@@ -74,7 +74,7 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
             parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined16);
         pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
           auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-          if (solver->isUsingSharedMappings(section)) {
+          if (solver->isMergingMetadata(section)) {
             const int cellDescriptionsIndex1 = getCellDescriptionsIndex()[pos1Scalar];
             const int cellDescriptionsIndex2 = getCellDescriptionsIndex()[pos2Scalar];
             const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
@@ -489,7 +489,7 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
         if (hasToMergeWithNeighbourMetadata(src,dest,x,h)) {
           for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
             auto* solver = solvers::RegisteredSolvers[solverNumber];
-            if (solver->isUsingSharedMappings(section)) {
+            if (solver->isMergingMetadata(section)) {
               const int offset  = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
               const int element = solver->tryGetElement(
                   getCellDescriptionsIndex()[destScalar],solverNumber);

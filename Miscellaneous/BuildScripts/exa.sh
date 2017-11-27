@@ -295,6 +295,9 @@ case $CMD in
 	"whoopsie") # runs command, if fails, collects info and uploads to a pastebin
 		exec $BuildScripts/../RunScripts/whoopsie.sh $@
 		;;
+	"mexa") # Runs the meta specfile file format utility
+		exec $BuildScripts/../MetaSpecfile/mexa.py $@
+		;;
 	*)
 		fail "Could not understand command '$CMD'"
 		;;

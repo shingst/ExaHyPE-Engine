@@ -34,6 +34,7 @@ exahype-project  Elastic
 /*
   shared-memory
     identifier               = autotuning
+    configure                = {}
     cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory

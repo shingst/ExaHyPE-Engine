@@ -1,5 +1,3 @@
-#!/bin/env python
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -19,8 +17,7 @@
 #
 # @section DESCRIPTION
 #
-# Generates the code for the volume integral
-# for a specific configuration
+# Generates the code for the AMR
 #
 
 
@@ -41,11 +38,13 @@ class AMRRoutinesGenerator:
 
 
     def generateCode(self):
-        self.m_context['gemm_face_Q'] = 'gemm_'+str(self.m_context['nData'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])+'_face_Q'
-        self.m_context['gemm_face_F'] = 'gemm_'+str(self.m_context['nVar']) +'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])+'_face_F'
-        TemplatingUtils.renderAsFile('amrRoutines_cpp.template', self.m_filename, self.m_context)
+        self.m_context["gemm_face_Q"] = "gemm_"+str(self.m_context["nData"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_face_Q"
+        self.m_context["gemm_face_F"] = "gemm_"+str(self.m_context["nVar"]) +"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_face_F"
+        self.m_context["gemm_volume"] = "gemm_"+str(self.m_context["nData"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_volume"
+        
+        TemplatingUtils.renderAsFile("amrRoutines_cpp.template", self.m_filename, self.m_context)
         # generates gemms
-        if(self.m_context['useLibxsmm']):
+        if(self.m_context["useLibxsmm"]):
             self.generateGemms()
     
     def generateGemms(self):
@@ -56,17 +55,17 @@ class AMRRoutinesGenerator:
         # implementation file
         #-----------------------------        
         l_face_Q = MatmulConfig(  # M
-                                    self.m_context['nData'],      \
+                                    self.m_context["nData"],      \
                                     # N
-                                    self.m_context['nDof'],       \
+                                    self.m_context["nDof"],       \
                                     # K
-                                    self.m_context['nDof'],       \
+                                    self.m_context["nDof"],       \
                                     # LDA
-                                    self.m_context['nDataPad'],   \
+                                    self.m_context["nDataPad"],   \
                                     # LDB
-                                    self.m_context['nDofPad'],    \
+                                    self.m_context["nDofPad"],    \
                                     # LDC
-                                    self.m_context['nDataPad'],   \
+                                    self.m_context["nDataPad"],   \
                                     # alpha 
                                     1,                            \
                                     # beta
@@ -74,26 +73,26 @@ class AMRRoutinesGenerator:
                                     # alignment A
                                     0,                            \
                                     # alignment C
-                                    0,                            \
+                                    1,                            \
                                     # name
-                                    "face_Q",                   \
+                                    "face_Q",                     \
                                     # prefetching
                                     "nopf",                       \
                                     # type
                                     "gemm")
         l_matmulList.append(l_face_Q)
         l_face_F = MatmulConfig(  # M
-                                    self.m_context['nVar'],       \
+                                    self.m_context["nVar"],       \
                                     # N
-                                    self.m_context['nDof'],       \
+                                    self.m_context["nDof"],       \
                                     # K
-                                    self.m_context['nDof'],       \
+                                    self.m_context["nDof"],       \
                                     # LDA
-                                    self.m_context['nVarPad'],    \
+                                    self.m_context["nVarPad"],    \
                                     # LDB
-                                    self.m_context['nDofPad'],    \
+                                    self.m_context["nDofPad"],    \
                                     # LDC
-                                    self.m_context['nVarPad'],    \
+                                    self.m_context["nVarPad"],    \
                                     # alpha 
                                     1,                            \
                                     # beta
@@ -101,13 +100,40 @@ class AMRRoutinesGenerator:
                                     # alignment A
                                     0,                            \
                                     # alignment C
-                                    0,                            \
+                                    1,                            \
                                     # name
-                                    "face_F",                   \
+                                    "face_F",                     \
                                     # prefetching
                                     "nopf",                       \
                                     # type
                                     "gemm")
         l_matmulList.append(l_face_F)
+        l_volume = MatmulConfig(  # M
+                                    self.m_context["nData"],       \
+                                    # N
+                                    self.m_context["nDof"],       \
+                                    # K
+                                    self.m_context["nDof"],       \
+                                    # LDA
+                                    self.m_context["nData"],      \
+                                    # LDB
+                                    self.m_context["nDofPad"],    \
+                                    # LDC
+                                    self.m_context["nData"],      \
+                                    # alpha 
+                                    1,                            \
+                                    # beta
+                                    1,                            \
+                                    # alignment A
+                                    0,                            \
+                                    # alignment C
+                                    1,                            \
+                                    # name
+                                    "volume",                     \
+                                    # prefetching
+                                    "nopf",                       \
+                                    # type
+                                    "gemm")
+        l_matmulList.append(l_volume)
         
         Backend.generateAssemblerCode("asm_"+self.m_filename, l_matmulList)

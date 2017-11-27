@@ -232,7 +232,7 @@ class mpibalancing::HotspotBalancing: public peano::parallel::loadbalancing::Ora
      *                     has however no direct impact on the load balancing.
      *                     It solely controls the grid refinement pattern.
      */
-    HotspotBalancing( bool joinsAllowed, int coarsestRegularInnerAndOuterGridLevel, int maxRanksThatCanBeUsedAsAdministors = std::numeric_limits<int>::max() );
+    HotspotBalancing( bool joinsAllowed, int coarsestRegularInnerAndOuterGridLevel, int maxRanksThatCanBeUsedAsAdministors = 1 );
 
     virtual ~HotspotBalancing();
 

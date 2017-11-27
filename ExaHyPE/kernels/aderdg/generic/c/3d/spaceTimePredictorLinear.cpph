@@ -149,7 +149,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             for (int l = 0; l < basisSize; l++) {
               for (int n = 0; n < numberOfVariables; n++) { //skip parameters
                 for (int s = 0; s < basisSize; s++) {
-                  tmp_PSderivatives[idx_PSderivatives(t, j, k, l, n)] += PSderivatives[idx_PSderivatives(t, j, k, l, n)] * kernels::dudx[order][t][s] * invDt;
+                  tmp_PSderivatives[idx_PSderivatives(t, j, k, l, n)] += PSderivatives[idx_PSderivatives(s, j, k, l, n)] * kernels::dudx[order][t][s] * invDt;
                 } //s
               } //n
             } //l

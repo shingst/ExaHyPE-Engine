@@ -18,6 +18,7 @@ public class CodeGeneratorHelper {
   private static String useFluxOptionFlag            = "--useFlux";
   private static String useNCPOptionFlag             = "--useNCP";
   private static String useSourceOptionFlag          = "--useSource";
+  private static String usePointSourcesOptionFlag    = "--usePointSources";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
   private static String enableDeepProfilerOptionFlag = "--enableDeepProfiler";
   
@@ -75,7 +76,7 @@ public class CodeGeneratorHelper {
   //Generate code
   //-------------
   public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order,
-      boolean isLinear, int dimensions, String microarchitecture, boolean enableDeepProfiler, boolean useFlux, boolean useSource, boolean useNCP, boolean noTimeAveraging)
+      boolean isLinear, int dimensions, String microarchitecture, boolean enableDeepProfiler, boolean useFlux, boolean useSource, boolean useNCP, int nPointSources, boolean noTimeAveraging)
       throws IOException {
     
     //check and defines paths       
@@ -96,7 +97,7 @@ public class CodeGeneratorHelper {
     //define the CodeGenerator arguments
     String namespace = defineNamespace(projectName, solverName);    
     String numericsParameter = isLinear ? "linear" : "nonlinear";
-    String options = (enableDeepProfiler ? enableDeepProfiler+" " : "") + (useFlux ? useFluxOptionFlag+" " : "") + (useSource ? useSourceOptionFlag+" " : "") + (useNCP ?  useNCPOptionFlag+" " : "") + (noTimeAveraging ? noTimeAveragingOptionFlag+" " : "");
+    String options = (enableDeepProfiler ? enableDeepProfiler+" " : "") + (useFlux ? useFluxOptionFlag+" " : "") + (useSource ? useSourceOptionFlag+" " : "") + (useNCP ?  useNCPOptionFlag+" " : "") + (nPointSources>=0 ?  usePointSourcesOptionFlag+" "+nPointSources+" " : "") + (noTimeAveraging ? noTimeAveragingOptionFlag+" " : "");
 
     // set up the command to execute the code generator
     String args =   " " + _pathToApplication 

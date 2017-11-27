@@ -41,6 +41,9 @@ namespace converter {
   
   constexpr int getFhiGenArraySize()     { return {{(nDof ** nDim) * nVar * (nDim+1)}};}
   constexpr int getFhiOptArraySize()     { return {{(nDof ** nDim) * nVarPad * (nDim+1)}};}
+  
+  constexpr int getPSiGenArraySize()     { return {{(nDof+1) * (nDof ** nDim) * nVar}};}
+  constexpr int getPSiOptArraySize()     { return {{(nDof+1) * (nDof ** nDim) * nVarPad}};}
 
 
   void Qhbnd_optimised2generic(const double* const opt, double* gen);
@@ -60,7 +63,9 @@ namespace converter {
   
   void Fhi_optimised2generic(const double* const opt, double* gen);
   void Fhi_generic2optimised(const double* const gen, double* opt);
-
+    
+  void PSi_optimised2generic(const double* const opt, double* gen);
+  void PSi_generic2optimised(const double* const gen, double* opt);
 }
 {% for namespaceName in codeNamespaceList %}
 }

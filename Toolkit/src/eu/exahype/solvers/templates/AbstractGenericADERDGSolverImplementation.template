@@ -51,7 +51,7 @@ void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* 
   kernels::aderdg::generic::fortran::spaceTimePredictor{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, tempUnknowns, tempFluxUnknowns, luh, dx, dt, tempPointForceSources);
 {%- else %}
 {%- if  isLinear %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSource}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, tempUnknowns, tempFluxUnknowns, luh, dx, dt, tempPointForceSources);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, tempUnknowns, tempFluxUnknowns, luh, dx, dt, tempPointForceSources);
 {%- else %}
   kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, tempUnknowns, tempFluxUnknowns, luh, dx, dt);
 {%- endif %}
@@ -79,9 +79,9 @@ void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* 
   kernels::aderdg::generic::fortran::volumeIntegral{{linearOrNonlinear}}(lduh,lFhi,dx,getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis());
 {%- else %}
   {%- if isLinear %}
-  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource || useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
   {%- else %}
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFi,lFhi,dx);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFi,lFhi,dx);
   {%- endif %}
 {%- endif %}
 {%- if enableProfiler %}
@@ -193,7 +193,7 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
 }
 
 void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
-{%- if usePointSource %}
+{%- if usePointSources %}
 {%- if enableProfiler %}
   _profiler->start("deltaDistribution");
 {%- endif %}
@@ -207,19 +207,19 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
         
 void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 /**

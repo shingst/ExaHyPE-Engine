@@ -90,21 +90,23 @@ void aderPicardLoopNonlinear(SolverType& solver,
 
     for (int i = 0; i < basisSize; i++) {  // time DOF
       // Compute the fluxes
-      auto grainSizeFluxSourceNCPLoop = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(basisSize,sharedmemorylabels::GenericKernelsFluxSourceNCPLoop);
-      //for (int k = 0; k < basisSize; k++) { // presumably k=y
-      pfor(k,0,basisSize,grainSizeFluxSourceNCPLoop.getGrainSize())
-        for (int l = 0; l < basisSize; l++) { // presumably l=x
-          // Call PDE fluxes
-          const double* Q = lQi + idx_lQi(k, l, i, 0); // TODO(Sven): unused
+      if (useFlux) {
+        auto grainSizeFluxSourceNCPLoop = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(basisSize,sharedmemorylabels::GenericKernelsFluxSourceNCPLoop);
+        //for (int k = 0; k < basisSize; k++) { // presumably k=y
+        pfor(k,0,basisSize,grainSizeFluxSourceNCPLoop.getGrainSize())
+          for (int l = 0; l < basisSize; l++) { // presumably l=x
+            // Call PDE fluxes
+            const double* Q = lQi + idx_lQi(k, l, i, 0); // TODO(Sven): unused
 
-          double* F[2]; // TODO(Sven): set but not used
-          F[0]      = lFi + idx_lFi(i, k, l, 0, 0);
-          F[1]      = lFi + idx_lFi(i, k, l, 1, 0);
-          solver.flux(Q,F);
-          // everything related to source now moved down to the NCP
-        }
-      endpfor
-      grainSizeFluxSourceNCPLoop.parallelSectionHasTerminated();
+            double* F[2]; // TODO(Sven): set but not used
+            F[0]      = lFi + idx_lFi(i, k, l, 0, 0);
+            F[1]      = lFi + idx_lFi(i, k, l, 1, 0);
+            solver.flux(Q,F);
+            // everything related to source now moved down to the NCP
+          }
+        endpfor
+        grainSizeFluxSourceNCPLoop.parallelSectionHasTerminated();
+      }
 
       // 2. Compute the contribution of the initial condition uh to the right-hand side (rhs0)
       auto grainSizeCopyRhs = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(basisSize,sharedmemorylabels::GenericKernelsCopyRhs);
@@ -140,8 +142,10 @@ void aderPicardLoopNonlinear(SolverType& solver,
         for (int l = 0; l < basisSize; l++) { // l == x
           for (int m = 0; m < numberOfVariables; m++) {
             for (int n = 0; n < basisSize; n++) { // n == matmul x
-              rhs[idx_rhs(i, k, l, m)] -= updateSize * lFi[idx_lFi(i, k, n, 0, m)] *
-                                          kernels::Kxi[order][n][l];
+              if (useFlux) {
+                rhs[idx_rhs(i, k, l, m)] -= updateSize * lFi[idx_lFi(i, k, n, 0, m)] *
+                                            kernels::Kxi[order][n][l]; 
+              }
               if(useNCP) {
                 gradQ[idx_gradQ(k, l, i, /*x*/0, m)] += 1.0 * invDx[0] *
                                           lQi[idx_lQi(k,n,i,m)] *
@@ -164,8 +168,10 @@ void aderPicardLoopNonlinear(SolverType& solver,
         for (int l = 0; l < basisSize; l++) { // l == y
           for (int m = 0; m < numberOfVariables; m++) {
             for (int n = 0; n < basisSize; n++) { // n = matmul y
-              rhs[idx_rhs(i, l, k, m)] -= updateSize * lFi[idx_lFi(i, n, k, 1, m)] *
-                                          kernels::Kxi[order][n][l];
+              if (useFlux) {
+                rhs[idx_rhs(i, l, k, m)] -= updateSize * lFi[idx_lFi(i, n, k, 1, m)] *
+                    kernels::Kxi[order][n][l];
+              }
               if(useNCP) {
                 gradQ[idx_gradQ(l, k, i, /*y*/1, m)] += 1.0 * invDx[1] *
                                           lQi[idx_lQi(n, k, i, m)] *
@@ -316,13 +322,15 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi,double* lQhi,
       for (int l = 0; l < numberOfVariables; l++) {
         // Matrix-Vector Products
         for (int m = 0; m < basisSize; m++) {
-          // Fortran: lFhi_x(:,k,j) = lFh(:,1,k,j,:) * wGPN(:)
-          lFhi_x[idx_lFhi(j, k, l)] += lFi[idx_lFi(m, j, k, 0, l)] *
-              kernels::gaussLegendreWeights[order][m];
+          if (useFlux) {
+            // Fortran: lFhi_x(:,k,j) = lFh(:,1,k,j,:) * wGPN(:)
+            lFhi_x[idx_lFhi(j, k, l)] += lFi[idx_lFi(m, j, k, 0, l)] *
+                kernels::gaussLegendreWeights[order][m];
 
-          // Fortran: lFhi_y(:,j,k) = lFh(:,2,:k,j,:) * wGPN(:)
-          lFhi_y[idx_lFhi(k, j, l)] += lFi[idx_lFi(m, j, k, 1, l)] *
-              kernels::gaussLegendreWeights[order][m];
+            // Fortran: lFhi_y(:,j,k) = lFh(:,2,:k,j,:) * wGPN(:)
+            lFhi_y[idx_lFhi(k, j, l)] += lFi[idx_lFi(m, j, k, 1, l)] *
+                kernels::gaussLegendreWeights[order][m]; 
+          }
 
           if(useSource || useNCP) {
             // Fortran: lShi(:,k,j) = lSh(:,k,j,:) * wGPN(:)
@@ -345,7 +353,7 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi,double* lQhi,
   }
 }
 
-template<int numberOfVariables,int numberOfParameters,int basisSize>
+template<bool useFlux,int numberOfVariables,int numberOfParameters,int basisSize>
 void aderExtrapolatorNonlinear(const double* lQhi, const double* lFhi_x,
     const double* lFhi_y, double* lQhbnd, double* lFhbnd) {
   // Compute the boundary-extrapolated values for Q and F*n
@@ -364,16 +372,18 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lFhi_x,
   // x-direction: face 1 (left) and face 2 (right)
   for (int j = 0; j < basisSize; j++) {
     // Matrix-Vector Products
-    for (int k = 0; k < numberOfVariables; k++) { 
-      for (int l = 0; l < basisSize; l++) { // x
-        // Fortran: lFhbnd(:,j,1) = lFhi_x(:,:,j) * FLCoeff(:)
-        lFhbnd[idx_lFhbnd(0, j, k)] +=
-            lFhi_x[idx_lFhi(j, l, k)] * kernels::FLCoeff[order][l];
+    if (useFlux) {
+      for (int k = 0; k < numberOfVariables; k++) { 
+        for (int l = 0; l < basisSize; l++) { // x
+          // Fortran: lFhbnd(:,j,1) = lFhi_x(:,:,j) * FLCoeff(:)
+          lFhbnd[idx_lFhbnd(0, j, k)] +=
+              lFhi_x[idx_lFhi(j, l, k)] * kernels::FLCoeff[order][l];
 
-        // Fortran: lFhbnd(:,j,2) = lFhi_x(:,:,j) * FRCoeff(:)
-        lFhbnd[idx_lFhbnd(1, j, k)] +=
-            lFhi_x[idx_lFhi(j, l, k)] * kernels::FRCoeff[order][l];
-      }
+          // Fortran: lFhbnd(:,j,2) = lFhi_x(:,:,j) * FRCoeff(:)
+          lFhbnd[idx_lFhbnd(1, j, k)] +=
+              lFhi_x[idx_lFhi(j, l, k)] * kernels::FRCoeff[order][l];
+        }
+      } 
     }
     
     // Matrix-Vector Products
@@ -392,17 +402,19 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lFhi_x,
 
   // y-direction: face 3 (left) and face 4 (right)
   for (int j = 0; j < basisSize; j++) {
-    for (int k = 0; k < numberOfVariables; k++) {
-      // Matrix-Vector Products
-      for (int l = 0; l < basisSize; l++) {
-        // Fortran: lFhbnd(:,j,3) = lFhi_y(:,:,j) * FLCoeff(:)
-        lFhbnd[idx_lFhbnd(2, j, k)] +=
-            lFhi_y[idx_lFhi(j, l, k)] * kernels::FLCoeff[order][l];
+    // Matrix-Vector Products
+    if (useFlux) {
+      for (int k = 0; k < numberOfVariables; k++) {
+        for (int l = 0; l < basisSize; l++) {
+          // Fortran: lFhbnd(:,j,3) = lFhi_y(:,:,j) * FLCoeff(:)
+          lFhbnd[idx_lFhbnd(2, j, k)] +=
+              lFhi_y[idx_lFhi(j, l, k)] * kernels::FLCoeff[order][l];
 
-        // Fortran: lFhbnd(:,j,4) = lFhi_y(:,:,j) * FRCoeff(:)
-        lFhbnd[idx_lFhbnd(3, j, k)] +=
-            lFhi_y[idx_lFhi(j, l, k)] * kernels::FRCoeff[order][l];
-      }
+          // Fortran: lFhbnd(:,j,4) = lFhi_y(:,:,j) * FRCoeff(:)
+          lFhbnd[idx_lFhbnd(3, j, k)] +=
+              lFhi_y[idx_lFhi(j, l, k)] * kernels::FRCoeff[order][l];
+        }
+      } 
     }
     
     // Matrix-Vector Products
@@ -428,7 +440,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lFhi_x,
 //  ...
 //}
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <bool useFlux,int numberOfVariables,int numberOfParameters,int basisSize>
 void aderTimeAveragingExtrapolatorNonlinear(
     const double* lQi, const double* lFi,
     double* lQhbnd, double* lFhbnd) {
@@ -451,17 +463,19 @@ void aderTimeAveragingExtrapolatorNonlinear(
     // x-direction: face 1 (left) and face 2 (right)
     for (int j = 0; j < basisSize; j++) { // y
       // Matrix-Vector Products
-      for (int k = 0; k < numberOfVariables; k++) {
-        for (int l = 0; l < basisSize; l++) { // x
-          // Fortran: lFhbnd(:,j,1) = lFhi_x(:,:,j) * FLCoeff(:) TODO edit
-          lFhbnd[idx_lFhbnd(0, j, k)] +=
-              lFi[idx_lFi(i, j, l, 0, k)] * kernels::FLCoeff[order][l]
-                                          * kernels::gaussLegendreWeights[order][i];
+      if (useFlux) {
+        for (int k = 0; k < numberOfVariables; k++) {
+          for (int l = 0; l < basisSize; l++) { // x
+            // Fortran: lFhbnd(:,j,1) = lFhi_x(:,:,j) * FLCoeff(:) TODO edit
+            lFhbnd[idx_lFhbnd(0, j, k)] +=
+                lFi[idx_lFi(i, j, l, 0, k)] * kernels::FLCoeff[order][l]
+                                                                      * kernels::gaussLegendreWeights[order][i];
 
-          // Fortran: lFhbnd(:,j,2) = lFhi_x(:,:,j) * FRCoeff(:) TODO edit
-          lFhbnd[idx_lFhbnd(1, j, k)] +=
-              lFi[idx_lFi(i, j, l, 0, k)] * kernels::FRCoeff[order][l]
-                                          * kernels::gaussLegendreWeights[order][i];
+            // Fortran: lFhbnd(:,j,2) = lFhi_x(:,:,j) * FRCoeff(:) TODO edit
+            lFhbnd[idx_lFhbnd(1, j, k)] +=
+                lFi[idx_lFi(i, j, l, 0, k)] * kernels::FRCoeff[order][l]
+                                                                      * kernels::gaussLegendreWeights[order][i];
+          }
         }
       }
       // Matrix-Vector Products
@@ -483,17 +497,19 @@ void aderTimeAveragingExtrapolatorNonlinear(
     // y-direction: face 3 (left) and face 4 (right)
     for (int j = 0; j < basisSize; j++) { // x
       // Matrix-Vector Products
-      for (int k = 0; k < numberOfVariables; k++) {
-        for (int l = 0; l < basisSize; l++) { // y
-          // Fortran: lFhbnd(:,j,3) = lFhi_y(:,:,j) * FLCoeff(:) TODO edit
-          lFhbnd[idx_lFhbnd(2, j, k)] +=
-              lFi[idx_lFi(i, l, j, 1, k)] * kernels::FLCoeff[order][l]
-                                          * kernels::gaussLegendreWeights[order][i];
+      if (useFlux) {
+        for (int k = 0; k < numberOfVariables; k++) {
+          for (int l = 0; l < basisSize; l++) { // y
+            // Fortran: lFhbnd(:,j,3) = lFhi_y(:,:,j) * FLCoeff(:) TODO edit
+            lFhbnd[idx_lFhbnd(2, j, k)] +=
+                lFi[idx_lFi(i, l, j, 1, k)] * kernels::FLCoeff[order][l]
+                                            * kernels::gaussLegendreWeights[order][i];
 
-          // Fortran: lFhbnd(:,j,4) = lFhi_y(:,:,j) * FRCoeff(:) TODO edit
-          lFhbnd[idx_lFhbnd(3, j, k)] +=
-              lFi[idx_lFi(i, l, j, 1, k)] * kernels::FRCoeff[order][l]
-                                          * kernels::gaussLegendreWeights[order][i];
+            // Fortran: lFhbnd(:,j,4) = lFhi_y(:,:,j) * FRCoeff(:) TODO edit
+            lFhbnd[idx_lFhbnd(3, j, k)] +=
+                lFi[idx_lFi(i, l, j, 1, k)] * kernels::FRCoeff[order][l]
+                                            * kernels::gaussLegendreWeights[order][i];
+          }
         }
       }
       // Matrix-Vector Products
@@ -538,7 +554,7 @@ void spaceTimePredictorNonlinear(
 
   // if fluxes are not computed, make sure wrong access patterns result in a crash, thus
   // the nullptr:
-  double* lFi     = useFlux ? tempSpaceTimeFluxUnknowns[0] : nullptr;
+  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
   double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
   
   aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
@@ -546,7 +562,7 @@ void spaceTimePredictorNonlinear(
         lQi, rhs, lFi, gradQ);
   
   if(noTimeAveraging) {
-    aderTimeAveragingExtrapolatorNonlinear<numberOfVariables,numberOfParameters, basisSize>(
+    aderTimeAveragingExtrapolatorNonlinear<useFlux,numberOfVariables,numberOfParameters, basisSize>(
         lQi,
         lFi,
         lQhbnd, lFhbnd);
@@ -562,7 +578,7 @@ void spaceTimePredictorNonlinear(
         &lFhi[1 * basisSize2 * numberOfVariables],  // lFhi_y
         &lFhi[2 * basisSize2 * numberOfVariables]   // lShi
     );
-    aderExtrapolatorNonlinear<numberOfVariables,numberOfParameters, basisSize>(
+    aderExtrapolatorNonlinear<useFlux,numberOfVariables,numberOfParameters, basisSize>(
         lQhi,
         &lFhi[0 * basisSize2 * numberOfVariables],  // lFhi_x
         &lFhi[1 * basisSize2 * numberOfVariables],  // lFhi_y

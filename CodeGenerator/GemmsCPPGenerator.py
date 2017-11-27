@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -15,7 +14,11 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
-
+#
+# @section DESCRIPTION
+#
+# Generate the a cpp+h to include the libxsmm gemm properly
+#
 
 import TemplatingUtils
 
@@ -24,7 +27,7 @@ class GemmsCPPGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filenameRoot = 'gemmsCPP'
+    m_filenameRoot = "gemmsCPP"
 
 
     def __init__(self, i_context):
@@ -32,7 +35,7 @@ class GemmsCPPGenerator:
         
 
     def generateCode(self):
-        self.m_context['gemm_prefix']  = 'gemm'
+        self.m_context["gemm_prefix"]  = "gemm"
         
-        TemplatingUtils.renderAsFile('gemmsCPP_h.template',   self.m_filenameRoot+'.h',   self.m_context)
-        TemplatingUtils.renderAsFile('gemmsCPP_cpp.template', self.m_filenameRoot+'.cpp', self.m_context)
+        TemplatingUtils.renderAsFile("gemmsCPP_h.template",   self.m_filenameRoot+".h",   self.m_context)
+        TemplatingUtils.renderAsFile("gemmsCPP_cpp.template", self.m_filenameRoot+".cpp", self.m_context)

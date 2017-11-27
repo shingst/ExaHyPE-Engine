@@ -35,6 +35,7 @@ exahype-project  Euler
 
   shared-memory
     identifier               = autotuning
+    configure                = {}
     cores                    = 28
     properties-file          = sharedmemory-p3-fused.autotuning.properties
   end shared-memory

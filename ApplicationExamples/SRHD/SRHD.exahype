@@ -30,6 +30,7 @@ exahype-project  SRHD
   
   shared-memory
     identifier               = dummy
+    configure                = {}
     cores                    = 2
     properties-file          = sharedmemory.properties
   end shared-memory

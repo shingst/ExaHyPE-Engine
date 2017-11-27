@@ -315,7 +315,7 @@ namespace {
       if (sq_res < tol * tol) {
         break;
       }
-
+      
       if (iter == MaxIterations) {  // No convergence after last iteration
         static tarch::logging::Log _log("kernels::aderdg::generic::c");
         logWarning("aderPicardLoopNonlinear(...)",
@@ -526,7 +526,7 @@ namespace {
     }
   }
   
-  template <int numberOfVariables,int numberOfParameters,int basisSize>
+  template <bool useFlux,int numberOfVariables,int numberOfParameters,int basisSize>
   void aderTimeAveragingExtrapolatorNonlinear(
       const double* lQi, const double* lFi,
       double* lQhbnd, double* lFhbnd) {
@@ -554,17 +554,19 @@ namespace {
       for (int j = 0; j < basisSize; j++) { // z
         for (int k = 0; k < basisSize; k++) { // y 
           // Matrix-Vector Products
-          for (int l = 0; l < numberOfVariables; l++) {
-            for (int n = 0; n < basisSize; n++) { // x
-              lFhbnd[idx_lFhbnd(0, j, k, l)] += 
-                  lFi[idx_lFi(i, j, k, n, 0, l)] * 
-                  kernels::FLCoeff[order][n] * 
-                  kernels::gaussLegendreWeights[order][i];
+          if (useFlux) {
+            for (int l = 0; l < numberOfVariables; l++) {
+              for (int n = 0; n < basisSize; n++) { // x
+                lFhbnd[idx_lFhbnd(0, j, k, l)] += 
+                    lFi[idx_lFi(i, j, k, n, 0, l)] * 
+                    kernels::FLCoeff[order][n] * 
+                    kernels::gaussLegendreWeights[order][i];
 
-              lFhbnd[idx_lFhbnd(1, j, k, l)] += 
-                  lFi[idx_lFi(i, j, k, n, 0, l)] * 
-                  kernels::FRCoeff[order][n] * 
-                  kernels::gaussLegendreWeights[order][i];
+                lFhbnd[idx_lFhbnd(1, j, k, l)] += 
+                    lFi[idx_lFi(i, j, k, n, 0, l)] * 
+                    kernels::FRCoeff[order][n] * 
+                    kernels::gaussLegendreWeights[order][i];
+              }
             }
           }
           // Matrix-Vector Products
@@ -588,17 +590,19 @@ namespace {
       for (int j = 0; j < basisSize; j++) { // z
         for (int k = 0; k < basisSize; k++) { // x 
           // Matrix-Vector Products
-          for (int l = 0; l < numberOfVariables; l++) {
-            for (int n = 0; n < basisSize; n++) { // y  
-              lFhbnd[idx_lFhbnd(2, j, k, l)] +=  
-                  lFi[idx_lFi(i, j, n, k, 1, l)] * 
-                  kernels::FLCoeff[order][n] * 
-                  kernels::gaussLegendreWeights[order][i];
+          if (useFlux) {
+            for (int l = 0; l < numberOfVariables; l++) {
+              for (int n = 0; n < basisSize; n++) { // y  
+                lFhbnd[idx_lFhbnd(2, j, k, l)] +=  
+                    lFi[idx_lFi(i, j, n, k, 1, l)] * 
+                    kernels::FLCoeff[order][n] * 
+                    kernels::gaussLegendreWeights[order][i];
 
-              lFhbnd[idx_lFhbnd(3, j, k, l)] += 
-                  lFi[idx_lFi(i, j, n, k, 1, l)] * 
-                  kernels::FRCoeff[order][n] * 
-                  kernels::gaussLegendreWeights[order][i];
+                lFhbnd[idx_lFhbnd(3, j, k, l)] += 
+                    lFi[idx_lFi(i, j, n, k, 1, l)] * 
+                    kernels::FRCoeff[order][n] * 
+                    kernels::gaussLegendreWeights[order][i];
+              }
             }
           }
           // Matrix-Vector Products
@@ -623,17 +627,19 @@ namespace {
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x 
           // Matrix-Vector Products
-          for (int l = 0; l < numberOfVariables; l++) {
-            for (int n = 0; n < basisSize; n++) { // z
-              lFhbnd[idx_lFhbnd(4, j, k, l)] +=
-                  lFi[idx_lFi(i, n, j, k, 2, l)] * 
-                  kernels::FLCoeff[order][n] * 
-                  kernels::gaussLegendreWeights[order][i];
+          if (useFlux) {
+            for (int l = 0; l < numberOfVariables; l++) {
+              for (int n = 0; n < basisSize; n++) { // z
+                lFhbnd[idx_lFhbnd(4, j, k, l)] +=
+                    lFi[idx_lFi(i, n, j, k, 2, l)] * 
+                    kernels::FLCoeff[order][n] * 
+                    kernels::gaussLegendreWeights[order][i];
 
-              lFhbnd[idx_lFhbnd(5, j, k, l)] +=
-                  lFi[idx_lFi(i, n, j, k, 2, l)] * 
-                  kernels::FRCoeff[order][n] * 
-                  kernels::gaussLegendreWeights[order][i];
+                lFhbnd[idx_lFhbnd(5, j, k, l)] +=
+                    lFi[idx_lFi(i, n, j, k, 2, l)] * 
+                    kernels::FRCoeff[order][n] * 
+                    kernels::gaussLegendreWeights[order][i];
+              }
             }
           }
           // Matrix-Vector Products
@@ -680,14 +686,14 @@ void spaceTimePredictorNonlinear(
   // wrong memory access patterns more quickly.
 
   double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
-  double* gradQ   = useNCP ? tempSpaceTimeFluxUnknowns[1] : nullptr; // size: basisSize3 * DIMENSIONS * numberOfVariables
+  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
 
   aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
       solver, luh, dt, dx, lQi, rhs, lFi, gradQ
   );
   
   if(noTimeAveraging) {
-    aderTimeAveragingExtrapolatorNonlinear<numberOfVariables,numberOfParameters, basisSize>(
+    aderTimeAveragingExtrapolatorNonlinear<useFlux,numberOfVariables,numberOfParameters, basisSize>(
         lQi,
         lFi,
         lQhbnd, lFhbnd);

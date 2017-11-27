@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -15,9 +14,13 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
+# @section DESCRIPTION
+#
+# Generates the SolutionUpdate Kernel
+#
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -25,7 +28,7 @@ class SolutionUpdateGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = 'solutionUpdate.cpp'
+    m_filename = "solutionUpdate.cpp"
 
 
     def __init__(self, i_context):
@@ -33,10 +36,4 @@ class SolutionUpdateGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile('solutionUpdate_cpp.template', self.m_filename, self.m_context)
-
-
-
-
-
-
+        TemplatingUtils.renderAsFile("solutionUpdate_cpp.template", self.m_filename, self.m_context)

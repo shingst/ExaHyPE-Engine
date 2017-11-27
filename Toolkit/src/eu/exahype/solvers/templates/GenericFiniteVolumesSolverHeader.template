@@ -95,7 +95,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     void flux(const double* const Q,double** F) override;
     {%- endif %}
     
-    {%- if usePointSource %}
+    {%- if usePointSources %}
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override; 
     {%- endif %}
 };

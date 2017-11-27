@@ -173,7 +173,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
 {%- endif %}
 
-{%- if usePointSource %}
+{%- if usePointSources %}
     /**
      * Compute a pointSource contribution.
      * 

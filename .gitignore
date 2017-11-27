@@ -100,6 +100,7 @@ ExternalLibraries
 # Logs and other typical output of runs
 *.log
 *output
+*.out-exahype
 
 # There are people storing LaTeX in the main repository, so these
 # files are LaTeX output.
@@ -128,6 +129,7 @@ ExternalLibraries
 *.ilg
 *.ind
 *.ist
+*.synctex.gz
 
 # Coredumps
 core

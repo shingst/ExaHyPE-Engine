@@ -45,6 +45,12 @@ class exahype::mappings::GlobalRollback {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * \return true if we are currently performing
+   * a global rollback for the solver.
+   */
+  static bool performGlobalRollback(exahype::solvers::Solver* solver);
+
  public:
   /**
    * Mask out data exchange between master and worker.
@@ -82,60 +88,42 @@ class exahype::mappings::GlobalRollback {
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-     * Initialise debug counters.
-     */
-    void beginIteration(exahype::State& solverState);
+   * Roll the global solver time step data back to the previous
+   * state.
+   */
+  void endIteration(exahype::State& solverState);
 
-    /**
-     * Print debug counters.
-     */
-    void endIteration(exahype::State& solverState);
-
-    /**
-     * For all cells hosting a solver patch of a
-     * LimitingADERDGSolver, perform the following operations:
-     *
-     * 1. Perform a rollback to the previous time step.
-     * 2. Reinitialise the solver patch, i.e. perform a rollback in
-     *    cells with LimiterStatus other than Ok, and
-     *    allocate an additional limiter patch if necessary.
-     *    If the solver requested a global recomputation, i.e.
-     *    additional mesh refinement,
-     *    also perform a rollback in cells with LimiterStatus
-     *    Ok.
-     * 3. Reset the neighbour merging flags.
-     */
-    void enterCell(
-        exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-    /**
-     * TODO(Dominic): Add docu.
-     */
-    void touchVertexFirstTime(
-        exahype::Vertex& fineGridVertex,
-        const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-        const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+  /**
+   * For all cells hosting a solver patch of a
+   * LimitingADERDGSolver, perform the following operations:
+   *
+   * 1. Perform a rollback to the previous time step.
+   * 2. Reinitialise the solver patch, i.e. perform a rollback in
+   *    cells with LimiterStatus other than Ok, and
+   *    allocate an additional limiter patch if necessary.
+   *    If the solver requested a global recomputation, i.e.
+   *    additional mesh refinement,
+   *    also perform a rollback in cells with LimiterStatus
+   *    Ok.
+   * 3. Reset the neighbour merging flags.
+   */
+  void enterCell(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   #ifdef Parallel
     /**
-     * In case a solver is a LimitingADERDGSolver and we have detected a irregular
-     * limiter domain change that does not require a mesh update, we
-     * ask the solver to send FV subcell data to neighbouring ranks.
+     * Drop neighbour data from the previous limiter status spreading.
      */
-    void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
-                                const tarch::la::Vector<DIMENSIONS, double>& x,
-                                const tarch::la::Vector<DIMENSIONS, double>& h,
-                                int level);
-
+    void mergeWithNeighbour(exahype::Vertex& vertex,
+                            const exahype::Vertex& neighbour, int fromRank,
+                            const tarch::la::Vector<DIMENSIONS, double>& x,
+                            const tarch::la::Vector<DIMENSIONS, double>& h,
+                            int level);
 
 
     //
@@ -146,11 +134,10 @@ class exahype::mappings::GlobalRollback {
     /**
      * Nop.
      */
-    void mergeWithNeighbour(exahype::Vertex& vertex,
-                            const exahype::Vertex& neighbour, int fromRank,
-                            const tarch::la::Vector<DIMENSIONS, double>& x,
-                            const tarch::la::Vector<DIMENSIONS, double>& h,
-                            int level);
+    void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
+                                const tarch::la::Vector<DIMENSIONS, double>& x,
+                                const tarch::la::Vector<DIMENSIONS, double>& h,
+                                int level);
 
 
     /**
@@ -280,6 +267,23 @@ class exahype::mappings::GlobalRollback {
      */
     void mergeWithWorkerThread(const GlobalRollback& workerThread);
   #endif
+
+    /**
+     * Nop.
+     */
+    void beginIteration(exahype::State& solverState);
+
+    /**
+     * Nop.
+     */
+    void touchVertexFirstTime(
+        exahype::Vertex& fineGridVertex,
+        const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+        const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+        exahype::Vertex* const coarseGridVertices,
+        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+        exahype::Cell& coarseGridCell,
+        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
     /**
      * Nop.

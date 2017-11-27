@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -23,8 +22,10 @@
 # outputs the implementation.
 #
 
+
 from sys import exit
 import AvailableConfigs
+
 
 class MatmulConfig:
 	# Specification of a dense matrix-matrix multiplication
@@ -34,7 +35,7 @@ class MatmulConfig:
 	#
 
 	# dgemm, dgemv, ....
-	operationType = ''
+	operationType = ""
 
 	baseroutinename = ""
 	
@@ -59,10 +60,10 @@ class MatmulConfig:
 	alignment_C = 0                         # 1 aligned, 0 unaligned
 	
 	# prefetching
-	prefetchStrategy = ''
+	prefetchStrategy = ""
 	
 	# Constructor
-	def __init__(self, M, N, K, LDA, LDB, LDC, alpha, beta, alignment_A, alignment_C, name, prefetchStrategy, operationType='gemm'):
+	def __init__(self, M, N, K, LDA, LDB, LDC, alpha, beta, alignment_A, alignment_C, name, prefetchStrategy, operationType="gemm"):
 		if((M > LDC) or (K > LDB) or (M > LDA)):
 			print("MatmulConfig: Incompatible matrix sizes and leading dimensions")
 			exit()
@@ -95,5 +96,3 @@ class MatmulConfig:
 	def __repr__(self):
 		return "<%s: %s LDA=%s, LDB=%s, LDC=%s, alpha=%s, beta=%s, alignment_A=%s, alignment_C=%s>" \
 			 % (self.name, self.baseroutinename, self.LDA, self.LDB, self.LDC, self.alpha, self.beta, self.alignment_A, self.alignment_C)
-
-		

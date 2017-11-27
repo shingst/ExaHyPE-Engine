@@ -73,7 +73,6 @@ event-mapping:
 adapter:
   name: MeshRefinement
   merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: BroadcastAndMergeTimeStepData
   merge-with-user-defined-mapping: MeshRefinement          // (createInner/BoundaryVertex,enterCell,serial)
   merge-with-user-defined-mapping: LoadBalancing
   merge-with-user-defined-mapping: PostProcessing
@@ -82,7 +81,6 @@ adapter:
 adapter:
   name: MeshRefinementAndPlotGrid
   merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: BroadcastAndMergeTimeStepData
   merge-with-user-defined-mapping: MeshRefinement           //(createInner/BoundaryVertex,enterCell,serial)
   merge-with-predefined-mapping:   VTKGridVisualiser(grid)
   merge-with-user-defined-mapping: AugmentedAMRTreePlot2d
@@ -100,7 +98,7 @@ adapter:
   merge-with-user-defined-mapping: FinaliseMeshRefinement
   merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: TimeStepSizeComputation
-  merge-with-user-defined-mapping: Sending  // send only face data; post-processing done directly
+  merge-with-user-defined-mapping: Sending  // send only time data; post-processing done directly
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 adapter:

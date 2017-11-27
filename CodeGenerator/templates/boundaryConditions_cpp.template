@@ -11,8 +11,6 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
-//#include "kernels/aderdg/generic/Kernels.h"
-
 #include <algorithm>
 
 #include "{{pathToOptKernel}}/Kernels.h"
@@ -31,7 +29,8 @@ void {{codeNamespace}}::boundaryConditions(
                         const tarch::la::Vector<DIMENSIONS,double>& cellSize,
                         const double t,const double dt,
                         const int faceIndex,
-                        const int normalNonZero) {
+                        const int normalNonZero
+) {                         
   // Compute if face is "left" (0,2,4) or "right" face (1,2,3).
   const int f = faceIndex-2*normalNonZero;
 
@@ -54,11 +53,9 @@ void {{codeNamespace}}::boundaryConditions(
     #pragma forceinline recursive
 #endif
     solver.{{solverName}}::boundaryValues(x,t,dt,faceIndex,normalNonZero,
-                          &fluxIn[(ii+jj*{{nDof3D}})*{{nVarPad}}],&stateIn[(ii+jj*{{nDof3D}})*{{nDataPad}}],
-                          &fluxOut[(ii+jj*{{nDof3D}})*{{nVarPad}}],&stateOut[(ii+jj*{{nDof3D}})*{{nDataPad}}]);   
+                          &fluxIn[(jj*{{nDof3D}}+ii)*{{nVarPad}}], &stateIn[(jj*{{nDof3D}}+ii)*{{nDataPad}}],
+                          &fluxOut[(jj*{{nDof3D}}+ii)*{{nVarPad}}],&stateOut[(jj*{{nDof3D}}+ii)*{{nDataPad}}]);   
     }
   }
   
 }
-
-

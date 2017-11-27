@@ -182,7 +182,6 @@ std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::T
   return "undefined";
 }
 
-
 void exahype::solvers::Solver::tearApart(
     int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
   char exponent;

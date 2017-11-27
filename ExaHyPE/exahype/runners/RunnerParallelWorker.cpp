@@ -21,6 +21,10 @@
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "tarch/parallel/NodePool.h"
 
+#include "peano/parallel/SendReceiveBufferPool.h"
+
+#include "exahype/Vertex.h"
+
 #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -33,6 +37,9 @@ int exahype::runners::Runner::runAsWorker(
          tarch::parallel::NodePool::JobRequestMessageAnswerValues::Terminate) {
     if (newMasterNode >=
         tarch::parallel::NodePool::JobRequestMessageAnswerValues::NewMaster) {
+      peano::parallel::SendReceiveBufferPool::getInstance().createBufferManually<exahype::Vertex>(
+          newMasterNode,peano::parallel::SendReceiveBufferPool::BufferAccessType::LIFO); // TODO(Dominic): LIFO or FIFO?
+
       peano::parallel::messages::ForkMessage forkMessage;
       forkMessage.receive(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -49,7 +56,9 @@ int exahype::runners::Runner::runAsWorker(
         switch (repository.continueToIterate()) {
           case exahype::repositories::Repository::Continue:
             {
-              repository.iterate();
+             preProcessTimeStepInSharedMemoryEnvironment();
+
+             repository.iterate();
               logInfo("runAsWorker(...)",
                 "\tmemoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
 
@@ -60,6 +69,8 @@ int exahype::runners::Runner::runAsWorker(
                 peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics( _parser.getMulticorePropertiesFile() + "-dump-" + std::to_string(dumpCounter) );
               }
               #endif
+
+              postProcessTimeStepInSharedMemoryEnvironment();
             }
             break;
           case exahype::repositories::Repository::Terminate:

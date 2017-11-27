@@ -165,47 +165,53 @@ void exahype::mappings::LocalRecomputation::beginIteration(
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
+bool exahype::mappings::LocalRecomputation::performLocalRecomputation(
+    exahype::solvers::Solver* solver) {
+  return
+      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+      &&
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
+      ==exahype::solvers::LimiterDomainChange::Irregular;
+}
+
 void exahype::mappings::LocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      if (limitingADERDG->getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular) {
-        logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
-            ",_minCellSizes[solverNumber]="<<_maxCellSizes[solverNumber]);
-        assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
-        assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
+    if ( performLocalRecomputation( solver ) ) {
+      logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
+          ",_minCellSizes[solverNumber]="<<_maxCellSizes[solverNumber]);
+      assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
+      assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
-        solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
-        solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
-        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-          assertion4(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
-              solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString(),
-              exahype::records::State::toString(_localState.getAlgorithmSection()));
-          assertion4(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString(),
-              exahype::records::State::toString(_localState.getAlgorithmSection()));
-        }
+      solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
+      solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
+      if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+        assertion4(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
+            solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString(),
+            exahype::records::State::toString(_localState.getAlgorithmSection()));
+        assertion4(solver->getNextMaxCellSize()>0,
+            solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString(),
+            exahype::records::State::toString(_localState.getAlgorithmSection()));
+      }
 
-        solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
+      solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 
-        if (
-            exahype::State::fuseADERDGPhases()
-            #ifdef Parallel
-            && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
-            #endif
-        ) {
-          exahype::mappings::TimeStepSizeComputation::
-          reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
-        }
+      if (
+          exahype::State::fuseADERDGPhases()
+          #ifdef Parallel
+          && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+          #endif
+      ) {
+        exahype::mappings::TimeStepSizeComputation::
+        reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+      }
+      if (exahype::State::fuseADERDGPhases()) {
+        solver->startNewTimeStepFused(true,true);
+      } else {
         solver->startNewTimeStep();
-        if (!exahype::State::fuseADERDGPhases()) {
-          exahype::mappings::TimeStepSizeComputation::
-          reconstructStandardTimeSteppingData(solver);
-        }
       }
 
       logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
@@ -239,48 +245,36 @@ void exahype::mappings::LocalRecomputation::enterCell(
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (element!=exahype::solvers::Solver::NotFound) {
-        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-          auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-          switch(limitingADERDG->getLimiterDomainChange()) {
-          case exahype::solvers::LimiterDomainChange::Irregular: {
-            limitingADERDG->recomputeSolutionLocally(
-                fineGridCell.getCellDescriptionsIndex(), element);
+      if (
+          element!=exahype::solvers::Solver::NotFound &&
+          performLocalRecomputation( solver )
+      ) {
+        auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDG->recomputeSolutionLocally(
+            fineGridCell.getCellDescriptionsIndex(),element);
 
-            if (exahype::State::fuseADERDGPhases()) {
-              limitingADERDG->recomputePredictorLocally(
-                  fineGridCell.getCellDescriptionsIndex(), element,
-                  _predictionTemporaryVariables);
-            }
-
-            double admissibleTimeStepSize =
-                solver->startNewTimeStep(
-                    fineGridCell.getCellDescriptionsIndex(),element);
-
-            if (!exahype::State::fuseADERDGPhases()) {
-              exahype::mappings::TimeStepSizeComputation::
-              reconstructStandardTimeSteppingData(solver,fineGridCell.getCellDescriptionsIndex(),element);
-            }
-
-            _minTimeStepSizes[solverNumber] = std::min(
-                admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-            _minCellSizes[solverNumber] = std::min(
-                fineGridVerticesEnumerator.getCellSize()[0],_minCellSizes[solverNumber]);
-            _maxCellSizes[solverNumber] = std::max(
-                fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
-
-            limitingADERDG->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
-          } break;
-          case exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate: {
-            // TODO(Dominic): Here, we update the solver min and max to
-            // give the LimitingADERDG
-            limitingADERDG->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
-          } break;
-          case exahype::solvers::LimiterDomainChange::Regular: {
-            // do nothing
-          } break;
-          }
+        double admissibleTimeStepSize = std::numeric_limits<double>::max();
+        if (exahype::State::fuseADERDGPhases()) {
+          limitingADERDG->recomputePredictorLocally(
+              fineGridCell.getCellDescriptionsIndex(),element,
+              _predictionTemporaryVariables);
+          admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
+              fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::State::isFirstIterationOfBatchOrNoBatch(),
+              exahype::State::isLastIterationOfBatchOrNoBatch());
+        } else {
+          admissibleTimeStepSize = limitingADERDG->startNewTimeStep(
+              fineGridCell.getCellDescriptionsIndex(),element);
         }
+
+        _minTimeStepSizes[solverNumber] = std::min(
+            admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
+        _minCellSizes[solverNumber] = std::min(
+            fineGridVerticesEnumerator.getCellSize()[0],_minCellSizes[solverNumber]);
+        _maxCellSizes[solverNumber] = std::max(
+            fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
+
+        limitingADERDG->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
       }
     endpfor
     grainSize.parallelSectionHasTerminated();
@@ -302,76 +296,7 @@ void exahype::mappings::LocalRecomputation::createHangingVertex(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  // prolong adjacency indices
-  const int level = coarseGridVerticesEnumerator.getLevel()+1;
-  exahype::VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createHangingVertex(
-          fineGridX,level,
-          fineGridPositionOfVertex,
-          exahype::VertexOperations::readCellDescriptionsIndex(coarseGridVerticesEnumerator,coarseGridVertices))
-  );
-
-  dfor2(pos1)
-    dfor2(pos2)
-      if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
-        auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
-            parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined4);
-        pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
-          auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-          const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
-          const int cellDescriptionsIndex2 = fineGridVertex.getCellDescriptionsIndex()[pos2Scalar];
-          int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
-          int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
-          assertion4((element1==exahype::solvers::Solver::NotFound &&
-                      element2==exahype::solvers::Solver::NotFound)
-                     || (element1 >= 0 && element2==exahype::solvers::Solver::NotFound)
-                     || (element2 >= 0 && element1==exahype::solvers::Solver::NotFound),
-                     cellDescriptionsIndex1,cellDescriptionsIndex2,element1,element2); // TODO(Dominic): Move down
-
-          if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-              &&
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-              ==exahype::solvers::LimiterDomainChange::Irregular) {
-            if (element1 >= 0) {
-              auto& solverPatch1 = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  getSolver()->getCellDescription(cellDescriptionsIndex1,element1);
-
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
-                      cellDescriptionsIndex1,element1,
-                      solverPatch1.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values.
-                      pos1,pos2,                              // The cell-based limiter status is still holding the old value though.
-                      true,
-                      _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
-
-              #ifdef Debug
-              _boundaryFaceMerges++;
-              #endif
-            }
-            if (element2 >= 0){
-              auto& solverPatch2 = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  getSolver()->getCellDescription(cellDescriptionsIndex2,element2);
-
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
-                      cellDescriptionsIndex2,element2,
-                      solverPatch2.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values
-                      pos2,pos1,                              // The cell-based limiter status is still holding the old value though.
-                      true,
-                      _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
-              #ifdef Debug
-              _boundaryFaceMerges++;
-              #endif
-            }
-          }
-        endpfor
-        grainSize.parallelSectionHasTerminated();
-
-        fineGridVertex.setMergePerformed(pos1,pos2,true);
-      }
-    enddforx
-  enddforx
+  // do nothing
 }
 
 void exahype::mappings::LocalRecomputation::touchVertexFirstTime(
@@ -389,10 +314,7 @@ void exahype::mappings::LocalRecomputation::touchVertexFirstTime(
             parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined5);
         pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
           auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-          if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-              &&
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-              ==exahype::solvers::LimiterDomainChange::Irregular) {
+          if ( performLocalRecomputation(solver) ) {
             const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
             const int cellDescriptionsIndex2 = fineGridVertex.getCellDescriptionsIndex()[pos2Scalar];
             const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
@@ -430,42 +352,42 @@ void exahype::mappings::LocalRecomputation::touchVertexFirstTime(
                      || (element1 >= 0 && element2==exahype::solvers::Solver::NotFound)
                      || (element2 >= 0 && element1==exahype::solvers::Solver::NotFound),
                      cellDescriptionsIndex1,cellDescriptionsIndex2,element1,element2); // TODO(Dominic): Move down
+          if (
+              element1 >= 0 &&
+              performLocalRecomputation(solver)
+          ) {
+            auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+            auto& solverPatch1 = limitingADERDG->getSolver()->getCellDescription(cellDescriptionsIndex1,element1);
 
-          if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-              &&
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-              ==exahype::solvers::LimiterDomainChange::Irregular) {
-            if (element1 >= 0) {
-              auto& solverPatch1 = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  getSolver()->getCellDescription(cellDescriptionsIndex1,element1);
+            limitingADERDG->
+              mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
+                cellDescriptionsIndex1,element1,
+                solverPatch1.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values.
+                pos1,pos2,                              // The cell-based limiter status is still holding the old value though.
+                true,
+                _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
 
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
-                      cellDescriptionsIndex1,element1,
-                      solverPatch1.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values.
-                      pos1,pos2,                              // The cell-based limiter status is still holding the old value though.
-                      true,
-                      _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
+            #ifdef Debug
+            _boundaryFaceMerges++;
+            #endif
+          }
+          else if (
+              element2 >= 0 &&
+              performLocalRecomputation(solver)
+          ){
+            auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+            auto& solverPatch2 = limitingADERDG->getSolver()->getCellDescription(cellDescriptionsIndex2,element2);
 
-              #ifdef Debug
-              _boundaryFaceMerges++;
-              #endif
-            }
-            if (element2 >= 0){
-              auto& solverPatch2 = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  getSolver()->getCellDescription(cellDescriptionsIndex2,element2);
-
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
-                      cellDescriptionsIndex2,element2,
-                      solverPatch2.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values
-                      pos2,pos1,                              // The cell-based limiter status is still holding the old value though.
-                      true,
-                      _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
-              #ifdef Debug
-              _boundaryFaceMerges++;
-              #endif
-            }
+            limitingADERDG->
+              mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
+                cellDescriptionsIndex2,element2,
+                solverPatch2.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values
+                pos2,pos1,                              // The cell-based limiter status is still holding the old value though.
+                true,
+                _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
+            #ifdef Debug
+            _boundaryFaceMerges++;
+            #endif
           }
         endpfor
         grainSize.parallelSectionHasTerminated();
@@ -545,9 +467,7 @@ void exahype::mappings::LocalRecomputation::dropNeighbourData(
   for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
     auto* solver = solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular) {
+    if ( performLocalRecomputation( solver ) ) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
       logDebug("dropNeighbourData(...)", "drop data for solver " << solverNumber << " from rank " <<
@@ -574,9 +494,7 @@ void exahype::mappings::LocalRecomputation::mergeNeighourData(
   for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
     auto* solver = solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular) {
+    if ( performLocalRecomputation( solver ) ) {
       const int element = solver->tryGetElement(destCellDescriptionIndex,solverNumber);
       const int offset  = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
 

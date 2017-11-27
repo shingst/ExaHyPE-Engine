@@ -12,7 +12,7 @@ using namespace std;
 
 
 AlfenWave::AlfenWave(const double* const x, const double t, double* Q) : VacuumInitialData(Q) {
-		// Computes the AlfenWave conserved variables (Q) at a given time t.
+	// Computes the AlfenWave variables (Q) at a given time t.
 	// Use it ie. with t=0 for initial data
 	// Use it for any other time ie. for comparison
 	
@@ -51,7 +51,9 @@ AlfenWave::AlfenWave(const double* const x, const double t, double* Q) : VacuumI
 	DFOR(i) vel.up(i) = - vax * Bmag.up(i) / B0;
 	vel.up(0) = 0.0;
 	
-	//if(DIMENSIONS == 2) { Bmag.up(2) = vel.up(2) = 0; }
+	// if ExaHyPE dimensiosn are 2. Remember: SVEC dimensions are independent and
+	// these AlfenWave ID MUST be computed in 3D.
+	// if(DIMENSIONS == 2 && TDIM == 3) { Bmag.up(2) = vel.up(2) = 0; } // this is WRONG
 	//Prim2Cons(Q,V);
 	
 	// instead of doing p2c, just copy everything over in order to produce

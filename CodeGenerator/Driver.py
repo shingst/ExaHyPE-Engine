@@ -23,12 +23,14 @@
 # @note
 # requires python3
 
+
 import argparse
 import os
 import sys
 
 import CodeGenArgumentParser
 import Backend
+
 
 # --------------------------------------------------------
 # Configuration parameters
@@ -90,6 +92,11 @@ l_parser.add_argument("--useNCP",
 l_parser.add_argument("--useSource",
                       action="store_true",
                       help="enable source terms")
+l_parser.add_argument("--usePointSources",
+                      type=int,
+                      default=-1,
+                      metavar='nPointSources',
+                      help="enable nPointSources point sources")
 l_parser.add_argument("--noTimeAveraging",
                       action="store_true",
                       help="disable time averaging in the spacetimepredictor (less memory usage, more computation)")
@@ -110,14 +117,17 @@ config = {
            "useNCP"                : l_commandLineArguments.useNCP,
            "useSource"             : l_commandLineArguments.useSource,
            "useSourceOrNCP"        : (l_commandLineArguments.useSource or l_commandLineArguments.useNCP),
-           "usePointSource"        : False, #TODO JMG add option
+           "nPointSources"         : l_commandLineArguments.usePointSources,
+           "usePointSources"       : l_commandLineArguments.usePointSources >= 0,
+           "useMaterialParam"      : False, #TODO JM
            "noTimeAveraging"       : l_commandLineArguments.noTimeAveraging,
            "codeNamespace"         : l_commandLineArguments.namespace,
            "pathToOutputDirectory" : os.path.join(os.path.dirname(__file__),pathFromHereToExaHyPERoot,l_commandLineArguments.pathToApplication,l_commandLineArguments.pathToOptKernel),
            "architecture"          : l_commandLineArguments.architecture,
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
            "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
-           "useLibxsmm"            : True
+           "useLibxsmm"            : True,
+           "runtimeDebug"          : False #for debug
           }
 
 # configure global setup of the code generator
@@ -129,5 +139,5 @@ Backend.prepareOutputDirectory(config['pathToOutputDirectory'])
 # generate the compute kernels.
 Backend.generateComputeKernels()
 
-
-
+if config['runtimeDebug']: 
+    Backend.printRuntimes() #print runtimes of generators

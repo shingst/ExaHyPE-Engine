@@ -1,0 +1,202 @@
+<CustomFilterDefinitions>
+  <CustomProxyDefinition name="CurvilinearMesh_2D" group="filters">
+    <CompoundSourceProxy id="20136" servers="1">
+      <Proxy group="filters" type="ProgrammableFilter" id="19906" servers="1" compound_name="ProgrammableFilter1">
+        <Property name="CopyArrays" id="19906.CopyArrays" number_of_elements="1">
+          <Element index="0" value="1"/>
+          <Domain name="bool" id="19906.CopyArrays.bool"/>
+        </Property>
+        <Property name="InformationScript" id="19906.InformationScript" number_of_elements="1">
+          <Element index="0" value=""/>
+        </Property>
+        <Property name="Input" id="19906.Input" number_of_elements="1">
+          <Domain name="groups" id="19906.Input.groups"/>
+          <Domain name="input_type" id="19906.Input.input_type"/>
+        </Property>
+        <Property name="OutputDataSetType" id="19906.OutputDataSetType" number_of_elements="1">
+          <Element index="0" value="8"/>
+          <Domain name="enum" id="19906.OutputDataSetType.enum">
+            <Entry value="8" text="Same as Input"/>
+            <Entry value="0" text="vtkPolyData"/>
+            <Entry value="2" text="vtkStructuredGrid"/>
+            <Entry value="3" text="vtkRectilinearGrid"/>
+            <Entry value="4" text="vtkUnstructuredGrid"/>
+            <Entry value="6" text="vtkImageData"/>
+            <Entry value="10" text="vtkUniformGrid"/>
+            <Entry value="13" text="vtkMultiblockDataSet"/>
+            <Entry value="15" text="vtkHierarchicalBoxDataSet"/>
+            <Entry value="19" text="vtkTable"/>
+          </Domain>
+        </Property>
+        <Property name="PythonPath" id="19906.PythonPath" number_of_elements="1">
+          <Element index="0" value=""/>
+        </Property>
+        <Property name="Script" id="19906.Script" number_of_elements="1">
+          <Element index="0" value="#########################&#xa;pdi = self.GetInput()&#xa;pdo = self.GetOutput()&#xa;&#xa;newPoints = vtk.vtkPoints()&#xa;&#xa;numPoints=pdi.GetNumberOfPoints()&#xa;&#xa;vals= pdi.GetPointData().GetVectors(&#x22;Q&#x22;)&#xa;&#xa;points_dict={}&#xa;&#xa;for point_id in range(0, numPoints):&#xa;&#xa;    q  = vals.GetTuple(point_id) &#xa;&#xa;    x_q = q[-2]&#xa;    y_q = q[-1]&#xa;    z_q = 1    &#xa;&#xa;    newPoints.InsertPoint(point_id, x_q, y_q, z_q)&#xa;&#xa;pdo.SetPoints(newPoints)&#xa;#########################"/>
+        </Property>
+        <Property name="TimestepValues" id="19906.TimestepValues" number_of_elements="150">
+          <Element index="0" value="0"/>
+          <Element index="1" value="1"/>
+          <Element index="2" value="2"/>
+          <Element index="3" value="3"/>
+          <Element index="4" value="4"/>
+          <Element index="5" value="5"/>
+          <Element index="6" value="6"/>
+          <Element index="7" value="7"/>
+          <Element index="8" value="8"/>
+          <Element index="9" value="9"/>
+          <Element index="10" value="10"/>
+          <Element index="11" value="11"/>
+          <Element index="12" value="12"/>
+          <Element index="13" value="13"/>
+          <Element index="14" value="14"/>
+          <Element index="15" value="15"/>
+          <Element index="16" value="16"/>
+          <Element index="17" value="17"/>
+          <Element index="18" value="18"/>
+          <Element index="19" value="19"/>
+          <Element index="20" value="20"/>
+          <Element index="21" value="21"/>
+          <Element index="22" value="22"/>
+          <Element index="23" value="23"/>
+          <Element index="24" value="24"/>
+          <Element index="25" value="25"/>
+          <Element index="26" value="26"/>
+          <Element index="27" value="27"/>
+          <Element index="28" value="28"/>
+          <Element index="29" value="29"/>
+          <Element index="30" value="30"/>
+          <Element index="31" value="31"/>
+          <Element index="32" value="32"/>
+          <Element index="33" value="33"/>
+          <Element index="34" value="34"/>
+          <Element index="35" value="35"/>
+          <Element index="36" value="36"/>
+          <Element index="37" value="37"/>
+          <Element index="38" value="38"/>
+          <Element index="39" value="39"/>
+          <Element index="40" value="40"/>
+          <Element index="41" value="41"/>
+          <Element index="42" value="42"/>
+          <Element index="43" value="43"/>
+          <Element index="44" value="44"/>
+          <Element index="45" value="45"/>
+          <Element index="46" value="46"/>
+          <Element index="47" value="47"/>
+          <Element index="48" value="48"/>
+          <Element index="49" value="49"/>
+          <Element index="50" value="50"/>
+          <Element index="51" value="51"/>
+          <Element index="52" value="52"/>
+          <Element index="53" value="53"/>
+          <Element index="54" value="54"/>
+          <Element index="55" value="55"/>
+          <Element index="56" value="56"/>
+          <Element index="57" value="57"/>
+          <Element index="58" value="58"/>
+          <Element index="59" value="59"/>
+          <Element index="60" value="60"/>
+          <Element index="61" value="61"/>
+          <Element index="62" value="62"/>
+          <Element index="63" value="63"/>
+          <Element index="64" value="64"/>
+          <Element index="65" value="65"/>
+          <Element index="66" value="66"/>
+          <Element index="67" value="67"/>
+          <Element index="68" value="68"/>
+          <Element index="69" value="69"/>
+          <Element index="70" value="70"/>
+          <Element index="71" value="71"/>
+          <Element index="72" value="72"/>
+          <Element index="73" value="73"/>
+          <Element index="74" value="74"/>
+          <Element index="75" value="75"/>
+          <Element index="76" value="76"/>
+          <Element index="77" value="77"/>
+          <Element index="78" value="78"/>
+          <Element index="79" value="79"/>
+          <Element index="80" value="80"/>
+          <Element index="81" value="81"/>
+          <Element index="82" value="82"/>
+          <Element index="83" value="83"/>
+          <Element index="84" value="84"/>
+          <Element index="85" value="85"/>
+          <Element index="86" value="86"/>
+          <Element index="87" value="87"/>
+          <Element index="88" value="88"/>
+          <Element index="89" value="89"/>
+          <Element index="90" value="90"/>
+          <Element index="91" value="91"/>
+          <Element index="92" value="92"/>
+          <Element index="93" value="93"/>
+          <Element index="94" value="94"/>
+          <Element index="95" value="95"/>
+          <Element index="96" value="96"/>
+          <Element index="97" value="97"/>
+          <Element index="98" value="98"/>
+          <Element index="99" value="99"/>
+          <Element index="100" value="100"/>
+          <Element index="101" value="101"/>
+          <Element index="102" value="102"/>
+          <Element index="103" value="103"/>
+          <Element index="104" value="104"/>
+          <Element index="105" value="105"/>
+          <Element index="106" value="106"/>
+          <Element index="107" value="107"/>
+          <Element index="108" value="108"/>
+          <Element index="109" value="109"/>
+          <Element index="110" value="110"/>
+          <Element index="111" value="111"/>
+          <Element index="112" value="112"/>
+          <Element index="113" value="113"/>
+          <Element index="114" value="114"/>
+          <Element index="115" value="115"/>
+          <Element index="116" value="116"/>
+          <Element index="117" value="117"/>
+          <Element index="118" value="118"/>
+          <Element index="119" value="119"/>
+          <Element index="120" value="120"/>
+          <Element index="121" value="121"/>
+          <Element index="122" value="122"/>
+          <Element index="123" value="123"/>
+          <Element index="124" value="124"/>
+          <Element index="125" value="125"/>
+          <Element index="126" value="126"/>
+          <Element index="127" value="127"/>
+          <Element index="128" value="128"/>
+          <Element index="129" value="129"/>
+          <Element index="130" value="130"/>
+          <Element index="131" value="131"/>
+          <Element index="132" value="132"/>
+          <Element index="133" value="133"/>
+          <Element index="134" value="134"/>
+          <Element index="135" value="135"/>
+          <Element index="136" value="136"/>
+          <Element index="137" value="137"/>
+          <Element index="138" value="138"/>
+          <Element index="139" value="139"/>
+          <Element index="140" value="140"/>
+          <Element index="141" value="141"/>
+          <Element index="142" value="142"/>
+          <Element index="143" value="143"/>
+          <Element index="144" value="144"/>
+          <Element index="145" value="145"/>
+          <Element index="146" value="146"/>
+          <Element index="147" value="147"/>
+          <Element index="148" value="148"/>
+          <Element index="149" value="149"/>
+        </Property>
+        <Property name="UpdateExtentScript" id="19906.UpdateExtentScript" number_of_elements="1">
+          <Element index="0" value=""/>
+        </Property>
+      </Proxy>
+      <ExposedProperties>
+        <Property name="Input" proxy_name="ProgrammableFilter1" exposed_name="Input"/>
+      </ExposedProperties>
+      <OutputPort name="Output" proxy="ProgrammableFilter1" port_index="0"/>
+      <Hints>
+        <ShowInMenu/>
+      </Hints>
+    </CompoundSourceProxy>
+  </CustomProxyDefinition>
+</CustomFilterDefinitions>

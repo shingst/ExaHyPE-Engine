@@ -63,7 +63,7 @@ int vacuumtest() {
 	}
 }
 
-constexpr double eps = 1e-10; // todo: raise
+constexpr double eps = 5e-9; // todo: raise
 constexpr int nSize = 300; // array size
 constexpr int nCheck = 19; // hydro vars
 #define CHECK(A,B) check(#A, A, #B, B)
@@ -159,7 +159,7 @@ void cmain_() {
 	for(int i=0; i<N; i++) {
 		x[1] += dx;
 		constexpr bool doC=true;
-		constexpr bool doF=false;
+		constexpr bool doF=true;
 		
 		printf("Generating ID at x=[%f %f %f].\n", x[0], x[1], x[2]);
 		

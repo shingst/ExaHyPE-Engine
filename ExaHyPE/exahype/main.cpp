@@ -170,7 +170,7 @@ int exahype::pingPongTest() {
 
   logInfo( "run()", " ping pong test ok" );
   #elif defined(Parallel)
-  logInfo( "run()", "Ping pont tests requires compile with -DAsserts as it uses assert data to validate that right content is exchanged" );
+  logInfo( "run()", "ping pong tests requires compile with -DAsserts as it uses assert data to validate that right content is exchanged" );
   #endif
 
   return correct ? EXIT_SUCCESS : -1;

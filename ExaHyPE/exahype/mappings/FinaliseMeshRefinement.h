@@ -49,12 +49,17 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   static tarch::logging::Log _log;
  public:
+  /**
+   * Finalise the mesh refinement in all cell descriptions registered
+   * for a cell.
+   *
+   * Currently, we avoid fine grid races. We might need to reassess this.
+   */
+  peano::MappingSpecification enterCellSpecification(int level) const;
+
   /* Nop */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
-
-
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
-  peano::MappingSpecification enterCellSpecification(int level) const;
   peano::MappingSpecification leaveCellSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;
@@ -62,11 +67,9 @@ class exahype::mappings::FinaliseMeshRefinement {
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * Finalise the synchronous sending operations started in the
-   * previous iteration.
-   *
-   * I further need to start sending synchronous data since I will send time step data
-   * size in the Sending mapping in the same adapter.
+   * Reset the following flags (to true):
+   * exahype::mappings::LimiterStatusSpreading::IsFirstIteration
+   * exahype::mappings::MeshRefinement::IsFirstIteration
    */
   void beginIteration(exahype::State& solverState);
 
@@ -75,7 +78,7 @@ class exahype::mappings::FinaliseMeshRefinement {
    * MeshRefinement::IsInitialMeshRefinement is set in Runner::run.
    *
    * Further turns on the performance analysis after the initial
-   * mesh refinement is over.
+   * mesh refinement is done.
    *
    * Performance analysis is turned off initially in exahype::runners::Runner::initHPCEnvironment().
    */

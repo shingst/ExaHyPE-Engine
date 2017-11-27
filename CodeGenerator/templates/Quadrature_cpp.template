@@ -46,9 +46,8 @@ void {{codeNamespace}}::initQuadratureNodesAndWeights(const std::set<int>& order
   weights3[{{i}}] = {{"{:.12e}".format(weights3[i])}};
 {% endfor %}
   
-{% for i in nodes_seq %}
-  nodes[{{i}}]   = {{"{:.12e}".format(nodes[i])}};
+{% for i in GPN_seq %}
+  nodes[{{i}}]    = {{"{:.12e}".format(xGPN[i])}};
 {% endfor %}
 
 }
-

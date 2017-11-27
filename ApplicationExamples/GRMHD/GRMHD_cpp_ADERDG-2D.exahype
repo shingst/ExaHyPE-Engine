@@ -28,11 +28,12 @@ exahype-project GRMHD
     dimension const                = 2
     width                          = 1.0, 1.0
     offset                         = 0.0, 0.0
-    end-time                       = 2.0
+    end-time                       = 2000.0
   end computational-domain
   
   shared-memory
     identifier               = dummy
+    configure                = {}
     cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
@@ -57,7 +58,7 @@ exahype-project GRMHD
   solver ADER-DG GRMHDSolver_ADERDG
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
     order const                    = 3
-    maximum-mesh-size              = 0.111133333339
+    maximum-mesh-size              = 0.333339
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -90,7 +91,7 @@ exahype-project GRMHD
 
     plot vtk::Cartesian::cells::ascii IntegralsWriter
       variables const = 0
-      time = 1000.0
+      time = 0.0
       repeat = 0.000001
       output = ./output/global-integrals
     end plot

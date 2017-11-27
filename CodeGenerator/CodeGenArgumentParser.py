@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -21,8 +20,10 @@
 # Validates the input arguments given to the code generator.
 #
 
+
 import os
 import AvailableConfigs
+
 
 def validateLibxsmmGenerator(i_parser, i_arg):
     if not os.path.isdir(i_arg):

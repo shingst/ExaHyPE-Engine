@@ -12,7 +12,7 @@
 #include "tarch/logging/Log.h"
 
 #include <vector>
-#include <map>
+#include <set>
 
 
 namespace mpibalancing {
@@ -148,17 +148,18 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
        * Standard mode. As soon as we run out of primary nodes, we switch it to
        * DeployingAlsoSecondaryRanks.
        */
-      DeployingIdlePrimaryRanks,
+      DeployingIdlePrimaryRanks=6,
       /**
-       * If this flag is set, we also deploy secondary nodes. However, as soon
-       * as our request queue is empty, i.e. as soon as we have answered one
-       * batch of requests, we switch into NoNodesLeft.
+       * If this flag is set, we also deploy secondary nodes for a fixed number
+       * of sweeps. Afterwards (or as soon as absolutely no entries are left 
+       * anymore), we switch into NoNodesLeft.
        */
-      DeployingAlsoSecondaryRanks,
+      DeployingAlsoSecondaryRanksFirstSweep=5,
+      DeployingAlsoSecondaryRanksLastSweep=1,
       /**
        * We do not hand out any nodes anymore.
        */
-      NoNodesLeft
+      NoNodesLeft=0
     };
 
 
@@ -212,20 +213,17 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
 
     NodePoolState _nodePoolState;
 
-    struct DeploymentPriority {
-      double  _priority;
-      int     _maxNumberOfSecondaryRanksToBeDeployed;
-    };
-
-    std::map<int, DeploymentPriority> _priorities;
+    /**
+     * If a node has got rid of too much work, noone else should have the 
+     * opportunity to reassign it more work again
+     */ 
+    std::set<int> _rankBlackList;
 
     /**
-     * This routine is called once when the node pool's status
-     * switches from DeployingIdlePrimaryRanks into DeployingAlsoSecondaryRanks.
-     * From hereon, it acts as guidance to the actual sorting of the queue.
-     * The rank deployment might change entries.
+     * If secondary ranks from a particular node have been activated, requests
+     * from this node should have higher priority.
      */
-    void buildUpPriorityMap(const RequestQueue& queue);
+    std::set<int> _rankPriorityList;
 
     int getNumberOfIdlePrimaryRanks() const;
 
@@ -239,23 +237,28 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
      */
     int getNumberOfPhysicalNodes() const;
 
-    /**
-     * Take queue and return re-sorted queue. Input and output queue contain
-     * the same elements in different ordering though.
-     */
-    RequestQueue sortRequestQueue( const RequestQueue& queue );
-
     bool hasCompleteIdleNode() const;
 
     bool isPrimaryMPIRank(int rank) const;
-    bool isFirstOrLastRankInQueueAlongSFC(int rank, const RequestQueue& queue) const;
 
     void configureForPrimaryRanksDelivery(int numberOfRequestedRanks);
 
+    /**
+     * Called in diffusion phase. Just ensure that noone grabs now ranks from 
+     * the master's node. That would be an oscillation.
+     */
     void haveReservedSecondaryRank(int masterRank, int workerRank);
 
     int deployIdlePrimaryRank(int forMaster);
     int deployIdleSecondaryRank(int forMaster);
+    
+    /**
+     * If no ranks are available or we are still giving out primary ranks, then 
+     * this operation becomes nop. If we are however already deploying 
+     * secondary ranks, then this routine decrements the internal state such 
+     * that it eventually becomes "nothing left".
+     */
+    void updateStrategyState();
   public:
     /**
      * Constructor
@@ -273,6 +276,15 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
      * Here's the magic to get the balancing right.
      */
     tarch::parallel::messages::WorkerRequestMessage extractElementFromRequestQueue(RequestQueue& queue) override;
+    
+    /**
+     * Wait strategy for DeployingIdlePrimaryRanks:
+     * 
+     * In this mode, hasIdleNodes returns true iff there are still primary 
+     * nodes available. Compared to the fair strategy, we thus may not stop
+     * immediately if we have more requests than primary nodes. We might 
+     * skip the waits too early - way too early.
+     */
     void fillWorkerRequestQueue(RequestQueue& queue) override;
     void addNode(const tarch::parallel::messages::RegisterAtNodePoolMessage& node ) override;
     void removeNode( int rank ) override;

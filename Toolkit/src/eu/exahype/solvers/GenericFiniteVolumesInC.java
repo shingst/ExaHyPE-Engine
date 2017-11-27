@@ -31,7 +31,7 @@ public class GenericFiniteVolumesInC implements Solver {
     final boolean useFlux            = kernel.useFlux();
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
-    final boolean usePointSource     = kernel.usePointSource();
+    final boolean usePointSources    = kernel.usePointSources();
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -55,7 +55,7 @@ public class GenericFiniteVolumesInC implements Solver {
     context.put("useFlux"           , useFlux);
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
-    context.put("usePointSource"    , usePointSource);
+    context.put("usePointSources"   , usePointSources);
     
     //Set<String>
     context.put("namingSchemes"     , namingSchemeNames.stream().map(s -> s.substring(0, 1).toUpperCase()+s.substring(1)).collect(Collectors.toSet())); //capitalize

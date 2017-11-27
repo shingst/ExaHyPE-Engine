@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -18,12 +17,10 @@
 #
 # @section DESCRIPTION
 #
-# Generates the code for the surface integral
-# for a specific configuration
+# Generates the SurfaceIntegral kernel
 #
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -31,7 +28,7 @@ class SurfaceIntegralGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = 'surfaceIntegral.cpp'
+    m_filename = "surfaceIntegral.cpp"
 
 
     def __init__(self, i_context):
@@ -39,11 +36,8 @@ class SurfaceIntegralGenerator:
 
 
     def generateCode(self):
-        self.m_context['bndFaceSize'] = self.m_context['nVarPad'] * self.m_context['nDof'] * self.m_context['nDof3D']  
-        if(self.m_context['isLinear']):
-           pass
-        else:
-            TemplatingUtils.renderAsFile('surfaceIntegralNonLinear_cpp.template', self.m_filename, self.m_context)
+        self.m_context["bndFaceSize"] = self.m_context["nVarPad"] * self.m_context["nDof"] * self.m_context["nDof3D"]  
+        TemplatingUtils.renderAsFile("surfaceIntegral_cpp.template", self.m_filename, self.m_context)
 
 
 

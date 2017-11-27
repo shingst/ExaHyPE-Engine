@@ -28,7 +28,7 @@ exahype-project EulerADERDG
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 1.0
+    end-time                = 0.01
   end computational-domain
  
   /*
@@ -41,13 +41,26 @@ exahype-project EulerADERDG
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
-  */
+   */
+
+
+  /*
+   ====================================================
+   Comment this stuff in to get a shared memory version
+   ====================================================
+   */
+  shared-memory
+    identifier               = dummy
+    configure                = {}
+    cores                    = 8
+    properties-file          = sharedmemory.properties
+  end shared-memory
   
   solver Limiting-ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
-    maximum-mesh-size          = 5e-1    
-    maximum-mesh-depth         = 2
+    maximum-mesh-size          = 1e-1    
+    maximum-mesh-depth         = 0 
     time-stepping              = global
     type const                 = nonlinear, Legendre
     terms const                = flux
@@ -59,22 +72,22 @@ exahype-project EulerADERDG
     dmp-observables            = 5
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
-    steps-till-cured = 10
-    helper-layers    = 2
     
-    plot vtk::Cartesian::vertices::limited::ascii EulerWriter
+    plot vtu::Cartesian::vertices::limited::ascii EulerWriter
       variables const = 5
       time            = 0.0
       repeat          = 0.001
       output          = ./variables
     end plot
     
+    
     plot vtk::Cartesian::subcells::limited::ascii EulerSubcellsWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 0.001
       output          = ./variables-fv
     end plot
-
+     
+     
   end solver
 end exahype-project

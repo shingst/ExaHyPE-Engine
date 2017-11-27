@@ -32,7 +32,7 @@ public class FiniteVolumesKernel {
   public static final String FLUX_OPTION_ID         = "flux";
   public static final String SOURCE_OPTION_ID       = "source";
   public static final String NCP_OPTION_ID          = "ncp";
-  public static final String POINTSOURCE_OPTION_ID  = "pointsources";
+  public static final String POINTSOURCES_OPTION_ID = "pointsources";
   
   private Set<String> type;
   private Set<String> terms;
@@ -123,8 +123,8 @@ public class FiniteVolumesKernel {
     return terms.contains(NCP_OPTION_ID);
   }
   
-  public boolean usePointSource() {
-    return terms.contains(POINTSOURCE_OPTION_ID);
+  public boolean usePointSources() {
+    return terms.contains(POINTSOURCES_OPTION_ID);
   }
     
   //(type: [...], terms: [...], opt: [...])

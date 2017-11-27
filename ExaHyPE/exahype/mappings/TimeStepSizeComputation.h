@@ -113,21 +113,6 @@ class exahype::mappings::TimeStepSizeComputation {
   static void reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(exahype::solvers::Solver* solver);
 
   /**
-   * If the original time stepping algorithm is used for the ADER-DG scheme,
-   * we need to enforce that the corrector time step size is identical to the
-   * predictor time step size.
-   * We further need to
-   */
-  static void reconstructStandardTimeSteppingData(exahype::solvers::Solver* solver);
-
-
-  /**
-   * Similar to ::overwriteCorrectorTimeStepDataWithPredictorValues(exahype::solvers::Solver*) but for
-   * a cell description.
-   */
-  static void reconstructStandardTimeSteppingData(exahype::solvers::Solver* solver,const int cellDescriptionsIndex,const int element);
-
-  /**
    * Run through whole tree. Run concurrently on fine grid.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;

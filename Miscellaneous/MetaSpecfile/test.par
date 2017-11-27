@@ -1,0 +1,84 @@
+##mexa  # This is an ExaHyPE meta specification file.
+#
+# Test for GRMHD
+
+<< "@mexa/exahype-single-base.xpar"
+
+Project::Name = "GRMHD"
+Project::Directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
+
+Coord::Dimension = 3
+Coord::width_x = 1.0
+Coord::width_y = 1.0
+Coord::width_z = 1.0
+Coord::offset_x = 0.0
+Coord::offset_y = 0.0
+Coord::offset_z = 0.0
+Solver::maximum_mesh_size = 0
+Solver::maximum_mesh_depth = 0
+Coord::end_time = 10.0
+
+Solver::type = "ADER-DG"
+Solver::name = "GRMHDSolver_ADERDG"
+Solver::variables = "rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1"
+Solver::order = 3
+Solver::time_stepping = "global"
+Solver::kernel::type = "godunov"
+Solver::kernel::terms = "flux,ncp,source"
+Solver::kernel::opt = "generic"
+Solver::kernel::language = "C"
+
+Plotters += PrimitiveWriter
+Plotters += ConservedWriter
+Plotters += CarpetWriter
+Plotters += IntegralsWriter
+
+BasePlotter::variables = "@{Solver/variables}"
+BasePlotter::time = 0.0
+BasePlotter::repeat = 0.001
+
+output_folder = "./vtk-output"
+
+ConservedWriter <= BasePlotter
+ConservedWriter::type = "vtk::Cartesian::vertices::binary"
+ConservedWriter::name = "ConservedWriter"
+ConservedWriter::output = "@output_folder/conserved"
+ConservedWriter::a = "15"
+ConservedWriter::b = "HalloWelt"
+
+PrimitiveWriter <= BasePlotter
+PrimitiveWriter::output = "@output_folder/primitive"
+
+CarpetWriter <= BasePlotter
+CarpetWriter::output = "./hdf5/primitive"
+CarpetWriter::plotPrimitives = True
+CarpetWriter::plotSelect = "x:0,y:0" # further select stuff
+# select should read then as
+#   select = "x:0,y:0,plotPrimitives:1"
+
+IntegralsWriter <= BasePlotter
+IntegralsWriter::output = "./output/global-integrals"
+IntegralsWriter::Primitives = True
+IntegralsWriter::Conserved = True
+IntegralsWriter::Errors = True
+
+# here interesting simulation data start
+
+InitialData::from = "AlfenWave"
+RNSID::mass_B = 1.23
+RNSID::rho = 17
+RNSID::x0 = 0
+
+Boundaries::left = "exact"
+Boundaries::right = "exact"
+Boundaries::bottom = "exact"
+Boundaries::front = "exact"
+Boundaries::back = "exact"
+
+# collect simulation steering data
+Parameters::Boundaries = Boundaries
+Parameters::RNSID = RNSID
+Parameters::InitialData = InitialData
+
+
+

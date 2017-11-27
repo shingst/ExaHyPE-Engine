@@ -102,19 +102,31 @@ void exahype::mappings::Reinitialisation::beginIteration(
   // do nothing
 }
 
+bool exahype::mappings::Reinitialisation::performLocalRecomputation(
+    exahype::solvers::Solver* solver) {
+  return
+      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+      &&
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
+      ==exahype::solvers::LimiterDomainChange::Irregular;
+}
+
 void exahype::mappings::Reinitialisation::endIteration(
     exahype::State& solverState) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular
+    if (
+        performLocalRecomputation(solver) &&
+        exahype::State::fuseADERDGPhases()==true
     ) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
-      if (!exahype::State::fuseADERDGPhases()) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            reconstructStandardTimeSteppingDataAfterRollback();
-      }
+      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDGSolver->rollbackToPreviousTimeStepFused();
+    } else if (
+        performLocalRecomputation(solver) &&
+        exahype::State::fuseADERDGPhases()==false
+    ) {
+      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDGSolver->rollbackToPreviousTimeStep();
     }
   }
 }
@@ -138,29 +150,15 @@ void exahype::mappings::Reinitialisation::enterCell(
 
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),i);
       if (element!=exahype::solvers::Solver::NotFound) {
-        if(solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-           ==exahype::solvers::LimiterDomainChange::Irregular
-        ) {
+        if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-          limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-          if (!exahype::State::fuseADERDGPhases()) {
-            limitingADERDGSolver->reconstructStandardTimeSteppingDataAfterRollback(fineGridCell.getCellDescriptionsIndex(),element);
+          if (exahype::State::fuseADERDGPhases()) {
+            limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
+          } else {
+            limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
           }
-
           limitingADERDGSolver->reinitialiseSolversLocally(fineGridCell.getCellDescriptionsIndex(),element);
-        }
-        else if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-              ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate) {
-          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-          // TODO(Dominc): Add to docu: Rollback is performed here in GlobalRollback mapping
-          limitingADERDGSolver->reinitialiseSolversGlobally(fineGridCell.getCellDescriptionsIndex(),element);
-
-          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
     endpfor
@@ -217,11 +215,7 @@ void exahype::mappings::Reinitialisation::sendEmptyDataToNeighbour(
   for (unsigned   int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-        &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular
-    ) {
+    if ( performLocalRecomputation( solver ) ) {
       logDebug("sendEmptyDataToNeighbour(...)", "send empty data for solver " << solverNumber << " to rank " <<
               toRank << " at vertex x=" << x << ", level=" << level <<
               ", source=" << src << ", destination=" << dest);
@@ -251,11 +245,7 @@ void exahype::mappings::Reinitialisation::sendDataToNeighbour(
   for (unsigned   int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-        &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular
-    ) {
+    if ( performLocalRecomputation( solver ) ) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
       const int element = solver->tryGetElement(srcCellDescriptionIndex,solverNumber);
 

@@ -72,6 +72,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * A flag indicating we fuse the algorithmic
    * phases of all ADERDGSolver and
    * LimitingADERDGSolver instances.
+   *
+   * TODO(Dominic): Make private and hide in init function
    */
   static bool FuseADERDGPhases;
 
@@ -88,6 +90,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    *
    * fuse-algorithmic-steps-reset-factor
    * fuse-algorithmic-steps-averaging-factor
+   *
+   * TODO(Dominic): Make private and hide in init function
    */
   static double WeightForPredictionRerun;
 
@@ -102,6 +106,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * boundary vertices.
    * A cell is considered as outside
    * if it has at least one(!) outside vertex.
+   *
+   * TODO(Dominic): Make private and hide in init function
    */
   static bool VirtuallyExpandBoundingBox;
 
@@ -109,9 +115,40 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * States used to disable or enable master-worker
    * and neighbour communication.
    * This makes sense for debugging only.
+   *
+   * TODO(Dominic): Remove this eventually - also from the grammar file!
    */
   static bool EnableMasterWorkerCommunication;
   static bool EnableNeighbourCommunication;
+
+  /**
+   * Indicates that the fused time stepping
+   * scheme is used in the runner
+   * instead of the standard time stepping.
+   */
+  static bool fuseADERDGPhases();
+
+  static double getTimeStepSizeWeightForPredictionRerun();
+
+  /**
+   * \return true if the current batch state is
+   * BatchState::FirstIterationOfBatch or
+   * BatchState::NoBatch.
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isFirstIterationOfBatchOrNoBatch();
+
+  /**
+   * \return true if the current batch state is
+   * BatchState::FirstIterationOfBatch or
+   * BatchState::NoBatch.
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  static bool isLastIterationOfBatchOrNoBatch();
 
   /**
    * Default Constructor
@@ -215,15 +252,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   void setReinitTimeStepData(bool state);
 
   bool reinitTimeStepData() const;
-
-  /**
-   * Indicates that the fused time stepping
-   * scheme is used in the runner
-   * instead of the standard time stepping.
-   */
-  static bool fuseADERDGPhases();
-
-  static double getTimeStepSizeWeightForPredictionRerun();
 
   /**
    * Has to be called after the iteration!

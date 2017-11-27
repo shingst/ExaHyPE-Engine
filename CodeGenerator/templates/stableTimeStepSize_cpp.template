@@ -30,17 +30,17 @@ double {{codeNamespace}}::stableTimeStepSize(
   double lambda[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
   double dt = std::numeric_limits<double>::max();
   
-  for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) { //xyz
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //xyz
     double denominator = 0.0;
     for (int d = 0; d < {{nDim}}; d++) {
 #ifdef USE_IPO
       #pragma forceinline recursive
 #endif
-      solver.{{solverName}}::eigenvalues(&luh[{{nData}}*ijk], d, lambda);
+      solver.{{solverName}}::eigenvalues(luh+({{nData}}*xyz), d, lambda);
       
       double maxEigenvalue = 0.0;
-      for (int ivar = 0; ivar < {{nVar}}; ivar++) {
-        maxEigenvalue = std::max(fabs(lambda[ivar]), maxEigenvalue);
+      for (int n = 0; n < {{nVar}}; n++) {
+        maxEigenvalue = std::max(fabs(lambda[n]), maxEigenvalue);
       }
       denominator += maxEigenvalue * inverseDx[d];
     }
@@ -51,4 +51,3 @@ double {{codeNamespace}}::stableTimeStepSize(
 
   return dt;
 }
-

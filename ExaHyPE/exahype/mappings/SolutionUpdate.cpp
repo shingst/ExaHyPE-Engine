@@ -182,7 +182,9 @@ void exahype::mappings::SolutionUpdate::enterCell(
         if (exahype::State::fuseADERDGPhases()) {
           result =
               solver->fusedTimeStep(
-                  fineGridCell.getCellDescriptionsIndex(), element,
+                  fineGridCell.getCellDescriptionsIndex(),element,
+                  exahype::State::isFirstIterationOfBatchOrNoBatch(),
+                  exahype::State::isLastIterationOfBatchOrNoBatch(),
                   _predictionTemporaryVariables._tempSpaceTimeUnknowns    [solverNumber],
                   _predictionTemporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber],
                   _predictionTemporaryVariables._tempUnknowns             [solverNumber],
@@ -190,12 +192,9 @@ void exahype::mappings::SolutionUpdate::enterCell(
                   _predictionTemporaryVariables._tempPointForceSources    [solverNumber]);
         } else {
           solver->updateSolution(
-              fineGridCell.getCellDescriptionsIndex(), element);
-
+              fineGridCell.getCellDescriptionsIndex(),element,true);
           result._timeStepSize =
               solver->startNewTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-          exahype::mappings::TimeStepSizeComputation::
-          reconstructStandardTimeSteppingData(solver,fineGridCell.getCellDescriptionsIndex(),element);
 
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
             auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
@@ -237,10 +236,7 @@ void exahype::mappings::SolutionUpdate::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if (
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
-  ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
 
     if (_localState.getAlgorithmSection()==exahype::records::State::TimeStepping) {
@@ -298,10 +294,7 @@ void exahype::mappings::SolutionUpdate::endIteration(
      * Swap the current values with the next values (in last batch iteration)
      */
     // mesh update events
-    if (
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
-    ) {
+    if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
       solver->setNextMeshUpdateRequest();
       solver->setNextAttainedStableState();
       if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -318,29 +311,24 @@ void exahype::mappings::SolutionUpdate::endIteration(
     // TODO(Dominic):
     // only update the time step size in last iteration; just advance with old time step size otherwise
     if (
-        exahype::State::fuseADERDGPhases()
-        &&
-        (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
-        &&
+        exahype::State::fuseADERDGPhases() &&
+        exahype::State::isLastIterationOfBatchOrNoBatch() &&
         tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
     ) {
       exahype::mappings::TimeStepSizeComputation::
       reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
     }
-    solver->startNewTimeStep();
-    if (!exahype::State::fuseADERDGPhases()) {
-      exahype::mappings::TimeStepSizeComputation::
-      reconstructStandardTimeSteppingData(solver);
+    if (exahype::State::fuseADERDGPhases()) {
+      solver->startNewTimeStepFused(
+          exahype::State::isFirstIterationOfBatchOrNoBatch(),
+          exahype::State::isLastIterationOfBatchOrNoBatch());
+    } else {
+      solver->startNewTimeStep();
     }
   }
 
-
   // delete temporary variables
-  if (
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
-  ) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     deleteSolverFlags(_solverFlags);
     deleteTemporaryVariables();
   }

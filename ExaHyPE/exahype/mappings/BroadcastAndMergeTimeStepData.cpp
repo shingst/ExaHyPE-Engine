@@ -137,7 +137,7 @@ void exahype::mappings::BroadcastAndMergeTimeStepData::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
+    if (solver->isBroadcasting(_localState.getAlgorithmSection())) {
       int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
         solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);

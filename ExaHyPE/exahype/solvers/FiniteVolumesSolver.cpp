@@ -74,6 +74,7 @@ exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
              numberOfVariables, numberOfParameters, nodesPerCoordinateAxis,
              maximumMeshSize, maximumAdaptiveMeshDepth,
              timeStepping, std::move(profiler)),
+            _previousMinTimeStamp( std::numeric_limits<double>::max() ),
             _previousMinTimeStepSize( std::numeric_limits<double>::max() ),
             _minTimeStamp( std::numeric_limits<double>::max() ),
             _minTimeStepSize( std::numeric_limits<double>::max() ),
@@ -137,10 +138,12 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
 
 
   _previousMinTimeStepSize = 0.0;
+  _previousMinTimeStamp = timeStamp;
+
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  _meshUpdateRequest = true;
+  _meshUpdateRequest = true; // for the initial mesh refinement
 }
 
 bool exahype::solvers::FiniteVolumesSolver::isSending(
@@ -152,20 +155,55 @@ bool exahype::solvers::FiniteVolumesSolver::isSending(
       section==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::isUsingSharedMappings(
+bool exahype::solvers::FiniteVolumesSolver::isComputingTimeStepSize(
     const exahype::records::State::AlgorithmSection& section) const {
-  return section==exahype::records::State::AlgorithmSection::TimeStepping;
+  bool result = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+      result |= getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
+  return result;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isMerging(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return
+      section==exahype::records::State::AlgorithmSection::TimeStepping ||
+      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isBroadcasting(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return
+      section==exahype::records::State::AlgorithmSection::TimeStepping;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isPerformingPrediction(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return false;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isMergingMetadata(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
     CellDescription& cellDescription) const {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      cellDescription.setPreviousTimeStepSize(_previousMinTimeStepSize);;
+      cellDescription.setPreviousTimeStepSize(_previousMinTimeStamp);
+      cellDescription.setPreviousTimeStepSize(_previousMinTimeStepSize);
       cellDescription.setTimeStamp(_minTimeStamp);
       cellDescription.setTimeStepSize(_minTimeStepSize);
       break;
     case TimeStepping::GlobalFixed:
+      cellDescription.setPreviousTimeStepSize(_previousMinTimeStamp);
       cellDescription.setPreviousTimeStepSize(_previousMinTimeStepSize);
       cellDescription.setTimeStamp(_minTimeStamp);
       cellDescription.setTimeStepSize(_minTimeStepSize);
@@ -183,7 +221,7 @@ void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
 void exahype::solvers::FiniteVolumesSolver::startNewTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      _previousMinTimeStepSize  = _minNextTimeStepSize;
+      _previousMinTimeStepSize  = _minTimeStepSize;
       _minTimeStamp            += _minTimeStepSize;
       _minTimeStepSize          = _minNextTimeStepSize;
       _minNextTimeStepSize      = std::numeric_limits<double>::max();
@@ -199,6 +237,34 @@ void exahype::solvers::FiniteVolumesSolver::startNewTimeStep() {
   _maxCellSize     = _nextMaxCellSize;
   _nextMinCellSize = std::numeric_limits<double>::max();
   _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+}
+
+void exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
+    const bool isFirstIterationOfBatch,
+    const bool isLastIterationOfBatch) {
+  // n-1
+   if ( isFirstIterationOfBatch ) {
+     _previousMinTimeStepSize  = _minTimeStepSize;
+     _previousMinTimeStamp     = _minTimeStamp;
+   }
+   // n
+   _minTimeStamp            += _minTimeStepSize;
+   if ( isLastIterationOfBatch ) {
+     switch (_timeStepping) {
+       case TimeStepping::Global:
+         _minTimeStepSize        = _minNextTimeStepSize;
+         _minNextTimeStepSize    = std::numeric_limits<double>::max();
+         break;
+       case TimeStepping::GlobalFixed:
+         _minTimeStepSize        = _minNextTimeStepSize;
+         break;
+     }
+
+     _minCellSize     = _nextMinCellSize;
+     _maxCellSize     = _nextMaxCellSize;
+     _nextMinCellSize = std::numeric_limits<double>::max();
+     _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+   }
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateTimeStepSizesFused() {
@@ -233,17 +299,22 @@ void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes() {
 void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep() {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      _minTimeStamp            = _minTimeStamp-_previousMinTimeStepSize;
-      _minTimeStepSize         = _previousMinTimeStepSize;
+      _minNextTimeStepSize     = std::numeric_limits<double>::max();
+
+      _minTimeStamp    = _previousMinTimeStamp;
+      _minTimeStepSize = _previousMinTimeStepSize;
 
       _previousMinTimeStepSize = std::numeric_limits<double>::max();
-      _minNextTimeStepSize     = std::numeric_limits<double>::max();
       break;
     case TimeStepping::GlobalFixed:
-      _minTimeStamp             = _minTimeStamp-_previousMinTimeStepSize;
-      _minTimeStepSize          = _previousMinTimeStepSize;
+      _minTimeStamp     = _previousMinTimeStamp;
+      _minTimeStepSize  = _previousMinTimeStepSize;
       break;
   }
+}
+
+void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused() {
+  rollbackToPreviousTimeStep();
 }
 
 double exahype::solvers::FiniteVolumesSolver::getMinNextTimeStepSize() const {
@@ -566,17 +637,50 @@ double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(
     double* solution = exahype::DataHeap::getInstance().getData(p.getSolution()).data();
 
     double admissibleTimeStepSize = stableTimeStepSize(solution, p.getSize());
-
     assertion(!std::isnan(admissibleTimeStepSize));
 
+    // n-1
+    p.setPreviousTimeStamp(p.getTimeStamp());
     p.setPreviousTimeStepSize(p.getTimeStepSize());
+
+    // n
     p.setTimeStamp(p.getTimeStamp()+p.getTimeStepSize());
     p.setTimeStepSize(admissibleTimeStepSize);
 
     return admissibleTimeStepSize;
+  } else {
+    return std::numeric_limits<double>::max();
   }
+}
 
-  return std::numeric_limits<double>::max();
+double exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
+    const int cellDescriptionsIndex,
+    const int element,
+    const bool isFirstIterationOfBatch,
+    const bool isLastIterationOfBatch) {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  if (cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell) {
+    //         assertion1(cellDescription.getRefinementEvent()==exahype::records::FiniteVolumesCellDescription::None,cellDescription.toString()); // todo
+    double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+
+    double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
+    assertion(!std::isnan(admissibleTimeStepSize));
+
+    // n-1
+    if (isFirstIterationOfBatch) {
+      cellDescription.setPreviousTimeStamp(cellDescription.getTimeStamp());
+      cellDescription.setPreviousTimeStepSize(cellDescription.getTimeStepSize());
+    }
+    // n
+    cellDescription.setTimeStamp(cellDescription.getTimeStamp()+cellDescription.getTimeStepSize());
+    if (isLastIterationOfBatch) {
+      cellDescription.setTimeStepSize(admissibleTimeStepSize);
+    }
+
+    return admissibleTimeStepSize;
+  } else {
+    return std::numeric_limits<double>::max();
+  }
 }
 
 double exahype::solvers::FiniteVolumesSolver::updateTimeStepSizesFused(
@@ -617,13 +721,18 @@ void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes(
 
 void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(
     const int cellDescriptionsIndex,
-    const int element) {
+    const int element) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  cellDescription.setTimeStamp(
-      cellDescription.getTimeStamp()-cellDescription.getPreviousTimeStepSize());
+  cellDescription.setTimeStamp(cellDescription.getPreviousTimeStamp());
   cellDescription.setTimeStepSize(cellDescription.getPreviousTimeStepSize());
 
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::max());
+}
+
+void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
+    const int cellDescriptionsIndex,
+    const int element) const {
+  rollbackToPreviousTimeStep(cellDescriptionsIndex,element);
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolution(
@@ -641,7 +750,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(
           solution,
           cellDescription.getOffset()+0.5*cellDescription.getSize(),
           cellDescription.getSize(),
-          cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),
+          cellDescription.getTimeStamp(),
           cellDescription.getTimeStepSize());
 
     for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
@@ -653,44 +762,54 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStep(
     const int cellDescriptionsIndex,
     const int element,
+    const bool isFirstIterationOfBatch,
+    const bool isLastIterationOfBatch,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     double** tempPointForceSources) {
-  updateSolution(cellDescriptionsIndex,element);
+  updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
 
   UpdateResult result;
-  result._timeStepSize = startNewTimeStep(cellDescriptionsIndex,element);
+  result._timeStepSize = startNewTimeStepFused(cellDescriptionsIndex,element,
+                                               isFirstIterationOfBatch,isLastIterationOfBatch);
   return result;
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
     const int cellDescriptionsIndex,
-    const int element) {
+    const int element,
+    const bool backupPreviousSolution) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
+  if (!cellDescription.getNeighbourMergePerformed().all()) {
+    logError("updateSolution(...)","Not all neighbour merges have been performed! cell="<<
+             cellDescription.toString());
+    std::terminate();
+  }
 
-  double* solution    = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
   double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-  std::copy(newSolution,newSolution+getDataPerPatch()+getGhostDataPerPatch(),solution); // Copy (current solution) in old solution field.
-
+  double* solution    = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
+  if (backupPreviousSolution) {
+    std::copy(newSolution,newSolution+getDataPerPatch()+getGhostDataPerPatch(),solution); // Copy (current solution) in old solution field.
+  }
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution");
 
   //    std::cout << "[pre] solution:" << std::endl;
   //    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
-  //  if (cellDescriptionsIndex==468) {
-  //    std::cout << "[pre] solution:" << std::endl;
-  //    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
-  //
-  //    ADERDGSolver::CellDescription& aderPatch =
-  //        ADERDGSolver::getCellDescription(cellDescriptionsIndex,cellDescription.getSolverNumber());
-  //    logDebug("updateSolution(...)","aderPatch="<<aderPatch.toString());
-  //  }
+//  if (cellDescriptionsIndex==2516) {
+//    std::cout << "[pre] solution:" << std::endl;
+//    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
+//
+//    ADERDGSolver::CellDescription& aderPatch =
+//        ADERDGSolver::getCellDescription(cellDescriptionsIndex,cellDescription.getSolverNumber());
+//    std::cout << "aderPatch="<<aderPatch.toString() << std::endl;
+//  }
 
-  // TODO(Dominic): Hotfix on master branch. This will not
-  // be necessary in the future.
+  assertion1(cellDescription.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
+  assertion1(cellDescription.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
   double admissibleTimeStepSize=0;
   if (cellDescription.getTimeStepSize()>0) {
     solutionUpdate(
@@ -701,11 +820,12 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   // cellDescription.getTimeStepSize() = 0 is an initial condition
   assertion2( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || !std::isnan(admissibleTimeStepSize), cellDescription.toString(), cellDescriptionsIndex );
   assertion2( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || !std::isinf(admissibleTimeStepSize), cellDescription.toString(), cellDescriptionsIndex );
-  assertion2( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || admissibleTimeStepSize<std::numeric_limits<double>::max(), cellDescription.toString(), cellDescriptionsIndex );
+  assertion3( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || admissibleTimeStepSize<std::numeric_limits<double>::max(),
+              admissibleTimeStepSize, cellDescription.toString(), cellDescriptionsIndex );
 
   if ( !tarch::la::equals(cellDescription.getTimeStepSize(), 0.0) && tarch::la::smaller(admissibleTimeStepSize,cellDescription.getTimeStepSize()) ) { //TODO JMG 1.001 factor to prevent same dt computation to throw logerror
     logWarning("updateSolution(...)","Finite volumes solver time step size harmed CFL condition. dt="<<
-        cellDescription.getTimeStepSize()<<", dt_adm=" << admissibleTimeStepSize << ". cell=" <<cellDescription.toString());
+               cellDescription.getTimeStepSize()<<", dt_adm=" << admissibleTimeStepSize << ". cell=" <<cellDescription.toString());
   }
 
   adjustSolution(
@@ -715,8 +835,10 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),
       cellDescription.getTimeStepSize());
 
-  //  std::cout << "[post] solution:" << std::endl;
-  //  printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
+//  if (cellDescriptionsIndex==2516) {
+//    std::cout << "[post] solution:" << std::endl;
+//    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
+//  }
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution");
 }
 
@@ -781,10 +903,21 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
   CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
   CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
 
+//  if (cellDescriptionsIndex1==2516 ||
+//      cellDescriptionsIndex2==2516) {
+//    std::cout << "cell1: "<< cellDescriptionsIndex1 << "," << cellDescription1.toString() << std::endl;
+//    std::cout << "cell2: "<< cellDescriptionsIndex2 << "," << cellDescription2.toString() << std::endl;
+//  }
+
   if (cellDescription1.getType()==CellDescription::Cell ||
       cellDescription2.getType()==CellDescription::Cell) {
     synchroniseTimeStepping(cellDescription1);
     synchroniseTimeStepping(cellDescription2);
+
+    assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
+    assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
+    assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
+    assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
 
     peano::datatraversal::TaskSet uncompression(
       [&] () -> void {
@@ -2004,7 +2137,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask );
+      peano::datatraversal::TaskSet spawnedSet( myTask,false );
     }
     else {
       determineUnknownAverages(cellDescription);

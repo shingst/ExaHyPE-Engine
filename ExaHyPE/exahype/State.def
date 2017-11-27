@@ -204,14 +204,6 @@ class exahype::dastgen::State {
      * triggers operations for solvers that
      * have performed mesh refinement or
      * which perform a global recomputation.
-     */
-    MeshRefinementOrGlobalRecomputation,
-    
-    /**
-     * In this section, the  runner
-     * triggers operations for solvers that
-     * have performed mesh refinement or
-     * which perform a global recomputation.
      * 
      * Triggers a send for all registered solvers.
      */

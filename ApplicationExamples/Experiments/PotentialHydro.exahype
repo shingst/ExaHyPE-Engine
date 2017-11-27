@@ -24,6 +24,7 @@ exahype-project PotentialHydro
   
   shared-memory
     identifier               = dummy
+    configure                = {}
     cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory  

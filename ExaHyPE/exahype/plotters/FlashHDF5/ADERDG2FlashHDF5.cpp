@@ -8,7 +8,7 @@
 
 
 std::string exahype::plotters::ADERDG2FlashHDF5::getIdentifier() {
-	return std::string("hdf5::FLASH");
+	return std::string("Flash::hdf5");
 }
 
 

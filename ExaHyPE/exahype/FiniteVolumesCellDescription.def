@@ -27,21 +27,20 @@ class exahype::records::FiniteVolumesCellDescription {
   parallelise persistent double timeStamp;
   
   /**
-   * TODO(Dominic): This is probably not necessary 
-   * for the FVM solver.
-   * 
    * The time step size this cell description was 
    * working with in the previous iteration.
    * 
-   * This field is necessary for performing rollbacks which
-   * is for example required in the context of a-posteriori subcell 
-   * limiting of higher-order schemes.
-   * 
-   * Background:
-   * If the solver has already evolved to a new time step,
-   * the timeStepSize field has been overwritten.
+   * Required for performing rollbacks.
    */
   parallelise persistent double previousTimeStepSize;
+  
+  /**
+   * The time stamp this cell description was 
+   * working with in the previous iteration.
+   * 
+   * Required for performing rollbacks.
+   */
+  parallelise persistent double previousTimeStamp;
   
   /**
    * Index referring to the old solution DoF associated with this cell

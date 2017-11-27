@@ -82,7 +82,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void flux(const double* const Q,double** F)  final {}
     {%- endif %}
     
-    {%- if !usePointSource %}
+    {%- if !usePointSources %}
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n)  final {}
     /* Please check if this is at the correct place: */
     virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}

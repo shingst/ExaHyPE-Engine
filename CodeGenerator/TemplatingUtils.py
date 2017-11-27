@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -17,13 +16,14 @@
 #
 # @section DESCRIPTION
 #
-# Base class for template based generator
+# Method to render a template using by default jinja2
 #
 
 
 import os
 
 from jinja2 import Template
+
 
 def renderAsFile(inputFilename, outputFilename, context):
     dir = os.path.dirname(__file__)

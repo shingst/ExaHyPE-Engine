@@ -100,20 +100,30 @@ void exahype::mappings::GlobalRollback::beginIteration(
   // do nothing
 }
 
+bool exahype::mappings::GlobalRollback::performGlobalRollback(exahype::solvers::Solver* solver) {
+  return
+      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+      &&
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
+      ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
+}
+
 void exahype::mappings::GlobalRollback::endIteration(
     exahype::State& solverState) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate
+    if (
+         performGlobalRollback(solver) &&
+         exahype::State::fuseADERDGPhases()==true
+    ) {
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
+    } else if (
+         performGlobalRollback(solver) &&
+         exahype::State::fuseADERDGPhases()==false
     ) {
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
-      if (!exahype::State::fuseADERDGPhases()) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            reconstructStandardTimeSteppingDataAfterRollback();
-      }
     }
+
   }
 }
 
@@ -135,21 +145,21 @@ void exahype::mappings::GlobalRollback::enterCell(
       auto solver = exahype::solvers::RegisteredSolvers[i];
 
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),i);
-      if (element!=exahype::solvers::Solver::NotFound) {
-        if(solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-           ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate
-        ) {
-          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      if (
+          element!=exahype::solvers::Solver::NotFound &&
+          performGlobalRollback(solver)
+      ) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-          limitingADERDGSolver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element);
+        limitingADERDGSolver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element);
+
+        if (exahype::State::fuseADERDGPhases()) {
+          limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
+        } else {
           limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-          if (!exahype::State::fuseADERDGPhases()) {
-            limitingADERDGSolver->reconstructStandardTimeSteppingDataAfterRollback(fineGridCell.getCellDescriptionsIndex(),element);
-          }
-
-          limitingADERDGSolver->rollbackSolverSolutionsGlobally(fineGridCell.getCellDescriptionsIndex(),element);
         }
+
+        limitingADERDGSolver->rollbackSolverSolutionsGlobally(fineGridCell.getCellDescriptionsIndex(),element);
       }
     endpfor
     grainSize.parallelSectionHasTerminated();
@@ -165,26 +175,30 @@ void exahype::mappings::GlobalRollback::enterCell(
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
+#ifdef Parallel
+void exahype::mappings::GlobalRollback::mergeWithNeighbour(
+    exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
+  logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
+                           fromRank, fineGridX, fineGridH, level);
+
+  vertex.dropNeighbourMetadata(
+      fromRank,fineGridX,fineGridH,level);
+
+  logTraceOut("mergeWithNeighbour(...)");
+}
 
 //
 // Below all methods are nop.
 //
 //===================================
 
-
-#ifdef Parallel
 void exahype::mappings::GlobalRollback::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // nop
-}
-
-void exahype::mappings::GlobalRollback::mergeWithNeighbour(
-    exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  // do nothing
 }
 
 void exahype::mappings::GlobalRollback::prepareCopyToRemoteNode(

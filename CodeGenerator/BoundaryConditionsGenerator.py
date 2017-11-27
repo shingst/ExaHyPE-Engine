@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -15,9 +14,14 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+# @section DESCRIPTION
+#
+# Generates the kernel to apply the boundary condition at the border of the domain
+#
+# Call the user function boundaryValues
+#
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -33,5 +37,5 @@ class BoundaryConditionsGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile('boundaryConditions_cpp.template', self.m_filename, self.m_context)
+        TemplatingUtils.renderAsFile("boundaryConditions_cpp.template", self.m_filename, self.m_context)
 

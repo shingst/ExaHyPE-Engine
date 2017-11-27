@@ -206,7 +206,7 @@ void exahype::Cell::mergeWithWorkerMetadata(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (solver->isUsingSharedMappings(section) &&
+      if (solver->isMergingMetadata(section) &&
           element!=exahype::solvers::Solver::NotFound &&
           receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
         MetadataHeap::HeapEntries metadataPortion(
@@ -236,7 +236,7 @@ void exahype::Cell::mergeWithMasterMetadata(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (solver->isUsingSharedMappings(section) &&
+      if (solver->isMergingMetadata(section) &&
           element!=exahype::solvers::Solver::NotFound &&
           receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
         MetadataHeap::HeapEntries metadataPortion(

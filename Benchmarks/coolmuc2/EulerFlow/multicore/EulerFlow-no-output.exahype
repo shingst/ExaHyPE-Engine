@@ -36,6 +36,7 @@ exahype-project  Euler
 
   shared-memory
     identifier               = dummy
+    configure                = {}
     cores                    = 7
     properties-file          = sharedmemory.properties
   end shared-memory

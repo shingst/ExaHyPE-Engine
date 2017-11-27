@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -18,14 +17,13 @@
 #
 # @section DESCRIPTION
 #
-# Generates the code for the mapping of the DG polynomial
+# Generates the kernel for the mapping of the DG polynomial
 # onto the [0,1] and calls the user-defined function.
-# It's simplistic and just picks the 2D or 3D version
-# of the generic kernels.
+#
+# Call the user function adjustPointSolution
 #
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -35,7 +33,7 @@ class AdjustSolutionGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename_point = 'adjustPointSolution.cpp'
+    m_filename_point = "adjustPointSolution.cpp"
 
 
     def __init__(self, i_context):
@@ -43,4 +41,4 @@ class AdjustSolutionGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile('adjustPointSolution_cpp.template', self.m_filename_point, self.m_context)
+        TemplatingUtils.renderAsFile("adjustPointSolution_cpp.template", self.m_filename_point, self.m_context)

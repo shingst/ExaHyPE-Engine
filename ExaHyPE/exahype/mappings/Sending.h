@@ -93,6 +93,34 @@ public:
    */
   static tarch::multicore::BooleanSemaphore _semaphoreForRestriction;
 
+  /**
+   * \return if we need to send face
+   * data in the current algorithm
+   * section and considering the send
+   * mode.
+   */
+  bool sendFaceData() const;
+
+
+  /**
+   * \return if we need to reduce time step
+   * data from worker to master
+   * in the current algorithm
+   * section and considering the send
+   * mode.
+   */
+  bool reduceTimeStepData() const;
+
+  /**
+   * Check if we need to send face data
+   * from worker to master.
+   *
+   * Differs from sendFaceData() since
+   * it also takes the BatchState into
+   * account.
+   */
+  bool reduceFaceData() const;
+
 #ifdef Parallel
 /**
  * Loop over all the solvers and check
@@ -131,18 +159,6 @@ void sendEmptySolverDataToNeighbour(
     const tarch::la::Vector<DIMENSIONS,int>&      dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const;
-
-
-/**
- * Check if we need to reduce time step data.
- */
-bool reduceTimeStepData() const;
-
-/**
- * Check if we need to send face data
- * from worker to master.
- */
-bool reduceFaceData() const;
 #endif
 
  public:
@@ -196,13 +212,24 @@ bool reduceFaceData() const;
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Restricts face data from \p cellDescription to
-   * a parent cell description if the fine grid cell associated with
-   * cell description is adjacent to a boundary of the
-   * coarse grid cell associated with the parent cell description.
+   * If we send face data, this routine restricts face data from a
+   * cell description to a parent cell description if the fine grid cell
+   * associated with the cell description is adjacent to a boundary of the
+   * coarser grid cell associated with the parent cell description.
    *
-   * \note We use a semaphore to make this operation thread-safe.
+   * We further restrict data (e.g. the limiter status) to the
+   * next parent if it exists. This operation is performed
+   * if we send face data or if we reduce time step data.
+   * In the first case, we might encounter a batch. We
+   * then still want to restrict that data up locally
+   * per rank. In the second case, we might run the nonfused
+   * time stepping scheme. Then, we are required to
+   * restrict the limiter status before we
+   * send out face data.
    *
+   * \note We use locks to make both operation thread-safe.
+   *
+   * \see reduceTimeStepData(), sendFaceData()
    *
    * <h2> Multicore parallelisation </h2>
    *
@@ -286,10 +313,14 @@ bool reduceFaceData() const;
   /**
    * This routine is called on the worker.
    *
-   * Send the local array of minimal time step sizes up to the master.
-   * Further send up face data if a cell description
-   * registered in the fine grid cell of the worker (and master)
-   * is of type Ancestor.
+   * In case, we have to reduce time step data
+   * we send the local array of minimal time step sizes up to the master.
+   * We further send the cell's metadata up to the the master in this case.
+   *
+   * In case we have to reduce face data to the master,
+   * we send both the cell's metadata and the face data
+   * of certain cell descriptions (or empty data)
+   * up to the master.
    *
    * <h2>Domain Decomposition in Peano</h2>
    * It is important to notice
@@ -341,10 +372,7 @@ bool reduceFaceData() const;
   /**
     * This routine is called on the master.
     *
-    * Receive and merge the array of minimal time step sizes send
-    * by the worker on the master.
-    * Further receive face data if a cell description
-    * registered in the fine grid cell is of type Descendant.
+    * Counterpart to prepareSendToMaster.
     *
     * \see prepareSendToMaster
     */

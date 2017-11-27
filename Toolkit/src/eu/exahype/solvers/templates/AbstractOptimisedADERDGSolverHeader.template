@@ -37,7 +37,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int Order              = {{optNamespace}}::getBasisSize() -1;
     static constexpr int Dimensions         = {{optNamespace}}::getDimension();
     static constexpr double CFL             = 0.9;
-    {%- if usePointSource %}
+    {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     {%- endif %}
     

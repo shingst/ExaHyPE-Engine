@@ -18,8 +18,7 @@
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
-
-{% if useLibxsmm %}
+{% if useLibxsmm and useFlux %}
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
 
@@ -31,9 +30,12 @@ void {{codeNamespace}}::volumeIntegral(
 ) {
 
 #ifdef __INTEL_COMPILER
+{% if useFlux %}
   __assume_aligned(lFi, ALIGNMENT);
   __assume_aligned(Kxi_T, ALIGNMENT);
+{% endif %} {# useFlux #}
   __assume_aligned(weights1, ALIGNMENT);
+  __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(lduh, ALIGNMENT); //lduh should be aligned, see Solver.h
 {% if useSourceOrNCP %}
   __assume_aligned(lSi, ALIGNMENT);
@@ -139,13 +141,13 @@ void {{codeNamespace}}::volumeIntegral(
 
 {% if useSourceOrNCP %}
   // source
-  for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     // Fortran: lduh(:,k,j,i) += w * lShi(:,k,j,i)
-    for(int m=0; m<{{nDof}}; m++) {
-      const double weight = weights3[ijk] * weights1[m];
+    for(int m = 0; m < {{nDof}}; m++) {
+      const double weight = weights3[xyz] * weights1[m];
       #pragma simd
       for (int n = 0; n < {{nVar}}; n++) {
-        lduh[n+{{nVar}}*ijk] += weight * lSi[n+{{nVarPad}}*(ijk+{{nDof**nDim}}*m)];
+        lduh[n+{{nVar}}*xyz] += weight * lSi[n+{{nVarPad}}*(xyz+{{nDof**nDim}}*m)];
       }
     }  
   }

@@ -33,6 +33,7 @@ exahype-project DIM
   
   shared-memory
     identifier               = dummy
+    configure                = {}
     cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  

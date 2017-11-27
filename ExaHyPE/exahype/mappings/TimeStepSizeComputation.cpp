@@ -44,7 +44,7 @@ void exahype::mappings::TimeStepSizeComputation::prepareLocalTimeStepVariables()
 peano::CommunicationSpecification
 exahype::mappings::TimeStepSizeComputation::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeDescendIntoLocalSubtree,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
@@ -123,20 +123,6 @@ void exahype::mappings::TimeStepSizeComputation::beginIteration(
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
-void exahype::mappings::TimeStepSizeComputation::reconstructStandardTimeSteppingData(
-    exahype::solvers::Solver* solver) {
-  switch(solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->reconstructStandardTimeSteppingData();
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->reconstructStandardTimeSteppingData();
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      break;
-  }
-}
-
 void exahype::mappings::TimeStepSizeComputation::weighMinNextPredictorTimeStepSize(
     exahype::solvers::Solver* solver) {
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
@@ -210,7 +196,7 @@ void exahype::mappings::TimeStepSizeComputation::endIteration(
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
+    if (solver->isComputingTimeStepSize(_localState.getAlgorithmSection())) {
       // cell sizes
       solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
       solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
@@ -243,24 +229,6 @@ void exahype::mappings::TimeStepSizeComputation::endIteration(
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
-void exahype::mappings::TimeStepSizeComputation::reconstructStandardTimeSteppingData(
-    exahype::solvers::Solver* solver,
-    const int cellDescriptionsIndex,
-    const int element) {
-  switch(solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-      reconstructStandardTimeSteppingData(cellDescriptionsIndex,element);
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-      reconstructStandardTimeSteppingData(cellDescriptionsIndex,element);
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      break;
-  }
-}
-
 void exahype::mappings::TimeStepSizeComputation::enterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -278,7 +246,7 @@ void exahype::mappings::TimeStepSizeComputation::enterCell(
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined15);
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
+      if (solver->isComputingTimeStepSize(_localState.getAlgorithmSection())) {
         const int element = solver->tryGetElement(
             fineGridCell.getCellDescriptionsIndex(),solverNumber);
 

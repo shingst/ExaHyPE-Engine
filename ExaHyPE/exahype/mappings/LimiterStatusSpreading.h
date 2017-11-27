@@ -37,7 +37,11 @@ class LimiterStatusSpreading;
 
 /**
  * This mapping is used to spread the limiter status
- * among neighbouring cells and from child to parent.
+ * among neighbouring cells, i.e. only horizontally.
+ *
+ * \note No troubled limiter status is reduced from child to parent.
+ * We expect that this was already done during the time stepping
+ * iterations in exahype::mappings::Sending::leaveCell(...)
  *
  * TODO(Dominic): Update docu
  *
@@ -61,6 +65,12 @@ private:
    */
   exahype::solvers::SolverFlags _solverFlags;
 
+  /**
+   * \return true if we need to perform limiter status spreading
+   * for this solver.
+   */
+  static bool spreadLimiterStatus(exahype::solvers::Solver* solver);
+
 public:
   #ifdef Parallel
   /**
@@ -71,14 +81,18 @@ public:
   static bool IsFirstIteration;
   #endif
   /**
-   * Switched on.
+   * Avoid fine grid races to prevent data races (whole tree).
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
+  /**
+   * Run concurrently on fine grid (whole tree).
+   */
+  peano::MappingSpecification enterCellSpecification(int level) const;
+
   /**
    * Switched off
    */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
-  peano::MappingSpecification enterCellSpecification(int level) const;
   peano::MappingSpecification leaveCellSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;
@@ -91,6 +105,26 @@ public:
    */
   LimiterStatusSpreading(const LimiterStatusSpreading& masterThread);
 #endif
+  /**
+   * Initialise all heaps.
+   *
+   * For each solver, initialise the next mesh update flags
+   * with the current ones.
+   *
+   * <h2>MPI</h2>
+   * Open the synchronous send-receive window.
+   */
+  void beginIteration(exahype::State& solverState);
+
+  /**
+   * For each solver, set the mesh update flags
+   * for the next iteration.
+   *
+   * <h2>MPI</h2>
+   * Close the synchronous send-receive window.
+   */
+  void endIteration(exahype::State& solverState);
+
   /**
    * Update the cell-wise limiter status only for solvers
    * of type LimitingADERDG for which the limiter domain
@@ -107,28 +141,18 @@ public:
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
-
   /**
-   * Initialise all heaps.
-   *
-   * For each solver, reset the grid update requested flag
-   * to false.
-   *
-   * <h2>MPI</h2>
-   * Finish the previous synchronous sends and
-   * start synchronous sending again.
+   * Merge metadata between cell descriptions registered at
+   * neighbouring cells.
    */
-  void beginIteration(exahype::State& solverState);
-
-  /**
-   * For each solver, set the grid update requested flag
-   * for the next iteration.
-   *
-   * <h2>MPI</h2>
-   * If this rank is the global master, update the
-   * initial grid refinement strategy.
-   */
-  void endIteration(exahype::State& solverState);
+  void touchVertexFirstTime(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
 
 #ifdef Parallel
@@ -368,17 +392,6 @@ public:
      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
- /**
-  * Nop.
-  */
- void touchVertexFirstTime(
-     exahype::Vertex& fineGridVertex,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
  /**
   * Nop.

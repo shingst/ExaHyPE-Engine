@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -15,6 +14,11 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
+# @section DESCRIPTION
+#
+# Generate the Kernels.h header
+#
 
 
 import TemplatingUtils
@@ -24,7 +28,7 @@ class KernelsHeaderGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = 'Kernels.h'
+    m_filename = "Kernels.h"
 
     
     def __init__(self, i_context):
@@ -32,7 +36,6 @@ class KernelsHeaderGenerator:
 
 
     def generateCode(self):
-        self.m_context['solverNamespace'] = self.m_context['solverName'].split('::')[0]
-        self.m_context['solverClass'] = self.m_context['solverName'].split('::')[1]
-        TemplatingUtils.renderAsFile('Kernels_h.template', self.m_filename, self.m_context)
-
+        self.m_context["solverNamespace"] = self.m_context["solverName"].split("::")[0]
+        self.m_context["solverClass"] = self.m_context["solverName"].split("::")[1]
+        TemplatingUtils.renderAsFile("Kernels_h.template", self.m_filename, self.m_context)

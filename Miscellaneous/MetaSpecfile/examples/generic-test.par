@@ -1,0 +1,89 @@
+##mexa  # This is an ExaHyPE meta specification file.
+#
+# Testing an application with several solvers.
+#
+# To test an individual solver:
+# Solver <= DGSolver
+# Project::Directory = "@mexa/examples/output/test-aderdg"
+# -> instead of giving this in this file, these assignments are provided as command line additions
+# -> See the run-test.sh code.
+
+<< "@mexa/exahype-single-base.xpar"
+
+Project::Name = "Test"
+Coord::Dimension = 2
+Coord::width_x = 1.0
+Coord::width_y = 1.0
+Coord::width_z = 1.0
+Coord::offset_x = 0.0
+Coord::offset_y = 0.0
+Coord::offset_z = 0.0
+BaseSolver::maximum_mesh_size = 0
+BaseSolver::maximum_mesh_depth = 0
+Coord::end_time = 10.0
+
+BaseSolver::name = "TestSolver"
+BaseSolver::variables = "a:1,b:2,c:3"
+BaseSolver::time_stepping = "global"
+
+BaseKernel::terms = "flux,ncp,source"
+BaseKernel::opt = "generic"
+BaseKernel::language = "C"
+
+# The ADER-DG solver
+DGSolver <= BaseSolver
+DGSolver::type = "ADER-DG"
+DGSolver::order = 3
+DGSolver::kernel <= BaseKernel
+DGSolver::kernel::type = "nonlinear"
+
+# The Finite volume solver
+FVSolver <= BaseSolver
+FVSolver::type = "Finite-Volumes"
+FVSolver::patch_size = 10
+FVSolver::kernel <= BaseKernel
+FVSolver::kernel::type = "godunov"
+
+# A limiting solver
+LimitingSolver <= BaseSolver
+LimitingSolver::type = "Limiting-ADER-DG"
+LimitingSolver::order = DGSolver::order
+LimitingSolver::kernel = DGSolver::kernel
+LimitingSolver::limiter::kernel = FVSolver::kernel
+LimitingSolver::limiter::observables = 2
+LimitingSolver::limiter::relaxation_parameter = 0.01
+LimitingSolver::limiter::difference_scaling = 0.001
+LimitingSolver::limiter::steps_till_cured = 0
+
+Plotters += PlotterA
+Plotters += PlotterB
+
+BasePlotter::variables = "@{BaseSolver/variables}"
+BasePlotter::time = 0.0
+BasePlotter::repeat = 0.001
+
+PlotterA <= BasePlotter
+PlotterA::type = "vtk::Cartesian::vertices::binary"
+PlotterA::name = "PlotterA"
+PlotterA::output = "./plota"
+PlotterA::x = 15
+PlotterA::y = True
+
+PlotterB <= BasePlotter
+PlotterB::output = "./plotb"
+PlotterB::name = "PlotterB"
+PlotterB::type = "vtk::Cartesian::vertices::ascii"
+
+# some simulation parameters
+
+InitialData::from = "FooBar"
+FooBarCode::alpha = 17.56
+Boundaries::left = "exact"
+
+# collect simulation steering data
+Parameters::InitialData = InitialData
+Parameters::FooBarCode = FooBarCode
+Parameters::Boundaries = Boundaries
+
+
+

@@ -1,0 +1,41 @@
+##mexa -- This is an ExaHyPE meta specification file.
+#
+# This file should be used as
+#   << "@mexa/exahype-single-base.xpar"
+# and provides the glue between handy parameters and a base tree
+# "exahype/" where all parameters are sorted in nicely.
+
+ExaHyPE::project_name = project::name
+ExaHyPE::peano_kernel_path = "./Peano"
+ExaHyPE::exahype_path = "./ExaHyPE"
+ExaHyPE::output_directory = project::directory
+ExaHyPE::architecture = "noarch"
+ExaHyPE::log_file = "whatever.log"
+
+# Meta registration of a single global solver.
+
+Solver::plotters = Plotters
+Solver::constants = Parameters
+Solver::parameters = Parameters
+ExaHyPE::solvers += Solver
+
+ExaHyPE::computational_domain = Coord
+
+ExaHyPE::shared_memory::identifier = "dummy"
+ExaHyPE::shared_memory::cores = 1
+ExaHyPE::shared_memory::properties_file = "sharedmemory.properties"
+
+ExaHyPE::distributed_memory::identifier = "static_load_balancing"
+ExaHyPE::distributed_memory::configure = "{hotspot,fair,ranks_per_node:1}"
+ExaHyPE::distributed_memory::buffer_size = 64
+ExaHyPE::distributed_memory::timeout = 60
+
+ExaHyPE::optimisation::fuse_algorithmic_steps = True # token_on_off = 'on' | 'off' = BOOL
+ExaHyPE::optimisation::fuse_algorithmic_steps_factor = 0.99
+ExaHyPE::optimisation::batch_timesteps = 0.0
+ExaHyPE::optimisation::skip_reduction = True
+ExaHyPE::optimisation::disable_amr_if_grid_has_been_stationary_in_previous_iteration = False
+ExaHyPE::optimisation::double_compression = 0.0
+ExaHyPE::optimisation::spawn_double_compression = False
+
+

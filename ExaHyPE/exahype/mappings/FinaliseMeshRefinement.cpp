@@ -34,12 +34,6 @@ exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
       true);
 }
 
-peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
-    touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-}
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) const {
@@ -49,6 +43,12 @@ exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) con
 }
 
 // Below all specs are Nop
+peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
+    touchVertexFirstTimeSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+}
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::leaveCellSpecification(int level) const {
@@ -129,9 +129,10 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
             fineGridPositionOfCell,
             solverNumber);
 
-        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-            ==exahype::solvers::LimiterDomainChange::Regular) {
+        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+          assertion(limitingADERDGSolver->getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::Irregular);
+
           const int element = exahype::solvers::RegisteredSolvers[solverNumber]->tryGetElement(
               fineGridCell.getCellDescriptionsIndex(),solverNumber);
           if (element!=exahype::solvers::Solver::NotFound) {

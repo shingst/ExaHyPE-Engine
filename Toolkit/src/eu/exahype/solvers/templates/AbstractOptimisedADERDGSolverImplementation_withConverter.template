@@ -27,8 +27,7 @@
   This may help identify a faulty optimised kernel.
   
   This implementation is not always maintained and might be deprecated.
-  
-  Doesn't work with linear
+
   Doesn't work with notimeavg
 */
 
@@ -69,7 +68,7 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 
 
 
-void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** pointForceSources) {
+void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** tempPointForceSources) {
 {%- if enableProfiler %}
   _profiler->start("spaceTimePredictor");
 {%- endif %}
@@ -96,7 +95,21 @@ if(useGeneric) {
   {{optNamespace}}::converter::Qhbnd_optimised2generic(lQhbnd, Qbnd);
   {{optNamespace}}::converter::Fhbnd_optimised2generic(lFhbnd, Fbnd);
   
+{%- if usePointSources %}
+  double* pointForceSources_g[2];
+  pointForceSources_g[0] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
+  pointForceSources_g[1] = tempPointForceSources[1];
+  {{optNamespace}}::converter::PSi_optimised2generic(tempPointForceSources[0],pointForceSources_g[0]);
+{%- else %}
+  double** pointForceSources_g = nullptr;
+{%- endif %}
+  
+  
+{%- if  isLinear %}
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
+{%- else %}
   kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
+{%- endif %}
   
   {{optNamespace}}::converter::Qhi_generic2optimised(lQhi, tempUnknowns);
   {{optNamespace}}::converter::Fhi_generic2optimised(lFhi, tempFluxUnknowns);
@@ -107,27 +120,39 @@ if(useGeneric) {
   delete[] lFhi;
   delete[] Qbnd;
   delete[] Fbnd;
+{%- if usePointSources %}
+  delete[] pointForceSources_g[0];
+{%- endif %}
     
     
 } else {
-
+  
+{%- if useFlux %}
 {%- if dimensions == 2 %}
   constexpr int lSi_offset  = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-{% else %}
+  constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**nDim)*nVarPad
+{%- else %}
   constexpr int lSi_offset  = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-{% endif %}
+  constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**nDim)*nVarPad
+{%- endif %}
+{%- else %}
+  constexpr int lSi_offset  = 0; //no Flux
+  constexpr int lShi_offset = 0; //no Flux
+{%- endif %}
 
+{%- if  isLinear %}
+  {{optNamespace}}::spaceTimePredictorLinear(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, tempPointForceSources[0] /*PSi*/, tempPointForceSources[1] /*PSderivatives*/, luh, inverseDx, dt);
+{%- else %}
 {%- if noTimeAveraging %}
   //No Time Averaging scheme
   {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
   {{optNamespace}}::extrapolatorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], lQhbnd, lFhbnd);
-{% else %}
+{%- else %}
   {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
   {{optNamespace}}::predictorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], tempUnknowns, tempFluxUnknowns, &tempFluxUnknowns[lShi_offset]);
   {{optNamespace}}::extrapolatorNonlinear(tempUnknowns, tempFluxUnknowns, lQhbnd, lFhbnd);
-{% endif %}
+{%- endif %}
+{%- endif %}
   
 }
   
@@ -170,35 +195,43 @@ if(useGeneric) {
   
   double* lFhi_g = new double[{{optNamespace}}::converter::getFhiGenArraySize()];
   {{optNamespace}}::converter::Fhi_optimised2generic(lFhi, lFhi_g);
-  
+{%- if isLinear %}
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi_g,&dx[0]);
+{%- else %}  
   kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,nullptr,lFhi_g,&dx[0]);
-  
+{%- endif %}
+
   delete[] lFhi_g;
     
     
 } else {
 
+{%- if useFlux %}
 {%- if dimensions == 2 %}
   {%- if noTimeAveraging %}
   constexpr int lSi_offset  = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
   {%- else %}
   constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-  {% endif %}
-{% else %}
+  {%- endif %}
+{%- else %}
   {%- if noTimeAveraging %}
   constexpr int lSi_offset  = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  {% else %}
+  {%- else %}
   constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-  {% endif %}
-{% endif %}
+  {%- endif %}
+{%- endif %}
+{%- else %}
+  constexpr int lSi_offset  = 0; //no Flux
+  constexpr int lShi_offset = 0; //no Flux
+{%- endif %}
 
 {%- if noTimeAveraging %}
   //No Time Averaging scheme, lFhi == nullptr
   {{optNamespace}}::volumeIntegral( lduh, lFi, &lFi[lSi_offset], inverseDx );
-{% else %}
+{%- else %}
   //Time averaging scheme, lFi not required
   {{optNamespace}}::volumeIntegral( lduh, lFhi, &lFhi[lShi_offset], inverseDx );
-{% endif %}
+{%- endif %}
 
 }
 
@@ -229,8 +262,11 @@ if(useGeneric) {
   
   double* lFhbnd_g = new double[{{optNamespace}}::converter::getFhbndGenArraySize()];
   {{optNamespace}}::converter::Fhbnd_optimised2generic(lFhbnd, lFhbnd_g);
-  
+{%- if isLinear %}
+  kernels::aderdg::generic::c::surfaceIntegralLinear<NumberOfVariables, Order+1>(lduh,lFhbnd_g,&dx[0]);
+{%- else %}
   kernels::aderdg::generic::c::surfaceIntegralNonlinear<NumberOfVariables, Order+1>(lduh,lFhbnd_g,&dx[0]);
+{%- endif %}
   
   delete[] lFhbnd_g;
     
@@ -266,9 +302,12 @@ if(useGeneric) {
   {{optNamespace}}::converter::FFace_optimised2generic(FR,FR_g);
   {{optNamespace}}::converter::QFace_optimised2generic(QL,QL_g);
   {{optNamespace}}::converter::QFace_optimised2generic(QR,QR_g);
-
+{%- if isLinear %}
+  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
+{%- else %}
   kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
-
+{%- endif %}
+  
   {{optNamespace}}::converter::FFace_generic2optimised(FL_g,FL);
   {{optNamespace}}::converter::FFace_generic2optimised(FR_g,FR);
 
@@ -320,13 +359,41 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
   _profiler->start("solutionAdjustment");
 {%- endif %}
   {{optNamespace}}::adjustPointSolution(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
-
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {%- endif %}
 }
 {%- endif %}
 
+
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
+{%- if usePointSources %}
+{%- if enableProfiler %}
+  _profiler->start("deltaDistribution");
+{%- endif %}
+  constexpr bool useGeneric = false;
+  
+  if(useGeneric) {
+    double** tmp = new double*[2];
+    tmp[0] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
+    tmp[1] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
+    kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), tmp);
+    
+    {{optNamespace}}::converter::PSi_generic2optimised(tmp[0],tempPointForceSources[0]);
+    
+    delete[] tmp[0];
+    delete[] tmp[1];
+    delete[] tmp;
+  } else {
+    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, center, dx, tempPointForceSources);
+  }
+{%- if enableProfiler %}
+  _profiler->stop("deltaDistribution");
+{%- endif %}
+{%- else %}
+  //Point sources aren't defined, this method should be empty
+{%- endif %}
+}
 
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
@@ -335,7 +402,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 {%- endif %}
   {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex);
 {%- if enableProfiler %}
-  _profiler->start("false");
+  _profiler->start("faceUnknownsProlongation");
 {%- endif %}
 }
 
@@ -381,22 +448,6 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	// verbosily fail even without assertions turned on
 	puts(msg);
 	abort();
-}
-
-
-void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
-{%- if usePointSource %}
-{%- if enableProfiler %}
-  _profiler->start("deltaDistribution");
-{%- endif %}
-  //TODO JMG
-  //kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
-{%- if enableProfiler %}
-  _profiler->stop("deltaDistribution");
-{%- endif %}
-{%- else %}
-  //Point sources aren't defined, this method should be empty
-{%- endif %}
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {

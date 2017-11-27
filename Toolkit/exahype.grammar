@@ -21,8 +21,9 @@ Helpers
    not_star             =   [ all - '*' ];
    not_star_not_slash   =   [ not_star - '/' ];
    not_comma            =   [ all - ',' ];
+   not_bracket          =   [ all - [ '{' + '}' ] ];
 
-   filename_element     =  digit | nondigit | '-' | '/' | dot;
+   filename_element     =  digit | nondigit | '-' | '/' | '*' | '%' | dot;
 
    identifier           = nondigit ( digit | nondigit ) *;
   
@@ -147,7 +148,7 @@ Tokens
   documentation_comment             = '/**' '*'* (not_star_not_slash not_star* '*'+)* '/';
   end_of_line_comment               = '//' not_line_terminator* line_terminator;
   
-  configure_type                    = '{' all* '}';
+  configure_type                    = '{' not_bracket* '}';
 
 Ignored Tokens
 
@@ -250,6 +251,7 @@ Productions
   shared_memory {->shared_memory} =
    [begin_token]:token_shared_memory
      token_identifier [identifier_equals]:token_equals [identifier]:identifier
+     token_configure    [configure_equals]:token_equals  [configure]:configure_type
      token_cores [cores_equals]:token_equals [cores]:int_number
      token_properties_file [properties_equals]:token_equals [properties_file]:filename
    token_end [end_token]:token_shared_memory

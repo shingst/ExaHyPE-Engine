@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
- 
+
 #include "exahype/State.h"
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
@@ -30,6 +30,24 @@ bool exahype::State::VirtuallyExpandBoundingBox = false;
 
 bool exahype::State::EnableMasterWorkerCommunication = true;
 bool exahype::State::EnableNeighbourCommunication    = true;
+
+bool exahype::State::fuseADERDGPhases() {
+  return FuseADERDGPhases;
+}
+
+double exahype::State::getTimeStepSizeWeightForPredictionRerun() {
+  return WeightForPredictionRerun;
+}
+
+bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
+  return getBatchState()==BatchState::FirstIterationOfBatch ||
+         getBatchState()==BatchState::NoBatch;
+}
+
+bool exahype::State::isLastIterationOfBatchOrNoBatch() {
+  return getBatchState()==BatchState::LastIterationOfBatch ||
+         getBatchState()==BatchState::NoBatch;
+}
 
 exahype::State::State() : Base() {
   // @todo Guidebook
@@ -57,64 +75,64 @@ void exahype::State::readFromCheckpoint(
 
 void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible) {
   const bool idleNodesLeft =
-    tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()>0;
+      tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()>0;
   const bool nodePoolHasGivenOutRankSizeLastQuery =
-    tarch::parallel::NodePool::getInstance().hasGivenOutRankSizeLastQuery();
+      tarch::parallel::NodePool::getInstance().hasGivenOutRankSizeLastQuery();
 
   // No more nodes left. Start to enforce refinement
   if ( !idleNodesLeft
-    && _stateData.getMaxRefinementLevelAllowed()>=0
-    && !nodePoolHasGivenOutRankSizeLastQuery) {
+      && _stateData.getMaxRefinementLevelAllowed()>=0
+      && !nodePoolHasGivenOutRankSizeLastQuery) {
     _stateData.setMaxRefinementLevelAllowed(-1);
   }
   // Seems that max permitted level has exceeded max grid level. We may assume
   // that there are more MPI ranks than available trees.
   else if (isGridStationary()
-    && _stateData.getMaxRefinementLevelAllowed()>finestGridLevelPossible
-    && _stateData.getMaxRefinementLevelAllowed()>=0
-    && !nodePoolHasGivenOutRankSizeLastQuery) {
+      && _stateData.getMaxRefinementLevelAllowed()>finestGridLevelPossible
+      && _stateData.getMaxRefinementLevelAllowed()>=0
+      && !nodePoolHasGivenOutRankSizeLastQuery) {
     _stateData.setMaxRefinementLevelAllowed( -1 );
   }
   // Reset counter by two. Some LB has happened and we might wanna
   // give the whole system two sweeps to recover from this LB, i.e. to
   // set up all partitions properly and recompute all LB metrics.
   else if (nodePoolHasGivenOutRankSizeLastQuery
-    && _stateData.getMaxRefinementLevelAllowed()>=2) {
+      && _stateData.getMaxRefinementLevelAllowed()>=2) {
     _stateData.setMaxRefinementLevelAllowed(
-      _stateData.getMaxRefinementLevelAllowed()-2);
+        _stateData.getMaxRefinementLevelAllowed()-2);
   }
   // Refinement is enforced. So we decrease counter. Once we underrun -2, grid
   // construction can terminate as all enforced refined instructions went
   // through.
   else if (_stateData.getMaxRefinementLevelAllowed()<=-1
-    && !nodePoolHasGivenOutRankSizeLastQuery
-    && isGridStationary()) {
+      && !nodePoolHasGivenOutRankSizeLastQuery
+      && isGridStationary()) {
     _stateData.setMaxRefinementLevelAllowed(
-      _stateData.getMaxRefinementLevelAllowed()-1 );
+        _stateData.getMaxRefinementLevelAllowed()-1 );
   }
   // Nothing has changed in this grid iteration in the grid and we haven't
   // given out new workers. So increase the permitted maximum grid level by
   // one and give another try whether the grid adds more vertices.
   else if (
-       (!nodePoolHasGivenOutRankSizeLastQuery)
-    && isGridStationary()
-    && (_stateData.getMaxRefinementLevelAllowed()>=0)
+      (!nodePoolHasGivenOutRankSizeLastQuery)
+      && isGridStationary()
+      && (_stateData.getMaxRefinementLevelAllowed()>=0)
   ) {
     _stateData.setMaxRefinementLevelAllowed(
-      _stateData.getMaxRefinementLevelAllowed()+1);
+        _stateData.getMaxRefinementLevelAllowed()+1);
   }
 }
 
 
 exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEvent, int level) const
 {
-  #ifdef Parallel
+#ifdef Parallel
   if (
-    _stateData.getMaxRefinementLevelAllowed()<=-2
-    &&
-    isCreationalEvent
-    &&
-    !isInvolvedInJoinOrFork() // A Peano assertion was triggered
+      _stateData.getMaxRefinementLevelAllowed()<=-2
+      &&
+      isCreationalEvent
+      &&
+      !isInvolvedInJoinOrFork() // A Peano assertion was triggered
   ) {
     return RefinementAnswer::EnforceRefinement;
   }
@@ -122,29 +140,29 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
     return RefinementAnswer::Refine;
   }
   else if (
-    _stateData.getMaxRefinementLevelAllowed()>level
-    &&
-    !isCreationalEvent
-    &&
-    mayForkDueToLoadBalancing()
+      _stateData.getMaxRefinementLevelAllowed()>level
+      &&
+      !isCreationalEvent
+      &&
+      mayForkDueToLoadBalancing()
   ) {
     return RefinementAnswer::Refine;
   }
   else {
     return RefinementAnswer::DontRefineYet;
   }
-  #else
+#else
   return RefinementAnswer::Refine;
-  #endif
+#endif
 }
 
 
 bool exahype::State::continueToConstructGrid() const {
-  #ifdef Parallel
+#ifdef Parallel
   return _stateData.getMaxRefinementLevelAllowed()>=-3;
-  #else
+#else
   return !isGridBalanced();
-  #endif
+#endif
 }
 
 void exahype::State::setAlgorithmSection(const records::State::AlgorithmSection& algorithmSection) {
@@ -155,114 +173,106 @@ exahype::records::State::AlgorithmSection exahype::State::getAlgorithmSection() 
   return _stateData.getAlgorithmSection();
 }
 
- exahype::records::State::MergeMode exahype::State::getMergeMode() const {
-   return _stateData.getMergeMode();
- }
+exahype::records::State::MergeMode exahype::State::getMergeMode() const {
+  return _stateData.getMergeMode();
+}
 
- exahype::records::State::SendMode exahype::State::getSendMode() const {
-   return _stateData.getSendMode();
- }
+exahype::records::State::SendMode exahype::State::getSendMode() const {
+  return _stateData.getSendMode();
+}
 
- void exahype::State::switchToInitialConditionAndTimeStepSizeComputationContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
- }
+void exahype::State::switchToInitialConditionAndTimeStepSizeComputationContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+}
 
- void exahype::State::switchToPredictionAndFusedTimeSteppingInitialisationContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-   _stateData.setSendMode (records::State::SendMode::SendFaceData);
- }
+void exahype::State::switchToPredictionAndFusedTimeSteppingInitialisationContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  _stateData.setSendMode (records::State::SendMode::SendFaceData);
+}
 
- void exahype::State::switchToFusedTimeStepContext() {
-   if (EnableMasterWorkerCommunication) {
-     if (EnableNeighbourCommunication) {
-       _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);
-       _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
-     } else { //!EnableNeighbourCommunication
-       _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-       _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
-     }
-   } else { // !EnableMasterWorkerCommunication
-     if (EnableNeighbourCommunication) {
-       _stateData.setMergeMode(records::State::MergeMode::MergeFaceData);
-       _stateData.setSendMode (records::State::SendMode::SendFaceData);
-     } else { //!EnableNeighbourCommunication
-       _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-       _stateData.setSendMode (records::State::SendMode::SendNothing);
-     }
-   }
- }
+void exahype::State::switchToFusedTimeStepContext() {
+  if (EnableMasterWorkerCommunication) {
+    if (EnableNeighbourCommunication) {
+      _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);
+      _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+    } else { //!EnableNeighbourCommunication
+      _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+      _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+    }
+  } else { // !EnableMasterWorkerCommunication
+    if (EnableNeighbourCommunication) {
+      _stateData.setMergeMode(records::State::MergeMode::MergeFaceData);
+      _stateData.setSendMode (records::State::SendMode::SendFaceData);
+    } else { //!EnableNeighbourCommunication
+      _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+      _stateData.setSendMode (records::State::SendMode::SendNothing);
+    }
+  }
+}
 
- void exahype::State::switchToPredictionRerunContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
-   _stateData.setSendMode (records::State::SendMode::SendFaceData);
- }
+void exahype::State::switchToPredictionRerunContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
+  _stateData.setSendMode (records::State::SendMode::SendFaceData);
+}
 
- void exahype::State::switchToNeighbourDataMergingContext() {
-   _stateData.setMergeMode(records::State::MergeMode::MergeFaceData);
-   _stateData.setSendMode (records::State::SendMode::SendNothing);
- }
+void exahype::State::switchToNeighbourDataMergingContext() {
+  _stateData.setMergeMode(records::State::MergeMode::MergeFaceData);
+  _stateData.setSendMode (records::State::SendMode::SendNothing);
+}
 
- void exahype::State::switchToPredictionContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-   _stateData.setSendMode (records::State::SendMode::SendFaceData);
- }
+void exahype::State::switchToPredictionContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  _stateData.setSendMode (records::State::SendMode::SendFaceData);
+}
 
- void exahype::State::switchToTimeStepSizeComputationContext() {
-   _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
- }
+void exahype::State::switchToTimeStepSizeComputationContext() {
+  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+}
 
- void exahype::State::switchToUpdateMeshContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-   _stateData.setSendMode (records::State::SendMode::SendNothing);
- }
+void exahype::State::switchToUpdateMeshContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  _stateData.setSendMode (records::State::SendMode::SendNothing);
+}
 
- void exahype::State::switchToPostAMRContext() {
-   _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
- }
+void exahype::State::switchToPostAMRContext() {
+  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+}
 
- void exahype::State::switchToLimiterStatusSpreadingContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-   _stateData.setSendMode (records::State::SendMode::SendNothing);
- }
+void exahype::State::switchToLimiterStatusSpreadingContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  _stateData.setSendMode (records::State::SendMode::SendNothing);
+}
 
- void exahype::State::switchToLimiterStatusSpreadingFusedTimeSteppingContext() {
-   _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
-   _stateData.setSendMode (records::State::SendMode::SendNothing);
- }
+void exahype::State::switchToLimiterStatusSpreadingFusedTimeSteppingContext() {
+  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
+  _stateData.setSendMode (records::State::SendMode::SendNothing);
+}
 
- void exahype::State::switchToReinitialisationContext() {
-   // We are merging a limiter status but we do not use the merging and sending mappings. So, we can use any value here.
-   _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-   _stateData.setSendMode (records::State::SendMode::SendNothing);
- }
+void exahype::State::switchToReinitialisationContext() {
+  // We are merging a limiter status but we do not use the merging and sending mappings. So, we can use any value here.
+  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+  _stateData.setSendMode (records::State::SendMode::SendNothing);
+}
 
- void exahype::State::switchToRecomputeSolutionAndTimeStepSizeComputationContext() {
-   _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
- }
+void exahype::State::switchToRecomputeSolutionAndTimeStepSizeComputationContext() {
+  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+}
 
- void exahype::State::switchToLocalRecomputationAndTimeStepSizeComputationContext() {
-   _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
- }
+void exahype::State::switchToLocalRecomputationAndTimeStepSizeComputationContext() {
+  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+}
 
- void exahype::State::switchToNeighbourDataDroppingContext() {
-   if (fuseADERDGPhases()) {
-     _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
-     _stateData.setSendMode (records::State::SendMode::SendNothing);
-   } else {
-     _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-     _stateData.setSendMode (records::State::SendMode::SendNothing);
-   }
- }
-
- bool exahype::State::fuseADERDGPhases() {
-   return FuseADERDGPhases;
- }
-
- double exahype::State::getTimeStepSizeWeightForPredictionRerun() {
-   return WeightForPredictionRerun;
- }
+void exahype::State::switchToNeighbourDataDroppingContext() {
+  if (fuseADERDGPhases()) {
+    _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
+    _stateData.setSendMode (records::State::SendMode::SendNothing);
+  } else {
+    _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+    _stateData.setSendMode (records::State::SendMode::SendNothing);
+  }
+}

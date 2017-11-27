@@ -382,9 +382,34 @@ exahype::Parser::MPILoadBalancingType exahype::Parser::getMPILoadBalancingType()
   return result;
 }
 
+
 std::string exahype::Parser::getMPIConfiguration() const {
   return getTokenAfter("distributed-memory", "configure");
 }
+
+
+std::string exahype::Parser::getSharedMemoryConfiguration() const {
+  return getTokenAfter("shared-memory", "configure");
+}
+
+
+double exahype::Parser::getNodePoolAnsweringTimeout() const {
+  const std::string token         = "max-node-pool-answering-time";
+  const double      defaultResult = 1e-2;
+  if (getMPIConfiguration().find( token )!=std::string::npos ) {
+    const double result = static_cast<double>(exahype::Parser::getValueFromPropertyString(getMPIConfiguration(),token));
+    if (result<0.0) {
+      logWarning( "getNodePoolAnsweringTimeout()", "token " << token << " not specified for MPI configuration so use default timeout of " << defaultResult );
+      return defaultResult;
+    }
+    else return result;
+  }
+  else {
+    logWarning( "getNodePoolAnsweringTimeout()", "token " << token << " not specified for MPI configuration so use default timeout of " << defaultResult );
+    return defaultResult;
+  }
+}
+
 
 int exahype::Parser::getMPIBufferSize() const {
   std::string token = getTokenAfter("distributed-memory", "buffer-size");
@@ -1326,6 +1351,27 @@ bool exahype::Parser::ParserView::isValueValidBool(
     return false;
   }
 }
+
+
+int exahype::Parser::getRanksPerNode() {
+  const std::string RanksPerNode = "ranks-per-node";
+
+  return static_cast<int>(exahype::Parser::getValueFromPropertyString(getMPIConfiguration(),RanksPerNode));
+}
+
+
+int exahype::Parser::getNumberOfBackgroundTasks() {
+  const std::string Search = "background-tasks";
+
+  int result = static_cast<int>(exahype::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
+  if (result<1) {
+    logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
+      "set or no number at all. Use default (1)");
+    result = 1;
+  }
+  return result;
+}
+
 
 bool exahype::Parser::ParserView::isValueValidString(
     const std::string& key) const {

@@ -51,6 +51,11 @@ class exahype::mappings::Reinitialisation {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * \return if we perform a local recomputation for this solver.
+   */
+  static bool performLocalRecomputation(exahype::solvers::Solver* solver);
+
 #ifdef Parallel
   /**
    * We only send empty data for LimitingADERDGSolvers
@@ -152,18 +157,6 @@ class exahype::mappings::Reinitialisation {
         const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
         exahype::Cell& coarseGridCell,
         const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-    /**
-     * TODO(Dominic): Add docu.
-     */
-    void touchVertexFirstTime(
-        exahype::Vertex& fineGridVertex,
-        const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-        const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
   #ifdef Parallel
     /**
@@ -403,6 +396,18 @@ class exahype::mappings::Reinitialisation {
         const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
         exahype::Cell& coarseGridCell,
         const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+    /**
+     * Nop.
+     */
+    void touchVertexFirstTime(
+        exahype::Vertex& fineGridVertex,
+        const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+        const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+        exahype::Vertex* const coarseGridVertices,
+        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+        exahype::Cell& coarseGridCell,
+        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
     /**
      * Nop.

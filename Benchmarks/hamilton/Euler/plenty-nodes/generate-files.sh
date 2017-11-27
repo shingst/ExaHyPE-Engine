@@ -82,7 +82,7 @@ do
       sed -i 's,tasksPerNode=1,tasksPerNode='$tasksPerNode',' $newScript
       sed -i 's,coresPerTask=1,coresPerTask='$coresPerTask',' $newScript
 
-      sed -i 's,script=hamilton.slurm-script,script='$newScript',g' $newScript 
+      sed -i 's,script='$script',script='$newScript',g' $newScript 
 
       # Create spec file
       spec=plenty-nodes/Euler-$io.exahype

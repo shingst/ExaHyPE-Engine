@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -18,6 +17,7 @@
 
 import Backend
 
+
 #****************************************
 #****************************************
 #****** Matrix/Vector operations ********
@@ -28,22 +28,56 @@ import Backend
 def matrixTranspose(M):
     return [[M[j][i] for j in range(len(M))] for i in range(len(M[0]))]
 
+
 #A dot B  
 def matrixDot(A,B):
     return [[sum([A[n][k]*B[k][m] for k in range(len(B))]) for m in range(len(B[0]))] for n in range(len(A))]
+
 
 #extract matrix minor without i^th row and j^th column
 def matrixMinor(M,i,j):
     return [row[:j] + row[j+1:] for row in (M[:i]+M[i+1:])]    
 
+
 #compute matrix determinant    
 def matrixDeterminant(M):
-    determinant = 0
+    if len(M) == 4: # apply Leibniz formula using permutation group S_4
+        return (  M[0][0]*M[1][1]*M[2][2]*M[3][3] # id
+                - M[0][0]*M[1][1]*M[2][3]*M[3][2] # (23) 
+                - M[0][0]*M[1][2]*M[2][1]*M[3][3] # (12) 
+                + M[0][0]*M[1][2]*M[2][3]*M[3][1] # (123)
+                + M[0][0]*M[1][3]*M[2][1]*M[3][2] # (132)
+                - M[0][0]*M[1][3]*M[2][2]*M[3][1] # (13)
+                - M[0][1]*M[1][0]*M[2][2]*M[3][3] # (01)
+                + M[0][1]*M[1][0]*M[2][3]*M[3][2] # (01)(23)
+                + M[0][1]*M[1][2]*M[2][0]*M[3][3] # (012)
+                - M[0][1]*M[1][2]*M[2][3]*M[3][0] # (0123) = (23)o(12)o(01)
+                - M[0][1]*M[1][3]*M[2][0]*M[3][2] # (0132) = (23)o(13)o(01)
+                + M[0][1]*M[1][3]*M[2][2]*M[3][0] # (013)
+                + M[0][2]*M[1][0]*M[2][1]*M[3][3] # (021)
+                - M[0][2]*M[1][0]*M[2][3]*M[3][1] # (0231) = (13)o(23)o(02)
+                - M[0][2]*M[1][1]*M[2][0]*M[3][3] # (02)
+                + M[0][2]*M[1][1]*M[2][3]*M[3][0] # (023)
+                + M[0][2]*M[1][3]*M[2][0]*M[3][1] # (02)(13)
+                - M[0][2]*M[1][3]*M[2][1]*M[3][0] # (0213) = (13)o(12)o(02)
+                - M[0][3]*M[1][0]*M[2][1]*M[3][2] # (0321) = (12)o(23)o(03)
+                + M[0][3]*M[1][0]*M[2][2]*M[3][1] # (031)
+                + M[0][3]*M[1][1]*M[2][0]*M[3][2] # (032)
+                - M[0][3]*M[1][1]*M[2][2]*M[3][0] # (03)
+                - M[0][3]*M[1][2]*M[2][0]*M[3][1] # (0312) = (12)o(13)o(03)
+                + M[0][3]*M[1][2]*M[2][1]*M[3][0] # (03)(12)
+               )
+    if len(M) == 3:
+        return M[0][0]*M[1][1]*M[2][2] + M[0][1]*M[1][2]*M[2][0] + M[0][2]*M[1][0]*M[2][1] - M[0][1]*M[1][0]*M[2][2] - M[0][0]*M[1][2]*M[2][1] - M[0][2]*M[1][1]*M[2][0]
+    if len(M) == 2:
+        return M[0][0]*M[1][1] - M[0][1]*M[1][0]
     if len(M) == 1:
         return M[0][0]
+    determinant = 0   
     for j in range(len(M)):
         determinant += ((-1)**j)*M[0][j]*matrixDeterminant(matrixMinor(M,0,j))
     return determinant    
+
 
 #inverse matrix M    
 def matrixInverse(M):
@@ -67,6 +101,7 @@ def vectorPad(v,padSize):
         return v
     return v + [0. for _ in range(padSize)]
 
+
 # a b c   
 # d e f  
 # => a b c 0 d e f 0  
@@ -76,13 +111,15 @@ def matrixPadAndFlatten_RowMajor(M, padSize):
         result += vectorPad(M[i], padSize)
     return result
 
+
 # a b c   
 # d e f  
 # => a d 0 b e 0 c f 0    
 def matrixPadAndFlatten_ColMajor(M, padSize):
     return matrixPadAndFlatten_RowMajor(matrixTranspose(M), padSize)
 
-    
+
+ 
 #****************************************
 #****************************************
 #*********** Gauss-Legendre *************
@@ -135,6 +172,7 @@ def getGaussLegendre(nDof):
     if nDof == 10:
         return  [0.03333567215434358, 0.07472567457529024, 0.1095431812579912, 0.1346333596549983, 0.1477621123573766, 0.1477621123573766, 0.1346333596549983, 0.1095431812579912, 0.07472567457529024, 0.03333567215434358], \
                 [0.01304673574141413, 0.06746831665550773, 0.1602952158504878, 0.2833023029353764, 0.4255628305091844, 0.5744371694908156, 0.7166976970646236, 0.8397047841495122, 0.9325316833444923, 0.9869532642585859]
+
 
 
 #****************************************
@@ -354,13 +392,13 @@ def generateDSCAL(i_scalarName: str, i_inVectorName: str, i_outVectorName: str, 
             intrinsics implementation of the scatter operation
     """
     if(i_inBaseAddr > 0 or i_outBaseAddr > 0):
-        l_code = '#pragma simd\n'                                \
-        '  for(int it=0;it<'+str(i_vectorSize)+';it++) \n' \
-        '    '+i_outVectorName+'['+str(i_outBaseAddr)+'+it] = '+ i_scalarName+' * '+i_inVectorName+'['+str(i_inBaseAddr)+'+it];\n'
+        l_code = "#pragma simd\n"                                \
+        "  for(int it=0;it<"+str(i_vectorSize)+";it++) \n" \
+        "    "+i_outVectorName+"["+str(i_outBaseAddr)+"+it] = "+ i_scalarName+" * "+i_inVectorName+"["+str(i_inBaseAddr)+"+it];\n"
     else:
-        l_code = '#pragma simd\n'                                \
-                '  for(int it=0;it<'+str(i_vectorSize)+';it++) \n' \
-                '    '+i_outVectorName+'[it] = '+ i_scalarName+' * '+i_inVectorName+'[it];\n'
+        l_code = "#pragma simd\n"                                \
+                "  for(int it=0;it<"+str(i_vectorSize)+";it++) \n" \
+                "    "+i_outVectorName+"[it] = "+ i_scalarName+" * "+i_inVectorName+"[it];\n"
     return l_code
 
 # --------------------------------------------------------------------------------------
@@ -393,60 +431,60 @@ def __scatter_avx(i_nVar: int, i_chunkSize: int, i_baseAddr_lhs: int, i_baseAddr
 
     # fully packed
     l_startAddress = 0
-    l_code = ''
+    l_code = ""
     for it in range(0, l_iters):
         # aligned load
-        l_code = l_code + 'v1 = _mm256_load_pd(&in_buf['+str(i_baseAddr_rhs+(0*l_offset+i_simdWidth*it))+']);\n'
-        l_code = l_code + 'v2 = _mm256_load_pd(&in_buf['+str(i_baseAddr_rhs+(1*l_offset+i_simdWidth*it))+']);\n'
-        l_code = l_code + 'v3 = _mm256_load_pd(&in_buf['+str(i_baseAddr_rhs+(2*l_offset+i_simdWidth*it))+']);\n'
-        l_code = l_code + 'v4 = _mm256_load_pd(&in_buf['+str(i_baseAddr_rhs+(3*l_offset+i_simdWidth*it))+']);\n'
+        l_code = l_code + "v1 = _mm256_load_pd(&in_buf["+str(i_baseAddr_rhs+(0*l_offset+i_simdWidth*it))+"]);\n"
+        l_code = l_code + "v2 = _mm256_load_pd(&in_buf["+str(i_baseAddr_rhs+(1*l_offset+i_simdWidth*it))+"]);\n"
+        l_code = l_code + "v3 = _mm256_load_pd(&in_buf["+str(i_baseAddr_rhs+(2*l_offset+i_simdWidth*it))+"]);\n"
+        l_code = l_code + "v4 = _mm256_load_pd(&in_buf["+str(i_baseAddr_rhs+(3*l_offset+i_simdWidth*it))+"]);\n"
         # vunpckhpd, vunpcklpd
-        l_code = l_code + 'perm1 = _mm256_unpacklo_pd(v1,v2);\n'
-        l_code = l_code + 'perm2 = _mm256_unpackhi_pd(v1,v2);\n'
-        l_code = l_code + 'perm3 = _mm256_unpacklo_pd(v3,v4);\n'
-        l_code = l_code + 'perm4 = _mm256_unpackhi_pd(v3,v4);\n'
+        l_code = l_code + "perm1 = _mm256_unpacklo_pd(v1,v2);\n"
+        l_code = l_code + "perm2 = _mm256_unpackhi_pd(v1,v2);\n"
+        l_code = l_code + "perm3 = _mm256_unpacklo_pd(v3,v4);\n"
+        l_code = l_code + "perm4 = _mm256_unpackhi_pd(v3,v4);\n"
         # vperm2f128
-        l_code = l_code + 'res1 = _mm256_permute2f128_pd(perm1,perm3,0b00100000);\n'
-        l_code = l_code + 'res3 = _mm256_permute2f128_pd(perm1,perm3,0b00110001);\n'
-        l_code = l_code + 'res2 = _mm256_permute2f128_pd(perm2,perm4,0b00100000);\n'
-        l_code = l_code + 'res4 = _mm256_permute2f128_pd(perm2,perm4,0b00110001);\n'
+        l_code = l_code + "res1 = _mm256_permute2f128_pd(perm1,perm3,0b00100000);\n"
+        l_code = l_code + "res3 = _mm256_permute2f128_pd(perm1,perm3,0b00110001);\n"
+        l_code = l_code + "res2 = _mm256_permute2f128_pd(perm2,perm4,0b00100000);\n"
+        l_code = l_code + "res4 = _mm256_permute2f128_pd(perm2,perm4,0b00110001);\n"
         # unaligned store. Should later on become _mm256_store_pd()
-        l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res1);\n'
+        l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res1);\n"
         l_startAddress = l_startAddress + i_chunkSize
-        l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res2);\n'
+        l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res2);\n"
         l_startAddress = l_startAddress + i_chunkSize
-        l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res3);\n'
+        l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res3);\n"
         l_startAddress = l_startAddress + i_chunkSize
-        l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res4);\n'
+        l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res4);\n"
         l_startAddress = l_startAddress + i_chunkSize
 
     # we need some scalar instructions for the remaining variables
     if(l_remainder > 0):
         # aligned packed load - in_buf is padded
         l_startRemainder = i_baseAddr_rhs + (l_iters * i_simdWidth)
-        l_code = l_code + 'v1 = _mm256_load_pd(&in_buf['+str(0*l_offset+l_startRemainder)+']);\n'
-        l_code = l_code + 'v2 = _mm256_load_pd(&in_buf['+str(1*l_offset+l_startRemainder)+']);\n'
-        l_code = l_code + 'v3 = _mm256_load_pd(&in_buf['+str(2*l_offset+l_startRemainder)+']);\n'
-        l_code = l_code + 'v4 = _mm256_load_pd(&in_buf['+str(3*l_offset+l_startRemainder)+']);\n'
+        l_code = l_code + "v1 = _mm256_load_pd(&in_buf["+str(0*l_offset+l_startRemainder)+"]);\n"
+        l_code = l_code + "v2 = _mm256_load_pd(&in_buf["+str(1*l_offset+l_startRemainder)+"]);\n"
+        l_code = l_code + "v3 = _mm256_load_pd(&in_buf["+str(2*l_offset+l_startRemainder)+"]);\n"
+        l_code = l_code + "v4 = _mm256_load_pd(&in_buf["+str(3*l_offset+l_startRemainder)+"]);\n"
         # vunpckhpd, vunpcklpd
-        l_code = l_code + 'perm1 = _mm256_unpacklo_pd(v1,v2);\n'
-        l_code = l_code + 'perm2 = _mm256_unpackhi_pd(v1,v2);\n'
-        l_code = l_code + 'perm3 = _mm256_unpacklo_pd(v3,v4);\n'
-        l_code = l_code + 'perm4 = _mm256_unpackhi_pd(v3,v4);\n'
+        l_code = l_code + "perm1 = _mm256_unpacklo_pd(v1,v2);\n"
+        l_code = l_code + "perm2 = _mm256_unpackhi_pd(v1,v2);\n"
+        l_code = l_code + "perm3 = _mm256_unpacklo_pd(v3,v4);\n"
+        l_code = l_code + "perm4 = _mm256_unpackhi_pd(v3,v4);\n"
         # vperm2f128
-        l_code = l_code + 'res1 = _mm256_permute2f128_pd(perm1,perm3,0b00100000);\n'
-        l_code = l_code + 'res3 = _mm256_permute2f128_pd(perm1,perm3,0b00110001);\n'
-        l_code = l_code + 'res2 = _mm256_permute2f128_pd(perm2,perm4,0b00100000);\n'
-        l_code = l_code + 'res4 = _mm256_permute2f128_pd(perm2,perm4,0b00110001);\n'
+        l_code = l_code + "res1 = _mm256_permute2f128_pd(perm1,perm3,0b00100000);\n"
+        l_code = l_code + "res3 = _mm256_permute2f128_pd(perm1,perm3,0b00110001);\n"
+        l_code = l_code + "res2 = _mm256_permute2f128_pd(perm2,perm4,0b00100000);\n"
+        l_code = l_code + "res4 = _mm256_permute2f128_pd(perm2,perm4,0b00110001);\n"
 
         if(l_remainder > 0):
-            l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res1);\n'
+            l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res1);\n"
             l_startAddress = l_startAddress + i_chunkSize
         if(l_remainder > 1):
-            l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res2);\n'
+            l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res2);\n"
             l_startAddress = l_startAddress + i_chunkSize
         if(l_remainder > 2):
-            l_code = l_code + '_mm256_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res3);\n'
+            l_code = l_code + "_mm256_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res3);\n"
 
     return l_code
 
@@ -478,26 +516,26 @@ def __scatter_sse2(i_nVar: int, i_chunkSize: int, i_baseAddr_lhs: int, i_baseAdd
 
     # fully packed
     l_startAddress = 0
-    l_code = ''
+    l_code = ""
     for it in range(0, l_iters):
         # aligned load
-        l_code = l_code + 'v1 = _mm_load_pd(&in_buf['+str(i_baseAddr_rhs+(0*l_offset+i_simdWidth*it))+']);\n'
-        l_code = l_code + 'v2 = _mm_load_pd(&in_buf['+str(i_baseAddr_rhs+(1*l_offset+i_simdWidth*it))+']);\n'
+        l_code = l_code + "v1 = _mm_load_pd(&in_buf["+str(i_baseAddr_rhs+(0*l_offset+i_simdWidth*it))+"]);\n"
+        l_code = l_code + "v2 = _mm_load_pd(&in_buf["+str(i_baseAddr_rhs+(1*l_offset+i_simdWidth*it))+"]);\n"
         # unpcklpd
-        l_code = l_code + 'res = _mm_unpacklo_pd(v1, v2);\n'
+        l_code = l_code + "res = _mm_unpacklo_pd(v1, v2);\n"
         # unaligned store. Should later on become _mm_store_pd()
-        l_code = l_code + '_mm_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res);\n'
+        l_code = l_code + "_mm_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res);\n"
         l_startAddress = l_startAddress + i_chunkSize
         # unpackhpd
-        l_code = l_code + 'res = _mm_unpackhi_pd(v1,v2);\n'
-        l_code = l_code + '_mm_storeu_pd(&out_buf['+str(i_baseAddr_lhs+l_startAddress)+'],res);\n'
+        l_code = l_code + "res = _mm_unpackhi_pd(v1,v2);\n"
+        l_code = l_code + "_mm_storeu_pd(&out_buf["+str(i_baseAddr_lhs+l_startAddress)+"],res);\n"
         l_startAddress = l_startAddress + i_chunkSize
 
     # there is one variable remaining
     if(l_remainder > 0):
         l_startRemainder = i_baseAddr_rhs + (l_iters * i_simdWidth)
-        l_code = l_code + 'out_buf['+str(i_baseAddr_lhs+l_startAddress)+'] = in_buf['+str(l_startRemainder)+'];\n'
-        l_code = l_code + 'out_buf['+str(i_baseAddr_lhs+l_startAddress+1)+'] = in_buf['+str(l_startRemainder+l_offset)+'];\n'
+        l_code = l_code + "out_buf["+str(i_baseAddr_lhs+l_startAddress)+"] = in_buf["+str(l_startRemainder)+"];\n"
+        l_code = l_code + "out_buf["+str(i_baseAddr_lhs+l_startAddress+1)+"] = in_buf["+str(l_startRemainder+l_offset)+"];\n"
 
     return l_code
 
@@ -521,11 +559,11 @@ def __scatter_scalar(i_nVar: int, i_chunkSize: int, i_startAddr_lhs: int, i_star
             plain C implementation of the scatter operation
     """
     l_startAddress = 0
-    l_code = ''
+    l_code = ""
     for iVar in range(0, i_nVar):
         l_inAddr  = i_startAddr_rhs+iVar
         l_outAddr = i_startAddr_lhs+iVar*i_chunkSize
-        l_code = l_code + 'out_buf['+str(l_outAddr)+'] = in_buf['+str(l_inAddr)+'];\n'
+        l_code = l_code + "out_buf["+str(l_outAddr)+"] = in_buf["+str(l_inAddr)+"];\n"
 
     return l_code
 
@@ -548,7 +586,7 @@ def generateScatter(i_nVar: int, i_nVectors: int, i_chunkSize: int):
 
     # decompose the number of input vectors
     i_architecture = Backend.m_architecture
-    i_simdWidth = Backend.m_simdWidth['DP'][i_architecture]
+    i_simdWidth = Backend.m_simdWidth["DP"][i_architecture]
     l_nVectorGroup = int(i_nVectors/i_simdWidth)
     l_nVectorRest  = i_nVectors % i_simdWidth
 
@@ -557,20 +595,20 @@ def generateScatter(i_nVar: int, i_nVectors: int, i_chunkSize: int):
     print("l_nVectorRest", l_nVectorRest)
     print("i_chunkSize", i_chunkSize)
 
-    l_sourceFile = open("asm_scatter.c", 'a')
-    l_sourceFile.write('#if defined( __SSE3__) || defined(__MIC__)\n'\
-                       '#include <immintrin.h>\n'\
-                       '#endif\n\n'\
-                       'void scatter(const double* restrict const in_buf, double* out_buf) {\n'
+    l_sourceFile = open("asm_scatter.c", "a")
+    l_sourceFile.write("#if defined( __SSE3__) || defined(__MIC__)\n"\
+                       "#include <immintrin.h>\n"\
+                       "#endif\n\n"\
+                       "void scatter(const double* restrict const in_buf, double* out_buf) {\n"
                        )
 
-    l_code = ''
+    l_code = ""
     l_startAddr_rhs = 0
     l_startAddr_lhs = 0
 
-    if(i_architecture == 'hsw' or i_architecture == 'snb'):
+    if(i_architecture == "hsw" or i_architecture == "snb"):
         # declaration of variables for macro kernel
-        l_code = '__m256d v1, v2, v3, v4, perm1, perm2, perm3, perm4, res1, res2, res3, res4;\n'
+        l_code = "__m256d v1, v2, v3, v4, perm1, perm2, perm3, perm4, res1, res2, res3, res4;\n"
 
         # full vector groups (micro kernel 1)
         for iVec in range(0, l_nVectorGroup):
@@ -593,9 +631,9 @@ def generateScatter(i_nVar: int, i_nVectors: int, i_chunkSize: int):
 
         l_sourceFile.write(l_code)
 
-    if(i_architecture == 'wsm'):
+    if(i_architecture == "wsm"):
         # declaration of variables for macro kernel
-        l_code = '__m128d v1,v2,res;\n'
+        l_code = "__m128d v1,v2,res;\n"
 
         # process full vector groups (micro kernel 1)
         for iVec in range(0, l_nVectorGroup):
@@ -611,7 +649,7 @@ def generateScatter(i_nVar: int, i_nVectors: int, i_chunkSize: int):
         l_sourceFile.write(l_code)
 
 
-    if(i_architecture == 'noarch'):
+    if(i_architecture == "noarch"):
         for iVec in range(0, i_nVectors):
             l_code = l_code + __scatter_scalar(i_nVar, i_chunkSize, l_startAddr_lhs, l_startAddr_rhs)
             l_startAddr_rhs = l_startAddr_rhs + Backend.getSizeWithPadding(i_nVar)
@@ -620,5 +658,5 @@ def generateScatter(i_nVar: int, i_nVectors: int, i_chunkSize: int):
         l_sourceFile.write(l_code)
 
 
-    l_sourceFile.write('}')
+    l_sourceFile.write("}")
     l_sourceFile.close()

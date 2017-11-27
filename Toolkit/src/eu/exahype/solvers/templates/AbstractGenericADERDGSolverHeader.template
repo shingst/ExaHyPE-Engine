@@ -34,7 +34,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int NumberOfParameters = {{numberOfParameters}};
     static constexpr int Order              = {{order}};
     static constexpr double CFL             = 0.9;
-    {%- if usePointSource %}
+    {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     {%- endif %}
     
@@ -118,7 +118,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       }
   	}
     
-    void deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempForceVector) override; 
+    void deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempForceVector) override;
     void spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt, double** tempPointForceSources) override; 
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
     void volumeIntegral(double* lduh,const double* const lFi,const double* const lFhi,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
@@ -144,7 +144,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int getTempUnknownsSize()          const {return -1;} //lQhi not required
     int getTempFluxUnknownsSize()      const {return -1;} //lFhi not required
     {%- endif %}
-    {%- if !usePointSource %}
+    {%- if !usePointSources %}
     int getTempPointForceSourcesSize() const {return -1;} //pointSource not required
     {%- endif %}
     {%- if !useNCP %}

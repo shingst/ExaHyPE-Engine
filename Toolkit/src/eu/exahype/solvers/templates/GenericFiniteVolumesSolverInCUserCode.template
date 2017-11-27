@@ -88,7 +88,7 @@ void  {{project}}::{{solver}}::nonConservativeProduct(const double* const Q,cons
 }
 {%- endif %}
 
-{%- if usePointSource %}
+{%- if usePointSources %}
 void  {{project}}::{{solver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
   // @todo Please implement/augment if required
 }

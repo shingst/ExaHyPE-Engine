@@ -46,24 +46,32 @@ void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* 
 {%- if enableProfiler %}
   _profiler->start("spaceTimePredictor");
 {%- endif %}
-
+{%- if useFlux %}
 {%- if dimensions == 2 %}
   constexpr int lSi_offset  = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-{% else %}
+  constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**nDim)*nVarPad
+{%- else %}
   constexpr int lSi_offset  = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-{% endif %}
+  constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**nDim)*nVarPad
+{%- endif %}
+{%- else %}
+  constexpr int lSi_offset  = 0; //no Flux
+  constexpr int lShi_offset = 0; //no Flux
+{%- endif %}
 
+{%- if  isLinear %}
+  {{optNamespace}}::spaceTimePredictorLinear(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, tempPointForceSources[0] /*PSi*/, tempPointForceSources[1] /*PSderivatives*/, luh, inverseDx, dt);
+{%- else %}
 {%- if noTimeAveraging %}
   //No Time Averaging scheme
   {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
   {{optNamespace}}::extrapolatorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], lQhbnd, lFhbnd);
-{% else %}
+{%- else %}
   {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
   {{optNamespace}}::predictorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], tempUnknowns, tempFluxUnknowns, &tempFluxUnknowns[lShi_offset]);
   {{optNamespace}}::extrapolatorNonlinear(tempUnknowns, tempFluxUnknowns, lQhbnd, lFhbnd);
-{% endif %}
+{%- endif %}
+{%- endif %}
   
 {%- if enableProfiler %}
   _profiler->stop("spaceTimePredictor");
@@ -89,27 +97,32 @@ void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* 
   _profiler->start("volumeIntegral");
 {%- endif %}
 
+{%- if useFlux %}
 {%- if dimensions == 2 %}
   {%- if noTimeAveraging %}
   constexpr int lSi_offset  = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
   {%- else %}
   constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-  {% endif %}
-{% else %}
+  {%- endif %}
+{%- else %}
   {%- if noTimeAveraging %}
   constexpr int lSi_offset  = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  {% else %}
+  {%- else %}
   constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-  {% endif %}
-{% endif %}
+  {%- endif %}
+{%- endif %}
+{%- else %}
+  constexpr int lSi_offset  = 0; //no Flux
+  constexpr int lShi_offset = 0; //no Flux
+{%- endif %}
 
 {%- if noTimeAveraging %}
   //No Time Averaging scheme, lFhi == nullptr
   {{optNamespace}}::volumeIntegral( lduh, lFi, &lFi[lSi_offset], inverseDx );
-{% else %}
+{%- else %}
   //Time averaging scheme, lFi not required
   {{optNamespace}}::volumeIntegral( lduh, lFhi, &lFhi[lShi_offset], inverseDx );
-{% endif %}
+{%- endif %}
 
 {%- if enableProfiler %}
   _profiler->stop("volumeIntegral");
@@ -183,6 +196,20 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 {%- endif %}
 
 
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
+{%- if usePointSources %}
+{%- if enableProfiler %}
+  _profiler->start("deltaDistribution");
+{%- endif %}
+  {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, center, dx, tempPointForceSources);
+{%- if enableProfiler %}
+  _profiler->stop("deltaDistribution");
+{%- endif %}
+{%- else %}
+  //Point sources aren't defined, this method should be empty
+{%- endif %}
+}
+
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {%- if enableProfiler %}
@@ -190,7 +217,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 {%- endif %}
   {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex);
 {%- if enableProfiler %}
-  _profiler->start("false");
+  _profiler->start("faceUnknownsProlongation");
 {%- endif %}
 }
 
@@ -236,22 +263,6 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	// verbosily fail even without assertions turned on
 	puts(msg);
 	abort();
-}
-
-
-void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
-{%- if usePointSource %}
-{%- if enableProfiler %}
-  _profiler->start("deltaDistribution");
-{%- endif %}
-  //TODO JMG
-  //kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
-{%- if enableProfiler %}
-  _profiler->stop("deltaDistribution");
-{%- endif %}
-{%- else %}
-  //Point sources aren't defined, this method should be empty
-{%- endif %}
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {

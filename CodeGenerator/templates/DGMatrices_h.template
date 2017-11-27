@@ -38,4 +38,3 @@ extern double ** fineGridProjector1d_T_weighted; // [k][i*nDof+j] = fineGridProj
 }
 {% endfor %}
 #endif /* _EXAHYPE_{{guardNamespace}}_DGMATRICES_H_ */
-

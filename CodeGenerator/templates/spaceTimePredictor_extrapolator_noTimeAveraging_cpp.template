@@ -26,10 +26,12 @@ void {{codeNamespace}}::extrapolatorNonlinear(
   // Compute the boundary-extrapolated values for Q and F*n
 
 #ifdef __INTEL_COMPILER
-  __assume_aligned(lQhbnd, ALIGNMENT);
-  __assume_aligned(lFhbnd, ALIGNMENT);
   __assume_aligned(lQi, ALIGNMENT);
+  __assume_aligned(lQhbnd, ALIGNMENT);
+{% if useFlux %}
   __assume_aligned(lFi, ALIGNMENT);
+  __assume_aligned(lFhbnd, ALIGNMENT);
+{% endif %}
   __assume_aligned(FRCoeff, ALIGNMENT);
   __assume_aligned(FLCoeff, ALIGNMENT);
 #endif
@@ -51,6 +53,7 @@ void {{codeNamespace}}::extrapolatorNonlinear(
           // Fortran: lQhbnd(:,j,i,2) = lQhi(:,:,j,i) * FRCoeff(:)
           lQhbnd[n+{{nDataPad}}*yz+{{1*nDataPad*nDof*nDof3D}}] +=
               FRCoeff[x] * weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(x+{{nDof}}*yz))];
+{% if useFlux %}
 {% if nDataPad != nVarPad %}
         }
         #pragma simd
@@ -63,6 +66,7 @@ void {{codeNamespace}}::extrapolatorNonlinear(
           // Fortran: lFhbnd(:,j,i,2) = lFhi_x(:,:,j,i) * FRCoeff(:)
           lFhbnd[n+{{nVarPad}}*yz+{{1*nVarPad*nDof*nDof3D}}] +=
               FRCoeff[x] * weights1[m] * lFi[n+{{nVarPad}}*(x+{{nDof}}*(yz+{{nDof*nDof3D}}*m))];
+{% endif %} {# useFlux #}
         }
       }
     }
@@ -89,6 +93,7 @@ void {{codeNamespace}}::extrapolatorNonlinear(
           // Fortran: lQhbnd(:,j,i,4) = lQhi(:,j,:,i) * FRCoeff(:)
           lQhbnd[n+{{nDataPad}}*xz+{{3*nDataPad*nDof*nDof3D}}] +=
               FRCoeff[y]* weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(x+{{nDof}}*(y+{{nDof3D}}*z)))];
+{% if useFlux %}
 {% if nDataPad != nVarPad %}
         }
         #pragma simd
@@ -101,6 +106,7 @@ void {{codeNamespace}}::extrapolatorNonlinear(
           // Fortran: lFhbnd(:,j,i,4) = lFhi_y(:,:,j,i) * FRCoeff(:)
           lFhbnd[n+{{nVarPad}}*xz+{{3*nVarPad*nDof*nDof3D}}] +=
               FRCoeff[y] * weights1[m] * lFi[n+{{nVarPad}}*(x+{{nDof}}*(y+{{nDof}}*(z+{{nDof3D}}*m)))+{{1*(nDof**nDim)*nDof*nVarPad}}];
+{% endif %} {# useFlux #}
         }
       }
     }
@@ -121,6 +127,7 @@ void {{codeNamespace}}::extrapolatorNonlinear(
           // Fortran: lQhbnd(:,j,i,6) = lQhi(:,j,i,:) * FRCoeff(:)
           lQhbnd[n+{{nDataPad}}*xy+{{5*nDataPad*nDof*nDof3D}}] +=
               FRCoeff[z] * weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(xy+{{nDof*nDof}}*z))];
+{% if useFlux %}
 {% if nDataPad != nVarPad %}
         }
         #pragma simd
@@ -133,9 +140,10 @@ void {{codeNamespace}}::extrapolatorNonlinear(
           // Fortran: lFhbnd(:,j,i,6) = lFhi_z(:,:,j,i) * FRCoeff(:)
           lFhbnd[n+{{nVarPad}}*xy+{{5*nVarPad*nDof*nDof3D}}] +=
               FRCoeff[z] * weights1[m] * lFi[n+{{nVarPad}}*(xy+{{nDof*nDof}}*(z+{{nDof}}*m))+{{2*(nDof**nDim)*nDof*nVarPad}}];
+{% endif %} {# useFlux #}
         }
       }
     }
   }
-{% endif %} 
+{% endif %} {# dim3 #}
 }

@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -15,9 +14,13 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
+# @section DESCRIPTION
+#
+# Generate the converter, used to mix generic and optimized kernels
+#
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -33,8 +36,7 @@ class ConverterGenerator:
         
 
     def generateCode(self):
-        self.m_context['noVarPadding'] = self.m_context['nVarPad'] == self.m_context['nVar']
+        self.m_context["noVarPadding"] = self.m_context["nVarPad"] == self.m_context["nVar"]
         
-        TemplatingUtils.renderAsFile('converter_h.template',   self.m_filenameRoot+'.h',   self.m_context)
-        TemplatingUtils.renderAsFile('converter_cpp.template', self.m_filenameRoot+'.cpp', self.m_context)
-
+        TemplatingUtils.renderAsFile("converter_h.template",   self.m_filenameRoot+".h",   self.m_context)
+        TemplatingUtils.renderAsFile("converter_cpp.template", self.m_filenameRoot+".cpp", self.m_context)

@@ -415,6 +415,7 @@ class exahype::solvers::Solver {
   static tarch::logging::Log _log;
 
  protected:
+
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
  public:
@@ -1042,10 +1043,9 @@ class exahype::solvers::Solver {
    *
    * All mappings introduced for a specific job, e.g. limiting, mesh refinement etc.,
    * do not rely on this method. It is used only for mappings which are shared by different
-   * algorithm sections.
-   * These are
-   * BroadcastAndMergeTimeStepData, Merging, Prediction, StatusSpreading, and
-   * TimeStepSizeComputation.
+   * algorithm sections. These are
+   * BroadcastAndMergeTimeStepData, Merging, Prediction, and TimeStepSizeComputation,
+   * MeshRefinement (+FinaliseMeshRefinement)
    *
    * E.g. a time step size computation via mapping TimeStepSizeComputation is required in
    * algorithm section "LocalRecomputationAllSend" for all solvers which
@@ -1054,7 +1054,19 @@ class exahype::solvers::Solver {
    * a local recomputation.
    *
    */
-  virtual bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const = 0;
+  /**
+   * \return true if this solvers is using the Merging mapping functionalities
+   * like broadcasting time step data or merging neighbour data in the
+   * current algorithm section.
+   */
+  virtual bool isMerging(const exahype::records::State::AlgorithmSection& section) const = 0;
+  /**
+   * \return true if this solver needs to merge metadata only(!) in the current algorithm section.
+   */
+  virtual bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const = 0;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
@@ -1072,6 +1084,22 @@ class exahype::solvers::Solver {
    * a time step update
    */
   virtual void startNewTimeStep() = 0;
+
+  /**
+   * Similar as Solver::startNewTimeStep but
+   * for the fused time stepping scheme.
+   *
+   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
+   *                                    of a batch or not. Note that this must be also set to true
+   *                                    in case we run a batch of size 1, i.e. no batch at all.
+   *
+   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
+   *                                    of a batch or not. Note that this must be also set to true
+   *                                    in case we run a batch of size 1, i.e. no batch at all.
+   */
+  virtual void startNewTimeStepFused(
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch) = 0;
 
   /**
    * Similar as Solver::updateTimeStepSizes but
@@ -1100,8 +1128,24 @@ class exahype::solvers::Solver {
    * the value of the corrector time stamp.
    * The fused must be initialised again after
    * each mesh refinement.
+   *
+   *   // TODO(Dominic): Still neccessary?
    */
   virtual void zeroTimeStepSizes() = 0;
+
+  /**
+   * Rolls the solver time step data back to the
+   * previous time step.
+   * Note that the newest time step
+   * data is lost in this process.
+   */
+  virtual void rollbackToPreviousTimeStep() = 0;
+
+  /**
+   * Same as Solver::rollbackToPreviousTimeStep
+   * for fused time stepping.
+   */
+  virtual void rollbackToPreviousTimeStepFused() = 0;
 
   virtual double getMinNextTimeStepSize() const=0;
 
@@ -1296,12 +1340,21 @@ class exahype::solvers::Solver {
       const int element) = 0;
 
   /**
-   * Same as ::updateTimeStepSizes for the fused
-   * time stepping.
+   * Same as \p startNewTimeStep for the fused time stepping scheme.
+   *
+   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
+   *                                    of a batch or not. Note that this must be also set to true
+   *                                    in case we run a batch of size 1, i.e. no batch at all.
+   *
+   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
+   *                                    of a batch or not. Note that this must be also set to true
+   *                                    in case we run a batch of size 1, i.e. no batch at all.
    */
-  virtual double updateTimeStepSizesFused(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
+  virtual double startNewTimeStepFused(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isFirstIterationOfBatch,
+        const bool isLastIterationOfBatch) = 0;
 
   /**
    * Computes a new time step size and overwrites
@@ -1321,6 +1374,14 @@ class exahype::solvers::Solver {
           const int element) = 0;
 
   /**
+   * Same as ::updateTimeStepSizes for the fused
+   * time stepping.
+   */
+  virtual double updateTimeStepSizesFused(
+      const int cellDescriptionsIndex,
+      const int element) = 0;
+
+  /**
    * Zeroes all the time step sizes.
    * This method is used by the adaptive mesh refinement mapping.
    * After the mesh refinement, we need to recompute
@@ -1336,7 +1397,26 @@ class exahype::solvers::Solver {
    * equivalent value since this would erase the time
    * step size of the fixed time stepping schemes ("globalfixed" etc.)
    */
+   // TODO(Dominic): Still neccessary?
   virtual void zeroTimeStepSizes(const int cellDescriptionsIndex, const int element) const = 0;
+
+  /**
+    * Rollback to the previous time step, i.e,
+    * overwrite the time step size and time stamp
+    * fields of the cell description
+    * by previous values.
+    */
+   virtual void rollbackToPreviousTimeStep(
+       const int cellDescriptionsIndex,
+       const int solverElement) const = 0;
+
+   /*
+    * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
+    * but for the fused time stepping scheme.
+    */
+   virtual void rollbackToPreviousTimeStepFused(
+       const int cellDescriptionsIndex,
+       const int solverElement) const = 0;
 
   /**
    * Impose initial conditions.
@@ -1372,6 +1452,8 @@ class exahype::solvers::Solver {
   virtual UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -1385,10 +1467,14 @@ class exahype::solvers::Solver {
    * helper variables in this method call.
    *
    * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
    */
   virtual void updateSolution(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element,
+      const bool backupPreviousSolution) = 0;
 
   /**
      * In this method, the solver can perform post-processing

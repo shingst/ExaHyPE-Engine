@@ -19,11 +19,10 @@
 
 
  #include "exahype/mappings/PreProcessing.h"
- #include "exahype/mappings/BroadcastAndMergeTimeStepData.h"
  #include "exahype/mappings/MeshRefinement.h"
  #include "exahype/mappings/LoadBalancing.h"
  #include "exahype/mappings/PostProcessing.h"
- #include "exahype/adapters/MeshRefinement2MultiscaleLinkedCell_5.h"
+ #include "exahype/adapters/MeshRefinement2MultiscaleLinkedCell_4.h"
 
 
 
@@ -44,18 +43,16 @@ namespace exahype {
 class exahype::adapters::MeshRefinement {
   private:
     typedef mappings::PreProcessing Mapping0;
-    typedef mappings::BroadcastAndMergeTimeStepData Mapping1;
-    typedef mappings::MeshRefinement Mapping2;
-    typedef mappings::LoadBalancing Mapping3;
-    typedef mappings::PostProcessing Mapping4;
-    typedef adapters::MeshRefinement2MultiscaleLinkedCell_5 Mapping5;
+    typedef mappings::MeshRefinement Mapping1;
+    typedef mappings::LoadBalancing Mapping2;
+    typedef mappings::PostProcessing Mapping3;
+    typedef adapters::MeshRefinement2MultiscaleLinkedCell_4 Mapping4;
 
      Mapping0  _map2PreProcessing;
-     Mapping1  _map2BroadcastAndMergeTimeStepData;
-     Mapping2  _map2MeshRefinement;
-     Mapping3  _map2LoadBalancing;
-     Mapping4  _map2PostProcessing;
-     Mapping5  _map2MeshRefinement2MultiscaleLinkedCell_5;
+     Mapping1  _map2MeshRefinement;
+     Mapping2  _map2LoadBalancing;
+     Mapping3  _map2PostProcessing;
+     Mapping4  _map2MeshRefinement2MultiscaleLinkedCell_4;
 
 
   public:

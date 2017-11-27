@@ -33,6 +33,7 @@ exahype-project DIM
   
   shared-memory
     identifier               = dummy
+    configure                = {}
     cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory  
@@ -58,8 +59,8 @@ exahype-project DIM
     /* gamma is actually parts of a matrix... */
     variables const                = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
     order const                    = 3
-    maximum-mesh-size              = 0.12
-    maximum-mesh-depth             = 2
+    maximum-mesh-size              = 0.3
+    maximum-mesh-depth             = 1
     time-stepping                  = global
     type const = nonlinear
 	terms const = ncp

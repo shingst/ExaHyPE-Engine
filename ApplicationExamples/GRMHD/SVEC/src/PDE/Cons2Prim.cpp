@@ -54,7 +54,7 @@ void GRMHD::Cons2Prim::followup() {
 
 
 	double VelVel2=0; CONTRACT(j) VelVel2  += vel.up(j)*vel.lo(j);
-	double WLorentz2 = 1.0 / std::sqrt(1.0 - VelVel2);
+	double WLorentz2 = 1.0 / std::sqrt(1.0 - VelVel2); // another way of computing WLorentz
 
 	if(debug_c2p) { S(WLorentz); S(WW); S(Dens/rho); S(WLorentz2); S(VelVel2); }
 }

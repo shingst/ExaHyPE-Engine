@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -18,12 +17,11 @@
 #
 # @section DESCRIPTION
 #
-# Generates the code for the volume integral
-# for a specific configuration
+# Generates the RiemannSolver Kernel
 #
+# Call user function flux, ncp, eigenvalue
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -39,8 +37,9 @@ class RiemannGenerator:
 
 
     def generateCode(self):        
-        if(self.m_context['isLinear']):
-            pass
+        if(self.m_context["isLinear"]):
+            # render template
+            TemplatingUtils.renderAsFile("riemannSolverLinear_cpp.template", self.m_filename, self.m_context)
         else:            
             # render template
-            TemplatingUtils.renderAsFile('riemannSolverNonLinear_cpp.template', self.m_filename, self.m_context)
+            TemplatingUtils.renderAsFile("riemannSolverNonLinear_cpp.template", self.m_filename, self.m_context)

@@ -34,7 +34,25 @@ namespace {{solverNamespace}} {
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {
 {% endfor %}
-  
+{% if isLinear %}
+  void spaceTimePredictorLinear(
+    {{solverName}}& solver,
+    double* restrict lQhbnd, 
+    double* restrict lFhbnd,
+    double* restrict lQi,
+    double* restrict lFi,
+    double* restrict lSi,   // for NCP or Source
+    double* restrict lQhi,
+    double* restrict lFhi,
+    double* restrict lShi,  // for NCP or Source
+    double* restrict gradQ, // for NCP or Source
+    double* restrict PSi,   // for pointSource
+    double* restrict PSderivatives, // for pointSource
+    const double* const restrict luh,
+    const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
+    const double dt
+  );
+{% else %}
   void picardLoopNonlinear(
     {{solverName}}& solver,
     const double* restrict const luh, 
@@ -54,13 +72,6 @@ namespace {{namespaceName}} {
     const double* restrict const lFi,
     double* restrict lQhbnd, 
     double* restrict lFhbnd);
-    
-  void volumeIntegral( 
-    double* restrict lduh, 
-    const double* restrict const lFi,
-    const double* restrict const lSi, //nullptr if not used
-    const tarch::la::Vector<DIMENSIONS,double> &inverseDx
-  );
 {% else %}    
   void predictorNonlinear(
     const double* restrict const lQi, 
@@ -76,14 +87,16 @@ namespace {{namespaceName}} {
     const double* restrict const lFhi,
     double* restrict lQhbnd, 
     double* restrict lFhbnd);
-    
+{% endif %}
+
+{% endif %}
+
   void volumeIntegral( 
     double* restrict lduh, 
-    const double* restrict const lFhi,
-    const double* restrict const lShi, //nullptr if not used
+    const double* restrict const {{'lFhi' if isLinear else 'lFi'}},
+    const double* restrict const {{'lShi' if isLinear else 'lSi'}}, //nullptr if not used
     const tarch::la::Vector<DIMENSIONS,double> &inverseDx
   );
-{% endif %}
 
   void solutionUpdate( 
     double* restrict luh, 
@@ -108,12 +121,12 @@ namespace {{namespaceName}} {
 
   void riemannSolver( 
     {{solverName}}& solver,
-    double* restrict lFhbndL,
-    double* restrict lFhbndR,
-    const double* restrict const lQhbndL,
-    const double* restrict const lQhbndR,
+    double* restrict FL,
+    double* restrict FR,
+    const double* restrict const QL,
+    const double* restrict const QR,
     const double dt,
-    const int normalNonZero
+    const int direction
 {% if useDeepProfiler %}
     , exahype::profilers::Profiler* profiler
 {% endif %}
@@ -138,40 +151,51 @@ namespace {{namespaceName}} {
     const int normalNonZero 
   );
 
+{% if usePointSources %}
+  void deltaDistribution(
+    {{solverName}}& solver,
+    const double t,
+    const double dt,
+    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    double** pointForceSources //memory space for forceVector
+  );
+{% endif %}
+  
 //AMR Routines
 //------------
 
   void faceUnknownsProlongation(
-    double* lQhbndFine,
-    double* lFhbndFine,
-    const double* lQhbndCoarse,
-    const double* lFhbndCoarse,
+    double* restrict lQhbndFine,
+    double* restrict lFhbndFine,
+    const double* restrict lQhbndCoarse,
+    const double* restrict lFhbndCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
   );
 
   void faceUnknownsRestriction(
-    double* lQhbndCoarse,
-    double* lFhbndCoarse,
-    const double* lQhbndFine,
-    const double* lFhbndFine,
+    double* restrict lQhbndCoarse,
+    double* restrict lFhbndCoarse,
+    const double* restrict lQhbndFine,
+    const double* restrict lFhbndFine,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
   );
 
   void volumeUnknownsProlongation(
-    double* luhFine,
-    const double* luhCoarse,
+    double* restrict luhFine,
+    const double* restrict luhCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
   );
   
   void volumeUnknownsRestriction(
-    double* luhCoarse,
-    const double* luhFine,
+    double* restrict luhCoarse,
+    const double* restrict luhFine,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex

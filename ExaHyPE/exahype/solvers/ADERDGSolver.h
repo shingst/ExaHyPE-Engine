@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "exahype/solvers/Solver.h"
-#include "exahype/solvers/UserSolverInterface.h"
 
 #include "peano/heap/Heap.h"
 #include "peano/utils/Globals.h"
@@ -42,6 +41,7 @@ namespace exahype {
  * Describes one solver.
  */
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
+  friend class LimitingADERDGSolver;
 public:
   /**
    * The maximum helper status.
@@ -139,7 +139,7 @@ private:
    * Minimum next predictor time step size of
    * all cell descriptions.
    */
-  double _minNextPredictorTimeStepSize;
+  double _minNextTimeStepSize;
 
   /**
    * A flag that is used to track if the
@@ -1273,6 +1273,8 @@ public:
       const int element) override;
 
   /**
+   * \copydoc Solver::startNewTimeStep
+   *
    * Update and reset corrector and predictor
    * time stamps and time step sizes according to the chosen
    * time stepping variant.
@@ -1291,6 +1293,17 @@ public:
    */
   void startNewTimeStep() override;
 
+  void startNewTimeStepFused(
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch) final override;
+
+  /**
+   * \copydoc Solver::updateTimeStepSizes
+   *
+   * Does not advance the predictor time stamp in time.
+   */
+  void updateTimeStepSizes() override;
+
   /** \copydoc Solver::updateTimeStepSizesFused
    *
    * Does advance the predictor time stamp in time.
@@ -1298,71 +1311,24 @@ public:
   void updateTimeStepSizesFused() override;
 
   /**
-   * Does not advance the predictor time stamp in time.
-   */
-  void updateTimeStepSizes() override;
-
-  /**
    * Zero predictor and corrector time step size.
    */
   void zeroTimeStepSizes() override;
 
-  /**
-   * !!! Only for fused time stepping !!!
-   *
-   * Rolls the solver time step data back to the
-   * previous time step for a cell description.
-   * Note that the newest time step
-   * data is lost in this process.
-   * In order to go back one time step, we
-   * need to perform two steps:
-   *
-   * 1) We want to to undo the startNewTimeStep effect, where
-   *
-   * correctorTimeStamp_{n}             <- predictorTimeStamp_{n-1}
-   * correctorTimeStepSize_{n}          <- predictorTimeStepSize_{n-1}
-   *
-   * previousCorrectorTimeStepSize_{n}  <- correctorTimeStepSize_{n-1}
-   * previousCorrectorTimeStamp_{n}     <- correctorTimeStamp_{n-1}
-   *
-   * previousPreviousCorrectorTimeStepSize_{n} <- previousCorrectorTimeStepSize_{n-1}
-   *
-   * We thus do
-   *
-   * predictorTimeStamp_{n-1}    <- correctorTimeStamp_{n}
-   * predictorTimeStepSize_{n-1} <-correctorTimeStepSize_{n}
-   *
-   * correctorTimeStepSize_{n-1} <- previousCorrectorTimeStepSize_{n} (1.1)
-   * correctorTimeStamp_{n-1}    <- previousCorrectorTimeStamp_{n}    (1.2)
-   *
-   * previousCorrectorTimeStepSize_{n-1} <- previousPreviousCorrectorTimeStepSize_{n}
-   *
-   *
-   * !!! Limiting Procedure (not done in this method) !!!
-   *
-   * If we cure a troubled cell, we need to go back further in time by one step with the corrector
-   *
-   * correctorTimeStepSize_{n-2} <- previousCorrectorTimeStepSize_{n-1} == previousCorrectorTimeStepSize_{n-2}
-   * correctorTimeStamp_{n-2}    <- previousCorrectorTimeStamp_{n-1}    == previousCorrectorTimeStamp_{n-2}
-   */
-  void rollbackToPreviousTimeStep();
+  void rollbackToPreviousTimeStep() final override;
 
   /**
-   * Similar to reconstructStandardTimeSteppingData for roll backs.
-   */
-  void reconstructStandardTimeSteppingDataAfterRollback();
-
-  /**
-   * If we use the original time stepping
-   * scheme with multiple algorithmic phases,
-   * we have to call this method
-   * after the time step computation phase.
+   * \copydoc Solver::rollbackToPreviousTimeStepFused()
    *
-   * It ensures that the corrector time stamp
-   * and step size equal their predictor
-   * equivalents.
+   * <h2> Fused ADER-DG Time Stepping </h2>
+   *
+   * Corrector time stamp and corrector time step size must
+   * add up to predictor time stamp after rollback.
+   *
+   * Corrector time step size is assumed to be used
+   * predictor time step size in batch.
    */
-  void reconstructStandardTimeSteppingData();
+  void rollbackToPreviousTimeStepFused() final override;
 
   /**
    * Update predictor time step size
@@ -1386,40 +1352,24 @@ public:
   void updateMinNextPredictorTimeStepSize(
       const double& nextPredictorTimeStepSize);
 
+  /**
+   * Currently, required by TimeStepSizeComputation.
+   */
+  void setMinPredictorTimeStepSize(const double value);
+
   double getMinNextPredictorTimeStepSize() const;
-
-  // todo 16/02/25:Dominic Etienne Charrier: It follows stuff that must be
-  // revised:
-
-  // todo 25/02/16:Dominic Etienne Charrier
-  // Remove the time stamps that are not used in ExaHype.
-  void setMinPredictorTimeStepSize(double minPredictorTimeStepSize);
   double getMinPredictorTimeStepSize() const;
-
-  void setMinPredictorTimeStamp(double value);
   double getMinPredictorTimeStamp() const;
-
-  void setMinCorrectorTimeStamp(double value);
   double getMinCorrectorTimeStamp() const;
-
-  void setMinCorrectorTimeStepSize(double value);
   double getMinCorrectorTimeStepSize() const;
-
-  void setPreviousMinCorrectorTimeStamp(double value);
   double getPreviousMinCorrectorTimeStamp() const;
-
-  void setPreviousMinCorrectorTimeStepSize(double value);
   double getPreviousMinCorrectorTimeStepSize() const;
 
   double getMinTimeStamp() const override;
-
   double getMinTimeStepSize() const override;
-
   double getMinNextTimeStepSize() const override;
 
-  void updateMinNextTimeStepSize( double value ) override;
-
-  void initFusedSolverTimeStepSizes();
+  void updateMinNextTimeStepSize(double value) override;
 
   /**
    * Set if the CFL condition was violated
@@ -1440,8 +1390,11 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-
-  bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;
 
   bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
 
@@ -1559,11 +1512,19 @@ public:
       CellDescription& cellDescription);
 
   double startNewTimeStep(
-      CellDescription& cellDescription);
-
-  double startNewTimeStep(
       const int cellDescriptionsIndex,
       const int element) override final;
+
+  /**
+   * Required by the fusedTimeStep
+   * and LimitingADERDGSolver::fusedTimeStep
+   * routines.
+   */
+  double startNewTimeStepFused(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch) final override;
 
   /** \copydoc Solver::updateTimeStepSizesFused
    *
@@ -1585,22 +1546,9 @@ public:
       const int cellDescriptionsIndex,
       const int solverElement) const override final;
 
-  /**
-   * If we use the original time stepping
-   * scheme with multiple algorithmic phases,
-   * we have to call this method
-   * after a time step update with startNewTimeStep().
-   *
-   * It ensures that the corrector time size
-   * is set to the admissible time step size that
-   * was computed using the latest corrector solution.
-   *
-   * TODO(Dominic): Get rid of this eventually
-   */
-  void reconstructStandardTimeSteppingData(
-      const int cellDescriptionsIndex,
-      int element) const;
-
+  void rollbackToPreviousTimeStep(
+        const int cellDescriptionsIndex,
+        const int element) const override final;
   /**
    * !!! Only for fused time stepping !!!
    *
@@ -1608,63 +1556,20 @@ public:
    * previous time step for a cell description.
    * Note that the newest time step
    * data is lost in this process.
-   * In order to go back one time step, we
-   * need to perform two steps:
-   *
-   * 1) We want to to undo the startNewTimeStep effect, where
-   *
-   * correctorTimeStamp_{n}             <- predictorTimeStamp_{n-1}
-   * correctorTimeStepSize_{n}          <- predictorTimeStepSize_{n-1}
-   *
-   * previousCorrectorTimeStepSize_{n}  <- correctorTimeStepSize_{n-1}
-   * previousCorrectorTimeStamp_{n}     <- correctorTimeStamp_{n-1}
-   *
-   * previousPreviousCorrectorTimeStepSize_{n} <- previousCorrectorTimeStepSize_{n-1}
-   *
-   * We thus do
-   *
-   * predictorTimeStamp_{n-1}    <- correctorTimeStamp_{n}
-   * predictorTimeStepSize_{n-1} <-correctorTimeStepSize_{n}
-   *
-   * correctorTimeStepSize_{n-1} <- previousCorrectorTimeStepSize_{n} (1.1)
-   * correctorTimeStamp_{n-1}    <- previousCorrectorTimeStamp_{n}    (1.2)
-   *
-   * previousCorrectorTimeStepSize_{n-1} <- previousPreviousCorrectorTimeStepSize_{n}
-   *
-   *
-   * !!! Limiting Procedure (not done in this method) !!!
-   *
-   * If we cure a troubled cell, we need to go back further in time by one step with the corrector
-   *
-   * correctorTimeStepSize_{n-2} <- previousCorrectorTimeStepSize_{n-1} == previousCorrectorTimeStepSize_{n-2}
-   * correctorTimeStamp_{n-2}    <- previousCorrectorTimeStamp_{n-1}    == previousCorrectorTimeStamp_{n-2}
    */
-  void rollbackToPreviousTimeStep(
+  void rollbackToPreviousTimeStepFused(
       const int cellDescriptionsIndex,
-      const int element);
+      const int element) const override final;
 
-  /**
-   * TODO(Dominic): Docu
-   */
-  void reconstructStandardTimeSteppingDataAfterRollback(
-      const int cellDescriptionsIndex,
-      const int element) const;
-
-  /**
-   * <h2>Solution adjustments</h2>
-   * The solution is initially at time
-   * cellDescription.getCorrectorTimeStamp().
-   * The value cellDescription.getCorrectorTimeStepSize()
-   * has initially no meaning and
-   * equals std::numeric_limits<double>::max().
-   */
   void adjustSolution(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) final override;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -1686,16 +1591,19 @@ public:
    * \todo We will not store the update field anymore
    * but a previous solution. We will thus only perform
    * a solution adjustment and adding of source term contributions here.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
+   *
    */
-  void updateSolution(CellDescription& cellDescription);
+  void updateSolution(
+      CellDescription& cellDescription,
+      const bool backupPreviousSolution=true);
 
- /** \copydoc ADERDGSolver::updateSolution()
-  *
-  *  \see updateSolution(CellDescription,double**,double**)
-  */
   void updateSolution(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element,
+      const bool backupPreviousSolution) final override;
 
   /**
    * TODO(Dominic): Update docu.

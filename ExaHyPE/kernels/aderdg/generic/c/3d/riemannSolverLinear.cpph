@@ -12,7 +12,6 @@
  **/
 
 #include <algorithm>
-#include <cstring>
 
 #include "../../../../KernelUtils.h"
 
@@ -25,7 +24,7 @@ template <bool useFlux, bool useNCP, bool useMM, typename SolverType>
 void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
                          const double* const QL, const double* const QR,
                          const double dt,
-                         const int normalNonZero) {
+                         const int direction) {
   /*
    * For the linear kernels, we need the material parameters in the
    * extrapolated predictor.
@@ -33,108 +32,130 @@ void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
    * do not use them in the max eigenvalue calculation.
    * 
    * Consider numberOfParameters in:
-   * QL,QR,QavL,QavR,Qav,
+   * QL,QR,QavL,QavR,Qdiff
    * 
    * Not necessary to consider numberOfParameters in
-   * FL,FR,LL,LR,Bn,BnMinusIdSmax,BnPlusIdSmax
+   * FL,FR,LL,LR
    */
+
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
+  
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
-  constexpr int order              = SolverType::Order;
-  constexpr int basisSize          = order+1;
-  constexpr int basisSize2         = basisSize * basisSize;
+  
+  constexpr int basisSize          = SolverType::Order+1;
+  constexpr int basisSize2         = basisSize*basisSize;
+  constexpr int order              = basisSize - 1;
 
+  
   // Compute the average variables and parameters from the left and the right
-  double QavL[numberOfData]={0.0}; // size: numberOfData
-  double QavR[numberOfData]={0.0}; // size: numberOfData
+  double QavL[numberOfData] = {0.0}; // size: numberOfVariables+numberOfParameters
+  double QavR[numberOfData] = {0.0}; // size: numberOfVariables+numberOfParameters
   {
-    idx3 idx_QLR(basisSize, basisSize, numberOfData);
-    
+    idx3 idx_QLR(basisSize,basisSize, numberOfData);
     for (int i = 0; i < basisSize; i++) {
       for (int j = 0; j < basisSize; j++) {
-        const double weight = kernels::gaussLegendreWeights[order][i] *
-                              kernels::gaussLegendreWeights[order][j];
-
-        for (int k = 0; k < numberOfData; k++) {
-          QavL[k] += weight * QL[idx_QLR(i, j, k)];
-          QavR[k] += weight * QR[idx_QLR(i, j, k)];
-        }
+	const double weight = kernels::gaussLegendreWeights[order][i]*
+	                      kernels::gaussLegendreWeights[order][j];
+	for (int k = 0; k < numberOfData; k++) {
+	  QavL[k] += weight * QL[idx_QLR(i ,j, k)];
+	  QavR[k] += weight * QR[idx_QLR(i ,j, k)];
+	}
       }
     }
   }
 
-  double LL[numberOfVariables] = {0.0}; // size: numberOfVariables
-  double LR[numberOfVariables] = {0.0}; // size: numberOfVariables
-  solver.eigenvalues(QavL, normalNonZero, LL);
-  solver.eigenvalues(QavR, normalNonZero, LR);
-
-  // Here, we implement a very simple Rusanov scheme with scalar dissipation
-  // (smax*Id).
-  // We can change this into a more sophisticated Osher or HLLEM Riemann solver
-  // whenever needed!
-  // skip parameters
+  //get abs max eigenvalue
+  double LL[numberOfVariables] = {0.0}; 
+  double LR[numberOfVariables] = {0.0}; 
+  solver.eigenvalues(QavL, direction, LL);
+  solver.eigenvalues(QavR, direction, LR);
   std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
   std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
   const double* smax_L = std::max_element(LL, LL + numberOfVariables);
   const double* smax_R = std::max_element(LR, LR + numberOfVariables);
-  const double  smax   = std::max(*smax_L, *smax_R);
+  const double smax    = std::max(*smax_L, *smax_R);
 
-  // We now compute the numerical flux. Note that the scheme is at the moment
-  // written in CONSERVATION FORM => no fluctuations, but real fluxes. Later,
-  // this will be converted into the left and right fluctuations.
+  double Qdiff[numberOfData] = {0.0};
+  double Qavg[numberOfData] = {0.0};
+  double gradQ[numberOfVariables*DIMENSIONS] = {0.0};
 
+  idx2 idx_2d(DIMENSIONS, numberOfVariables);
   
-  // TODO: NCP and MatrixB also for Linear Kernels in 3D! 
-  // TODO(Dominic): Still relevant? matrixb seems to be used?
-  
-  // evaluate the system matrix just once in the averaged state
-  double Qav[numberOfData]; // size: numberOfData
-  // Qav = 0.5 * (QavL + QavR) (includes parameters)
-  std::transform(QavL, QavL + (numberOfData), QavR, Qav,
-                 [](double a, double b) { return 0.5 * (a + b); });
-  double Bn[numberOfVariables][numberOfVariables]={0.0}; // size: numberOfVariables * numberOfVariables
-  
-  solver.coefficientMatrix(Qav, normalNonZero, Bn[0]);
+  double ncp[numberOfVariables*DIMENSIONS] = {0.0};
 
-  double BnMinusIdSmax[numberOfVariables][numberOfVariables] = {0.0}; // size: numberOfVariables * numberOfVariables
-  double BnPlusIdSmax[numberOfVariables][numberOfVariables] = {0.0}; // size: numberOfVariables * numberOfVariables
-  {
-    // skip parameters
-    std::copy_n (Bn[0], numberOfVariables2, BnMinusIdSmax[0]);
-    std::copy_n (Bn[0], numberOfVariables2, BnPlusIdSmax[0]);
-    for (int i = 0; i < numberOfVariables; i++) {
-      BnMinusIdSmax[i][i] -= smax;
-      BnPlusIdSmax [i][i] += smax;
-    }
+  double flux_vec[numberOfVariables*DIMENSIONS] = {0.0};
+  double* flux[DIMENSIONS];
+  
+  flux[0] = &flux_vec[idx_2d(0,0)];
+  flux[1] = &flux_vec[idx_2d(1,0)];
+  flux[2] = &flux_vec[idx_2d(2,0)];
+  
+  for(int l = 0; l < numberOfData; l++) {
+    Qavg[l] = 0.5 *  (QavR[l] + QavL[l]);
   }
 
-  double Q[basisSize2*numberOfData];
-  std::transform(QR, QR + basisSize2 * (numberOfData), QL, Q,
-                 [](double a, double b) { return 0.5 * (a - b); });
-
-  std::fill_n (FL, basisSize2 * numberOfVariables, 0.0);
-  std::fill_n (FR, basisSize2 * numberOfVariables, 0.0);
+  //We copy the averaged material parameters to Qdiff as they are used in the flux term
+  //These must not be overritten !
+  for(int l = numberOfVariables; l < numberOfData; l++) {
+    Qdiff[l] = Qavg[l];
+  }
+ 
   {
-    idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
-    idx3 idx_QLR(basisSize, basisSize, numberOfData);
+    idx3 idx_FLR(basisSize,basisSize, numberOfVariables);
+    idx3 idx_QLR(basisSize,basisSize, numberOfData);    
+
+    std::fill_n (FL, basisSize2 * numberOfVariables, 0.0);
+    std::fill_n (FR, basisSize2 * numberOfVariables, 0.0);
     for (int i = 0; i < basisSize; i++) {
       for (int j = 0; j < basisSize; j++) {
-        // FL(:,j,i) = 0.5 * (Bn - Id*smax)(:,:) * (QR(:,j,i) - QL(:,j,i))
-        // FR(:,j,i) = 0.5 * (Bn + Id*smax)(:,:) * (QR(:,j,i) - QL(:,j,i))
-        for (int k = 0; k < numberOfVariables; k++) {
-          for (int l = 0; l < numberOfVariables; l++) {
-            FL[idx_FLR(i, j, k)] +=
-                BnMinusIdSmax[l][k] * Q[idx_QLR(i, j, l)];
-            FR[idx_FLR(i, j, k)] +=
-                BnPlusIdSmax[l][k] * Q[idx_QLR(i, j, l)];
-          }
-        }
+	for(int l = 0 ; l< numberOfVariables ; l++){ 
+	  Qdiff[l] = 0.5 * (QR[idx_QLR(i, j, l)] - QL[idx_QLR(i ,j, l)]);
+	}
+
+	std::copy_n(&Qdiff[0],numberOfVariables,&gradQ[idx_2d(0,0)]);
+	std::copy_n(&Qdiff[0],numberOfVariables,&gradQ[idx_2d(1,0)]);
+	std::copy_n(&Qdiff[0],numberOfVariables,&gradQ[idx_2d(2,0)]);            
+      
+    
+	if(useNCP) {
+	  solver.nonConservativeProduct(Qavg, gradQ, ncp);
+	
+	  if(useMM){
+	    solver.multiplyMaterialParameterMatrix(Qavg, ncp);
+	  }
+	
+	  for(int l=0; l < numberOfVariables; l++) {
+	    FL[idx_FLR(i, j, l)] += ncp[idx_2d(direction,l)]; 
+	    FR[idx_FLR(i, j, l)] += ncp[idx_2d(direction,l)]; 
+	  }
+	}
+     
+      
+	if(useFlux){
+	  solver.flux(Qdiff, flux);
+
+	  if(useMM){
+	    solver.multiplyMaterialParameterMatrix(Qavg, flux_vec);
+	  }
+	
+	  for(int l=0; l < numberOfVariables; l++) {
+	    FL[idx_FLR(i, j, l)] +=  flux[direction][l];
+	    FR[idx_FLR(i, j, l)] +=  flux[direction][l];
+	  }
+	}
+
+	for(int l=0; l < numberOfVariables; l++) {
+	  FL[idx_FLR(i, j, l)] -= smax*Qdiff[l];
+	  FR[idx_FLR(i, j, l)] += smax*Qdiff[l];
+	}
       }
     }
   }
+  
 }
+
 
 }  // namespace c
 }  // namespace generic

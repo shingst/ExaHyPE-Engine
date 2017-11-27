@@ -15,14 +15,14 @@
 
 #include <cstring>
 
+#include <tarch/la/Vector.h>
+
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
-
-{% if useLibxsmm %}
+{% if useLibxsmm and useFlux %}
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
-
 
 void {{codeNamespace}}::volumeIntegral( 
   double* restrict lduh, 
@@ -30,19 +30,21 @@ void {{codeNamespace}}::volumeIntegral(
   const double* restrict const lShi, //nullptr if not used
   const tarch::la::Vector<DIMENSIONS,double> &inverseDx
 ) {
-  memset(lduh, 0, sizeof(lduh)*{{nVar*(nDof**nDim)}});
+  memset(lduh, 0, {{nVar*(nDof**nDim)}}*sizeof(double));
 
 #ifdef __INTEL_COMPILER
-  __assume_aligned(lFhi, ALIGNMENT);
-  __assume_aligned(Kxi_T, ALIGNMENT);
+{% if useFlux %}
+  __assume_aligned(lFhi,     ALIGNMENT);
+  __assume_aligned(Kxi_T,    ALIGNMENT);
   __assume_aligned(weights2, ALIGNMENT);
-  __assume_aligned(lduh, ALIGNMENT); //lduh should be aligned, see Solver.h
+{% endif %} {# useFlux #}
+  __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
 {% if useSourceOrNCP %}
   __assume_aligned(weights3, ALIGNMENT);
-  __assume_aligned(lShi, ALIGNMENT);
+  __assume_aligned(lShi,     ALIGNMENT);
 {% endif %}
 #endif
-
+{% if useFlux %}
   double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
@@ -99,17 +101,18 @@ void {{codeNamespace}}::volumeIntegral(
     }
   }
   
-{% endif %} 
-{% endif %}  
+{% endif %} {# dim3 #}
+{% endif %} {# useLibxsmm #}
 {% endfor %}
 {% endfor %}
+{% endif %} {# useFlux #}
 {% if useSourceOrNCP %}
   // source
-  for (int ijk=0; ijk<{{nDof**nDim}}; ijk++) {
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     // Fortran: lduh(:,k,j,i) += w * lShi(:,k,j,i)
     #pragma simd
-    for (int n=0; n<{{nVar}}; n++) {
-      lduh[ijk*{{nVar}}+n] += weights3[ijk] * lShi[ijk*{{nVarPad}}+n];
+    for (int n = 0; n < {{nVar}}; n++) {
+      lduh[xyz*{{nVar}}+n] += weights3[xyz] * lShi[xyz*{{nVarPad}}+n];
     }
   }
   

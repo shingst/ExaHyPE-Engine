@@ -36,7 +36,7 @@ public class ADERDGKernel {
   public static final String FLUX_OPTION_ID              = "flux";
   public static final String SOURCE_OPTION_ID            = "source";
   public static final String NCP_OPTION_ID               = "ncp";
-  public static final String POINTSOURCE_OPTION_ID       = "pointsources";
+  public static final String POINTSOURCES_OPTION_ID      = "pointsources";
   public static final String MATERIALPARAMETER_OPTION_ID = "materialparameters";
 
   public static final String NO_TIME_AVG_OPTION_ID       = "notimeavg";
@@ -87,8 +87,8 @@ public class ADERDGKernel {
     if(!type.contains(LINEAR_OPTION_ID) ^ type.contains(NONLINEAR_OPTION_ID)) {//should be only one
       throw new IllegalArgumentException("nonlinear or linear not specified or both specified in the kernel type");
     }
-    if(usePointSource() && getNumberOfPointSources() < 0) {
-      throw new IllegalArgumentException("point sources used but number not specified! In the specification file, use "+POINTSOURCE_OPTION_ID+":X, with X the number of point sources.");
+    if(usePointSources() && getNumberOfPointSources() < 0) {
+      throw new IllegalArgumentException("point sources used but number not specified! In the specification file, use "+POINTSOURCES_OPTION_ID+":X, with X the number of point sources.");
     }
   }
 
@@ -133,8 +133,8 @@ public class ADERDGKernel {
     return terms.containsKey(NCP_OPTION_ID);
   }
   
-  public boolean usePointSource() {
-    return terms.containsKey(POINTSOURCE_OPTION_ID);
+  public boolean usePointSources() {
+    return terms.containsKey(POINTSOURCES_OPTION_ID);
   }
   
   public boolean useMaterialParameterMatrix() {
@@ -154,8 +154,8 @@ public class ADERDGKernel {
   }
   
   public int getNumberOfPointSources() {
-    if(usePointSource()) {
-      return terms.get(POINTSOURCE_OPTION_ID);
+    if(usePointSources()) {
+      return terms.get(POINTSOURCES_OPTION_ID);
     }
     
     return -1;
