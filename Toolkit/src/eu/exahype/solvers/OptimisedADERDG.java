@@ -96,10 +96,6 @@ public class OptimisedADERDG implements Solver {
     return solverName;
   }
   
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
-  }
-  
   private String boolToTemplate(boolean b) {
     return b? "true" : "false";
   }

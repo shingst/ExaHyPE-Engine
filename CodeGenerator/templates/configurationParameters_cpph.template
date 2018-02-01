@@ -66,7 +66,6 @@ namespace {{namespaceName}} {
   constexpr int getBndTotalSize()                   {return {{2*nDim*nDataPad*(nDof*nDof3D)}};} // == lQhbnd size
   constexpr int getBndFluxSize()                    {return {{nVarPad*(nDof*nDof3D)}};} // == FR/FL size
   constexpr int getBndFluxTotalSize()               {return {{2*nDim*nVarPad*(nDof*nDof3D)}};} // == lFhbnd size
-  constexpr int getTempStateSizedVectorsSize()      {return {{nDataPad}};}
 
 {% for namespaceName in codeNamespaceList %}
 }

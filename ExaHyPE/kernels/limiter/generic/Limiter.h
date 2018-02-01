@@ -84,7 +84,7 @@ void findCellLocalLimiterMinAndMax(
     const double* const lim,
     const exahype::solvers::ADERDGSolver* solver,
     const int ghostLayerWidth,
-    double* localMinPerObservable, double* localMaxPerObservable);
+    double* const localMinPerObservable, double* const localMaxPerObservable);
 
 /**
  * Returns true if the nodal solution degrees of freedom

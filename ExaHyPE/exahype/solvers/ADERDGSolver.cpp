@@ -1952,7 +1952,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       lock.free();
 
       PredictionTask predictionTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( predictionTask, tarch::multicore::TaskType::Background );
+      peano::datatraversal::TaskSet spawnedSet( predictionTask, peano::datatraversal::TaskSet::TaskType::Background  );
     }
     else { // TODO(Dominic): Just run predictionTask manually as soon as we know there is not much difference in speed
       // persistent fields
@@ -2812,6 +2812,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
     [&] () -> void {
       uncompress(cellDescriptionRight);
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 
@@ -4365,7 +4367,7 @@ void exahype::solvers::ADERDGSolver::compress(CellDescription& cellDescription) 
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask, tarch::multicore::TaskType::RunAsSoonAsPossible );
+      peano::datatraversal::TaskSet spawnedSet( myTask, peano::datatraversal::TaskSet::TaskType::Background );
     }
     else {
       determineUnknownAverages(cellDescription);
@@ -4383,6 +4385,8 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
   bool uncompress   = false;
 
   while (!madeDecision) {
+    tarch::multicore::processBackgroundTasks();
+
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
       madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;
       uncompress   = cellDescription.getCompressionState() == CellDescription::Compressed;
@@ -4390,8 +4394,6 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
         cellDescription.setCompressionState( CellDescription::CurrentlyProcessed );
       }
     lock.free();
-
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0
@@ -4577,7 +4579,12 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       getUnknownsPerCellBoundary(),
       CompressionAccuracy
       );},
-      true
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    true
   );
 
   assertion(1<=compressionOfPreviousSolution);
@@ -4764,6 +4771,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 }
@@ -4909,6 +4921,11 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         lock.free();
       }
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 }

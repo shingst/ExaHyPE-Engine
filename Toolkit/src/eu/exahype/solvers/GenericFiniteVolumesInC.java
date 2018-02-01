@@ -70,10 +70,6 @@ public class GenericFiniteVolumesInC implements Solver {
   public String getSolverName() {
     return _solverName;
   }
-  
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
-  }
 
   public void writeHeader(java.io.BufferedWriter writer) throws IOException, IllegalArgumentException {
     final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/GenericFiniteVolumesSolverHeader.template");

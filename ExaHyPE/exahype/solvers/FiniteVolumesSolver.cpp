@@ -878,6 +878,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
       [&] () -> void {
         uncompress(cellDescription2);
       },
+      peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+      peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
       true
     );
 
@@ -1786,7 +1788,10 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       getDataPerPatchBoundary(),
       CompressionAccuracy
       );},
-      true
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    true
   );
 
   assertion(1<=compressionOfPreviousSolution);
@@ -1904,6 +1909,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 }
@@ -2005,6 +2013,9 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
         lock.free();
       }
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 }
@@ -2021,7 +2032,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask,tarch::multicore::TaskType::Background );
+      peano::datatraversal::TaskSet spawnedSet( myTask,peano::datatraversal::TaskSet::TaskType::Background );
     }
     else {
       determineUnknownAverages(cellDescription);
@@ -2047,7 +2058,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
+    tarch::multicore::processBackgroundTasks();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

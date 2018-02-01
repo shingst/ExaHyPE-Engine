@@ -32,7 +32,8 @@ exahype-project  Euler
     offset                   = 0.0, 0.0
     end-time                 = 0.4
   end computational-domain
-  
+
+/*  
   shared-memory
     identifier               = dummy
     configure                = {}
@@ -46,7 +47,7 @@ exahype-project  Euler
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
-  
+*/  
 
   global-optimisation
     fuse-algorithmic-steps          = on
@@ -71,7 +72,8 @@ exahype-project  Euler
 	terms const = flux
 	optimisation const = generic
     language const           = C
-    limiter-kernel const     = generic::godunov
+    limiter-type const             = godunov
+    limiter-optimisation const     = generic
     limiter-language const   = C
     dmp-observables          = 2
     dmp-relaxation-parameter = 1e-4

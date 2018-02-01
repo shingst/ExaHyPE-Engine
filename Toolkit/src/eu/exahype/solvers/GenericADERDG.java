@@ -86,10 +86,6 @@ public class GenericADERDG implements Solver {
     return _solverName;
   }
   
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
-  }
-  
   private String boolToTemplate(boolean b) {
     return b? "true" : "false";
   }

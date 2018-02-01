@@ -441,7 +441,6 @@ public:
 
   virtual int getTempUnknownsSize()              const {return getDataPerPatch();} // TODO function should be renamed
   virtual int getBndFaceSize()                   const {return getDataPerPatchFace();} // TODO function should be renamed
-  virtual int getTempStateSizedVectorsSize()     const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints // TODO function should be renamed
 
   /**
    * Run over all solvers and identify the minimal time step size.

@@ -300,12 +300,13 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _solverName  = node.getName().getText();
       _solverType  = "ADERDG"; // TODO(Dominic): We currently use the ADERDG degrees of freedom as the plotter input for the LimitingADERDGSolver
 
-      _writer.write("#include \"exahype/solvers/LimitingADERDGSolver.h\"\n");
       
       // Consistency: We have the same definition at CreateSolverClasses.inALimitingAderdgSolver()
-      String solverNameADERDG = _solverName+"_ADERDG";
-      String solverNameFV     = _solverName+"_FV";
+      String solverNameADERDG  = _solverName+"_ADERDG";
+      String solverNameFV      = _solverName+"_FV";
+      String solverNameLimiter = "Abstract"+_solverName+"_Limiter";
       
+      _writer.write("#include \"" + solverNameLimiter + ".h\"\n");
       _writer.write("#include \"" + solverNameADERDG + ".h\"\n");
       _writer.write("#include \"" + solverNameFV + ".h\"\n");
 
@@ -363,8 +364,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       // Limiting ADER-DG
       _methodBodyWriter.write("  \n");
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back(\n"
-          + "    new exahype::solvers::LimitingADERDGSolver(\""+_solverName+"\",std::move(aderdgSolver),std::move(finiteVolumesSolver),"
-                  + "parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
+          + "    new "+ _projectName + "::" + solverNameLimiter+"(std::move(aderdgSolver),std::move(finiteVolumesSolver),parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
       
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n");
       _methodBodyWriter.write("  }\n\n");

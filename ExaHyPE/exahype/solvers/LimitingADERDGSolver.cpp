@@ -13,14 +13,12 @@
  * \author Dominic E. Charrier, Tobias Weinzierl
  **/
 
+#include <algorithm> //copy_n
+
 #include "LimitingADERDGSolver.h"
 
-#include "kernels/limiter/generic/Limiter.h"
-
 #include "exahype/VertexOperations.h"
-
 #include "exahype/amr/AdaptiveMeshRefinement.h"
-
 
 namespace exahype {
 namespace solvers {
@@ -841,11 +839,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
         _limiter->swapSolutionAndPreviousSolution(limiterPatch);
         double* limiterSolution = DataHeap::getInstance().getData(
             limiterPatch.getSolution()).data();
-        kernels::limiter::generic::c::projectOnFVLimiterSpace( // TODO(Dominic): Add virtual method. The current implementation depends on a particular kernel.
-            solverSolution,_solver->getNumberOfVariables(),
-            _solver->getNodesPerCoordinateAxis(),
-            _limiter->getGhostLayerWidth(),
-            limiterSolution);
+        projectOnFVLimiterSpace(solverSolution, limiterSolution);
       }
       else { // solverPatch.getLimiterStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
         assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());
@@ -858,11 +852,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
         double* limiterSolution = DataHeap::getInstance().getData(
             limiterPatch.getSolution()).data();
 
-        kernels::limiter::generic::c::projectOnDGSpace(
-            limiterSolution,_solver->getNumberOfVariables(),
-            _solver->getNodesPerCoordinateAxis(), // TODO(Dominic): Add virtual method. The current implementation depends on a particular kernel.
-            _limiter->getGhostLayerWidth(),
-            solverSolution);
+        projectOnDGSpace(limiterSolution, solverSolution);
       }
 
       // 3. Only after the solution update, we are allowed to remove limiter patches.
@@ -973,10 +963,7 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
 
     // 1. Check if the DMP is satisfied and search for the min and max
     // Write the new min and max to the storage reserved for face 0
-    bool dmpIsSatisfied = kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
-          solution,_solver.get(),
-          _DMPMaximumRelaxationParameter, _DMPDifferenceScaling,
-          observablesMin,observablesMax);
+    bool dmpIsSatisfied = discreteMaximumPrincipleAndMinAndMaxSearch(solution, observablesMin,observablesMax);
 
     // TODO(Dominic):
 //    // 2. Copy the result on the other faces as well
@@ -1068,9 +1055,7 @@ void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(SolverPatc
         solverPatch.getSolutionMax()).data();
 
     // Write the result to the face with index "0"
-    kernels::limiter::generic::c::findCellLocalMinAndMax(
-        solution,_solver.get(),
-        observablesMin,observablesMax);
+    findCellLocalMinAndMax(solution, observablesMin, observablesMax);
 
     // Copy the result on the other faces as well
     for (int i=1; i<DIMENSIONS_TIMES_TWO; ++i) {
@@ -1101,9 +1086,7 @@ void exahype::solvers::LimitingADERDGSolver::determineLimiterMinAndMax(SolverPat
         solverPatch.getSolutionMax()).data();
 
     // Write the result to the face with index "0"
-    kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
-        limiterSolution,_solver.get(),
-        _limiter->getGhostLayerWidth(),observablesMin,observablesMax);
+    findCellLocalLimiterMinAndMax(limiterSolution, observablesMin, observablesMax);
 
     // Copy the result on the other faces as well
     const int numberOfObservables = _solver->getDMPObservables();
@@ -1241,12 +1224,7 @@ void exahype::solvers::LimitingADERDGSolver::projectDGSolutionOnFVSpace(
   const double* solverSolution  = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
   double*       limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
 
-  // TODO(Dominic): Add virtual method. The current implementation depends on a particular kernel.
-  kernels::limiter::generic::c::projectOnFVLimiterSpace(
-      solverSolution,_solver->getNumberOfVariables(),
-      _solver->getNodesPerCoordinateAxis(),
-      _limiter->getGhostLayerWidth(),
-      limiterSolution);
+  projectOnFVLimiterSpace(solverSolution, limiterSolution);
 }
 
 // TODO(Dominic): Check that we have rolled back in time as well
@@ -1335,12 +1313,7 @@ void exahype::solvers::LimitingADERDGSolver::projectFVSolutionOnDGSpace(
   const double* limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
   double*       solverSolution  = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
 
-  // TODO(Dominic): Add virtual method. The current implementation depends on a particular kernel.
-  kernels::limiter::generic::c::projectOnDGSpace(
-      limiterSolution,_solver->getNumberOfVariables(),
-      _solver->getNodesPerCoordinateAxis(),
-      _limiter->getGhostLayerWidth(),
-      solverSolution);
+  projectOnDGSpace(limiterSolution, solverSolution);
 }
 
 void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
