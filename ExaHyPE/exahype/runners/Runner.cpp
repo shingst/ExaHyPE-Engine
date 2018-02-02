@@ -773,17 +773,17 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       simulationTimeSteps = _parser.getSimulationTimeSteps();
     }
 
-    logDebug("runAsMaster(...)","min solver time stamp: "     << solvers::Solver::getMinSolverTimeStampOfAllSolvers());
-    logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers());
+    logDebug("runAsMaster(...)","min solver time stamp: "     << solvers::Solver::getMinTimeStampOfAllSolvers());
+    logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinTimeStepSizeOfAllSolvers());
 
     int timeStep = 0;
     while (
-        tarch::la::greater(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0) &&
-        solvers::Solver::getMinSolverTimeStampOfAllSolvers() < simulationEndTime &&
+        tarch::la::greater(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0) &&
+        solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime &&
         timeStep < simulationTimeSteps
     ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
-          solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has no side effects
+          solvers::Solver::getMinTimeStampOfAllSolvers()); // has no side effects
 
       preProcessTimeStepInSharedMemoryEnvironment();
 
@@ -800,15 +800,32 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
           /**
            * This computation is optimistic. If we were pessimistic, we had to
            * use the max solver time step size. However, this is not necessary
-           * here, as we half the time steps anyway.
+           * here, as we multiple the time steps by a factor anyway.
            */
+          const double minTimeStepSize          = solvers::Solver::getMinTimeStepSizeOfAllSolvers();
+          const double maxTimeStamp             = solvers::Solver::getMaxTimeStampOfAllSolvers();
+          const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
           if (_parser.foundSimulationEndTime()) {
-            const double timeIntervalTillNextPlot = std::min(exahype::plotters::getTimeOfNextPlot(),simulationEndTime) - solvers::Solver::getMaxSolverTimeStampOfAllSolvers();
-            numberOfStepsToRun = std::floor( timeIntervalTillNextPlot / solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() * _parser.getTimestepBatchFactor() );
+            const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
+
+            numberOfStepsToRun = static_cast<int>(
+                _parser.getTimestepBatchFactor() *
+                std::min(timeIntervalTillNextPlot, timeIntervalTillEndTime) / minTimeStepSize );
           } else {
-            numberOfStepsToRun = std::min(
-                static_cast<int>(simulationTimeSteps * _parser.getTimestepBatchFactor()),
-                simulationTimeSteps - timeStep);
+            const int stepsTillNextPlot = static_cast<int>(
+                _parser.getTimestepBatchFactor() *
+                timeIntervalTillNextPlot / minTimeStepSize);
+
+            std::cout << stepsTillNextPlot << std::endl;
+
+            numberOfStepsToRun =
+              std::min(
+                stepsTillNextPlot,
+                std::min(
+                  static_cast<int>(simulationTimeSteps * _parser.getTimestepBatchFactor()),
+                  simulationTimeSteps - timeStep
+                )
+            );
           }
           numberOfStepsToRun = numberOfStepsToRun<1 ? 1 : numberOfStepsToRun;
         }
@@ -826,7 +843,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       timeStep += numberOfStepsToRun==0 ? 1 : numberOfStepsToRun;
     }
 
-    if ( tarch::la::equals(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0)) {
+    if ( tarch::la::equals(solvers::Solver::getMinTimeStepSizeOfAllSolvers(), 0.0)) {
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
@@ -1182,7 +1199,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
 
   #endif
 
-  if (solvers::Solver::getMinSolverTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
+  if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
     logError("runAsMaster(...)","quit simulation as solver seems to explode" );
     exit(-1);
   }

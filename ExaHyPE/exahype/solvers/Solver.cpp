@@ -385,7 +385,7 @@ void exahype::solvers::Solver::moveDataHeapArray(
   DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
 }
 
-double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
+double exahype::solvers::Solver::getMinTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
@@ -396,7 +396,7 @@ double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
 }
 
 
-double exahype::solvers::Solver::getMaxSolverTimeStampOfAllSolvers() {
+double exahype::solvers::Solver::getMaxTimeStampOfAllSolvers() {
   double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
@@ -417,7 +417,7 @@ double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
   return currentMinTimeStamp;
 }
 
-double exahype::solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() {
+double exahype::solvers::Solver::getMinTimeStepSizeOfAllSolvers() {
   double currentMinTimeStepSize = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {

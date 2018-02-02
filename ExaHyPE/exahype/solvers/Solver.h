@@ -560,7 +560,7 @@ class exahype::solvers::Solver {
   /**
    * Run over all solvers and identify the minimal time stamp.
    */
-  static double getMinSolverTimeStampOfAllSolvers();
+  static double getMinTimeStampOfAllSolvers();
 
   /**
    * Run over all solvers and identify the minimal sum of minimal time stamp
@@ -574,7 +574,7 @@ class exahype::solvers::Solver {
   /**
    * Run over all solvers and identify the minimal time step size.
    */
-  static double getMinSolverTimeStepSizeOfAllSolvers();
+  static double getMinTimeStepSizeOfAllSolvers();
 
   /**
    * Run over all solvers and identify the minimal time step size.
@@ -588,7 +588,7 @@ class exahype::solvers::Solver {
    * far, so the routine returns the maximum over all min solver
    * time stamps.
    */
-  static double getMaxSolverTimeStampOfAllSolvers();
+  static double getMaxTimeStampOfAllSolvers();
 
   static bool allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping scheme);
 
