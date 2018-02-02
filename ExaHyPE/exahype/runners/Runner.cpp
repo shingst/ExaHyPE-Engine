@@ -797,37 +797,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
             solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed) &&
             repository.getState().getVerticalExchangeOfSolverDataRequired()==false // known after mesh update
         ) {
-          /**
-           * This computation is optimistic. If we were pessimistic, we had to
-           * use the max solver time step size. However, this is not necessary
-           * here, as we multiple the time steps by a factor anyway.
-           */
-          const double minTimeStepSize          = solvers::Solver::getMinTimeStepSizeOfAllSolvers();
-          const double maxTimeStamp             = solvers::Solver::getMaxTimeStampOfAllSolvers();
-          const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
-          if (_parser.foundSimulationEndTime()) {
-            const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
-
-            numberOfStepsToRun = static_cast<int>(
-                _parser.getTimestepBatchFactor() *
-                std::min(timeIntervalTillNextPlot, timeIntervalTillEndTime) / minTimeStepSize );
-          } else {
-            const int stepsTillNextPlot = static_cast<int>(
-                _parser.getTimestepBatchFactor() *
-                timeIntervalTillNextPlot / minTimeStepSize);
-
-            std::cout << stepsTillNextPlot << std::endl;
-
-            numberOfStepsToRun =
-              std::min(
-                stepsTillNextPlot,
-                std::min(
-                  static_cast<int>(simulationTimeSteps * _parser.getTimestepBatchFactor()),
-                  simulationTimeSteps - timeStep
-                )
-            );
-          }
-          numberOfStepsToRun = numberOfStepsToRun<1 ? 1 : numberOfStepsToRun;
+          numberOfStepsToRun = determineNumberOfBatchedTimeSteps(timeStep);
         }
 
         runTimeStepsWithFusedAlgorithmicSteps(repository,numberOfStepsToRun);
@@ -859,6 +829,43 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
   return 0;
 }
 
+int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& currentTimeStep) {
+  int batchSize = 0;
+
+  double simulationEndTime   = std::numeric_limits<double>::max();
+  int simulationTimeSteps = std::numeric_limits<int>::max();
+  if (_parser.foundSimulationEndTime()) {
+    simulationEndTime = _parser.getSimulationEndTime();
+  } else {
+    simulationTimeSteps = _parser.getSimulationTimeSteps();
+  }
+
+  const double minTimeStepSize          = solvers::Solver::getMinTimeStepSizeOfAllSolvers();
+  const double maxTimeStamp             = solvers::Solver::getMaxTimeStampOfAllSolvers();
+  const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
+
+  if (_parser.foundSimulationEndTime()) {
+    const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
+
+    batchSize = static_cast<int>(
+      _parser.getTimestepBatchFactor() *
+      std::min(timeIntervalTillNextPlot, timeIntervalTillEndTime) / minTimeStepSize );
+  } else {
+    const int stepsTillNextPlot = static_cast<int>(
+      _parser.getTimestepBatchFactor() *
+      timeIntervalTillNextPlot / minTimeStepSize);
+
+    batchSize =
+      std::min(
+        stepsTillNextPlot,
+        std::min(
+          static_cast<int>(simulationTimeSteps * _parser.getTimestepBatchFactor()),
+          simulationTimeSteps - currentTimeStep
+        )
+      );
+  }
+  return batchSize<1 ? 1 : batchSize;
+}
 
 void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
   #if defined(SharedTBBInvade)
