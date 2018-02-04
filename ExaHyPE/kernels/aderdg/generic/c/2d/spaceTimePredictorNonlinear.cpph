@@ -41,7 +41,7 @@ namespace {
 template <bool useSource, bool useFlux, bool useNCP, typename SolverType>
 void aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double dt,
-                             const tarch::la::Vector<DIMENSIONS, double>& dx,
+                             const tarch::la::Vector<DIMENSIONS, double>& invDx,
                              double* lQi, double* rhs,
                              double* lFi, double* gradQ) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -54,8 +54,6 @@ void aderPicardLoopNonlinear(SolverType& solver,
   
   assertion(numberOfVariables>=0);
   assertion(numberOfParameters>=0);
-  
-  const double invDx[2] = { 1.0/dx[0], 1.0/dx[1] };
 
   idx3 idx_luh(basisSize, basisSize, numberOfData); // idx_luh(y,x,nVar)
   
@@ -239,8 +237,8 @@ void aderPicardLoopNonlinear(SolverType& solver,
                   kernels::iK1[order][l][n]; // note: iK1 is already the transposed inverse of K1
             }
             sq_res += (lQi_new - lQi[idx_lQi(j, k, l, m)]) * (lQi_new - lQi[idx_lQi(j, k, l, m)]);
-            assertion3( !std::isnan(lQi[idx_lQi(j, k, l, m)]), idx_lQi(j, k, l, m), dt, dx );
-            assertion3( !std::isnan(lQi_new), idx_lQi(j, k, l, m), dt, dx );
+            assertion3( !std::isnan(lQi[idx_lQi(j, k, l, m)]), idx_lQi(j, k, l, m), dt, invDx );
+            assertion3( !std::isnan(lQi_new), idx_lQi(j, k, l, m), dt, invDx );
             lQi[idx_lQi(j, k, l, m)] = lQi_new;
           }
         }
@@ -542,7 +540,7 @@ void spaceTimePredictorNonlinear(
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx, 
+    const tarch::la::Vector<DIMENSIONS, double>& invDx, 
     double dt
  ) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -558,7 +556,7 @@ void spaceTimePredictorNonlinear(
   double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
   
   aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
-        solver, luh, dt, dx,
+        solver, luh, dt, invDx,
         lQi, rhs, lFi, gradQ);
   
   if(noTimeAveraging) {

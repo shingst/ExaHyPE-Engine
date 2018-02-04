@@ -93,7 +93,7 @@ void spaceTimePredictorLinear(SolverType& solver,
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt,
     double** tempPointForceSources);
 
@@ -106,7 +106,7 @@ void spaceTimePredictorNonlinear(
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt);
 
 template <typename SolverType>
@@ -294,7 +294,7 @@ void spaceTimePredictorLinear(
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt,
     double* tempPointForceSources);
 

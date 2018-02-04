@@ -42,7 +42,7 @@ namespace {
   template <bool useSource, bool useFlux, bool useNCP, typename SolverType>
   void aderPicardLoopNonlinear(SolverType& solver,
                                const double* luh, const double dt,
-                               const tarch::la::Vector<DIMENSIONS, double>& dx,
+                               const tarch::la::Vector<DIMENSIONS, double>& invDx,
                                double* lQi, double* rhs,
                                double* lFi, double* gradQ) {
     constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -55,8 +55,6 @@ namespace {
 
     assertion(numberOfVariables>=0);
     assertion(numberOfParameters>=0);
-    
-    const double invDx[3] = { 1.0/dx[0], 1.0/dx[1], 1.0/dx[2] };
 
     idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
 
@@ -108,9 +106,9 @@ namespace {
               solver.flux(Q, F);
 
               for (int m=0; m<numberOfVariables; m++) {
-                assertion4( std::isfinite(lFi[idx_lFi(i, j, k, l, 0, m)]), lFi[idx_lFi(i, j, k, l, 0, m)], m, dt, dx );
-                assertion4( std::isfinite(lFi[idx_lFi(i, j, k, l, 1, m)]), lFi[idx_lFi(i, j, k, l, 1, m)], m, dt, dx );
-                assertion4( std::isfinite(lFi[idx_lFi(i, j, k, l, 1, m)]), lFi[idx_lFi(i, j, k, l, 2, m)], m, dt, dx );
+                assertion4( std::isfinite(lFi[idx_lFi(i, j, k, l, 0, m)]), lFi[idx_lFi(i, j, k, l, 0, m)], m, dt, invDx );
+                assertion4( std::isfinite(lFi[idx_lFi(i, j, k, l, 1, m)]), lFi[idx_lFi(i, j, k, l, 1, m)], m, dt, invDx );
+                assertion4( std::isfinite(lFi[idx_lFi(i, j, k, l, 1, m)]), lFi[idx_lFi(i, j, k, l, 2, m)], m, dt, invDx );
               }
 
               // the algebraic source call moved together with ncp products
@@ -133,7 +131,7 @@ namespace {
             for (int m = 0; m < numberOfVariables; m++) {
               rhs[idx_rhs(i, j, k, l, m)] =
                   weight * kernels::FLCoeff[order][i] * luh[idx_luh(j, k, l, m)]; //FLCoeff == F0
-              assertion3( std::isfinite(rhs[idx_rhs(i, j, k, l, m)]), rhs[idx_rhs(i, j, k, l, m)], dt, dx );
+              assertion3( std::isfinite(rhs[idx_rhs(i, j, k, l, m)]), rhs[idx_rhs(i, j, k, l, m)], dt, invDx );
             }
           }
         }
@@ -165,7 +163,7 @@ namespace {
                   rhs[idx_rhs(i, j, k, l, m)] -= updateSize *
                       lFi[idx_lFi(i, j, k, n, 0, m)] *
                       kernels::Kxi[order][n][l];
-                  assertion3( std::isfinite(rhs[idx_rhs(i, j, k, l, m)]), rhs[idx_rhs(i, j, k, l, m)], dt, dx );
+                  assertion3( std::isfinite(rhs[idx_rhs(i, j, k, l, m)]), rhs[idx_rhs(i, j, k, l, m)], dt, invDx );
                 }
                 if(useNCP) {
                   gradQ[idx_gradQ(j, k, l, i, /*x*/0, m)] += 1.0 * invDx[0] *
@@ -194,7 +192,7 @@ namespace {
                   rhs[idx_rhs(i, j, l, k, m)] -= updateSize *
                       lFi[idx_lFi(i, j, n, k, 1, m)] *
                       kernels::Kxi[order][n][l];
-                  assertion3( std::isfinite(rhs[idx_rhs(i, j, l, k, m)]), rhs[idx_rhs(i, j, l, k, m)], dt, dx );
+                  assertion3( std::isfinite(rhs[idx_rhs(i, j, l, k, m)]), rhs[idx_rhs(i, j, l, k, m)], dt, invDx );
                 }
                 if(useNCP) {
                   gradQ[idx_gradQ(j, l, k, i, /*y*/1, m)] += 1.0 * invDx[1] *
@@ -223,7 +221,7 @@ namespace {
                   rhs[idx_rhs(i, l, j, k, m)] -= updateSize *
                       lFi[idx_lFi(i, n, j, k, 2, m)] *
                       kernels::Kxi[order][n][l];
-                  assertion3( std::isfinite(rhs[idx_rhs(i, l, j, k, m)]), rhs[idx_rhs(i, l, j, k, m)], dt, dx );
+                  assertion3( std::isfinite(rhs[idx_rhs(i, l, j, k, m)]), rhs[idx_rhs(i, l, j, k, m)], dt, invDx );
                 }
                 if(useNCP) {
                   gradQ[idx_gradQ(l, j, k, i, /*z*/2, m)] += 1.0 * invDx[2] *
@@ -267,7 +265,7 @@ namespace {
 
               for (int m = 0; m < numberOfVariables; m++) {
                 rhs[idx_rhs(i, j, k, l, m)] += updateSize * S[m];
-                assertion5( std::isfinite(rhs[idx_rhs(i, j, k, l, m)]), rhs[idx_rhs(i, j, k, l, m)], m, S[m], dt, dx );
+                assertion5( std::isfinite(rhs[idx_rhs(i, j, k, l, m)]), rhs[idx_rhs(i, j, k, l, m)], m, S[m], dt, invDx );
               }
             }
           }
@@ -297,11 +295,11 @@ namespace {
                       rhs[idx_rhs(n, i, j, k, m)] *
                       kernels::iK1[order][l][n]; // note: iK1 is already the transposed inverse of K1
 
-                  assertion3( std::isfinite(rhs[idx_rhs(n, i, j, k, m)]), rhs[idx_rhs(n, i, j, k, m)], dt, dx );
+                  assertion3( std::isfinite(rhs[idx_rhs(n, i, j, k, m)]), rhs[idx_rhs(n, i, j, k, m)], dt, invDx );
                 }
                 sq_res += (lQi_new - lQi[idx_lQi(i, j, k, l, m)]) * (lQi_new - lQi[idx_lQi(i, j, k, l, m)]);
-                assertion3( std::isfinite(lQi[idx_lQi(i, j, k, l, m)]), idx_lQi(i, j, k, l, m), dt, dx );
-                assertion3( std::isfinite(lQi_new), idx_lQi(i, j, k, l, m), dt, dx );
+                assertion3( std::isfinite(lQi[idx_lQi(i, j, k, l, m)]), idx_lQi(i, j, k, l, m), dt, invDx );
+                assertion3( std::isfinite(lQi_new), idx_lQi(i, j, k, l, m), dt, invDx );
                 lQi[idx_lQi(i, j, k, l, m)] = lQi_new;
               }
             }
@@ -672,7 +670,7 @@ void spaceTimePredictorNonlinear(
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
     double dt
 ) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -689,7 +687,7 @@ void spaceTimePredictorNonlinear(
   double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
 
   aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
-      solver, luh, dt, dx, lQi, rhs, lFi, gradQ
+      solver, luh, dt, invDx, lQi, rhs, lFi, gradQ
   );
   
   if(noTimeAveraging) {
