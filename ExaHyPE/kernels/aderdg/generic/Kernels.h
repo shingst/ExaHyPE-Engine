@@ -88,10 +88,7 @@ namespace c {
 template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM ,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lFi,double* lQi,double* gradQ,double* PSderivatives,double* tmp_PSderivatives,double* PSi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt,
@@ -117,7 +114,7 @@ void volumeIntegralLinear(double* lduh, const double* const lFhi,
                           const tarch::la::Vector<DIMENSIONS, double>& dx);
 
 template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfVariables, int basisSize>
-void volumeIntegralNonlinear(double* lduh, const double* const lFi, const double* const lFhi,
+void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
 // todo 10/02/16: Dominic

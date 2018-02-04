@@ -665,10 +665,7 @@ template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typen
 void spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
     double dt
@@ -677,14 +674,14 @@ void spaceTimePredictorNonlinear(
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
 
-  double* lQi     = tempSpaceTimeUnknowns[0];
-  double* rhs     = tempSpaceTimeUnknowns[1];
-
-  // Give nullptrs in case certain PDE features are not used in order to detect
-  // wrong memory access patterns more quickly.
-
-  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
-  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
+//  double* lQi     = tempSpaceTimeUnknowns[0];
+//  double* rhs     = tempSpaceTimeUnknowns[1];
+//
+//  // Give nullptrs in case certain PDE features are not used in order to detect
+//  // wrong memory access patterns more quickly.
+//
+//  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
+//  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
 
   aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
       solver, luh, dt, invDx, lQi, rhs, lFi, gradQ
@@ -699,8 +696,8 @@ void spaceTimePredictorNonlinear(
     constexpr int basisSize2         = basisSize * basisSize;
     constexpr int basisSize3         = basisSize2 * basisSize;
     
-    double *lQhi    = tempUnknowns;
-    double *lFhi    = tempFluxUnknowns;
+//    double *lQhi    = tempUnknowns;
+//    double *lFhi    = tempFluxUnknowns;
 
     aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,

@@ -1823,12 +1823,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnPredictorAsBackgroundThread,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
-    double**  tempPointForceSources) {
+    const bool vetoSpawnPredictorAsBackgroundThread) {
   CellDescription& cellDescription =
       getCellDescription(cellDescriptionsIndex,element);
 
@@ -1838,10 +1833,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 
   performPredictionAndVolumeIntegral(
       cellDescription,
-      vetoSpawnPredictorAsBackgroundThread,
-      tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
-      tempUnknowns,tempFluxUnknowns,
-      tempPointForceSources);
+      vetoSpawnPredictorAsBackgroundThread);
 
   UpdateResult result;
   result._timeStepSize        = startNewTimeStepFused(cellDescriptionsIndex,element,
@@ -1854,8 +1846,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     exahype::solvers::Solver* solver,
     const int cellDescriptionsIndex,
     const int element,
-    const bool vetoSpawnPredictorAsBackgroundThread,
-    exahype::solvers::PredictionTemporaryVariables& temporaryVariables) {
+    const bool vetoSpawnPredictionAsBackgroundThread) {
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
 
   switch (solver->getType()) {
@@ -1874,16 +1865,11 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
     aderdgSolver->performPredictionAndVolumeIntegral(
         cellDescription,
-        vetoSpawnPredictorAsBackgroundThread,
-        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
-        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
-        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
-        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
-        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);
+        vetoSpawnPredictionAsBackgroundThread);
   }
 }
 
-bool exahype::solvers::ADERDGSolver::predictorCanBeProcessedAsBackgroundTask(
+bool exahype::solvers::ADERDGSolver::predictionCanBeProcessedAsBackgroundTask(
     CellDescription& cellDescription) {
   bool canBeProcessedAsBackgroundTask = !cellDescription.getIsAugmented();
 
@@ -1909,12 +1895,7 @@ bool exahype::solvers::ADERDGSolver::predictorCanBeProcessedAsBackgroundTask(
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
-    const bool vetoSpawnPredictorAsBackgroundThread,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
-    double**  tempPointForceSources) {
+    const bool vetoSpawnPredictionAsBackgroundThread) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [pre]");
 
@@ -1941,9 +1922,9 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         cellDescription.toString(),toString());
 
     if (
-        vetoSpawnPredictorAsBackgroundThread==false
+        vetoSpawnPredictionAsBackgroundThread==false
         &&
-        predictorCanBeProcessedAsBackgroundTask(cellDescription)
+        predictionCanBeProcessedAsBackgroundTask(cellDescription)
     ) {
       // TODO(Dominic):
       // Get rid of the temporary variables -> Make stack arrays.
@@ -1968,39 +1949,16 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       } 
       #endif
 
-      deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
+      // TODO(Dominic,JM): deltaDistribution should be part of fusedSpaceTimePredictorVolumeIntegral
+      //deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
 
       // luh, t, dt, cell cell center, cell size, data allocation for forceVect
-
-      #ifdef OPT_KERNELS
       fusedSpaceTimePredictorVolumeIntegral(
-          lduh,
-          lQhbnd,lFhbnd,
-          tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
-          luh,
-          tarch::la::invertEntries(cellDescription.getSize()),
-          cellDescription.getPredictorTimeStepSize(),
-          tempPointForceSources);
-      #else // OPT_KERNELS not defined
-      spaceTimePredictor(
-          lQhbnd,lFhbnd,
-          tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
-          luh,
-          cellDescription.getSize(),cellDescription.getPredictorTimeStepSize(),tempPointForceSources);
-
-      volumeIntegral(
-          lduh,
-          tempSpaceTimeFluxUnknowns[0],tempFluxUnknowns,
-          cellDescription.getSize());
-      #endif
-
-      #if defined(Debug) || defined(Asserts)
-      for (int i=0; i<getTempSpaceTimeUnknownsSize(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-      }
-      for (int i=0; i<getSpaceTimeFluxUnknownsPerCell(); i++) {
-        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
-      }
+                lduh,lQhbnd,lFhbnd,
+                luh,
+                cellDescription.getOffset()+0.5*cellDescription.getSize(),
+                cellDescription.getSize(),
+                cellDescription.getPredictorTimeStepSize());
       
       if(usePaddedData_nVar()) {
         //TODO JMG add assert ignoring padding
@@ -2784,8 +2742,7 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
     const int                                 cellDescriptionsIndex2,
     const int                                 element2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
-    const tarch::la::Vector<DIMENSIONS, int>& pos2,
-    double**                                  tempFaceUnknowns) {
+    const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   assertion1(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),tarch::la::countEqualEntries(pos1,pos2));
   const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
   const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
@@ -2818,8 +2775,7 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
   );
 
   solveRiemannProblemAtInterface(
-      cellDescriptionLeft,cellDescriptionRight,indexOfRightFaceOfLeftCell,indexOfLeftFaceOfRightCell,
-      tempFaceUnknowns);
+      cellDescriptionLeft,cellDescriptionRight,indexOfRightFaceOfLeftCell,indexOfLeftFaceOfRightCell);
 }
 
 
@@ -2828,8 +2784,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     CellDescription& pLeft,
     CellDescription& pRight,
     const int faceIndexLeft,
-    const int faceIndexRight,
-    double**  tempFaceUnknowns) {
+    const int faceIndexRight) {
   if (pLeft.getType()==CellDescription::Type::Cell ||
       pRight.getType()==CellDescription::Type::Cell) {
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
@@ -2934,8 +2889,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
 
 void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
     CellDescription& p,
-    const int faceIndex,
-    double**  tempFaceUnknowns) {
+    const int faceIndex) {
   assertion1(p.getType()==CellDescription::Type::Cell,p.toString());
   assertion1(p.getRefinementEvent()==CellDescription::None,p.toString());
   assertion1(DataHeap::getInstance().isValidIndex(p.getExtrapolatedPredictor()),p.toString());
@@ -2967,11 +2921,8 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
   // Synchronise time stepping.
   synchroniseTimeStepping(p);
 
-  double* QOut  = tempFaceUnknowns[1];
-  double* FOut  = tempFaceUnknowns[2];
-
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
-  boundaryConditions(FOut,QOut,
+  boundaryConditions(
       FIn,QIn,
       p.getOffset() + 0.5*p.getSize(), // centre
       p.getSize(),
@@ -2993,6 +2944,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FOut[i]),p.toString(),faceIndex,normalDirection,i,FOut[i]);
   }  
   #endif
+
+
+  // TODO(Dominic): Put into own solver
 
   // @todo(Dominic): Add to docu why we need this. Left or right inpclut
   if (faceIndex % 2 == 0) {
@@ -3558,8 +3512,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     records::ADERDGCellDescription& cellDescription,
     const int faceIndex,
     const int indexOfQValues,
-    const int indexOfFValues,
-    double**  tempFaceUnknowns) {
+    const int indexOfFValues) {
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 
@@ -4234,36 +4187,6 @@ exahype::solvers::ADERDGSolver::PredictionTask::PredictionTask(
 }
 
 void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
-  // temporary fields
-  std::vector<int> dataHeapIndices;
-  dataHeapIndices.reserve(8);
-  //
-  double** tempSpaceTimeUnknowns = new double*[2];
-  for (int i=0; i<2; ++i) { // max; see spaceTimePredictorNonlinear
-    tempSpaceTimeUnknowns[i] = allocateArray( dataHeapIndices,
-            _solver.getTempSpaceTimeUnknownsSize() );
-  }
-  //
-  double** tempSpaceTimeFluxUnknowns = new double*[2];
-  //lFi
-  tempSpaceTimeFluxUnknowns[0] = allocateArray( dataHeapIndices,
-      _solver.getTempSpaceTimeFluxUnknowns0Size() );
-  //gradQ, might be not required if ncp is not used
-  tempSpaceTimeFluxUnknowns[1] = allocateArray( dataHeapIndices,
-      _solver.getTempSpaceTimeFluxUnknowns1Size() );
-  //
-  double* tempUnknowns = allocateArray( dataHeapIndices,
-      _solver.getTempUnknownsSize() );
-  //
-  double* tempFluxUnknowns = allocateArray( dataHeapIndices,
-      _solver.getTempFluxUnknownsSize() );
-  //
-  double** tempPointForceSources = new double*[2];
-  tempPointForceSources[0] = allocateArray( dataHeapIndices,
-      _solver.getTempPointForceSourcesSize() ); //PSi
-  tempPointForceSources[1] = allocateArray( dataHeapIndices,
-      _solver.getTempPointForceSourcesSize() ); //forceVectorSourceN
-
   // persistent fields
   double* luh  = DataHeap::getInstance().getData(_cellDescription.getSolution()).data();
   double* lduh = DataHeap::getInstance().getData(_cellDescription.getUpdate()).data();
@@ -4278,55 +4201,15 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
   }
   #endif
 
-  _solver.deltaDistribution(_cellDescription.getCorrectorTimeStamp(),_cellDescription.getCorrectorTimeStepSize(), _cellDescription.getOffset()+0.5*_cellDescription.getSize(),_cellDescription.getSize(),tempPointForceSources);
   // luh, t, dt, cell cell center, cell size, data allocation for forceVect
-
-  #ifdef OPT_KERNELS
   _solver.fusedSpaceTimePredictorVolumeIntegral(
-          lduh,
-          lQhbnd,lFhbnd,
-          tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
-          luh,
-          tarch::la::invertEntries(_cellDescription.getSize()),
-          _cellDescription.getPredictorTimeStepSize(),
-          tempPointForceSources);
-  #else // OPT_KERNELS not defined
-  _solver.spaceTimePredictor(
-      lQhbnd,lFhbnd,
-      tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
-      luh,
-      _cellDescription.getSize(),_cellDescription.getPredictorTimeStepSize(),tempPointForceSources);
-
-  _solver.volumeIntegral(
-      lduh,
-      tempSpaceTimeFluxUnknowns[0],tempFluxUnknowns,
-      _cellDescription.getSize());
-  #endif
-
-  #if defined(Debug) || defined(Asserts)
-  for (int i=0; i<_solver.getTempSpaceTimeUnknownsSize(); i++) { // _cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-  }
-  for (int i=0; i<_solver.getSpaceTimeFluxUnknownsPerCell(); i++) {
-    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), _cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
-  }
-  
-  if(_solver.usePaddedData_nVar()) {
-    //TODO JMG add assert ignoring padding
-  } else {
-    //    for (int i=0; i<getDataPerCell(); i++) {
-    //    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-    //    }
-    //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
-    //      assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-    //    }
-  }
-  #endif
+            lduh, lQhbnd,lFhbnd,
+            luh,
+            _cellDescription.getOffset()+0.5*_cellDescription.getSize(),
+            _cellDescription.getSize(),
+            _cellDescription.getPredictorTimeStepSize());
 
   _solver.validateNoNansInADERDGSolver(_cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
-
-  // clean up
-  freeArrays(dataHeapIndices);
 
   tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
   _NumberOfTriggeredTasks--;

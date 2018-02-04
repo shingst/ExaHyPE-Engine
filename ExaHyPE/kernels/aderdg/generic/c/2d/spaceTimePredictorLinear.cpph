@@ -30,10 +30,7 @@ namespace c {
 template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lFi,double* lQi,double* gradQ,double* PSderivatives,double* tmp_PSderivatives,double* PSi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt,
@@ -55,22 +52,22 @@ void spaceTimePredictorLinear(SolverType& solver,
   
   // Matrices
   
-  double* PSi = tempPointForceSources[0];    // nullptr if bnot usePointSource,  size: basisSize2 * (basisSize + 1) * numberOfVariables
+  //double* PSi = tempPointForceSources[0];    // nullptr if bnot usePointSource,  size: basisSize2 * (basisSize + 1) * numberOfVariables
   idx4 idx_PSi(basisSize + 1, basisSize, basisSize, numberOfVariables);
   
-  double* PSderivatives = tempPointForceSources[1]; // nullptr if bnot usePointSource, size: basisSize2 * (basisSize + 1) * numberOfVariables
-  double* tmp_PSderivatives = tempSpaceTimeFluxUnknowns[0]; // it's actually lFi used here as a temp array //TODO do something cleaner?
+  //double* PSderivatives = tempPointForceSources[1]; // nullptr if bnot usePointSource, size: basisSize2 * (basisSize + 1) * numberOfVariables
+  //double* tmp_PSderivatives = tempSpaceTimeFluxUnknowns[0]; // it's actually lFi used here as a temp array //TODO do something cleaner?
   idx4 idx_PSderivatives(basisSize, basisSize, basisSize, numberOfVariables); //no need for 0th time derivative
   
-  double* lQi = tempSpaceTimeUnknowns[0]; // size: basisSize2 * (basisSize + 1) * numberOfData;
+  //double* lQi = tempSpaceTimeUnknowns[0]; // size: basisSize2 * (basisSize + 1) * numberOfData;
   idx4 idx_lQi(basisSize + 1, basisSize, basisSize, numberOfData);
   std::fill_n(lQi, basisSize2 * (basisSize + 1) * numberOfData, 0.);
 
-  double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize3 * DIMENSIONS+1 * numberOfVariables
+  //double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize3 * DIMENSIONS+1 * numberOfVariables
   idx5 idx_lFi(basisSize, basisSize, basisSize, DIMENSIONS+1, numberOfVariables);
   std::fill_n(lFi,basisSize3*(DIMENSIONS+1)*numberOfVariables, 0.);
 
-  double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize3 * DIMENSIONS * numberOfVariables
+  //double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize3 * DIMENSIONS * numberOfVariables
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
   if(useNCP) {
     std::fill_n(gradQ, basisSize3 * DIMENSIONS * numberOfVariables, 0.);

@@ -535,10 +535,7 @@ template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typen
 void spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx, 
     double dt
@@ -547,13 +544,13 @@ void spaceTimePredictorNonlinear(
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
 
-  double* lQi     = tempSpaceTimeUnknowns[0];
-  double* rhs     = tempSpaceTimeUnknowns[1];
+//  double* lQi     = tempSpaceTimeUnknowns[0];
+//  double* rhs     = tempSpaceTimeUnknowns[1];
 
   // if fluxes are not computed, make sure wrong access patterns result in a crash, thus
   // the nullptr:
-  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
-  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
+//  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
+//  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
   
   aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
         solver, luh, dt, invDx,
@@ -567,8 +564,8 @@ void spaceTimePredictorNonlinear(
   } else {
     constexpr int basisSize2         = basisSize * basisSize;
     
-    double* lQhi    = tempUnknowns;
-    double* lFhi    = tempFluxUnknowns;
+//    double* lQhi    = tempUnknowns;
+//    double* lFhi    = tempFluxUnknowns;
 
     aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,

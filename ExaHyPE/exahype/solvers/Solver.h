@@ -1497,12 +1497,7 @@ class exahype::solvers::Solver {
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double**  tempPointForceSources) = 0;
+      const bool vetoSpawnPredictorAsBackgroundThread) = 0;
 
   /**
    * Update the solution of a cell description.
@@ -1654,12 +1649,6 @@ class exahype::solvers::Solver {
    *
    * \see tryGetElement
    *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    */
   virtual void mergeNeighbours(
@@ -1668,8 +1657,7 @@ class exahype::solvers::Solver {
         const int                                 cellDescriptionsIndex2,
         const int                                 element2,
         const tarch::la::Vector<DIMENSIONS, int>& pos1,
-        const tarch::la::Vector<DIMENSIONS, int>& pos2,
-        double**                                  tempFaceUnknowns) = 0;
+        const tarch::la::Vector<DIMENSIONS, int>& pos2) = 0;
 
   /**
    * Take the cell descriptions \p element
@@ -1686,20 +1674,13 @@ class exahype::solvers::Solver {
    *
    * \see tryGetElement
    *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    */
   virtual void mergeWithBoundaryData(
         const int                                 cellDescriptionsIndex,
         const int                                 element,
         const tarch::la::Vector<DIMENSIONS, int>& posCell,
-        const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-        double**                                  tempFaceUnknowns) = 0;
+        const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
 
   #ifdef Parallel
   /**
@@ -1789,12 +1770,6 @@ class exahype::solvers::Solver {
    *                    holding the data to send out in
    *                    the array with address \p cellDescriptionsIndex.
    *                    This is not the solver number.
-   *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
    */
   virtual void mergeWithNeighbourData(
       const int                                    fromRank,
@@ -1803,7 +1778,6 @@ class exahype::solvers::Solver {
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
 

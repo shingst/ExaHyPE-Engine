@@ -65,6 +65,7 @@ public class OptimisedADERDG implements Solver {
     context.put("numberOfPointSources", numberOfPointSources);
     
     //boolean
+    context.put("nDim3"             , dimensions==3);
     context.put("enableProfiler"    , enableProfiler);
     context.put("enableDeepProfiler", enableDeepProfiler);
     context.put("hasConstants"      , hasConstants);
