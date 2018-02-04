@@ -1126,9 +1126,7 @@ public:
    * @param[in]    direction Index of the nonzero normal vector component,
    *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
-  virtual void boundaryConditions(double* fluxOut,
-                                  double* stateOut,
-                                  const double* const fluxIn,
+  virtual void boundaryConditions(const double* const fluxIn,
                                   const double* const stateIn,
                                   const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                                   const tarch::la::Vector<DIMENSIONS,

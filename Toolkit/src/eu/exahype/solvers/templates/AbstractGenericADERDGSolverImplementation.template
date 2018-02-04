@@ -29,18 +29,18 @@
 }
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
-	// This string is used in the --version output to identify compile time constants
-	os << "{{project}}::{{abstractSolver}}("
-	   << "nVar=" << NumberOfVariables << ", "
-	   << "nParam=" << NumberOfParameters << ", "
-	   << "Order=" << Order
-	   << ")";
+  // This string is used in the --version output to identify compile time constants
+  os << "{{project}}::{{abstractSolver}}("
+     << "nVar=" << NumberOfVariables << ", "
+     << "nParam=" << NumberOfParameters << ", "
+     << "Order=" << Order
+     << ")";
 }
 
 void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
-	// verbosily fail even without assertions turned on
-	puts(msg);
-	abort();
+  // verbosily fail even without assertions turned on
+  puts(msg);
+  abort();
 }
 
 int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double dt) {
@@ -187,6 +187,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   DataHeap::getInstance().deleteData(indexLQhi,true);
   DataHeap::getInstance().deleteData(indexLFhi,true);
 {%-     endif %}
+
   DataHeap::getInstance().deleteData(indexLQi,true);
   DataHeap::getInstance().deleteData(indexRhs,true);
   DataHeap::getInstance().deleteData(indexLFi,true);
@@ -219,19 +220,19 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double*
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
-  assertion2(normalNonZeroIndex>=0,dt,normalNonZeroIndex);
-  assertion2(normalNonZeroIndex<DIMENSIONS,dt,normalNonZeroIndex);
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+  assertion2(direction>=0,dt,direction);
+  assertion2(direction<DIMENSIONS,dt,direction);
 {%- if enableProfiler %}
   _profiler->start("riemannSolver");
 {%- endif %}
 {%- if isFortran %}
-  kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+  kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
 {%- else %}
   {%- if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
   {%- else %}
-    kernels::aderdg::generic::c::riemannSolver{{linearOrNonlinear}}<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
   {%- endif %}
 {%- endif %}
 {%- if enableProfiler %}
@@ -239,11 +240,59 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,double* stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
 {%- endif %}
+
+{%- if nDim3 %}
+  constexpr int basisSize     = (Order+1)*(Order+1);
+{%- else %}
+  constexpr int basisSize     = (Order+1);
+{%- endif %}
+{%- if tempVarsOnStack %}
+  
+  double stateOut[(NumberOfVariables+NumberOfParameters)*basisSize];
+  double fluxOut[NumberOfVariables*basisSize];
+{%- else %}
+  
+  constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
+  constexpr int sizeFluxOut = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
+  
+  const int indexStateOut = DataHeap::getInstance().createData(
+     sizeQ,sizeQ,DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  const int indexFluxOut  = DataHeap::getInstance().createData(
+     sizeF,sizeF,DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  double* stateOut = DataHeap::getInstance().getData(indexLQi).data();
+  double* fluxOut  = DataHeap::getInstance().getData(indexRhs).data();
+  
+{%- endif %}
+
   kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,normalNonZero);
+  
+  double* FL = fluxOut;
+  double* QL = stateOut;
+  double* FR = fluxIn;
+  double* QR = stateIn;
+  if (faceIndex % 2 != 0) {
+    double* FL = fluxIn;
+    double* QL = stateIn;
+    double* FR = fluxOut;
+    double* QR = stateOut;  
+  }
+  
+{%- if isLinear %}
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+{%- else %}
+    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+{%- endif %}
+  
+{%- if tempVarsOnStack %}
+{%- else %}
+  DataHeap::getInstance().deleteData(indexStateOut,true);
+  DataHeap::getInstance().deleteData(indexFluxOut,true);
+{%- endif %}
+  
 {%- if enableProfiler %}
   _profiler->stop("boundaryConditions");
 {%- endif %}
