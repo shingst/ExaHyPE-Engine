@@ -75,20 +75,17 @@ tarch::logging::Log exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessa
     "exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages");
 
 exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::~BroadcastGlobalDataAndMergeNeighbourMessages() {
-  exahype::solvers::deleteTemporaryVariables(_mergingTemporaryVariables);
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::BroadcastGlobalDataAndMergeNeighbourMessages(const BroadcastGlobalDataAndMergeNeighbourMessages& masterThread) {
-  exahype::solvers::initialiseTemporaryVariables(_mergingTemporaryVariables);
+  // do nothing
 }
 #endif
 
 void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
-
-  exahype::solvers::initialiseTemporaryVariables(_mergingTemporaryVariables);
 
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
@@ -104,11 +101,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::beginItera
 
 void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::endIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("endIteration(State)", solverState);
-
-  exahype::solvers::deleteTemporaryVariables(_mergingTemporaryVariables);
-
-  logTraceOutWith1Argument("endIteration(State)", solverState);
+  // do nothing
 }
 
 void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::touchVertexFirstTime(

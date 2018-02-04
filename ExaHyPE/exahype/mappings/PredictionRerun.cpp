@@ -83,13 +83,13 @@ tarch::logging::Log exahype::mappings::PredictionRerun::_log(
 exahype::mappings::PredictionRerun::PredictionRerun() {}
 
 exahype::mappings::PredictionRerun::~PredictionRerun() {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread)
   : _localState(masterThread._localState) {
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
@@ -101,15 +101,13 @@ void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
   _localState = solverState;
 
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
-
   // background threads
   exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::enterCell(
@@ -127,7 +125,6 @@ void exahype::mappings::PredictionRerun::enterCell(
   exahype::mappings::Prediction::performPredictionAndProlongateData(
         fineGridCell,
         fineGridVertices,fineGridVerticesEnumerator,
-        _predictionTemporaryVariables,
         exahype::State::AlgorithmSection::PredictionRerunAllSend);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -158,7 +155,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   vertex.receiveNeighbourData(
       fromRank,false /*no merge - just drop */,
-      nullptr,fineGridX,fineGridH,level);
+      fineGridX,fineGridH,level);
 }
 
 void exahype::mappings::PredictionRerun::prepareSendToNeighbour(

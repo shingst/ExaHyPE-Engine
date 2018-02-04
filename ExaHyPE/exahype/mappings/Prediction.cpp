@@ -83,13 +83,13 @@ tarch::logging::Log exahype::mappings::Prediction::_log(
 exahype::mappings::Prediction::Prediction() {}
 
 exahype::mappings::Prediction::~Prediction() {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::Prediction::Prediction(const Prediction& masterThread)
   : _localState(masterThread._localState) {
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 void exahype::mappings::Prediction::mergeWithWorkerThread(
@@ -100,13 +100,11 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
   _localState = solverState;
-
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 bool exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
@@ -168,7 +166,6 @@ void exahype::mappings::Prediction::enterCell(
   exahype::mappings::Prediction::performPredictionAndProlongateData(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
-      _predictionTemporaryVariables,
       exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

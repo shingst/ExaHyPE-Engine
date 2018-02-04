@@ -121,43 +121,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   void prepareLocalTimeStepVariables();
 
   /**
-   * Temporary variables for every registered
-   * ADERDGSolver and LimitingADERDGSolver which are required for performing
-   * the prediction.
-   */
-  exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
-
-  /**
-   * Temporary variables for every registered solvers which are required
-   * for performing the neighbour data merging.
-   */
-   exahype::solvers::MergingTemporaryVariables _mergingTemporaryVariables;
-
-  /**
-   * Initialises the temporary variables.
-   *
-   * \note We parallelise over the domain
-   * (mapping is copied for each thread) and
-   * over the solvers registered on a cell.
-   *
-   * \note We need to initialise the temporary variables
-   * in this mapping and not in the solvers since the
-   * solvers in exahype::solvers::RegisteredSolvers
-   * are not copied for every thread.
-   */
-  void initialiseTemporaryVariables();
-
-  /**
-   * Deletes the temporary variables.
-   *
-   * \note We need to initialise the temporary variables
-   * in this mapping and not in the solvers since the
-   * solvers in exahype::solvers::RegisteredSolvers
-   * are not copied for every thread.
-   */
-  void deleteTemporaryVariables();
-
-  /**
    * \return true if we perform a local recomputation for this solver.
    */
   static bool performLocalRecomputation(exahype::solvers::Solver* solver);

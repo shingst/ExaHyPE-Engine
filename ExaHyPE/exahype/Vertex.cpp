@@ -459,7 +459,6 @@ void exahype::Vertex::mergeWithBoundaryData(
 }
 
 void exahype::Vertex::mergeNeighbours(
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
@@ -468,12 +467,12 @@ void exahype::Vertex::mergeNeighbours(
         validateThatNeighbourhoodIsValid(pos1,pos1Scalar,pos2,pos2Scalar);
 
         if (hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) { // Assumes that we have to valid indices
-          mergeNeighboursDataAndMetadata(tempFaceUnknowns,pos1,pos1Scalar,pos2,pos2Scalar);
+          mergeNeighboursDataAndMetadata(pos1,pos1Scalar,pos2,pos2Scalar);
 
           setMergePerformed(pos1,pos2,true);
         }
         if (hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) {
-          mergeWithBoundaryData(tempFaceUnknowns,pos1,pos1Scalar,pos2,pos2Scalar);
+          mergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar);
 
           setMergePerformed(pos1,pos2,true);
         }
@@ -970,7 +969,6 @@ void exahype::Vertex::dropNeighbourData(
 void exahype::Vertex::mergeWithNeighbourData(
         const int fromRank,
         const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-        double*** tempFaceUnknowns,
         const int srcCellDescriptionIndex,
         const int destCellDescriptionIndex,
         const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -997,7 +995,6 @@ void exahype::Vertex::mergeWithNeighbourData(
           fromRank,
           metadataPortion,
           destCellDescriptionIndex,element,src,dest,
-          tempFaceUnknowns[solverNumber],
           x,level);
 
       solver->mergeWithNeighbourMetadata(
@@ -1019,7 +1016,6 @@ void exahype::Vertex::mergeWithNeighbourData(
 void exahype::Vertex::receiveNeighbourData(
     int fromRank,
     bool mergeWithReceivedData,
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     int level) const {
@@ -1049,7 +1045,6 @@ void exahype::Vertex::receiveNeighbourData(
               mergeWithNeighbourData(
                   fromRank,
                   receivedMetadata,
-                  tempFaceUnknowns,
                   getCellDescriptionsIndex()[srcScalar],
                   getCellDescriptionsIndex()[destScalar],
                   src,dest,

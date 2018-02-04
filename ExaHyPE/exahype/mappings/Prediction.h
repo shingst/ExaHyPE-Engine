@@ -97,13 +97,6 @@ private:
    */
    exahype::State _localState;
 
-   /**
-    * Temporary variables for every registered
-    * ADERDGSolver and LimitingADERDGSolver which are required for performing
-    * the prediction.
-    */
-   exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
-
   /**
    * A semaphore for restrictions.
    */
