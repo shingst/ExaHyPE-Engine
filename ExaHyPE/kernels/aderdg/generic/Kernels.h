@@ -49,22 +49,6 @@
   (face * MbasisSize * MbasisSize * Mvar + Mvar * a + Mvar * MbasisSize * b + \
    var)
 
-/** Computes a 1-d node index.
-  * The brackets around \p ix allow to write
-  * idx1(ix+ox,...), where ox is some offset.
-  *
-  * TODO(Dominic): Get rid of this; only used in c/2d/boundaryConditions.cpph
-  */
-#define nidx1(ix) numberOfVariables*(ix)
-
-/** Computes a 2-d node index.
-  * The brackets around \p ix and \p iy allow to write
-  * idx1(ix+ox, iy+oy,...), where ox and oy are some offsets.
-  *
-  * TODO(Dominic): Get rid of this; only used in c/3d/boundaryConditions.cpph
-  */
-#define nidx2(ix, iy) numberOfVariables*(basisSize * (iy) + ix)
-
 // todo Dominic Etienne Charrier
 // Possibly redundant definition of face indices
 // see exahype/solvers/Solver.h
@@ -91,17 +75,13 @@ void spaceTimePredictorLinear(SolverType& solver,
     double* lFi,double* lQi,double* gradQ,double* PSderivatives,double* tmp_PSderivatives,double* PSi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
-    const double dt,
-    double** tempPointForceSources);
+    const double dt);
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
 void spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt);

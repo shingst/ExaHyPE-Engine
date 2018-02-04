@@ -47,14 +47,14 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
-{%- if  isLinear %}
-{%- if nDim3 %}
+{%- if isLinear %}
+{%-   if nDim3 %}
   constexpr int spaceBasisSize     = (Order+1)*(Order+1)*(Order+1);
-{%- else %}
+{%-   else %}
   constexpr int spaceBasisSize     = (Order+1)*(Order+1);
-{%- endif %}
+{%-   endif %}
   constexpr int spaceTimeBasisSize = spaceBasisSize*(Order+1);
-{%- if tempVarsOnStack %}
+{%-   if tempVarsOnStack %}
 
   double lQi[(NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2)]; // size: basisSize2 * (basisSize + 1) * numberOfData;
   double lFi[(DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize]; // also stores the source; size: basisSize3 * DIMENSIONS+1 * numberOfVariables
@@ -62,7 +62,9 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double PSi[NumberOfVariables*spaceBasisSize*(Order+2)]; // nullptr if bnot usePointSource,  size: basisSize2 * (basisSize + 1) * numberOfVariables
   double PSderivatives[NumberOfVariables*spaceTimeBasisSize]; // nullptr if bnot usePointSource, size: basisSize2 * (basisSize + 1) * numberOfVariables 
   double tmp_PSderivatives[NumberOfVariables*spaceTimeBasisSize]; // it's actually lFi used here as a temp array //TODO do something cleaner?
-{%- else %}
+  
+  double lFhi[(DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize]; // also stores the source
+{%-   else %}
 
   constexpr int sizeLQi           = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
   constexpr int sizeLFi           = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
@@ -88,36 +90,58 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* PSi               = DataHeap::getInstance().getData(indexPsi).data();
   double* PSDerivatives     = DataHeap::getInstance().getData(indexPSderivatives).data();
   double* tmp_PSderivatives = DataHeap::getInstance().getData(indexTmp_PSderivatives).data();
-{%- endif %}
+  
+  constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
+  const int indexLFhi     = DataHeap::getInstance().createData(
+     sizeLFhi,sizeLFhi,DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  double* lFhi = DataHeap::getInstance().getData(indexLFhi).data();
+{%-   endif %}
 
-{%- if usePointSources %}
-  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), tempPointForceSources);
-{%- endif %}
+{%-   if usePointSources %}
+  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), PSi);
+{%-   endif %}
   int picardIterations = 1;
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, tempUnknowns, tempFluxUnknowns, luh, tarch::la::invertEntries(dx), dt, tempPointForceSources);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lFi, lQi, gradQ, PSderivatives, tmp_PSderivatives, PSi, luh, tarch::la::invertEntries(dx), dt);
   kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource || useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+  
+{%-   if tempVarsOnStack %}
+{%-   else %}
+{%-     if noTimeAveraging %}
+{%-     else %}
+
+  DataHeap::getInstance().deleteData(indexLQhi,true);
+  DataHeap::getInstance().deleteData(indexLFhi,true);
+{%-     endif %}
+  DataHeap::getInstance().deleteData(indexLQi,true);
+  DataHeap::getInstance().deleteData(indexLFi,true);
+  DataHeap::getInstance().deleteData(indexPsi,true);
+  DataHeap::getInstance().deleteData(indexLQi,true);
+  DataHeap::getInstance().deleteData(indexPSderivatives,true);
+  DataHeap::getInstance().deleteData(indexTmp_PSderivatives,true);
+{%-   endif %}
+  
 {%- else %}
-{%- if nDim3 %}
+{%-   if nDim3 %}
   constexpr int spaceBasisSize     = (Order+1)*(Order+1)*(Order+1);
-{%- else %}
+{%-   else %}
   constexpr int spaceBasisSize     = (Order+1)*(Order+1);
-{%- endif %}
+{%-   endif %}
   constexpr int spaceTimeBasisSize = spaceBasisSize*(Order+1);
-{%- if tempVarsOnStack %}
+{%-   if tempVarsOnStack %}
 
   double lQi[(NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize];
   double rhs[(NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize];
   double lFi[(DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize]; // also stores the source
   double gradQ[DIMENSIONS*NumberOfVariables*spaceTimeBasisSize];
   
-{%- if noTimeAveraging %}
+{%-     if noTimeAveraging %}
   double* lQhi = lQi;
   double* lFhi = lFi;
-{%- else %}
+{%-     else %}
   double lQhi[(NumberOfVariables+NumberOfParameters)*spaceBasisSize];
   double lFhi[(DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize]; // also stores the source
-{%- endif %}
-{%- else %}
+{%-     endif %}
+{%-   else %}
 
   constexpr int sizeLQi   = (NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize;
   constexpr int sizeLFi   = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
@@ -136,10 +160,10 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lFi   = DataHeap::getInstance().getData(indexLFi).data();
   double* gradQ = DataHeap::getInstance().getData(indexGradQ).data();
   
-{%- if noTimeAveraging %}
+{%-     if noTimeAveraging %}
   double* lQhi = lQi;
   double* lFhi = lFi;
-{%- else %}
+{%-     else %}
   constexpr int sizeLQhi = (NumberOfVariables+NumberOfParameters)*spaceBasisSize;
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
   
@@ -149,25 +173,25 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
      sizeLFhi,sizeLFhi,DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   double* lQhi = DataHeap::getInstance().getData(indexLQhi).data();
   double* lFhi = DataHeap::getInstance().getData(indexLFhi).data();
-{%- endif %}
-{%- endif %}
+{%-     endif %}
+{%-   endif %}
 
   int picardInterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, double* lQi, double* rhs, double* lFi, double* gradQ, double* lQhi, double* lFhi, luh, tarch::la::invertEntries(dx), dt);
   kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
-{%- endif %}
-{%- if tempVarsOnStack %}
-{%- else %}
-{%- if noTimeAveraging %}
-{%- else %}
+{%-   if tempVarsOnStack %}
+{%-   else %}
+{%-     if noTimeAveraging %}
+{%-     else %}
 
   DataHeap::getInstance().deleteData(indexLQhi,true);
   DataHeap::getInstance().deleteData(indexLFhi,true);
-{%- endif %}
+{%-     endif %}
   DataHeap::getInstance().deleteData(indexLQi,true);
   DataHeap::getInstance().deleteData(indexRhs,true);
   DataHeap::getInstance().deleteData(indexLFi,true);
   DataHeap::getInstance().deleteData(indexGradQ,true);
+{%-   endif %}
 {%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");

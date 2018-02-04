@@ -33,8 +33,7 @@ void spaceTimePredictorLinear(SolverType& solver,
     double* lFi,double* lQi,double* gradQ,double* PSderivatives,double* tmp_PSderivatives,double* PSi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
-    const double dt,
-    double** tempPointForceSources
+    const double dt
 ) {
   
   // Define constants
