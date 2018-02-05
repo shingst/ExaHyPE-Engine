@@ -510,8 +510,8 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   // Inputs:
   double lQi[1600];  // lQi; nVar * nDOFx * nDOFy * nDOFz * (nDOFt+1); nDOF+1 only here
   double PSi[1600];  // pointSources
-  double PSderivatives[1600];  // pointSources
-  double tmp_PSderivatives[1600];  // pointSources
+  double PSderivatives[1600];
+  double tmp_PSderivatives[1600];
   double lFi[3840+1280];           // lFi+source; nVar * nDOFx * nDOFy * nDOFt * (dim+1)
   double gradQ[3840];              // lQi; nVar * nDOFx * nDOFy * nDOFt * dim
 
@@ -607,7 +607,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
 
   // Outputs:
   // spatial unknowns,flux unknowns
-  double lQhi[nData*basisSize3] = {0.0};       // nData * nDOFx * nDOFy * nDOFz; // intentionally left uninitialised;
+  double lQhi[nData*basisSize3]     = {0.0};       // nData * nDOFx * nDOFy * nDOFz; // intentionally left uninitialised;
   double lFhi[(3+1)*nVar*basisSize3] = {0.0};  // nData * nDOFx * nDOFy * nDOFz * (dim + 1);
 
   double lQhbnd[6 * nData*basisSize2] = {0.0};  // nData * nDOFy * nDOF_z * 6

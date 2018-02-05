@@ -535,7 +535,7 @@ void aderTimeAveragingExtrapolatorNonlinear(
 
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
-void spaceTimePredictorNonlinear(
+int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
     double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
