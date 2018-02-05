@@ -34,6 +34,9 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
+#include "tarch/multicore/Jobs.h"
+
+
 namespace {
 constexpr const char* tags[]{"solutionUpdate", "stableTimeStepSize"};
 }  // namespace
@@ -2058,7 +2061,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    tarch::multicore::processBackgroundTasks();
+    tarch::multicore::jobs::processBackgroundJobs();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

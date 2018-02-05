@@ -18,8 +18,6 @@
 #include "exahype/Cell.h"
 
 #include "tarch/multicore/Lock.h"
-#include "tarch/multicore/BackgroundTasks.h"
-
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
 
@@ -27,6 +25,7 @@
 #include <mm_malloc.h> //g++
 #include <cstring> //memset
 
+#include "../../../Peano/tarch/multicore/Jobs.h"
 #include "LimitingADERDGSolver.h"
 #include "ADERDGSolver.h"
 #include "FiniteVolumesSolver.h"
@@ -122,14 +121,14 @@ void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
   lock.free();
   if (!finishedWait) {
     logInfo("waitUntilAllBackgroundTasksHaveTerminated",
-            "Waiting for " << tarch::multicore::getNumberOfWaitingBackgroundTasks() <<
+            "Waiting for " << tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs() <<
             " background tasks to complete"
             );
   }
 
 
   while (!finishedWait) {
-    tarch::multicore::processBackgroundTasks();
+    tarch::multicore::jobs::processBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
     finishedWait = _NumberOfTriggeredTasks == 0;

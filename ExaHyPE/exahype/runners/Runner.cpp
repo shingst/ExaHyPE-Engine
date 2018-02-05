@@ -33,6 +33,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/multicore/AffinityTools.h"
+#include "tarch/multicore/Jobs.h"
 
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/JoinDataBufferPool.h"
@@ -252,7 +253,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     #endif
   }
 
-  tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+  tarch::multicore::jobs::BackgroundJob::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   switch (_parser.getMulticoreOracleType()) {
   case Parser::MulticoreOracleType::Dummy:

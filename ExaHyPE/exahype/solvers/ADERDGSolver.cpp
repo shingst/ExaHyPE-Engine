@@ -38,6 +38,8 @@
 
 #include "kernels/KernelUtils.h"
 
+#include "tarch/multicore/Jobs.h"
+
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
                              "volumeIntegral",
@@ -4385,7 +4387,7 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
   bool uncompress   = false;
 
   while (!madeDecision) {
-    tarch::multicore::processBackgroundTasks();
+    tarch::multicore::jobs::processBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
       madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;
@@ -4579,11 +4581,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       getUnknownsPerCellBoundary(),
       CompressionAccuracy
       );},
-    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 
@@ -4771,11 +4773,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }
