@@ -101,6 +101,23 @@ protected:
    */
   const double _DMPDifferenceScaling;
 
+  /**
+   * A counter holding the number of iterations to
+   * cure a troubled cell.
+   * This counter will be initialised to a certain
+   * (user-dependent?) value if a cell is flagged as troubled.
+   *
+   * If the cell is not troubled for one iteration, the counter is
+   * decreased until it reaches 0. Then, the
+   * cell is considered as cured.
+   * Note that the counter can be reset to the maximum value
+   * in the meantime if the cell is marked again as troubled.
+   *
+   * This counter prevents that a cell is toggling between
+   * troubled and Ok (cured).
+   */
+  int _iterationsToCureTroubledCell;
+
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
   typedef peano::heap::RLEHeap<SolverPatch> SolverHeap;
@@ -128,23 +145,6 @@ private:
    * iteration.
    */
   exahype::solvers::LimiterDomainChange _nextLimiterDomainChange;
-
-  /**
-   * A counter holding the number of iterations to
-   * cure a troubled cell.
-   * This counter will be initialised to a certain
-   * (user-dependent?) value if a cell is flagged as troubled.
-   *
-   * If the cell is not troubled for one iteration, the counter is
-   * decreased until it reaches 0. Then, the
-   * cell is considered as cured.
-   * Note that the counter can be reset to the maximum value
-   * in the meantime if the cell is marked again as troubled.
-   *
-   * This counter prevents that a cell is toggling between
-   * troubled and Ok (cured).
-   */
-  int _iterationsToCureTroubledCell;
 
   /**
    * TODO(Dominc): Remove after docu is recycled.

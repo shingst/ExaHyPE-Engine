@@ -117,7 +117,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::touchVerte
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  fineGridVertex.mergeNeighbours(_mergingTemporaryVariables._tempFaceUnknowns,fineGridX,fineGridH);
+  fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -158,7 +158,6 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::mergeWithN
 
   vertex.receiveNeighbourData(
         fromRank,true,
-        _mergingTemporaryVariables._tempFaceUnknowns,
         fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );

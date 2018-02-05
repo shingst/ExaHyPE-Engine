@@ -40,7 +40,7 @@ namespace {
    *
    */
   template <bool useSource, bool useFlux, bool useNCP, typename SolverType>
-  void aderPicardLoopNonlinear(SolverType& solver,
+  int aderPicardLoopNonlinear(SolverType& solver,
                                const double* luh, const double dt,
                                const tarch::la::Vector<DIMENSIONS, double>& invDx,
                                double* lQi, double* rhs,
@@ -87,7 +87,8 @@ namespace {
     // idx_gradQ(z,y,x,t,nDim,nVar)
     idx6 idx_gradQ(basisSize, basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
 
-    for (int iter = 0; iter < MaxIterations; iter++) {
+    int iter = 0;
+    for (; iter < MaxIterations; iter++) {
 
       for (int i = 0; i < basisSize; i++) {  // time DOF
         // Compute the fluxes
@@ -323,6 +324,8 @@ namespace {
                    "maximum number of iteration steps");
       }
     }  // end iter
+    
+    return iter;
   }
 
   /*
@@ -662,7 +665,7 @@ namespace {
 }  // namespace
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
-void spaceTimePredictorNonlinear(
+int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
     double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
@@ -683,7 +686,7 @@ void spaceTimePredictorNonlinear(
 //  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
 //  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
 
-  aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
+  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
       solver, luh, dt, invDx, lQi, rhs, lFi, gradQ
   );
   
@@ -714,6 +717,8 @@ void spaceTimePredictorNonlinear(
         &lFhi[2 * basisSize3 * numberOfVariables],  // lFhi_z
         lQhbnd, lFhbnd);
   }
+  
+  return iterations;
 }
 
 }  // namespace c

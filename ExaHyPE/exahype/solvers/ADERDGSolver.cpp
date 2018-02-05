@@ -1951,9 +1951,6 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       } 
       #endif
 
-      // TODO(Dominic,JM): deltaDistribution should be part of fusedSpaceTimePredictorVolumeIntegral
-      //deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
-
       // luh, t, dt, cell cell center, cell size, data allocation for forceVect
       fusedSpaceTimePredictorVolumeIntegral(
                 lduh,lQhbnd,lFhbnd,
@@ -1961,18 +1958,6 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
                 cellDescription.getOffset()+0.5*cellDescription.getSize(),
                 cellDescription.getSize(),
                 cellDescription.getPredictorTimeStepSize());
-      
-      if(usePaddedData_nVar()) {
-        //TODO JMG add assert ignoring padding
-      } else {
-        //    for (int i=0; i<getDataPerCell(); i++) {
-        //    assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-        //    }
-        //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
-        //      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-        //    }
-      }
-      #endif
 
       validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
     }
@@ -2868,8 +2853,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     const int                                 cellDescriptionsIndex,
     const int                                 element,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-    double**                                  tempFaceUnknowns) {
+    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   if (tarch::la::countEqualEntries(posCell,posBoundary)!=(DIMENSIONS-1)) {
     return; // We only consider faces; no corners.
   }
@@ -2883,15 +2867,11 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
 
     uncompress(cellDescription);
 
-    applyBoundaryConditions(
-        cellDescription,2*direction+orientation,
-        tempFaceUnknowns);
+    applyBoundaryConditions(cellDescription,2*direction+orientation);
   }
 }
 
-void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
-    CellDescription& p,
-    const int faceIndex) {
+void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,const int faceIndex) {
   assertion1(p.getType()==CellDescription::Type::Cell,p.toString());
   assertion1(p.getRefinementEvent()==CellDescription::None,p.toString());
   assertion1(DataHeap::getInstance().isValidIndex(p.getExtrapolatedPredictor()),p.toString());
@@ -2899,72 +2879,41 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
 
   const int dataPerFace = getBndFaceSize();
   const int dofPerFace  = getBndFluxSize();
-
   double* QIn = DataHeap::getInstance().getData(p.getExtrapolatedPredictor()).data() +
       (faceIndex * dataPerFace);
   double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
       (faceIndex * dofPerFace);
 
-  const int normalDirection = (faceIndex - faceIndex % 2)/2;
-  assertion2(normalDirection<DIMENSIONS,faceIndex,normalDirection);
+  const int direction = (faceIndex - faceIndex % 2)/2;
   
   #if defined(Debug) || defined(Asserts)
+  assertion2(direction<DIMENSIONS,faceIndex,direction);
   for(int i=0; i<dataPerFace; ++i) {
-    assertion5(std::isfinite(QIn[i]), p.toString(),
-        faceIndex, normalDirection, i, QIn[i]);
+    assertion5(std::isfinite(QIn[i]), p.toString(),faceIndex, direction, i, QIn[i]);
   }
-
   for(int i=0; i<dofPerFace; ++i) {
-    assertion5(std::isfinite(FIn[i]), p.toString(),
-        faceIndex, normalDirection, i, FIn[i]);
+    assertion5(std::isfinite(FIn[i]), p.toString(),faceIndex, direction, i, FIn[i]);
   } 
   #endif
 
-  // Synchronise time stepping.
   synchroniseTimeStepping(p);
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
   boundaryConditions(
       FIn,QIn,
-      p.getOffset() + 0.5*p.getSize(), // centre
+      p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
       p.getCorrectorTimeStamp(),
       p.getCorrectorTimeStepSize(),
       faceIndex,
-      normalDirection);
-
-  assertion4(std::isfinite(p.getCorrectorTimeStamp()),p.toString(),faceIndex,normalDirection,p.getCorrectorTimeStamp());
-  assertion4(std::isfinite(p.getCorrectorTimeStepSize()),p.toString(),faceIndex,normalDirection,p.getCorrectorTimeStepSize());
-  assertion4(p.getCorrectorTimeStepSize()>=0.0, p.toString(),faceIndex, normalDirection,p.getCorrectorTimeStepSize());
-  #if defined(Debug) || defined(Asserts)
-  for(int i=0; i<dataPerFace; ++i) {
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(QIn[i]),p.toString(),faceIndex,normalDirection,i,QIn[i]);
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(QOut[i]),p.toString(),faceIndex,normalDirection,i,QOut[i]);
-  }
-  for(int i=0; i<dofPerFace; ++i) {
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),faceIndex,normalDirection,i,FIn[i]);
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FOut[i]),p.toString(),faceIndex,normalDirection,i,FOut[i]);
-  }  
-  #endif
-
-
-  // TODO(Dominic): Put into own solver
-
-  // @todo(Dominic): Add to docu why we need this. Left or right inpclut
-  if (faceIndex % 2 == 0) {
-    riemannSolver(FOut, FIn, QOut, QIn,
-        p.getCorrectorTimeStepSize(),
-	normalDirection,true,faceIndex);
-  } else {
-    riemannSolver(FIn, FOut, QIn, QOut,
-        p.getCorrectorTimeStepSize(),
-        normalDirection,true,faceIndex);
-  }
+      direction);
 
   #if defined(Debug) || defined(Asserts)
+  assertion4(std::isfinite(p.getCorrectorTimeStamp()),p.toString(),faceIndex,direction,p.getCorrectorTimeStamp());
+  assertion4(std::isfinite(p.getCorrectorTimeStepSize()),p.toString(),faceIndex,direction,p.getCorrectorTimeStepSize());
+  assertion4(p.getCorrectorTimeStepSize()>=0.0, p.toString(),faceIndex, direction,p.getCorrectorTimeStepSize());
   for(int i=0; i<dofPerFace; ++i) {
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),faceIndex,normalDirection,i,FIn[i]);
-    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FOut[i]),p.toString(),faceIndex,normalDirection,i,FOut[i]);
+    assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),faceIndex,direction,i,FIn[i]);
   }
   #endif
 }
@@ -3449,7 +3398,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
-    double**                                     tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   if (tarch::la::countEqualEntries(src,dest)!=(DIMENSIONS-1)) {
@@ -3500,8 +3448,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
         cellDescription,
         faceIndex,
         receivedlQhbndIndex,
-        receivedlFhbndIndex,
-        tempFaceUnknowns);
+        receivedlFhbndIndex);
 
     DataHeap::getInstance().deleteData(receivedlQhbndIndex,true);
     DataHeap::getInstance().deleteData(receivedlFhbndIndex,true);
@@ -3553,32 +3500,30 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         (faceIndex * dofPerFace);
   }
 
-  // Synchronise time stepping.
   synchroniseTimeStepping(cellDescription);
 
-  const int normalDirection = (faceIndex - faceIndex%2)/2; // faceIndex=2*normalNonZero+f, f=0,1
-  assertion2(normalDirection<DIMENSIONS,faceIndex,normalDirection);
+  const int direction = (faceIndex - faceIndex%2)/2; // faceIndex=2*normalNonZero+f, f=0,1
+  assertion2(direction<DIMENSIONS,faceIndex,direction);
   riemannSolver(
       FL, FR, QL, QR,
-      cellDescription.getCorrectorTimeStepSize(),
-      normalDirection,false,-1);
+      cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex);
 
   #if defined(Debug) || defined(Asserts)
   for (int ii = 0; ii<dataPerFace; ii++) {
     assertion10(std::isfinite(QR[ii]), cellDescription.toString(),
-        faceIndex, normalDirection, indexOfQValues, indexOfFValues,
+        faceIndex, direction, indexOfQValues, indexOfFValues,
         ii, QR[ii], QL[ii], FR[ii], FL[ii]);
     assertion10(std::isfinite(QL[ii]), cellDescription.toString(),
-        faceIndex, normalDirection, indexOfQValues, indexOfFValues,
+        faceIndex, direction, indexOfQValues, indexOfFValues,
         ii, QR[ii], QL[ii], FR[ii], FL[ii]);
   }
 
   for (int ii = 0; ii<dofPerFace; ii++) {
     assertion10(std::isfinite(FR[ii]), cellDescription.toString(),
-        faceIndex, normalDirection, indexOfQValues, indexOfFValues,
+        faceIndex, direction, indexOfQValues, indexOfFValues,
         ii, QR[ii], QL[ii], FR[ii], FL[ii]);
     assertion10(std::isfinite(FL[ii]), cellDescription.toString(),
-        faceIndex, normalDirection, indexOfQValues, indexOfFValues,
+        faceIndex, direction, indexOfQValues, indexOfFValues,
         ii, QR[ii], QL[ii], FR[ii], FL[ii]);
   }
   #endif

@@ -67,7 +67,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * TODO(Dominic): Add docu.
    */
   void mergeNeighboursDataAndMetadata(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS,int>&  pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -78,7 +77,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * TODO(Dominic): Add docu.
    */
   void mergeWithBoundaryData(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS,int>&  pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>&  pos2,

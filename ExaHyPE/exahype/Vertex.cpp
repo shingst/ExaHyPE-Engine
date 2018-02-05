@@ -402,7 +402,6 @@ void exahype::Vertex::setMergePerformed(
 }
 
 void exahype::Vertex::mergeNeighboursDataAndMetadata(
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS,int>&  pos1,
     const int pos1Scalar,
     const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -417,8 +416,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
     const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
     if (element2>=0 && element1>=0) {
       solver->mergeNeighbours(
-          cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2,
-          tempFaceUnknowns[solverNumber]);
+          cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
       solver->mergeNeighboursMetadata(
           cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
     }
@@ -427,7 +425,6 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
 }
 
 void exahype::Vertex::mergeWithBoundaryData(
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS,int>&  pos1,
     const int pos1Scalar,
     const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -447,12 +444,10 @@ void exahype::Vertex::mergeWithBoundaryData(
                cellDescriptionsIndex1,cellDescriptionsIndex2,element1,element2);
 
     if (element1 >= 0) {
-      solver->mergeWithBoundaryData(cellDescriptionsIndex1,element1,pos1,pos2,
-                                    tempFaceUnknowns[solverNumber]);
+      solver->mergeWithBoundaryData(cellDescriptionsIndex1,element1,pos1,pos2);
     }
     if (element2 >= 0){
-      solver->mergeWithBoundaryData(cellDescriptionsIndex2,element2,pos2,pos1,
-                                    tempFaceUnknowns[solverNumber]);
+      solver->mergeWithBoundaryData(cellDescriptionsIndex2,element2,pos2,pos1);
     }
   endpfor
   grainSize.parallelSectionHasTerminated();

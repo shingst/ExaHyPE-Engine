@@ -317,22 +317,22 @@ public:
   /**
    * Return the state variables at the boundary.
    *
-   * @param[inout] stateOut
-   * @param[in]    stateIn
-   * @param[in]    cellCentre    Cell centre.
-   * @param[in]    cellSize      Cell size.
+   * @param[inout] luh           the solution patch
+   * @param[in]    cellCentre    cell centre.
+   * @param[in]    cellSize      cell size.
    * @param[in]    t             The time.
    * @param[in]    dt            A time step size.
    * @param[in]    normalNonZero Index of the nonzero normal vector component,
    *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
-  virtual void boundaryConditions(double* stateOut,
-      const double* const stateIn,
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+  virtual void boundaryConditions(
+      double* luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const double t,const double dt,
-      const int faceIndex,
-      const int normalNonZero) = 0;
+      const tarch::la::Vector<DIMENSIONS, int>& posCell,
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
+
 
   /**
    * Compute the Riemann problem.
@@ -362,7 +362,6 @@ public:
    * \note Use this function and ::useAdjustSolution to set initial conditions.
    *
    * \param[in]    x         the physical coordinate on the face.
-   * \param[in]    w         (deprecated) the quadrature weight corresponding to the quadrature point w.
    * \param[in]    t         the start of the time interval.
    * \param[in]    dt        the width of the time interval.
    * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point

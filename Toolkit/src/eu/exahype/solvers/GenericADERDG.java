@@ -55,7 +55,6 @@ public class GenericADERDG implements Solver {
     context.put("numberOfPointSources", numberOfPointSources);
     
     //boolean
-    context.put("nDim3"             , dimensions==3);
     context.put("enableProfiler"    , enableProfiler);
     context.put("hasConstants"      , hasConstants);
     context.put("isLinear"          , isLinear);
@@ -124,7 +123,7 @@ public class GenericADERDG implements Solver {
   public void writeUserPDE(java.io.BufferedWriter writer)
       throws java.io.IOException {
     // @todo Implement
-    System.err.println("C-style kernels do not have a PDF.f90.\n");
+    System.err.println("C-style kernels do not have a PDE.f90.\n");
   }
 
 

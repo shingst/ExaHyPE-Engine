@@ -305,14 +305,6 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
 exahype::solvers::Solver::SubcellPosition exahype::solvers::FiniteVolumesSolver::computeSubcellPositionOfCellOrAncestor(
         const int cellDescriptionsIndex,
         const int element) const {
-  // TODO(Dominic): Comment code in as soon as we have all the required fields
-  // on the cell description.
-//  CellDescription& cellDescription =
-//      getCellDescription(cellDescriptionsIndex,element);
-//
-//  return
-//      exahype::amr::computeSubcellPositionOfCellOrAncestor
-//      <CellDescription,Heap>(cellDescription);
   SubcellPosition empty;
   return empty;
 }
@@ -901,31 +893,16 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 
   if (cellDescription.getType()==CellDescription::Cell) {
     synchroniseTimeStepping(cellDescription);
-
     uncompress(cellDescription);
 
-    double* luh       = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-
-    assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==DIMENSIONS-1,posCell.toString(),posBoundary.toString());
-
-    const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
-    const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
-
-    // TODO(Dominic): Put these functions into own kernel
-
-    boundaryLayerExtraction(luhbndIn,luh,posBoundary-posCell);
-
+    double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     boundaryConditions(
-        luhbndOut,luhbndIn,
+        luh,
         cellDescription.getOffset()+0.5*cellDescription.getSize(),
         cellDescription.getSize(),
         cellDescription.getTimeStamp(),
         cellDescription.getTimeStepSize(),
-        faceIndex,
-        direction);
-
-    ghostLayerFillingAtBoundary(luh,luhbndOut,posBoundary-posCell);
+        posCell,posBoundary);
   }
 }
 

@@ -137,7 +137,6 @@ private:
       const exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
       const exahype::State::AlgorithmSection& algorithmSection);
 
   /**

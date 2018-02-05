@@ -120,7 +120,6 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
     const exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     exahype::Cell::resetNeighbourMergeFlags(
@@ -141,8 +140,7 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           solver,fineGridCell.getCellDescriptionsIndex(),element,
           vetoPerformPredictionAsBackgroundThread(
-              fineGridVertices,fineGridVerticesEnumerator),
-          temporaryVariables);
+              fineGridVertices,fineGridVerticesEnumerator));
 
       solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }

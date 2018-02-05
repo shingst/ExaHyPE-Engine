@@ -30,7 +30,9 @@ namespace c {
 template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
-    double* lFi,double* lQi,double* gradQ,double* PSderivatives,double* tmp_PSderivatives,double* PSi,
+    double* lQi, double* lFi, double* gradQ,
+    double* PSi, double* PSderivatives, double* tmp_PSderivatives,
+    double* lQhi,double* lFhi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt
@@ -308,10 +310,10 @@ void spaceTimePredictorLinear(SolverType& solver,
   //**** Averaging over time ****
   //*****************************
   
-  double* lQhi = tempUnknowns;
+  //  double* lQhi = tempUnknowns;
   idx3 idx_lQhi(basisSize, basisSize, numberOfData);
   
-  double* lFhi = tempFluxUnknowns;
+  // double* lFhi = tempFluxUnknowns;
   idx4 idx_lFhi(DIMENSIONS+1, basisSize, basisSize, numberOfVariables);
 
   // Immediately compute the time-averaged space-time polynomials

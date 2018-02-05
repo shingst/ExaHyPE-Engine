@@ -62,12 +62,6 @@ namespace exahype {
 class exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages {
 private:
   /**
-   * A bunch of temporary variables to perform neighbour data
-   * BroadcastGlobalDataAndMergeNeighbourMessages for every solver on a patch.
-   */
-  exahype::solvers::MergingTemporaryVariables _mergingTemporaryVariables;
-
-  /**
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;

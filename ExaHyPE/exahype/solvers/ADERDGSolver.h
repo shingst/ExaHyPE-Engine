@@ -574,19 +574,16 @@ private:
    *
    * \note Not thread-safe.
    *
-   * @param[in] cellDescription         The cell description
-   * @param[in] faceIndex               The index of the interface
+   * \param[in] cellDescription         The cell description
+   * \param[in] faceIndex               The index of the interface
    *                                    from the perspective of the cell/cell
    *                                    description. The index is computed as 2 times the
-   *                                    position of the normal vector non-zero plus a
+   *                                    position of the normal vector non-zero entry plus a
    *                                    value that encodes the normal vector direction
    *                                    (0 for negative direction, 1 for positive direction).
    * \note Not thread-safe.
    */
-  void applyBoundaryConditions(
-      CellDescription& p,
-      const int faceIndex,
-      double**  tempFaceUnknowns);
+  void applyBoundaryConditions(CellDescription& p,const int faceIndex);
 
 #ifdef Parallel
   /**
@@ -1071,9 +1068,9 @@ public:
   /**
    * @brief Adds the solution update to the solution.
    *
-   * @param[inout] luh  Cell-local solution DoF.
-   * @param[in]    lduh Cell-local update DoF.
-   * @param[dt]    dt   Time step size.
+   * \param[inout] luh  Cell-local solution DoF.
+   * \param[in]    lduh Cell-local update DoF.
+   * \param[dt]    dt   Time step size.
    */
   virtual void solutionUpdate(double* luh, const double* const lduh,
                               const double dt) = 0;
@@ -1082,9 +1079,9 @@ public:
    * @brief Computes the surface integral contributions
    * to the cell update.
    *
-   * @param[inout] lduh   Cell-local update DoF.
-   * @param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
-   * @param[in]    cellSize     Extent of the cell in each coordinate direction.
+   * \param[inout] lduh   Cell-local update DoF.
+   * \param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
+   * \param[in]    cellSize     Extent of the cell in each coordinate direction.
    */
   virtual void surfaceIntegral(
       double* lduh, const double* const lFhbnd,
@@ -1094,13 +1091,13 @@ public:
    * @brief Computes the normal fluxes (or fluctuations) at the interface of two
    *cells.
    *
-   * @param[inout] FL             Flux DoF belonging to the left cell.
-   * @param[inout] FR             Flux DoF belonging the right cell.
-   * @param[in]    QL             DoF of the boundary extrapolated predictor
+   * \param[inout] FL             Flux DoF belonging to the left cell.
+   * \param[inout] FR             Flux DoF belonging the right cell.
+   * \param[in]    QL             DoF of the boundary extrapolated predictor
    *                              belonging to the left cell.
-   * @param[in]    QR             DoF of the boundary extrapolated predictor
+   * \param[in]    QR             DoF of the boundary extrapolated predictor
    *                              belonging to the right cell.
-   * @param[in]    direction  Index of the nonzero normal vector component,
+   * \param[in]    direction  Index of the nonzero normal vector component,
    *               i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
   virtual void riemannSolver(double* FL, double* FR,
@@ -1111,22 +1108,20 @@ public:
                              int faceIndex) = 0;
 
   /**
-   * Return the normal fluxes (or fluctuations) and state variables at the boundary.
+   * Impose boundary conditions on the fluxes (or fluctuations).
+   * The state is only read.
    *
-   * @param[inout] fluxOut       Flux DoF belonging to the left cell.
-   * @param[inout] stateOut      DoF of the boundary extrapolated predictor
-   *                             belonging to the left cell.
-     @param[in]    fluxIn        Flux DoF belonging to the left cell.
-   * @param[in]    stateIn       DoF of the boundary extrapolated predictor
-   *                             belonging to the left cell.
-   * @param[in]    cellCentre    Cell centre.
-   * @param[in]    cellSize      Cell size.
-   * @param[in]    t             The time.
-   * @param[in]    dt            A time step size.
-   * @param[in]    direction Index of the nonzero normal vector component,
-   *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * \param[in]    fluxIn        boundary-extrapolated (space-time) volume flux
+   * \param[in]    stateIn       boundary-extraplolated (space-time) predictor
+   * \param[in]    cellCentre    cell centre.
+   * \param[in]    cellSize      cell size.
+   * \param[in]    t             The time.
+   * \param[in]    dt            a time step size.
+   * \param[in]    faceIndex     Index of the face under consideration.
+   * \param[in]    direction     index of the nonzero component of the normal vector
+   *                             i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
-  virtual void boundaryConditions(const double* const fluxIn,
+  virtual void boundaryConditions(double* fluxIn,
                                   const double* const stateIn,
                                   const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                                   const tarch::la::Vector<DIMENSIONS,
@@ -1142,11 +1137,11 @@ public:
    * The space-time predictor computation also includes
    * evaluating the point sources.
    *
-   * @param[out] lduh           cell-local update DoF.
-   * @param[out] lQhbnd, lFhbnd boundary-extrapolated space-time predictor and volume flux values.
-   * @param[int] luh            solution DoF.
-   * @param[in]  invDx          inverted extent of the cell per coordinate direction.
-   * @param[in]  dt             time step size.
+   * \param[out] lduh           cell-local update DoF.
+   * \param[out] lQhbnd, lFhbnd boundary-extrapolated space-time predictor and volume flux values.
+   * \param[int] luh            solution DoF.
+   * \param[in]  invDx          inverted extent of the cell per coordinate direction.
+   * \param[in]  dt             time step size.
    *
    * \return the number of Picard iterations performed by the
    * space-time predictor computation kernel.

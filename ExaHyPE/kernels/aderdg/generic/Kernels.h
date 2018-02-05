@@ -72,13 +72,15 @@ namespace c {
 template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM ,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
-    double* lFi,double* lQi,double* gradQ,double* PSderivatives,double* tmp_PSderivatives,double* PSi,
+    double* lQi, double* lFi, double* gradQ,
+    double* PSi, double* PSderivatives, double* tmp_PSderivatives,
+    double* lQhi,double* lFhi,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt);
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
-void spaceTimePredictorNonlinear(
+int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
     double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
