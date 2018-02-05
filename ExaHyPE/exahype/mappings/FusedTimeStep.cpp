@@ -125,7 +125,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     _localState = solverState;
 
     exahype::plotters::startPlottingIfAPlotterIsActive(
-        solvers::Solver::getMinSolverTimeStampOfAllSolvers());
+        solvers::Solver::getMinTimeStampOfAllSolvers());
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       solver->setNextMeshUpdateRequest();
