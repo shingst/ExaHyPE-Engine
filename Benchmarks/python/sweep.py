@@ -508,8 +508,8 @@ def verifyAllJobScriptsExist():
     """
     cpus       = jobs["num_cpus"]
     
-    if not os.path.exists(scriptFolderPath):
-        print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
+    if not os.path.exists(scriptsFolderPath):
+        print("ERROR: job script folder '"+scriptsFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
     
     allJobScriptsExist = True
@@ -555,8 +555,8 @@ def verifyAllSpecFilesExist():
     """
     cpus       = jobs["num_cpus"]
     
-    if not os.path.exists(scriptFolderPath):
-        print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
+    if not os.path.exists(scriptsFolderPath):
+        print("ERROR: job script folder '"+scriptsFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
     
     allSpecFilesExist = True
