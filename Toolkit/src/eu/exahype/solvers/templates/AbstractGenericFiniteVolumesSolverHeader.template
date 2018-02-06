@@ -62,7 +62,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void ghostLayerFilling(double* luh,const double* luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) override;
     void ghostLayerFillingAtBoundary(double* luh,const double* luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
     void boundaryLayerExtraction(double* luhbnd,const double* luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) override;
-    void boundaryConditions(double* stateOut,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
+    void boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
     double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) override;

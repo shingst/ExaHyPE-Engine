@@ -83,13 +83,13 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch
   const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
   const int faceIndex   = 2*direction+orientation;
   
-  boundaryLayerExtraction(luhbndIn,luh,posBoundary-posCell);
+  boundaryLayerExtraction(luhbndInside,luh,posBoundary-posCell);
   kernels::finitevolumes::commons::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),luhbndOutside,luhbndInside,cellCentre,cellSize,t,dt,faceIndex,direction);
-  ghostLayerFillingAtBoundary(luh,luhbndOut,posBoundary-posCell);
-  
+  ghostLayerFillingAtBoundary(luh,luhbndOutside,posBoundary-posCell);
   {%- if !tempVarsOnStack %}
+  
   exahype::DataHeap::getInstance().deleteData(indexLuhbndInside,true);
-  exahype::DataHeap::getInstance().deleteData(luhbndOutside,true);
+  exahype::DataHeap::getInstance().deleteData(indexLuhbndOutside,true);
   {%- endif %}
 }
 

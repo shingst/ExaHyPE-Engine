@@ -1746,11 +1746,6 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
 void exahype::solvers::ADERDGSolver::validateNoNansInADERDGSolver(
   const CellDescription& cellDescription,
   const std::string& methodTraceOfCaller) const {
-  int dataPerCell             = 0;
-  int unknownsPerCell         = 0;
-  int dataPerCellBoundary     = 0;
-  int unknownsPerCellBoundary = 0;
-
   #if defined(Debug) || defined(Asserts)
   #ifdef Parallel
   assertion(!cellDescription.getHasToHoldDataForMasterWorkerCommunication());
@@ -1762,12 +1757,11 @@ void exahype::solvers::ADERDGSolver::validateNoNansInADERDGSolver(
   double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
   double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
 
-  dataPerCell             = getDataPerCell();
-  unknownsPerCell         = getUnknownsPerCell();
+  int dataPerCell             = getDataPerCell();
+  int unknownsPerCell         = getUnknownsPerCell();
 
-  dataPerCellBoundary     = getBndTotalSize();
-  unknownsPerCellBoundary = getBndFluxTotalSize();
-  #endif
+  int dataPerCellBoundary     = getBndTotalSize();
+  int unknownsPerCellBoundary = getBndFluxTotalSize();
 
   assertion1(getType()==exahype::solvers::Solver::Type::ADERDG,cellDescription.toString());
 
@@ -1776,7 +1770,6 @@ void exahype::solvers::ADERDGSolver::validateNoNansInADERDGSolver(
   assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()),cellDescription.toString());
   assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()),cellDescription.toString());
 
-  #if defined(Debug) || defined(Asserts)
   for (int i=0; i<dataPerCell; i++) {
     assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),
         cellDescription.toString(),toString(),methodTraceOfCaller,i);
