@@ -413,10 +413,6 @@ def generateScripts():
     Generate spec files and job scripts.
     """
     cpus       = jobs["num_cpus"]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = int(jobs["runs"])
     
     specFileTemplatePath  = exahypeRoot+"/"+general["spec_template"]
     jobScriptTemplatePath = exahypeRoot+"/"+general["job_template"]
@@ -466,7 +462,7 @@ def generateScripts():
     
     # generate job scrips
     jobScripts = 0
-    for run in range(0,runs):
+    for run in runNumbers:
         for nodes in nodeCounts:
             for tasks in taskCounts:
                 for parsedCores in coreCounts:
@@ -490,7 +486,7 @@ def generateScripts():
                                            parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             outputFileName = resultsFolderPath + "/" + jobName + ".out"
@@ -511,17 +507,13 @@ def verifyAllJobScriptsExist():
     Verify that all job scripts exist.
     """
     cpus       = jobs["num_cpus"]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = int(jobs["runs"])
     
     if not os.path.exists(scriptFolderPath):
         print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
     
     allJobScriptsExist = True
-    for run in range(0,runs):
+    for run in runNumbers:
         for nodes in nodeCounts:
             for tasks in taskCounts:
                 for parsedCores in coreCounts:
@@ -538,7 +530,7 @@ def verifyAllJobScriptsExist():
                             order     = parameterDict["order"]
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             
@@ -550,7 +542,7 @@ def verifyAllJobScriptsExist():
                                       ", nodes="+nodes + \
                                       ", tasks="+tasks + \
                                       ", cores="+cores + \
-                                      ", run="+str(run) + \
+                                      ", run="+run + \
                                       " does not exist! ('"+jobFilePath+"')",file=sys.stderr)
     if not allJobScriptsExist:
         print("ERROR: subprogram failed! Please adopt your sweep options file according to the error messages.\n" + \
@@ -562,8 +554,6 @@ def verifyAllSpecFilesExist():
     Verify that all ExaHyPE specification files exist.
     """
     cpus       = jobs["num_cpus"]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     
     if not os.path.exists(scriptFolderPath):
         print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
@@ -595,11 +585,6 @@ def verifyAllSpecFilesExist():
         sys.exit()
 
 def hashSweep():
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = jobs["runs"]
-    
     chain = ""
     for value in nodeCounts:
         chain += value+";"
@@ -607,7 +592,8 @@ def hashSweep():
         chain += value+";"
     for value in coreCounts:
         chain += value+";"
-    chain += runs+";"
+    for value in runNumbers:
+        chain += value+";"
     
     for environmentDict in dictProduct(environmentSpace):
         chain += hashDictionary(environmentDict)
@@ -633,12 +619,7 @@ def submitJobs():
     """
     jobSubmissionTool    = general["job_submission"]
     
-    jobs       = config["jobs"]
-    cpus       = jobs["num_cpus"]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = int(jobs["runs"])
+    cpus = jobs["num_cpus"]
     
     # verify everything is fine
     verifyAllExecutablesExist()
@@ -651,7 +632,7 @@ def submitJobs():
     
     # loop over job scrips
     jobIds = []
-    for run in range(0,runs):
+    for run in runNumbers:
         for nodes in nodeCounts:
             for tasks in taskCounts:
                 for parsedCores in coreCounts:
@@ -668,7 +649,7 @@ def submitJobs():
                             order     = parameterDict["order"]
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             
@@ -1146,6 +1127,11 @@ typical workflow:
     scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
     resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
     historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
+    
+    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
+    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
+    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
+    runNumbers = [x.strip() for x in jobs["runs"].split(",")]
     
     verifySweepAgreesWithHistoricExperiments()
     
