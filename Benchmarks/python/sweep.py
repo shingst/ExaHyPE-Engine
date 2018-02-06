@@ -1122,7 +1122,8 @@ typical workflow:
     outputPath       = general["output_path"]
     projectPath      = general["project_path"]
     projectName      = general["project_name"]
-    
+   
+    buildFolder       = "build" 
     buildFolderPath   = exahypeRoot+"/"+outputPath+"/build"
     scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
     resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
