@@ -2756,8 +2756,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
     [&] () -> void {
       uncompress(cellDescriptionRight);
     },
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
 
@@ -4409,11 +4409,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       getUnknownsPerCellBoundary(),
       CompressionAccuracy
       );},
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
 
@@ -4751,11 +4751,11 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         lock.free();
       }
     },
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
 }
