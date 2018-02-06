@@ -1131,7 +1131,7 @@ typical workflow:
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runNumbers = [x.strip() for x in jobs["runs"].split(",")]
+    runNumbers = [x.strip() for x in jobs["run"].split(",")]
     
     verifySweepAgreesWithHistoricExperiments()
     
