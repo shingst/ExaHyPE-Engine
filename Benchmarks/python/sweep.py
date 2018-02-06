@@ -24,6 +24,18 @@ def haveToPrintHelpMessage(argv):
         result = result or ( arg=="-help" or arg=="-h" )
     return result
 
+def parseList(string):
+    """
+    Decomposes strings like '"val1,val2",val3,"val4,val5"'
+    into a list of strings:
+    [ 'val1,val2' ,'val3', 'val4,val5' ]
+    """
+    for line in csv.reader([string],delimiter=","):
+      values = line
+      for i,value in enumerate(values):
+          values[i] = value.replace(" ","")
+      return values
+
 def parseEnvironment(config):
     """
     Parse the environment section.
@@ -31,7 +43,7 @@ def parseEnvironment(config):
     environmentSpace = {}
     if "environment" in config and len(config["environment"].keys()):
         for key, value in config["environment"].items():
-            environmentSpace[key] = [x.strip() for x in value.split(",")]
+            environmentSpace[key] = parseList(value)
         if "SHAREDMEM" not in environmentSpace:
             print("ERROR: 'SHAREDMEM' missing in section 'environment'.",file=sys.stderr)
             sys.exit()
@@ -48,7 +60,7 @@ def parseParameters(config):
     parameterSpace = {}
     if "parameters" in config and len(config["parameters"].keys()):
         for key, value in config["parameters"].items():
-            parameterSpace[key] = [x.strip() for x in value.split(",")]
+            parameterSpace[key] = parseList(value)
             
         if "order" not in parameterSpace:
             print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
@@ -775,7 +787,7 @@ def parseAdapterTimes():
     tablePath         = resultsFolderPath+"/"+projectName+'.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            csvwriter = csv.writer(csvfile, delimiter=';')
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
 
             print("processed files:")
@@ -967,7 +979,7 @@ def parseLikwidMetrics():
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            csvwriter = csv.writer(csvfile, delimiter=';')
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out.likwid")]
 
             print("processed files:")
