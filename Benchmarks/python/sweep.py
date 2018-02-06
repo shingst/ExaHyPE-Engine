@@ -953,7 +953,7 @@ def getLikwidMetricsSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseLikwidMetrics():
+def parseMetrics():
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
@@ -977,7 +977,12 @@ def parseLikwidMetrics():
                 run                 = match.group(7)
                 
                 environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName,cores=="1")
-                if len(adapters):
+
+                # TODO(Dominic): workaround. parameters 
+                if len(environmentDict) is 0:
+                   environmentDict,parameterDict,adapters = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
+
+                if len(measurements):
                     # write header
                     if firstFile:
                         header = []
@@ -991,28 +996,31 @@ def parseLikwidMetrics():
                         header.append("tasks")
                         header.append("cores")
                         header.append("run")
-                        header += sorted(measurements)
+                        for key in sorted(measurements):
+                            for subkey in measurements[key]:
+                                header.append(key+" ("+subkey+")")
                         csvwriter.writerow(header)
                         firstFile=False
                     print(resultsFolderPath+"/"+fileName)
                     
-                    # write rows
-                    for adapter in adapters:
-                        row=[]
-                        for key in sorted(environmentDict):
-                            row.append(environmentDict[key])
-                        for key in knownParameters:
+                    # write row
+                    row=[]
+                    for key in sorted(environmentDict):
+                        row.append(environmentDict[key])
+                    for key in knownParameters:
+                        row.append(parameterDict[key])
+                    for key in sorted(parameterDict):
+                        if key not in knownParameters:
                             row.append(parameterDict[key])
-                        for key in sorted(parameterDict):
-                            if key not in knownParameters:
-                                row.append(parameterDict[key])
-                        row.append(nodes)
-                        row.append(tasks)
-                        row.append(cores)
-                        row.append(run)
-                        for key in sorted(measurements):
-                            row.append(parameterDict[key])
-                        csvwriter.writerow(row)
+                    row.append(nodes)
+                    row.append(tasks)
+                    row.append(cores)
+                    row.append(run)
+                    for key in sorted(measurements):
+                        for subkey in measurements[key]:
+                            row.append(measurements[key][subkey])
+                    csvwriter.writerow(row)
+
         success = not firstFile
         if success:
           # reopen the table and sort it
@@ -1160,4 +1168,4 @@ typical workflow:
     elif subprogram == "parseAdapters":
         parseAdapterTimes()
     elif subprogram == "parseMetrics":
-        parseLikwidMetrics()
+        parseMetrics()
