@@ -261,21 +261,13 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
-{%- if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-{%- else %}
-    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-{%- endif %}
+    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-{%- if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-{%- else %}
-    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-{%- endif %}
+    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
   }
 {%- if !tempVarsOnStack %}
   exahype::DataHeap::getInstance().deleteData(indexStateOut,true);
