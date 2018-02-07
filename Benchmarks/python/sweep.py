@@ -768,7 +768,7 @@ def parseAdapterTimes():
     tablePath         = resultsFolderPath+"/"+projectName+'.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=';')
+            csvwriter = csv.writer(csvfile, delimiter=";")
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
 
             print("processed files:")
@@ -832,14 +832,14 @@ def parseAdapterTimes():
           tableFile   = open(tablePath, 'r')
           header      = next(tableFile)
           header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=',')
+          reader      = csv.reader(tableFile,delimiter=";")
           
           sortedData = sorted(reader,key=getAdapterTimesSortingKey)
           tableFile.close()
           
           with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-              writer.writerow(header.split(','))
+              writer = csv.writer(sortedTableFile, delimiter=";")
+              writer.writerow(header.split(';'))
               writer.writerows(sortedData)
           print("created table:")
           print(tablePath) 
@@ -960,7 +960,7 @@ def parseMetrics():
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=';')
+            csvwriter = csv.writer(csvfile, delimiter=";")
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out.likwid")]
 
             print("processed files:")
@@ -1027,14 +1027,14 @@ def parseMetrics():
           tableFile   = open(tablePath, 'r')
           header      = next(tableFile)
           header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=',')
+          reader      = csv.reader(tableFile,delimiter=";")
           
           sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
           tableFile.close()
           
           with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-              writer.writerow(header.split(','))
+              writer = csv.writer(sortedTableFile, delimiter=";")
+              writer.writerow(header.split(";"))
               writer.writerows(sortedData)
           print("created table:")
           print(tablePath) 
