@@ -63,6 +63,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double tmp_PSderivatives[NumberOfVariables*spaceTimeBasisSize]; // it's actually lFi used here as a temp array //TODO do something cleaner?
   
   double lFhi[(DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize]; // also stores the source
+  double lQhi[(NumberOfVariables+NumberOfParameters)*spaceBasisSize];
 {%-   else %}
   constexpr int sizeLQi           = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
   constexpr int sizeLFi           = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
