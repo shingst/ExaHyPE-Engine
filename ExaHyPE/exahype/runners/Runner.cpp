@@ -32,7 +32,6 @@
 
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
-#include "tarch/multicore/AffinityTools.h"
 #include "tarch/multicore/Jobs.h"
 
 #include "peano/parallel/JoinDataBufferPool.h"
@@ -242,7 +241,7 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
   const int numberOfThreads = _parser.getNumberOfThreads();
-  tarch::multicore::Core::getInstance().configure(numberOfThreads);
+  tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
 
   if ( _parser.useManualPinning() ) {
     #ifdef SharedTBB
