@@ -866,8 +866,6 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
       );
       batchSize = std::min(batchSize,stepsTillNextPlot);
     }
-
-    std::cout << "batchSize=" << batchSize << std::endl;
   }
   return batchSize<1 ? 1 : batchSize;
 }
