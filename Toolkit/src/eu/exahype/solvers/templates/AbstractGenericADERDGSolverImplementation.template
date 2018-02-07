@@ -67,7 +67,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr int sizeLQi           = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
   constexpr int sizeLFi           = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeGradQ         = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
-  constexpr int sizePsi           = NumberOfVariables*spaceBasisSize*(Order+2);
+  constexpr int sizePSi           = NumberOfVariables*spaceBasisSize*(Order+2);
   constexpr int sizePSderivatives = NumberOfVariables*spaceTimeBasisSize;
   
   const int indexLQi               = exahype::DataHeap::getInstance().createData(
@@ -76,8 +76,8 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
      sizeLFi,sizeLFi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   const int indexGradQ             = exahype::DataHeap::getInstance().createData(
      sizeGradQ,sizeGradQ,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexPsi               = exahype::DataHeap::getInstance().createData(
-     sizePsi,sizePsi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  const int indexPSi               = exahype::DataHeap::getInstance().createData(
+     sizePSi,sizePSi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   const int indexPSderivatives     = exahype::DataHeap::getInstance().createData(
      sizePSderivatives,sizePSderivatives,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   const int indexTmp_PSderivatives = exahype::DataHeap::getInstance().createData(
@@ -85,7 +85,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lQi               = exahype::DataHeap::getInstance().getData(indexLQi).data();
   double* lFi               = exahype::DataHeap::getInstance().getData(indexLFi).data();
   double* gradQ             = exahype::DataHeap::getInstance().getData(indexGradQ).data();
-  double* PSi               = exahype::DataHeap::getInstance().getData(indexPsi).data();
+  double* PSi               = exahype::DataHeap::getInstance().getData(indexPSi).data();
   double* PSderivatives     = exahype::DataHeap::getInstance().getData(indexPSderivatives).data();
   double* tmp_PSderivatives = exahype::DataHeap::getInstance().getData(indexTmp_PSderivatives).data();
   
@@ -113,7 +113,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%-     endif %}
   exahype::DataHeap::getInstance().deleteData(indexLQi,true);
   exahype::DataHeap::getInstance().deleteData(indexLFi,true);
-  exahype::DataHeap::getInstance().deleteData(indexPsi,true);
+  exahype::DataHeap::getInstance().deleteData(indexPSi,true);
   exahype::DataHeap::getInstance().deleteData(indexLQi,true);
   exahype::DataHeap::getInstance().deleteData(indexPSderivatives,true);
   exahype::DataHeap::getInstance().deleteData(indexTmp_PSderivatives,true);

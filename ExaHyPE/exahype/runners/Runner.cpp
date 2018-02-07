@@ -846,7 +846,6 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
   const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
   const bool   haveActivePlotters       = exahype::plotters::getTimeOfNextPlot() < std::numeric_limits<double>::max();
 
-
   if (_parser.foundSimulationEndTime()) {
     const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
 
