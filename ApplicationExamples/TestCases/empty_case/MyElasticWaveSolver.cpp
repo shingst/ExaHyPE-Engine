@@ -46,6 +46,7 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
   stateOut[6] = 0.0;
   stateOut[7] = 0.0;
   stateOut[8] = 0.0;
+  stateOut[9] = 1.0;
 
   fluxOut[0] = 0.0;
   fluxOut[1] = 0.0;
