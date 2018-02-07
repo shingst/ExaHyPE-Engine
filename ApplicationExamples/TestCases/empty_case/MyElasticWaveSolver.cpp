@@ -95,7 +95,7 @@ void Elastic::MyElasticWaveSolver::flux(const double* const Q,double** F) {
 
   if((Q[9]-1.0)*(Q[9]- 1.0)> 1.0e-5){
     std::cout<< "Test parameter not read correctly" << std::endl;
-    std::exit(-1);
+    std::terminate();
   }
   F[0][0] = 0.0;
   F[0][1] = 0.0;
