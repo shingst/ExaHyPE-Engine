@@ -114,8 +114,8 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%-     endif %}
   exahype::DataHeap::getInstance().deleteData(indexLQi,true);
   exahype::DataHeap::getInstance().deleteData(indexLFi,true);
+  exahype::DataHeap::getInstance().deleteData(indexGradQ,true);
   exahype::DataHeap::getInstance().deleteData(indexPSi,true);
-  exahype::DataHeap::getInstance().deleteData(indexLQi,true);
   exahype::DataHeap::getInstance().deleteData(indexPSderivatives,true);
   exahype::DataHeap::getInstance().deleteData(indexTmp_PSderivatives,true);
 {%-   endif %}  
