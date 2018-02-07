@@ -844,6 +844,8 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
   const double minTimeStepSize          = solvers::Solver::getMinTimeStepSizeOfAllSolvers();
   const double maxTimeStamp             = solvers::Solver::getMaxTimeStampOfAllSolvers();
   const double timeIntervalTillNextPlot = exahype::plotters::getTimeOfNextPlot() - maxTimeStamp;
+  const bool   haveActivePlotters       = exahype::plotters::getTimeOfNextPlot() < std::numeric_limits<double>::max();
+
 
   if (_parser.foundSimulationEndTime()) {
     const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
@@ -852,18 +854,20 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
       _parser.getTimestepBatchFactor() *
       std::min(timeIntervalTillNextPlot, timeIntervalTillEndTime) / minTimeStepSize );
   } else {
-    const int stepsTillNextPlot = static_cast<int>(
-      _parser.getTimestepBatchFactor() *
-      timeIntervalTillNextPlot / minTimeStepSize);
-
     batchSize =
       std::min(
-        stepsTillNextPlot,
-        std::min(
-          static_cast<int>(simulationTimeSteps * _parser.getTimestepBatchFactor()),
-          simulationTimeSteps - currentTimeStep
-        )
+        static_cast<int>(simulationTimeSteps * _parser.getTimestepBatchFactor()),
+        simulationTimeSteps - currentTimeStep
       );
+    if (haveActivePlotters) {
+      const int stepsTillNextPlot = static_cast<int>(
+        _parser.getTimestepBatchFactor() *
+        timeIntervalTillNextPlot / minTimeStepSize
+      );
+      batchSize = std::min(batchSize,stepsTillNextPlot);
+    }
+
+    std::cout << "batchSize=" << batchSize << std::endl;
   }
   return batchSize<1 ? 1 : batchSize;
 }
