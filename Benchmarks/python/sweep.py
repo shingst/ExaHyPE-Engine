@@ -332,12 +332,10 @@ def verifySweepAgreesWithHistoricExperiments():
         print(previousSweeps)
     
         for f in previousSweeps:
-            otherConfig = configparser.ConfigParser()
-            otherConfig.optionxform=str
-            otherConfig.read(historyFolderPath + "/" + f)
+            otherOptions = sweep_options.parseOptionsFile(historyFolderPath+"/"+f)
         
-            otherEnvironmentSpace = parseEnvironment(otherConfig)
-            otherParameterSpace   = parseParameters(otherConfig)
+            otherEnvironmentSpace = otherOptions.environmentSpace
+            otherParameterSpace   = otherOptions.parameterSpace
         
             environmentSpaceIntersection = set(environmentSpace.keys()).intersection(otherEnvironmentSpace.keys())
             parameterSpaceIntersection   = set(parameterSpace.keys()).intersection(otherParameterSpace.keys())

@@ -12,6 +12,7 @@
 """
 import csv
 import json
+import os
 
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
 
