@@ -65,21 +65,13 @@ def dictProduct(dictionary):
 def column(matrix, i):
     return [row[i] for row in matrix]
 
-def autolabel(axes,rects):
-    """
-    Attach a text label above each bar displaying its height
-    """
-    for rect in rects:
-        label = rect.get_label()
-        axes.text(rect.get_y() + rect.get_height()/2., 1.05*rect.get_width(),
-                "%s" % label, 
-                ha='center', va='bottom')
-
-def plot():
+def createPlots():
     """
     Create a plot per plotDict. 
     Per plot, plot all rows found for the elements of the perPlotSpace.
     """
+    perPlotDictKeys = {}
+    
     for plotDict in dictProduct(plotsSpace):
         # create new plot
         figure = pyplot.figure()
@@ -88,7 +80,9 @@ def plot():
         plotDictKey = ",".join("%s=%s" %  pair for pair in plotDict.items())
         
         counter = 0
-        rects = []
+        positions  = []
+        labels     = []
+        dataPoints = []
         for perPlotDict in dictProduct(perPlotSpace):
             def tableFilter(row):
                 hit = True
@@ -100,7 +94,7 @@ def plot():
             
             filtered = list(filter(tableFilter,tableData))
             perPlotDictKey = ",".join("%s=%s" %  pair for pair in perPlotDict.items())
-            filterKey = plotDictKey + perPlotDictKey
+            filterKey = plotDictKey + "," + perPlotDictKey
             if len(filtered)>1:
                 print("ERROR: Parameter combinations are not unique!",file=sys.stderr)
                 print("ERROR: Found multiple rows for filter key=("+filterKey+").",file=sys.stderr)
@@ -111,23 +105,122 @@ def plot():
                         print("ERROR: "+name+"={"+",".join(values)+"}",file=sys.stderr)
                 sys.exit()
             elif len(filtered)==1:
-                dataPoint = float(filtered[0][dataColumnIndex])
-                rect = axes.barh(-counter,dataPoint,height=0.4,color='0.4',align='center',log=False,label=perPlotDictKey)
-                rects.append(rect)
+                positions.append(-counter)
+                labels.append("("+"|".join(perPlotDict.values())+")")
+                dataPoints.append(float(filtered[0][dataColumnIndex]))
                 counter += 1
             elif len(filtered)==0:
                 print("WARNING: Found no rows for key=("+filterKey+")!",file=sys.stderr)
         
         if counter>0:
-            axes.set_title(plotDictKey.replace(",","   "))
+            container = axes.barh(positions,dataPoints,height=0.8,color='0.6',align='center',log=False,label=labels)
+            # annotate the bar chart
+            x = 0.001*max(dataPoints)
+            for i,y in enumerate(positions):
+                label = labels[i]
+                axes.text(x,y,"%s" % label,ha='left', va='center',fontsize=6)
+            
+            title = plotDictKey.replace(","," ")
+            
             axes.get_yaxis().set_visible(False)
             axes.set_xlabel(dataColumnName)
-            axes.grid(True, which='x')
+            axes.set_ylim([-counter+0.6,0.6])
+            axes.grid(True, which='both')
             
-            autolabel(axes,rects)
+            if not os.path.exists(plotFolderPath):
+                print("create directory "+plotFolderPath)
+                os.makedirs(plotFolderPath)
             
-            figure.show()
-            input("Press Enter to continue...")
+            # Write files
+            figure.set_size_inches(4.80,4.80)
+            #figure.set_size_inches(2.40,2.20) # width: 0.470 * SIAM SISC \textwidth (=5.125in)
+        
+            # plot
+            filename = plotFolderPath + "/" + plotPrefix + "-" + "-".join(plotDict.values())
+            figure.savefig('%s-linear.pdf' % filename, bbox_inches='tight')
+            figure.savefig('%s-linear.png' % filename, bbox_inches='tight')
+            print("created plot: %s-linear.pdf" % filename)
+            print("created plot: %s-linear.png" % filename)
+            
+            axes.set_xscale('symlog')
+            figure.savefig('%s-log.pdf' % filename, bbox_inches='tight')
+            figure.savefig('%s-log.png' % filename, bbox_inches='tight')
+            print("created plot: %s-log.pdf" % filename)
+            print("created plot: %s-log.png" % filename)
+            
+            # memorise for the rendering
+            perPlotDictKeys[str(plotDict.keys())] = perPlotDict.keys()
+    
+    return perPlotDictKeys
+
+latexFigureTemplate = \
+r"""
+\begin{figure}
+\centering
+\includegraphics[scale=0.89]{{{file}}}
+\caption{{{caption}}}
+\end{figure}
+"""
+
+latexFileTemplate = \
+r"""
+\title{{{title}}}
+\author{{{author}}}
+\date{\today}
+
+\documentclass[12pt]{article}
+
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\begin{document}
+\maketitle
+
+{{body}}
+
+\end{document}
+"""
+
+
+def renderPDF():
+    """
+    Render a LaTeX document.
+    """
+    latexFileContent = latexFileTemplate;
+    latexFileContent = latexFileContent.replace("{{title}}",plotPrefix)
+    latexFileContent = latexFileContent.replace("{{author}}",os.environ["USER"])
+    
+    body = ""
+    counter = 0
+    for plotDict in dictProduct(plotsSpace):
+        plotFileName = plotFolder + "/" + plotPrefix + "-" + "-".join(plotDict.values())
+        
+        if os.path.exists(outputPath + "/" + plotFileName+"-linear.pdf"):
+            renderedFigure = latexFigureTemplate;
+            
+            caption  = "\\textbf{"+", ".join("%s=%s" %  pair for pair in plotDict.items())
+            caption += ":} The bars show measurements for different values of ("
+            caption += r"{$|$}".join("%s" % item for item in perPlotDictKeys[str(plotDict.keys())]) + ")."
+            renderedFigure = renderedFigure.replace("{{caption}}",caption)
+            
+            for ending in ["-linear.pdf", "-log.pdf"]:
+                body += renderedFigure.replace("{{file}}",plotFileName+ending) + "\n\n"
+                if counter % 10 == 0:
+                    body += r"\clearpage"
+                counter += 1
+    latexFileContent = latexFileContent.replace("{{body}}",body)
+    
+    latexFileName = plotPrefix + ".tex"
+    with open(outputPath + "/" + latexFileName, 'w') as latexFile:
+         latexFile.write(latexFileContent)
+    print("created tex file: "+outputPath + "/" + latexFileName)
+    command = "( cd "+outputPath+" && pdflatex "+latexFileName + ")"
+    print(command)
+#    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    process = subprocess.Popen([command], shell=True)
+    (output, err) = process.communicate()
+    process.wait()
+    print("created PDF document: "+outputPath+"/"+latexFileName.replace(".tex",".pdf"))
 
 def getDataColumnIndex():
     """
@@ -169,11 +262,12 @@ def createParameterKeysToColumnIndexMapping(parameterSpace):
     return indexMapping
 
 if __name__ == "__main__":
-    import sys
+    import sys,os
     import csv
     import configparser
     import collections
     import itertools
+    import subprocess
     
     import matplotlib
     import matplotlib.pyplot as pyplot
@@ -205,7 +299,8 @@ NOTE: tableplotter preserves the order of the parameters. You thus have control 
     
     plotPrefix      = configParser["output"]["prefix"].replace("\"","")
     outputPath      = configParser["output"]["path"].replace("\"","")
-    buildFolderPath = outputPath+"/plots"
+    plotFolder      = "plots"
+    plotFolderPath  = outputPath+"/" + plotFolder
     
     dataColumnName = configParser["to_plot"]["data"].replace("\"","")
     
@@ -225,4 +320,5 @@ NOTE: tableplotter preserves the order of the parameters. You thus have control 
     indexMappingPerPlot = createParameterKeysToColumnIndexMapping(perPlotSpace)
     
     # plot
-    plot()
+    perPlotDictKeys = createPlots()
+    renderPDF()
