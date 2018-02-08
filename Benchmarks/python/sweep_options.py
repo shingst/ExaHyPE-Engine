@@ -72,6 +72,18 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     configParser.optionxform=str
     configParser.read(optionsFile)
     
+    general          = dict(configParser["general"])
+    exahypeRoot      = general["exahype_root"]
+    outputPath       = general["output_path"]
+    projectPath      = general["project_path"]
+    projectName      = general["project_name"]
+    
+    buildFolder       = "build"
+    buildFolderPath   = exahypeRoot+"/"+outputPath+"/" + buildFolder
+    scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
+    resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
+    historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
+    
     jobs             = dict(configParser["jobs"])
     environmentSpace = parseEnvironment(configParser)
     parameterSpace   = parseParameters(configParser)
@@ -81,61 +93,35 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runNumbers = [x.strip() for x in jobs["run"].split(",")]
     
-    if ignoreMetadata:
-        Options = namedtuple("options", \
-               ("environmentSpace parameterSpace "
-                "nodeCounts taskCounts coreCounts runNumbers"))
-        
-        options = Options(
-          environmentSpace = environmentSpace,\
-          parameterSpace   = parameterSpace,\
-          nodeCounts = nodeCounts,\
-          taskCounts = taskCounts,\
-          coreCounts = coreCounts,\
-          runNumbers = runNumbers\
-        )
-    else:
-        Options = namedtuple("options", \
-               ("general jobs environmentSpace parameterSpace "
-                "exahypeRoot outputPath projectPath projectName "
-                "buildFolder "
-                "buildFolderPath scriptsFolderPath "
-                "resultsFolderPath historyFolderPath "
-                "nodeCounts taskCounts coreCounts runNumbers"))
-        
-        general          = dict(configParser["general"])
-        exahypeRoot      = general["exahype_root"]
-        outputPath       = general["output_path"]
-        projectPath      = general["project_path"]
-        projectName      = general["project_name"]
-        
-        buildFolder       = "build"
-        buildFolderPath   = exahypeRoot+"/"+outputPath+"/" + buildFolder
-        scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
-        resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
-        historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
-        
-        options = Options(
-          general          = general,
-          jobs             = jobs,\
-          environmentSpace = environmentSpace,\
-          parameterSpace   = parameterSpace,\
-          \
-          exahypeRoot      = exahypeRoot,\
-          outputPath       = outputPath,\
-          projectPath      = projectPath,\
-          projectName      = projectName,\
-          \
-          buildFolder       = buildFolder,\
-          buildFolderPath   = buildFolderPath,\
-          scriptsFolderPath = scriptsFolderPath,\
-          resultsFolderPath = resultsFolderPath,\
-          historyFolderPath = historyFolderPath,\
-          \
-          nodeCounts = nodeCounts,\
-          taskCounts = taskCounts,\
-          coreCounts = coreCounts,\
-          runNumbers = runNumbers\
-        )
+    Options = namedtuple("options", \
+           ("general jobs environmentSpace parameterSpace "
+            "exahypeRoot outputPath projectPath projectName "
+            "buildFolder "
+            "buildFolderPath scriptsFolderPath "
+            "resultsFolderPath historyFolderPath "
+            "nodeCounts taskCounts coreCounts runNumbers"))
+    
+    options = Options(
+      general          = general,
+      jobs             = jobs,\
+      environmentSpace = environmentSpace,\
+      parameterSpace   = parameterSpace,\
+      \
+      exahypeRoot      = exahypeRoot,\
+      outputPath       = outputPath,\
+      projectPath      = projectPath,\
+      projectName      = projectName,\
+      \
+      buildFolder       = buildFolder,\
+      buildFolderPath   = buildFolderPath,\
+      scriptsFolderPath = scriptsFolderPath,\
+      resultsFolderPath = resultsFolderPath,\
+      historyFolderPath = historyFolderPath,\
+      \
+      nodeCounts = nodeCounts,\
+      taskCounts = taskCounts,\
+      coreCounts = coreCounts,\
+      runNumbers = runNumbers\
+    )
     
     return options
