@@ -1950,6 +1950,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
                 luh,
                 cellDescription.getOffset()+0.5*cellDescription.getSize(),
                 cellDescription.getSize(),
+		cellDescription.getPredictorTimeStamp(),
                 cellDescription.getPredictorTimeStepSize());
 
       validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
@@ -4147,6 +4148,7 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
             luh,
             _cellDescription.getOffset()+0.5*_cellDescription.getSize(),
             _cellDescription.getSize(),
+	    _cellDescription.getPredictorTimeStamp(),
             _cellDescription.getPredictorTimeStepSize());
 
   _solver.validateNoNansInADERDGSolver(_cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");

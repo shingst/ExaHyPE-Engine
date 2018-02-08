@@ -1151,6 +1151,7 @@ public:
       const double* const luh,
       const tarch::la::Vector<DIMENSIONS, double>& center,
       const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
       const double dt) = 0;
 
   /**

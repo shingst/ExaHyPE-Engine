@@ -192,7 +192,6 @@ void volumeUnknownsRestriction(
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex);
     
-//TODO KD    
 template <typename SolverType>
 void deltaDistribution(
     SolverType& solver,
@@ -200,8 +199,8 @@ void deltaDistribution(
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int basisSize,
-    double** tempPointForceSources //memory space for forceVector
+    double* Psi,
+    double* forceVectorSourceN 
     );
 }  // namespace c
 }  // namespace generic

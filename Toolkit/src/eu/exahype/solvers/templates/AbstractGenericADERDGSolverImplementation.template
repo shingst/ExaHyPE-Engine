@@ -43,7 +43,7 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
   abort();
 }
 
-int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double dt) {
+int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t ,const double dt) {
 {%- if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
@@ -79,6 +79,9 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
      sizeGradQ,sizeGradQ,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   const int indexPSi               = exahype::DataHeap::getInstance().createData(
      sizePSi,sizePSi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  const int indexForceVectorSouceN = exahype::DataHeap::getInstance().createData(
+     sizePSi,sizePSi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequir\
+ed);
   const int indexPSderivatives     = exahype::DataHeap::getInstance().createData(
      sizePSderivatives,sizePSderivatives,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   const int indexTmp_PSderivatives = exahype::DataHeap::getInstance().createData(
@@ -87,6 +90,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lFi               = exahype::DataHeap::getInstance().getData(indexLFi).data();
   double* gradQ             = exahype::DataHeap::getInstance().getData(indexGradQ).data();
   double* PSi               = exahype::DataHeap::getInstance().getData(indexPSi).data();
+  double* forceVectorSourceN= exahype::DataHeap::getInstance().getData(indexForceVectorSouceN).data();
   double* PSderivatives     = exahype::DataHeap::getInstance().getData(indexPSderivatives).data();
   double* tmp_PSderivatives = exahype::DataHeap::getInstance().getData(indexTmp_PSderivatives).data();
   
@@ -101,7 +105,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%-   endif %}
 
 {%-   if usePointSources %}
-  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), PSi);
+  kernels::aderdg::generic::c::deltaDistribution<MyElasticWaveSolver>(*static_cast<MyElasticWaveSolver*>(this), t, dt, center, dx, PSi, forceVectorSourceN);
 {%-   endif %}
   const int picardIterations = 1;
   kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
@@ -116,6 +120,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   exahype::DataHeap::getInstance().deleteData(indexLFi,true);
   exahype::DataHeap::getInstance().deleteData(indexGradQ,true);
   exahype::DataHeap::getInstance().deleteData(indexPSi,true);
+  exahype::DataHeap::getInstance().deleteData(indexForceVectorSouceN,true);
   exahype::DataHeap::getInstance().deleteData(indexPSderivatives,true);
   exahype::DataHeap::getInstance().deleteData(indexTmp_PSderivatives,true);
 {%-   endif %}  
