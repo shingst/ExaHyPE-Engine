@@ -24,62 +24,6 @@ def haveToPrintHelpMessage(argv):
         result = result or ( arg=="-help" or arg=="-h" )
     return result
 
-def parseList(string):
-    """
-    Decomposes strings like '"val1,val2",val3,"val4,val5"'
-    into a list of strings:
-    [ 'val1,val2' ,'val3', 'val4,val5' ]
-    """
-    for line in csv.reader([string],delimiter=","):
-      values = line
-      for i,value in enumerate(values):
-          values[i] = value.replace(" ","")
-      return values
-
-def parseEnvironment(config):
-    """
-    Parse the environment section.
-    """
-    environmentSpace = {}
-    if "environment" in config and len(config["environment"].keys()):
-        for key, value in config["environment"].items():
-            environmentSpace[key] = parseList(value)
-        if "SHAREDMEM" not in environmentSpace:
-            print("ERROR: 'SHAREDMEM' missing in section 'environment'.",file=sys.stderr)
-            sys.exit()
-    else:
-        print("ERROR: Section 'environment' is missing or empty! (Must contain at least 'SHAREDMEM'.)",file=sys.stderr)
-        sys.exit()
-    
-    return environmentSpace
-
-def parseParameters(config):
-    """
-    Parse the parameters section.
-    """
-    parameterSpace = {}
-    if "parameters" in config and len(config["parameters"].keys()):
-        for key, value in config["parameters"].items():
-            parameterSpace[key] = parseList(value)
-            
-        if "order" not in parameterSpace:
-            print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "dimension" not in parameterSpace:
-            print("ERROR: 'dimension' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "optimisation" not in parameterSpace:
-            print("ERROR: 'optimisation' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "architecture" not in parameterSpace:
-            print("ERROR: 'architecture' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-    else:
-        print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
-        sys.exit()
-    
-    return parameterSpace
-
 def dictProduct(dicts):
     """
     Computes the Cartesian product of a dictionary of lists as 
@@ -706,16 +650,14 @@ def cancelJobs():
 
 if __name__ == "__main__":
     import sys,os
-    import configparser
     import subprocess
     import itertools
     import hashlib
     import json
-    import codecs
     import re
-    import csv
     
     import sweep_analysis
+    import sweep_options
     
     subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
     
@@ -735,8 +677,6 @@ available subprograms:
 * cancel        - cancel the submitted jobs
 * parseAdapters - read the job output and parse adapter times
 * parseMetrics  - read the job output and parse likwid metrics
-* plotAdapters  - read the job output and plot the adapter times
-* plotMetrics   - read the job output and plot the likwid metrics
 * cleanAll      - remove the whole sweep benchmark suite
 * cleanBuild    - remove the build subfolder
 * cleanScripts  - remove the scripts subfolder
@@ -757,33 +697,31 @@ typical workflow:
         print(info) # correctly indented
         sys.exit()
     
-    configFile = parseArgument(sys.argv,1)
-    subprogram = parseArgument(sys.argv,2)
+    optionsFile = parseArgument(sys.argv,1)
+    subprogram  = parseArgument(sys.argv,2)
     
-    config = configparser.ConfigParser()
-    config.optionxform=str
-    config.read(configFile)
+    options = sweep_options.parseOptionsFile(optionsFile)
     
-    general          = config["general"]
-    jobs             = config["jobs"]
-    environmentSpace = parseEnvironment(config)
-    parameterSpace   = parseParameters(config)
+    general          = options.general
+    jobs             = options.jobs
+    environmentSpace = options.environmentSpace
+    parameterSpace   = options.parameterSpace
      
-    exahypeRoot      = general["exahype_root"]
-    outputPath       = general["output_path"]
-    projectPath      = general["project_path"]
-    projectName      = general["project_name"]
+    exahypeRoot      = options.exahypeRoot
+    outputPath       = options.outputPath
+    projectPath      = options.projectPath
+    projectName      = options.projectName
    
-    buildFolder       = "build" 
-    buildFolderPath   = exahypeRoot+"/"+outputPath+"/build"
-    scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
-    resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
-    historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
+    buildFolder       = options.buildFolder
+    buildFolderPath   = options.buildFolderPath
+    scriptsFolderPath = options.scriptsFolderPath
+    resultsFolderPath = options.resultsFolderPath
+    historyFolderPath = options.historyFolderPath
     
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runNumbers = [x.strip() for x in jobs["run"].split(",")]
+    nodeCounts = options.nodeCounts
+    taskCounts = options.taskCounts
+    coreCounts = options.coreCounts
+    runNumbers = options.runNumbers
     
     verifySweepAgreesWithHistoricExperiments()
     

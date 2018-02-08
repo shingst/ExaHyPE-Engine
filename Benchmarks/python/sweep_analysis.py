@@ -2,12 +2,17 @@
 """
 .. module:: sweep_analysis
   :platform: Unix, Windows, Mac
-  :synopsis: Submodule containing modules for analysing 
+  :synopsis: Submodule containing modules for analysing a bunch of 
+   ExaHyPE output files
+   and creating 
    
 .. moduleauthor:: Dominic Etienne Charrier <dominic.e.charrier@durham.ac.uk>, 
 
 :synopsis: Generate benchmark suites for ExaHyPE.
 """
+import csv
+import json
+
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
 
 metrics =  [
@@ -51,7 +56,7 @@ def parseResultFile(filePath):
     environmentDict = {}
     parameterDict   = {}
     
-    adapters = {}
+    adapters      = {}
     cputimeIndex  = 3
     usertimeIndex = 5
     
@@ -129,6 +134,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         header.append("iterations")
                         header.append("total_cputime")
                         header.append("total_usertime")
+                        header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
                     print(resultsFolderPath+"/"+fileName)
@@ -151,6 +157,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(adapters[adapter]["iterations"])
                         row.append(adapters[adapter]["total_cputime"])
                         row.append(adapters[adapter]["total_usertime"])
+                        row.append(resultsFolderPath + "/" + fileName)
                         csvwriter.writerow(row)
         success = not firstFile
         if success:
@@ -325,6 +332,7 @@ def parseMetrics(resultsFolderPath,projectName):
                         for key in sorted(measurements):
                             for subkey in measurements[key]:
                                 header.append(key+" ("+subkey+")")
+                        header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
                     print(resultsFolderPath+"/"+fileName)
@@ -345,6 +353,7 @@ def parseMetrics(resultsFolderPath,projectName):
                     for key in sorted(measurements):
                         for subkey in measurements[key]:
                             row.append(measurements[key][subkey])
+                    row.append(resultsFolderPath + "/" + fileName)
                     csvwriter.writerow(row)
 
         success = not firstFile
