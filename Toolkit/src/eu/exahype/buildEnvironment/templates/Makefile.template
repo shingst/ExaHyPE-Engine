@@ -24,12 +24,6 @@ EXAHYPE_PATH={{exahypePath}}
 PROJECT_PATH={{outputPath}}
 EXECUTABLE={{executableName}}
 
-# Several MPI variants face problems with multithreaded MPI. As we run into 
-# such issues multiple times, we disable by default multithreaded MPI in ExaHyE. 
-# However, feel free to give it a try in your code on your system by disabling 
-# this flag. 
-PROJECT_CFLAGS+= -DnoMultipleThreadsMayTriggerMPICalls
-
 PROJECT_CFLAGS+= -DDim{{dimensions}}
 
 {%- if architecture != "noarch" %}
