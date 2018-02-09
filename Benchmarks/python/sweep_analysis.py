@@ -13,6 +13,8 @@
 import csv
 import json
 import os
+import re
+import codecs
 
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
 
