@@ -104,8 +104,8 @@ def createPlots():
                         print("ERROR: "+name+"={"+",".join(values)+"}",file=sys.stderr)
                 sys.exit()
             elif len(filtered)==1:
-                positions.append(-counter)
-                labels.append("("+"|".join(perPlotDict.values())+")")
+                positions.append(counter)
+                labels.append(""+"-".join(perPlotDict.values())+"")
                 dataPoints.append(float(filtered[0][dataColumnIndex]))
                 counter += 1
             elif len(filtered)==0:
@@ -113,16 +113,30 @@ def createPlots():
         
         if counter>0:
             # plot
-            container = axes.barh(positions,dataPoints,height=0.8,color='0.8',align='center',log=False,label=labels)
+            container = axes.bar(positions,dataPoints,width=0.8,color="0.8",edgecolor="0.8",align='center',log=False,label=labels)
             # annotate the bar chart
-            x = 0.005*max(dataPoints)
-            for i,y in enumerate(positions):
+            dataMin = min(dataPoints)
+            dataMax = max(dataPoints)
+            iMin    = dataPoints.index(dataMin)
+            iMax    = dataPoints.index(dataMax)
+            container.patches[iMin].set_color("g")
+            container.patches[iMax].set_color("r")
+            for i,x in enumerate(positions):
                 label = labels[i]
-                axes.text(x,y,"%s" % label,ha='left', va='center',fontsize=6)
+                axes.text(x,dataMax*0.05,"%s" % label,ha='center', va='bottom',fontweight="bold",fontsize=6,rotation=90)
             
-            axes.get_yaxis().set_visible(False)
-            axes.set_xlabel(dataColumnName)
-            axes.set_ylim([-counter+0.6,0.6])
+            axes.set_ylabel(dataColumnName)
+            axes.set_ylim([0,dataMax*1.05])
+            
+            axes.get_xaxis().set_visible(False)
+            axes.set_xlim([-0.6,counter-1++0.6])
+            
+            #axes.set_xticks(positions)
+            #axes.set_xticklabels(labels)
+            #figure.autofmt_xdate()
+            
+            axes.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
+            
             axes.grid(True, which='both')
             
             if not os.path.exists(plotFolderPath):
@@ -130,20 +144,20 @@ def createPlots():
                 os.makedirs(plotFolderPath)
             
             # write files
-            figure.set_size_inches(4.80,4.80)
+            figure.set_size_inches(4.90,4.90)
             #figure.set_size_inches(2.40,2.20) # width: 0.470 * SIAM SISC \textwidth (=5.125in)
             
             filename = plotFolderPath + "/" + plotPrefix + "-" + "-".join(plotDict.values())
-            figure.savefig('%s-linear.pdf' % filename, bbox_inches='tight')
-            figure.savefig('%s-linear.png' % filename, bbox_inches='tight')
+            figure.savefig('%s-linear.pdf' % filename, bbox_inches="tight")
+            figure.savefig('%s-linear.png' % filename, bbox_inches="tight")
             print("created plot: %s-linear.pdf" % filename)
             print("created plot: %s-linear.png" % filename)
             
-            axes.set_xscale('symlog')
-            figure.savefig('%s-log.pdf' % filename, bbox_inches='tight')
-            figure.savefig('%s-log.png' % filename, bbox_inches='tight')
-            print("created plot: %s-log.pdf" % filename)
-            print("created plot: %s-log.png" % filename)
+            #axes.set_yscale("log", base=10)
+            #figure.savefig('%s-log.pdf' % filename, bbox_inches="tight")
+            #figure.savefig('%s-log.png' % filename, bbox_inches="tight")
+            #print("created plot: %s-log.pdf" % filename)
+            #print("created plot: %s-log.png" % filename)
             
             # memorise keys for the caption rendering
             perPlotDictKeys[str(plotDict.keys())] = perPlotDict.keys()
@@ -164,13 +178,13 @@ def renderPDF():
         plotFileName = plotFolder + "/" + plotPrefix + "-" + "-".join(plotDict.values())
         
         if os.path.exists(outputPath + "/" + plotFileName+"-linear.pdf"):
-            for scale in ["linear", "log"]:
+            for scale in ["linear"]:
                 renderedFigure = latexFigureTemplate;
                 
                 caption  = "\\textbf{"+", ".join("%s: %s" %  pair for pair in plotDict.items())
-                caption += " ("+scale+"):} "
+                caption += ":} "
                 caption += "The bars show measurements for different values of the tuples ("
-                caption += r"{$|$}".join("%s" % item for item in perPlotDictKeys[str(plotDict.keys())]) 
+                caption += ",".join("%s" % item for item in perPlotDictKeys[str(plotDict.keys())]) 
                 caption += ")."
                 renderedFigure = renderedFigure.replace("{{caption}}",caption)
                 
@@ -241,12 +255,13 @@ if __name__ == "__main__":
     
     import matplotlib
     import matplotlib.pyplot as pyplot
+    import matplotlib.ticker as ticker
     
     latexFigureTemplate = \
 r"""
 \begin{figure}
 \centering
-\includegraphics[scale=0.89]{{{file}}}
+\includegraphics[scale=1.0]{{{file}}}
 \caption{{{caption}}}
 \end{figure}
 """
@@ -262,9 +277,12 @@ r"""
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage[justification=justified,singlelinecheck=false]{caption}
+%\usepackage{layouts}
 
 \begin{document}
 \maketitle
+
+%\printinunitsof{in}\prntlen{\textwidth}
 
 {{body}}
 
