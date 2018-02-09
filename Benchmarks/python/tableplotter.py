@@ -77,8 +77,6 @@ def createPlots():
         figure = pyplot.figure()
         axes   = figure.add_subplot(111)
         
-        plotDictKey = ",".join("%s=%s" %  pair for pair in plotDict.items())
-        
         counter = 0
         positions  = []
         labels     = []
@@ -93,11 +91,12 @@ def createPlots():
                 return hit
             
             filtered = list(filter(tableFilter,tableData))
-            perPlotDictKey = ",".join("%s=%s" %  pair for pair in perPlotDict.items())
-            filterKey = plotDictKey + "," + perPlotDictKey
+            filterKeyAsStringPart1 = ",".join("%s=%s" %  pair for pair in plotDict.items())
+            filterkeyAsStringPart2 = ",".join("%s=%s" %  pair for pair in perPlotDict.items())
+            filterKeyAsString      = filterKeyAsStringPart1 + "," + filterkeyAsStringPart2
             if len(filtered)>1:
                 print("ERROR: Parameter combinations are not unique!",file=sys.stderr)
-                print("ERROR: Found multiple rows for filter key=("+filterKey+").",file=sys.stderr)
+                print("ERROR: Found multiple rows for filter key=("+filterKeyAsString+").",file=sys.stderr)
                 print("ERROR: Differing column values:",file=sys.stderr)
                 for index,name in enumerate(columnNames):
                     values = set(column(filtered,index))
@@ -110,17 +109,16 @@ def createPlots():
                 dataPoints.append(float(filtered[0][dataColumnIndex]))
                 counter += 1
             elif len(filtered)==0:
-                print("WARNING: Found no rows for key=("+filterKey+")!",file=sys.stderr)
+                print("WARNING: Found no rows for key=("+filterKeyAsString+")!",file=sys.stderr)
         
         if counter>0:
-            container = axes.barh(positions,dataPoints,height=0.8,color='0.6',align='center',log=False,label=labels)
+            # plot
+            container = axes.barh(positions,dataPoints,height=0.8,color='0.8',align='center',log=False,label=labels)
             # annotate the bar chart
-            x = 0.001*max(dataPoints)
+            x = 0.005*max(dataPoints)
             for i,y in enumerate(positions):
                 label = labels[i]
                 axes.text(x,y,"%s" % label,ha='left', va='center',fontsize=6)
-            
-            title = plotDictKey.replace(","," ")
             
             axes.get_yaxis().set_visible(False)
             axes.set_xlabel(dataColumnName)
@@ -131,11 +129,10 @@ def createPlots():
                 print("create directory "+plotFolderPath)
                 os.makedirs(plotFolderPath)
             
-            # Write files
+            # write files
             figure.set_size_inches(4.80,4.80)
             #figure.set_size_inches(2.40,2.20) # width: 0.470 * SIAM SISC \textwidth (=5.125in)
-        
-            # plot
+            
             filename = plotFolderPath + "/" + plotPrefix + "-" + "-".join(plotDict.values())
             figure.savefig('%s-linear.pdf' % filename, bbox_inches='tight')
             figure.savefig('%s-linear.png' % filename, bbox_inches='tight')
@@ -148,39 +145,10 @@ def createPlots():
             print("created plot: %s-log.pdf" % filename)
             print("created plot: %s-log.png" % filename)
             
-            # memorise for the rendering
+            # memorise keys for the caption rendering
             perPlotDictKeys[str(plotDict.keys())] = perPlotDict.keys()
     
     return perPlotDictKeys
-
-latexFigureTemplate = \
-r"""
-\begin{figure}
-\centering
-\includegraphics[scale=0.89]{{{file}}}
-\caption{{{caption}}}
-\end{figure}
-"""
-
-latexFileTemplate = \
-r"""
-\title{{{title}}}
-\author{{{author}}}
-\date{\today}
-
-\documentclass[12pt]{article}
-
-\usepackage{amssymb}
-\usepackage{graphicx}
-
-\begin{document}
-\maketitle
-
-{{body}}
-
-\end{document}
-"""
-
 
 def renderPDF():
     """
@@ -196,14 +164,17 @@ def renderPDF():
         plotFileName = plotFolder + "/" + plotPrefix + "-" + "-".join(plotDict.values())
         
         if os.path.exists(outputPath + "/" + plotFileName+"-linear.pdf"):
-            renderedFigure = latexFigureTemplate;
-            
-            caption  = "\\textbf{"+", ".join("%s=%s" %  pair for pair in plotDict.items())
-            caption += ":} The bars show measurements for different values of ("
-            caption += r"{$|$}".join("%s" % item for item in perPlotDictKeys[str(plotDict.keys())]) + ")."
-            renderedFigure = renderedFigure.replace("{{caption}}",caption)
-            
-            for ending in ["-linear.pdf", "-log.pdf"]:
+            for scale in ["linear", "log"]:
+                renderedFigure = latexFigureTemplate;
+                
+                caption  = "\\textbf{"+", ".join("%s: %s" %  pair for pair in plotDict.items())
+                caption += " ("+scale+"):} "
+                caption += "The bars show measurements for different values of the tuples ("
+                caption += r"{$|$}".join("%s" % item for item in perPlotDictKeys[str(plotDict.keys())]) 
+                caption += ")."
+                renderedFigure = renderedFigure.replace("{{caption}}",caption)
+                
+                ending = "-"+scale+".pdf"
                 body += renderedFigure.replace("{{file}}",plotFileName+ending) + "\n\n"
                 if counter % 10 == 0:
                     body += r"\clearpage"
@@ -216,8 +187,7 @@ def renderPDF():
     print("created tex file: "+outputPath + "/" + latexFileName)
     command = "( cd "+outputPath+" && pdflatex "+latexFileName + ")"
     print(command)
-#    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    process = subprocess.Popen([command], shell=True)
+    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (output, err) = process.communicate()
     process.wait()
     print("created PDF document: "+outputPath+"/"+latexFileName.replace(".tex",".pdf"))
@@ -272,6 +242,35 @@ if __name__ == "__main__":
     import matplotlib
     import matplotlib.pyplot as pyplot
     
+    latexFigureTemplate = \
+r"""
+\begin{figure}
+\centering
+\includegraphics[scale=0.89]{{{file}}}
+\caption{{{caption}}}
+\end{figure}
+"""
+
+    latexFileTemplate = \
+r"""
+\title{{{title}}}
+\author{{{author}}}
+\date{\today}
+
+\documentclass[11pt]{article}
+
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[justification=justified,singlelinecheck=false]{caption}
+
+\begin{document}
+\maketitle
+
+{{body}}
+
+\end{document}
+"""
+    
     if haveToPrintHelpMessage(sys.argv):
         info = \
 """tableplotter.py:
@@ -282,9 +281,6 @@ run:
 
 NOTE: The order of the parameters in the section 'per_plot' is preserved. 
       You thus have some control over the position of bars in the resulting diagrams.
-
-NOTE: tableplotter preserves the order of the parameters. You thus have control over
-      the order of the position of the parameters in the loop.
 """
         print(info) # correctly indented
         sys.exit()
@@ -300,7 +296,7 @@ NOTE: tableplotter preserves the order of the parameters. You thus have control 
     plotPrefix      = configParser["output"]["prefix"].replace("\"","")
     outputPath      = configParser["output"]["path"].replace("\"","")
     plotFolder      = "plots"
-    plotFolderPath  = outputPath+"/" + plotFolder
+    plotFolderPath  = outputPath + "/" + plotFolder
     
     dataColumnName = configParser["to_plot"]["data"].replace("\"","")
     
