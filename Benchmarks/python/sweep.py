@@ -613,7 +613,7 @@ def submitJobs():
     
     print("submitted "+str(len(jobIds))+" jobs")
     print("job ids are memorised in: "+submittedJobsPath)
-    command="cp "+configFile+" "+submittedJobsPath.replace(".submitted",".ini")
+    command="cp "+optionsFile+" "+submittedJobsPath.replace(".submitted",".ini")
     print(command)
     process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
     (output, err) = process.communicate()
