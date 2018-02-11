@@ -7,9 +7,10 @@
 
 :synopsis: Generate benchmark suites for ExaHyPE.
 """
-from collections import namedtuple
+import sys
 import configparser
 import csv
+import collections
 
 def parseList(string):
     """
@@ -93,7 +94,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runNumbers = [x.strip() for x in jobs["run"].split(",")]
     
-    Options = namedtuple("options", \
+    Options = collections.namedtuple("options", \
            ("general jobs environmentSpace parameterSpace "
             "exahypeRoot outputPath projectPath projectName "
             "buildFolder "

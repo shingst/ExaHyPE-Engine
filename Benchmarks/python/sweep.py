@@ -724,16 +724,16 @@ typical workflow:
     verifySweepAgreesWithHistoricExperiments()
     
     # select subprogram
-    if subprogram == "clean":
-        clean(general)
+    if subprogram == "cleanAll":
+        clean()
     elif subprogram == "cleanBuild":
         clean("build")
     elif subprogram == "cleanScripts":
         clean("scripts")
     elif subprogram == "cleanResults":
-      clean("results")
+        clean("results")
     elif subprogram == "cleanHistory":
-      clean("history")
+        clean("history")
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":
