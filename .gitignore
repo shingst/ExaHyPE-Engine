@@ -13,6 +13,7 @@ buildinfo.h
 .cproject
 .project
 .settings
+.directory
 .kdev4
 *.kdev4
 
