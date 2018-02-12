@@ -160,7 +160,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(adapters[adapter]["iterations"])
                         row.append(adapters[adapter]["total_cputime"])
                         row.append(adapters[adapter]["total_usertime"])
-                        row.append(resultsFolderPath + "/" + fileName)
+                        row.append(fileName)
                         csvwriter.writerow(row)
         success = not firstFile
         if success:
@@ -356,7 +356,7 @@ def parseMetrics(resultsFolderPath,projectName):
                     for key in sorted(measurements):
                         for subkey in measurements[key]:
                             row.append(measurements[key][subkey])
-                    row.append(resultsFolderPath + "/" + fileName)
+                    row.append(fileName)
                     csvwriter.writerow(row)
 
         success = not firstFile
