@@ -34,7 +34,7 @@
  * and extrapolated predictor lQhbnd.
  * Currently we simply copy them over from the solution array.
  */
-void {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
+int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
     double* restrict lduh,
     double* restrict lQhbnd, 
@@ -528,5 +528,6 @@ void {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     }
   }
   
+  return -1; //no picard iteration in linear case
   
 }
