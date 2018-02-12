@@ -560,7 +560,7 @@ class exahype::solvers::Solver {
   /**
    * Run over all solvers and identify the minimal time stamp.
    */
-  static double getMinSolverTimeStampOfAllSolvers();
+  static double getMinTimeStampOfAllSolvers();
 
   /**
    * Run over all solvers and identify the minimal sum of minimal time stamp
@@ -574,7 +574,12 @@ class exahype::solvers::Solver {
   /**
    * Run over all solvers and identify the minimal time step size.
    */
-  static double getMinSolverTimeStepSizeOfAllSolvers();
+  static double getMinTimeStepSizeOfAllSolvers();
+
+  /**
+   * Run over all solvers and identify the minimal time step size.
+   */
+  static double getMaxSolverTimeStepSizeOfAllSolvers();
 
   /**
    * Run over all solvers and identify the maximal time stamp.
@@ -583,7 +588,7 @@ class exahype::solvers::Solver {
    * far, so the routine returns the maximum over all min solver
    * time stamps.
    */
-  static double getMaxSolverTimeStampOfAllSolvers();
+  static double getMaxTimeStampOfAllSolvers();
 
   static bool allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping scheme);
 
@@ -614,7 +619,7 @@ class exahype::solvers::Solver {
    * Run over all solvers and identify the maximum depth of adaptive
    * refinement employed.
    *
-   * This number directly correlates with the number
+   * This number might correlate with the number
    * of grid iterations to run for performing an erasing operation.
    *
    * \note It is very important that initSolvers
@@ -622,6 +627,12 @@ class exahype::solvers::Solver {
    * method is used.
    */
   static int getMaxAdaptiveRefinementDepthOfAllSolvers();
+
+  /**
+   * Loop over the solver registry and check if no solver
+   * performs adaptive mesh refinement.
+   */
+  static bool allSolversPerformOnlyUniformRefinement();
 
   /**
    * Loop over the solver registry and check if one
@@ -633,6 +644,10 @@ class exahype::solvers::Solver {
    * Loop over the solver registry and check if one
    * of the solver's mesh refinement has not
    * attained a stable state yet.
+   *
+   * TODO(Dominic): Make this a state attribute since
+   * we do not need to know which particular solver
+   * did not attain a stable state.
    */
   static bool oneSolverHasNotAttainedStableState();
 
@@ -1482,12 +1497,7 @@ class exahype::solvers::Solver {
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double**  tempPointForceSources) = 0;
+      const bool vetoSpawnPredictorAsBackgroundThread) = 0;
 
   /**
    * Update the solution of a cell description.
@@ -1639,12 +1649,6 @@ class exahype::solvers::Solver {
    *
    * \see tryGetElement
    *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    */
   virtual void mergeNeighbours(
@@ -1653,8 +1657,7 @@ class exahype::solvers::Solver {
         const int                                 cellDescriptionsIndex2,
         const int                                 element2,
         const tarch::la::Vector<DIMENSIONS, int>& pos1,
-        const tarch::la::Vector<DIMENSIONS, int>& pos2,
-        double**                                  tempFaceUnknowns) = 0;
+        const tarch::la::Vector<DIMENSIONS, int>& pos2) = 0;
 
   /**
    * Take the cell descriptions \p element
@@ -1671,20 +1674,13 @@ class exahype::solvers::Solver {
    *
    * \see tryGetElement
    *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    */
   virtual void mergeWithBoundaryData(
         const int                                 cellDescriptionsIndex,
         const int                                 element,
         const tarch::la::Vector<DIMENSIONS, int>& posCell,
-        const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-        double**                                  tempFaceUnknowns) = 0;
+        const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
 
   #ifdef Parallel
   /**
@@ -1774,12 +1770,6 @@ class exahype::solvers::Solver {
    *                    holding the data to send out in
    *                    the array with address \p cellDescriptionsIndex.
    *                    This is not the solver number.
-   *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
    */
   virtual void mergeWithNeighbourData(
       const int                                    fromRank,
@@ -1788,7 +1778,6 @@ class exahype::solvers::Solver {
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
 
@@ -1819,14 +1808,17 @@ class exahype::solvers::Solver {
    * that needs to restrict data up to an Ancestor on the
    * master rank. However, this can definitively happen. For example,
    * in situations where a refined cell is augmented as well, i.e.
-   * has virtual children (Descendants).
+   * has virtual children (Descendants). (Still applicable??)
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
    */
-  virtual void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
   /**
-   * TODO(Dominic): Add docu.
+   * Prepare a worker cell description at the master worker boundary.
    */
   virtual void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
         const int cellDescriptionsIndex,
@@ -1840,7 +1832,6 @@ class exahype::solvers::Solver {
    * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
    * times exahype::InvalidMetadataEntry to the back of the vector.
    *
-   * TODO(Dominic): Do send more information, e.g., the limiter status!
    */
   virtual void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
@@ -1848,7 +1839,7 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * TODO(Dominic): docu
+   * Merge with the master's metadata.
    */
   virtual void mergeWithMasterMetadata(
         const MetadataHeap::HeapEntries& receivedMetadata,
@@ -1856,9 +1847,12 @@ class exahype::solvers::Solver {
         const int                        element) = 0;
 
   /**
-   * TODO(Dominic): docu
+   * Merge with the worker's metadata.
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
    */
-  virtual void mergeWithWorkerMetadata(
+  virtual bool mergeWithWorkerMetadata(
           const MetadataHeap::HeapEntries& receivedMetadata,
           const int                        cellDescriptionsIndex,
           const int                        element) = 0;

@@ -268,6 +268,18 @@ class exahype::Parser {
   double getSimulationEndTime() const;
 
   /**
+   * \return if the simulation end time can be
+   * found in the parsed specification file.
+   */
+  bool  foundSimulationEndTime() const;
+
+  /**
+   * \return the number of time steps the
+   * simulation shall be run (0 is a valid value)
+   */
+  int  getSimulationTimeSteps() const;
+
+  /**
    * \return Indicates if the user has chosen the fused ADER-DG time stepping
    * variant.
    *
@@ -459,6 +471,8 @@ class exahype::Parser {
 
   int getRanksPerNode();
   int getNumberOfBackgroundTasks();
+
+  bool useManualPinning();
 
   /**
    * Returns the filename of the specfile represented by this Parser. Can

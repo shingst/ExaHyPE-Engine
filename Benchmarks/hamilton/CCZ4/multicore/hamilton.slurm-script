@@ -2,16 +2,16 @@
 #SBATCH --job-name="ExaHyPE-CCZ4"
 #SBATCH -o ExaHyPE-CCZ4.%A.out
 #SBATCH -e ExaHyPE-CCZ4.%A.err
-#SBATCH -t 01:00:00
+#SBATCH -t 02:00:00
 #SBATCH --exclusive
 #SBATCH -p par7.q
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-##SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
-##SBATCH --mail-type=ALL
-##SBATCH --array=24
-#SBATCH --array=1,3,6,12,24
+#SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
+#SBATCH --mail-type=ALL
+#SBATCH --array=1
+##SBATCH --array=1,3,6,12,24
 ##SBATCH --array=1-24,48 # ham7: 1..24 cores + 48 threads (HT)
 ##SBATCH --array=1-16,32 # ham6: 1..16 cores + 32 threads (HT) 
 
@@ -23,9 +23,9 @@ module load intelmpi/intel/2017.2
 module load gcc
 module load likwid
 
-export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.7 -ltbb"
+module load gsl/intel
 
-export I_MPI_FABRICS="shm:dapl"
+export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.7 -ltbb"
 
 nodes=1
 tasks=1
@@ -35,9 +35,9 @@ let procsPerNode=tasksPerNode*coresPerTask
 
 compiler=Intel
 sharedMem=TBB
-if (( coresPerTask==1 )); then
-  sharedMem=None
-fi
+#if (( coresPerTask==1 )); then
+#  sharedMem=None
+#fi
 
 prefix=CCZ4-no-output-regular-0-p3
 out=multicore/results/$prefix-$sharedMem-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
@@ -54,14 +54,12 @@ echo "" >> $out
 cat $spec >> $out
 cat $out > ${out}.likwid
 
-#ExaHyPE-CCZ4-p3-$sharedMem-$compiler --version >> $out
-
 # execute the job
 ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> $out
 
 if (( coresPerTask==1 )); then
   #likwid-perfctr -f -C 0 -g MEM      ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-  #likwid-perfctr -f -C 0 -g FLOPS_DP ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+  likwid-perfctr -f -C 0 -g FLOPS_DP ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0 -g L2CACHE  ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0 -g L3CACHE  ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0 -g L3       ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
@@ -71,11 +69,10 @@ else
   #let maxCore=coresPerTask-1
 
   #likwid-perfctr -f -C 0-$maxCore -g MEM      ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-  #likwid-perfctr -f -C 0-$maxCore -g FLOPS_DP ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+  likwid-perfctr -f -C 0-$maxCore -g FLOPS_DP ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0-$maxCore -g L2CACHE  ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0-$maxCore -g L3CACHE  ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0-$maxCore -g L3       ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
 #  likwid-perfctr -f -C 0-$maxCore -g BRANCH   ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
   # not available on ham7: likwid-perfctr -C 0-$maxCore -g L1CACHE  ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> $out
 fi
-

@@ -65,6 +65,7 @@ Tokens
   token_maximum_mesh_depth          = 'maximum-mesh-depth';
   token_time_stepping               = 'time-stepping';
   token_end_time                    = 'end-time';
+  token_time_steps                  = 'time-steps';
 
   token_solver                      = 'solver';
   token_aderdg                      = 'ADER-DG';
@@ -276,23 +277,45 @@ Productions
      { -> New shared_memory( identifier,cores,properties_file ) };
 
   computational_domain {->computational_domain} =
-    {two_dimensional}
+    {two_dimensional_with_end_time}
      [begin_token]:token_computational_domain
       token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
       token_width                   [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number
       token_offset                  [offset_equals]:token_equals             [offset_x]:float_number [offset_comma_xy]:token_comma [offset_y]:float_number
       token_end_time                [end_time_equals]:token_equals           [end_time]:float_number
      token_end [end_token]:token_computational_domain
-      { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, end_time ) }
+      { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, end_time, Null ) }
       |
-    {three_dimensional}
+    {three_dimensional_with_end_time}
      [begin_token]:token_computational_domain
       token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
       token_width              [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number [width_comma_yz]:token_comma [width_z]:float_number
       token_offset             [offset_equals]:token_equals             [offset_x]:float_number  [offset_comma_xy]:token_comma [offset_y]:float_number [offset_comma_yz]:token_comma [offset_z]:float_number
       token_end_time           [end_time_equals]:token_equals           [end_time]:float_number
      token_end [end_token]:token_computational_domain
-      { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, end_time ) };
+      { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, end_time, Null ) }
+      |
+    {two_dimensional_with_time_steps}
+     [begin_token]:token_computational_domain
+      token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
+      token_width                   [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number
+      token_offset                  [offset_equals]:token_equals             [offset_x]:float_number [offset_comma_xy]:token_comma [offset_y]:float_number
+      token_time_steps              [end_time_equals]:token_equals           [end_time]:int_number
+     token_end [end_token]:token_computational_domain
+      { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, Null,  end_time ) }
+      |
+    {three_dimensional_with_time_steps}
+     [begin_token]:token_computational_domain
+      token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
+      token_width              [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number [width_comma_yz]:token_comma [width_z]:float_number
+      token_offset             [offset_equals]:token_equals             [offset_x]:float_number  [offset_comma_xy]:token_comma [offset_y]:float_number [offset_comma_yz]:token_comma [offset_z]:float_number
+      token_time_steps         [end_time_equals]:token_equals           [end_time]:int_number
+     token_end [end_token]:token_computational_domain
+      { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, Null, end_time ) }
+      ;
+
+
+
 
   optimisation {->optimisation} =
      [begin_token]:token_optimisation
@@ -609,7 +632,7 @@ Abstract Syntax Tree
     [timeout]:int_number;
 
   computational_domain =
-    [dimension]:int_number [width_x]:float_number [width_y]:float_number [width_z]:float_number? [offset_x]:float_number [offset_y]:float_number [offset_z]:float_number? [end_time]:float_number;
+    [dimension]:int_number [width_x]:float_number [width_y]:float_number [width_z]:float_number? [offset_x]:float_number [offset_y]:float_number [offset_z]:float_number? [end_time]:float_number?  [time_steps]:int_number?;
 
   optimisation =
     [fuse_algorithm_steps]:token_on_off 

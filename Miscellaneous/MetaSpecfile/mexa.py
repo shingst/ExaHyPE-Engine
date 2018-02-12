@@ -1,8 +1,17 @@
 #!/usr/bin/python
 # Regular Python 2
-# A graph approach to mexa.
 
-# This is a clean rewrite/refactor of mexa. 
+"""
+This is gmexa, a clean rewrite of mexa using a graph-based approach. It is a regular
+Python 2 program with no (currently only minimal: networkx) dependencies in a single
+file. It can be used as a library from other python scripts but is also shipped with
+a rich command line interface (CLI) to do all kind of parameter file mangling.
+
+For more details about the Mexa language see the README file or the repository
+http://bitbucket.org/svek/mexa
+
+Written in 2017 by SvenK for ExaHyPE.
+"""
 
 # dependency
 import networkx as nx
@@ -10,7 +19,7 @@ import networkx as nx
 
 # batteries:
 import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collections, types, operator
-from collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict, defaultdict
 from argparse import Namespace as namespace
 from itertools import izip, islice, product
 from functools import wraps
@@ -30,6 +39,8 @@ unpack = lambda f: lambda p: f(*p)
 unpack_namespace = lambda f: lambda ns: f(**vars(ns))
 # The identity function. Don't mix up with pythons internal "id"
 idfunc = lambda x: x
+# A no-operation function which just slurps arguments.
+noop = lambda *args, **kwargs: None
 # A nicer functional list access thing
 first = lambda x: x[0]
 last = lambda x: x[-1]
@@ -103,7 +114,6 @@ class NamedFunction:
 		return self.f(*args, **kwargs)
 	def __repr__(self):
 		return self.name
-
 
 ### end helpers
 
@@ -216,8 +226,13 @@ class symbol:
 	def base_as_term(self):
 		return term(self._path[0])
 	
-	def add_prefix(self, other, inplace=False): # should be named add_prefix
-		"Returns a new symbol wich is prefixed by self."
+	def add_prefix(self, other, inplace=False):
+		"""
+		Returns a new symbol wich is prefixed by other, i.e.
+		>>> a, b = symbol("a"), symbol("b")
+		>>> print a.add_prefix(b)
+		"b/a"
+		"""
 		if not isa(other,symbol): other = symbol(other)
 		newpath = other._path + self._path;
 		if inplace:
@@ -225,8 +240,23 @@ class symbol:
 			return self
 		else:	return symbol(newpath)
 	
+	def sub(self, other):
+		"""
+		A more readable version:
+		>>> a, b = symbol("a"), symbol("b")
+		>>> print a.sub("b")
+		"a/b"
+		"""
+		if not isa(other,symbol): other = symbol(other)
+		return symbol(self._path + other._path)
+	
 	def remove_prefix(self, other, inplace=False):
-		"Returns a new symbol which has removed the common prefix"
+		"""
+		Returns a new symbol which has removed the common prefix. I.e.
+		>>> ab, a = symbol("a/b"), symbol("a")
+		>>> print ab.remove_prefix(a)
+		"b"
+		"""
 		if not isa(other,symbol): other = symbol(other)
 		newpath = remove_comstr_prefix(self.canonical(), other.canonical())
 		if inplace:
@@ -326,7 +356,7 @@ class lang:
 	stringvarcomplex = stringvarchar + "\{("+symb+")\}"
 
 	# rhs parsing:
-	astring = r"(?:" + r'"([^"]+)"'+'|'+r"'([^']+)'" + ')'
+	astring = r"(?:" + r'"([^"]*)"'+'|'+r"'([^']*)'" + ')'
 	anum = r"([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)" # floats/ints; cf https://docs.python.org/3/library/re.html#simulating-scanf
 	yes = r"^(Yes|True|On)"
 	no = r"^(No|False|Off)"
@@ -784,11 +814,21 @@ class mexagraph:
 		#return map(unpack(node_to_mexafile), )
 		
 	def toFile(self, base_filename):
+		"""
+		Quickly write graph to a file. For more extensive usage examples, see the CLI version
+		below.
+		"""
 		dotfilename = base_filename+".dot"
 		imgfilename = base_filename+".png"
 		nx.nx_agraph.write_dot(self.G, dotfilename)
 		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
 		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+	
+	def to_agraph(self):
+		"""
+		Return a pygraphviz instance of the graph.
+		"""
+		return nx.nx_agraph.to_agraph(self.G)
 
 class mexafile:
 	"""
@@ -866,7 +906,7 @@ class mexafile:
 		else:
 			return mexafile(ret)
 		
-	def tree(self, root='', symbol_resolver=None, backref=False):
+	def tree(self, root='', symbol_resolver=None, backref=False, backref_key="$path"):
 		"""
 		Like query, but will result in a nested dictionary structure instead of an oplist.
 		
@@ -876,8 +916,8 @@ class mexafile:
 		"""
 		oplist_absolute = self.query(root) # with absolute paths
 		oplist_relative = oplist_absolute.remove_prefix(root) # relative paths to root
-		# a list with the general structure of the tree, especially parents come before childs
-		# so we can make a dict tree out of it
+		# outline is a list with the general structure of the tree, especially parents come before
+		# childs so we can make a dict tree out of it.
 		outline = sorted(unique(flatten2d([op.l.ancestors() for op in oplist_relative])))
 		
 		# setup the tree outline (nodes)
@@ -888,29 +928,44 @@ class mexafile:
 				if not symp in subtree:
 					subtree[symp] = {}
 				subtree = subtree[symp]
-		
-		# as a placeholder, should be related to a context
-		if not symbol_resolver:
-			symbol_resolver = lambda sym: "REF="+sym.canonical()
-			
-		# backref: Include the full path for each node (not leaf)
-		backref_key = "$path"
-			
+
 		# fill the tree with leafs
 		for abs_op,op in izip(oplist_absolute,oplist_relative):
 			if op.l.isRoot():
 				tree = op.r
 			else:
+				# This reads as following:
+				# when op.l = symbol(solvers/solver/constants/initialdata/name)
+				# then op.l.parent() = symbol(solvers/solver/constants/initialdata)
+				# then op.l.parent().as_str_tuple() =  ('solvers', 'solver', 'constants', 'initialdata')
+				# then parent = tree['solvers']['solver']['constants']['initialdata']
 				parent = reduce(dict.get, op.l.parent().as_str_tuple(), tree) 
 				leaf_name = op.l.node().canonical()
 				parent[leaf_name] = op.r
 				
-				if backref and not backref_key in parent:
+				
+				### Should be done somewhere else
+				### if backref and not backref_key in parent:
 					# we do *not* put the parent in a symbol_resolver but instead
 					# use the canonical description.
 					# Note that the absolute path is the original one in the defining file,
 					# not taking into account the actual mapping (inclusion) of the path.
-					parent[backref_key] = abs_op.l.parent().canonical()
+				### 	parent[backref_key] = c
+				
+		# fill in backrefs if neccessary
+		if backref:
+			def visit(node, path):
+				if backref_key in node:
+					# we have a problem: The backref key is not unique but the data
+					# allready use it.
+					raise ValueError("backref_key=%s already taken in %s" % (backref_key, node))
+				else:
+					node[backref_key] = path.canonical()
+				
+				for k, v in node.iteritems():
+					if isa(v, dict):
+						visit(v, path.sub(k))
+			visit(tree, path=symbol(root))
 
 		return tree
 	
@@ -950,7 +1005,7 @@ class mexafile:
 		else:
 			return mexafile(ret)
 	
-	def evaluate(self, inplace=True):
+	def evaluate(self, inplace=True, resolve_equalities=True):
 		"""
 		The evaluation is two-place: First, there is a element-local replacement step.
 		Second, there is a global variable resolving step, using the graph.
@@ -976,15 +1031,12 @@ class mexafile:
 				name = op.r.node()
 			else:
 				# a dumb way to come up with a number:
-				op_nodes = operations.query(op.l)
-				op_nodes = potentialFlatten2D([opi.r for opi in op_nodes.ops])
-				try:
-					i_op_node = op_nodes.index(op.r)
-					#name = "n%iof%i" % (i_op_node, num_op_nodes)
-					name = "n%i" % i_op_node
-				except:
-					# something weird happened and we can only come up with a element-local name
-					name = "l" + hex(abs(hash( op.r )%2**30))
+				if not hasattr(operations, 'append_counter'):
+					operations.append_counter = defaultdict(lambda: 0)
+				i_op_node = operations.append_counter[op.l]
+				name = "n%i" % i_op_node
+				operations.append_counter[op.l] += 1
+				# import pdb; pdb.set_trace()
 				
 			return mexafile([ Rel(symbol(name).add_prefix(op.l), op.r, 'equals', op.src) ])
 		
@@ -1008,7 +1060,8 @@ class mexafile:
 		self.evaluate_symbol('include', include, inplace=inplace)
 		self.evaluate_symbol('equals', prepare_equal, eliminate=False, inplace=inplace)
 		self.evaluate_symbol('append', append, inplace=inplace)
-		self.evaluate_all_symbols(equalities, inplace=inplace)
+		if resolve_equalities:
+			self.evaluate_all_symbols(equalities, inplace=inplace)
 		
 		# + evaluate strings?
 		
@@ -1048,25 +1101,63 @@ class mexafile:
 ###
 
 class mexa_cli(object):
+	"""
+	This is the command line interface to the gmexa code. The interface is structured
+	into sub commands (similar to git). Call the individual sub commands in order to
+	learn how they are used.
+	The CLI is backed up by a class structure which shares code, such as a common
+	input/output engine for all sub commands.
+	"""
+	
 	command_registration = {} # maps string -> class
+	subparsers_dest = 'command'
 	
 	def __init__(self):
-		self.parser = argparse.ArgumentParser(description=__doc__)
-		subparsers_dest = 'command'
+		self.parser = argparse.ArgumentParser(description=self.__doc__, epilog=__doc__)
+		
 		subparsers = self.parser.add_subparsers(
-			dest=subparsers_dest,
-			title="commands",
-			description="valid subcommands",
-			help="choose one")
+			dest=self.subparsers_dest,
+			title="subcommands",
+			#description="valid subcommands",
+			help="Individual meaning:")
 		
 		for cmd, cls in self.command_registration.iteritems():
-			subargs = subparsers.add_parser(cmd)
+			subargs = subparsers.add_parser(cmd, help=cls.__doc__, description=cls.__doc__)
 			cls.arguments(subargs) # ask class for setting arguments
-		
+			subargs.add_argument("--pdb", action='store_true', help="Start Python debugger on error")
+
 		args = vars(self.parser.parse_args())
-		
-		target_cls = self.command_registration[ args[subparsers_dest] ]
+
+		if args['pdb']:
+			try:
+				self.run(args)
+			except:
+				# Real PDB interface
+				import pdb, traceback, sys
+				type, value, tb = sys.exc_info()
+				traceback.print_exc()
+				pdb.post_mortem(tb)
+
+				# interactive command line instead
+				if False:
+					import traceback, sys, code
+					type, value, tb = sys.exc_info()
+					traceback.print_exc()
+					last_frame = lambda tb=tb: last_frame(tb.tb_next) if tb.tb_next else tb
+					frame = last_frame().tb_frame
+					ns = dict(frame.f_globals)
+					ns.update(frame.f_locals)
+					code.interact(local=ns)
+		else:
+			self.run(args)
+
+	def run(self, args):
+		"""
+		args being a Python dictionary
+		"""
+		target_cls = self.command_registration[ args[self.subparsers_dest] ]
 		self.job = target_cls(**args)
+
 
 	@classmethod
 	def register_subcommand(cls, subcommand_name):
@@ -1076,9 +1167,34 @@ class mexa_cli(object):
 		return register
 
 class io_mexafile(object):
-	def __init__(self, infile, outfile, root="", evaluate=True, **ignored_kwargs):
+	env_default_key = "env"
+	evaluate_actions = {
+		'all': lambda self: self.mf.evaluate(),
+		'basic': lambda self: self.mf.evaluate(resolve_equalities=False),
+		'none': noop
+	}
+	evaluate_actions_default = 'all'
+	
+	def __init__(self, infile, outfile, root="", evaluate='all', env=False, env_root=None, add=None, **ignored_kwargs):
 		self.outfile = outfile
 		self.mf = mexafile.from_filehandle(infile)
+		
+		# environment injection
+		if env:
+			env_root = symbol(self.env_default_key if not env_root else env_root)
+			env_source = "Environment injection"
+			env2rel = lambda k,v: Rel(env_root.sub(k), v, "equals", env_source)
+			env_ops = map(unpack(env2rel), os.environ.iteritems())
+		else:
+			env_ops = []
+		
+		# Arbitrary command injection
+		if add:
+			mf_cmd = mexafile.from_textlines(add, source_name="Command line input")
+			mf_cmd_ops = mf_cmd.ops
+		else:
+			mf_cmd_ops = []
+		
 		self.root = root
 		if root:
 			self.mf.query(root, inplace=True)
@@ -1090,29 +1206,35 @@ class io_mexafile(object):
 		]
 		# -> should move to include file lookup paths instead.
 		
-		self.mf.ops = global_mexa_information + self.mf.ops
+		self.mf.ops = global_mexa_information + mf_cmd_ops + self.mf.ops + env_ops
 		
 		self.evaluate = evaluate
-		if evaluate:
-			self.mf.evaluate()
+		self.evaluate_actions[evaluate](self)
 		
 		#print mf.toPlain()
 		#mf.toGraph("graph")
+		
+		self.output_is_stdout = (self.outfile == sys.stdout)
 	
 	@classmethod
-	def arguments(cls, parser, add_root=True):
-		group = parser.add_argument_group('input/output')
+	def arguments(cls, parser, add_root=True, allow_generation=True):
+		group = parser.add_argument_group('input/output arguments')
 		group.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
 			metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
 		group.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
 			metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
-		
 		if add_root:
-			group.add_argument('--root', default='', help='Queried root container')
-		
-		# also probably allow injection, i.e.
-		# --env  => the environment variables, etc.
-		# --var FOO=BAR => another variable definition, etc.
+			group.add_argument('--root', default='', metavar="/some/root", help='Queried root container')
+
+		if allow_generation:
+			gengroup = parser.add_argument_group('on-the-fly input arguments')
+			gengroup.add_argument('--env', action='store_true',
+				help="Add environment variables. They are inserted as strings below a root key (see --env-root).")
+			gengroup.add_argument('--env-root', metavar="/some/env/root",
+				help="Environment variables injection point. Defaults to " +cls.env_default_key)
+			gengroup.add_argument('--add', action='append', metavar='"foo=\'bar\'"',
+				help="Add any kind of mexa expression to the input. Mind the special treatment of your shell when it comes to whitespace and especially quotes. Add one expression with one --add argument each.")
+		     
 		
 	def write(self, data):
 		self.outfile.write(data)
@@ -1120,26 +1242,126 @@ class io_mexafile(object):
 
 @mexa_cli.register_subcommand('plain')
 class plain_mexafile(io_mexafile):
-	def __init__(self, no_evaluation, graph, *args, **kwargs):
+	"""
+	Prints the interpreted mexa file (pass-throught). This can either serve as syntax
+	check or also invoke the evaluation which yields a simple mexa file with only
+	assignments left.
+	"""	
+	def __init__(self, evaluate, *args, **kwargs):
 		#import ipdb; ipdb.set_trace()
-		super(plain_mexafile,self).__init__(evaluate=not no_evaluation, *args, **kwargs)
+		super(plain_mexafile,self).__init__(evaluate=evaluate, *args, **kwargs)
 		self.write("# evaluated = %s\n" % (str(self.evaluate)))
 		self.write(self.mf.toPlain())
 		self.write("\n")
 		
-		# quick and dirty (this is the wrong place, in principle):
-		if graph:
-			self.mf.graph().toFile("graph")
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		group = parser.add_argument_group('plain output arguments')
+		group.add_argument('--evaluate', choices=cls.evaluate_actions, default=cls.evaluate_actions_default, help='Fully resolve equalities, just evaluate basic syntactic sugar or no evaluation at all.')
+
+@mexa_cli.register_subcommand('graph')
+class graph_mexafile(io_mexafile):
+	"""
+	Writes the graph of the mexafile (currently: DOT).
+	tbd: Should support multiple file formats, such as DOT but also others
+	"""
+	# dot file formats we want to support here, taken from
+	# help(pygraphviz.AGraph.draw)
+	formats = [ \
+		'canon', 'cmap', 'cmapx', 'cmapx_np', 'dia', 'dot',
+		'fig', 'gd', 'gd2', 'gif', 'hpgl', 'imap', 'imap_np',
+		'ismap', 'jpe', 'jpeg', 'jpg', 'mif', 'mp', 'pcl', 'pdf',
+		'pic', 'plain', 'plain-ext', 'png', 'ps', 'ps2', 'svg',
+		'svgz', 'vml', 'vmlz', 'vrml', 'vtx', 'wbmp', 'xdot', 'xlib'
+	]
+	default_format = 'plain'
+	
+	def __init__(self, dot=False, format=default_format, *args, **kwargs):
+		super(graph_mexafile,self).__init__(*args, **kwargs)
+		
+		G = self.mf.graph().G
+		A = nx.nx_agraph.to_agraph(G)
+		
+		if dot:
+			if self.output_is_stdout:
+				raise ValueError("Please specify a base output filename with --outfile.")
+			base_filename = self.outfile.name
+			dotfilename = base_filename+".dot"
+			imgfilename = base_filename+"."+format
+			nx.nx_agraph.write_dot(G, dotfilename)
+			retcode = subprocess.call(["dot", "-Grankdir=LR", "-T"+format, dotfilename, "-o", imgfilename])
+			print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+		else:
+			self.write( A.to_string() )
 		
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser)
-		parser.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
-		parser.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
+		group = parser.add_argument_group('graph output arguments')
+		group.add_argument('--dot', action='store_true', help='Call dot on the output. Works only if you do not write to stdout but a file instead')
+		group.add_argument('--format', choices=cls.formats, default=cls.default_format, help="Format to call dot with")
+		#group.add_argument('--evaluate', choices=cls.evaluate_actions, default=cls.evaluate_actions_default, help='Fully resolve equalities, just evaluate basic syntactic sugar or no evaluation at all.')
+		#group.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
+
+@mexa_cli.register_subcommand('shell')
+class shell_mexafile(io_mexafile):
+	"""
+	Writes the graph of the mexafile (currently: DOT).
+	tbd: Should support multiple file formats, such as DOT but also others
+	
+	You are given the two variables
+	  mf: The Mexafile object
+	  cli: The command line interface object
+	to play with.
+	
+	Note: The shell command does not allow you to stream input data to stdin/stdout
+	without hazzle. Instead, use --infile. Example usage:
+	
+	$ exa mexa shell --infile <(echo 'foo = (0,1,0)' )
+	Python 2.7.12 ...
+	> print mf
+	mexafile([
+		equals(symbol(foo/n0), 0),
+		equals(symbol(foo/n1), 1)
+	])
+	...
+	"""
+
+	def __init__(self, *args, **kwargs):
+		#import ipdb; ipdb.set_trace()
+		super(shell_mexafile,self).__init__(*args, **kwargs)
+		
+		# expose variables to the shell
+		cli = self
+		mf = self.mf
+
+		try:
+			# show fancy IPython console
+			from IPython import embed
+			embed()
+		except ImportError:
+			# show standard python console
+			import readline, code
+			variables = globals().copy()
+			variables.update(locals())
+			shell = code.InteractiveConsole(variables)
+			shell.interact()
+		
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		group = parser.add_argument_group('shell output arguments')
+		#group.add_argument('--evaluate', choices=cls.evaluate_actions, default=cls.evaluate_actions_default, help='Fully resolve equalities, just evaluate basic syntactic sugar or no evaluation at all.')
+		#group.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
 
 
 @mexa_cli.register_subcommand('encode')
 class encoded_mexafile(io_mexafile):
+	"""
+	Gives the string of an encoded mexafile. Several encodings are possible. An encoded
+	string can be embedded into other files or file formats more easily.
+	"""
 	def __init__(self, encoding, header, *args, **kwargs):
 		#import ipdb; ipdb.set_trace()
 		super(encoded_mexafile,self).__init__(*args, **kwargs)
@@ -1172,8 +1394,9 @@ class encoded_mexafile(io_mexafile):
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser)
-		parser.add_argument('--encoding', choices=cls.encodings.keys(), default=cls.default_encoding, help='Output encoding')
-		parser.add_argument('--header', default=cls.default_prepend_header, help='First line to add to output')
+		group = parser.add_argument_group('encoding output arguments')
+		group.add_argument('--encoding', choices=cls.encodings.keys(), default=cls.default_encoding, help='Output encoding')
+		group.add_argument('--header', default=cls.default_prepend_header, help='First line to add to output')
 	
 	@classmethod
 	def dump(cls, mf, encoding=None, header=None):
@@ -1192,6 +1415,13 @@ class encoded_mexafile(io_mexafile):
 
 @mexa_cli.register_subcommand('structured')
 class structured_mexafile(io_mexafile):
+	"""
+	Exports the hierarchical key-value parameter structure into various standard
+	file formats. As they are typically more expressive than the mexa format,
+	different style decisions are possible such as the representation as nested
+	dictionaries or tags versus a linearization with fully qualified path names.
+	"""
+	
 	native_styles = {
 		'tree': lambda mexa: mexa.tree(), # graph as nested dictionary
 		'tree-backref': lambda mexa: mexa.tree(backref=True), # including full paths (backreferences)
@@ -1277,6 +1507,11 @@ class structured_mexafile(io_mexafile):
 	
 @mexa_cli.register_subcommand('specfile')
 class mexafile_to_exahype_specfile(io_mexafile):
+	"""
+	Generates an ExaHyPE specification file. Based on the queried root, the input
+	has to follow a shape defined by the used jinja template file.
+	"""
+	
 	default_root = 'exahype' # the root container in a mexa file where the hierarchy begins
 	
 	# Inclusion of solver constants (aka simulation parameters) and plotter select statements
@@ -1287,6 +1522,9 @@ class mexafile_to_exahype_specfile(io_mexafile):
 	#    strings are not correctly escaped.
 	parameter_styles = ['embedded', 'adapted', 'referenced']
 	default_parameter_style = 'embedded'
+	
+	# the internal backref key used
+	backref_key = "$path"
 	
 	@classmethod
 	def arguments(cls, parser):
@@ -1303,7 +1541,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		self.tplfile = './exa-specfile-tpl.exahype'
 		#self.tplfile = './debug-project.jinja'
 		self.exahype_base = self.mf.query(root)
-		self.native = self.exahype_base.tree(backref=True)
+		self.native = self.exahype_base.tree(backref=True, backref_key=self.backref_key)
 		self.write(self.exaspecfile(mf_tree=self.native))
 	
 	def encode_parameters(self, path):
@@ -1395,7 +1633,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		jinja_env = jinja2.Environment(
 			loader=jinja2.FileSystemLoader(mexa_path),
 			#undefined=jinja2.StrictUndefined
-			undefined=jinja2.DebugUndefined
+			undefined=(jinja2.DebugUndefined if self.debug  else jinja2.StrictUndefined)
 		)
 		
 		# provide further jinja functions:
@@ -1407,9 +1645,29 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		
 		@jinja_filter
 		def tolist(adict):
-			# Mexa always stores dict. To treat a dictionary as a list, use this.
-			# Could also loop like for k,v in ... in jinja.
-			return adict.values()
+			"""
+			Mexa always stores dict. To treat a dictionary as a list, use this. It
+			It basically works like the .values() call. An alternative is to
+			loop like "for k,v in thedict" in jinja. The nice feature of this
+			function is that it removes the backrefs.
+			"""
+			# former:
+			## return adict.values()
+			# instead, filter out the $path backref
+			return [ v for k, v in adict.iteritems() if k != self.backref_key ]
+		
+		@jinja_filter
+		def asfloat(something):
+			"""
+			Returns a scalar or vector thing casted as a float string. This is sometimes
+			important when ExaHyPE expects it to be clearly defined as a float.
+			"""
+			if isa(something, int):
+				return float(something)
+			elif isa(something, list):
+				return map(float, something)
+			else:
+				raise ValueError("The asfloat filter can only be used on scalar and vector values. '%s' given." % something)
 		
 		@jinja_filter
 		def dimlist(comp_domain, field):

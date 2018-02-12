@@ -26,6 +26,7 @@ namespace ElasticWaveEquation3D{
 
 class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D::AbstractElasticWaveEquation {
   private:
+
     /**
      * Log device
      */

@@ -17,25 +17,25 @@ exahype-project  CCZ4
     dimension const                = 3
     width                          = 1.0, 1.0, 1.0
     offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.1
+    time-steps                     = 4.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:1}
-    buffer-size              = 64
+    configure                = {hotspot,fair,ranks_per_node:4}
+    buffer-size              = 64000
     timeout                  = 120
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = off
     timestep-batch-factor           = 0.0
@@ -49,7 +49,8 @@ exahype-project  CCZ4
     /* 59 variables: 3-Metric, 3-Curvature, (Theta,Z), (beta, alpha), b_i, A_i, B_ij, D_ijk, traceK, phi, P_i, K0 */
     variables const          = G:6,K:6,theta:1,Z:3,lapse:1,shift:3,b:3,dLapse:3,dxShift:3,dyShift:3,dzShift:3,dxG:6,dyG:6,dzG:6,traceK:1,phi:1,P:3,K0:1
     order const              = 3
-    maximum-mesh-size        = 0.3
+    maximum-mesh-size        = 0.12
+    maximum-mesh-depth       = 0
     time-stepping            = global
     type const               = nonlinear
     terms const              = ncp,source
@@ -59,10 +60,16 @@ exahype-project  CCZ4
     limiter-type const             = godunov
     limiter-optimisation const     = generic
     limiter-language const         = C
-    dmp-observables                = 2
+    dmp-observables                = 0
     dmp-relaxation-parameter       = 1e-2 
     dmp-difference-scaling         = 1e-3 
-    steps-till-cured               = 0
 
+    plot vtk::Cartesian::vertices::limited::ascii PrimitiveWriter
+      variables const = 1
+      time     = 10.0
+      repeat   = 0.000785674
+      output   = ./primitive
+    end plot
+  
   end solver
 end exahype-project

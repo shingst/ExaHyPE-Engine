@@ -7,6 +7,7 @@
 debug tarch -1 black
 debug peano -1 black
 info tarch -1 black
+info tarch::multicore                  -1 white
 info tarch::logging::CommandLineLogger -1 white
 info peano -1 black
 info peano::utils::UserInterface -1 white

@@ -19,13 +19,6 @@
 #include "{{pathToOptKernel}}/asm_amrRoutines.c"
 
 
-// spaceTimePredictor gemms
-#include "{{pathToOptKernel}}/asm_stp.c"
-{% if isLinear %}
-{% else %}
-{% if useFlux %}
-//volume integral gemms
-#include "{{pathToOptKernel}}/asm_volumeIntegral.c"
-{% endif %} {# useFlux #}
-{% endif %}
+// fusedSpaceTimePredictorVolumeIntegral gemms
+#include "{{pathToOptKernel}}/asm_fstpvi.c"
 {% endif %} {# useLibxsmm #}

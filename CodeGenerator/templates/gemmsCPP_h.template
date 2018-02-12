@@ -32,6 +32,7 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_y(const double* A, const d
 {% if nDim == 3 %} 
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_z(const double* A, const double* B, double* C);
 {% endif %}  
+{% endif %}  
 {% if isLinear %}
 {% if useFlux %}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_x(const double* A, const double* B, double* C);
@@ -57,7 +58,6 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_x(const double* A, const do
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_y(const double* A, const double* B, double* C);
 {% if nDim == 3 %} 
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const double* B, double* C);
-{% endif %}
 {% endif %}
 {% endif %} {# useFlux #}
 

@@ -21,19 +21,6 @@ hMax=(0.0404 0.012784810126582278 0.004190871369294606 0.0013892709766162312 0.0
 mesh=regular-$i
 h=${hMax[i]}
 
-# SIMULATION END TIME
-T=( 0.01 0.00334 0.00112 0.00038 0.00013 )            # p=3
-if (( order == 5 )); then
-  T=( 0.006364 0.002126 0.000713 0.000242 0.000083 )  # p=5; (2*3+1)/(2*order+1)*T_3 ceiled with sig. 1e-6
-fi
-if (( order == 7 )); then
-  T=( 0.004667 0.001559 0.000523 0.000178 0.000061 )  # p=7
-fi
-if (( order == 9 )); then
-  T=( 0.003685 0.001231 0.000413 0.00014 0.000048 )   # p=9
-fi
-t=${T[i]}
-
 for fuseAlgorithmicSteps in "on" "off"
 do
   prefix=$project-$io-$kernels

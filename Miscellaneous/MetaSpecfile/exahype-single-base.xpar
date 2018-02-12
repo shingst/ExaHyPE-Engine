@@ -16,7 +16,7 @@ ExaHyPE::log_file = "whatever.log"
 
 Solver::plotters = Plotters
 Solver::constants = Parameters
-Solver::parameters = Parameters
+Solver::parameters = Parameters  # what is this line for?
 ExaHyPE::solvers += Solver
 
 ExaHyPE::computational_domain = Coord

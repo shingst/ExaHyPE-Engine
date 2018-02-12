@@ -18,7 +18,6 @@
 #include "exahype/Cell.h"
 
 #include "tarch/multicore/Lock.h"
-
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
 
@@ -26,6 +25,7 @@
 #include <mm_malloc.h> //g++
 #include <cstring> //memset
 
+#include "../../../Peano/tarch/multicore/Jobs.h"
 #include "LimitingADERDGSolver.h"
 #include "ADERDGSolver.h"
 #include "FiniteVolumesSolver.h"
@@ -116,12 +116,23 @@ int                                exahype::solvers::Solver::_NumberOfTriggeredT
 void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
   bool finishedWait = false;
 
+  tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
+  finishedWait = _NumberOfTriggeredTasks == 0;
+  lock.free();
+  if (!finishedWait) {
+    logInfo("waitUntilAllBackgroundTasksHaveTerminated",
+            "Waiting for " << tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs() <<
+            " background tasks to complete"
+            );
+  }
+
+
   while (!finishedWait) {
+    tarch::multicore::jobs::processBackgroundJobs();
+
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
     finishedWait = _NumberOfTriggeredTasks == 0;
     lock.free();
-
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
   }
 }
 
@@ -373,7 +384,7 @@ void exahype::solvers::Solver::moveDataHeapArray(
   DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
 }
 
-double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
+double exahype::solvers::Solver::getMinTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
@@ -381,6 +392,18 @@ double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
         std::min(currentMinTimeStamp, p->getMinTimeStamp());
   }
   return currentMinTimeStamp;
+}
+
+
+double exahype::solvers::Solver::getMaxTimeStampOfAllSolvers() {
+  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+
+  for (const auto& p : exahype::solvers::RegisteredSolvers) {
+    currentMaxTimeStamp =
+        std::max(currentMaxTimeStamp, p->getMinTimeStamp());
+  }
+
+  return currentMaxTimeStamp;
 }
 
 double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
@@ -393,7 +416,7 @@ double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
   return currentMinTimeStamp;
 }
 
-double exahype::solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() {
+double exahype::solvers::Solver::getMinTimeStepSizeOfAllSolvers() {
   double currentMinTimeStepSize = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
@@ -404,18 +427,16 @@ double exahype::solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() {
   return currentMinTimeStepSize;
 }
 
-
-double exahype::solvers::Solver::getMaxSolverTimeStampOfAllSolvers() {
-  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+double exahype::solvers::Solver::getMaxSolverTimeStepSizeOfAllSolvers() {
+  double currentMaxTimeStepSize = -std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    currentMaxTimeStamp =
-        std::max(currentMaxTimeStamp, p->getMinTimeStamp());
+    currentMaxTimeStepSize =
+        std::max(currentMaxTimeStepSize, p->getMinTimeStepSize());
   }
 
-  return currentMaxTimeStamp;
+  return currentMaxTimeStepSize;
 }
-
 
 bool exahype::solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping scheme) {
   bool result = true;
@@ -483,6 +504,14 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
 
   assertion1(maxDepth>=0,maxDepth);
   return maxDepth;
+}
+
+bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
+  bool result = true;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result &= solver->getMaximumAdaptiveMeshDepth()==0;
+  }
+  return result;
 }
 
 bool exahype::solvers::Solver::oneSolverRequestedMeshUpdate() {

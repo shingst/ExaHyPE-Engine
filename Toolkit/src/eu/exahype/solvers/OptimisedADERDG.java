@@ -43,8 +43,8 @@ public class OptimisedADERDG implements Solver {
     final int numberOfPointSources  = kernel.getNumberOfPointSources();
     
     //generate the optimised kernel, can throw IOException
-    final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
-        microarchitecture, enableDeepProfiler, useFlux, useSource, useNCP, numberOfPointSources, noTimeAveraging);
+    final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, dimensions,
+        microarchitecture, enableDeepProfiler, kernel);
     final String optNamespace = CodeGeneratorHelper.getInstance().getNamespace(projectName, solverName);
     
     templateEngine = new TemplateEngine();
@@ -94,10 +94,6 @@ public class OptimisedADERDG implements Solver {
   @Override
   public String getSolverName() {
     return solverName;
-  }
-  
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
   }
   
   private String boolToTemplate(boolean b) {

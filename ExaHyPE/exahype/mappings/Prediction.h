@@ -97,13 +97,6 @@ private:
    */
    exahype::State _localState;
 
-   /**
-    * Temporary variables for every registered
-    * ADERDGSolver and LimitingADERDGSolver which are required for performing
-    * the prediction.
-    */
-   exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
-
   /**
    * A semaphore for restrictions.
    */
@@ -144,7 +137,6 @@ private:
       const exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
       const exahype::State::AlgorithmSection& algorithmSection);
 
   /**

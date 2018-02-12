@@ -49,22 +49,6 @@
   (face * MbasisSize * MbasisSize * Mvar + Mvar * a + Mvar * MbasisSize * b + \
    var)
 
-/** Computes a 1-d node index.
-  * The brackets around \p ix allow to write
-  * idx1(ix+ox,...), where ox is some offset.
-  *
-  * TODO(Dominic): Get rid of this; only used in c/2d/boundaryConditions.cpph
-  */
-#define nidx1(ix) numberOfVariables*(ix)
-
-/** Computes a 2-d node index.
-  * The brackets around \p ix and \p iy allow to write
-  * idx1(ix+ox, iy+oy,...), where ox and oy are some offsets.
-  *
-  * TODO(Dominic): Get rid of this; only used in c/3d/boundaryConditions.cpph
-  */
-#define nidx2(ix, iy) numberOfVariables*(basisSize * (iy) + ix)
-
 // todo Dominic Etienne Charrier
 // Possibly redundant definition of face indices
 // see exahype/solvers/Solver.h
@@ -88,25 +72,20 @@ namespace c {
 template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM ,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi, double* lFi, double* gradQ,
+    double* PSi, double* PSderivatives, double* tmp_PSderivatives,
+    double* lQhi,double* lFhi,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const double dt,
-    double** tempPointForceSources);
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
+    const double dt);
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
-void spaceTimePredictorNonlinear(
+int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt);
 
 template <typename SolverType>
@@ -117,7 +96,7 @@ void volumeIntegralLinear(double* lduh, const double* const lFhi,
                           const tarch::la::Vector<DIMENSIONS, double>& dx);
 
 template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfVariables, int basisSize>
-void volumeIntegralNonlinear(double* lduh, const double* const lFi, const double* const lFhi,
+void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
 // todo 10/02/16: Dominic
@@ -213,7 +192,6 @@ void volumeUnknownsRestriction(
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex);
     
-//TODO KD    
 template <typename SolverType>
 void deltaDistribution(
     SolverType& solver,
@@ -221,8 +199,8 @@ void deltaDistribution(
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int basisSize,
-    double** tempPointForceSources //memory space for forceVector
+    double* Psi,
+    double* forceVectorSourceN 
     );
 }  // namespace c
 }  // namespace generic
@@ -294,7 +272,7 @@ void spaceTimePredictorLinear(
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
     const double dt,
     double* tempPointForceSources);
 

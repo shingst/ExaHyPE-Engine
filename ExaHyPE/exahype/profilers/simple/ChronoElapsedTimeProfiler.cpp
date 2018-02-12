@@ -62,53 +62,53 @@ void getCurrentTime() {
   escape(&now);
 }
 
-static void estimateOverhead() {
-  std::cout << "clock::period = "
-            << static_cast<double>(clockType::period::num) /
-                   clockType::period::den
-            << "sec" << std::endl;
-
-  // noop
-  std::tuple<mean_sec, median_sec, std_sec, min_sec, max_sec> duration_noop =
-      meanMedianStdMinMaxOfDurations<kNumberOfSamples1>(
-          nTimesDurationOf<kNumberOfSamples1, &noop>());
-  std::cout << "duration_noop" << std::endl;
-  std::cout << "  mean_sec = " << std::get<0>(duration_noop) << std::endl;
-  std::cout << "  median_sec = " << std::get<1>(duration_noop) << std::endl;
-  std::cout << "  std_sec = " << std::get<2>(duration_noop) << std::endl;
-  std::cout << "  min_sec = " << std::get<3>(duration_noop) << std::endl;
-  std::cout << "  max_sec = " << std::get<4>(duration_noop) << std::endl;
-
-  // storeInMap
-  initOverheadMeasurementMap();
-  std::tuple<mean_sec, median_sec, std_sec, min_sec, max_sec>
-      duration_storeInMap = meanMedianStdMinMaxOfDurations<kNumberOfSamples1>(
-          nTimesDurationOf<kNumberOfSamples1, &storeInMap>());
-  std::cout << "duration_storeInMap" << std::endl;
-  std::cout << "  mean_sec = " << std::get<0>(duration_storeInMap) << std::endl;
-  std::cout << "  median_sec = " << std::get<1>(duration_storeInMap)
-            << std::endl;
-  std::cout << "  std_sec = " << std::get<2>(duration_storeInMap) << std::endl;
-  std::cout << "  min_sec = " << std::get<3>(duration_storeInMap) << std::endl;
-  std::cout << "  max_sec = " << std::get<4>(duration_storeInMap) << std::endl;
-
-  // getCurrentTime
-  std::tuple<mean_sec, median_sec, std_sec, min_sec, max_sec>
-      duration_getCurrentTime =
-          meanMedianStdMinMaxOfDurations<kNumberOfSamples1>(
-              nTimesDurationOf<kNumberOfSamples1, &getCurrentTime>());
-  std::cout << "getCurrentTime" << std::endl;
-  std::cout << "  mean_sec = " << std::get<0>(duration_getCurrentTime)
-            << std::endl;
-  std::cout << "  median_sec = " << std::get<1>(duration_getCurrentTime)
-            << std::endl;
-  std::cout << "  std_sec = " << std::get<2>(duration_getCurrentTime)
-            << std::endl;
-  std::cout << "  min_sec = " << std::get<3>(duration_getCurrentTime)
-            << std::endl;
-  std::cout << "  max_sec = " << std::get<4>(duration_getCurrentTime)
-            << std::endl;
-}
+//static void estimateOverhead() {
+//  std::cout << "clock::period = "
+//            << static_cast<double>(clockType::period::num) /
+//                   clockType::period::den
+//            << "sec" << std::endl;
+//
+//  // noop
+//  std::tuple<mean_sec, median_sec, std_sec, min_sec, max_sec> duration_noop =
+//      meanMedianStdMinMaxOfDurations<kNumberOfSamples1>(
+//          nTimesDurationOf<kNumberOfSamples1, &noop>());
+//  std::cout << "duration_noop" << std::endl;
+//  std::cout << "  mean_sec = " << std::get<0>(duration_noop) << std::endl;
+//  std::cout << "  median_sec = " << std::get<1>(duration_noop) << std::endl;
+//  std::cout << "  std_sec = " << std::get<2>(duration_noop) << std::endl;
+//  std::cout << "  min_sec = " << std::get<3>(duration_noop) << std::endl;
+//  std::cout << "  max_sec = " << std::get<4>(duration_noop) << std::endl;
+//
+//  // storeInMap
+//  initOverheadMeasurementMap();
+//  std::tuple<mean_sec, median_sec, std_sec, min_sec, max_sec>
+//      duration_storeInMap = meanMedianStdMinMaxOfDurations<kNumberOfSamples1>(
+//          nTimesDurationOf<kNumberOfSamples1, &storeInMap>());
+//  std::cout << "duration_storeInMap" << std::endl;
+//  std::cout << "  mean_sec = " << std::get<0>(duration_storeInMap) << std::endl;
+//  std::cout << "  median_sec = " << std::get<1>(duration_storeInMap)
+//            << std::endl;
+//  std::cout << "  std_sec = " << std::get<2>(duration_storeInMap) << std::endl;
+//  std::cout << "  min_sec = " << std::get<3>(duration_storeInMap) << std::endl;
+//  std::cout << "  max_sec = " << std::get<4>(duration_storeInMap) << std::endl;
+//
+//  // getCurrentTime
+//  std::tuple<mean_sec, median_sec, std_sec, min_sec, max_sec>
+//      duration_getCurrentTime =
+//          meanMedianStdMinMaxOfDurations<kNumberOfSamples1>(
+//              nTimesDurationOf<kNumberOfSamples1, &getCurrentTime>());
+//  std::cout << "getCurrentTime" << std::endl;
+//  std::cout << "  mean_sec = " << std::get<0>(duration_getCurrentTime)
+//            << std::endl;
+//  std::cout << "  median_sec = " << std::get<1>(duration_getCurrentTime)
+//            << std::endl;
+//  std::cout << "  std_sec = " << std::get<2>(duration_getCurrentTime)
+//            << std::endl;
+//  std::cout << "  min_sec = " << std::get<3>(duration_getCurrentTime)
+//            << std::endl;
+//  std::cout << "  max_sec = " << std::get<4>(duration_getCurrentTime)
+//            << std::endl;
+//}
 
 }  // namespace
 

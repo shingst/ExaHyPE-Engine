@@ -329,17 +329,29 @@ exahype::plotters::Plotter::Plotter(
         _device = new ADERDG2FlashHDF5(postProcessing);
       }
 
-      if(equalsIgnoreCase(_identifier, Patch2VTKAscii::getIdentifier())) {
-        _device = new Patch2VTKAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTKBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTKBinary::getIdentifier())) {
-        _device = new Patch2VTKBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTKBoxesBinary(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUAscii::getIdentifier())) {
-        _device = new Patch2VTUAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTUBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUBinary::getIdentifier())) {
-        _device = new Patch2VTUBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTUBoxesBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsAscii::getIdentifier())) {
+        _device = new Patch2VTKGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsBinary::getIdentifier())) {
+        _device = new Patch2VTKGapsBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsAscii::getIdentifier())) {
+        _device = new Patch2VTUGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsBinary::getIdentifier())) {
+        _device = new Patch2VTUGapsBinary(postProcessing, solvertype);
       }
     break;
     case exahype::solvers::Solver::Type::FiniteVolumes:
@@ -402,17 +414,29 @@ exahype::plotters::Plotter::Plotter(
                 postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTKAscii::getIdentifier())) {
-        _device = new Patch2VTKAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTKBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTKBinary::getIdentifier())) {
-        _device = new Patch2VTKBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTKBoxesBinary(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUAscii::getIdentifier())) {
-        _device = new Patch2VTUAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTUBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUBinary::getIdentifier())) {
-        _device = new Patch2VTUBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTUBoxesBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsAscii::getIdentifier())) {
+        _device = new Patch2VTKGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsBinary::getIdentifier())) {
+        _device = new Patch2VTKGapsBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsAscii::getIdentifier())) {
+        _device = new Patch2VTUGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsBinary::getIdentifier())) {
+        _device = new Patch2VTUGapsBinary(postProcessing, solvertype);
       }
     break;
   }

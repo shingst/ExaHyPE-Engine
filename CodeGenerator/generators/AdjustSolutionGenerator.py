@@ -33,7 +33,7 @@ class AdjustSolutionGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename_point = "adjustPointSolution.cpp"
+    m_filename_point = "solutionAdjustment.cpp"
 
 
     def __init__(self, i_context):
@@ -41,4 +41,4 @@ class AdjustSolutionGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("adjustPointSolution_cpp.template", self.m_filename_point, self.m_context)
+        TemplatingUtils.renderAsFile("solutionAdjustment_cpp.template", self.m_filename_point, self.m_context)

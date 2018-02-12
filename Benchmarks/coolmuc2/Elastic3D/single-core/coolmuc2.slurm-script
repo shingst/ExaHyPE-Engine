@@ -1,0 +1,79 @@
+#!/bin/bash
+#SBATCH --job-name="ExaHyPE-ElasticWaveEquation3D"
+#SBATCH -o ExaHyPE-ElasticWaveEquation3D.%A.out
+#SBATCH -e ExaHyPE-ElasticWaveEquation3D.%A.err
+#SBATCH -t 0:20:00
+#SBATCH --exclusive
+#SBATCH --cluster=mpp2 
+#SBATCH --partition=mpp2_batch 
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=28
+#SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
+#SBATCH --mail-type=ALL
+#SBATCH --array=0-71
+
+pwd
+source /etc/profile.d/modules.sh
+
+FOLDER=single-core
+SPEC=${FOLDER}/Elastic3D-no-output.exahype
+APP=ExaHyPE-ElasticWaveEquation3D
+ARCH=hsw
+#ARCH=knl
+
+declare -a KERNELS=( "generic" "generic" "generic" "generic" "optimised" "optimised" "optimised" "optimised" )
+
+declare -a suffixes=("O2-novec" "O2-vec" "O3-vec" "O3-vec-ipo" "opt-O3-vec-no-ipo-no-simd-no-libxsmm" "opt-O3-vec-ipo-no-simd-no-libsxmm" "opt-O3-vec-ipo-simd-no-libxsmm" "opt-03-vec-ipo-simd-libxsmm" )
+
+# A1 -- A2
+index=0
+for run in {0..2}
+do 
+  for arch in "noarch" "$ARCH"
+  do 
+    for i in {0..3} # optimisations
+    do   
+      for order in 3 6 9
+      do
+        # echo $index
+
+#        if (( 1==1 )); then         
+        if (( SLURM_ARRAY_TASK_ID==index )); then         
+          cp $SPEC ${SPEC}_${index}
+ 
+          # SIMULATION END TIME
+          T=0.174
+          if (( order==6 )); then
+            T=0.094
+          fi 
+          if (( order==9 )); then
+            T=0.0642
+          fi 
+    
+          sed -i -r 's,end-time(\s*)=(\s*).+,end-time\1=\2'$T',' ${SPEC}_${index}
+          sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' ${SPEC}_${index}
+	 
+          kernel=${KERNELS[i]}   
+          suffix=${suffixes[i]} 
+
+          sed -i -r 's, optimisation(\s*)const(\s*)=(\s*)(generic|optimised), optimisation\1const\2=\3'$kernel',' $SPEC
+
+          OUT_FILE="$FOLDER/results/$APP-no-output-${arch}-$suffix-p${order}-r$run.out"
+
+	  #touch $OUT_FILE
+   
+          cat ${SPEC}_${index} >> $OUT_FILE
+
+          # echo "./$APP-${arch}-$suffix-p${order} ${SPEC}_${index} &> $OUT_FILE"
+
+          ./$APP-no-output-${arch}-$suffix-p${order} ${SPEC}_${index} >> $OUT_FILE
+
+          rm ${SPEC}_${index}
+        fi
+         
+        let index=index+1
+      done   
+    done
+  done 
+done

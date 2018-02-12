@@ -189,7 +189,11 @@ void exahype::Parser::checkValidity() {
   // functions have side-effects: might set _interpretationErrorOccured
   getDomainSize();
   getOffset();
-  getSimulationEndTime();
+  if (foundSimulationEndTime()) {
+    getSimulationEndTime();
+  } else {
+    getSimulationTimeSteps();
+  }
 }
 
 bool exahype::Parser::isValid() const {
@@ -483,6 +487,34 @@ double exahype::Parser::getSimulationEndTime() const {
     logError("getSimulationEndTime()",
              "Invalid simulation end-time: " << token);
     result = 1.0;
+    _interpretationErrorOccured = true;
+  }
+  return result;
+}
+
+bool exahype::Parser::foundSimulationEndTime() const {
+  bool found = false;
+  for (auto& token : _tokenStream ) {
+    if ( token.compare("end-time")==0 ) {
+      found = true;
+      break;
+    }
+  }
+  return found;
+}
+
+int exahype::Parser::getSimulationTimeSteps() const {
+  std::string token = getTokenAfter("computational-domain", "time-steps");
+  logDebug("getSimulationEndTime()", "found token " << token);
+
+  int result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (result < 0) {
+    logError("getSimulationEndTime()",
+             "Invalid simulation timestep: " << token);
     _interpretationErrorOccured = true;
   }
   return result;
@@ -1418,12 +1450,19 @@ int exahype::Parser::getNumberOfBackgroundTasks() {
   const std::string Search = "background-tasks";
 
   int result = static_cast<int>(exahype::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
-  if (result<-1) {
+  if (result<-2) {
     logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
-      "set or no number at all. Use default (1). 0 switches background tasks off despite long-running tasks, while -1 switches background tasks off compleley");
+      "set or no number at all. Use default (1). See BackgroundTasks.h for documentation.");
     result = 1;
   }
   return result;
+}
+
+
+bool exahype::Parser::useManualPinning() {
+  const std::string Search = "manual-pinning";
+
+  return getSharedMemoryConfiguration().find(Search) != std::string::npos;
 }
 
 

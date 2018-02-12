@@ -24,13 +24,12 @@ exahype-project Euler
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./Benchmarks/hamilton/Euler_ADERDG
   architecture const      = noarch
-  log-file                = mylogfile.log
 
   computational-domain
-    dimension const          = 2
+    dimension const          = 3
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
-    end-time                 = 0.01
+    time-steps               = 5
   end computational-domain
 
   shared-memory

@@ -34,20 +34,22 @@ public class FiniteVolumesKernel {
   public static final String NCP_OPTION_ID          = "ncp";
   public static final String POINTSOURCES_OPTION_ID = "pointsources";
   
+  public static final String TEMP_VARS_ON_STACK_OPTION_ID = "usestack";
+  
   private Set<String> type;
   private Set<String> terms;
-  private Set<String> optimization;
+  private Set<String> optimisation;
   
   public FiniteVolumesKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AFiniteVolumesSolver) {
       type = parseIds(((AFiniteVolumesSolver) solver).getKernelType());
       terms = parseIds(((AFiniteVolumesSolver) solver).getKernelTerms());
-      optimization = parseIds(((AFiniteVolumesSolver) solver).getKernelOpt());
+      optimisation = parseIds(((AFiniteVolumesSolver) solver).getKernelOpt());
     } else if(solver instanceof ALimitingAderdgSolver) {
       type = parseIds(((ALimitingAderdgSolver) solver).getKernelLimiterType()); 
       // Does not differ between ADER-DG solver and FV limiter 
       terms = parseIds(((ALimitingAderdgSolver) solver).getKernelTerms());
-      optimization = parseIds(((ALimitingAderdgSolver) solver).getKernelLimiterOpt());
+      optimisation = parseIds(((ALimitingAderdgSolver) solver).getKernelLimiterOpt());
     } else {
       throw new IllegalArgumentException("No kernel definition found");
     }
@@ -79,21 +81,21 @@ public class FiniteVolumesKernel {
   }
   
   public KernelType getKernelType() {
-	if ( type.contains(MUSCL_OPTION_ID) && optimization.contains(OPTIMISED_OPTION_ID) ) {
+	if ( type.contains(MUSCL_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
       return  KernelType.Unknown;
 	}
 	if ( 
-      type.contains(MUSCL_OPTION_ID) && optimization.contains(GENERIC_OPTION_ID)
+      type.contains(MUSCL_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
       || 
       type.contains(MUSCL_OPTION_ID)
     ) {
 	  return  KernelType.GenericMUSCLHancock;
 	}
-	if ( type.contains(GODUNOV_OPTION_ID) && optimization.contains(OPTIMISED_OPTION_ID) ) {
+	if ( type.contains(GODUNOV_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
       return  KernelType.Unknown;
 	}
 	if ( 
-      type.contains(GODUNOV_OPTION_ID) && optimization.contains(GENERIC_OPTION_ID)
+      type.contains(GODUNOV_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
       || 
       type.contains(GODUNOV_OPTION_ID)
     ) {
@@ -126,6 +128,10 @@ public class FiniteVolumesKernel {
   public boolean usePointSources() {
     return terms.contains(POINTSOURCES_OPTION_ID);
   }
+  
+  public boolean tempVarsOnStack() {
+    return optimisation.contains(TEMP_VARS_ON_STACK_OPTION_ID);
+  }
     
   //(type: [...], terms: [...], opt: [...])
   public String toString() {
@@ -143,7 +149,7 @@ public class FiniteVolumesKernel {
     }
     sb.deleteCharAt(sb.length()-2);
     sb.append("], opt: [");
-    for(String s : optimization) {
+    for(String s : optimisation) {
       sb.append(s);
       sb.append(", ");
     }

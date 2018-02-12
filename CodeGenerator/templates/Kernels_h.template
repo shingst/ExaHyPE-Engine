@@ -35,8 +35,9 @@ namespace {{solverNamespace}} {
 namespace {{namespaceName}} {
 {% endfor %}
 {% if isLinear %}
-  void spaceTimePredictorLinear(
+  void fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
+    double* restrict lduh,
     double* restrict lQhbnd, 
     double* restrict lFhbnd,
     double* restrict lQi,
@@ -53,42 +54,23 @@ namespace {{namespaceName}} {
     const double dt
   );
 {% else %}
-  void picardLoopNonlinear(
+  void fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
-    const double* restrict const luh, 
-    const double dt,
-    const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
-    double* restrict lQi, double* restrict rhs,
-    double* restrict lFi,
-    double* restrict lSi, double* restrict gradQ
-{% if useDeepProfiler %}
-    , exahype::profilers::Profiler* profiler
-{% endif %}
-  );
-
-{% if noTimeAveraging %}
-  void extrapolatorNonlinear(
-    const double* restrict const lQi, 
-    const double* restrict const lFi,
+    double* restrict lduh,
     double* restrict lQhbnd, 
-    double* restrict lFhbnd);
-{% else %}    
-  void predictorNonlinear(
-    const double* restrict const lQi, 
-    const double* restrict const lFi,
-    const double* restrict const lSi, //nullptr if not used
+    double* restrict lFhbnd,
+    double* restrict lQi,
+    double* restrict rhs,
+    double* restrict lFi,
+    double* restrict lSi,   // for NCP or Source
     double* restrict lQhi,
     double* restrict lFhi,
-    double* restrict lShi //nullptr if not used
+    double* restrict lShi,  // for NCP or Source
+    double* restrict gradQ, // for NCP or Source
+    const double* const restrict luh,
+    const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
+    const double dt
   );
-
-  void extrapolatorNonlinear(
-    const double* restrict const lQhi, 
-    const double* restrict const lFhi,
-    double* restrict lQhbnd, 
-    double* restrict lFhbnd);
-{% endif %}
-
 {% endif %}
 
   void volumeIntegral( 
@@ -110,7 +92,7 @@ namespace {{namespaceName}} {
     const tarch::la::Vector<DIMENSIONS,double> &inverseDx
   );
 
-  void adjustPointSolution(
+  void solutionAdjustment(
     {{solverName}}& solver,
     double* luh,
     const tarch::la::Vector<DIMENSIONS,double>& center,
@@ -204,11 +186,6 @@ namespace {{namespaceName}} {
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}
-{# //TODO JMG implement/remove
-{% if isLinear %}
-#include "{{pathToOptKernel}}/cauchyKovalewski.cpph"
-{% endif %}
-#}
 
 #include "{{pathToOptKernel}}/ConfigurationParameters.cpph"
 

@@ -116,7 +116,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithNe
   if ( exahype::State::fuseADERDGPhases() ) {
     vertex.receiveNeighbourData(
         fromRank,false /*no merge - just drop */,
-        nullptr,fineGridX,fineGridH,level);
+        fineGridX,fineGridH,level);
   }
 }
 

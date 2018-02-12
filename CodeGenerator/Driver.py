@@ -92,6 +92,9 @@ l_parser.add_argument("--useNCP",
 l_parser.add_argument("--useSource",
                       action="store_true",
                       help="enable source terms")
+l_parser.add_argument("--useMaterialParam",
+                      action="store_true",
+                      help="enable material parameters")
 l_parser.add_argument("--usePointSources",
                       type=int,
                       default=-1,
@@ -119,7 +122,7 @@ config = {
            "useSourceOrNCP"        : (l_commandLineArguments.useSource or l_commandLineArguments.useNCP),
            "nPointSources"         : l_commandLineArguments.usePointSources,
            "usePointSources"       : l_commandLineArguments.usePointSources >= 0,
-           "useMaterialParam"      : False, #TODO JM
+           "useMaterialParam"      : l_commandLineArguments.useMaterialParam,
            "noTimeAveraging"       : l_commandLineArguments.noTimeAveraging,
            "codeNamespace"         : l_commandLineArguments.namespace,
            "pathToOutputDirectory" : os.path.join(os.path.dirname(__file__),pathFromHereToExaHyPERoot,l_commandLineArguments.pathToApplication,l_commandLineArguments.pathToOptKernel),

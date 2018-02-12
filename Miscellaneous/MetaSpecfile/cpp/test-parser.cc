@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
 	std::cout << "\ntest1 = " << mf("string/test1").get_string();
 	std::cout << "\ntest2 = " << mf("string").get_string("test2");
 	
+
 	std::cout << "\nTesting queries in general:";
 	std::cout << "\nQueried: " << mf.query("boundaries").toString();
 	std::cout << "\nFiltered: " << mf.filter("boundaries").toString();
@@ -75,15 +76,4 @@ int main(int argc, char** argv) {
 	std::vector<double> dvec = mf("mixedvec/vel").vec(3).as_double();
 	for(size_t i=0; i<dvec.size(); i++)
 		std::cout << "dvec[" << i << "] = " << dvec[i] << "\n";
-	
-	std::cout << "\nTesting mixedvec as int:\n";
-	std::vector<int> divec = mf("mixedvec/vel").vec(3).as_int();
-	for(size_t i=0; i<divec.size(); i++)
-		std::cout << "divec[" << i << "]= " << divec[i] << "\n";
-
-	std::cout << "\nTesting boolvec:\n";
-	std::vector<bool> bvec = mf("boolvec/beta").vec(3).get_bool();
-	for(size_t i=0; i<bvec.size(); i++)
-		std::cout << "bvec[" << i << "]= " << bvec[i] << "\n";
-
 }

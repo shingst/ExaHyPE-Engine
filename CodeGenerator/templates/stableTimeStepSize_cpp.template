@@ -23,11 +23,11 @@ double {{codeNamespace}}::stableTimeStepSize(
     const double* restrict const luh,
     const tarch::la::Vector<DIMENSIONS,double>& inverseDx
 ) {
-  constexpr double cflFactor       = 0.9;
+  constexpr double cflFactor       = {{solverName}}::CFL;
   constexpr double PNPM[10]        = {1.0,   0.33,  0.17, 0.1,  0.069,
                                       0.045, 0.038, 0.03, 0.02, 0.015};
   
-  double lambda[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+  double lambda[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   double dt = std::numeric_limits<double>::max();
   
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //xyz

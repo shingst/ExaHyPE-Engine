@@ -42,9 +42,9 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 
 
 
-void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** tempPointForceSources) {
+void {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** tempPointForceSources) {
 {%- if enableProfiler %}
-  _profiler->start("spaceTimePredictor");
+  _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
 {%- if useFlux %}
 {%- if dimensions == 2 %}
@@ -60,21 +60,13 @@ void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* 
 {%- endif %}
 
 {%- if  isLinear %}
-  {{optNamespace}}::spaceTimePredictorLinear(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, tempPointForceSources[0] /*PSi*/, tempPointForceSources[1] /*PSderivatives*/, luh, inverseDx, dt);
+  {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, tempPointForceSources[0] /*PSi*/, tempPointForceSources[1] /*PSderivatives*/, luh, inverseDx, dt);
 {%- else %}
-{%- if noTimeAveraging %}
-  //No Time Averaging scheme
-  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
-  {{optNamespace}}::extrapolatorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], lQhbnd, lFhbnd);
-{%- else %}
-  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
-  {{optNamespace}}::predictorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], tempUnknowns, tempFluxUnknowns, &tempFluxUnknowns[lShi_offset]);
-  {{optNamespace}}::extrapolatorNonlinear(tempUnknowns, tempFluxUnknowns, lQhbnd, lFhbnd);
-{%- endif %}
+  {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/,tempSpaceTimeUnknowns[1] /*rhs*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, luh, inverseDx, dt);
 {%- endif %}
   
 {%- if enableProfiler %}
-  _profiler->stop("spaceTimePredictor");
+  _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
 }
 
@@ -87,45 +79,6 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
   {{optNamespace}}::solutionUpdate( luh, lduh, dt );
 {%- if enableProfiler %}
   _profiler->stop("solutionUpdate");
-{%- endif %}
-}
-
-
-
-void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* const lFi,const double* const lFhi,const tarch::la::Vector<DIMENSIONS,double>& inverseDx) {
-{%- if enableProfiler %}
-  _profiler->start("volumeIntegral");
-{%- endif %}
-
-{%- if useFlux %}
-{%- if dimensions == 2 %}
-  {%- if noTimeAveraging %}
-  constexpr int lSi_offset  = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  {%- else %}
-  constexpr int lShi_offset = 2*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-  {%- endif %}
-{%- else %}
-  {%- if noTimeAveraging %}
-  constexpr int lSi_offset  = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded(); //nDim*(nDof**(nDim+1))*nVarPad
-  {%- else %}
-  constexpr int lShi_offset = 3*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getBasisSize()*{{optNamespace}}::getNumberOfVariablePadded();//nDim*(nDof**nDim)*nVarPad
-  {%- endif %}
-{%- endif %}
-{%- else %}
-  constexpr int lSi_offset  = 0; //no Flux
-  constexpr int lShi_offset = 0; //no Flux
-{%- endif %}
-
-{%- if noTimeAveraging %}
-  //No Time Averaging scheme, lFhi == nullptr
-  {{optNamespace}}::volumeIntegral( lduh, lFi, &lFi[lSi_offset], inverseDx );
-{%- else %}
-  //Time averaging scheme, lFi not required
-  {{optNamespace}}::volumeIntegral( lduh, lFhi, &lFhi[lShi_offset], inverseDx );
-{%- endif %}
-
-{%- if enableProfiler %}
-  _profiler->stop("volumeIntegral");
 {%- endif %}
 }
 
@@ -187,7 +140,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 {%- if enableProfiler %}
   _profiler->start("solutionAdjustment");
 {%- endif %}
-  {{optNamespace}}::adjustPointSolution(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
+  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
 
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");

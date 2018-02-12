@@ -50,43 +50,17 @@ public class SolverFactory {
    * 
    * Consult class documentation for further details.
    */
-  public Solver createADERDGSolver(String solvername, ADERDGKernel kernel,boolean isFortran,int numberOfVariables,int numberOfParameters,Set<String> namingSchemeNames,int order,boolean hasConstants) {
+  public Solver createADERDGSolver(String solverName, ADERDGKernel kernel,boolean isFortran,int numberOfVariables,int numberOfParameters,Set<String> namingSchemeNames,int order,boolean hasConstants) {
     try { //some solver initialisation can throw IllegalArgumentException if the options are wrong or IOException
       switch (kernel.getKernelType()) {
         case GenericADERDG: 
-          return new eu.exahype.solvers.GenericADERDG(_projectName, solvername, _dimensions,
+          return new eu.exahype.solvers.GenericADERDG(_projectName, solverName, _dimensions,
             numberOfVariables, numberOfParameters, namingSchemeNames, order, _enableProfiler, hasConstants, isFortran, kernel );
         case OptimisedADERDG:
-          return new eu.exahype.solvers.OptimisedADERDG(_projectName, solvername, _dimensions,
+          return new eu.exahype.solvers.OptimisedADERDG(_projectName, solverName, _dimensions,
             numberOfVariables, numberOfParameters, namingSchemeNames, order, _microarchitecture,
             _enableProfiler, _enableDeepProfiler, hasConstants, kernel);
       }
-    	
-/*      
-      // TODO JMG Clean
-      // else if (!isFortran && kernel.equals( eu.exahype.solvers.OptimisedFluxesLinearADER_DGinC.Identifier )) {
-        // return new eu.exahype.solvers.OptimisedFluxesLinearADER_DGinC(_dimensions,
-            // numberOfVariables, numberOfParameters, order, _microarchitecture,
-            // _enableProfiler, hasConstants);
-      // }
-      else if (!isFortran && kernel.isKernelType( eu.exahype.solvers.OptimisedADERDG.Identifier )) {
-        return new eu.exahype.solvers.OptimisedADERDG(_projectName, solvername, _dimensions,
-            numberOfVariables, numberOfParameters, namingSchemeNames, order, _microarchitecture,
-            _enableProfiler, _enableDeepProfiler, hasConstants, kernel);
-        
-      }
-      // TODO JMG Clean when confirmed legacy
-      // else if (!isFortran && kernel.equals( eu.exahype.solvers.KernelEuler2d.Identifier )) {
-        // return new eu.exahype.solvers.KernelEuler2d(_projectName, solvername);
-      // }
-      else if (isFortran && kernel.isKernelType( eu.exahype.solvers.UserDefinedADER_DGinFortran.Identifier )) {
-        return new eu.exahype.solvers.UserDefinedADER_DGinFortran(_projectName, solvername);
-      }
-      else if (!isFortran && kernel.isKernelType( eu.exahype.solvers.UserDefinedADER_DGinC.Identifier )) {
-        return new eu.exahype.solvers.UserDefinedADER_DGinC(_projectName, solvername, numberOfVariables,
-            numberOfParameters, order, hasConstants, _enableProfiler);
-      }
-*/      
       System.err.println("ERROR: solver configuration is not supported: "+kernel.toString() );
       return null;
     } catch(Exception e) {
@@ -100,37 +74,46 @@ public class SolverFactory {
    * 
    * Consult class documentation for further details.
    */
-  public Solver createFiniteVolumesSolver(String solvername, FiniteVolumesKernel kernel,boolean isFortran,int numberOfVariables,int numberOfParameters,Set<String> namingSchemeNames,int patchSize,boolean hasConstants) {
+  public Solver createFiniteVolumesSolver(String solverName, FiniteVolumesKernel kernel,boolean isFortran,int numberOfVariables,int numberOfParameters,Set<String> namingSchemeNames,int patchSize,boolean hasConstants) {
     try { //some solver initialisation can throw IllegalArgumentException if the options are wrong or IOException
       switch (kernel.getKernelType()) {
         case GenericMUSCLHancock: 
           if (isFortran) {
         	// @todo Does not exist yet
-            //return new eu.exahype.solvers.GenericFiniteVolumesMUSCLHancockInFortran(_projectName, solvername,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants);
+            //return new eu.exahype.solvers.GenericFiniteVolumesMUSCLHancockInFortran(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants);
           }
           else {
-            return new eu.exahype.solvers.GenericFiniteVolumesMUSCLHancockInC(_projectName, solvername,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants, kernel);
+            return new eu.exahype.solvers.GenericFiniteVolumesMUSCLHancockInC(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants, kernel);
           }
           break;
         case GenericGodunov: 
             if (isFortran) {
               // @todo Does not exist yet
-              //return new eu.exahype.solvers.GenericFiniteVolumesGodunovInFortran(_projectName, solvername,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants);
+              //return new eu.exahype.solvers.GenericFiniteVolumesGodunovInFortran(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants);
             }
             else {
-              return new eu.exahype.solvers.GenericFiniteVolumesGodunovInC(_projectName, solvername,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants, kernel);
+              return new eu.exahype.solvers.GenericFiniteVolumesGodunovInC(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants, kernel);
             }
             break;
         case UserDefined: 
             if (isFortran) {
-              return new eu.exahype.solvers.UserDefinedFiniteVolumesinFortran(_projectName, solvername,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
+              return new eu.exahype.solvers.UserDefinedFiniteVolumesinFortran(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
             }
             else {
-              return new eu.exahype.solvers.UserDefinedFiniteVolumesinC(_projectName, solvername,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
+              return new eu.exahype.solvers.UserDefinedFiniteVolumesinC(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
             }
         }
       System.err.println("ERROR: solver configuration is not supported: "+kernel.toString() );
       return null;
+    } catch(Exception e) {
+      System.err.println("ERROR: can't create the solver. Error: "+e );
+      return null;
+    }
+  }
+  
+  public Solver createLimiterSolver(String solverName, ADERDGKernel aderdgKernel, FiniteVolumesKernel FVKernel, Solver ADERDGsolver, Solver FVsolver) { //take the kernel to know if generic or optimised
+    try {
+      return new eu.exahype.solvers.Limiter(_projectName, solverName, ADERDGsolver, FVsolver); //TODO JMG optimized vs generic
     } catch(Exception e) {
       System.err.println("ERROR: can't create the solver. Error: "+e );
       return null;

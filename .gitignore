@@ -8,6 +8,7 @@ buildinfo.h
 *~
 [._]*.s[a-w][a-z]
 [._]s[a-w][a-z]
+*.backup
 
 # IDE project files: Eclipse, Kdevelop
 .cproject
@@ -54,6 +55,9 @@ buildinfo.h
 *.vtu
 *.pvd
 *.log-file
+*.png
+*.webm
+*.svg
 
 # Any kind of archives
 *.zip
@@ -134,3 +138,4 @@ ExternalLibraries
 
 # Coredumps
 core
+/build/

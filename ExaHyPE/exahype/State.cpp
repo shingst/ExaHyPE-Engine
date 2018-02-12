@@ -62,8 +62,18 @@ exahype::State::State(const Base::PersistentState& argument) : Base(argument) {
   // do nothing
 }
 
+void exahype::State::setVerticalExchangeOfSolverDataRequired(bool state) {
+  _stateData.setVerticalExchangeOfSolverDataRequired(state);
+}
+
+bool exahype::State::getVerticalExchangeOfSolverDataRequired() const {
+  return _stateData.getVerticalExchangeOfSolverDataRequired();
+}
+
 void exahype::State::merge(const exahype::State& anotherState) {
-  // do nothing
+  setVerticalExchangeOfSolverDataRequired(
+      getVerticalExchangeOfSolverDataRequired() ||
+      anotherState.getVerticalExchangeOfSolverDataRequired());
 }
 
 void exahype::State::writeToCheckpoint(

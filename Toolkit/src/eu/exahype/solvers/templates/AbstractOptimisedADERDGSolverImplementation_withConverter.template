@@ -358,7 +358,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 {%- if enableProfiler %}
   _profiler->start("solutionAdjustment");
 {%- endif %}
-  {{optNamespace}}::adjustPointSolution(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
+  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {%- endif %}

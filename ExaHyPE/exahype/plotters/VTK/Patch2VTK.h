@@ -27,11 +27,15 @@ namespace exahype {
   namespace plotters {
     class Patch2VTK;
 
-    class Patch2VTKAscii;
-    class Patch2VTKBinary;
+    class Patch2VTKBoxesAscii;
+    class Patch2VTKBoxesBinary;
+    class Patch2VTKGapsAscii;
+    class Patch2VTKGapsBinary;
 
-    class Patch2VTUAscii;
-    class Patch2VTUBinary;
+    class Patch2VTUBoxesAscii;
+    class Patch2VTUBoxesBinary;
+    class Patch2VTUGapsAscii;
+    class Patch2VTUGapsBinary;
 
     class Slicer; // external forward decl, #include exahype/plotters/slicing/Slicer.h
   }
@@ -49,7 +53,7 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
   const exahype::solvers::Solver::Type _solverType;
   const bool _isLimitingSolver; // Shorthand
   const PlotterType _plotterType;
-  const bool    _plotCells;
+  const bool    _plotGaps; ///< whether to plot cells with artificial gap
   const bool    _hasMPIenabled;
   int           _fileCounter;
   std::string   _filename;
@@ -116,30 +120,58 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
 };
 
 
-class exahype::plotters::Patch2VTKAscii: public exahype::plotters::Patch2VTK {
+class exahype::plotters::Patch2VTKBoxesAscii: public exahype::plotters::Patch2VTK {
   public:
-    Patch2VTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    Patch2VTKBoxesAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
     static std::string getIdentifier();
 };
 
 
-class exahype::plotters::Patch2VTKBinary: public exahype::plotters::Patch2VTK {
+class exahype::plotters::Patch2VTKBoxesBinary: public exahype::plotters::Patch2VTK {
   public:
-    Patch2VTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    Patch2VTKBoxesBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
     static std::string getIdentifier();
 };
 
 
-class exahype::plotters::Patch2VTUAscii: public exahype::plotters::Patch2VTK {
+class exahype::plotters::Patch2VTUBoxesAscii: public exahype::plotters::Patch2VTK {
   public:
-    Patch2VTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    Patch2VTUBoxesAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
     static std::string getIdentifier();
 };
 
 
-class exahype::plotters::Patch2VTUBinary: public exahype::plotters::Patch2VTK {
+class exahype::plotters::Patch2VTUBoxesBinary: public exahype::plotters::Patch2VTK {
   public:
-    Patch2VTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    Patch2VTUBoxesBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    static std::string getIdentifier();
+};
+
+
+class exahype::plotters::Patch2VTKGapsAscii: public exahype::plotters::Patch2VTK {
+  public:
+    Patch2VTKGapsAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    static std::string getIdentifier();
+};
+
+
+class exahype::plotters::Patch2VTKGapsBinary: public exahype::plotters::Patch2VTK {
+  public:
+    Patch2VTKGapsBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    static std::string getIdentifier();
+};
+
+
+class exahype::plotters::Patch2VTUGapsAscii: public exahype::plotters::Patch2VTK {
+  public:
+    Patch2VTUGapsAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
+    static std::string getIdentifier();
+};
+
+
+class exahype::plotters::Patch2VTUGapsBinary: public exahype::plotters::Patch2VTK {
+  public:
+    Patch2VTUGapsBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, exahype::solvers::Solver::Type solvertype);
     static std::string getIdentifier();
 };
 

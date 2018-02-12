@@ -187,6 +187,21 @@ class exahype::runners::Runner {
    */
   void printTimeStepInfo(int numberOfStepsRanSinceLastCall, const exahype::repositories::Repository& repository);
 
+  /**
+   * Determine how many time steps we can group into one batch until
+   * we either reach the user prescribed simulation end time or
+   * the user prescribed maximum number of time steps.
+   *
+   * The number of batched time steps is determined as minimum of
+   * the three ingredients:
+   * - estimated number of steps till the next plot weighted by a factor smaller 1.0,
+   * - (estimated) number of steps till the simulation end time weighted by a factor smaller 1.0,
+   * - number of steps till the maximum number of time steps is reached.
+   *
+   * Time steps are estimated based on the maximum time stamp of all solvers
+   * and the minimum time step size of all solvers.
+   */
+  int determineNumberOfBatchedTimeSteps(const int& currentTimeStep);
 
   /**
    * Do one time step where all phases are actually fused into one traversal
@@ -194,7 +209,7 @@ class exahype::runners::Runner {
    * @param numberOfStepsToRun Number of steps to run. If you hand in 0, then
    *           it runs one time step plus does a plot.
    */
-  void runOneTimeStepWithFusedAlgorithmicSteps(exahype::repositories::Repository& repository, int numberOfStepsToRun, bool exchangeBoundaryData);
+  void runTimeStepsWithFusedAlgorithmicSteps(exahype::repositories::Repository& repository, int numberOfStepsToRun);
 
   /**
    * Run the three (four for MPI) adapters necessary for initialising the

@@ -17,7 +17,7 @@ exahype-project  CCZ4
     dimension const                = 3
     width                          = 1.0, 1.0, 1.0
     offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.1
+    time-steps                     = 4.0
   end computational-domain
 
   shared-memory
@@ -51,9 +51,9 @@ exahype-project  CCZ4
     order const              = 3
     maximum-mesh-size        = 0.3
     time-stepping            = global
-    type const = nonlinear
-    terms const = ncp,source
-    optimisation const = generic
+    type const               = nonlinear
+    terms const              = ncp,source
+    optimisation const       = generic
     language const           = C
     
     limiter-type const             = godunov

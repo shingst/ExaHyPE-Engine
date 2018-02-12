@@ -220,7 +220,9 @@ int exahype::main(int argc, char** argv) {
     // tarch::parallel::Node<static>::reserveFreeTag() log outputs.
     // The only alternative to get the clean specfile would be to dump it to
     // a file.
-    //std::cout << std::string(kernels::compiledSpecfile());
+    
+    // if this line does not compile for you, rebuild and rerun the toolkit.
+    std::cout << std::string(kernels::compiledSpecfile());
     return EXIT_SUCCESS;
   }
 
@@ -290,7 +292,8 @@ int exahype::main(int argc, char** argv) {
 
   if(runCompiledSpecfile) {
     std::stringstream specfile;
-    //specfile.str(std::string(kernels::compiledSpecfile()));
+    // if this line does not compile for you, rebuild and rerun the toolkit.
+    specfile.str(std::string(kernels::compiledSpecfile()));
     parser.readFile(specfile, "builtin");
   } else {
     parser.readFile(firstarg);

@@ -156,15 +156,5 @@ public class Helpers {
     writer.write("  // @todo Please implement/augment if required.\n");
     writer.write("}\n\n");
   }
-
-  //Should use CodeGeneratorHelper
-  @Deprecated
-  static public String invokeCodeGenerator(String solverFullName, int numberOfUnknowns, int numberOfParameters, int order,
-      boolean isLinear, int dimensions, String microarchitecture, String pathToLibxsmm, boolean enableDeepProfiler, boolean useFlux, boolean useSource, boolean useNCP, boolean noTimeAveraging)
-      throws IOException {
-
-    return ""; 
-  } // invokeCodeGenerator
-
   
 }

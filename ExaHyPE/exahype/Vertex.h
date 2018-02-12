@@ -67,7 +67,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * TODO(Dominic): Add docu.
    */
   void mergeNeighboursDataAndMetadata(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS,int>&  pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -78,7 +77,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * TODO(Dominic): Add docu.
    */
   void mergeWithBoundaryData(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS,int>&  pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -155,7 +153,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   void mergeWithNeighbourData(
       const int fromRank,
       const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-      double*** tempFaceUnknowns,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -356,7 +353,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * of a cell.
    */
   void mergeNeighbours(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
@@ -634,7 +630,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   void receiveNeighbourData(
       int fromRank,
       bool mergeWithReceivedData,
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;

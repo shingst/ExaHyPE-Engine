@@ -226,7 +226,23 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @todo Clarify which stuff has to be merged
    */
   void merge(const State& anotherState);
-  ///@}
+
+  /**
+   * Set to true if we need to exchange local solver
+   * data between master and worker at least for one cell at
+   * a master-worker boundary.
+   *
+   * These local solver data are usually restricted or prolongated degrees of freedom.
+   * They must not be confused with global solver data such as, e.g.
+   * admissible time step sizes.
+   *
+   * \see exahype::mappings::MeshRefinement
+   */
+  void setVerticalExchangeOfSolverDataRequired(bool state);
+  /**
+   * \see setVerticalExchangeOfSolverDataRequired
+   */
+  bool getVerticalExchangeOfSolverDataRequired() const;
 
   /**
    * Has to be called after the iteration!

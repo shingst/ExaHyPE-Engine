@@ -5,7 +5,7 @@ spec=$directory/CCZ4-no-output.exahype
 
 cp $spec ${spec}_tmp
 
-for m in None
+for m in None TBB OMP
 do
   make clean
   export SHAREDMEM=$m
@@ -13,7 +13,7 @@ do
   echo "SHAREDMEM=$SHAREDMEM"
   #read -p "press any key..."
 
-  for p in 3
+  for p in 3 5 7
   do 
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec

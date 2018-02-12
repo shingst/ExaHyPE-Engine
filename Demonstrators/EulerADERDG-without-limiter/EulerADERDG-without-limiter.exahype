@@ -28,22 +28,28 @@ exahype-project EulerADERDG
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 1.0
+    end-time                = 0.01
   end computational-domain
   
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 8
+    cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory
-  
+
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks_per_node:1}
+    buffer-size              = 64
+    timeout                  = 60
+  end distributed-memory 
   
   solver ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
-    order const                = 5
-    maximum-mesh-size          = 5e-2    
+    order const                = 3
+    maximum-mesh-size          = 0.1  
     maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear, Legendre

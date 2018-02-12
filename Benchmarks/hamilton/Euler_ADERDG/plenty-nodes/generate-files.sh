@@ -20,7 +20,6 @@
 
 # PREAMBLE
 project=Euler_ADERDG
-order=3
 skipReductionInBatchedTimeSteps=on
 batchFactor=0.8
 io=no-output # or output
@@ -28,11 +27,14 @@ kernels=gen # this is just an identifier; actual kernels must be chosen before b
 sharedMem=None
 
 # MESH
-i=0
+i=1
 #hMax=( 0.03704 0.01235 0.00412 0.00138 0.00046 ) # 1/3^l ceiled with significance 1e-5
 hMax=(0.0404 0.012784810126582278 0.004190871369294606 0.0013892709766162312 0.0004622425629290618) # 1/(3^l-2) times 1.01
 mesh=regular-$i
 h=${hMax[i]}
+
+for order in 3
+do
 
 # SIMULATION END TIME
 T=( 0.01 0.00334 0.00112 0.00038 0.00013 )            # p=3
@@ -57,13 +59,13 @@ do
   fi
   prefix+="-$mesh"
 
-  for nodes in 10 28 82
+  for nodes in 2
   do
-    for tasksPerNode in 1 2 4 8 # ham7
+    for tasksPerNode in 16 # ham7
     #for tasksPerNode in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 # ham6
     do 
       let tasks=$nodes*$tasksPerNode
-      let coresPerTask=24/$tasksPerNode # ham7
+      let coresPerTask=16/$tasksPerNode # ham7
       #let coresPerTask=16/$tasksPerNode # ham6
 
       # Create script
@@ -103,4 +105,6 @@ do
       sed -i -r 's,maximum-mesh-size(\s*)=(\s*)(([0-9]|\.)*),maximum-mesh-size\1=\2'$h',g' $newSpec
     done
   done
+done
+
 done

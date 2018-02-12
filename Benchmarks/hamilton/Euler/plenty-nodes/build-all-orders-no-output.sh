@@ -6,7 +6,7 @@ spec=$directory/Euler-no-output.exahype
 # save original file
 cp $spec ${spec}_tmp
 
-for m in 1 2
+for m in 2
 do
   if (( m == 1 )); then
     make clean
@@ -19,7 +19,7 @@ do
   echo "SHAREDMEM=$SHAREDMEM"
   #read -p "press any key..."
 
-  for p in 3 5 7 9
+  for p in 5
   do 
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec

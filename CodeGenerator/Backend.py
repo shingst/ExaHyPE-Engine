@@ -96,13 +96,9 @@ def generateComputeKernels():
     kernelsHeaderGenerator.generateCode()
     g_runtimes["kernelsHeaderGenerator"] = time.perf_counter() - start
     start = time.perf_counter()
-    spaceTimePredictorGenerator = SpaceTimePredictorGenerator.SpaceTimePredictorGenerator(generateContext(g_config))
-    spaceTimePredictorGenerator.generateCode()
-    g_runtimes["spaceTimePredictorGenerator"] = time.perf_counter() - start
-    start = time.perf_counter()
-    volumeIntegralGenerator = VolumeIntegralGenerator.VolumeIntegralGenerator(generateContext(g_config))
-    volumeIntegralGenerator.generateCode()
-    g_runtimes["volumeIntegralGenerator"] = time.perf_counter() - start
+    fusedSpaceTimePredictorVolumeIntegralGenerator = FusedSpaceTimePredictorVolumeIntegralGenerator.FusedSpaceTimePredictorVolumeIntegralGenerator(generateContext(g_config))
+    fusedSpaceTimePredictorVolumeIntegralGenerator.generateCode()
+    g_runtimes["fusedSpaceTimePredictorVolumeIntegralGenerator"] = time.perf_counter() - start
     start = time.perf_counter()
     surfaceIntegralGenerator = SurfaceIntegralGenerator.SurfaceIntegralGenerator(generateContext(g_config))
     surfaceIntegralGenerator.generateCode()

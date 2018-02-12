@@ -30,14 +30,12 @@ namespace c {
 template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi, double* lFi, double* gradQ,
+    double* PSi, double* PSderivatives, double* tmp_PSderivatives,
+    double* lQhi,double* lFhi,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const double dt,
-    double** tempPointForceSources
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
+    const double dt
 ) {
   
   // Define constants
@@ -55,22 +53,22 @@ void spaceTimePredictorLinear(SolverType& solver,
   
   // Matrices
   
-  double* PSi = tempPointForceSources[0];    // nullptr if bnot usePointSource,  size: basisSize2 * (basisSize + 1) * numberOfVariables
+  //double* PSi = tempPointForceSources[0];    // nullptr if bnot usePointSource,  size: basisSize2 * (basisSize + 1) * numberOfVariables
   idx4 idx_PSi(basisSize + 1, basisSize, basisSize, numberOfVariables);
   
-  double* PSderivatives = tempPointForceSources[1]; // nullptr if bnot usePointSource, size: basisSize2 * (basisSize + 1) * numberOfVariables
-  double* tmp_PSderivatives = tempSpaceTimeFluxUnknowns[0]; // it's actually lFi used here as a temp array //TODO do something cleaner?
+  //double* PSderivatives = tempPointForceSources[1]; // nullptr if bnot usePointSource, size: basisSize2 * (basisSize + 1) * numberOfVariables
+  //double* tmp_PSderivatives = tempSpaceTimeFluxUnknowns[0]; // it's actually lFi used here as a temp array //TODO do something cleaner?
   idx4 idx_PSderivatives(basisSize, basisSize, basisSize, numberOfVariables); //no need for 0th time derivative
   
-  double* lQi = tempSpaceTimeUnknowns[0]; // size: basisSize2 * (basisSize + 1) * numberOfData;
+  //double* lQi = tempSpaceTimeUnknowns[0]; // size: basisSize2 * (basisSize + 1) * numberOfData;
   idx4 idx_lQi(basisSize + 1, basisSize, basisSize, numberOfData);
   std::fill_n(lQi, basisSize2 * (basisSize + 1) * numberOfData, 0.);
 
-  double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize3 * DIMENSIONS+1 * numberOfVariables
+  //double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize3 * DIMENSIONS+1 * numberOfVariables
   idx5 idx_lFi(basisSize, basisSize, basisSize, DIMENSIONS+1, numberOfVariables);
   std::fill_n(lFi,basisSize3*(DIMENSIONS+1)*numberOfVariables, 0.);
 
-  double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize3 * DIMENSIONS * numberOfVariables
+  //double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize3 * DIMENSIONS * numberOfVariables
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
   if(useNCP) {
     std::fill_n(gradQ, basisSize3 * DIMENSIONS * numberOfVariables, 0.);
@@ -187,7 +185,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) {
                 fluxDerivative[idx_fluxDerivative(l,m)] += lFi[idx_lFi(i, j, n, 0, m)]*
-                kernels::dudx[order][l][n] / dx[0] ;
+                kernels::dudx[order][l][n] * invDx[0] ;
               }
             }
           }
@@ -205,7 +203,7 @@ void spaceTimePredictorLinear(SolverType& solver,
           for (int m = 0; m < numberOfVariables; m++) {
             for (int n = 0; n < basisSize; n++) {
               fluxDerivative[idx_fluxDerivative(l,m)] += lFi[idx_lFi(i, n, j, 1, m)]*
-              kernels::dudx[order][l][n] / dx[1] ;
+              kernels::dudx[order][l][n] * invDx[1] ;
               
             }
           }
@@ -226,7 +224,7 @@ void spaceTimePredictorLinear(SolverType& solver,
         for (int l = 0; l < basisSize; l++) {  // x-loop
           for (int m = 0; m < numberOfVariables; m++) { // Skip parameters
             for (int n = 0; n < basisSize; n++) {
-              gradQ[idx_gradQ(i, j, l, 0, m)] += lQi[idx_lQi(i, j, n, m)] * kernels::dudx[order][l][n] / dx[0];
+              gradQ[idx_gradQ(i, j, l, 0, m)] += lQi[idx_lQi(i, j, n, m)] * kernels::dudx[order][l][n] * invDx[0];
             }
           }
         }  
@@ -238,7 +236,7 @@ void spaceTimePredictorLinear(SolverType& solver,
         for (int l = 0; l < basisSize; l++) {
           for (int m = 0; m < numberOfVariables; m++) { // Skip parameters
             for (int n = 0; n < basisSize; n++) {
-              gradQ[idx_gradQ(i, l, j, 1, m)] += lQi[idx_lQi(i, n, j, m)] * kernels::dudx[order][l][n] / dx[1];
+              gradQ[idx_gradQ(i, l, j, 1, m)] += lQi[idx_lQi(i, n, j, m)] * kernels::dudx[order][l][n] * invDx[1];
             }
           }
         }
@@ -312,10 +310,10 @@ void spaceTimePredictorLinear(SolverType& solver,
   //**** Averaging over time ****
   //*****************************
   
-  double* lQhi = tempUnknowns;
+  //  double* lQhi = tempUnknowns;
   idx3 idx_lQhi(basisSize, basisSize, numberOfData);
   
-  double* lFhi = tempFluxUnknowns;
+  // double* lFhi = tempFluxUnknowns;
   idx4 idx_lFhi(DIMENSIONS+1, basisSize, basisSize, numberOfVariables);
 
   // Immediately compute the time-averaged space-time polynomials

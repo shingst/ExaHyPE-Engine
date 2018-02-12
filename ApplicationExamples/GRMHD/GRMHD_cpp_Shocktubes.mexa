@@ -3,15 +3,27 @@
 # GRMHD with some benchmarks.
 #
 # To choose an individual solver:
-#   Solver <= DGSolver
+#   Solver = DGSolver
 # To choose a particular simulation:
-#   Simulation <= Shocktubes/RP1
+#   Simulation = Shocktubes/RP1
 
 << "@mexa/exahype-single-base.xpar"
 
+# DEBUGGING
+#Simulation = Shocktubes/RP1
+#Solver = DGSolver
+
+# Options:
+Options/solver/dg = DGsolver
+Options/solver/fv = FVsolver
+Options/solver/limiting = LimitingSolver
+# This line makes trouble => should again debug and write a test for it.
+### Options/simulation/shocktube_rp1 = Shocktubes/RP1
+
+
 Project::Name = "GRMHD"
 #Project::directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
-Project::directory = output_directory
+Project::directory = "GMRHD_cpp"
 Coord = Simulation/Coord
 Coord::end_time = Simulation/end_time
 
@@ -79,6 +91,7 @@ AllQuantitiesPlotter/variables = "@{BaseSolver/variables}"
 writer/integrals <= RepeatedPlotter
 writer/integrals/type = FVSolver::plotter_type # the basis does not really change anything
 writer/integrals/variables = 0
+writer/integrals/name = "IntegralsWriter"
 writer/integrals/output = "./output/global-integrals"
 
 writer/conserved <= AllQuantitiesPlotter
@@ -87,6 +100,9 @@ writer/diff      <= AllQuantitiesPlotter
 writer/conserved/output = "./vtk-output/conserved"
 writer/diff/output      = "./vtk-output/diff-with-id"
 writer/primitive/output = "./vtk-output/primitive"
+writer/conserved/name = "ConservedWriter"
+writer/diff/name = "DifferenceWithIDWriter"
+writer/primitive/name = "PrimitiveWriter"
 
 
 ####

@@ -39,9 +39,9 @@ namespace {
  *  and have to adjust the index accordingly.
  */
 template <bool useSource, bool useFlux, bool useNCP, typename SolverType>
-void aderPicardLoopNonlinear(SolverType& solver,
+int aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double dt,
-                             const tarch::la::Vector<DIMENSIONS, double>& dx,
+                             const tarch::la::Vector<DIMENSIONS, double>& invDx,
                              double* lQi, double* rhs,
                              double* lFi, double* gradQ) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -54,8 +54,6 @@ void aderPicardLoopNonlinear(SolverType& solver,
   
   assertion(numberOfVariables>=0);
   assertion(numberOfParameters>=0);
-  
-  const double invDx[2] = { 1.0/dx[0], 1.0/dx[1] };
 
   idx3 idx_luh(basisSize, basisSize, numberOfData); // idx_luh(y,x,nVar)
   
@@ -86,7 +84,8 @@ void aderPicardLoopNonlinear(SolverType& solver,
   // spatial gradient of q
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables); // idx_gradQ(y,x,t,nDim,nVar)
 
-  for (int iter = 0; iter < MaxIterations; iter++) {
+  int iter = 0;
+  for (; iter < MaxIterations; iter++) {
 
     for (int i = 0; i < basisSize; i++) {  // time DOF
       // Compute the fluxes
@@ -239,8 +238,8 @@ void aderPicardLoopNonlinear(SolverType& solver,
                   kernels::iK1[order][l][n]; // note: iK1 is already the transposed inverse of K1
             }
             sq_res += (lQi_new - lQi[idx_lQi(j, k, l, m)]) * (lQi_new - lQi[idx_lQi(j, k, l, m)]);
-            assertion3( !std::isnan(lQi[idx_lQi(j, k, l, m)]), idx_lQi(j, k, l, m), dt, dx );
-            assertion3( !std::isnan(lQi_new), idx_lQi(j, k, l, m), dt, dx );
+            assertion3( !std::isnan(lQi[idx_lQi(j, k, l, m)]), idx_lQi(j, k, l, m), dt, invDx );
+            assertion3( !std::isnan(lQi_new), idx_lQi(j, k, l, m), dt, invDx );
             lQi[idx_lQi(j, k, l, m)] = lQi_new;
           }
         }
@@ -286,6 +285,8 @@ void aderPicardLoopNonlinear(SolverType& solver,
           "number of iteration steps");
     }
   }  // end iter
+  
+  return iter;
 }
 
 /*
@@ -534,31 +535,28 @@ void aderTimeAveragingExtrapolatorNonlinear(
 
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
-void spaceTimePredictorNonlinear(
+int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
+    double* lQi,double* rhs,double* lFi,double* gradQ,double* lQhi,double* lFhi,
     const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& dx, 
+    const tarch::la::Vector<DIMENSIONS, double>& invDx, 
     double dt
  ) {
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
 
-  double* lQi     = tempSpaceTimeUnknowns[0];
-  double* rhs     = tempSpaceTimeUnknowns[1];
+//  double* lQi     = tempSpaceTimeUnknowns[0];
+//  double* rhs     = tempSpaceTimeUnknowns[1];
 
   // if fluxes are not computed, make sure wrong access patterns result in a crash, thus
   // the nullptr:
-  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
-  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
+//  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
+//  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
   
-  aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
-        solver, luh, dt, dx,
+  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
+        solver, luh, dt, invDx,
         lQi, rhs, lFi, gradQ);
   
   if(noTimeAveraging) {
@@ -569,8 +567,8 @@ void spaceTimePredictorNonlinear(
   } else {
     constexpr int basisSize2         = basisSize * basisSize;
     
-    double* lQhi    = tempUnknowns;
-    double* lFhi    = tempFluxUnknowns;
+//    double* lQhi    = tempUnknowns;
+//    double* lFhi    = tempFluxUnknowns;
 
     aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,
@@ -584,6 +582,8 @@ void spaceTimePredictorNonlinear(
         &lFhi[1 * basisSize2 * numberOfVariables],  // lFhi_y
         lQhbnd, lFhbnd);
   }
+  
+  return iterations;
 }
 
 }  // namespace c
