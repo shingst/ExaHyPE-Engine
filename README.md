@@ -1,5 +1,16 @@
 # This is the ExaHyPE project #
 
+This is the maing repository of the ExaHyPE project. It contains the following directories:
+
+* ApplicationExamples: A number of exemplaric application such as Euler, MHD, Seismic, etc.
+* Benchmarks: An ExaHyPE Benchmark suite for TBB and MPI (maintained by Durham)
+* CodeGenerator: The optimized kernels generators (maintained by TUM)
+* Demonstrators: Lightweight applications for demonstration purpose (maintained by Durham)
+* Miscellaneous: Various codes and tools
+* Peano: Mounting point for the Peano installation
+* Toolkit: The ExaHyPE development toolkit
+* UserCodes: Prototypes of ExaHyPE written in Matlab and Fortran and contributed by Trento
+
 ## Mini installation guide ##
 
 Copy and paste these commands to start with a working ExaHyPE application and compile the demo application _EulerFlow_:
