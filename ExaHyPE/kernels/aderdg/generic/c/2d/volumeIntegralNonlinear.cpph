@@ -29,12 +29,11 @@ namespace c {
 #if DIMENSIONS == 2
 
 /*
- * Depending on the template parameter noTimeAveraging, either 
- *    lFhi is nullptr and lFi is used,
- *    lFhi is defined and used
+ * Depending on the template parameter noTimeAveraging, lFi
+ * is either a space-time volume flux (false) or a time-averaged flux (true). 
  */
 template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, const int numberOfVariables, int basisSize>
-void volumeIntegralNonlinear(double* lduh, const double* const lFi, const double* const lFhi,
+void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx) {
   const int order = basisSize - 1;
   const int basisSize2 = basisSize  * basisSize;
@@ -123,13 +122,13 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi, const double
         const double weight = kernels::gaussLegendreWeights[order][j];
         const double updateSize = weight * invDx[0];
 
-        // Fortran: lduh(l, k, j) += lFhi_x(l, m, j) * Kxi(m, k)
+        // Fortran: lduh(l, k, j) += lFi_x(l, m, j) * Kxi(m, k)
         // Matrix product: (l, m) * (m, k) = (l, k)
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < numberOfVariables; l++) {
             for (int m = 0; m < basisSize; m++) {
               lduh[idx(j, k, l)] += kernels::Kxi[order][k][m] *
-                  lFhi[x_offset + idx(j, m, l)] * updateSize;
+                  lFi[x_offset + idx(j, m, l)] * updateSize;
             }
           }
         }
@@ -141,13 +140,13 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi, const double
         const double weight = kernels::gaussLegendreWeights[order][j];
         const double updateSize = weight * invDx[1];
 
-        // Fortran: lduh(l, j, k) += lFhi_y(l, m, j) * Kxi(m, k)
+        // Fortran: lduh(l, j, k) += lFi_y(l, m, j) * Kxi(m, k)
         // Matrix product: (l, m) * (m, k) = (l, k)
         for (int k = 0; k < basisSize; k++) {
           for (int l = 0; l < numberOfVariables; l++) {
             for (int m = 0; m < basisSize; m++) {
               lduh[idx(k, j, l)] += kernels::Kxi[order][k][m] *
-                  lFhi[y_offset + idx(j, m, l)] * updateSize;
+                  lFi[y_offset + idx(j, m, l)] * updateSize;
             }
           }
         }
@@ -165,7 +164,7 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi, const double
 
           // Fortran: lduh(:,k,j) += w * lShi(:,k,j)
           for (int l = 0; l < numberOfVariables; l++) {
-            lduh[idx(j, k, l)] += weight * lFhi[s_offset + idx(j, k, l)];
+            lduh[idx(j, k, l)] += weight * lFi[s_offset + idx(j, k, l)];
           }
         }
       }

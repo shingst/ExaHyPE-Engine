@@ -34,6 +34,9 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
+#include "tarch/multicore/Jobs.h"
+
+
 namespace {
 constexpr const char* tags[]{"solutionUpdate", "stableTimeStepSize"};
 }  // namespace
@@ -302,14 +305,6 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
 exahype::solvers::Solver::SubcellPosition exahype::solvers::FiniteVolumesSolver::computeSubcellPositionOfCellOrAncestor(
         const int cellDescriptionsIndex,
         const int element) const {
-  // TODO(Dominic): Comment code in as soon as we have all the required fields
-  // on the cell description.
-//  CellDescription& cellDescription =
-//      getCellDescription(cellDescriptionsIndex,element);
-//
-//  return
-//      exahype::amr::computeSubcellPositionOfCellOrAncestor
-//      <CellDescription,Heap>(cellDescription);
   SubcellPosition empty;
   return empty;
 }
@@ -722,12 +717,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnPredictorAsBackgroundThread,
-    double** tempSpaceTimeUnknowns,
-    double** tempSpaceTimeFluxUnknowns,
-    double*  tempUnknowns,
-    double*  tempFluxUnknowns,
-    double** tempPointForceSources) {
+    const bool vetoSpawnPredictorAsBackgroundThread) {
   updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
 
   UpdateResult result;
@@ -850,8 +840,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
     const int                                 cellDescriptionsIndex2,
     const int                                 element2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
-    const tarch::la::Vector<DIMENSIONS, int>& pos2,
-    double**                                  tempFaceUnknowns) {
+    const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
   CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
 
@@ -878,8 +867,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
       [&] () -> void {
         uncompress(cellDescription2);
       },
-      peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-      peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	  peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
       true
     );
 
@@ -899,37 +888,21 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     const int                                 cellDescriptionsIndex,
     const int                                 element,
     const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-    double**                                  tempFaceUnknowns) {
+    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if (cellDescription.getType()==CellDescription::Cell) {
     synchroniseTimeStepping(cellDescription);
-
     uncompress(cellDescription);
 
-    double* luh       = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    double* luhbndIn  = tempFaceUnknowns[0];
-    double* luhbndOut = tempFaceUnknowns[1];
-
-    assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==DIMENSIONS-1,posCell.toString(),posBoundary.toString());
-
-    const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
-    const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
-
-    boundaryLayerExtraction(luhbndIn,luh,posBoundary-posCell);
-
+    double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     boundaryConditions(
-        luhbndOut,luhbndIn,
+        luh,
         cellDescription.getOffset()+0.5*cellDescription.getSize(),
         cellDescription.getSize(),
         cellDescription.getTimeStamp(),
         cellDescription.getTimeStepSize(),
-        faceIndex,
-        direction);
-
-    ghostLayerFillingAtBoundary(luh,luhbndOut,posBoundary-posCell);
+        posCell,posBoundary);
   }
 }
 
@@ -1262,7 +1235,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
-    double**                                     tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   if (tarch::la::countEqualEntries(src,dest)!=(DIMENSIONS-1)) {
@@ -1788,9 +1760,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
       getDataPerPatchBoundary(),
       CompressionAccuracy
       );},
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
 
@@ -1909,9 +1881,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }
@@ -2013,10 +1985,10 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
         lock.free();
       }
     },
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-    true
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	true
   );
 }
 
@@ -2058,7 +2030,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    tarch::multicore::processBackgroundTasks();
+    tarch::multicore::jobs::processBackgroundJobs();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

@@ -364,7 +364,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       // Limiting ADER-DG
       _methodBodyWriter.write("  \n");
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back(\n"
-          + "    new "+ _projectName + "::" + solverNameLimiter+"(std::move(aderdgSolver),std::move(finiteVolumesSolver),parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
+          + "    new "+ _projectName + "::" + solverNameLimiter+"(\""+_solverName+"\",std::move(aderdgSolver),std::move(finiteVolumesSolver),parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
       
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n");
       _methodBodyWriter.write("  }\n\n");

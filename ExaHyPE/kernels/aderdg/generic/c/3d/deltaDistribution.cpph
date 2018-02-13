@@ -37,10 +37,10 @@ void kernels::aderdg::generic::c::deltaDistribution(
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int basisSize,
-    double** pointForceSources //memory space for forceVector
+    double* PSi,
+    double* forceVectorSourceN 
 ) { 
-  //TODO KD
+
 
   //double x0[3];
 
@@ -51,8 +51,8 @@ void kernels::aderdg::generic::c::deltaDistribution(
   //solver.pointSource(x, t, dt, &pointForceSources[idx_PSi(0,ndof1,ndof2,ndof3,0)], &x0);
   //apply the result for this quadrature point
 
-
-  int order = basisSize - 1;
+  constexpr int basisSize = SolverType::Order +1;
+  constexpr int order = SolverType::Order;
 
 
   double x0[DIMENSIONS];
@@ -69,8 +69,8 @@ void kernels::aderdg::generic::c::deltaDistribution(
   idx5 idx_forceVectorSourceN(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables);
 
  
-  double* PSi                = pointForceSources[0]; 
-  double* forceVectorSourceN = pointForceSources[1];
+//   double* PSi                = pointForceSources[0]; 
+//   double* forceVectorSourceN = pointForceSources[1];
 
   std::fill_n(PSi ,(basisSize + 1) * basisSize * basisSize * basisSize * numberOfVariables,0);
   

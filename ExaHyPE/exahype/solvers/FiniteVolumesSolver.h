@@ -254,7 +254,6 @@ public:
    * \brief Returns a stable time step size.
    *
    * \param[in] luh             Cell-local solution DoF.
-   * \param[in] tempEigenvalues A temporary array of size equalling the number of variables.
    * \param[in] cellSize        Extent of the cell in each coordinate direction.
    */
   virtual double stableTimeStepSize(
@@ -318,22 +317,22 @@ public:
   /**
    * Return the state variables at the boundary.
    *
-   * @param[inout] stateOut
-   * @param[in]    stateIn
-   * @param[in]    cellCentre    Cell centre.
-   * @param[in]    cellSize      Cell size.
+   * @param[inout] luh           the solution patch
+   * @param[in]    cellCentre    cell centre.
+   * @param[in]    cellSize      cell size.
    * @param[in]    t             The time.
    * @param[in]    dt            A time step size.
    * @param[in]    normalNonZero Index of the nonzero normal vector component,
    *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
-  virtual void boundaryConditions(double* stateOut,
-      const double* const stateIn,
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+  virtual void boundaryConditions(
+      double* luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const double t,const double dt,
-      const int faceIndex,
-      const int normalNonZero) = 0;
+      const tarch::la::Vector<DIMENSIONS, int>& posCell,
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
+
 
   /**
    * Compute the Riemann problem.
@@ -363,7 +362,6 @@ public:
    * \note Use this function and ::useAdjustSolution to set initial conditions.
    *
    * \param[in]    x         the physical coordinate on the face.
-   * \param[in]    w         (deprecated) the quadrature weight corresponding to the quadrature point w.
    * \param[in]    t         the start of the time interval.
    * \param[in]    dt        the width of the time interval.
    * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
@@ -627,12 +625,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double** tempPointForceSources) final override;
+      const bool vetoSpawnPredictorAsBackgroundThread) final override;
 
   void updateSolution(
       const int cellDescriptionsIndex,
@@ -699,15 +692,13 @@ public:
       const int                                 cellDescriptionsIndex2,
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      double**                                  tempFaceUnknowns) override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2) override;
 
   void mergeWithBoundaryData(
       const int                                 cellDescriptionsIndex,
       const int                                 element,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-      double**                                  tempFaceUnknowns) override;
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 #ifdef Parallel
   ///////////////////////////////////
   // MASTER<=>WORKER
@@ -832,7 +823,6 @@ public:
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 

@@ -9,6 +9,8 @@
 //   www.exahype.eu
 // ========================
 
+#include <string>
+
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "{{ADERDGAbstractSolver}}.h"
 #include "{{FVAbstractSolver}}.h"
@@ -23,7 +25,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSo
     static constexpr int Order              = {{project}}::{{ADERDGAbstractSolver}}::Order;
     static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
   
-    {{abstractSolver}}(std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell);
+    {{abstractSolver}}(std::string identifier, std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell);
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;
     void projectOnDGSpace(const double* const lim, double* const luh) const override;

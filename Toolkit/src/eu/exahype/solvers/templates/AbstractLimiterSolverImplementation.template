@@ -14,8 +14,8 @@
 
 
 // Just call parent constructor
-{{project}}::{{abstractSolver}}::{{abstractSolver}}(std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell):
-  exahype::solvers::LimitingADERDGSolver("LimitingADERDG" /* identifier */, std::move(solver), std::move(limiter), DMPRelaxationParameter, DMPDifferenceScaling, iterationsToCureTroubledCell) {
+{{project}}::{{abstractSolver}}::{{abstractSolver}}(std::string identifier, std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell):
+  exahype::solvers::LimitingADERDGSolver(identifier, std::move(solver), std::move(limiter), DMPRelaxationParameter, DMPDifferenceScaling, iterationsToCureTroubledCell) {
 }
 
 void {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {

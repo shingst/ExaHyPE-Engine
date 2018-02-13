@@ -83,13 +83,13 @@ tarch::logging::Log exahype::mappings::Prediction::_log(
 exahype::mappings::Prediction::Prediction() {}
 
 exahype::mappings::Prediction::~Prediction() {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::Prediction::Prediction(const Prediction& masterThread)
   : _localState(masterThread._localState) {
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 void exahype::mappings::Prediction::mergeWithWorkerThread(
@@ -100,13 +100,11 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
   _localState = solverState;
-
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 bool exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
@@ -122,7 +120,6 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
     const exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     exahype::Cell::resetNeighbourMergeFlags(
@@ -143,8 +140,7 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           solver,fineGridCell.getCellDescriptionsIndex(),element,
           vetoPerformPredictionAsBackgroundThread(
-              fineGridVertices,fineGridVerticesEnumerator),
-          temporaryVariables);
+              fineGridVertices,fineGridVerticesEnumerator));
 
       solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }
@@ -168,7 +164,6 @@ void exahype::mappings::Prediction::enterCell(
   exahype::mappings::Prediction::performPredictionAndProlongateData(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
-      _predictionTemporaryVariables,
       exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

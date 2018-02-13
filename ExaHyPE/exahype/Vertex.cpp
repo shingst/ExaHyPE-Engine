@@ -402,7 +402,6 @@ void exahype::Vertex::setMergePerformed(
 }
 
 void exahype::Vertex::mergeNeighboursDataAndMetadata(
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS,int>&  pos1,
     const int pos1Scalar,
     const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -417,8 +416,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
     const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
     if (element2>=0 && element1>=0) {
       solver->mergeNeighbours(
-          cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2,
-          tempFaceUnknowns[solverNumber]);
+          cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
       solver->mergeNeighboursMetadata(
           cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
     }
@@ -427,7 +425,6 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
 }
 
 void exahype::Vertex::mergeWithBoundaryData(
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS,int>&  pos1,
     const int pos1Scalar,
     const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -447,19 +444,16 @@ void exahype::Vertex::mergeWithBoundaryData(
                cellDescriptionsIndex1,cellDescriptionsIndex2,element1,element2);
 
     if (element1 >= 0) {
-      solver->mergeWithBoundaryData(cellDescriptionsIndex1,element1,pos1,pos2,
-                                    tempFaceUnknowns[solverNumber]);
+      solver->mergeWithBoundaryData(cellDescriptionsIndex1,element1,pos1,pos2);
     }
     if (element2 >= 0){
-      solver->mergeWithBoundaryData(cellDescriptionsIndex2,element2,pos2,pos1,
-                                    tempFaceUnknowns[solverNumber]);
+      solver->mergeWithBoundaryData(cellDescriptionsIndex2,element2,pos2,pos1);
     }
   endpfor
   grainSize.parallelSectionHasTerminated();
 }
 
 void exahype::Vertex::mergeNeighbours(
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
@@ -468,12 +462,12 @@ void exahype::Vertex::mergeNeighbours(
         validateThatNeighbourhoodIsValid(pos1,pos1Scalar,pos2,pos2Scalar);
 
         if (hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) { // Assumes that we have to valid indices
-          mergeNeighboursDataAndMetadata(tempFaceUnknowns,pos1,pos1Scalar,pos2,pos2Scalar);
+          mergeNeighboursDataAndMetadata(pos1,pos1Scalar,pos2,pos2Scalar);
 
           setMergePerformed(pos1,pos2,true);
         }
         if (hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) {
-          mergeWithBoundaryData(tempFaceUnknowns,pos1,pos1Scalar,pos2,pos2Scalar);
+          mergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar);
 
           setMergePerformed(pos1,pos2,true);
         }
@@ -970,7 +964,6 @@ void exahype::Vertex::dropNeighbourData(
 void exahype::Vertex::mergeWithNeighbourData(
         const int fromRank,
         const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-        double*** tempFaceUnknowns,
         const int srcCellDescriptionIndex,
         const int destCellDescriptionIndex,
         const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -997,7 +990,6 @@ void exahype::Vertex::mergeWithNeighbourData(
           fromRank,
           metadataPortion,
           destCellDescriptionIndex,element,src,dest,
-          tempFaceUnknowns[solverNumber],
           x,level);
 
       solver->mergeWithNeighbourMetadata(
@@ -1019,7 +1011,6 @@ void exahype::Vertex::mergeWithNeighbourData(
 void exahype::Vertex::receiveNeighbourData(
     int fromRank,
     bool mergeWithReceivedData,
-    double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     int level) const {
@@ -1049,7 +1040,6 @@ void exahype::Vertex::receiveNeighbourData(
               mergeWithNeighbourData(
                   fromRank,
                   receivedMetadata,
-                  tempFaceUnknowns,
                   getCellDescriptionsIndex()[srcScalar],
                   getCellDescriptionsIndex()[destScalar],
                   src,dest,

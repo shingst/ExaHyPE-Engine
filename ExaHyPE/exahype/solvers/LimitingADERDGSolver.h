@@ -24,8 +24,6 @@
 
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
-
 namespace exahype {
 namespace solvers {
 
@@ -103,6 +101,23 @@ protected:
    */
   const double _DMPDifferenceScaling;
 
+  /**
+   * A counter holding the number of iterations to
+   * cure a troubled cell.
+   * This counter will be initialised to a certain
+   * (user-dependent?) value if a cell is flagged as troubled.
+   *
+   * If the cell is not troubled for one iteration, the counter is
+   * decreased until it reaches 0. Then, the
+   * cell is considered as cured.
+   * Note that the counter can be reset to the maximum value
+   * in the meantime if the cell is marked again as troubled.
+   *
+   * This counter prevents that a cell is toggling between
+   * troubled and Ok (cured).
+   */
+  int _iterationsToCureTroubledCell;
+
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
   typedef peano::heap::RLEHeap<SolverPatch> SolverHeap;
@@ -130,23 +145,6 @@ private:
    * iteration.
    */
   exahype::solvers::LimiterDomainChange _nextLimiterDomainChange;
-
-  /**
-   * A counter holding the number of iterations to
-   * cure a troubled cell.
-   * This counter will be initialised to a certain
-   * (user-dependent?) value if a cell is flagged as troubled.
-   *
-   * If the cell is not troubled for one iteration, the counter is
-   * decreased until it reaches 0. Then, the
-   * cell is considered as cured.
-   * Note that the counter can be reset to the maximum value
-   * in the meantime if the cell is marked again as troubled.
-   *
-   * This counter prevents that a cell is toggling between
-   * troubled and Ok (cured).
-   */
-  int _iterationsToCureTroubledCell;
 
   /**
    * TODO(Dominc): Remove after docu is recycled.
@@ -897,12 +895,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double** tempPointForceSources) final override;
+      const bool vetoSpawnPredictorAsBackgroundThread) final override;
 
   /**
    * This method assumes the ADERDG solver's cell-local limiter status has
@@ -1096,8 +1089,7 @@ public:
   void recomputePredictorLocally(
       const int cellDescriptionsIndex,
       const int element,
-      const bool vetoSpawnPredictorAsBackgroundThread,
-      exahype::solvers::PredictionTemporaryVariables& predictionTemporaryVariables);
+      const bool vetoSpawnPredictorAsBackgroundThread);
 
   void preProcess(
       const int cellDescriptionsIndex,
@@ -1141,8 +1133,7 @@ public:
       const int                                 cellDescriptionsIndex2,
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      double**                                  tempFaceUnknowns) final override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2) final override;
 
   /**
    * Merge solver boundary data (and other values) of two adjacent
@@ -1192,8 +1183,7 @@ public:
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      const bool                                isRecomputation,
-      double**                                  tempFaceUnknowns) const;
+      const bool                                isRecomputation) const;
 
   /**
    * Merges the min max of two neighbours sharing a face.
@@ -1217,8 +1207,7 @@ public:
       const int                                 cellDescriptionsIndex,
       const int                                 element,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-      double**                                  tempFaceUnknowns) final override;
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) final override;
 
   /**
    * Merge solver boundary data (and other values) of a
@@ -1256,8 +1245,7 @@ public:
         const int                                 limiterStatusAsInt,
         const tarch::la::Vector<DIMENSIONS, int>& posCell,
         const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-        const bool                                isRecomputation,
-        double**                                  tempFaceUnknowns);
+        const bool                                isRecomputation);
 
 #ifdef Parallel
   ///////////////////////////////////
@@ -1330,7 +1318,6 @@ public:
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
@@ -1360,7 +1347,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       const bool                                   isRecomputation,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 

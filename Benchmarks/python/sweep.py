@@ -24,50 +24,6 @@ def haveToPrintHelpMessage(argv):
         result = result or ( arg=="-help" or arg=="-h" )
     return result
 
-def parseEnvironment(config):
-    """
-    Parse the environment section.
-    """
-    environmentSpace = {}
-    if "environment" in config and len(config["environment"].keys()):
-        for key, value in config["environment"].items():
-            environmentSpace[key] = [x.strip() for x in value.split(",")]
-        if "SHAREDMEM" not in environmentSpace:
-            print("ERROR: 'SHAREDMEM' missing in section 'environment'.",file=sys.stderr)
-            sys.exit()
-    else:
-        print("ERROR: Section 'environment' is missing or empty! (Must contain at least 'SHAREDMEM'.)",file=sys.stderr)
-        sys.exit()
-    
-    return environmentSpace
-
-def parseParameters(config):
-    """
-    Parse the parameters section.
-    """
-    parameterSpace = {}
-    if "parameters" in config and len(config["parameters"].keys()):
-        for key, value in config["parameters"].items():
-            parameterSpace[key] = [x.strip() for x in value.split(",")]
-            
-        if "order" not in parameterSpace:
-            print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "dimension" not in parameterSpace:
-            print("ERROR: 'dimension' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "optimisation" not in parameterSpace:
-            print("ERROR: 'optimisation' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "architecture" not in parameterSpace:
-            print("ERROR: 'architecture' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-    else:
-        print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
-        sys.exit()
-    
-    return parameterSpace
-
 def dictProduct(dicts):
     """
     Computes the Cartesian product of a dictionary of lists as 
@@ -376,12 +332,10 @@ def verifySweepAgreesWithHistoricExperiments():
         print(previousSweeps)
     
         for f in previousSweeps:
-            otherConfig = configparser.ConfigParser()
-            otherConfig.optionxform=str
-            otherConfig.read(historyFolderPath + "/" + f)
+            otherOptions = sweep_options.parseOptionsFile(historyFolderPath+"/"+f)
         
-            otherEnvironmentSpace = parseEnvironment(otherConfig)
-            otherParameterSpace   = parseParameters(otherConfig)
+            otherEnvironmentSpace = otherOptions.environmentSpace
+            otherParameterSpace   = otherOptions.parameterSpace
         
             environmentSpaceIntersection = set(environmentSpace.keys()).intersection(otherEnvironmentSpace.keys())
             parameterSpaceIntersection   = set(parameterSpace.keys()).intersection(otherParameterSpace.keys())
@@ -401,10 +355,6 @@ def generateScripts():
     Generate spec files and job scripts.
     """
     cpus       = jobs["num_cpus"]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = int(jobs["runs"])
     
     specFileTemplatePath  = exahypeRoot+"/"+general["spec_template"]
     jobScriptTemplatePath = exahypeRoot+"/"+general["job_template"]
@@ -454,7 +404,7 @@ def generateScripts():
     
     # generate job scrips
     jobScripts = 0
-    for run in range(0,runs):
+    for run in runNumbers:
         for nodes in nodeCounts:
             for tasks in taskCounts:
                 for parsedCores in coreCounts:
@@ -478,7 +428,7 @@ def generateScripts():
                                            parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             outputFileName = resultsFolderPath + "/" + jobName + ".out"
@@ -499,17 +449,13 @@ def verifyAllJobScriptsExist():
     Verify that all job scripts exist.
     """
     cpus       = jobs["num_cpus"]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = int(jobs["runs"])
     
-    if not os.path.exists(scriptFolderPath):
-        print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
+    if not os.path.exists(scriptsFolderPath):
+        print("ERROR: job script folder '"+scriptsFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
     
     allJobScriptsExist = True
-    for run in range(0,runs):
+    for run in runNumbers:
         for nodes in nodeCounts:
             for tasks in taskCounts:
                 for parsedCores in coreCounts:
@@ -526,7 +472,7 @@ def verifyAllJobScriptsExist():
                             order     = parameterDict["order"]
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             
@@ -538,7 +484,7 @@ def verifyAllJobScriptsExist():
                                       ", nodes="+nodes + \
                                       ", tasks="+tasks + \
                                       ", cores="+cores + \
-                                      ", run="+str(run) + \
+                                      ", run="+run + \
                                       " does not exist! ('"+jobFilePath+"')",file=sys.stderr)
     if not allJobScriptsExist:
         print("ERROR: subprogram failed! Please adopt your sweep options file according to the error messages.\n" + \
@@ -550,11 +496,9 @@ def verifyAllSpecFilesExist():
     Verify that all ExaHyPE specification files exist.
     """
     cpus       = jobs["num_cpus"]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     
-    if not os.path.exists(scriptFolderPath):
-        print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
+    if not os.path.exists(scriptsFolderPath):
+        print("ERROR: job script folder '"+scriptsFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
     
     allSpecFilesExist = True
@@ -583,11 +527,6 @@ def verifyAllSpecFilesExist():
         sys.exit()
 
 def hashSweep():
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = jobs["runs"]
-    
     chain = ""
     for value in nodeCounts:
         chain += value+";"
@@ -595,7 +534,8 @@ def hashSweep():
         chain += value+";"
     for value in coreCounts:
         chain += value+";"
-    chain += runs+";"
+    for value in runNumbers:
+        chain += value+";"
     
     for environmentDict in dictProduct(environmentSpace):
         chain += hashDictionary(environmentDict)
@@ -621,12 +561,7 @@ def submitJobs():
     """
     jobSubmissionTool    = general["job_submission"]
     
-    jobs       = config["jobs"]
-    cpus       = jobs["num_cpus"]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runs       = int(jobs["runs"])
+    cpus = jobs["num_cpus"]
     
     # verify everything is fine
     verifyAllExecutablesExist()
@@ -639,7 +574,7 @@ def submitJobs():
     
     # loop over job scrips
     jobIds = []
-    for run in range(0,runs):
+    for run in runNumbers:
         for nodes in nodeCounts:
             for tasks in taskCounts:
                 for parsedCores in coreCounts:
@@ -656,7 +591,7 @@ def submitJobs():
                             order     = parameterDict["order"]
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             
@@ -678,7 +613,7 @@ def submitJobs():
     
     print("submitted "+str(len(jobIds))+" jobs")
     print("job ids are memorised in: "+submittedJobsPath)
-    command="cp "+configFile+" "+submittedJobsPath.replace(".submitted",".ini")
+    command="cp "+optionsFile+" "+submittedJobsPath.replace(".submitted",".ini")
     print(command)
     process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
     (output, err) = process.communicate()
@@ -711,371 +646,18 @@ def cancelJobs():
     print(command)
     subprocess.call(command,shell=True)
 
-def parseResultFile(filePath):
-    '''
-    Reads a single sweep job output file and parses the user time spent within each adapter.
-    
-    Args:
-       filePath (str):
-          Path to the sweep job output file.
-
-    Returns:
-       A dict holding for each of the found adapters a nested dict that holds the following key-value pairs:
-          * 'n'       : (int)    Number of times this adapter was used.
-          * 'cputime' : (float) Total CPU time spent within the adapter.
-          * 'usertime': (float) Total user time spent within the adapter.
-       
-       The dict further holds the following dictionaries:
-          * 'environment':(dictionary(str,str)) Total user time spent within the adapter.
-          * 'parameters' :(dictionary(str,str)) Total user time spent within the adapter.
-    '''
-    environmentDict = {}
-    parameterDict   = {}
-    
-    adapters = {}
-    cputimeIndex  = 3
-    usertimeIndex = 5
-    
-    try:
-        fileHandle=codecs.open(filePath,'r','UTF_8')
-        for line in fileHandle:
-            if line.startswith("sweep/environment"):
-                value = line.split('=')[-1]
-                environmentDict=json.loads(value)
-            if line.startswith("sweep/parameters"):
-                value = line.split('=')[-1]
-                parameterDict=json.loads(value)
-            anchor = '|'
-            header = '||'
-            if anchor in line and header not in line:
-                segments = line.split('|')
-                adapter = segments[1].strip();
-                adapters[adapter]             = {}
-                adapters[adapter]['iterations']     = segments[2].strip()
-                adapters[adapter]['total_cputime']  = segments[cputimeIndex ].strip()
-                adapters[adapter]['total_usertime'] = segments[usertimeIndex].strip()
-    except IOError as err:
-        print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
-    return environmentDict,parameterDict,adapters
-
-def getAdapterTimesSortingKey(row):
-    keyTuple = ()
-    keys = row[:-3]
-    for key in keys:
-      try:
-          keyTuple += (float(key),)
-      except ValueError:
-          keyTuple += (key,)
-    return keyTuple
-
-def parseAdapterTimes():
-    """
-    Loop over all ".out" files in the results section and create a table.
-    """
-    tablePath         = resultsFolderPath+"/"+projectName+'.csv'
-    try:
-        with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
-
-            print("processed files:")
-            firstFile = True
-            for fileName in files:
-                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
-                prefix              = match.group(1)
-                parameterDictHash   = match.group(2)
-                environmentDictHash = match.group(3)
-                nodes               = match.group(4)
-                tasks               = match.group(5)
-                cores               = match.group(6)
-                run                 = match.group(7)
-                
-                environmentDict,parameterDict,adapters = parseResultFile(resultsFolderPath + "/" + fileName)
-                if len(adapters):
-                    # write header
-                    if firstFile:
-                        header = []
-                        header += sorted(environmentDict)
-                        for parameter in knownParameters:
-                            header.append(parameter)
-                        for parameter in sorted(parameterDict):
-                            if parameter not in knownParameters:
-                                header.append(parameter)
-                        header.append("nodes")
-                        header.append("tasks")
-                        header.append("cores")
-                        header.append("adapter")
-                        header.append("run")
-                        header.append("iterations")
-                        header.append("total_cputime")
-                        header.append("total_usertime")
-                        csvwriter.writerow(header)
-                        firstFile=False
-                    print(resultsFolderPath+"/"+fileName)
-                    
-                    # write rows
-                    for adapter in adapters:
-                        row=[]
-                        for key in sorted(environmentDict):
-                            row.append(environmentDict[key])
-                        for key in knownParameters:
-                            row.append(parameterDict[key])
-                        for key in sorted(parameterDict):
-                            if key not in knownParameters:
-                                row.append(parameterDict[key])
-                        row.append(nodes)
-                        row.append(tasks)
-                        row.append(cores)
-                        row.append(adapter)
-                        row.append(run)
-                        row.append(adapters[adapter]["iterations"])
-                        row.append(adapters[adapter]["total_cputime"])
-                        row.append(adapters[adapter]["total_usertime"])
-                        csvwriter.writerow(row)
-        success = not firstFile
-        if success:
-          # reopen the file and sort it
-          tableFile   = open(tablePath, 'r')
-          header      = next(tableFile)
-          header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=',')
-          
-          sortedData = sorted(reader,key=getAdapterTimesSortingKey)
-          tableFile.close()
-          
-          with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-              writer.writerow(header.split(','))
-              writer.writerows(sortedData)
-          print("created table:")
-          print(tablePath) 
-
-    except IOError as err:
-        print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
-
-
-def parseLikwidMetrics(filePath,singlecore=False):
-    """
-    Reads a single Peano output file and parses likwid performance metrics.
-    
-    Args:
-       filePath (str):
-          Path to the Peano output file.
-       metrics (str[][]):
-          A list of metrics the we want to read out.
-       counters (str[][]):
-          A list of counters the we want to read out.
-       singlecore (bool):
-          Specifies if the run was a singlecore run.
-    
-    Returns:
-       A dict holding for each of the found metrics a nested dict that holds the following key-value pairs:
-          * 'Sum' 
-          * 'Avg' 
-          * 'Min' 
-          * 'Max' 
-    """
-    columns    = [ "Sum","Min","Max","Avg" ]
-    
-    environmentDict = {}
-    parameterDict   = {}
-    
-    result  = {}
-    for metric in metrics:
-        result[metric[0]] =  {}
-        result[metric[0]][metric[1]] = -1.0
-    for counter in counters:
-        result[counter[0]] =  {}
-        result[counter[0]][counter[1]] = -1.0
-
-    try:
-        fileHandle=open(filePath)
-        
-        for line in fileHandle:
-            if line.startswith("sweep/environment"):
-                value = line.split('=')[-1]
-                environmentDict=json.loads(value)
-            if line.startswith("sweep/parameters"):
-                value = line.split('=')[-1]
-                parameterDict=json.loads(value)
-            
-            for metric in metrics: 
-                if singlecore:
-                    if metric[0] in line:
-                        segments = line.split('|')
-                        
-                        #    |     Runtime (RDTSC) [s]    |    6.5219    |
-                        value  = float(segments[2].strip());
-                        values = {}                         
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[metric[0]][metric[1]]=values[metric[1]]                        
-                else:
-                    if metric[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
-                        values = {}                                                 
-                        values["Sum"] = float(segments[2].strip());
-                        values["Min"] = float(segments[3].strip());
-                        values["Max"] = float(segments[4].strip());
-                        values["Avg"] = float(segments[5].strip());
-                        result[metric[0]][metric[1]]=values[metric[1]]
-                        
-            for counter in counters: 
-                if singlecore:
-                    if counter[0] in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
-                        value  = float(segments[3].strip());
-                        values = {}                         
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[counter[0]][counter[1]]=values[metric[1]]                        
-                else:
-                    if counter[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
-                        values = {}                                                 
-                        values["Sum"] = float(segments[3].strip());
-                        values["Min"] = float(segments[4].strip());
-                        values["Max"] = float(segments[5].strip());
-                        values["Avg"] = float(segments[6].strip());
-                        result[counter[0]][counter[1]]=values[counter[1]]
-    except IOError as err:
-        print ("ERROR: could not parse likwid metrics for file "+filePath+"! Reason: "+str(err))
-    return environmentDict,parameterDict,result
-
-def getLikwidMetricsSortingKey(row):
-    keyTuple = ()
-    keys = row[:-(len(metrics)+len(counters))]
-    for key in keys:
-      try:
-          keyTuple += (float(key),)
-      except ValueError:
-          keyTuple += (key,)
-    return keyTuple
-
-def parseLikwidMetrics():
-    """
-    Loop over all ".out.likwid" files in the results section and create a table.
-    """
-    tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
-    try:
-        with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out.likwid")]
-
-            print("processed files:")
-            firstFile = True
-            for fileName in files:
-                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out.likwid$',fileName)
-                prefix              = match.group(1)
-                parameterDictHash   = match.group(2)
-                environmentDictHash = match.group(3)
-                nodes               = match.group(4)
-                tasks               = match.group(5)
-                cores               = match.group(6)
-                run                 = match.group(7)
-                
-                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName,cores=="1")
-                if len(adapters):
-                    # write header
-                    if firstFile:
-                        header = []
-                        header += sorted(environmentDict)
-                        for parameter in knownParameters:
-                            header.append(parameter)
-                        for parameter in sorted(parameterDict):
-                            if parameter not in knownParameters:
-                                header.append(parameter)
-                        header.append("nodes")
-                        header.append("tasks")
-                        header.append("cores")
-                        header.append("run")
-                        header += sorted(measurements)
-                        csvwriter.writerow(header)
-                        firstFile=False
-                    print(resultsFolderPath+"/"+fileName)
-                    
-                    # write rows
-                    for adapter in adapters:
-                        row=[]
-                        for key in sorted(environmentDict):
-                            row.append(environmentDict[key])
-                        for key in knownParameters:
-                            row.append(parameterDict[key])
-                        for key in sorted(parameterDict):
-                            if key not in knownParameters:
-                                row.append(parameterDict[key])
-                        row.append(nodes)
-                        row.append(tasks)
-                        row.append(cores)
-                        row.append(run)
-                        for key in sorted(measurements):
-                            row.append(parameterDict[key])
-                        csvwriter.writerow(row)
-        success = not firstFile
-        if success:
-          # reopen the table and sort it
-          tableFile   = open(tablePath, 'r')
-          header      = next(tableFile)
-          header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=',')
-          
-          sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
-          tableFile.close()
-          
-          with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-              writer.writerow(header.split(','))
-              writer.writerows(sortedData)
-          print("created table:")
-          print(tablePath) 
-
-    except IOError as err:
-        print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
-
 if __name__ == "__main__":
     import sys,os
-    import configparser
     import subprocess
     import itertools
     import hashlib
     import json
-    import codecs
-    
     import re
-    import csv
+    
+    import sweep_analysis
+    import sweep_options
     
     subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
-    
-    knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
-    
-    metrics =  [
-                ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
-                ["AVX MFLOP/s",                 "Sum"],
-                ["Memory bandwidth [MBytes/s]", "Sum"],
-                ["Memory data volume [GBytes]", "Sum"],
-                ["L3 bandwidth [MBytes/s]",     "Sum"], 
-                ["L3 data volume [GBytes]",     "Sum"],
-                ["L3 request rate",             "Avg"],
-                ["L3 miss rate",                "Avg"],
-                ["L2 request rate",             "Avg"],
-                ["L2 miss rate",                "Avg"],
-                ["Branch misprediction rate",   "Avg"]
-               ]
-             
-    counters = [
-                ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
-                ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
-                ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
-               ]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -1110,44 +692,48 @@ typical workflow:
 ./sweep.py myoptions.ini parseAdapters
 
 """
-        print(info)
+        print(info) # correctly indented
         sys.exit()
     
-    configFile = parseArgument(sys.argv,1)
-    subprogram = parseArgument(sys.argv,2)
+    optionsFile = parseArgument(sys.argv,1)
+    subprogram  = parseArgument(sys.argv,2)
     
-    config = configparser.ConfigParser()
-    config.optionxform=str
-    config.read(configFile)
+    options = sweep_options.parseOptionsFile(optionsFile)
     
-    general          = config["general"]
-    jobs             = config["jobs"]
-    environmentSpace = parseEnvironment(config)
-    parameterSpace   = parseParameters(config)
+    general          = options.general
+    jobs             = options.jobs
+    environmentSpace = options.environmentSpace
+    parameterSpace   = options.parameterSpace
      
-    exahypeRoot      = general["exahype_root"]
-    outputPath       = general["output_path"]
-    projectPath      = general["project_path"]
-    projectName      = general["project_name"]
+    exahypeRoot      = options.exahypeRoot
+    outputPath       = options.outputPath
+    projectPath      = options.projectPath
+    projectName      = options.projectName
+   
+    buildFolder       = options.buildFolder
+    buildFolderPath   = options.buildFolderPath
+    scriptsFolderPath = options.scriptsFolderPath
+    resultsFolderPath = options.resultsFolderPath
+    historyFolderPath = options.historyFolderPath
     
-    buildFolderPath   = exahypeRoot+"/"+outputPath+"/build"
-    scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
-    resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
-    historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
+    nodeCounts = options.nodeCounts
+    taskCounts = options.taskCounts
+    coreCounts = options.coreCounts
+    runNumbers = options.runNumbers
     
     verifySweepAgreesWithHistoricExperiments()
     
     # select subprogram
-    if subprogram == "clean":
-        clean(general)
+    if subprogram == "cleanAll":
+        clean()
     elif subprogram == "cleanBuild":
         clean("build")
     elif subprogram == "cleanScripts":
         clean("scripts")
     elif subprogram == "cleanResults":
-      clean("results")
+        clean("results")
     elif subprogram == "cleanHistory":
-      clean("history")
+        clean("history")
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":
@@ -1159,6 +745,6 @@ typical workflow:
     elif subprogram == "cancel":
         cancelJobs()
     elif subprogram == "parseAdapters":
-        parseAdapterTimes()
+        sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName)
     elif subprogram == "parseMetrics":
-        parseLikwidMetrics()
+        sweep_analysis.parseMetrics(resultsFolderPath,projectName)

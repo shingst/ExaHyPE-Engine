@@ -24,24 +24,25 @@ public class ADERDGKernel {
   /**
    * Configuration parameter: id of the options
    */
-  public static final String GENERIC_OPTION_ID           = "generic";
-  public static final String OPTIMISED_OPTION_ID         = "optimised";
+  public static final String GENERIC_OPTION_ID            = "generic";
+  public static final String OPTIMISED_OPTION_ID          = "optimised";
 
-  public static final String LINEAR_OPTION_ID            = "linear";
-  public static final String NONLINEAR_OPTION_ID         = "nonlinear";
-  public static final String USER_DEFINED_OPTION_ID      = "user";
-  public static final String LEGENDRE_OPTION_ID          = "gausslegendre";
-  public static final String LOBATTO_OPTION_ID           = "gausslobatto";
+  public static final String LINEAR_OPTION_ID             = "linear";
+  public static final String NONLINEAR_OPTION_ID          = "nonlinear";
+  public static final String USER_DEFINED_OPTION_ID       = "user";
+  public static final String LEGENDRE_OPTION_ID           = "gausslegendre";
+  public static final String LOBATTO_OPTION_ID            = "gausslobatto";
     
-  public static final String FLUX_OPTION_ID              = "flux";
-  public static final String SOURCE_OPTION_ID            = "source";
-  public static final String NCP_OPTION_ID               = "ncp";
-  public static final String POINTSOURCES_OPTION_ID      = "pointsources";
-  public static final String MATERIALPARAMETER_OPTION_ID = "materialparameters";
+  public static final String FLUX_OPTION_ID               = "flux";
+  public static final String SOURCE_OPTION_ID             = "source";
+  public static final String NCP_OPTION_ID                = "ncp";
+  public static final String POINTSOURCES_OPTION_ID       = "pointsources";
+  public static final String MATERIALPARAMETER_OPTION_ID  = "materialparameters";
 
-  public static final String NO_TIME_AVG_OPTION_ID       = "notimeavg";
-  public static final String PATCHWISE_ADJUST_OPTION_ID  = "patchwiseadjust";
-  public static final String CONVERTER_OPTION_ID         = "converter"; //for debug only, not in guidebook
+  public static final String NO_TIME_AVG_OPTION_ID        = "notimeavg";
+  public static final String PATCHWISE_ADJUST_OPTION_ID   = "patchwiseadjust";
+  public static final String TEMP_VARS_ON_STACK_OPTION_ID = "usestack";
+  public static final String CONVERTER_OPTION_ID          = "converter"; //for debug only, not in guidebook
   
   private Set<String> type;
   private Map<String, Integer> terms;
@@ -147,6 +148,10 @@ public class ADERDGKernel {
   
   public boolean patchwiseAdjust() {
     return optimisation.contains(PATCHWISE_ADJUST_OPTION_ID);
+  }
+  
+  public boolean tempVarsOnStack() {
+    return optimisation.contains(TEMP_VARS_ON_STACK_OPTION_ID);
   }
   
   public boolean useConverterDebug() {

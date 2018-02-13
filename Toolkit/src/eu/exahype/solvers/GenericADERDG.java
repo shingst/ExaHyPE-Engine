@@ -34,6 +34,7 @@ public class GenericADERDG implements Solver {
     final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging    = kernel.noTimeAveraging();
     final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
+    final boolean tempVarsOnStack    = kernel.tempVarsOnStack();
     final int numberOfPointSources   = kernel.getNumberOfPointSources();
     
     templateEngine = new TemplateEngine();
@@ -65,6 +66,7 @@ public class GenericADERDG implements Solver {
     context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
     context.put("patchwiseAdjust"   , patchwiseAdjust);
+    context.put("tempVarsOnStack"   , tempVarsOnStack);
 
     
     //boolean as String
@@ -121,7 +123,7 @@ public class GenericADERDG implements Solver {
   public void writeUserPDE(java.io.BufferedWriter writer)
       throws java.io.IOException {
     // @todo Implement
-    System.err.println("C-style kernels do not have a PDF.f90.\n");
+    System.err.println("C-style kernels do not have a PDE.f90.\n");
   }
 
 

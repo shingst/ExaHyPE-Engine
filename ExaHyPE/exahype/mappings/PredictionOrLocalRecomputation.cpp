@@ -95,17 +95,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareLocalTimeStepVari
   }
 }
 
-void exahype::mappings::PredictionOrLocalRecomputation::initialiseTemporaryVariables() {
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
-  exahype::solvers::initialiseTemporaryVariables(_mergingTemporaryVariables);
-}
-
-void exahype::mappings::PredictionOrLocalRecomputation::deleteTemporaryVariables() {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
-  exahype::solvers::deleteTemporaryVariables(_mergingTemporaryVariables);
-}
-
-
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation()
   #ifdef Debug
   :
@@ -117,7 +106,7 @@ exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputatio
 }
 
 exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputation() {
-  deleteTemporaryVariables();
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
@@ -125,8 +114,6 @@ exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputatio
     const PredictionOrLocalRecomputation& masterThread)
 : _localState(masterThread._localState) {
   prepareLocalTimeStepVariables();
-
-  initialiseTemporaryVariables();
 }
 // Merge over threads
 void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
@@ -152,8 +139,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
         exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 
   prepareLocalTimeStepVariables();
-
-  initialiseTemporaryVariables();
 
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
@@ -229,8 +214,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     #endif
   }
 
-  deleteTemporaryVariables();
-
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
@@ -265,8 +248,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
             limitingADERDG->recomputePredictorLocally(
                 cellDescriptionsIndex,element,
                 exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
-                    fineGridVertices,fineGridVerticesEnumerator),
-                _predictionTemporaryVariables);
+                    fineGridVertices,fineGridVerticesEnumerator));
             admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
                 cellDescriptionsIndex,element,
                 exahype::State::isFirstIterationOfBatchOrNoBatch(),
@@ -288,8 +270,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
               solver,cellDescriptionsIndex,element,
               exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
-                  fineGridVertices,fineGridVerticesEnumerator),
-              _predictionTemporaryVariables);
+                  fineGridVertices,fineGridVerticesEnumerator));
 
           solver->prolongateDataAndPrepareDataRestriction(
               cellDescriptionsIndex,element);
@@ -362,8 +343,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
                     cellDescriptionsIndex1,element1,
                     cellDescriptionsIndex2,element2,
                     pos1,pos2,
-                    true, /* isRecomputation */
-                    _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
+                    true /* isRecomputation */);
               }
             }
 
@@ -401,8 +381,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
                   cellDescriptionsIndex1,element1,
                   solverPatch1.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values.
                   pos1,pos2,                              // The cell-based limiter status is still holding the old value though.
-                  true,
-                  _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
+                  true);
 
               #ifdef Debug
               _boundaryFaceMerges++;
@@ -420,8 +399,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
                   cellDescriptionsIndex2,element2,
                   solverPatch2.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values
                   pos2,pos1,                              // The cell-based limiter status is still holding the old value though.
-                  true,
-                  _mergingTemporaryVariables._tempFaceUnknowns[solverNumber]);
+                  true);
               #ifdef Debug
               _boundaryFaceMerges++;
               #endif
@@ -554,7 +532,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
             metadataPortion,
             destCellDescriptionIndex,element,src,dest,
             true, /* isRecomputation */
-            _mergingTemporaryVariables._tempFaceUnknowns[solverNumber],
             x,level);
       } else {
         logDebug("mergeWithNeighbourData(...)", "drop data for solver " << solverNumber << " from rank " <<
