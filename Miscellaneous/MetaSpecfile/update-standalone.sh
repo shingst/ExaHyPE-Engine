@@ -1,4 +1,12 @@
 #!/bin/bash
+#
+# This script tries to keep the standalone Mexa repository to be
+# in sync with the code maintained at the Engine-ExaHyPE repository.
+# To do so, it brutally merges all relevant commits into the
+# standalone repository. These are filtered by the path name.
+#
+# SvenK for ExaHyPE, 2018-01-31
+#
 
 set -e
 cd "$(dirname $0)"

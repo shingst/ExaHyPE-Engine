@@ -8,7 +8,7 @@ threefold of what mexa can be:
 2. A very simple file format for parameters based on (1)
 3. A purely functional language based on (2) to create parameter trees
 
-### Associative key: Key-Value mapping
+## Associative key: Key-Value mapping
 
 Configuration parameters means a certain configuration *key* is
 assigned a *value*. Implementations of hash maps exist in all programming
@@ -16,7 +16,7 @@ languages. In Mexa, the key-value mapping is always scalar, i.e.
 the types of the values are *primitives* such as Integers,
 floating point numbers, booleans or character strings.
 
-### Hierarchical directory tree
+## Hierarchical directory tree
 
 Many configuration systems are structured in a hierarchy, think of 
 the ini format, LDAP or the Microsoft Windows Registry. In such a
@@ -27,9 +27,9 @@ Some programming languages, notably untyped script languages, allow
 to represent hierarchical (nested) directories (hash maps) directly
 in code, most notably Python and PHP.
 
-### Syntax-free
+## Syntax-free
 
-So far, the concepts of *key-value-pairs* and **hierarchy* are pretty
+So far, the concepts of *key-value-pairs* and *hierarchy* are pretty
 common. They are not only quickly representable in most computing languages
 but also in most configuration file formats, markup languages or data
 serialization/exchange languages such as XML, Yaml and JSON. Therefore,
@@ -44,7 +44,7 @@ file format.
 
 Actually, the *syntax-free* keyword is not generally aplicable.
 
-### Verbosity and Extensivity
+## Verbosity and Extensivity
 
 The `plain-mexa` language is verbose: The full path of the key is always
 given in every assignment line. This is by intention and contradicts
@@ -55,7 +55,7 @@ to avoid *magic numbers* by any means. Instead, you are encouraged to
 assign every possible primitive data (numbers and trees) a name and use
 these names extensively.
 
-### Convention/Contract vs. Schema
+## Convention/Contract vs. Schema
 
 A schema (think of DTD/XSD or Cactus parameter.ccl files) allows to
 *statically* check the semantical correctness of a parameter file. For
@@ -79,7 +79,7 @@ in the parameter file.
 change all existing parameter files when a new parameter is introduced
 in the code.
 
-### General-purpose
+## General-purpose
 
 Needless to say, while mexa fulfills the idea of a domain specific language
 (DSL), i.e. collecting steering parameters -- "a bunch of numbers" -- for
@@ -92,7 +92,7 @@ representation is treated poorly. It is possible to embed arbitrary multiline
 strings (i.e. text files) in mexa files. The paradigm to do so is to
 embed it naturally into a dumb dictionary which represents a list of lines.
 
-### Embeddable
+## Embeddable
 
 Mexa is primarily designed for being embedded in other configuration languages.
 Therefore, standards have been defined in which way a mexa file can be encoded

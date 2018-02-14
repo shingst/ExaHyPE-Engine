@@ -52,7 +52,7 @@ list `[1,3,7]` is thus represented by `{i0:1,i1:3,i2:7}` or `{x:1,y:3,z:7}`.
 In case an ordering is not imporatnt, the keys are completely arbitrary.
 
 Similarly, one can think of multiline strings as lists and subsequently as maps.
-The mutliline message "foo\nbar\nbaz" then gets "{s1:'foo',s2:'bar,s3:'baz'}".
+The mutliline message `foo\nbar\nbaz` then gets `{s1:'foo',s2:'bar,s3:'baz'}`.
 
 Obviously, being a data structure, there is nothing beyond the data, such as coments.
 Instead, everything is data and comments are *meta data*. In the exa approach, there
@@ -98,8 +98,8 @@ The following rules apply:
 Furthermore, note that due to the linearization of the tree, an order is imposed
 and simple-mexa files thus can represent sorted dictioniaries.
 
-Keys in Mexa can be any strings, but the operator symbol "=" is reserved as well
-as the dictionary seperator. It might not only be "/" but also "::" is allowed.
+Keys in Mexa can be any strings, but the operator symbol `=` is reserved as well
+as the dictionary seperator. It might not only be `/` but also `::` is allowed.
 
 ### Primitive types in Simple-Mexa
 
@@ -282,7 +282,7 @@ rectangle <= triangle
 This does assign the rectangle the nodes `w,x,y,z` while the triangle is not affected.
 
 With the extension operation, complex data structures can be built while no
-**information is lost* in the middle. This is a non-destructive version of the typical
+**information is lost** in the middle. This is a non-destructive version of the typical
 imperative approach of *default values* which are *overwritten* subsequently. The lack
 of default values makes it obvious when an overwrite did not take place already at
 compile time.
@@ -343,7 +343,7 @@ a multiline string, thought.
 
 ### Inclusion operation
 
-The `a << "something"`operation is somewhat special and has a similar meaning as in
+The `a << "something"` operation is somewhat special and has a similar meaning as in
 Mathematica: It allows to place code from another file at exactly this node. On the
 right hand side of this operator only strings are accepted (one could think of
 accepting symbol names, but this destroys the independency of line evaluation order).
