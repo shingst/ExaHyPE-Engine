@@ -40,6 +40,7 @@ public class OptimisedADERDG implements Solver {
     final boolean useMaterialParam  = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging   = kernel.noTimeAveraging();
     final boolean patchwiseAdjust   = kernel.patchwiseAdjust();
+    final boolean tempVarsOnStack   = kernel.tempVarsOnStack();
     final int numberOfPointSources  = kernel.getNumberOfPointSources();
     
     //generate the optimised kernel, can throw IOException
@@ -76,6 +77,7 @@ public class OptimisedADERDG implements Solver {
     context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
     context.put("patchwiseAdjust"   , patchwiseAdjust);
+    context.put("tempVarsOnStack"   , tempVarsOnStack);
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));
