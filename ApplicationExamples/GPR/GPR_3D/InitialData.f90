@@ -25,6 +25,45 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx)
 	limiter_value=0
 END SUBROUTINE PDElimitervalue
 
+RECURSIVE SUBROUTINE ShuVortex2D(x, t, Q)
+    USE, INTRINSIC :: ISO_C_BINDING
+    USE Parameters, ONLY : nVar, nDim,gamma
+    IMPLICIT NONE 
+    ! Argument list 
+    REAL, INTENT(IN)               :: t
+    REAL, INTENT(IN)               :: x(nDim)        ! 
+    REAL, INTENT(OUT)              :: Q(nVar)        ! 
+
+	INTEGER	:: iErr
+    REAL    :: up(nVar), Pi = ACOS(-1.0), epsilon, r, du, dv, dT, drho, dp
+
+    ! Initialize parameters
+       epsilon = 5.0
+       r = SQRT((x(1)-t-5.)**2+(x(2)-t-5.)**2)
+       du = epsilon/2./Pi*exp(0.5*(1.-r*r))*(5. - x(2) + t)
+       dv = epsilon/2./Pi*exp(0.5*(1.-r*r))*(x(1)  - 5.- t)
+       dT = -(gamma-1.)*epsilon**2/8./gamma/Pi**2*exp(1.-r*r)
+       drho = (1.+dT)**(1./(gamma-1.))-1.
+       dp   = (1.+dT)**(gamma/(gamma-1.))-1.
+       !
+       up = 0.0 
+       ! Density 
+       up(1) = 1. + drho 
+       ! Velocity    
+       up(2) = 1.  + du
+       up(3) = 1.  + dv
+       up(4) = 0.
+       ! Pressure  
+       up(5) = 1.  + dp
+       ! distortion tensor  
+       up(6:14) = up(1)**(1./3.)*(/ 1., 0., 0., 0., 1., 0., 0., 0., 1. /)   
+       ! thermal impulse
+       up(15:17) = 0.0 
+       !
+       CALL PDEPrim2Cons(Q,up)
+    !Q=up
+END SUBROUTINE ShuVortex2D
+
 RECURSIVE SUBROUTINE SmoothShock(x, t, Q)
     USE, INTRINSIC :: ISO_C_BINDING
     USE Parameters, ONLY : nVar, nDim,rho0,cs,tau1,gamma
@@ -46,11 +85,11 @@ RECURSIVE SUBROUTINE SmoothShock(x, t, Q)
 		nv(1) = 1.0 
         up(:) = 0. 
 		u0=0.0
-		p0=1.0
+		p0=1.0/gamma
         Re0 = rho0 * Ms / mu 
-        CALL NSShock(up(1),vx,up(5),DOT_PRODUCT(x(:)-x0(:),nv),gamma,mu,Re0,Ms,rho0,u0,p0)
+        CALL NSShock(up(1),vx,up(5),DOT_PRODUCT(x(:)-ms*t-x0(:),nv),gamma,mu,Re0,Ms,rho0,u0,p0)
         up(4) = 0.0
-		up(2:1+nDim) = vx*nv 
+		up(2:1+nDim) = vx*nv  
         Aref = up(1)**(1./3.) 
         up(6:14) = (/ Aref, 0., 0., 0., Aref, 0., 0., 0., Aref /) 
         CALL PDEPrim2Cons(Q,up)

@@ -44,10 +44,13 @@ void GPR::GPRSolver_FV::boundaryValues(
     const int d,
     const double* const stateInside,
     double* stateOutside) {
+	const int nVar = GPR::AbstractGPRSolver_FV::NumberOfVariables;	
+	double Qgp[nVar];
   // Dimensions             = 3
   // Number of variables    = 17 + #parameters
 
   // @todo Please implement/augment if required
+  /*
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
@@ -65,6 +68,12 @@ void GPR::GPRSolver_FV::boundaryValues(
   stateOutside[14] = stateInside[14];
   stateOutside[15] = stateInside[15];
   stateOutside[16] = stateInside[16];
+  */
+  double ti = t + 0.5 * dt;
+  initialdata_(x, &ti, Qgp);
+  for(int m=0; m < nVar; m++) {
+        stateOutside[m] = Qgp[m];
+  }
 }
 
 //***********************************************************

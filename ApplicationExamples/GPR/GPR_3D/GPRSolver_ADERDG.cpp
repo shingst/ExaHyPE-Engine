@@ -36,7 +36,7 @@ const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
   const int nDim = DIMENSIONS;
 
   double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
-/*
+
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut, 0, nVar * sizeof(double));
   
@@ -55,11 +55,12 @@ const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
         fluxOut[m] += weight * Fs[normalNonZero][m];
      }
   }
-  */
+  /*
 	for(int m=0; m < nVar; m++) {
 	stateOut[m] = stateIn[m];
 	fluxOut[m] = fluxIn[m];
 	}
+	*/
 }
 
 exahype::solvers::Solver::RefinementControl GPR::GPRSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
