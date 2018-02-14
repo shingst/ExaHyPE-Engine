@@ -8,7 +8,6 @@
 
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
 
 tarch::logging::Log GPR::GPRSolver_FV::_log( "GPR::GPRSolver_FV" );
 
@@ -18,7 +17,7 @@ void GPR::GPRSolver_FV::init(std::vector<std::string>& cmdlineargs) {
 }
 
 void GPR::GPRSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
-  // Dimensions             = 3
+  // Dimensions             = 2
   // Number of variables    = 17 + #parameters
   
   // @todo Please implement/augment if required
@@ -28,7 +27,7 @@ void GPR::GPRSolver_FV::adjustSolution(const double* const x,const double t,cons
 }
 
 void GPR::GPRSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
-  // Dimensions             = 3
+  // Dimensions             = 2
   // Number of variables    = 17 + #parameters
   
   // @todo Please implement/augment if required
@@ -46,7 +45,7 @@ void GPR::GPRSolver_FV::boundaryValues(
     double* stateOutside) {
 	const int nVar = GPR::AbstractGPRSolver_FV::NumberOfVariables;	
 	double Qgp[nVar];
-  // Dimensions             = 3
+  // Dimensions             = 2
   // Number of variables    = 17 + #parameters
 
   // @todo Please implement/augment if required
@@ -84,7 +83,7 @@ void GPR::GPRSolver_FV::boundaryValues(
 
 
 void GPR::GPRSolver_FV::flux(const double* const Q,double** F) {
-  // Dimensions                        = 3
+  // Dimensions                        = 2
   // Number of variables + parameters  = 17 + 0
   
   // @todo Please implement/augment if required

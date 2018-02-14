@@ -20,15 +20,15 @@ exahype-project GPR
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/GPR/GPR_3D
+  output-directory const           = ./ApplicationExamples/GPR/GPR_2D
   architecture const               = noarch
   log-file                         = whatever.log
 
   computational-domain
-    dimension const         = 3
-    width                   = 1.0, 0.3, 0.3
-    offset                  = -0.5, -0.15, -0.15
-    end-time                = 0.5
+    dimension const         = 2
+    width                   = 10.0, 10.0
+    offset                  = -0.0, -0.0
+    end-time                = 1.0
   end computational-domain
   
   shared-memory
@@ -40,7 +40,7 @@ exahype-project GPR
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:4}
+    configure                = {hotspot,fair,ranks_per_node:1}
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory
@@ -60,7 +60,7 @@ exahype-project GPR
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,p:1,A:9,j:3
     order const                    = 3
-    maximum-mesh-size              = 0.1
+    maximum-mesh-size              = 0.2
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -79,14 +79,14 @@ exahype-project GPR
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 17
       time      = 0.0
-      repeat    = 5e-3
+      repeat    = 0.1
       output    = ./vtk-output/primitives
     end plot
 
     plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
       time = 0.0
-      repeat = 0.01
+      repeat = 0.1
       output = ./global-integrals
     end plot
   end solver

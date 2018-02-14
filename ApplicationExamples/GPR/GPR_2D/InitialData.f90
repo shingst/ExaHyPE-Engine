@@ -10,7 +10,8 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 		
 	!call ShearLayer(x, t, Q);
-	call SmoothShock(x, t, Q);
+	!call SmoothShock(x, t, Q);
+	call ShuVortex2D(x, t, Q);
 END SUBROUTINE InitialData
 
 RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx)
