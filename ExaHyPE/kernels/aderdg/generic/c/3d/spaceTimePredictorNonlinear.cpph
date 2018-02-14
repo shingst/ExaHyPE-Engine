@@ -52,6 +52,9 @@ namespace {
     constexpr int basisSize          = order+1;
     constexpr int basisSize2         = basisSize * basisSize;
     constexpr int basisSize4         = basisSize2 * basisSize2;
+    
+    constexpr bool useMaxPicardIterations = SolverType::UseMaxPicardIterations;
+    constexpr int  maxPicardIterations    = SolverType::MaxPicardIterations;
 
     assertion(numberOfVariables>=0);
     assertion(numberOfParameters>=0);
@@ -80,7 +83,7 @@ namespace {
     grainSizeTrivialGuess.parallelSectionHasTerminated();
 
     // 3. Discrete Picard iterations
-    constexpr int MaxIterations = 2 * (order + 1);
+    constexpr int MaxIterations = (useMaxPicardIterations) ? maxPicardIterations : 2 * (order + 1);
     // right-hand side
     idx5 idx_rhs(basisSize, basisSize, basisSize, basisSize, numberOfVariables); // idx_rhs(t,z,y,x,nVar)
     // spatial gradient of q
@@ -310,18 +313,20 @@ namespace {
       
 
       // 5. Exit condition
-      constexpr double tol = 1e-7;
-      if (sq_res < tol * tol) {
-        break;
-      }
-      
-      if (iter == MaxIterations) {  // No convergence after last iteration
-        static tarch::logging::Log _log("kernels::aderdg::generic::c");
-        logWarning("aderPicardLoopNonlinear(...)",
-                   "|res|^2=" << sq_res << " > |tol|^2=" << tol * tol << " after "
-                   << iter << " iterations. Solver seems not to "
-                   "have converged properly within "
-                   "maximum number of iteration steps");
+      if (!useMaxPicardIterations) {
+        constexpr double tol = 1e-7;
+        if (sq_res < tol * tol) {
+          break;
+        }
+        
+        if (iter == MaxIterations) {  // No convergence after last iteration
+          static tarch::logging::Log _log("kernels::aderdg::generic::c");
+          logWarning("aderPicardLoopNonlinear(...)",
+                     "|res|^2=" << sq_res << " > |tol|^2=" << tol * tol << " after "
+                     << iter << " iterations. Solver seems not to "
+                     "have converged properly within "
+                     "maximum number of iteration steps");
+        } 
       }
     }  // end iter
     

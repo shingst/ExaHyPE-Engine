@@ -32,11 +32,13 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
   public:
-    static constexpr int NumberOfVariables  = {{optNamespace}}::getNumberOfVariable();
-    static constexpr int NumberOfParameters = {{optNamespace}}::getNumberOfParameter();
-    static constexpr int Order              = {{optNamespace}}::getBasisSize() -1;
-    static constexpr int Dimensions         = {{optNamespace}}::getDimension();
-    static constexpr double CFL             = 0.9;
+    static constexpr int NumberOfVariables       = {{optNamespace}}::getNumberOfVariable();
+    static constexpr int NumberOfParameters      = {{optNamespace}}::getNumberOfParameter();
+    static constexpr int Order                   = {{optNamespace}}::getBasisSize() -1;
+    static constexpr int Dimensions              = {{optNamespace}}::getDimension();
+    static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
+    static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
+    static constexpr double CFL                  = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     {%- endif %}

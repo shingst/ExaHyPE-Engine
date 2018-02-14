@@ -52,6 +52,9 @@ int aderPicardLoopNonlinear(SolverType& solver,
   constexpr int basisSize2         = basisSize * basisSize;
   constexpr int basisSize3         = basisSize2 * basisSize;
   
+  constexpr bool useMaxPicardIterations = SolverType::UseMaxPicardIterations;
+  constexpr int  maxPicardIterations    = SolverType::MaxPicardIterations;
+  
   assertion(numberOfVariables>=0);
   assertion(numberOfParameters>=0);
 
@@ -76,7 +79,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
   grainSizeTrivialGuess.parallelSectionHasTerminated();
   
   // 3. Discrete Picard iterations
-  constexpr int MaxIterations = 2 * (order + 1);
+  constexpr int MaxIterations = (useMaxPicardIterations) ? maxPicardIterations : 2 * (order + 1);
 
   // right-hand side
   idx4 idx_rhs(basisSize, basisSize, basisSize, numberOfVariables); // idx_rhs(t,y,x,nVar)
@@ -271,18 +274,20 @@ int aderPicardLoopNonlinear(SolverType& solver,
      */
 
     // 5. Exit condition
-    constexpr double tol = 1e-7;
-    if (sq_res < tol * tol) {
-      iter = MaxIterations + 1; // break
-    }
-
-    if (iter == MaxIterations) {  // No convergence after last iteration
-      static tarch::logging::Log _log("kernels::aderdg::generic::c");
-      logWarning("aderPicardLoopNonlinear(...)",
-          "|res|^2=" << sq_res << " > |tol|^2=" << tol * tol << " after "
-          << iter << " iterations. Solver seems not to have "
-          "converged properly within maximum "
-          "number of iteration steps");
+    if (!useMaxPicardIterations) {
+      constexpr double tol = 1e-7;
+      if (sq_res < tol * tol) {
+        iter = MaxIterations + 1; // break
+      }
+      
+      if (iter == MaxIterations) {  // No convergence after last iteration
+        static tarch::logging::Log _log("kernels::aderdg::generic::c");
+        logWarning("aderPicardLoopNonlinear(...)",
+            "|res|^2=" << sq_res << " > |tol|^2=" << tol * tol << " after "
+            << iter << " iterations. Solver seems not to have "
+            "converged properly within maximum "
+            "number of iteration steps");
+      }
     }
   }  // end iter
   
