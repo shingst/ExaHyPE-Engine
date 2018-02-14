@@ -19,7 +19,7 @@ void GPR::GPRSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) {
 }
 
 void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
-  // Dimensions                        = 3
+  // Dimensions                        = 2
   // Number of variables + parameters  = 17 + 0
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
@@ -36,7 +36,18 @@ const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
   const int nDim = DIMENSIONS;
 
   double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
+  // Dimensions                        = 2
+  // Number of variables + parameters  = 17 + 0
 /*
+  // @todo Please implement/augment if required
+	for(int m=0; m < nVar; m++) {
+	stateOut[m] = stateIn[m];
+	fluxOut[m] = fluxIn[m];
+	}
+*/
+
+
+
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut, 0, nVar * sizeof(double));
   
@@ -55,11 +66,7 @@ const int nVar = GPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
         fluxOut[m] += weight * Fs[normalNonZero][m];
      }
   }
-  */
-	for(int m=0; m < nVar; m++) {
-	stateOut[m] = stateIn[m];
-	fluxOut[m] = fluxIn[m];
-	}
+  
 }
 
 exahype::solvers::Solver::RefinementControl GPR::GPRSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
@@ -75,7 +82,7 @@ exahype::solvers::Solver::RefinementControl GPR::GPRSolver_ADERDG::refinementCri
 
 
 void GPR::GPRSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
-  // Dimensions                        = 3
+  // Dimensions                        = 2
   // Number of variables + parameters  = 17 + 0
   
   // @todo Please implement/augment if required
@@ -86,12 +93,11 @@ void GPR::GPRSolver_ADERDG::eigenvalues(const double* const Q,const int d,double
 
 
 void GPR::GPRSolver_ADERDG::flux(const double* const Q,double** F) {
-  // Dimensions                        = 3
+  // Dimensions                        = 2
   // Number of variables + parameters  = 17 + 0
   
   // @todo Please implement/augment if required
   pdeflux_(F[0], F[1], (DIMENSIONS==3)?F[2]:nullptr, Q);
-
   
 }
 
@@ -126,7 +132,8 @@ bool GPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
   //if(limvalue>0){
 //	  return false;
  // }else{
+	  //return true;
 	  return true;
-	  //return false;
  // };
 }
+

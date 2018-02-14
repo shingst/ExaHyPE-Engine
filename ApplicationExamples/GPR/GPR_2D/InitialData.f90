@@ -48,9 +48,9 @@ RECURSIVE SUBROUTINE SmoothShock(x, t, Q)
 		u0=0.0
 		p0=1.0
         Re0 = rho0 * Ms / mu 
-        CALL NSShock(up(1),vx,up(5),DOT_PRODUCT(x(:)-x0(:),nv),gamma,mu,Re0,Ms,rho0,u0,p0)
+        CALL NSShock(up(1),vx,up(5),DOT_PRODUCT(x(:)-ms*t-x0(:),nv),gamma,mu,Re0,Ms,rho0,u0,p0)
         up(4) = 0.0
-		up(2:1+nDim) = vx*nv 
+		up(2:1+nDim) = vx*nv  
         Aref = up(1)**(1./3.) 
         up(6:14) = (/ Aref, 0., 0., 0., Aref, 0., 0., 0., Aref /) 
         CALL PDEPrim2Cons(Q,up)

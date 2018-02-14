@@ -82,7 +82,7 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,hz,Q)
   
   IF(nDim==3) THEN
     hz=h
-  END IF  
+  END IF
   END SUBROUTINE PDEFlux
 
 
