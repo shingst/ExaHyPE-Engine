@@ -137,8 +137,15 @@ def createPlots():
                 dataMax = max(dataPoints)
                 iMin    = dataPoints.index(dataMin)
                 iMax    = dataPoints.index(dataMax)
-                container.patches[iMin].set_color("g")
-                container.patches[iMax].set_color("r")
+                
+                colours = ["0.8","0.8"]
+                if   best=="min":
+                  colours = ["g", "r"]
+                elif best=="max":
+                  colours = ["r", "g"]
+                container.patches[iMin].set_color(colours[0])
+                container.patches[iMax].set_color(colours[1])
+                
                 axes.set_ylabel(yLabel)
                 if (yScale=="linear"):
                     axes.ticklabel_format(axis="y", style="sci", scilimits=(-2,2))
@@ -321,6 +328,7 @@ NOTE: The order of the parameters in the section 'per_plot' is preserved.
     dataColumnName = configParser["to_plot"]["data"].replace("\"","")
     yLabel         = configParser["to_plot"]["label"].replace("\"","")
     yScales        = parseList(configParser["to_plot"]["scale"])
+    best           = configParser["to_plot"]["best"].replace("\"","")
     
     plotsSpace     = parseParameterSpace(configParser,"plots")
     perPlotSpace   = parseParameterSpace(configParser,"per_plot")
