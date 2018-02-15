@@ -32,11 +32,13 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
   public:
-    static constexpr int NumberOfVariables  = {{optNamespace}}::getNumberOfVariable();
-    static constexpr int NumberOfParameters = {{optNamespace}}::getNumberOfParameter();
-    static constexpr int Order              = {{optNamespace}}::getBasisSize() -1;
-    static constexpr int Dimensions         = {{optNamespace}}::getDimension();
-    static constexpr double CFL             = 0.9;
+    static constexpr int NumberOfVariables       = {{optNamespace}}::getNumberOfVariable();
+    static constexpr int NumberOfParameters      = {{optNamespace}}::getNumberOfParameter();
+    static constexpr int Order                   = {{optNamespace}}::getBasisSize() -1;
+    static constexpr int Dimensions              = {{optNamespace}}::getDimension();
+    static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
+    static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
+    static constexpr double CFL                  = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     {%- endif %}
@@ -115,7 +117,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
   	}
     
     // old: void fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt, double** tempPointForceSources) override; 
-    int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double dt) override; 
+    int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override; 
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
     void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
@@ -136,16 +138,16 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static void abortWithMsg(const char* const msg);
     
     //padded array size, override default ADERDGSolver values
-    int getTempSpaceTimeUnknownsSize()      const {return {{optNamespace}}::getTempSpaceTimeUnknownsSize();     }
-    int getTempSpaceTimeFluxUnknowns0Size() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknowns0Size();}
-    int getTempSpaceTimeFluxUnknowns1Size() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknowns1Size();}
-    int getTempUnknownsSize()               const {return {{optNamespace}}::getTempUnknownsSize();              }
-    int getTempFluxUnknownsSize()           const {return {{optNamespace}}::getTempFluxUnknownsSize();          }
-    int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getTempPointForceSourcesSize();     }
-    int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
-    int getBndTotalSize()                   const {return {{optNamespace}}::getBndTotalSize();                  }
-    int getBndFluxSize()                    const {return {{optNamespace}}::getBndFluxSize();                   }
-    int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndFluxTotalSize();              }
+    int getTempSpaceTimeUnknownsSize()      const {return {{optNamespace}}::getlQiSize();          }
+    int getTempSpaceTimeFluxUnknowns0Size() const {return {{optNamespace}}::getlFiSize();          }
+    int getTempSpaceTimeFluxUnknowns1Size() const {return {{optNamespace}}::getgradQSize();        }
+    int getTempUnknownsSize()               const {return {{optNamespace}}::getlQhiSize();         }
+    int getTempFluxUnknownsSize()           const {return {{optNamespace}}::getlFhiSize();         }
+    int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getPSiSize();          }
+    int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();      }
+    int getBndTotalSize()                   const {return {{optNamespace}}::getBndTotalSize();     }
+    int getBndFluxSize()                    const {return {{optNamespace}}::getBndFluxSize();      }
+    int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndFluxTotalSize(); }
     
     bool alignTempArray()                  const {return true;}
     
@@ -159,6 +161,11 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     {%- if patchwiseAdjust %}
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
     {%- endif %}
+    
+    //helper function
+    inline double* allocateArray(const int size) {return ((double *) _mm_malloc(sizeof(double)*size, ALIGNMENT));}
+    inline void freeArray(double*& array) {_mm_free(array);}
+      
 };
 
 #endif // __{{abstractSolver}}_CLASS_HEADER__

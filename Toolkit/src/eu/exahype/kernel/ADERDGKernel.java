@@ -42,21 +42,22 @@ public class ADERDGKernel {
   public static final String NO_TIME_AVG_OPTION_ID        = "notimeavg";
   public static final String PATCHWISE_ADJUST_OPTION_ID   = "patchwiseadjust";
   public static final String TEMP_VARS_ON_STACK_OPTION_ID = "usestack";
+  public static final String MAX_PICARD_ITER_ID           = "maxpicarditer";
   public static final String CONVERTER_OPTION_ID          = "converter"; //for debug only, not in guidebook
   
   private Set<String> type;
   private Map<String, Integer> terms;
-  private Set<String> optimisation;
+  private Map<String, Integer> optimisation;
   
   public ADERDGKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AAderdgSolver) {
       type = parseIds(((AAderdgSolver) solver).getKernelType());
       terms = parseIdsToMap(((AAderdgSolver) solver).getKernelTerms());
-      optimisation = parseIds(((AAderdgSolver) solver).getKernelOpt());
+      optimisation =  parseIdsToMap(((AAderdgSolver) solver).getKernelOpt());
     } else if(solver instanceof ALimitingAderdgSolver) {
       type = parseIds(((ALimitingAderdgSolver) solver).getKernelType());
       terms = parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelTerms());
-      optimisation = parseIds(((ALimitingAderdgSolver) solver).getKernelOpt());
+      optimisation =  parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelOpt());
     } else {
       throw new IllegalArgumentException("No kernel definition found");
     }
@@ -105,12 +106,12 @@ public class ADERDGKernel {
   }
 
   public KernelType getKernelType() {
-    if (optimisation.contains(OPTIMISED_OPTION_ID)) {
+    if (optimisation.containsKey(OPTIMISED_OPTION_ID)) {
      return KernelType.OptimisedADERDG;
    }
       
    // default kernel - must be last   
-   if(optimisation.contains(GENERIC_OPTION_ID)) {
+   if(optimisation.containsKey(GENERIC_OPTION_ID)) {
       return KernelType.GenericADERDG;
   }
   
@@ -118,8 +119,8 @@ public class ADERDGKernel {
   }
 
   public boolean usesOptimisedKernels() {
-    // assert: !optimisation.contains(GENERIC_OPTION_ID)
-    return optimisation.contains(OPTIMISED_OPTION_ID);
+    // assert: !optimisation.containsKey(GENERIC_OPTION_ID)
+    return optimisation.containsKey(OPTIMISED_OPTION_ID);
   }
 
   public boolean useFlux() {
@@ -143,19 +144,28 @@ public class ADERDGKernel {
   }
   
   public boolean noTimeAveraging() {
-    return optimisation.contains(NO_TIME_AVG_OPTION_ID);
+    return optimisation.containsKey(NO_TIME_AVG_OPTION_ID);
   }
   
   public boolean patchwiseAdjust() {
-    return optimisation.contains(PATCHWISE_ADJUST_OPTION_ID);
+    return optimisation.containsKey(PATCHWISE_ADJUST_OPTION_ID);
   }
   
   public boolean tempVarsOnStack() {
-    return optimisation.contains(TEMP_VARS_ON_STACK_OPTION_ID);
+    return optimisation.containsKey(TEMP_VARS_ON_STACK_OPTION_ID);
+  }
+  
+  public int maxPicardIterations() {
+    return optimisation.get(MAX_PICARD_ITER_ID);
+  }
+  
+  public boolean useMaxPicardIterations() {
+    return optimisation.containsKey(MAX_PICARD_ITER_ID) &&
+           optimisation.get(MAX_PICARD_ITER_ID)!=-1;
   }
   
   public boolean useConverterDebug() {
-    return optimisation.contains(CONVERTER_OPTION_ID);
+    return optimisation.containsKey(CONVERTER_OPTION_ID);
   }
   
   public int getNumberOfPointSources() {
@@ -182,7 +192,7 @@ public class ADERDGKernel {
     }
     sb.deleteCharAt(sb.length()-2);
     sb.append("], opt: [");
-    for(String s : optimisation) {
+    for(String s : optimisation.keySet()) {
       sb.append(s);
       sb.append(", ");
     }

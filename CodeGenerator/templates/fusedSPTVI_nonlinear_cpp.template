@@ -26,7 +26,7 @@
 #include "{{solverHeader}}"
 
 
-void {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
+int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         {{solverName}}& solver, 
         double* restrict lduh,
         double* restrict lQhbnd, 
@@ -100,8 +100,9 @@ void {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
   // 3. Discrete Picard iterations
   const int MaxIterations = {{2 * nDof}};
+  int iter = 0;
 
-  for (int iter = 0; iter < MaxIterations; iter++) {
+  for (iter; iter < MaxIterations; iter++) {
     for (int i = 0; i < {{nDof}}; i++) {  // time DOF
 
 {% if useFlux %}    
@@ -680,4 +681,5 @@ void {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
 {% endif %} 
 
+  return iter; //return number of Picard iterations
 }
