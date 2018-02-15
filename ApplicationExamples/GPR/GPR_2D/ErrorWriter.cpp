@@ -93,8 +93,8 @@ void GPR::ErrorWriter::plotPatch(
 		const int patchSize = GPR::AbstractGPRSolver_FV::PatchSize;
 		dV = tarch::la::volume(sizeOfPatch)/patchSize; // correct is probably (patchSize+1)
 	}*/
-	printf("dV=%e\n", dV);
-	printf("localError=%e\n", localError[0]);
+	// printf("dV=%e\n", dV);
+	// printf("localError=%e\n", localError[0]);
   	errors.addValue(localError, dV);
 }
 
