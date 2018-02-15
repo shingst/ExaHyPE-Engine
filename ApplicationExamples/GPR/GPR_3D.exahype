@@ -28,7 +28,7 @@ exahype-project GPR
     dimension const         = 3
     width                   = 1.0, 0.3, 0.3
     offset                  = -0.5, -0.15, -0.15
-    end-time                = 0.5
+    end-time                = 0.1
   end computational-domain
   
   shared-memory
@@ -83,11 +83,25 @@ exahype-project GPR
       output    = ./vtk-output/primitives
     end plot
 
-    plot vtk::Legendre::vertices::ascii IntegralsWriter
-      variables const = 0
-      time = 0.0
-      repeat = 0.01
-      output = ./global-integrals
+    plot vtu::Cartesian::vertices::ascii ConservedWriter
+      variables const = 17
+      time      = 0.0
+      repeat    = 5e-3
+      output    = ./vtk-output/conserved
     end plot
+
+    plot vtu::Cartesian::vertices::limited::ascii Plotter
+      variables const = 17
+      time      = 0.0
+      repeat    = 5e-3
+      output    = ./vtk-output-lim/dg
+    end plot
+
+     plot user::defined ErrorWriter
+       variables const = 17
+       time            = 0.0
+       repeat          = 5e-3
+       output          = ./output/errors
+     end plot
   end solver
 end exahype-project

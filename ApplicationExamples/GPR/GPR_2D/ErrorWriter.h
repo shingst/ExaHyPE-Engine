@@ -70,6 +70,11 @@ class GPR::ErrorWriter : public exahype::plotters::ADERDG2UserDefined {
   private:
 	exahype::plotters::ascii::MultipleReductionsWriter errors;
 	bool plotForADERSolver;
+	
+	void getNumericalSolution(double* numerical, double* u);
+	void getExactSolution(double* exact, double* pos, double timeStamp);
+
+
 };
 
 #endif /* ErrorWriter_CLASS_HEADER_ */

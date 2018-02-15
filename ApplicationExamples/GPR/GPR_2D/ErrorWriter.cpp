@@ -45,25 +45,19 @@ void GPR::ErrorWriter::plotPatch(
     double timeStamp) {
 
   // @TODO Please insert your code here.
-
+  double dV=sizeOfPatch[0]*sizeOfPatch[1];
+#if DIMENSIONS==3
+	dV = dV * sizeOfPatch[2];
+	kernels::idx4 id_xyz_dof(basisSize,basisSize,basisSize,nVar);
+#else
 	kernels::idx3 id_xy_dof(basisSize,basisSize,nVar);
-	double dV=sizeOfPatch[0]*sizeOfPatch[1];
-  	//double dV=sizeOfPatch[0]*sizeOfPatch[1]*sizeOfPatch[2];
-	/*printf("=====================================================\n");
-	for(int i = 0; i < basisSize; i++){
-		for(int j = 0; j <basisSize ; j++){
-			printf("%d %d : ", i,j);
-			for(int k = 0; k <nVar ; k++){
-				printf("%e ", u[id_xy_dof(i,j,:)]);
-				//printf(" . ");
-			}
-		printf("\n");
-		}
-	}
-	printf("=====================================================\n");*/
+#endif
+
 	
 	double localError[nVar]={0.};
 	double w_x, w_y;
+	double w_z = 1.0; //constant in two dimensions
+	
 	double pos[DIMENSIONS] = {0.};
 	
 	for(int i = 0; i < basisSize; i++){
@@ -72,49 +66,50 @@ void GPR::ErrorWriter::plotPatch(
 		for(int j = 0; j <basisSize ; j++){
 			w_y = kernels::gaussLegendreWeights[order][j];
 			pos[1] = kernels::gaussLegendreNodes[order][j]*sizeOfPatch[1]+offsetOfPatch[1];
-			
-			double numerical[nVar];
-			//getNumericalSolution(numerical,&u[id_xy_dof(i,j,0)]);
-			getnumericalsolution_(numerical,&u[id_xy_dof(i,j,0)]);
-			double exact[nVar];
-			//getExactSolution(exact,pos,timeStamp);
-			getexactsolution_(exact,pos,&timeStamp);
+#if DIMENSIONS==3	
+			for(int k = 0; k <basisSize ; k++){
+				w_z = kernels::gaussLegendreWeights[order][k];
+				pos[2] = kernels::gaussLegendreNodes[order][k]*sizeOfPatch[2]+offsetOfPatch[2];
+#endif	
+				double numerical[nVar];
+#if DIMENSIONS==3
+				getNumericalSolution(numerical,&u[id_xyz_dof(i,j,k,0)]);
+#else
+				getNumericalSolution(numerical,&u[id_xy_dof(i,j,0)]);
+#endif	
+				double exact[nVar];
+				getExactSolution(exact,pos,timeStamp);
+				
 						
-			for(int k = 0; k <nVar ; k++){
-				localError[k] += std::abs(numerical[k]-exact[k]) * w_x * w_y;
-			}	
+				for(int m = 0; m <nVar ; m++){
+					localError[m] += std::abs(numerical[m]-exact[m]) * w_x * w_y * w_z;
+				}
+#if DIMENSIONS==3				
+			}
+#endif			
 		}
 	}
-	
-	/*if(plotForADERSolver) {
-		const int order = GPR::AbstractGPRSolver_ADERDG::Order;
-		dV = kernels::ADERDGVolume(order, sizeOfPatch, pos);
-	} else {
-		const int patchSize = GPR::AbstractGPRSolver_FV::PatchSize;
-		dV = tarch::la::volume(sizeOfPatch)/patchSize; // correct is probably (patchSize+1)
-	}*/
-	// printf("dV=%e\n", dV);
-	// printf("localError=%e\n", localError[0]);
   	errors.addValue(localError, dV);
 }
 
 
 void GPR::ErrorWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
-	printf("***********************************************************\n");
-	printf("I am starting the error writer:");
     errors.startRow(time);
-   printf("Done \n");
-   printf("***********************************************************\n");
 }
 
 
 void GPR::ErrorWriter::finishPlotting() {
   // @TODO Please insert your code here.
-   printf("***********************************************************\n");
-   printf("I am finishing the error writer:");
    errors.finishRow();
-   printf("Done \n");
-   printf("***********************************************************\n");
 }
+
+void GPR::ErrorWriter::getNumericalSolution(double* numerical, double* u){
+	getnumericalsolution_(numerical,u);
+}
+
+void GPR::ErrorWriter::getExactSolution(double* exact, double* pos, double timeStamp){
+	getexactsolution_(exact,pos,&timeStamp);
+}
+
 

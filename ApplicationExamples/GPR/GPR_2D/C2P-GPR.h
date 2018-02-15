@@ -9,7 +9,7 @@ extern "C" {
 
 // FORTRAN functions called by C
 void pdeprim2cons_(double* /* OUT */ Q, double* /* IN */ V);
-void pdecons2prim_(double* /* OUT */ V, double* /* IN */ Q, int* iErr);
+void pdecons2prim_(double* /* OUT */ V, double* /* IN */ Q);
 
 
 } /* extern "C" */

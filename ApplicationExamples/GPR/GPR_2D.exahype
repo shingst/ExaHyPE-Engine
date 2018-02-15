@@ -76,8 +76,15 @@ exahype-project GPR
     steps-till-cured           = 5
     // helper-layers              = 2
 
-    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+    plot vtu::Cartesian::vertices::ascii ConservedWriter
       variables const = 17
+      time      = 0.0
+      repeat    = 0.01
+      output    = ./vtk-output/conserved
+    end plot
+
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+      variables const = 18
       time      = 0.0
       repeat    = 0.01
       output    = ./vtk-output/primitives
@@ -96,5 +103,12 @@ exahype-project GPR
        repeat          = 1e-2
        output          = ./output/errors
      end plot
+
+    plot vtu::Cartesian::vertices::limited::ascii Plotter
+      variables const = 17
+      time      = 0.0
+      repeat    = 1e-2
+      output    = ./vtk-output-lim/dg
+    end plot
   end solver
 end exahype-project

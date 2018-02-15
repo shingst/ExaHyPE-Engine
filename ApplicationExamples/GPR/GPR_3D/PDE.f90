@@ -253,29 +253,32 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
       
 END SUBROUTINE PDESource
 
-RECURSIVE SUBROUTINE PDEVarName(Name) 
+RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind) 
   USE Parameters, ONLY: nVar  
   IMPLICIT NONE     
-  CHARACTER(LEN=10):: Name(nVar)
+  CHARACTER(LEN=10):: MyName(nVar),MyNameOUT
+  INTEGER			:: ind
 
   ! EQNTYPE93
-    Name(1)  = 'rho'
-    Name(2)  = 'u'
-    Name(3)  = 'v'
-    Name(4)  = 'w'
-    Name(5)  = 'p'
-    Name(6)  = 'A11'
-    Name(7)  = 'A12'
-    Name(8)  = 'A13'
-    Name(9)  = 'A21'
-    Name(10) = 'A22'
-    Name(11) = 'A23'
-    Name(12) = 'A31'
-    Name(13) = 'A32'
-    Name(14) = 'A33'
-    Name(15) = 'j1'
-    Name(16) = 'j2'
-    Name(17) = 'j3'
+    MyName(1)  = 'rho'
+    MyName(2)  = 'u'
+    MyName(3)  = 'v'
+    MyName(4)  = 'w'
+    MyName(5)  = 'p'
+    MyName(6)  = 'A11'
+    MyName(7)  = 'A12'
+    MyName(8)  = 'A13'
+    MyName(9)  = 'A21'
+    MyName(10) = 'A22'
+    MyName(11) = 'A23'
+    MyName(12) = 'A31'
+    MyName(13) = 'A32'
+    MyName(14) = 'A33'
+    MyName(15) = 'j1'
+    MyName(16) = 'j2'
+    MyName(17) = 'j3'
+	
+	MyNameOUT=MyName(ind+1)
     END SUBROUTINE PDEVarName
 
 RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv) 
@@ -363,3 +366,19 @@ RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv)
 END SUBROUTINE PDEMatrixB
 
 
+RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
+  USE Parameters, ONLY: nVar  
+  IMPLICIT NONE     
+  REAL				:: V(nVar), Q(nVar)
+  CALL PDECons2Prim(V,Q)
+  !V=0.
+END SUBROUTINE getNumericalSolution
+
+RECURSIVE SUBROUTINE getExactSolution(V,pos, timeStamp) 
+  USE Parameters, ONLY: nVar , nDim  
+  IMPLICIT NONE     
+  REAL				:: V(nVar), Q(nVar), pos(nDim), timeStamp
+  call InitialData(pos, timeStamp, Q)
+  CALL PDECons2Prim(V,Q)
+  !V(1)=pos(1)**2!*pos(2)**2
+END SUBROUTINE getExactSolution

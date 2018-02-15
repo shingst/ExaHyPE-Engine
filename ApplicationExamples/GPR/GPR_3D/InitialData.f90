@@ -13,16 +13,21 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	call SmoothShock(x, t, Q);
 END SUBROUTINE InitialData
 
-RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx)
+RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, observablesMin, observablesMax)
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim
 	IMPLICIT NONE 
 	! Argument list 
 	REAL, INTENT(IN)               :: xx(nDim)        ! 
+	INTEGER, INTENT(IN)					:: numberOfObservables
 	INTEGER, INTENT(OUT)              :: limiter_value        !
+	REAL, INTENT(IN)					:: observablesMin(numberOfObservables), observablesMax(numberOfObservables)
 	real	:: rr	
 
 	limiter_value=0
+	if(xx(1).ge.0.2 .and. xx(1).le. 0.3) then
+		limiter_value=1
+	end if
 END SUBROUTINE PDElimitervalue
 
 RECURSIVE SUBROUTINE ShuVortex2D(x, t, Q)
