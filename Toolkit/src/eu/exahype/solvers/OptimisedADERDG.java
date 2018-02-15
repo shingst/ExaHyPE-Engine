@@ -67,6 +67,7 @@ public class OptimisedADERDG implements Solver {
     context.put("numberOfParameters"  , numberOfParameters);
     context.put("numberOfPointSources", numberOfPointSources);
     context.put("maxPicardIterations" , maxPicardIterations);
+    
     //boolean
     context.put("enableProfiler"        , enableProfiler);
     context.put("enableDeepProfiler"    , enableDeepProfiler);

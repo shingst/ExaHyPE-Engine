@@ -156,7 +156,10 @@ public class ADERDGKernel {
   }
   
   public int maxPicardIterations() {
-    return optimisation.get(MAX_PICARD_ITER_ID);
+    if(useMaxPicardIterations()) {
+      return optimisation.get(MAX_PICARD_ITER_ID);
+    }
+    return -1;
   }
   
   public boolean useMaxPicardIterations() {
@@ -172,7 +175,6 @@ public class ADERDGKernel {
     if(usePointSources()) {
       return terms.get(POINTSOURCES_OPTION_ID);
     }
-    
     return -1;
   }
   
