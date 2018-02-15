@@ -199,6 +199,7 @@ void deltaDistribution(
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
+    bool& hasPointSource,
     double* Psi,
     double* forceVectorSourceN 
     );

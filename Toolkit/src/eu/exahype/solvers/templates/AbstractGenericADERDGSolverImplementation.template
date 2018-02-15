@@ -104,11 +104,18 @@ ed);
   double* lFhi = exahype::DataHeap::getInstance().getData(indexLFhi).data();
 {%-   endif %}
 
+const int picardIterations = 1;
 {%-   if usePointSources %}
-  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, PSi, forceVectorSourceN);
-{%-   endif %}
-  const int picardIterations = 1;
+  bool hasPointSource=false;
+  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, hasPointSource, PSi, forceVectorSourceN);
+  if(hasPointSource){
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+  }else{
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+  }
+{%- else %}
   kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+{%-   endif %}
   kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource || useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
   
 {%-   if !tempVarsOnStack %}
