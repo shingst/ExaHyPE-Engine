@@ -137,18 +137,28 @@ def createPlots():
                 dataMax = max(dataPoints)
                 iMin    = dataPoints.index(dataMin)
                 iMax    = dataPoints.index(dataMax)
-                container.patches[iMin].set_color("g")
-                container.patches[iMax].set_color("r")
+                
+                colours = ["0.8","0.8"]
+                if   best=="min":
+                  colours = ["g", "r"]
+                elif best=="max":
+                  colours = ["r", "g"]
+                container.patches[iMin].set_color(colours[0])
+                container.patches[iMax].set_color(colours[1])
+                
                 axes.set_ylabel(yLabel)
                 if (yScale=="linear"):
                     axes.ticklabel_format(axis="y", style="sci", scilimits=(-2,2))
-                    axes.set_ylim([dataMin*0.95,dataMax*1.05])
+                    axes.set_ylim([0,dataMax*1.05])
+                else:
+                    yMin = 10**math.floor(math.log10(dataMin))
+                    yMax = max(dataMax*1.05,2.2*yMin)
+                    axes.set_ylim([yMin,yMax])
+                    
                 for i,x in enumerate(positions):
                     xTrans = ( xMargin + float(x) ) / (xLimits[1]-xLimits[0])
                     label  = labels[i]
                     axes.text(xTrans,0.05,"%s" % label,ha='center', va='bottom',fontweight="bold",fontsize=TINY_SIZE,rotation=90,transform=axes.transAxes)
-                    yMin = 10**math.floor(math.log10(dataMin))
-                    axes.set_ylim([yMin,dataMax*1.05])
                 
                 if not os.path.exists(plotFolderPath):
                     print("create directory "+plotFolderPath)
@@ -320,6 +330,7 @@ NOTE: The order of the parameters in the section 'per_plot' is preserved.
     dataColumnName = configParser["to_plot"]["data"].replace("\"","")
     yLabel         = configParser["to_plot"]["label"].replace("\"","")
     yScales        = parseList(configParser["to_plot"]["scale"])
+    best           = configParser["to_plot"]["best"].replace("\"","")
     
     plotsSpace     = parseParameterSpace(configParser,"plots")
     perPlotSpace   = parseParameterSpace(configParser,"per_plot")

@@ -187,7 +187,8 @@ private:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * Please consult the specification's documentation in NewTimeStep.
+   * Broadcast global solver data such as time step sizes at the beginning of the traversal.
+   * Do not reduce anything.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
