@@ -1,5 +1,0 @@
-Mesh&Order&CC&Kernels&Algorithm&Nodes&Tasks (per Node)&Cores (per Task)&Mode&Iterations&Total Runtime (Per Iteration)&FusedTimeStep (Per Iteration)&Reruns&Predictor Rerun (Per Iteration)
-regular-1&3&Intel&gen&fused&4&7&4&None&10&2.154&2.154&0.0&9.64
-regular-1&3&Intel&gen&nonfused&4&7&4&None&10&6.029727272727273&0&0&0.
-regular-1&5&Intel&gen&fused&4&7&4&None&13&3.063076923076923&3.063076923076923&0.0&10.23
-regular-1&5&Intel&gen&nonfused&4&7&4&None&13&6.57423076923077&0&0&0.

@@ -26,16 +26,18 @@ public class GenericADERDG implements Solver {
 
     _solverName         = solverName;
     
-    final boolean isLinear           = kernel.isLinear();
-    final boolean useFlux            = kernel.useFlux();
-    final boolean useSource          = kernel.useSource();
-    final boolean useNCP             = kernel.useNCP();
-    final boolean usePointSources    = kernel.usePointSources();
-    final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
-    final boolean noTimeAveraging    = kernel.noTimeAveraging();
-    final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
-    final boolean tempVarsOnStack    = kernel.tempVarsOnStack();
-    final int numberOfPointSources   = kernel.getNumberOfPointSources();
+    final boolean isLinear               = kernel.isLinear();
+    final boolean useFlux                = kernel.useFlux();
+    final boolean useSource              = kernel.useSource();
+    final boolean useNCP                 = kernel.useNCP();
+    final boolean usePointSources        = kernel.usePointSources();
+    final boolean useMaterialParam       = kernel.useMaterialParameterMatrix();
+    final boolean noTimeAveraging        = kernel.noTimeAveraging();
+    final boolean patchwiseAdjust        = kernel.patchwiseAdjust();
+    final boolean tempVarsOnStack        = kernel.tempVarsOnStack();
+    final boolean useMaxPicardIterations = kernel.useMaxPicardIterations();
+    final int     maxPicardIterations    = kernel.maxPicardIterations();
+    final int     numberOfPointSources   = kernel.getNumberOfPointSources();
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -48,26 +50,27 @@ public class GenericADERDG implements Solver {
     context.put("language"          , isFortran? "fortran" : "c");
     
     //int
-    context.put("dimensions"        , dimensions);
-    context.put("order"             , order);
-    context.put("numberOfVariables" , numberOfVariables);
-    context.put("numberOfParameters", numberOfParameters);
+    context.put("dimensions"          , dimensions);
+    context.put("order"               , order);
+    context.put("numberOfVariables"   , numberOfVariables);
+    context.put("numberOfParameters"  , numberOfParameters);
     context.put("numberOfPointSources", numberOfPointSources);
+    context.put("maxPicardIterations" , maxPicardIterations);
     
     //boolean
-    context.put("enableProfiler"    , enableProfiler);
-    context.put("hasConstants"      , hasConstants);
-    context.put("isLinear"          , isLinear);
-    context.put("isFortran"         , isFortran);
-    context.put("useFlux"           , useFlux);
-    context.put("useSource"         , useSource);
-    context.put("useNCP"            , useNCP);
-    context.put("usePointSources"   , usePointSources);
-    context.put("useMaterialParam"  , useMaterialParam);
-    context.put("noTimeAveraging"   , noTimeAveraging);
-    context.put("patchwiseAdjust"   , patchwiseAdjust);
-    context.put("tempVarsOnStack"   , tempVarsOnStack);
-
+    context.put("enableProfiler"        , enableProfiler);
+    context.put("hasConstants"          , hasConstants);
+    context.put("isLinear"              , isLinear);
+    context.put("isFortran"             , isFortran);
+    context.put("useFlux"               , useFlux);
+    context.put("useSource"             , useSource);
+    context.put("useNCP"                , useNCP);
+    context.put("usePointSources"       , usePointSources);
+    context.put("useMaterialParam"      , useMaterialParam);
+    context.put("noTimeAveraging"       , noTimeAveraging);
+    context.put("patchwiseAdjust"       , patchwiseAdjust);
+    context.put("tempVarsOnStack"       , tempVarsOnStack);
+    context.put("useMaxPicardIterations", useMaxPicardIterations);
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));

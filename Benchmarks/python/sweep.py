@@ -642,7 +642,6 @@ def cancelJobs():
     print("cancelled "+str(len(jobIds))+" jobs")    
 
     command = "rm "+submittedJobsPath
-    command = "rm "+submittedJobsPath.replace(".submitted",".ini")
     print(command)
     subprocess.call(command,shell=True)
 

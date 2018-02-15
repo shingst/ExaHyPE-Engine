@@ -30,10 +30,12 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
   public:
-    static constexpr int NumberOfVariables  = {{numberOfVariables}};
-    static constexpr int NumberOfParameters = {{numberOfParameters}};
-    static constexpr int Order              = {{order}};
-    static constexpr double CFL             = 0.9;
+    static constexpr int NumberOfVariables       = {{numberOfVariables}};
+    static constexpr int NumberOfParameters      = {{numberOfParameters}};
+    static constexpr int Order                   = {{order}}; 
+    static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
+    static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
+    static constexpr double CFL                  = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     {%- endif %}
@@ -118,7 +120,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       }
   	}
      
-    int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t,const double dt) override;
+    int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override;
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
     void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
