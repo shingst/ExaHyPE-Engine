@@ -148,7 +148,8 @@ def createPlots():
                     label  = labels[i]
                     axes.text(xTrans,0.05,"%s" % label,ha='center', va='bottom',fontweight="bold",fontsize=TINY_SIZE,rotation=90,transform=axes.transAxes)
                     yMin = 10**math.floor(math.log10(dataMin))
-                    axes.set_ylim([yMin,dataMax*1.05])
+                    yMax = max(dataMax*1.05,2.2*yMin)
+                    axes.set_ylim([yMin,yMax])
                 
                 if not os.path.exists(plotFolderPath):
                     print("create directory "+plotFolderPath)
