@@ -27,7 +27,7 @@ exahype-project GPR
   computational-domain
     dimension const         = 2
     width                   = 1.0, 0.3
-    offset                  = -0.0, -0.15
+    offset                  = -0.5, -0.15
     end-time                = 0.1
   end computational-domain
   
@@ -93,7 +93,7 @@ exahype-project GPR
      plot user::defined ErrorWriter
        variables const = 17
        time            = 0.0
-       repeat          = 1e-1
+       repeat          = 1e-2
        output          = ./output/errors
      end plot
   end solver
