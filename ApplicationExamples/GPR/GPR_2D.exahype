@@ -26,9 +26,9 @@ exahype-project GPR
 
   computational-domain
     dimension const         = 2
-    width                   = 10.0, 10.0
-    offset                  = -0.0, -0.0
-    end-time                = 1.0
+    width                   = 1.0, 0.3
+    offset                  = -0.0, -0.15
+    end-time                = 0.1
   end computational-domain
   
   shared-memory
@@ -60,14 +60,14 @@ exahype-project GPR
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,p:1,A:9,j:3
     order const                    = 3
-    maximum-mesh-size              = 0.2
+    maximum-mesh-size              = 0.02
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source
 	optimisation const = generic
     language const                 = C
-    limiter-type const         = godunov
+    limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables                = 1
@@ -79,15 +79,22 @@ exahype-project GPR
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 17
       time      = 0.0
-      repeat    = 0.1
+      repeat    = 0.01
       output    = ./vtk-output/primitives
     end plot
-
+/*
     plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
       time = 0.0
       repeat = 0.1
       output = ./global-integrals
     end plot
+*/
+     plot user::defined ErrorWriter
+       variables const = 17
+       time            = 0.0
+       repeat          = 1e-1
+       output          = ./output/errors
+     end plot
   end solver
 end exahype-project

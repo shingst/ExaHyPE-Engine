@@ -28,16 +28,27 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,hz,Q)
   ! Compute the pressure (hydrodynamic part) 
   p = V(5) 
   ! Compute the viscous stress tensor 
-  A(1,:) = (/ V( 6), V( 7), V( 8) /) 
-  A(2,:) = (/ V( 9), V(10), V(11) /)
-  A(3,:) = (/ V(12), V(13), V(14) /)   
+  !A(1,:) = (/ V( 6), V( 7), V( 8) /) 
+  !A(2,:) = (/ V( 9), V(10), V(11) /)
+  !A(3,:) = (/ V(12), V(13), V(14) /)  
+	A(1,1)=V(6)
+	A(1,2)=V(7)
+	A(1,3)=V(8)
+	A(2,1)=V(9)
+	A(2,2)=V(10)
+	A(2,3)=V(11)
+	A(3,1)=V(12)
+	A(3,2)=V(13)
+	A(3,3)=V(14)  
   AU = MATMUL( A, V(2:4) ) 
   detA   = A(1,1)*A(2,2)*A(3,3)-A(1,1)*A(2,3)*A(3,2)-A(2,1)*A(1,2)*A(3,3)+A(2,1)*A(1,3)*A(3,2)+A(3,1)*A(1,2)*A(2,3)-A(3,1)*A(1,3)*A(2,2) 
   ! 
   !        
   GT     = MATMUL( TRANSPOSE(A), A ) 
   Id     = 0. 
-  Id(1,1) = 1.0; Id(2,2) = 1.0; Id(3,3) = 1.0 
+  Id(1,1) = 1.0
+  Id(2,2) = 1.0
+  Id(3,3) = 1.0 
   devG   = GT - (GT(1,1)+GT(2,2)+GT(3,3))/3.*Id
   TT      = -rho0*detA*cs**2*MATMUL(GT,devG) 
   ! Compute the temperature from the ideal gas law 
@@ -204,9 +215,18 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
 
 	S(1:5)= 0. 
 	CALL PDECons2Prim(V,Q) 
-	AM(1,:) = (/ V( 6), V( 7), V( 8) /) 
-	AM(2,:) = (/ V( 9), V(10), V(11) /)
-	AM(3,:) = (/ V(12), V(13), V(14) /)         
+	!AM(1,:) = (/ V( 6), V( 7), V( 8) /) 
+	!AM(2,:) = (/ V( 9), V(10), V(11) /)
+	!AM(3,:) = (/ V(12), V(13), V(14) /) 
+	AM(1,1)=V(6)
+	AM(1,2)=V(7)
+	AM(1,3)=V(8)
+	AM(2,1)=V(9)
+	AM(2,2)=V(10)
+	AM(2,3)=V(11)
+	AM(3,1)=V(12)
+	AM(3,2)=V(13)
+	AM(3,3)=V(14)
 	G      = MATMUL( TRANSPOSE(AM), AM ) 
 	Id     = 0. 
 	Id(1,1) = 1.0; Id(2,2) = 1.0; Id(3,3) = 1.0 
@@ -215,10 +235,19 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
 	detA2  = Q(1)/rho0                                ! this is the determinant we should have from the compatibility relation 
 	psiM   = 3./(detA)*MATMUL(AM,devG)                    ! in the coefficient of the source term, we use the detA2 from the compatibility relation, to reduce nonlinearities in A 
 	temp2  = detA2**(1./3.) 
-	S(6:14) = -(/ psiM(1,1), psiM(1,2), psiM(1,3), & 
-				  psiM(2,1), psiM(2,2), psiM(2,3), & 
-				  psiM(3,1), psiM(3,2), psiM(3,3) /) /tau1*detA**(8./3.)   &      ! real relaxation term 
-			  -(detA-detA2)/tau1*Q(6:14)                                          ! artificial relaxation term to correct the errors of the ODE integrator 
+	!S(6:14) = -(/ psiM(1,1), psiM(1,2), psiM(1,3), & 
+	!			  psiM(2,1), psiM(2,2), psiM(2,3), & 
+	!			  psiM(3,1), psiM(3,2), psiM(3,3) /) /tau1*detA**(8./3.)   &      ! real relaxation term 
+	!		  -(detA-detA2)/tau1*Q(6:14)                                          ! artificial relaxation term to correct the errors of the ODE integrator 
+    S(6)=-psiM(1,1)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(6)
+	S(7)=-psiM(1,2)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(7)
+	S(8)=-psiM(1,3)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(8)
+	S(9)=-psiM(2,1)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(9)
+	S(10)=-psiM(2,2)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(10)
+	S(11)=-psiM(2,3)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(11)
+	S(12)=-psiM(3,1)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(12)
+	S(13)=-psiM(3,2)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(13)
+	S(14)=-psiM(3,3)/tau1*detA**(8./3.)-(detA-detA2)/tau1*Q(14)
 	T = V(5)/V(1)/cv/(gamma-1)
 	S(15:17) = -Q(15:17)/tau2 * T/V(1) ! the source term for the heat flux is very nice and simple    
       

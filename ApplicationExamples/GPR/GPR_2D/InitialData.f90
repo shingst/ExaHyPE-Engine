@@ -10,8 +10,7 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 		
 	!call ShearLayer(x, t, Q);
-	!call SmoothShock(x, t, Q);
-	call ShuVortex2D(x, t, Q);
+	call SmoothShock(x, t, Q);
 END SUBROUTINE InitialData
 
 RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx)
@@ -77,7 +76,7 @@ RECURSIVE SUBROUTINE SmoothShock(x, t, Q)
 	INTEGER	:: iErr
     REAL    :: up(nVar), Pi = ACOS(-1.0)
     REAL    :: xi, ICQR(2), ICxd, ICsig
-    REAL    :: Re0,Ms,mu,x0(nDim),nv(nDim),u0,p0, Aref, vx
+    REAL    :: Re0,Ms,mu,x0(nDim),nv(nDim),u0,p0, MyAref, vx
     ! Initialize parameters
 		mu=1.0/6.0*rho0*cs**2*tau1
 		ms=2.0
@@ -91,8 +90,16 @@ RECURSIVE SUBROUTINE SmoothShock(x, t, Q)
         CALL NSShock(up(1),vx,up(5),DOT_PRODUCT(x(:)-ms*t-x0(:),nv),gamma,mu,Re0,Ms,rho0,u0,p0)
         up(4) = 0.0
 		up(2:1+nDim) = vx*nv  
-        Aref = up(1)**(1./3.) 
-        up(6:14) = (/ Aref, 0., 0., 0., Aref, 0., 0., 0., Aref /) 
+        MyAref = up(1)**(1./3.) 
+		up(6)=MyAref
+		up(7)=0.0
+		up(8)=0.0
+		up(9)=0.0
+		up(10)=MyAref
+		up(11)=0.0
+		up(12)=0.0
+		up(13)=0.0
+		up(14)=MyAref 
         CALL PDEPrim2Cons(Q,up)
     !Q=up
 END SUBROUTINE SmoothShock
@@ -220,10 +227,10 @@ RECURSIVE SUBROUTINE NSSFunction(f,u,x,gamma,lambda,M2,Re0)
       ! Argument list declaration
       REAL :: f,u,x,Re0,M2,gamma,lambda  
       ! Local variable declaration
-      REAL :: RHS, exponent 
+      REAL :: RHS, MYexponent 
       !
-      exponent = MIN( 0.75*Re0*(M2-1)/gamma/M2 * x, 10. ) 
-      RHS      = ABS( 0.5*(1-lambda) )**(1-lambda) * EXP( exponent ) 
+      MYexponent = MIN( 0.75*Re0*(M2-1)/gamma/M2 * x, 10. ) 
+      RHS      = ABS( 0.5*(1-lambda) )**(1-lambda) * EXP( MYexponent ) 
       f        = ABS(u-1) - ABS(u-lambda)**lambda * RHS 
       !
   END SUBROUTINE  

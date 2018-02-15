@@ -27,6 +27,6 @@
 	REAL, PARAMETER 				:: gamma = 1.4
 	REAL, PARAMETER 				:: alpha = 5.0
 	REAL, PARAMETER 				:: p0 = 0.0
-	REAL, PARAMETER 				:: tau1 =4.e-3! 1.e+20
-	REAL, PARAMETER 				:: tau2 = 0.1244444444e-2!1.e+20
+	REAL, PARAMETER 				:: tau1 =1.e-2! 1.e+20
+	REAL, PARAMETER 				:: tau2 = 0.3111111111e-2!1.e+20
   END MODULE Parameters  
