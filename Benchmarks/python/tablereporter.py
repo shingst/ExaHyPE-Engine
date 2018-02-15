@@ -151,7 +151,7 @@ def createPlots():
                     axes.ticklabel_format(axis="y", style="sci", scilimits=(-2,2))
                     axes.set_ylim([0,dataMax*1.05])
                 else:
-                    yMin = 10**math.floor(math.log10(dataMin))
+                    yMin = 0.95*10**math.floor(math.log10(dataMin))
                     yMax = max(dataMax*1.05,2.2*yMin)
                     axes.set_ylim([yMin,yMax])
                     
