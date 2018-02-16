@@ -49,12 +49,12 @@ public:
    * Must be reset in beginIteration() or endIteration() after a new batch
    * of predictor background threads has been spawned.
    */
-  static bool PredictorBackgroundThreadsFinished;
+  static bool PredictorBackgroundJobsFinished;
 
   /**
    * A semaphore for evaluating if the predictor background tasks have finished.
    */
-  static tarch::multicore::BooleanSemaphore PredictorBackgroundThreadsFinishedSemaphore;
+  static tarch::multicore::BooleanSemaphore PredictorBackgroundJobsFinishedSemaphore;
 
   /**
    * The maximum helper status.
@@ -471,7 +471,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool predictionCanBeProcessedAsBackgroundTask(
+  static bool predictionCanBeProcessedAsBackgroundJob(
       CellDescription& cellDescription);
 
   /**
@@ -642,12 +642,12 @@ private:
 
 #endif
 
-  class PredictionTask {
+  class PredictionJob {
   private:
     ADERDGSolver&    _solver;
     CellDescription& _cellDescription;
   public:
-    PredictionTask(
+    PredictionJob(
         ADERDGSolver&     solver,
         CellDescription&  cellDescription);
 
@@ -713,12 +713,12 @@ private:
    */
   void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
 
-  class CompressionTask {
+  class CompressionJob {
     private:
       ADERDGSolver&     _solver;
       CellDescription&  _cellDescription;
     public:
-      CompressionTask(
+      CompressionJob(
         ADERDGSolver&     _solver,
         CellDescription&  _cellDescription
       );
@@ -1523,21 +1523,20 @@ public:
       exahype::solvers::Solver* solver,
       const int cellDescriptionsIndex,
       const int element,
-      const bool vetoSpawnPredictionAsBackgroundThread);
+      const bool vetoSpawnPredictionAsBackgroundJob);
 
   /**
    * Computes the space-time predictor quantities, extrapolates fluxes
    * and (space-time) predictor values to the boundary and
    * computes the volume integral.
    *
-   * \param[in] vetoSpawnPredictorAsBackgroundThread  indicates that the cell holding the cell description
-   *                                                  is adjacent to a remote rank
+   * \param[in] vetoSpawnPredictorAsBackgroundJob  veto spawning the predictor as background job
    *
    * \note Has no const modifier since kernels are not const functions.
    */
   void performPredictionAndVolumeIntegral(
       CellDescription& cellDescription,
-      const bool vetoSpawnPredictorAsBackgroundThread);
+      const bool vetoSpawnPredictorAsBackgroundJob);
 
   void validateNoNansInADERDGSolver(
       const CellDescription& cellDescription,
@@ -1610,7 +1609,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread) final override;
+      const bool vetoSpawnPredictorAsBackgroundJob) final override;
 
   /**
    * Computes the surface integral contributions to the

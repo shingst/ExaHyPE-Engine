@@ -133,7 +133,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::solvers::prepareSolverFlags(_solverFlags);
 
     // background threads
-    exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+    exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);

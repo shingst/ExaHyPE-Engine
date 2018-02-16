@@ -118,7 +118,7 @@ namespace exahype {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  extern tarch::multicore::BooleanSemaphore BackgroundThreadSemaphore;
+  extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
 
   /**
    * A semaphore for serialising heap access.
@@ -439,7 +439,7 @@ class exahype::solvers::Solver {
    */
   static double CompressionAccuracy;
 
-  static bool SpawnCompressionAsBackgroundThread;
+  static bool SpawnCompressionAsBackgroundJob;
 
   /**
    * The type of a solver.
@@ -702,7 +702,7 @@ class exahype::solvers::Solver {
   * data. Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
   */
- static void waitUntilAllBackgroundTasksHaveTerminated();
+ static void waitUntilAllBackgroundJobsHaveTerminated();
 
  protected:
   /**

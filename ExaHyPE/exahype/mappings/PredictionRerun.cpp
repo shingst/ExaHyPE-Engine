@@ -102,7 +102,7 @@ void exahype::mappings::PredictionRerun::beginIteration(
   _localState = solverState;
 
   // background threads
-  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
