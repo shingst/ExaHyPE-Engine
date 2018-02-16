@@ -169,9 +169,10 @@ def createPlots():
                 #figure.set_size_inches(2.40,2.20) # width: 0.470 * SIAM SISC \textwidth (=5.125in)
                 
                 filename = plotFolderPath + "/" + plotPrefix + "-" + "-".join(plotDict.values())
-                figure.savefig('%s-%s.pdf' % (filename,yScale), bbox_inches="tight")
-                pyplot.close(figure)
-                print("created plot: %s-%s.pdf" % (filename,yScale))
+                for format in ["pdf", "png"]:
+                    figure.savefig('%s-%s.%s' % (filename,yScale,format), bbox_inches="tight", dpi=300)
+                    pyplot.close(figure)
+                    print("created plot: %s-%s.%s" % (filename,yScale,format))
 
 def renderPDF():
     """
@@ -218,8 +219,9 @@ r"""
     for plotDict in dictProduct(plotsSpace):
         plotFileName = plotFolder + "/" + plotPrefix + "-" + "-".join(plotDict.values())
         
-        if os.path.exists(outputPath + "/" + plotFileName+"-linear.pdf"):
-            for yScale in yScales:
+        for yScale in yScales:
+            ending = "-"+yScale+".pdf"
+            if os.path.exists(outputPath + "/" + plotFileName+ending):
                 renderedFigure = latexFigureTemplate;
                 
                 caption  = "\\textbf{"+", ".join("%s: %s" %  pair for pair in plotDict.items())
@@ -229,7 +231,6 @@ r"""
                 caption += ")."
                 renderedFigure = renderedFigure.replace("{{caption}}",caption)
                 
-                ending = "-"+yScale+".pdf"
                 body += renderedFigure.replace("{{file}}",plotFileName+ending) + "\n\n"
                 if counter % 10 == 0:
                     body += r"\clearpage"
