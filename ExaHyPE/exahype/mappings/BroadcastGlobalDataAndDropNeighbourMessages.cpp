@@ -84,7 +84,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::beginIterat
   #endif
 
   // background threads
-  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

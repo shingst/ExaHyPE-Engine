@@ -210,7 +210,7 @@ bool exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
 void exahype::Cell::setupMetaData() {
   assertion1(!exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),toString());
 
-  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
     const int cellDescriptionIndex = exahype::solvers::ADERDGSolver::Heap::getInstance().createData(0, 0);
     assertion2(!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionIndex),cellDescriptionIndex,toString());

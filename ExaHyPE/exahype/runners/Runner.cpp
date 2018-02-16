@@ -359,8 +359,8 @@ void exahype::runners::Runner::initDataCompression() {
     logInfo( "initDataCompression()", "switched off any data compression");
   }
   else {
-    exahype::solvers::Solver::SpawnCompressionAsBackgroundThread = _parser.getSpawnDoubleCompressionAsBackgroundTask();
-    logInfo( "initDataCompression()", "store all data with accuracy of " << exahype::solvers::Solver::CompressionAccuracy << ". Use background threads for data conversion=" << exahype::solvers::ADERDGSolver::SpawnCompressionAsBackgroundThread);
+    exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = _parser.getSpawnDoubleCompressionAsBackgroundTask();
+    logInfo( "initDataCompression()", "store all data with accuracy of " << exahype::solvers::Solver::CompressionAccuracy << ". Use background threads for data conversion=" << exahype::solvers::ADERDGSolver::SpawnCompressionAsBackgroundJob);
   }
 }
 

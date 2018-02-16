@@ -36,7 +36,7 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
-tarch::multicore::BooleanSemaphore exahype::BackgroundThreadSemaphore;
+tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
 
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
@@ -109,14 +109,14 @@ exahype::solvers::LimiterDomainChange exahype::solvers::convertToLimiterDomainCh
 
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
-bool exahype::solvers::Solver::SpawnCompressionAsBackgroundThread = false;
+bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
 int                                exahype::solvers::Solver::_NumberOfTriggeredTasks(0);
 
-void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
+void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
-  tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   finishedWait = _NumberOfTriggeredTasks == 0;
   lock.free();
   if (!finishedWait) {
@@ -130,7 +130,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
   while (!finishedWait) {
     tarch::multicore::jobs::processBackgroundJobs();
 
-    tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
+    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     finishedWait = _NumberOfTriggeredTasks == 0;
     lock.free();
   }
