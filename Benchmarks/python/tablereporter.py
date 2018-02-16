@@ -1,43 +1,4 @@
 #!/usr/bin/env python3
-def parseArgument(argv,i):
-    if i<len(argv):
-        return argv[i]
-    else:
-        return None
-
-def haveToPrintHelpMessage(argv):
-    """
-    Check if we have to print a help message.
-    """
-    result = parseArgument(argv,1)==None
-    for arg in argv:
-        result = result or ( arg=="-help" or arg=="-h" )
-    return result
-
-def parseList(string):
-    """
-    Decomposes strings like '"val1,val2",val3,"val4,val5"'
-    into a list of strings:
-    [ 'val1,val2' ,'val3', 'val4,val5' ]
-    """
-    for line in csv.reader([string],delimiter=","):
-      values = line
-      return values
-
-def parseParameterSpace(config,section):
-    """
-    Parse the environment section.
-    """
-    parameterSpace = collections.OrderedDict()
-    if section in config and len(config[section].keys()):
-        for key, value in config[section].items():
-            parameterSpace[key] = parseList(value)
-    else:
-        print("ERROR: Section '"+section+"' must not be empty!",file=sys.stderr)
-        sys.exit()
-    
-    return parameterSpace
-
 def dictProduct(dictionary):
     """
     Computes the Cartesian product of a dictionary of lists as 
@@ -68,17 +29,9 @@ def createPlots():
     Create a plot per plotDict. 
     Per plot, plot all rows found for the elements of the perPlotSpace.
     """
-    TINY_SIZE   = 7
-    SMALL_SIZE  = 11
-    MEDIUM_SIZE = 11
-    BIGGER_SIZE = 11
-    
-    pyplot.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    pyplot.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    pyplot.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-    pyplot.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    pyplot.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    pyplot.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    pyplot.rc('font', size=fontsizeBars)          # controls default text sizes
+    pyplot.rc('axes', labelsize=fontsizeLabel)    # fontsize of the x and y labels
+    pyplot.rc('ytick', labelsize=fontsizeTicks)    # fontsize of the tick labels
     
     pyplot.rc('text', usetex=True)
     pyplot.rc('font', family='serif')
@@ -158,14 +111,14 @@ def createPlots():
                 for i,x in enumerate(positions):
                     xTrans = ( xMargin + float(x) ) / (xLimits[1]-xLimits[0])
                     label  = labels[i]
-                    axes.text(xTrans,0.05,"%s" % label,ha='center', va='bottom',fontweight="bold",fontsize=TINY_SIZE,rotation=90,transform=axes.transAxes)
+                    axes.text(xTrans,0.05,"%s" % label,ha='center', va='bottom',fontweight="bold",fontsize=fontsizeBars,rotation=90,transform=axes.transAxes)
                 
                 if not os.path.exists(plotFolderPath):
                     print("create directory "+plotFolderPath)
                     os.makedirs(plotFolderPath)
                 
                 # write files
-                figure.set_size_inches(4.90,4.90)
+                figure.set_size_inches(plotSizeInches)
                 #figure.set_size_inches(2.40,2.20) # width: 0.470 * SIAM SISC \textwidth (=5.125in)
                 
                 filename = plotFolderPath + "/" + plotPrefix + "-" + "-".join(plotDict.values())
@@ -287,6 +240,51 @@ def createParameterKeysToColumnIndexMapping(parameterSpace):
     
     return indexMapping
 
+def parseArgument(argv,i):
+    if i<len(argv):
+        return argv[i]
+    else:
+        return None
+
+def haveToPrintHelpMessage(argv):
+    """
+    Check if we have to print a help message.
+    """
+    result = parseArgument(argv,1)==None
+    for arg in argv:
+        result = result or ( arg=="-help" or arg=="-h" )
+    return result
+
+def parseList(string):
+    """
+    Decomposes strings like '"val1,val2",val3,"val4,val5"'
+    into a list of strings:
+    [ 'val1,val2' ,'val3', 'val4,val5' ]
+    """
+    for line in csv.reader([string],delimiter=","):
+      values = line
+      return values
+
+def parseParameterSpace(config,section):
+    """
+    Parse the environment section.
+    """
+    parameterSpace = collections.OrderedDict()
+    if section in config and len(config[section].keys()):
+        for key, value in config[section].items():
+            parameterSpace[key] = parseList(value)
+    else:
+        print("ERROR: Section '"+section+"' must not be empty!",file=sys.stderr)
+        sys.exit()
+    
+    return parameterSpace
+
+def parseOption(section,option,converter,default):
+    result = default
+    if configParser.has_option(section, option):
+        result  = converter(configParser[section][option].replace("\"",""))
+    return result
+
 if __name__ == "__main__":
     import sys,os
     import csv
@@ -309,6 +307,23 @@ run:
 
 ./tableplotter.py myoptions.ini mytable.csv
 
+required 'to_plot' parameters:
+
+  * data - the data column you want to plot
+
+optional 'to_plot' parameters:
+
+  * label            the y-axis label
+  * scale            the y-axis scale. Use 'linear', 'log' or both separated by a comma. You probably
+                     break the code if you use something else.
+  * best             highlight the best and worst values. Use 'min','max', or none to specify what
+                     is best. Other inputs default to 'none'.
+  * fontsize_bars    font size of the text printed on each bar
+  * fontsize_label   font size of y-axis label
+  * fontsize_ticks   font size of the y-axis ticks
+  * plot_size_inches the size of the plot in inches. Specify an single value for a quadratic plot. Specify two values
+                     for a rectangular plot.
+
 NOTE: The order of the parameters in the section 'per_plot' is preserved. 
       You thus have some control over the position of bars in the resulting diagrams.
 """
@@ -323,16 +338,34 @@ NOTE: The order of the parameters in the section 'per_plot' is preserved.
     configParser.optionxform=str
     configParser.read(optionsFilePath)
     
+    # output
     plotPrefix      = configParser["output"]["prefix"].replace("\"","")
     outputPath      = configParser["output"]["path"].replace("\"","")
     plotFolder      = "plots"
     plotFolderPath  = outputPath + "/" + plotFolder
     
+    # to_plot
+    if not configParser.has_option("to_plot", "data"):
+      print("ERROR: Section 'to_plot' must contain field 'data'!",file=sys.stderr)
     dataColumnName = configParser["to_plot"]["data"].replace("\"","")
-    yLabel         = configParser["to_plot"]["label"].replace("\"","")
-    yScales        = parseList(configParser["to_plot"]["scale"])
-    best           = configParser["to_plot"]["best"].replace("\"","")
+    yLabel        = parseOption("to_plot","label",str,dataColumnName)
+    yScales       = ["linear"]
+    if configParser.has_option("to_plot", "scale"):
+        yScales = parseList(configParser["to_plot"]["scale"])
+    best = parseOption("to_plot","best",str,"none")
+    fontsizeBars  = parseOption("to_plot","fontsize_bars",int,7)
+    fontsizeLabel = parseOption("to_plot","fontsize_label",int,11)
+    fontsizeTicks = parseOption("to_plot","fontsize_ticks",int,11)
+    plotSizeInches = [4.90,4.90]
+    if configParser.has_option("to_plot", "plot_size_inches"):
+        parsedList = parseList(configParser["to_plot"]["plot_size_inches"])
+        plotSizeInches[0] = float(parsedList[0])
+        plotSizeInches[1] = float(parsedList[0])
+        if len(parsedList)>1:
+            plotSizeInches[1] = float(parsedList[1])
     
+    
+    # plots and per_plot
     plotsSpace     = parseParameterSpace(configParser,"plots")
     perPlotSpace   = parseParameterSpace(configParser,"per_plot")
     
