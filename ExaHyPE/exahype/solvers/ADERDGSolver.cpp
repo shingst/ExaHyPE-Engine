@@ -4127,7 +4127,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   _cellDescription(cellDescription) {
 }
 
-void exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
+bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   // persistent fields
   double* luh  = DataHeap::getInstance().getData(_cellDescription.getSolution()).data();
   double* lduh = DataHeap::getInstance().getData(_cellDescription.getUpdate()).data();
@@ -4157,6 +4157,7 @@ void exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _NumberOfTriggeredTasks--;
   assertion( _NumberOfTriggeredTasks>=0 );
   lock.free();
+  false;
 }
 
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
@@ -4168,7 +4169,7 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
 }
 
 
-void exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
+bool exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
@@ -4178,6 +4179,7 @@ void exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
     _NumberOfTriggeredTasks--;
     assertion( _NumberOfTriggeredTasks>=0 );
   lock.free();
+  return false;
 }
 
 

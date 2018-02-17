@@ -175,7 +175,7 @@ private:
         exahype::records::FiniteVolumesCellDescription&  _cellDescription
       );
 
-      void operator()();
+      bool operator()();
   };
 
 public:

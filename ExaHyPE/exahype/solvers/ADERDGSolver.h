@@ -651,7 +651,7 @@ private:
         ADERDGSolver&     solver,
         CellDescription&  cellDescription);
 
-    void operator()();
+    bool operator()();
   };
 
   /**
@@ -723,7 +723,7 @@ private:
         CellDescription&  _cellDescription
       );
 
-      void operator()();
+      bool operator()();
   };
 
 public:

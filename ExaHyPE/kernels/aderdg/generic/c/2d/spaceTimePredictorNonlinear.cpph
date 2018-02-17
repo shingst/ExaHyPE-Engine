@@ -53,7 +53,6 @@ int aderPicardLoopNonlinear(SolverType& solver,
   constexpr int basisSize3         = basisSize2 * basisSize;
   
   constexpr bool useMaxPicardIterations = SolverType::UseMaxPicardIterations;
-  constexpr int  maxPicardIterations    = SolverType::MaxPicardIterations;
   
   assertion(numberOfVariables>=0);
   assertion(numberOfParameters>=0);
@@ -79,7 +78,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
   grainSizeTrivialGuess.parallelSectionHasTerminated();
   
   // 3. Discrete Picard iterations
-  constexpr int MaxIterations = (useMaxPicardIterations) ? maxPicardIterations : 2 * (order + 1);
+  constexpr int MaxIterations = (useMaxPicardIterations) ? useMaxPicardIterations : 2 * (order + 1);
 
   // right-hand side
   idx4 idx_rhs(basisSize, basisSize, basisSize, numberOfVariables); // idx_rhs(t,y,x,nVar)

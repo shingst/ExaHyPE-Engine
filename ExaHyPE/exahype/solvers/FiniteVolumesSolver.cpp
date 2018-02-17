@@ -2170,14 +2170,16 @@ exahype::solvers::FiniteVolumesSolver::CompressionTask::CompressionTask(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
+bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
   _solver.putUnknownsIntoByteStream(_cellDescription);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _cellDescription.setCompressionState(CellDescription::Compressed);
+  // @todo raus
   _NumberOfTriggeredTasks--;
   assertion( _NumberOfTriggeredTasks>=0 );
   lock.free();
+  return false;
 }
