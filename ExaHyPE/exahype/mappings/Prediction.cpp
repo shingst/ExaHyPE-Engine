@@ -107,7 +107,7 @@ void exahype::mappings::Prediction::endIteration(
   // do nothing
 }
 
-bool exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
+bool exahype::mappings::Prediction::vetoSpawnBackgroundJobs(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
   return
@@ -139,7 +139,7 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
     ) {
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           solver,fineGridCell.getCellDescriptionsIndex(),element,
-          vetoPerformPredictionAsBackgroundThread(
+          vetoSpawnBackgroundJobs(
               fineGridVertices,fineGridVerticesEnumerator));
 
       solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);

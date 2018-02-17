@@ -1489,7 +1489,8 @@ class exahype::solvers::Solver {
    * performs an FV update. Performs some additional
    * tasks.
    *
-   * \param[in] vetoSpawnPredictorAsBackgroundThread Flag indicating that the cell hosting the
+   *
+   * \param[in] vetoSpawnBackgroundJobs Flag indicating that the cell hosting the
    *                                   cell description is adjacent to a remote rank.
    */
   virtual UpdateResult fusedTimeStep(
@@ -1497,7 +1498,7 @@ class exahype::solvers::Solver {
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread) = 0;
+      const bool vetoSpawnBackgroundJobs) = 0;
 
   /**
    * Update the solution of a cell description.

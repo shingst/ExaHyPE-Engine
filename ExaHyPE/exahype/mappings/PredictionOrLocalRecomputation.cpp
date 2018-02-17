@@ -247,7 +247,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           if (exahype::State::fuseADERDGPhases()) {
             limitingADERDG->recomputePredictorLocally(
                 cellDescriptionsIndex,element,
-                exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
+                exahype::mappings::Prediction::vetoSpawnBackgroundJobs(
                     fineGridVertices,fineGridVerticesEnumerator));
             admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
                 cellDescriptionsIndex,element,
@@ -269,7 +269,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
         else if ( performPrediction(solver) ) {
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
               solver,cellDescriptionsIndex,element,
-              exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
+              exahype::mappings::Prediction::vetoSpawnBackgroundJobs(
                   fineGridVertices,fineGridVerticesEnumerator));
 
           solver->prolongateDataAndPrepareDataRestriction(

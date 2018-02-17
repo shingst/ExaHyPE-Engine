@@ -178,6 +178,30 @@ private:
       bool operator()();
   };
 
+  /**
+   * A job which performs the Finite Volumes solution update
+   * and further updates the local time stamp associated with
+   * the FV cell description.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * do not plan to reduce the admissible time step size or refinement requests
+   * within a consequent reduction step.
+   */
+  class FusedTimeStepJob {
+  private:
+    FiniteVolumesSolver&  _solver;
+    const int&            _cellDescriptionsIndex;
+    const int&            _element;
+  public:
+    FusedTimeStepJob(
+        FiniteVolumesSolver& _solver,
+        const int&            cellDescriptionsIndex,
+        const int&            element
+    );
+
+    bool operator()();
+  };
+
 public:
   /**
     * Returns the Finite Volumes description.
@@ -625,7 +649,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread) final override;
+      const bool vetoSpawnBackgroundJobs) final override;
 
   void updateSolution(
       const int cellDescriptionsIndex,

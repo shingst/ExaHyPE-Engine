@@ -771,30 +771,36 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnPredictorAsBackgroundThread
+    const bool vetoSpawnBackgroundJobs
 ) {
-  SolverPatch& cellDescription =
-        _solver->getCellDescription(cellDescriptionsIndex,element);
-  // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
-
-  updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
+  auto& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+  bool vetoSpawnPredictorAsBackgroundJob =
+      vetoSpawnBackgroundJobs || !ADERDGSolver::predictionCanBePerformedInBackground(solverPatch);
 
   UpdateResult result;
-  result._limiterDomainChange =
-      updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(cellDescriptionsIndex,element);
-  result._refinementRequested=
-      evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
+  if (
+      isFirstIterationOfBatch ||
+      isLastIterationOfBatch  ||
+      vetoSpawnPredictorAsBackgroundJob
+  ) {
+    // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
+    updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
+    result._limiterDomainChange = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(cellDescriptionsIndex,element);
+    result._refinementRequested=  evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
 
-  if (cellDescription.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell()) {
-    _solver->performPredictionAndVolumeIntegral(
-        cellDescription,
-        vetoSpawnPredictorAsBackgroundThread);
-  }
-
-  result._timeStepSize = startNewTimeStepFused(
-      cellDescriptionsIndex,element,
-      isFirstIterationOfBatch,isLastIterationOfBatch);
+    if (solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell()) {
+      _solver->performPredictionAndVolumeIntegral(
+          solverPatch,
+          vetoSpawnPredictorAsBackgroundJob);
+    }
+    result._timeStepSize = startNewTimeStepFused(
+        cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
   return result;
+  } else {
+    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
+    peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    return result;
+  }
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateSolution(
@@ -1354,7 +1360,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
 void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
     const int cellDescriptionsIndex,
     const int element,
-    const bool vetoSpawnPredictorAsBackgroundThread) {
+    const bool vetoSpawnBackgroundJobs) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
@@ -1370,7 +1376,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
     ) {
       _solver->performPredictionAndVolumeIntegral(
           solverPatch,
-          vetoSpawnPredictorAsBackgroundThread);
+          vetoSpawnBackgroundJobs);
     }
   }
 }
@@ -2316,4 +2322,27 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
   out << _solver->toString() << "}\n";
   out << getIdentifier() << "{_FV: ";
   out << _limiter->toString() << "}";
+}
+
+
+exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
+  LimitingADERDGSolver& solver,
+  const int&    cellDescriptionsIndex,
+  const int&    element):
+  _solver(solver),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfTriggeredTasks++;
+  lock.free();
+}
+
+bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
+  _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfTriggeredTasks--;
+  assertion( _NumberOfTriggeredTasks>=0 );
+  lock.free();
+  return false;
 }

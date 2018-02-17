@@ -121,15 +121,15 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
   lock.free();
   if (!finishedWait) {
     logInfo("waitUntilAllBackgroundTasksHaveTerminated",
-            "Waiting for " << tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs() <<
-            " background tasks to complete"
+            "Waiting for "
+            << tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()
+            << " background tasks to complete of which "
+            << _NumberOfTriggeredTasks << " were spawned by ExaHyPE."
             );
   }
 
-
   while (!finishedWait) {
     tarch::multicore::jobs::processBackgroundJobs();
-
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     finishedWait = _NumberOfTriggeredTasks == 0;
     lock.free();

@@ -106,7 +106,7 @@ private:
   /**
    * \return true if we veto to spawn the prediction as background thread.
    */
-  static bool vetoPerformPredictionAsBackgroundThread(
+  static bool vetoSpawnBackgroundJobs(
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
 

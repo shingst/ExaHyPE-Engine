@@ -67,11 +67,6 @@ namespace {
 
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
 
-
-bool exahype::solvers::ADERDGSolver::PredictorBackgroundJobsFinished = false;
-
-tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::PredictorBackgroundJobsFinishedSemaphore;
-
 // helper status
 int exahype::solvers::ADERDGSolver::MaximumHelperStatus                          = 2;
 int exahype::solvers::ADERDGSolver::MinimumHelperStatusForAllocatingBoundaryData = 1;
@@ -1818,30 +1813,36 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnPredictorAsBackgroundJob) {
-  CellDescription& cellDescription =
-      getCellDescription(cellDescriptionsIndex,element);
-
-  // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
-
-  updateSolution(cellDescription,isFirstIterationOfBatch);
-
-  performPredictionAndVolumeIntegral(
-      cellDescription,
-      vetoSpawnPredictorAsBackgroundJob);
+    const bool vetoSpawnBackgroundJobs) {
+  auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  bool vetoSpawnPredictorAsBackgroundJob =
+      vetoSpawnBackgroundJobs || !predictionCanBePerformedInBackground(cellDescription);
 
   UpdateResult result;
-  result._timeStepSize        = startNewTimeStepFused(cellDescriptionsIndex,element,
-                                                      isFirstIterationOfBatch,isLastIterationOfBatch);
-  result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
-  return result;
+  if (
+      isFirstIterationOfBatch ||
+      isLastIterationOfBatch  ||
+      vetoSpawnPredictorAsBackgroundJob
+  ) {
+    // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
+    updateSolution(cellDescription,isFirstIterationOfBatch);
+    performPredictionAndVolumeIntegral(cellDescription,vetoSpawnPredictorAsBackgroundJob);
+    result._timeStepSize        = startNewTimeStepFused(
+        cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
+    result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
+    return result;
+  } else {
+    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
+    peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    return result;
+  }
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     exahype::solvers::Solver* solver,
     const int cellDescriptionsIndex,
     const int element,
-    const bool vetoSpawnPredictionAsBackgroundJob) {
+    const bool vetoSpawnBackgroundJobs) {
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
 
   switch (solver->getType()) {
@@ -1858,13 +1859,13 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 
   if (aderdgSolver!=nullptr) {
     auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-    aderdgSolver->performPredictionAndVolumeIntegral(
-        cellDescription,
-        vetoSpawnPredictionAsBackgroundJob);
+    const bool vetoSpawnPredictorAsBackgroundJob =
+        vetoSpawnBackgroundJobs || !predictionCanBePerformedInBackground(cellDescription);
+    aderdgSolver->performPredictionAndVolumeIntegral(cellDescription,vetoSpawnPredictorAsBackgroundJob);
   }
 }
 
-bool exahype::solvers::ADERDGSolver::predictionCanBeProcessedAsBackgroundJob(
+bool exahype::solvers::ADERDGSolver::predictionCanBePerformedInBackground(
     CellDescription& cellDescription) {
   bool canBeProcessedAsBackgroundJob = !cellDescription.getIsAugmented();
 
@@ -1916,44 +1917,31 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     assertion2(cellDescription.getPredictorTimeStamp()>=0,
         cellDescription.toString(),toString());
 
-    if (
-        vetoSpawnPredictionAsBackgroundJob==false
-        &&
-        predictionCanBeProcessedAsBackgroundJob(cellDescription)
-    ) {
-      // TODO(Dominic):
-      // Get rid of the temporary variables -> Make stack arrays.
-      tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      _NumberOfTriggeredTasks++;
-      lock.free();
-
-      PredictionJob predictionTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( predictionTask, peano::datatraversal::TaskSet::TaskType::Background  );
-    }
-    else { // TODO(Dominic): Just run predictionTask manually as soon as we know there is not much difference in speed
-      // persistent fields
-      // volume DoF (basisSize**(DIMENSIONS))
+    if ( vetoSpawnPredictionAsBackgroundJob ) {
       double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
       double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
-      // face DoF (basisSize**(DIMENSIONS-1))
       double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
       double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+
       #if defined(Debug) || defined(Asserts)
       for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
       } 
       #endif
 
-      // luh, t, dt, cell cell center, cell size, data allocation for forceVect
       fusedSpaceTimePredictorVolumeIntegral(
-                lduh,lQhbnd,lFhbnd,
-                luh,
-                cellDescription.getOffset()+0.5*cellDescription.getSize(),
-                cellDescription.getSize(),
-		cellDescription.getPredictorTimeStamp(),
-                cellDescription.getPredictorTimeStepSize());
+          lduh,lQhbnd,lFhbnd,
+          luh,
+          cellDescription.getOffset()+0.5*cellDescription.getSize(),
+          cellDescription.getSize(),
+          cellDescription.getPredictorTimeStamp(),
+          cellDescription.getPredictorTimeStepSize());
 
       validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+    }
+    else {
+      PredictionJob predictionJob( *this, cellDescription );
+      peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
     }
   }
 }
@@ -4119,46 +4107,51 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out <<  ")";
 }
 
+
 exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   ADERDGSolver&     solver,
   CellDescription&  cellDescription
 ):
   _solver(solver),
   _cellDescription(cellDescription) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfTriggeredTasks++;
+  lock.free();
 }
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
-  // persistent fields
-  double* luh  = DataHeap::getInstance().getData(_cellDescription.getSolution()).data();
-  double* lduh = DataHeap::getInstance().getData(_cellDescription.getUpdate()).data();
-  double* lQhbnd = DataHeap::getInstance().getData(_cellDescription.getExtrapolatedPredictor()).data();
-  double* lFhbnd = DataHeap::getInstance().getData(_cellDescription.getFluctuation()).data();
-
-  #if defined(Debug) || defined(Asserts)
-  for (int i=0; i<_solver.getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-    assertion3(
-        tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),_cellDescription.toString(),
-        "exahype::solvers::ADERDGSolver::PredictionTask::operator()",i);
-  }
-  #endif
-
-  // luh, t, dt, cell cell center, cell size, data allocation for forceVect
-  _solver.fusedSpaceTimePredictorVolumeIntegral(
-            lduh, lQhbnd,lFhbnd,
-            luh,
-            _cellDescription.getOffset()+0.5*_cellDescription.getSize(),
-            _cellDescription.getSize(),
-	    _cellDescription.getPredictorTimeStamp(),
-            _cellDescription.getPredictorTimeStepSize());
-
-  _solver.validateNoNansInADERDGSolver(_cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+  _solver.performPredictionAndVolumeIntegral(_cellDescription,true); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfTriggeredTasks--;
   assertion( _NumberOfTriggeredTasks>=0 );
   lock.free();
-  false;
+  return false;
 }
+
+
+exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
+  ADERDGSolver& solver,
+  const int&    cellDescriptionsIndex,
+  const int&    element):
+  _solver(solver),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfTriggeredTasks++;
+  lock.free();
+}
+
+bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
+  _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfTriggeredTasks--;
+  assertion( _NumberOfTriggeredTasks>=0 );
+  lock.free();
+  return false;
+}
+
 
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   ADERDGSolver&                             solver,

@@ -717,13 +717,22 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnPredictorAsBackgroundThread) {
-  updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
-
+    const bool vetoSpawnBackgroundJobs) {
   UpdateResult result;
-  result._timeStepSize = startNewTimeStepFused(cellDescriptionsIndex,element,
-                                               isFirstIterationOfBatch,isLastIterationOfBatch);
-  return result;
+  if (
+      isFirstIterationOfBatch ||
+      isLastIterationOfBatch  ||
+      vetoSpawnBackgroundJobs
+  ) {
+    updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
+    result._timeStepSize = startNewTimeStepFused(
+        cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
+    return result;
+  } else {
+    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
+    peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    return result;
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
@@ -2178,6 +2187,29 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _cellDescription.setCompressionState(CellDescription::Compressed);
   // @todo raus
+  _NumberOfTriggeredTasks--;
+  assertion( _NumberOfTriggeredTasks>=0 );
+  lock.free();
+  return false;
+}
+
+
+exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
+  FiniteVolumesSolver&     solver,
+  const int&               cellDescriptionsIndex,
+  const int&               element):
+  _solver(solver),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfTriggeredTasks++;
+  lock.free();
+}
+
+bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
+  _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfTriggeredTasks--;
   assertion( _NumberOfTriggeredTasks>=0 );
   lock.free();

@@ -381,7 +381,7 @@ void exahype::mappings::MeshRefinement::enterCell(
               solverNumber);
 
       oneSolverRequestsRefinement |= result._refinementRequested;
-      adjustSolution     |= result._newComputeCellAllocated;
+      adjustSolution              |= result._newComputeCellAllocated;
 
       // Synchronise time stepping and adjust the solution if required
       if (fineGridCell.isInitialised()) {

@@ -226,7 +226,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
                 fineGridCell.getCellDescriptionsIndex(),element,
                 exahype::State::isFirstIterationOfBatchOrNoBatch(),
                 exahype::State::isLastIterationOfBatchOrNoBatch(),
-                exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
+                exahype::mappings::Prediction::vetoSpawnBackgroundJobs(
                     fineGridVertices,fineGridVerticesEnumerator));
 
         solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);

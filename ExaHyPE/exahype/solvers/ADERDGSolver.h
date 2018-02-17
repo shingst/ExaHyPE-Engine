@@ -44,19 +44,6 @@ class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
   /**
-   * Flag indicating that the predictor background threads spawned in
-   * the previous iteration have all finished.
-   * Must be reset in beginIteration() or endIteration() after a new batch
-   * of predictor background threads has been spawned.
-   */
-  static bool PredictorBackgroundJobsFinished;
-
-  /**
-   * A semaphore for evaluating if the predictor background tasks have finished.
-   */
-  static tarch::multicore::BooleanSemaphore PredictorBackgroundJobsFinishedSemaphore;
-
-  /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
    * of type Cell.
@@ -471,7 +458,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool predictionCanBeProcessedAsBackgroundJob(
+  static bool predictionCanBePerformedInBackground(
       CellDescription& cellDescription);
 
   /**
@@ -642,18 +629,6 @@ private:
 
 #endif
 
-  class PredictionJob {
-  private:
-    ADERDGSolver&    _solver;
-    CellDescription& _cellDescription;
-  public:
-    PredictionJob(
-        ADERDGSolver&     solver,
-        CellDescription&  cellDescription);
-
-    bool operator()();
-  };
-
   /**
    * Determine average of each unknown
    *
@@ -722,6 +697,43 @@ private:
         ADERDGSolver&     _solver,
         CellDescription&  _cellDescription
       );
+
+      bool operator()();
+  };
+
+  class PredictionJob {
+    private:
+      ADERDGSolver&    _solver;
+      CellDescription& _cellDescription;
+    public:
+      PredictionJob(
+          ADERDGSolver&     solver,
+          CellDescription&  cellDescription);
+
+      bool operator()();
+  };
+
+  /**
+   * A job which performs a fused ADER-DG time step, i.e., it performs the solution update,
+   * updates the local time stamp, and finally performs the space-time predictor commputation.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * do not plan to reduce the admissible time step size or refinement requests
+   * within a consequent reduction step.
+   *
+   * TODO(Dominic): Minimise time step sizes and refinement requests per patch
+   * (->transpose the typical minimisation order)
+   */
+  class FusedTimeStepJob {
+    private:
+      ADERDGSolver&    _solver;
+      const int&       _cellDescriptionsIndex;
+      const int&       _element;
+    public:
+      FusedTimeStepJob(
+          ADERDGSolver& solver,
+          const int&    cellDescriptionsIndex,
+          const int&    element);
 
       bool operator()();
   };
@@ -1530,13 +1542,13 @@ public:
    * and (space-time) predictor values to the boundary and
    * computes the volume integral.
    *
-   * \param[in] vetoSpawnPredictorAsBackgroundJob  veto spawning the predictor as background job
+   * \param[in] vetoSpawnBackgroundJobs  veto spawning the predictor as background job
    *
    * \note Has no const modifier since kernels are not const functions.
    */
   void performPredictionAndVolumeIntegral(
       CellDescription& cellDescription,
-      const bool vetoSpawnPredictorAsBackgroundJob);
+      const bool vetoSpawnBackgroundJobs);
 
   void validateNoNansInADERDGSolver(
       const CellDescription& cellDescription,
@@ -1609,7 +1621,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundJob) final override;
+      const bool vetoSpawnBackgroundJobs) final override;
 
   /**
    * Computes the surface integral contributions to the
