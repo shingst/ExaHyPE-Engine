@@ -1757,17 +1757,17 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
     [&]() -> void  { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).data(),
       getDataPerPatch() + getGhostDataPerPatch(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
     [&] () -> void  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getSolution() ).data(),
       getDataPerPatch() + getGhostDataPerPatch(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
     [&]() -> void  { compressionOfExtrapolatedSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getExtrapolatedSolution() ).data(),
       getDataPerPatchBoundary(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,

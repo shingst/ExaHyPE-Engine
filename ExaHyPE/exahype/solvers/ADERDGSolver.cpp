@@ -4377,27 +4377,27 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
     [&]() -> void  { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).data(),
       getDataPerCell(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
     [&] () -> void  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getSolution() ).data(),
       getDataPerCell(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
     [&]() -> void  { compressionOfUpdate = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getUpdate() ).data(),
       getUnknownsPerCell(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
     [&]() -> void  { compressionOfExtrapolatedPredictor = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).data(),
       getDataPerCellBoundary(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
     [&]() -> void  { compressionOfFluctuation = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getFluctuation() ).data(),
       getUnknownsPerCellBoundary(),
-      CompressionAccuracy
+      CompressionAccuracy,true
       );},
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,

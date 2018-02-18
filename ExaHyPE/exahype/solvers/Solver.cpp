@@ -18,6 +18,8 @@
 #include "exahype/Cell.h"
 
 #include "tarch/multicore/Lock.h"
+#include "tarch/la/Scalar.h"
+
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
 
@@ -128,11 +130,12 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
             );
 
     tarch::multicore::jobs::processBackgroundJobs();
+
+    lock.lock();
+    finishedWait = _NumberOfTriggeredTasks == 0;
+    lock.free();
   }
 }
-
-
-
 
 
 exahype::solvers::Solver::Solver(
@@ -189,7 +192,7 @@ std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::T
 }
 
 void exahype::solvers::Solver::tearApart(
-    int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
+  int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
   char exponent;
   long int mantissa;
   char* pMantissa = reinterpret_cast<char*>( &(mantissa) );
@@ -207,18 +210,35 @@ void exahype::solvers::Solver::tearApart(
       DataHeap::getInstance().getData( normalHeapIndex )[i],
       exponent, mantissa, bytesForMantissa
     );
+
     CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = exponent;
     compressedDataHeapIndex++;
     for (int j=0; j<bytesForMantissa; j++) {
       CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = pMantissa[j];
       compressedDataHeapIndex++;
     }
+
+    #ifdef ValidateCompressedVsUncompressedData
+    const double reconstructedValue = peano::heap::compose(
+      exponent, mantissa, bytesForMantissa
+    );
+    assertion9(
+      tarch::la::equals( reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
+	  reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i],
+	  reconstructedValue-DataHeap::getInstance().getData( normalHeapIndex )[i],
+      CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex,
+	  static_cast<int>(exponent), mantissa
+    );
+    #endif
   }
+
+
 }
 
 
 void exahype::solvers::Solver::glueTogether(
-    int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
+  int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa
+) const {
   char exponent  = 0;
   long int mantissa;
   char* pMantissa = reinterpret_cast<char*>( &(mantissa) );
@@ -251,13 +271,12 @@ void exahype::solvers::Solver::glueTogether(
     );
     #ifdef ValidateCompressedVsUncompressedData
     assertion7(
-      tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, CompressionAccuracy ),
+      tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
       DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, DataHeap::getInstance().getData(normalHeapIndex)[i] - reconstructedValue,
       CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex
     );
-    #else
-    DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
     #endif
+    DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
   }
 }
 
