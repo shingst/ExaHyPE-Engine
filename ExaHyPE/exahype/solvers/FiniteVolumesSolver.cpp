@@ -2196,8 +2196,8 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
 
 exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   FiniteVolumesSolver&     solver,
-  const int&               cellDescriptionsIndex,
-  const int&               element):
+  const int                cellDescriptionsIndex,
+  const int                element):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element) {

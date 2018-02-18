@@ -226,7 +226,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   
   for (int i=0; i<numberOfIterations; i++) {
 
-    #ifdef Parallel
     if (_repositoryState.getNumberOfIterations()==1) {
       _solverState.currentlyRunsMultipleIterations(State::BatchState::NoBatch);
     }
@@ -239,7 +238,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     else {
       _solverState.currentlyRunsMultipleIterations(State::BatchState::IntermediateIterationOfBatch);
     }
-    #endif
 
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;

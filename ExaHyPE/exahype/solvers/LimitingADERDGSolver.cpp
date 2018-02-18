@@ -2327,13 +2327,13 @@ void exahype::solvers::LimitingADERDGSolver::toString (std::ostream& out) const 
 
 exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   LimitingADERDGSolver& solver,
-  const int&    cellDescriptionsIndex,
-  const int&    element):
+  const int             cellDescriptionsIndex,
+  const int             element):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks++;
+  _NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -2341,8 +2341,8 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks--;
-  assertion( _NumberOfTriggeredTasks>=0 );
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }

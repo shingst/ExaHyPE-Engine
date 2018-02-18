@@ -4132,8 +4132,8 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
 
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver& solver,
-  const int&    cellDescriptionsIndex,
-  const int&    element):
+  const int     cellDescriptionsIndex,
+  const int     element):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element) {
