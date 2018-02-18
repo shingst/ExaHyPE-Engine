@@ -559,7 +559,7 @@ def submitJobs():
     """
     Submit all jobs spanned by the options.
     """
-    jobSubmissionTool    = general["job_submission"]
+    jobSubmissionTool    = general["job_submission"].replace("\"","")
     
     cpus = jobs["num_cpus"]
     
@@ -606,7 +606,7 @@ def submitJobs():
         print("create directory "+historyFolderPath)
         os.makedirs(historyFolderPath)
     
-    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
+      submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
     
     with open(submittedJobsPath, "w") as submittedJobsFile:
         submittedJobsFile.write(json.dumps(jobIds))
@@ -623,9 +623,9 @@ def cancelJobs():
     """
     Cancel submitted jobs.
     """
-    jobCancellationTool    = general["job_cancellation"]
+    jobCancellationTool = general["job_cancellation"].replace("\"","")
     
-    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
+    submittedJobsPath   = historyFolderPath + "/" + hashSweep() + ".submitted"
     
     jobIds = None
     try:
