@@ -616,6 +616,8 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
 
+    shutdownHeaps();
+
     delete repository;
   }
   else {
