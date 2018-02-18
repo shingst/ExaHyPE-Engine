@@ -244,8 +244,7 @@ void exahype::repositories::RepositoryArrayStack::iterate(int numberOfIterations
     }
     else {
       _solverState.currentlyRunsMultipleIterations(State::BatchState::IntermediateIterationOfBatch);
-    }
-  
+    } 
   
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
