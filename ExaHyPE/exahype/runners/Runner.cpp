@@ -859,9 +859,14 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
   if (_parser.foundSimulationEndTime()) {
     const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
 
-    batchSize = static_cast<int>(
-      _parser.getTimestepBatchFactor() *
-      std::min(timeIntervalTillNextPlot, timeIntervalTillEndTime) / minTimeStepSize );
+    batchSize =
+      static_cast<int>(
+        std::min (
+            _parser.getTimestepBatchFactor() * std::min(timeIntervalTillNextPlot, simulationEndTime),
+             timeIntervalTillEndTime
+        ) /  minTimeStepSize
+      );
+
   } else {
     batchSize =
       std::min(
