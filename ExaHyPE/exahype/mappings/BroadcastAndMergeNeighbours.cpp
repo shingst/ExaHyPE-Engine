@@ -10,7 +10,7 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#include "exahype/mappings/BroadcastGlobalDataAndDropNeighbourMessages.h"
+#include "exahype/mappings/BroadcastAndMergeNeighbours.h"
 
 #include "tarch/multicore/Loop.h"
 
@@ -24,7 +24,7 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 peano::CommunicationSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::communicationSpecification() const {
+exahype::mappings::BroadcastAndMergeNeighbours::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
@@ -32,48 +32,58 @@ exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::communicationSpe
 }
 
 peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCellSpecification(int level) const {
+exahype::mappings::BroadcastAndMergeNeighbours::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 
-/* All specifications below are nop. */
 peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexFirstTimeSpecification(int level) const {
+exahype::mappings::BroadcastAndMergeNeighbours::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
-        peano::MappingSpecification::Nop,
+        peano::MappingSpecification::WholeTree,
         peano::MappingSpecification::AvoidFineGridRaces,true);
 }
+
+/* Specifications below are all nop. */
 peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexLastTimeSpecification(int level) const {
+exahype::mappings::BroadcastAndMergeNeighbours::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::leaveCellSpecification(int level) const {
+exahype::mappings::BroadcastAndMergeNeighbours::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::ascendSpecification(int level) const {
+exahype::mappings::BroadcastAndMergeNeighbours::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,true);
 }
 peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::descendSpecification(int level) const {
+exahype::mappings::BroadcastAndMergeNeighbours::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,true);
 }
 
-tarch::logging::Log exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::_log(
-    "exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages");
+tarch::logging::Log exahype::mappings::BroadcastAndMergeNeighbours::_log(
+    "exahype::mappings::BroadcastAndMergeNeighbours");
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::beginIteration(
+exahype::mappings::BroadcastAndMergeNeighbours::~BroadcastAndMergeNeighbours() {
+}
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::BroadcastAndMergeNeighbours::BroadcastAndMergeNeighbours(const BroadcastAndMergeNeighbours& masterThread) {
+  // do nothing
+}
+#endif
+
+void exahype::mappings::BroadcastAndMergeNeighbours::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
@@ -89,7 +99,30 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::beginIterat
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCell(
+void exahype::mappings::BroadcastAndMergeNeighbours::endIteration(
+    exahype::State& solverState) {
+  // do nothing
+}
+
+void exahype::mappings::BroadcastAndMergeNeighbours::touchVertexFirstTime(
+    exahype::Vertex& fineGridVertex,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
+  logTraceInWith6Arguments("touchVertexFirstTime(...)", fineGridVertex,
+                           fineGridX, fineGridH,
+                           coarseGridVerticesEnumerator.toString(),
+                           coarseGridCell, fineGridPositionOfVertex);
+
+  fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
+
+  logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
+}
+
+void exahype::mappings::BroadcastAndMergeNeighbours::enterCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -97,6 +130,10 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
+    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVerticesEnumerator);
+
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetFaceDataExchangeCounters(
@@ -109,21 +146,27 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCell(
 ///////////////////////////////////////
 // NEIGHBOUR
 ///////////////////////////////////////
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithNeighbour(
+// TODO(Dominic): Add to docu: We receive metadata on all vertices.
+// We receive only for Cell/Ancestor/Descendants cell descriptions face data.
+// EmptyAncestor/EmptyDescendants/InvalidAdjacencyIndices drop face data
+// that was sent to them by Cells/Ancestors/Descendants.
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  if ( exahype::State::fuseADERDGPhases() ) {
-    vertex.receiveNeighbourData(
-        fromRank,false /*no merge - just drop */,
+  logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
+
+  vertex.receiveNeighbourData(
+        fromRank,true,
         fineGridX,fineGridH,level);
-  }
+
+  logTraceOut( "mergeWithNeighbour(...)" );
 }
 
 ///////////////////////////////////////
 // MASTER->WORKER
 ///////////////////////////////////////
-bool exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSendToWorker(
+bool exahype::mappings::BroadcastAndMergeNeighbours::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -131,15 +174,25 @@ bool exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSend
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+
   exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel());
 
+  fineGridCell.broadcastDataToWorkerPerCell(
+      worker,
+      fineGridVerticesEnumerator.getCellCenter(),
+      fineGridVerticesEnumerator.getCellSize(),
+      fineGridVerticesEnumerator.getLevel());
+
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
+
   return true; // see docu
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::receiveDataFromMaster(
+void exahype::mappings::BroadcastAndMergeNeighbours::receiveDataFromMaster(
     exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
     const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
     exahype::Vertex* const receivedCoarseGridVertices,
@@ -149,10 +202,32 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::receiveData
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceIn( "receiveDataFromMaster(...)" );
+
   exahype::Cell::mergeWithGlobalDataFromMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       receivedVerticesEnumerator.getCellCenter(),
       receivedVerticesEnumerator.getLevel());
+
+  receivedCell.receiveDataFromMasterPerCell(
+      tarch::parallel::NodePool::getInstance().getMasterRank(),
+      receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getCellSize(),
+      receivedVerticesEnumerator.getLevel());
+
+  logTraceOut( "receiveDataFromMaster(...)" );
+}
+
+
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithWorker(
+    exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
+    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
+  logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
+
+  localCell.mergeWithMasterDataPerCell( cellSize );
+
+  logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
 }
 
 //
@@ -160,35 +235,28 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::receiveData
 //
 // ====================================
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithWorker(
-    exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
-    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  // do nothing
-}
-
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithWorker(
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithWorker(
     exahype::Vertex& localVertex, const exahype::Vertex& receivedMasterVertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSendToMaster(
+void exahype::mappings::BroadcastAndMergeNeighbours::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
     const peano::grid::VertexEnumerator& verticesEnumerator,
     const exahype::Vertex* const coarseGridVertices,
@@ -198,7 +266,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSend
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithMaster(
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithMaster(
     const exahype::Cell& workerGridCell,
     exahype::Vertex* const workerGridVertices,
     const peano::grid::VertexEnumerator& workerEnumerator,
@@ -213,21 +281,21 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithMa
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSendToNeighbour(
+void exahype::mappings::BroadcastAndMergeNeighbours::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareCopyToRemoteNode(
+void exahype::mappings::BroadcastAndMergeNeighbours::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareCopyToRemoteNode(
+void exahype::mappings::BroadcastAndMergeNeighbours::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
@@ -236,23 +304,18 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareCopy
 
 #endif
 
-
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::~BroadcastGlobalDataAndDropNeighbourMessages() {
-  // do nothing
-}
-
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::BroadcastGlobalDataAndDropNeighbourMessages(const BroadcastGlobalDataAndDropNeighbourMessages& masterThread) {
+void exahype::mappings::BroadcastAndMergeNeighbours::mergeWithWorkerThread(
+    const BroadcastAndMergeNeighbours& workerThread) {
   // do nothing
 }
 #endif
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::endIteration(
-    exahype::State& solverState) {
+exahype::mappings::BroadcastAndMergeNeighbours::BroadcastAndMergeNeighbours() {
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexFirstTime(
+void exahype::mappings::BroadcastAndMergeNeighbours::createHangingVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -263,29 +326,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertex
   // do nothing
 }
 
-#if defined(SharedMemoryParallelisation)
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithWorkerThread(
-    const BroadcastGlobalDataAndDropNeighbourMessages& workerThread) {
-  // do nothing
-}
-#endif
-
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::BroadcastGlobalDataAndDropNeighbourMessages() {
-  // do nothing
-}
-
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createHangingVertex(
-    exahype::Vertex& fineGridVertex,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  // do nothing
-}
-
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::destroyHangingVertex(
+void exahype::mappings::BroadcastAndMergeNeighbours::destroyHangingVertex(
     const exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -296,7 +337,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::destroyHang
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createInnerVertex(
+void exahype::mappings::BroadcastAndMergeNeighbours::createInnerVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -307,7 +348,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createInner
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createBoundaryVertex(
+void exahype::mappings::BroadcastAndMergeNeighbours::createBoundaryVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -318,7 +359,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createBound
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::destroyVertex(
+void exahype::mappings::BroadcastAndMergeNeighbours::destroyVertex(
     const exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -329,7 +370,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::destroyVert
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createCell(
+void exahype::mappings::BroadcastAndMergeNeighbours::createCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -339,7 +380,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::createCell(
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::destroyCell(
+void exahype::mappings::BroadcastAndMergeNeighbours::destroyCell(
     const exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -349,7 +390,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::destroyCell
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexLastTime(
+void exahype::mappings::BroadcastAndMergeNeighbours::touchVertexLastTime(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -360,7 +401,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertex
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::leaveCell(
+void exahype::mappings::BroadcastAndMergeNeighbours::leaveCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -370,7 +411,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::leaveCell(
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::descend(
+void exahype::mappings::BroadcastAndMergeNeighbours::descend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -379,7 +420,7 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::descend(
   // do nothing
 }
 
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::ascend(
+void exahype::mappings::BroadcastAndMergeNeighbours::ascend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,

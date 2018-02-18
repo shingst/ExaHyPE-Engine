@@ -13,8 +13,8 @@
  * @author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#ifndef EXAHYPE_MAPPINGS_BroadcastGlobalDataAndMergeNeighbourMessages_H_
-#define EXAHYPE_MAPPINGS_BroadcastGlobalDataAndMergeNeighbourMessages_H_
+#ifndef EXAHYPE_MAPPINGS_BroadcastAndMergeNeighbours_H_
+#define EXAHYPE_MAPPINGS_BroadcastAndMergeNeighbours_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -33,7 +33,7 @@
 
 namespace exahype {
   namespace mappings {
-    class BroadcastGlobalDataAndMergeNeighbourMessages;
+    class BroadcastAndMergeNeighbours;
   }
 }
 
@@ -59,7 +59,7 @@ namespace exahype {
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages {
+class exahype::mappings::BroadcastAndMergeNeighbours {
 private:
   /**
    * Logging device for the trace macros.
@@ -161,13 +161,13 @@ public:
   /**
    * Initialise temporary variables on worker thread.
    */
-  BroadcastGlobalDataAndMergeNeighbourMessages(const BroadcastGlobalDataAndMergeNeighbourMessages& masterThread);
+  BroadcastAndMergeNeighbours(const BroadcastAndMergeNeighbours& masterThread);
 #endif
 
   /**
    * Free previously allocated temporary variables.
    */
-  virtual ~BroadcastGlobalDataAndMergeNeighbourMessages();
+  virtual ~BroadcastAndMergeNeighbours();
 
   /**
    * Initialise temporary variables
@@ -274,7 +274,7 @@ public:
    * If the overlapping cell holds cell
    * descriptions of type Descendant on the master (and worker) side,
    * we thus need to send data from the master rank to the worker rank.
-   * This operation is performed in the mapping BroadcastGlobalDataAndMergeNeighbourMessages since
+   * This operation is performed in the mapping BroadcastAndMergeNeighbours since
    * it is a top-down broadcast type operation.
    *
    * Ancestors are used for storing restricted
@@ -416,13 +416,13 @@ public:
   /**
    * Nop.
    */
-  BroadcastGlobalDataAndMergeNeighbourMessages();
+  BroadcastAndMergeNeighbours();
 
 #if defined(SharedMemoryParallelisation)
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const BroadcastGlobalDataAndMergeNeighbourMessages& workerThread);
+  void mergeWithWorkerThread(const BroadcastAndMergeNeighbours& workerThread);
 #endif
 
   /**

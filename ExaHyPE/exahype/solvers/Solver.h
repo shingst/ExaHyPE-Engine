@@ -708,7 +708,7 @@ class exahype::solvers::Solver {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  static int                                _NumberOfTriggeredTasks;
+  static int                                _NumberOfBackgroundJobs;
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.

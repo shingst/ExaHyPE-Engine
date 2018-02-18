@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef _EXAHYPE_REPOSITORIES_REPOSITORY_ARRAY_STD_H_ 
-#define _EXAHYPE_REPOSITORIES_REPOSITORY_ARRAY_STD_H_ 
+#ifndef _EXAHYPE_REPOSITORIES_REPOSITORY_ARRAY_STACK_H_ 
+#define _EXAHYPE_REPOSITORIES_REPOSITORY_ARRAY_STACK_H_ 
 
 
 #include "exahype/repositories/Repository.h"
@@ -12,8 +12,8 @@
 #include "exahype/Cell.h"
 
 #include "peano/grid/Grid.h"
-#include "peano/stacks/CellSTDStack.h"
-#include "peano/stacks/VertexSTDStack.h"
+#include "peano/stacks/CellArrayStack.h"
+#include "peano/stacks/VertexArrayStack.h"
 
 
  #include "exahype/adapters/MeshRefinement.h" 
@@ -34,19 +34,19 @@
 
 namespace exahype {
       namespace repositories {
-        class RepositorySTDStack;  
+        class RepositoryArrayStack;  
       }
 }
 
 
-class exahype::repositories::RepositorySTDStack: public exahype::repositories::Repository {
+class exahype::repositories::RepositoryArrayStack: public exahype::repositories::Repository {
   private:
     static tarch::logging::Log _log;
   
     peano::geometry::Geometry& _geometry;
     
-    typedef peano::stacks::CellSTDStack<exahype::Cell>       CellStack;
-    typedef peano::stacks::VertexSTDStack<exahype::Vertex>   VertexStack;
+    typedef peano::stacks::CellArrayStack<exahype::Cell>       CellStack;
+    typedef peano::stacks::VertexArrayStack<exahype::Vertex>   VertexStack;
 
     CellStack    _cellStack;
     VertexStack  _vertexStack;
@@ -68,7 +68,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::UpdateAndReduce> _gridWithUpdateAndReduce;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Prediction> _gridWithPrediction;
 
-     
+  
    exahype::records::RepositoryState               _repositoryState;
    
     tarch::timing::Measurement _measureMeshRefinementCPUTime;
@@ -99,12 +99,15 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureUpdateAndReduceCalendarTime;
     tarch::timing::Measurement _measurePredictionCalendarTime;
 
-   
+
   public:
-    RepositorySTDStack(
+    RepositoryArrayStack(
       peano::geometry::Geometry&                   geometry,
       const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>&  computationalDomainOffset
+      const tarch::la::Vector<DIMENSIONS,double>&  computationalDomainOffset,
+      int                                          maximumSizeOfCellInOutStack,
+      int                                          maximumSizeOfVertexInOutStack,
+      int                                          maximumSizeOfVertexTemporaryStack
     );
     
     /**
@@ -113,11 +116,14 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
      * Used in parallel mode only where the size of the domain is not known 
      * when the type of repository is determined.  
      */
-    RepositorySTDStack(
-      peano::geometry::Geometry&                   geometry
+    RepositoryArrayStack(
+      peano::geometry::Geometry&                   geometry,
+      int                                          maximumSizeOfCellInOutStack,
+      int                                          maximumSizeOfVertexInOutStack,
+      int                                          maximumSizeOfVertexTemporaryStack
     );
     
-    virtual ~RepositorySTDStack();
+    virtual ~RepositoryArrayStack();
 
     virtual void restart(
       const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
@@ -130,9 +136,9 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
         
     virtual exahype::State& getState();
     virtual const exahype::State& getState() const;
-	
-    virtual void iterate(int numberOfIterations=1, bool exchangeBoundaryVertices=true);
 
+    virtual void iterate(int numberOfIterations=1, bool exchangeBoundaryVertices=true);
+    
     virtual void writeCheckpoint(peano::grid::Checkpoint<exahype::Vertex, exahype::Cell> * const checkpoint); 
     virtual void readCheckpoint( peano::grid::Checkpoint<exahype::Vertex, exahype::Cell> const * const checkpoint );
     virtual peano::grid::Checkpoint<exahype::Vertex, exahype::Cell>* createEmptyCheckpoint(); 
@@ -165,7 +171,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterUpdateAndReduce() const;
     virtual bool isActiveAdapterPrediction() const;
 
-   
+     
     #ifdef Parallel
     virtual ContinueCommand continueToIterate();
     virtual void runGlobalStep();

@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid_H_
-#define EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid_H_
+#ifndef EXAHYPE_ADAPTERS_BroadcastAndMergeNeighbours_H_
+#define EXAHYPE_ADAPTERS_BroadcastAndMergeNeighbours_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,17 +18,13 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/MeshRefinement.h"
- #include "exahype/adapters/MeshRefinementAndPlotGrid2VTKGridVisualiser_1.h"
- #include "exahype/mappings/AugmentedAMRTreePlot2d.h"
- #include "exahype/mappings/LoadBalancing.h"
- #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
+ #include "exahype/mappings/BroadcastAndMergeNeighbours.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class MeshRefinementAndPlotGrid;
+        class BroadcastAndMergeNeighbours;
       } 
 }
 
@@ -40,19 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::MeshRefinementAndPlotGrid {
+class exahype::adapters::BroadcastAndMergeNeighbours {
   private:
-    typedef mappings::MeshRefinement Mapping0;
-    typedef adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_1 Mapping1;
-    typedef mappings::AugmentedAMRTreePlot2d Mapping2;
-    typedef mappings::LoadBalancing Mapping3;
-    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping4;
+    typedef mappings::BroadcastAndMergeNeighbours Mapping0;
 
-     Mapping0  _map2MeshRefinement;
-     Mapping1  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1;
-     Mapping2  _map2AugmentedAMRTreePlot2d;
-     Mapping3  _map2LoadBalancing;
-     Mapping4  _map2LevelwiseAdjacencyBookkeeping;
+     Mapping0  _map2BroadcastAndMergeNeighbours;
 
 
   public:
@@ -64,16 +52,16 @@ class exahype::adapters::MeshRefinementAndPlotGrid {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    MeshRefinementAndPlotGrid();
+    BroadcastAndMergeNeighbours();
 
     #if defined(SharedMemoryParallelisation)
-    MeshRefinementAndPlotGrid(const MeshRefinementAndPlotGrid& masterThread);
+    BroadcastAndMergeNeighbours(const BroadcastAndMergeNeighbours& masterThread);
     #endif
 
-    virtual ~MeshRefinementAndPlotGrid();
+    virtual ~BroadcastAndMergeNeighbours();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const MeshRefinementAndPlotGrid& workerThread);
+    void mergeWithWorkerThread(const BroadcastAndMergeNeighbours& workerThread);
     #endif
 
     void createInnerVertex(

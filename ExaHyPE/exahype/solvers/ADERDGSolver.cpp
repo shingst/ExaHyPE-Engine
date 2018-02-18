@@ -4115,7 +4115,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   _solver(solver),
   _cellDescription(cellDescription) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks++;
+  _NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -4123,8 +4123,8 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegral(_cellDescription,true); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks--;
-  assertion( _NumberOfTriggeredTasks>=0 );
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -4132,13 +4132,13 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
 
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver& solver,
-  const int&    cellDescriptionsIndex,
-  const int&    element):
+  const int     cellDescriptionsIndex,
+  const int     element):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks++;
+  _NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -4146,8 +4146,8 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks--;
-  assertion( _NumberOfTriggeredTasks>=0 );
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -4169,8 +4169,8 @@ bool exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     _cellDescription.setCompressionState(CellDescription::Compressed);
-    _NumberOfTriggeredTasks--;
-    assertion( _NumberOfTriggeredTasks>=0 );
+    _NumberOfBackgroundJobs--;
+    assertion( _NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -4183,7 +4183,7 @@ void exahype::solvers::ADERDGSolver::compress(CellDescription& cellDescription) 
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      _NumberOfTriggeredTasks++;
+      _NumberOfBackgroundJobs++;
       lock.free();
 
       CompressionJob myTask( *this, cellDescription );

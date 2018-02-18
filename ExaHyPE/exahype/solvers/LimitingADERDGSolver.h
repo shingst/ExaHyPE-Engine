@@ -467,13 +467,13 @@ private:
   class FusedTimeStepJob {
   private:
     LimitingADERDGSolver& _solver;
-    const int&            _cellDescriptionsIndex;
-    const int&            _element;
+    const int             _cellDescriptionsIndex;
+    const int             _element;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver& solver,
-        const int&            cellDescriptionsIndex,
-        const int&            element);
+        const int             cellDescriptionsIndex,
+        const int             element);
 
     bool operator()();
   };
