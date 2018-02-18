@@ -2009,7 +2009,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      _NumberOfTriggeredTasks++;
+      _NumberOfBackgroundJobs++;
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
@@ -2187,8 +2187,8 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _cellDescription.setCompressionState(CellDescription::Compressed);
   // @todo raus
-  _NumberOfTriggeredTasks--;
-  assertion( _NumberOfTriggeredTasks>=0 );
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -2202,7 +2202,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks++;
+  _NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -2210,8 +2210,8 @@ bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfTriggeredTasks--;
-  assertion( _NumberOfTriggeredTasks>=0 );
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }

@@ -1,96 +1,67 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid2VTKGridVisualiser_1_H_
-#define EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid2VTKGridVisualiser_1_H_
+#ifndef EXAHYPE_ADAPTERS_UpdateAndReduce_H_
+#define EXAHYPE_ADAPTERS_UpdateAndReduce_H_
 
 
-#include "tarch/la/Vector.h"
-#include "tarch/la/VectorCompare.h"
 #include "tarch/logging/Log.h"
-#include "tarch/multicore/MulticoreDefinitions.h"
-#include "tarch/plotter/griddata/unstructured/vtk/VTKTextFileWriter.h"
-#include "tarch/plotter/griddata/unstructured/vtk/VTKBinaryFileWriter.h"
+#include "tarch/la/Vector.h"
 
+#include "peano/grid/VertexEnumerator.h"
 #include "peano/MappingSpecification.h"
 #include "peano/CommunicationSpecification.h"
-#include "peano/grid/VertexEnumerator.h"
+
+#include "tarch/multicore/MulticoreDefinitions.h"
 
 #include "exahype/Vertex.h"
 #include "exahype/Cell.h"
 #include "exahype/State.h"
 
-#include <map>
+
+ #include "exahype/mappings/UpdateAndReduce.h"
+
 
 
 namespace exahype {
       namespace adapters {
-        class MeshRefinementAndPlotGrid2VTKGridVisualiser_1;
+        class UpdateAndReduce;
       } 
 }
 
 
 /**
- * This is an adapter plotting a vtk grid file. Please set
- *
- * grid   filename
- *
- * @author Tobias Weinzierl
+ * This is a mapping from the spacetree traversal events to your user-defined activities.
+ * The latter are realised within the mappings. 
+ * 
+ * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_1 {
+class exahype::adapters::UpdateAndReduce {
   private:
-    /**
-     * One big map mapping vertices to indices. The procedure using this map is 
-     * straightforward. Whenever we encounter a vertex, the object does a 
-     * lookup whether this vertex already has been plotted. If not, it plots it 
-     * and adds an entry.
-     * 
-     * @see plotVertex(const tarch::la::Vector<DIMENSIONS,double>&  x)
-     */
-    static std::map<tarch::la::Vector<DIMENSIONS,double> , int, tarch::la::VectorCompare<DIMENSIONS> >  _vertex2IndexMap;
-    
-    #if defined(Debug) || defined(Asserts)    
-    typedef  tarch::plotter::griddata::unstructured::vtk::VTKTextFileWriter         UsedWriter;
-    #else
-    typedef  tarch::plotter::griddata::unstructured::vtk::VTKBinaryFileWriter       UsedWriter;
-    #endif
+    typedef mappings::UpdateAndReduce Mapping0;
 
-    UsedWriter*                                                                     _vtkWriter;
-    tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter*   _vertexWriter;
-    tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*     _cellWriter;
-    
-    tarch::plotter::griddata::Writer::VertexDataWriter*                             _vertexTypeWriter;
-    tarch::plotter::griddata::Writer::VertexDataWriter*                             _vertexRefinementControlWriter;
-    tarch::plotter::griddata::Writer::VertexDataWriter*                             _vertexAdjacentCellsHeight;
+     Mapping0  _map2UpdateAndReduce;
 
-    tarch::plotter::griddata::Writer::CellDataWriter*                               _cellStateWriter;
-    
-    static int _snapshotCounter;
-    
-    void plotVertex(
-      const exahype::Vertex&                 fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,double>&  fineGridX
-    );
+
   public:
-    peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
-    peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
-    peano::MappingSpecification   enterCellSpecification(int level) const;
-    peano::MappingSpecification   leaveCellSpecification(int level) const;
-    peano::MappingSpecification   ascendSpecification(int level) const;
-    peano::MappingSpecification   descendSpecification(int level) const;
-
+    peano::MappingSpecification         touchVertexLastTimeSpecification(int level) const;
+    peano::MappingSpecification         touchVertexFirstTimeSpecification(int level) const;
+    peano::MappingSpecification         enterCellSpecification(int level) const;
+    peano::MappingSpecification         leaveCellSpecification(int level) const;
+    peano::MappingSpecification         ascendSpecification(int level) const;
+    peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    MeshRefinementAndPlotGrid2VTKGridVisualiser_1();
+    UpdateAndReduce();
 
     #if defined(SharedMemoryParallelisation)
-    MeshRefinementAndPlotGrid2VTKGridVisualiser_1(const MeshRefinementAndPlotGrid2VTKGridVisualiser_1& masterThread);
+    UpdateAndReduce(const UpdateAndReduce& masterThread);
     #endif
 
-    virtual ~MeshRefinementAndPlotGrid2VTKGridVisualiser_1();
+    virtual ~UpdateAndReduce();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const MeshRefinementAndPlotGrid2VTKGridVisualiser_1& workerThread);
+    void mergeWithWorkerThread(const UpdateAndReduce& workerThread);
     #endif
 
     void createInnerVertex(
@@ -197,7 +168,7 @@ class exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_1 {
 
     void prepareCopyToRemoteNode(
       exahype::Cell&  localCell,
-      int                                           toRank,
+      int  toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>&   cellSize,
       int                                           level
@@ -254,8 +225,8 @@ class exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_1 {
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
       int                                                                  worker,
-      const exahype::State&          workerState,
-      exahype::State&                masterState
+      const exahype::State&           workerState,
+      exahype::State&                 masterState
     );
 
 

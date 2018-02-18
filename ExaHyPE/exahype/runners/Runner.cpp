@@ -401,7 +401,6 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 #endif
 }
 
-
 int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
   double hMax = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
@@ -553,6 +552,16 @@ void exahype::runners::Runner::initHeaps() {
   #ifdef Parallel
   exahype::MetadataHeap::getInstance().setName("MetadataHeap");
   logInfo("initHeaps()","initialised MetadataHeap="<<exahype::MetadataHeap::getInstance().toString());
+  #endif
+}
+
+void exahype::runners::Runner::shutdownHeaps() {
+  logInfo("shutdownHeaps()","shutdown all heaps");
+  exahype::DataHeap::getInstance().shutdown();
+  exahype::solvers::ADERDGSolver::Heap::getInstance().shutdown();
+  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().shutdown();
+  #ifdef Parallel
+  exahype::MetadataHeap::getInstance().shutdown();
   #endif
 }
 
@@ -817,7 +826,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
-    repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
+    repository.switchToBroadcastAndDropNeighbourMessages();
     repository.iterate(1,false);
 
     printStatistics();
@@ -1063,7 +1072,7 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
-  repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
+  repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
@@ -1265,10 +1274,10 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     exahype::repositories::Repository& repository, bool plot) {
   // Only one time step (predictor vs. corrector) is used in this case.
-  repository.switchToBroadcastGlobalDataAndMergeNeighbourMessages();  // Riemann -> face2face
+  repository.switchToBroadcastAndMergeNeighbours();  // Riemann -> face2face
   repository.iterate(1,false);
 
-  repository.switchToSolutionUpdate();  // Face to cell + Inside cell
+  repository.switchToUpdateAndReduce();  // Face to cell + Inside cell
   repository.iterate(1,false);
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {

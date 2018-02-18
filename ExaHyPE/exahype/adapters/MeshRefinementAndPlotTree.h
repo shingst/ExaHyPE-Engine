@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_BroadcastGlobalDataAndDropNeighbourMessages_H_
-#define EXAHYPE_ADAPTERS_BroadcastGlobalDataAndDropNeighbourMessages_H_
+#ifndef EXAHYPE_ADAPTERS_MeshRefinementAndPlotTree_H_
+#define EXAHYPE_ADAPTERS_MeshRefinementAndPlotTree_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,13 +18,17 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/BroadcastGlobalDataAndDropNeighbourMessages.h"
+ #include "exahype/mappings/MeshRefinement.h"
+ #include "exahype/adapters/MeshRefinementAndPlotTree2VTKGridVisualiser_1.h"
+ #include "exahype/mappings/AugmentedAMRTreePlot2d.h"
+ #include "exahype/mappings/LoadBalancing.h"
+ #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class BroadcastGlobalDataAndDropNeighbourMessages;
+        class MeshRefinementAndPlotTree;
       } 
 }
 
@@ -36,11 +40,19 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::BroadcastGlobalDataAndDropNeighbourMessages {
+class exahype::adapters::MeshRefinementAndPlotTree {
   private:
-    typedef mappings::BroadcastGlobalDataAndDropNeighbourMessages Mapping0;
+    typedef mappings::MeshRefinement Mapping0;
+    typedef adapters::MeshRefinementAndPlotTree2VTKGridVisualiser_1 Mapping1;
+    typedef mappings::AugmentedAMRTreePlot2d Mapping2;
+    typedef mappings::LoadBalancing Mapping3;
+    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping4;
 
-     Mapping0  _map2BroadcastGlobalDataAndDropNeighbourMessages;
+     Mapping0  _map2MeshRefinement;
+     Mapping1  _map2MeshRefinementAndPlotTree2VTKGridVisualiser_1;
+     Mapping2  _map2AugmentedAMRTreePlot2d;
+     Mapping3  _map2LoadBalancing;
+     Mapping4  _map2LevelwiseAdjacencyBookkeeping;
 
 
   public:
@@ -52,16 +64,16 @@ class exahype::adapters::BroadcastGlobalDataAndDropNeighbourMessages {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    BroadcastGlobalDataAndDropNeighbourMessages();
+    MeshRefinementAndPlotTree();
 
     #if defined(SharedMemoryParallelisation)
-    BroadcastGlobalDataAndDropNeighbourMessages(const BroadcastGlobalDataAndDropNeighbourMessages& masterThread);
+    MeshRefinementAndPlotTree(const MeshRefinementAndPlotTree& masterThread);
     #endif
 
-    virtual ~BroadcastGlobalDataAndDropNeighbourMessages();
+    virtual ~MeshRefinementAndPlotTree();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const BroadcastGlobalDataAndDropNeighbourMessages& workerThread);
+    void mergeWithWorkerThread(const MeshRefinementAndPlotTree& workerThread);
     #endif
 
     void createInnerVertex(

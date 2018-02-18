@@ -12,23 +12,23 @@
 #include "peano/stacks/VertexSTDStack.h"
 
  #include "exahype/adapters/MeshRefinement.h" 
- #include "exahype/adapters/MeshRefinementAndPlotGrid.h" 
+ #include "exahype/adapters/MeshRefinementAndPlotTree.h" 
  #include "exahype/adapters/FinaliseMeshRefinement.h" 
  #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
- #include "exahype/adapters/BroadcastGlobalDataAndDropNeighbourMessages.h" 
+ #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
  #include "exahype/adapters/LimiterStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
  #include "exahype/adapters/GlobalRollback.h" 
- #include "exahype/adapters/BroadcastGlobalDataAndMergeNeighbourMessages.h" 
- #include "exahype/adapters/SolutionUpdate.h" 
+ #include "exahype/adapters/BroadcastAndMergeNeighbours.h" 
+ #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
 
 
 namespace peano {
   namespace grid {
-    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexSTDStack<  exahype::Vertex> ,peano::stacks::CellSTDStack<  exahype::Cell> ,exahype::adapters::BroadcastGlobalDataAndMergeNeighbourMessages>;
+    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexSTDStack<  exahype::Vertex> ,peano::stacks::CellSTDStack<  exahype::Cell> ,exahype::adapters::BroadcastAndMergeNeighbours>;
   }
 }
 

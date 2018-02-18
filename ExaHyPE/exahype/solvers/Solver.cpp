@@ -111,20 +111,24 @@ exahype::solvers::LimiterDomainChange exahype::solvers::convertToLimiterDomainCh
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int                                exahype::solvers::Solver::_NumberOfTriggeredTasks(0);
+int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
 
 void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  finishedWait = _NumberOfTriggeredTasks == 0;
+  const int numberOfExaHyPEBackgroundJobs =  _NumberOfBackgroundJobs;
   lock.free();
+  finishedWait = numberOfExaHyPEBackgroundJobs == 0;
+
+  const int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+
   if (!finishedWait) {
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-            "Waiting for "
-            << tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()
+            "waiting for roughly "
+            << numberOfBackgroundJobs
             << " background tasks to complete of which "
-            << _NumberOfTriggeredTasks << " were spawned by ExaHyPE."
+            << numberOfExaHyPEBackgroundJobs << " were spawned by ExaHyPE"
             );
 
     tarch::multicore::jobs::processBackgroundJobs();

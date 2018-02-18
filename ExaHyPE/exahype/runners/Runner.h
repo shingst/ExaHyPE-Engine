@@ -99,13 +99,13 @@ class exahype::runners::Runner {
    * created the repository. See Orace::loadStatistics().
    */
   void initSharedMemoryConfiguration();
+  void shutdownSharedMemoryConfiguration();
 
   /**
-   * The shared memory environment has to be set up before we create the
+   * The distributed memory environment has to be set up before we create the
    * repository.
    */
   void initDistributedMemoryConfiguration();
-  void shutdownSharedMemoryConfiguration();
   void shutdownDistributedMemoryConfiguration();
 
   int runAsMaster(exahype::repositories::Repository& repository);
@@ -171,6 +171,11 @@ class exahype::runners::Runner {
    * patches.
    */
   void initHeaps();
+
+  /**
+   * Shutdown all heaps.
+   */
+  void shutdownHeaps();
 
   /**
    * Print minimum of current solver time stamps and time step sizes.
