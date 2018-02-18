@@ -136,7 +136,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
     tarch::multicore::jobs::processBackgroundJobs();
 
     lock.lock();
-    finishedWait = _NumberOfTriggeredTasks == 0;
+    finishedWait = _NumberOfBackgroundJobs == 0;
     lock.free();
   }
 }
@@ -220,6 +220,7 @@ void exahype::solvers::Solver::tearApart(
     for (int j=0; j<bytesForMantissa; j++) {
       CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = pMantissa[j];
       compressedDataHeapIndex++;
+      assertion( pMantissa[j]!=0 );
     }
 
     #ifdef ValidateCompressedVsUncompressedData
