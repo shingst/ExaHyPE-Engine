@@ -119,7 +119,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  const int numberOfExaHyPEBackgroundJobs =  _NumberOfBackgroundJobs;
+  const int numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -136,7 +136,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
     tarch::multicore::jobs::processBackgroundJobs();
 
     lock.lock();
-    finishedWait = _NumberOfTriggeredTasks == 0;
+    finishedWait = _NumberOfBackgroundJobs == 0;
     lock.free();
   }
 }
