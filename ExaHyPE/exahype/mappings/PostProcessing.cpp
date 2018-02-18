@@ -27,7 +27,7 @@ peano::MappingSpecification
 exahype::mappings::PostProcessing::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       exahype::solvers::Solver::CompressionAccuracy>0.0 ? peano::MappingSpecification::WholeTree : peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGridWithoutInterGridDependencies,false);
 }
 
 /**

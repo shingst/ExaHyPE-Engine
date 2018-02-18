@@ -4183,7 +4183,7 @@ void exahype::solvers::ADERDGSolver::compress(CellDescription& cellDescription) 
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-        _NumberOfTriggeredTasks++;
+      _NumberOfTriggeredTasks++;
       lock.free();
 
       CompressionJob myTask( *this, cellDescription );
@@ -4208,11 +4208,11 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
     tarch::multicore::jobs::processBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;
-      uncompress   = cellDescription.getCompressionState() == CellDescription::Compressed;
-      if (uncompress) {
-        cellDescription.setCompressionState( CellDescription::CurrentlyProcessed );
-      }
+    madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;
+    uncompress   = cellDescription.getCompressionState() == CellDescription::Compressed;
+    if (uncompress) {
+      cellDescription.setCompressionState( CellDescription::CurrentlyProcessed );
+    }
     lock.free();
   }
   #else
@@ -4591,11 +4591,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
-	peano::datatraversal::TaskSet::TaskType::Background,
-	peano::datatraversal::TaskSet::TaskType::Background,
-	peano::datatraversal::TaskSet::TaskType::Background,
-	peano::datatraversal::TaskSet::TaskType::Background,
-	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
 }

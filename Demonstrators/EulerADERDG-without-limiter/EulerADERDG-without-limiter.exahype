@@ -28,14 +28,15 @@ exahype-project EulerADERDG
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.01
+    end-time                = 0.001
   end computational-domain
   
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+// {manual-pinning}
+    cores                    = 3
     properties-file          = sharedmemory.properties
   end shared-memory
 
@@ -43,9 +44,22 @@ exahype-project EulerADERDG
     identifier               = static_load_balancing
     configure                = {hotspot,fair,ranks_per_node:1}
     buffer-size              = 64
-    timeout                  = 60
+    timeout                  = 160
   end distributed-memory 
   
+
+  global-optimisation
+    fuse-algorithmic-steps          = off
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+    timestep-batch-factor           = 0.0
+    skip-reduction-in-batched-time-steps = off
+    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    double-compression = 1e-12
+    spawn-double-compression-as-background-thread = on
+  end global-optimisation
+
   solver ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 3
