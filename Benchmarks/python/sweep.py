@@ -606,8 +606,7 @@ def submitJobs():
         print("create directory "+historyFolderPath)
         os.makedirs(historyFolderPath)
     
-      submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
-    
+    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
     with open(submittedJobsPath, "w") as submittedJobsFile:
         submittedJobsFile.write(json.dumps(jobIds))
     
