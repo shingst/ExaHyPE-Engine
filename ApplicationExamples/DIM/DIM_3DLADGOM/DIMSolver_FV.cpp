@@ -77,7 +77,7 @@ void DIM::DIMSolver_FV::flux(const double* const Q,double** F) {
 		double F_3[nVar];
 		pdeflux_(F[0], F[1],F_3, Q);
 	}else{
-		pdeflux_(F[0], F[1],F[3], Q);
+		pdeflux_(F[0], F[1],F[2], Q);
 	}
 }
 
