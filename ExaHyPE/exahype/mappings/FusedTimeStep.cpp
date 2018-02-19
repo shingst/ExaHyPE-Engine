@@ -324,7 +324,8 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
         fineGridVerticesEnumerator.getLevel());
   }
 
-  return true;
+  return exahype::State::isFirstIterationOfBatchOrNoBatch() ||
+         exahype::State::isLastIterationOfBatchOrNoBatch();
 }
 
 void exahype::mappings::FusedTimeStep::receiveDataFromMaster(

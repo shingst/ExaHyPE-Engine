@@ -181,6 +181,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _limiterDomainChange=LimiterDomainChange::Regular;
 
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize);
+  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(
