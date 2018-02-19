@@ -4119,8 +4119,21 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   lock.free();
 }
 
+
 bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegral(_cellDescription,true); // ignore return value
+
+/*
+  if (
+      _cellDescription.getType()==CellDescription::Type::Cell
+      #ifdef Parallel
+      &&
+      !_cellDescription.getAdjacentToRemoteRank() // TODO(Dominic): What is going on here?
+      #endif
+    ) {
+    _solver.compress(_cellDescription);
+  }
+*/
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;
@@ -4205,7 +4218,7 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
   bool uncompress   = false;
 
   while (!madeDecision) {
-    tarch::multicore::jobs::processBackgroundJobs();
+	peano::datatraversal::TaskSet::processBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;

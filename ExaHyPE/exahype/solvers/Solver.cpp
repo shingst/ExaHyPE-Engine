@@ -70,8 +70,10 @@ const int exahype::solvers::Solver::NotFound = -1;
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
 void exahype::solvers::initialiseSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
+/*
   assertion(solverFlags._limiterDomainChange==nullptr);
   assertion(solverFlags._meshUpdateRequest  ==nullptr);
+*/
 
   int numberOfSolvers    = exahype::solvers::RegisteredSolvers.size();
   solverFlags._limiterDomainChange = new LimiterDomainChange[numberOfSolvers];
@@ -133,7 +135,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
             << numberOfExaHyPEBackgroundJobs << " were spawned by ExaHyPE"
             );
 
-    tarch::multicore::jobs::processBackgroundJobs();
+    peano::datatraversal::TaskSet::processBackgroundJobs();
 
     lock.lock();
     finishedWait = _NumberOfBackgroundJobs == 0;

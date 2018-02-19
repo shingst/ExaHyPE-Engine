@@ -2039,7 +2039,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    tarch::multicore::jobs::processBackgroundJobs();
+    peano::datatraversal::TaskSet::processBackgroundJobs();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0
