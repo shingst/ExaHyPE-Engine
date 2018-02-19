@@ -209,33 +209,41 @@ void exahype::solvers::Solver::tearApart(
   CompressedDataHeap::getInstance().getData( compressedHeapIndex ).clear();
 
   for (int i=0; i<numberOfEntries; i++) {
-    peano::heap::decompose(
-      DataHeap::getInstance().getData( normalHeapIndex )[i],
-      exponent, mantissa, bytesForMantissa
-    );
+	if (tarch::la::equals(DataHeap::getInstance().getData( normalHeapIndex )[i],0.0,CompressionAccuracy)) {
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( 0 );
+	}
+	else {
+     peano::heap::decompose(
+	  DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  exponent, mantissa, bytesForMantissa
+		);
 
-    CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( exponent );
-    for (int j=0; j<bytesForMantissa; j++) {
-      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( pMantissa[j] );
-      // @todo TW: Here we give away the big impact of compression
-      //assertion( pMantissa[j]!=0 );
-    }
+		CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( exponent );
+		for (int j=0; j<bytesForMantissa-1; j++) {
+		  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( pMantissa[j] );
+		}
+		// ensure that 0 marker is not misused
+        if (pMantissa[bytesForMantissa-1]==0) {
+  		  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( 1 );
+        }
+        else {
+  		  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( pMantissa[bytesForMantissa-1] );
+        }
 
-    #ifdef ValidateCompressedVsUncompressedData
-    const double reconstructedValue = peano::heap::compose(
-      exponent, mantissa, bytesForMantissa
-    );
-    assertion9(
-      tarch::la::equals( reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
-	  reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i],
-	  reconstructedValue-DataHeap::getInstance().getData( normalHeapIndex )[i],
-      CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex,
-	  static_cast<int>(exponent), mantissa
-    );
-    #endif
+		#ifdef ValidateCompressedVsUncompressedData
+		const double reconstructedValue = peano::heap::compose(
+		  exponent, mantissa, bytesForMantissa
+		);
+		assertion9(
+		  tarch::la::equals( reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
+		  reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  reconstructedValue-DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex,
+		  static_cast<int>(exponent), mantissa
+		);
+		#endif
+	}
   }
-
-
 }
 
 
@@ -248,11 +256,6 @@ void exahype::solvers::Solver::glueTogether(
 
   assertion( DataHeap::getInstance().isValidIndex(normalHeapIndex) );
   assertion( CompressedDataHeap::getInstance().isValidIndex(compressedHeapIndex) );
-  assertion5(
-    static_cast<int>(CompressedDataHeap::getInstance().getData(compressedHeapIndex).size())==numberOfEntries * (bytesForMantissa+1),
-    CompressedDataHeap::getInstance().getData(compressedHeapIndex).size(), numberOfEntries * (bytesForMantissa+1),
-    numberOfEntries, compressedHeapIndex, bytesForMantissa
-  );
 
   #ifdef ValidateCompressedVsUncompressedData
   assertion( static_cast<int>(DataHeap::getInstance().getData(normalHeapIndex).size())==numberOfEntries );
@@ -261,24 +264,31 @@ void exahype::solvers::Solver::glueTogether(
   #endif
 
   for (int i=numberOfEntries-1; i>=0; i--) {
-    mantissa = 0;
-    for (int j=bytesForMantissa-1; j>=0; j--) {
-      pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+    const char firstEntry = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+	if (firstEntry==0) {
+      DataHeap::getInstance().getData(normalHeapIndex)[i] = 0.0;
       CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
+	}
+	else {
+      mantissa = 0;
+      for (int j=bytesForMantissa-1; j>=0; j--) {
+        pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+        CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
+      }
+      exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
+      double reconstructedValue = peano::heap::compose(
+        exponent, mantissa, bytesForMantissa
+      );
+      #ifdef ValidateCompressedVsUncompressedData
+      assertion7(
+        tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
+        DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, DataHeap::getInstance().getData(normalHeapIndex)[i] - reconstructedValue,
+        CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex
+      );
+      #endif
+      DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
     }
-    exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
-    CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
-    double reconstructedValue = peano::heap::compose(
-      exponent, mantissa, bytesForMantissa
-    );
-    #ifdef ValidateCompressedVsUncompressedData
-    assertion7(
-      tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
-      DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, DataHeap::getInstance().getData(normalHeapIndex)[i] - reconstructedValue,
-      CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex
-    );
-    #endif
-    DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
   }
 }
 
