@@ -215,12 +215,13 @@ void exahype::solvers::Solver::tearApart(
       exponent, mantissa, bytesForMantissa
     );
 
-    CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = exponent;
+    CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex] = exponent;
     compressedDataHeapIndex++;
     for (int j=0; j<bytesForMantissa; j++) {
-      CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = pMantissa[j];
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex] = pMantissa[j];
       compressedDataHeapIndex++;
-      assertion( pMantissa[j]!=0 );
+      // @todo TW: Here we give away the big impact of compression
+      //assertion( pMantissa[j]!=0 );
     }
 
     #ifdef ValidateCompressedVsUncompressedData
@@ -266,10 +267,10 @@ void exahype::solvers::Solver::glueTogether(
   for (int i=numberOfEntries-1; i>=0; i--) {
     mantissa = 0;
     for (int j=bytesForMantissa-1; j>=0; j--) {
-      pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u; // TODO(Dominic):This line fails
+      pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]; // TODO(Dominic):This line fails
       compressedDataHeapIndex--;
     }
-    exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u;
+    exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex];
     compressedDataHeapIndex--;
     double reconstructedValue = peano::heap::compose(
       exponent, mantissa, bytesForMantissa
