@@ -3,7 +3,7 @@
 
 RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	USE, INTRINSIC :: ISO_C_BINDING
-	USE Parameters, ONLY : nVar, nDim
+	USE Parameters, ONLY : nVar, nDim, ICFlag
 	IMPLICIT NONE 
 	! Argument list 
 	REAL, INTENT(IN)               :: x(nDim), t        ! 
@@ -11,14 +11,28 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 
 	!Call InitialPlaneWave(x, t, Q)
 	!call GaussianBubble(x,t,Q)
+	select case(ICFlag)
+		case('CGeom')
+			if(nDim .eq. 3) then
+				call InitialCG3D(x, t, Q);
+			else
+				print *, ICFlag, ' Not implemented'
+				stop
+			end if
+		case('PlaneWave')
+			call InitialPlaneWave(x, t, Q)
+		case('SmoothTC')
+			call GaussianBubble(x,t,Q)
+		case default
+			print *, ICFlag, ' Not implemented'
+	end select
 		
-	call InitialCG3D(x, t, Q);
 END SUBROUTINE InitialData
 
 RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, observablesMin, observablesMax)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
-	USE Parameters, ONLY : nVar, nDim
+	USE Parameters, ONLY : nVar, nDim,ICFlag
 	IMPLICIT NONE 
 	! Argument list 
 	REAL, INTENT(IN)               :: xx(nDim)        ! 
@@ -35,6 +49,7 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!else
 	!	limiter_value=0
 	!end if
+	!return
 	!
 	
 	! Exclude the boundaries
@@ -42,15 +57,19 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!	limiter_value=0
 	!	return
 	!end if
-	rr = RadiusFromCG(xx(1),xx(2),xx(3))
+	!rr = RadiusFromCG(xx(1),xx(2),xx(3))
 	!rr = DistanceFromSurfaceCG(xx(1),xx(2),xx(3),50.0)
 	!rr=1.00
 	!rr=xx(3)-2000
-	
+	!limiter_value=0
+	!if(abs(rr)<500) then
+	!    limiter_value=1
+	!	return
+	!end if
    if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
-       limiter_value=0
+       limiter_value=1
    else
-		limiter_value=1
+		limiter_value=0
    ENDIF 
 	!limiter_value=0
 END SUBROUTINE PDElimitervalue
@@ -93,7 +112,7 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
         up(14)  = 1.0   ! No Fracture everywhere
         r = x(3)
         !r = RadiusFromCG(x(1),x(2),x(3))
-		ICsig=50.0
+		ICsig=200.0
 		r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
         
 
@@ -131,7 +150,7 @@ RECURSIVE SUBROUTINE InitialPlaneWave(x, t, Q)
     ICA=1.0     ! wave length
     ICxd=0.25   ! radius of the circle
     ICsig=3e-3  ! smoothing parameter
-    ICQR(:)= (/1e-7, 0.9999999 /)
+    ICQR(:)= (/0.0, 1.0 /)
     ! Initialize the variables vector V
     up = ICuL + ICuR*SIN(2*Pi*(x(1)-2.0*t)/ICA)
     r = SQRT(sum(x(1:nDim)**2)) 
@@ -142,11 +161,12 @@ RECURSIVE SUBROUTINE InitialPlaneWave(x, t, Q)
 	! Way one to compute alpha
 	ICsig=1.e-2  ! smoothing parameter
 	r=ICxd-r
-	CALL SmoothInterface(up(13),r,ICsig,1.e-4,0)
+	CALL SmoothInterface(up(13),r,ICsig,0.0,0)
     !up(13)=1.0
 	
     !up(1:9) = up(1:9)*up(13)
-    up(14)=1.0-1.e-10
+    up(14)=1.0
+	up(1:6)=up(1:6)*up(13)
 
     CALL PDEPrim2Cons(Q,up)
     !Q=up
@@ -180,6 +200,7 @@ END SUBROUTINE GaussianBubble
 	! ================ Specific complex geometries routines =======================
 RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		USE	:: SpecificVarEqn99
+		USE :: Parameters, only : ICFlag, ndim
 		USE, INTRINSIC :: ISO_C_BINDING
         implicit none
         CHARACTER(LEN=100)         :: CGEOMFile
@@ -198,6 +219,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		print *, MyDomain
 		print *, MyOffset
 		print *, "**********************************************************"
+	if(ICFlag .eq. 'CGeom' .and. ndim .eq. 3) then
 		leng=15000.0
 		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
 		n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
@@ -296,8 +318,8 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		print *, 'Min-Max of x=',minval(x_cg), maxval(x_cg)
 		print *, 'Min-Max of y=',minval(y_cg), maxval(y_cg)
 		print *, 'Min-Max of z=',minval(z_cg), maxval(z_cg)
-        
-    end subroutine ReadCGFile
+	end if
+end subroutine ReadCGFile
 
 RECURSIVE SUBROUTINE SmoothInterface(alpha,r,ICsig,epsilon,smooth_order)
     USE, INTRINSIC :: ISO_C_BINDING

@@ -17,11 +17,14 @@
     ! Here, we obtain DIMENSIONS from the C++ preprocessor
 #if defined(Dim3)
     INTEGER, PARAMETER             :: nDim = 3                   ! The number of space dimensions
+	CHARACTER(LEN=10), PARAMETER	:: ICFlag='CGeom'
 #elif defined(Dim2)
     INTEGER, PARAMETER             :: nDim = 2                   ! The number of space dimensions
+	CHARACTER(LEN=10), PARAMETER	:: ICFlag='PlaneWave'
 #endif
+	!CHARACTER(LEN=10), PARAMETER				:: ICFlag='CGeom'
     INTEGER, PARAMETER             :: nVar = 14                           ! The number of variables of the PDE system  
     INTEGER, PARAMETER             :: nLin = 12
-	REAL, PARAMETER             :: epsilon1 =1.e-3
+	REAL, PARAMETER             :: epsilon1 =1.e-4
 
   END MODULE Parameters  

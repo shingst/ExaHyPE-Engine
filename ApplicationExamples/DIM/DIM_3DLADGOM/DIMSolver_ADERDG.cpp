@@ -33,15 +33,17 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
 void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
   double *fluxOut,double* stateOut) {
-  const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
+const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   const int order = DIM::AbstractDIMSolver_ADERDG::Order;
   const int basisSize = order + 1;
   const int nDim = DIMENSIONS;
 
-  double Qgp[nVar], F[nDim][nVar];
+  double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
 
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut, 0, nVar * sizeof(double));
+  
+  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
   
   for(int i=0; i < basisSize; i++)  { // i == time
      const double weight = kernels::gaussLegendreWeights[order][i];
@@ -49,11 +51,11 @@ void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,
      double ti = t + xi * dt;
 
      initialdata_(x, &ti, Qgp);
-    pdeflux_(F[0], F[1], F[2], Qgp);
+    //pdeflux_(F[0], F[1], F[2], Qgp);
+	flux(Qgp, F);
      for(int m=0; m < nVar; m++) {
         stateOut[m] += weight * Qgp[m];
-       // fluxOut[m] += weight * F[normalNonZero][m];
-	   fluxOut[m]=0;
+        fluxOut[m] += weight * Fs[normalNonZero][m];
      }
   }
 }
@@ -82,55 +84,17 @@ void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double
 
 
 void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
+	const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
   // Dimensions                        = 3
   // Number of variables + parameters  = 14 + 0
   
   // @todo Please implement/augment if required
-  F[0][0] = 0.0;
-  F[0][1] = 0.0;
-  F[0][2] = 0.0;
-  F[0][3] = 0.0;
-  F[0][4] = 0.0;
-  F[0][5] = 0.0;
-  F[0][6] = 0.0;
-  F[0][7] = 0.0;
-  F[0][8] = 0.0;
-  F[0][9] = 0.0;
-  F[0][10] = 0.0;
-  F[0][11] = 0.0;
-  F[0][12] = 0.0;
-  F[0][13] = 0.0;
-  
-  F[1][0] = 0.0;
-  F[1][1] = 0.0;
-  F[1][2] = 0.0;
-  F[1][3] = 0.0;
-  F[1][4] = 0.0;
-  F[1][5] = 0.0;
-  F[1][6] = 0.0;
-  F[1][7] = 0.0;
-  F[1][8] = 0.0;
-  F[1][9] = 0.0;
-  F[1][10] = 0.0;
-  F[1][11] = 0.0;
-  F[1][12] = 0.0;
-  F[1][13] = 0.0;
-  
-  F[2][0] = 0.0;
-  F[2][1] = 0.0;
-  F[2][2] = 0.0;
-  F[2][3] = 0.0;
-  F[2][4] = 0.0;
-  F[2][5] = 0.0;
-  F[2][6] = 0.0;
-  F[2][7] = 0.0;
-  F[2][8] = 0.0;
-  F[2][9] = 0.0;
-  F[2][10] = 0.0;
-  F[2][11] = 0.0;
-  F[2][12] = 0.0;
-  F[2][13] = 0.0;
-  
+    if(DIMENSIONS == 2){
+		double F_3[nVar];
+		pdeflux_(F[0], F[1],F_3, Q);
+	}else{
+		pdeflux_(F[0], F[1],F[2], Q);
+	}
 }
 
 void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
@@ -148,11 +112,6 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   int limvalue;
-  double xx[3] = {0.0};
-  
-  xx[0]=center[0];
-  xx[1]=center[1];
-  xx[2]=center[2];
   // Variant 1 (cheapest, currently works only in 2D)
   //  double outerRadius = 1.25*0.25;
   //  double innerRadius = 0.75*0.25;
