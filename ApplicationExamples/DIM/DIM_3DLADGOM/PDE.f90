@@ -49,7 +49,7 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
     mu   = Q(11) 
     irho = 1./Q(12)
     
-    ialpha=Q(13)/(Q(13)**2+epsilon1)
+    ialpha=Q(13)/(Q(13)**2+epsilon1*(1-Q(13)))
     u=Q(7:9)*ialpha
     !
 ! Original model
@@ -191,7 +191,7 @@ RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv)
     mu   = Q(11) 
     irho = 1./Q(12)
     
-    ialpha =Q(13)/(Q(13)**2+epsilon1)
+    ialpha =Q(13)/(Q(13)**2+epsilon1*(1-Q(13)))
     uv=Q(7:9)*ialpha
     
 	!print *, maxval(nv),lam,mu,irho
@@ -274,7 +274,8 @@ RECURSIVE SUBROUTINE PDEIntermediateFields(RL,LL,iRL,Q,nv)
   ! Local variables
   INTEGER :: i,j,k, zero,iErr, minl(1), maxl(1) 
   REAL :: R(nVar,nVar), L(nVar,nVar), Lv(nVar), iR(nVar,nVar)
-  !   
+  !  
+  
   CALL PDEEigenvectors(R,L,iR,Q,nv)
   RL(:,1:7)  = R(:,4:10) 
   iRL(1:7,:) = iR(4:10,:) 
@@ -515,7 +516,7 @@ RECURSIVE SUBROUTINE PDEEigenvectors(R,L,iR,Q,nv)
         Qrot = MATMUL( iTM, Q) 
         alpha = Q(13) 
 
-        ialpha=Q(13)/(Q(13)**2+epsilon1)
+        ialpha=Q(13)/(Q(13)**2+epsilon1*(1-Q(13)))
         uv=Qrot(7:9)*ialpha
         ! 
         s11 = Qrot(1) 
@@ -602,6 +603,8 @@ RECURSIVE SUBROUTINE PDEEigenvectors(R,L,iR,Q,nv)
         L(13,13) = +cp
         L(14,14) = 0.0 
         ! 
+		!alpha=Q(13)/sqrt(Q(13)**2-epsilon1*Q(13)+epsilon1)
+        !L=L*alpha
 
     END SUBROUTINE PDEEigenvectors 
     

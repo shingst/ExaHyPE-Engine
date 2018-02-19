@@ -47,11 +47,17 @@ void DIM::DIMSolver_FV::boundaryValues(
     const int d,
     const double* const stateInside,
     double* stateOutside) {
+	const int nVar = DIM::AbstractDIMSolver_FV::NumberOfVariables;	
+	double Qgp[nVar];
   // Dimensions             = 3
   // Number of variables    = 14 + #parameters
 
   // @todo Please implement/augment if required
-  initialdata_(x, &t, stateOutside);
+  double ti = t + 0.5 * dt;
+  initialdata_(x, &ti, Qgp);
+  for(int m=0; m < nVar; m++) {
+        stateOutside[m] = Qgp[m];
+  }
 }
 
 //***********************************************************
@@ -62,55 +68,17 @@ void DIM::DIMSolver_FV::boundaryValues(
 
 
 void DIM::DIMSolver_FV::flux(const double* const Q,double** F) {
+	const int nVar = DIM::AbstractDIMSolver_FV::NumberOfVariables;
   // Dimensions                        = 3
   // Number of variables + parameters  = 14 + 0
   
   // @todo Please implement/augment if required
-  F[0][0] = 0.0;
-  F[0][1] = 0.0;
-  F[0][2] = 0.0;
-  F[0][3] = 0.0;
-  F[0][4] = 0.0;
-  F[0][5] = 0.0;
-  F[0][6] = 0.0;
-  F[0][7] = 0.0;
-  F[0][8] = 0.0;
-  F[0][9] = 0.0;
-  F[0][10] = 0.0;
-  F[0][11] = 0.0;
-  F[0][12] = 0.0;
-  F[0][13] = 0.0;
-  
-  F[1][0] = 0.0;
-  F[1][1] = 0.0;
-  F[1][2] = 0.0;
-  F[1][3] = 0.0;
-  F[1][4] = 0.0;
-  F[1][5] = 0.0;
-  F[1][6] = 0.0;
-  F[1][7] = 0.0;
-  F[1][8] = 0.0;
-  F[1][9] = 0.0;
-  F[1][10] = 0.0;
-  F[1][11] = 0.0;
-  F[1][12] = 0.0;
-  F[1][13] = 0.0;
-  
-  F[2][0] = 0.0;
-  F[2][1] = 0.0;
-  F[2][2] = 0.0;
-  F[2][3] = 0.0;
-  F[2][4] = 0.0;
-  F[2][5] = 0.0;
-  F[2][6] = 0.0;
-  F[2][7] = 0.0;
-  F[2][8] = 0.0;
-  F[2][9] = 0.0;
-  F[2][10] = 0.0;
-  F[2][11] = 0.0;
-  F[2][12] = 0.0;
-  F[2][13] = 0.0;
-  
+    if(DIMENSIONS == 2){
+		double F_3[nVar];
+		pdeflux_(F[0], F[1],F_3, Q);
+	}else{
+		pdeflux_(F[0], F[1],F[3], Q);
+	}
 }
 
 

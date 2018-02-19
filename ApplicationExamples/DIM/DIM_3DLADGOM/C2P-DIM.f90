@@ -2,7 +2,7 @@
 ! Should be merged with SRHD's.
 
 SUBROUTINE PDEPrim2Cons(Q,V)
-  USE Parameters, ONLY: nVar, nDim 
+  USE Parameters, ONLY: nVar, nDim , epsilon1
   IMPLICIT NONE
   ! Argument list declaration
   REAL :: Q(nVar), V(nVar)
@@ -23,6 +23,7 @@ SUBROUTINE PDEPrim2Cons(Q,V)
   !
   Q(:)=V(:)  
   Q(7:9)=V(7:9)*Q(13)
+  !Q(7:9)=V(7:9)/(Q(13)+epsilon1*Q(13)*(1-Q(13)))*(Q(13)**2+epsilon1*(1-Q(13)))
 END SUBROUTINE PDEPrim2Cons
 
 
@@ -67,6 +68,11 @@ SUBROUTINE PDECons2Prim(V,Q)
   REAL, PARAMETER    :: tol = 1e-8, third=1.0/3.0, p_floor = 1.0e-5, rho_floor = 1.0e-4
   !
     V=Q
-    V(7:9)=Q(7:9)*Q(13)/(Q(13)**2+epsilon1)
+    V(7:9)=Q(7:9)*Q(13)/(Q(13)**2+epsilon1*(1-Q(13)))
+	!if(Q(13)< 1.e-3) then
+	!	V(7:9)=0.
+	!else
+	!	V(7:9)=Q(7:9)/Q(13)
+	!end if
 END SUBROUTINE PDECons2Prim
 

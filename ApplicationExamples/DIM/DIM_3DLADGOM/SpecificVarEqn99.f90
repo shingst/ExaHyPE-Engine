@@ -72,6 +72,7 @@ module SpecificVarEqn99
         shift(5,2,:)=(/ 0,-1  /)
         shift(6,1,:)=(/ -1,1  /)
         shift(6,2,:)=(/ -1,0  /)
+		np_nv_norm=100;
         do l=1,6
             minpos(2,:)=minpos(1,:)+shift(l,1,:)
             minpos(3,:)=minpos(1,:)+shift(l,2,:)
@@ -178,7 +179,7 @@ module SpecificVarEqn99
         real    :: i,j,phi(4),xi,gamma
         integer :: ix(2)
         
-        ix=lookatindex_cg(x_in,y_in)
+        ix=lookatindex_cg_fast(x_in,y_in)
         phi(1)=z_cg(ix(1),ix(2))
         phi(2)=z_cg(ix(1)+1,ix(2))
         phi(3)=z_cg(ix(1),ix(2)+1)
@@ -192,7 +193,7 @@ module SpecificVarEqn99
         !RadiusFromCG=z_out-z_in
         RadiusFromCG=-z_out+z_in
     end function RadiusFromCG
-    
+
     
     function lookatindex_cg(x_in,y_in)
         implicit none
@@ -218,6 +219,22 @@ module SpecificVarEqn99
             stop
         end if
     end function lookatindex_cg
+    
+    function lookatindex_cg_fast(x_in,y_in)
+        implicit none
+        real    :: x_in,y_in
+        integer    :: lookatindex_cg_fast(2)
+        integer :: i,j
+        
+		
+		
+		lookatindex_cg_fast(1)=floor((x_in-xL_cg)/dx_cg)
+        lookatindex_cg_fast(2)=floor((y_in-yL_cg)/dy_cg)
+        if(minval(lookatindex_cg_fast(:))<0) then
+            print *, 'LookIndex error for x_in=',x_in, ' and y_in=',y_in, '! Please choose a larger CG domain'
+            stop
+        end if
+    end function lookatindex_cg_fast
     !*********************************************************************************
     !           Use constant rings in the parameter file
     !*********************************************************************************
@@ -437,10 +454,10 @@ module SpecificVarEqn99
         end if
         ! =============== WAY 2 ================================
         SmoothInterface  = (1.0-epsilon)*(1-xi)**smooth_order + (0.0+epsilon)*xi**smooth_order 
-        if(smooth_order .eq. 0) then
-            xi = 0.5+0.5*ERF(r/(2*ICsig))  
-            SmoothInterface  = (1.0-epsilon)*(1-xi) + (0.0+epsilon)*xi
-        end if
+        !if(smooth_order .eq. 0) then
+        !    xi = 0.5+0.5*ERF(r/(2*ICsig))  
+        !    SmoothInterface  = (1.0-epsilon)*(1-xi) + (0.0+epsilon)*xi
+        !end if
     end function SmoothInterface
     
     function xy2t(x,ind)
