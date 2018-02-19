@@ -66,6 +66,16 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!    limiter_value=1
 	!	return
 	!end if
+	if(ICFlag .eq. 'CGeom') then
+		rr = RadiusFromCG(xx(1),xx(2),xx(3))
+		if(abs(rr)<500) then
+			limiter_value=1
+		else
+			limiter_value=0
+		end if
+		return
+	end if
+	
    if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
        limiter_value=1
    else
@@ -118,7 +128,7 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
 
         up(13)=SmoothInterface(r,ICsig,0.0,1)                 ! Get the smooth value of alpha for that value of r
 		!up(13)=1.0
-        ICx0=[0.0, 0.0, 0.0]
+        ICx0=[0.0, 0.0, -1000.0]
         r = SQRT((x(1)-ICx0(1))**2 + (x(2)-ICx0(2))**2+(x(3)-ICx0(3))**2 ) 
         nv(1) = 0.0
         nv(2) = 0.0
@@ -210,7 +220,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
         real, allocatable   :: x_cg_new(:),y_cg_new(:),z_cg_new(:,:)
         real            :: h, phi(4), xi,gamma
         real            :: minx,maxx,miny,maxy
-		logical			:: invert_coordinates
+		logical			:: invert_coordinates, binary_input
 		real			:: MyOffset(3),MyDomain(3), scalefactor(3)
 		! Input parameters
 		leng(1:2,1)=MyDomain(1:2)+MyOffset(1:2)
@@ -221,27 +231,42 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		print *, "**********************************************************"
 	if(ICFlag .eq. 'CGeom' .and. ndim .eq. 3) then
 		leng=15000.0
-		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
 		n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
-		CGEOMFile="CG.dat"			! DTM file
+		
+		!CGEOMFile="CG.dat"			! DTM file
+		!center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
+		CGEOMFile="trient_003.txt"			! DTM file
+		center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
+		binary_input=.true.
 		
 		!leng=15000.0
 		!center=(/600.0, 5110.0/)			! UTM coordinates of the center (with respect to the DTM data file)
 		!n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
 		!CGEOMFile="alps_01.txt"			! DTM file
 		
-		
-        open(8, file=trim(CGEOMFile), action='read')
-            read(8,*) nx_cg
-            read(8,*) ny_cg
-            allocate(x_cg(nx_cg),y_cg(ny_cg),z_cg(nx_cg,ny_cg))
-			read(8,*) scalefactor(1:3)
-            read(8,*) x_cg(1:nx_cg)
-            read(8,*) y_cg(1:ny_cg)
-            do jcg=1,ny_cg
-                read(8,*) z_cg(1:nx_cg,jcg)       
-            end do
-        close(8)
+		if(binary_input) then
+			open(8, file=trim(CGEOMFile) ,form='unformatted')
+				read(8) nx_cg
+				read(8) ny_cg
+				allocate(x_cg(nx_cg),y_cg(ny_cg),z_cg(nx_cg,ny_cg))
+				read(8) scalefactor(1:3)
+				read(8) x_cg(1:nx_cg)
+				read(8) y_cg(1:ny_cg)
+				read(8,*) z_cg      
+			close(8)			
+		else
+			open(8, file=trim(CGEOMFile), action='read')
+				read(8,*) nx_cg
+				read(8,*) ny_cg
+				allocate(x_cg(nx_cg),y_cg(ny_cg),z_cg(nx_cg,ny_cg))
+				read(8,*) scalefactor(1:3)
+				read(8,*) x_cg(1:nx_cg)
+				read(8,*) y_cg(1:ny_cg)
+				do jcg=1,ny_cg
+					read(8,*) z_cg(1:nx_cg,jcg)       
+				end do
+			close(8)
+		end if
 		print *, 'Min-Max of z (DTM)=',minval(z_cg), maxval(z_cg)
 		center(1)=center(1)*scalefactor(1);
 		center(2)=center(2)*scalefactor(2);
