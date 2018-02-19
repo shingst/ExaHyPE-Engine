@@ -206,20 +206,17 @@ void exahype::solvers::Solver::tearApart(
   assertion2( static_cast<int>(DataHeap::getInstance().getData(normalHeapIndex).size())==numberOfEntries, DataHeap::getInstance().getData(normalHeapIndex).size(), numberOfEntries );
   assertion( CompressedDataHeap::getInstance().getData(compressedHeapIndex).empty() );
 
-  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).resize(numberOfEntries * (bytesForMantissa+1));
+  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).clear();
 
-  int compressedDataHeapIndex = 0;
   for (int i=0; i<numberOfEntries; i++) {
     peano::heap::decompose(
       DataHeap::getInstance().getData( normalHeapIndex )[i],
       exponent, mantissa, bytesForMantissa
     );
 
-    CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex] = exponent;
-    compressedDataHeapIndex++;
+    CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( exponent );
     for (int j=0; j<bytesForMantissa; j++) {
-      CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex] = pMantissa[j];
-      compressedDataHeapIndex++;
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( pMantissa[j] );
       // @todo TW: Here we give away the big impact of compression
       //assertion( pMantissa[j]!=0 );
     }
@@ -263,15 +260,14 @@ void exahype::solvers::Solver::glueTogether(
   DataHeap::getInstance().getData(normalHeapIndex).resize(numberOfEntries);
   #endif
 
-  int compressedDataHeapIndex = numberOfEntries * (bytesForMantissa+1)-1;
   for (int i=numberOfEntries-1; i>=0; i--) {
     mantissa = 0;
     for (int j=bytesForMantissa-1; j>=0; j--) {
-      pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]; // TODO(Dominic):This line fails
-      compressedDataHeapIndex--;
+      pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
     }
-    exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex];
-    compressedDataHeapIndex--;
+    exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+    CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
     double reconstructedValue = peano::heap::compose(
       exponent, mantissa, bytesForMantissa
     );
