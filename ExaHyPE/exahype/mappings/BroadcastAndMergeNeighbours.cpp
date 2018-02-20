@@ -139,6 +139,22 @@ void exahype::mappings::BroadcastAndMergeNeighbours::enterCell(
     exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
+
+    if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+        const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+        if (element!=exahype::solvers::Solver::NotFound) {
+          solver->compress(
+              cellDescriptionsIndex,element,
+              exahype::Cell::isAtRemoteBoundary(
+                  fineGridVertices,fineGridVerticesEnumerator)
+          );
+        }
+      }
+    }
   }
 }
 

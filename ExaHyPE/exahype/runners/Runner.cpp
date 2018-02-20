@@ -574,9 +574,17 @@ int exahype::runners::Runner::run() {
   if ( _parser.isValid() ) {
     initHeaps();
 
-    exahype::State::FuseADERDGPhases                 = _parser.getFuseAlgorithmicSteps();
-    exahype::State::WeightForPredictionRerun         = _parser.getFuseAlgorithmicStepsFactor();
-    exahype::State::SpawnPredictorAsBackgroundThread = _parser.getSpawnPredictorAsBackgroundThread();
+    exahype::State::FuseADERDGPhases          = _parser.getFuseAlgorithmicSteps();
+    exahype::State::WeightForPredictionRerun  = _parser.getFuseAlgorithmicStepsFactor();
+
+    exahype::solvers::Solver::SpawnPredictionAsBackgroundJob =
+        _parser.getSpawnPredictionAsBackgroundThread();
+
+    exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
+    #ifdef Parallel
+    exahype::mappings::MeshRefinement::IsFirstIteration = false;
+    #endif
+
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
@@ -594,11 +602,6 @@ int exahype::runners::Runner::run() {
       initDataCompression();
     if ( _parser.isValid() )
       initHPCEnvironment();
-
-    exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
-    #ifdef Parallel
-    exahype::mappings::MeshRefinement::IsFirstIteration = false;
-    #endif
 
     if ( _parser.isValid() ) {
       if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
@@ -819,7 +822,13 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       postProcessTimeStepInSharedMemoryEnvironment();
 
-      logDebug("runAsMaster(...)", "state=" << repository.getState().toString());
+      #if !defined(Parallel)
+      logInfo("createGrid(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+      #else
+      if (tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
+        logInfo("createGrid(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+      }
+      #endif
 
       timeStep += numberOfStepsToRun==0 ? 1 : numberOfStepsToRun;
     }

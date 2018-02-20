@@ -115,6 +115,8 @@ exahype::solvers::LimiterDomainChange exahype::solvers::convertToLimiterDomainCh
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
+
 int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
 
 void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {

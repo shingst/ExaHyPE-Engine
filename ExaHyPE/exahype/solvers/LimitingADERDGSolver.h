@@ -710,13 +710,6 @@ public:
   LimiterPatch& getLimiterPatchForSolverPatch(
       const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement) const;
 
-  /**
-    * \see exahype::amr::computeSubcellPositionOfCellOrAncestor
-    */
-  SubcellPosition computeSubcellPositionOfCellOrAncestor(
-      const int cellDescriptionsIndex,
-      const int element) const final override;
-
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
@@ -915,15 +908,27 @@ public:
       const int cellDescriptionsIndex,
       const int element) final override;
 
-
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnBackgroundJobs) final override;
+      const bool isAtRemoteBoundary) final override;
+
+  UpdateResult update(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isAtRemoteBoundary) final override;
+
+  void compress(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) const final override;
 
   /**
+   * Update the solution of a solver patch and or
+   * its associated limiter patch
+   *
    * This method assumes the ADERDG solver's cell-local limiter status has
    * already been determined.
    *
@@ -932,11 +937,20 @@ public:
    * (ADER-DG is always dictating the time step sizes.)
    *
    * \see determineLimiterStatusAfterLimiterStatusSpreading(...)
+   *
+   * \note Make sure to reset neighbour merge
+   * helper variables in this method call.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
+   *
    */
   void updateSolution(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) final override;
+      const bool backupPreviousSolution);
 
   /**
    * Determine the new cell-local min max values.
@@ -1109,38 +1123,21 @@ public:
    * We compute the new limiter status based on the merged limiter statuses associated
    * with the faces.
    *
-   * \param[in] vetoSpawnBackgroundJobs Flag indicating that the cell hosting the
+   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                   cell description is adjacent to a remote rank.
    */
   void recomputePredictorLocally(
       const int cellDescriptionsIndex,
       const int element,
-      const bool vetoSpawnBackgroundJobs);
+      const bool isAtRemoteBoundary);
 
-  void preProcess(
-      const int cellDescriptionsIndex,
-      const int element) const final override;
-
-  void postProcess(
+  void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) final override;
 
-  void prolongateDataAndPrepareDataRestriction(
-      const int cellDescriptionsIndex,
-      const int element) final override;
-
-  void restrictToNextParent(
-        const int fineGridCellDescriptionsIndex,
-        const int fineGridElement,
-        const int coarseGridCellDescriptionsIndex,
-        const int coarseGridElement) const final override;
-
-  void restrictToTopMostParent(
-      const int cellDescriptionsIndex,
-      const int element,
-      const int parentCellDescriptionsIndex,
-      const int parentElement,
-      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) final override;
+  void restriction(
+        const int cellDescriptionsIndex,
+        const int element) final override;
 
   ///////////////////////////////////
   // NEIGHBOUR

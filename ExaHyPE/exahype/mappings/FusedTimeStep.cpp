@@ -221,15 +221,18 @@ void exahype::mappings::FusedTimeStep::enterCell(
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
 
+        // this operates only on compute cells
         exahype::solvers::Solver::UpdateResult result =
             solver->fusedTimeStep(
                 fineGridCell.getCellDescriptionsIndex(),element,
                 exahype::State::isFirstIterationOfBatchOrNoBatch(),
                 exahype::State::isLastIterationOfBatchOrNoBatch(),
-                exahype::mappings::Prediction::vetoSpawnBackgroundJobs(
-                    fineGridVertices,fineGridVerticesEnumerator));
+                exahype::Cell::isAtRemoteBoundary(
+                    fineGridVertices,fineGridVerticesEnumerator)
+            );
 
-        solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+        // this operates only on helper cells
+        solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _solverFlags._meshUpdateRequest  [solverNumber] |= result._refinementRequested;
         _solverFlags._limiterDomainChange[solverNumber]  = std::max( _solverFlags._limiterDomainChange[solverNumber], result._limiterDomainChange );
@@ -268,7 +271,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictDataAndPostProcess(
+  exahype::mappings::Prediction::restrictData(
       fineGridCell,coarseGridCell,
       exahype::State::AlgorithmSection::TimeStepping);
 

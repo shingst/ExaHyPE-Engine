@@ -143,29 +143,12 @@ void exahype::mappings::UpdateAndReduce::enterCell(
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
 
-        // TODO(Dominic): Fuse methods below in a single virtual function
-        // solver->updateSolutionNonFused
-        solver->updateSolution(
-            fineGridCell.getCellDescriptionsIndex(),element,true);
-
-        exahype::solvers::Solver::UpdateResult result;
-        result._timeStepSize =
-            solver->startNewTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-
-        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-          result._limiterDomainChange =  // !!! limiter status must be updated before refinement crit is evaluated
-              limitingADERDGSolver->
-              updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
-                  fineGridCell.getCellDescriptionsIndex(),element);
-          result._refinementRequested |=
-              limitingADERDGSolver->evaluateRefinementCriterionAfterSolutionUpdate(
-                  fineGridCell.getCellDescriptionsIndex(),element);
-        } else {
-          result._refinementRequested |=
-              solver->evaluateRefinementCriterionAfterSolutionUpdate(
-                  fineGridCell.getCellDescriptionsIndex(),element);
-        }
+        exahype::solvers::Solver::UpdateResult result =
+            solver->update(
+                fineGridCell.getCellDescriptionsIndex(),element,
+                exahype::Cell::isAtRemoteBoundary(
+                    fineGridVertices,fineGridVerticesEnumerator)
+            );
 
         _solverFlags._meshUpdateRequest  [solverNumber] |= result._refinementRequested;
         _solverFlags._limiterDomainChange[solverNumber]  = std::max( _solverFlags._limiterDomainChange[solverNumber], result._limiterDomainChange );

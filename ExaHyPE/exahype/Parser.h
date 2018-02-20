@@ -298,7 +298,7 @@ class exahype::Parser {
    * \return if the predictor should be spawned as background
    * thread whenever this is possible.
    */
-  bool getSpawnPredictorAsBackgroundThread() const;
+  bool getSpawnPredictionAsBackgroundThread() const;
 
   double getTimestepBatchFactor() const;
   bool getSkipReductionInBatchedTimeSteps() const;

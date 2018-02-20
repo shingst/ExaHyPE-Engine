@@ -302,13 +302,6 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
   return NotFound;
 }
 
-exahype::solvers::Solver::SubcellPosition exahype::solvers::FiniteVolumesSolver::computeSubcellPositionOfCellOrAncestor(
-        const int cellDescriptionsIndex,
-        const int element) const {
-  SubcellPosition empty;
-  return empty;
-}
-
 ///////////////////////////////////
 // MODIFY CELL DESCRIPTION
 ///////////////////////////////////
@@ -717,12 +710,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnBackgroundJobs) {
+    const bool isAtRemoteBoundary) {
   UpdateResult result;
   if (
       isFirstIterationOfBatch ||
       isLastIterationOfBatch  ||
-      vetoSpawnBackgroundJobs
+      isAtRemoteBoundary
   ) {
     updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
     result._timeStepSize = startNewTimeStepFused(
@@ -733,6 +726,30 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
     return result;
   }
+}
+
+exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::update(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary){
+  UpdateResult result;
+
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  uncompress(cellDescription);
+
+  updateSolution(cellDescriptionsIndex,element,true);
+  result._timeStepSize = startNewTimeStep(cellDescriptionsIndex,element);
+
+  compress(cellDescription,isAtRemoteBoundary);
+  return result;
+}
+
+void exahype::solvers::FiniteVolumesSolver::compress(
+    const int cellDescriptionsIndex,
+    const int element,
+    const bool isAtRemoteBoundary) const {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  compress(cellDescription,isAtRemoteBoundary);
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
@@ -802,7 +819,7 @@ void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::prolongateDataAndPrepareDataRestriction(
+void exahype::solvers::FiniteVolumesSolver::prolongateAndPrepareRestriction(
     const int cellDescriptionsIndex,
     const int element) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
@@ -813,21 +830,10 @@ void exahype::solvers::FiniteVolumesSolver::prolongateDataAndPrepareDataRestrict
   assertionMsg(false,"Please implement!");
 }
 
-void exahype::solvers::FiniteVolumesSolver::restrictToNextParent(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const {
+void exahype::solvers::FiniteVolumesSolver::restriction(
+      const int cellDescriptionsIndex,
+      const int element) {
   // do nothing
-}
-
-void exahype::solvers::FiniteVolumesSolver::restrictToTopMostParent(
-    const int cellDescriptionsIndex,
-    const int element,
-    const int parentCellDescriptionsIndex,
-    const int parentElement,
-    const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
-  assertionMsg(false,"Please implement!");
 }
 
 ///////////////////////////////////
@@ -877,7 +883,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
         uncompress(cellDescription2);
       },
       peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	  peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
       true
     );
 
@@ -2002,18 +2008,18 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescription) {
+void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescription,const bool vetoSpawnBackgroundJob) const {
   assertion1( cellDescription.getCompressionState() ==  CellDescription::Uncompressed, cellDescription.toString() );
   if (CompressionAccuracy>0.0) {
-    if (SpawnCompressionAsBackgroundJob) {
+    if (!vetoSpawnBackgroundJob && SpawnCompressionAsBackgroundJob) {
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
       _NumberOfBackgroundJobs++;
       lock.free();
 
-      CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask,peano::datatraversal::TaskSet::TaskType::Background );
+      CompressionTask compressionJob( *this, cellDescription );
+      peano::datatraversal::TaskSet spawnedSet( compressionJob,peano::datatraversal::TaskSet::TaskType::Background );
     }
     else {
       determineUnknownAverages(cellDescription);
@@ -2142,36 +2148,8 @@ void exahype::solvers::FiniteVolumesSolver::computeHierarchicalTransform(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::preProcess(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
-  if (
-    cellDescription.getType()==CellDescription::Type::Cell
-  ) {
-    uncompress(cellDescription);
-  }
-}
-
-void exahype::solvers::FiniteVolumesSolver::postProcess(
-    const int cellDescriptionsIndex,
-    const int element) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
-  if (
-      cellDescription.getType()==CellDescription::Type::Cell
-      &&
-      CompressionAccuracy>0.0
-      &&
-      cellDescription.getCompressionState() == CellDescription::Uncompressed
-    ) {
-    compress(cellDescription);
-  }
-}
-
 exahype::solvers::FiniteVolumesSolver::CompressionTask::CompressionTask(
-  FiniteVolumesSolver&  solver,
+  const FiniteVolumesSolver&  solver,
   CellDescription&      cellDescription
 ):
   _solver(solver),

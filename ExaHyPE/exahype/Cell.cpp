@@ -187,7 +187,7 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
   return faceBarycentre;
 }
 
-bool exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+bool exahype::Cell::isAtRemoteBoundary(
     exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {
   bool result = false;

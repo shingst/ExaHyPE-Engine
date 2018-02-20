@@ -122,7 +122,7 @@ void exahype::mappings::PredictionRerun::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::performPredictionAndProlongateData(
+  exahype::mappings::Prediction::performPredictionOrProlongate(
         fineGridCell,
         fineGridVertices,fineGridVerticesEnumerator,
         exahype::State::AlgorithmSection::PredictionRerunAllSend);
@@ -141,7 +141,7 @@ void exahype::mappings::PredictionRerun::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictDataAndPostProcess(
+  exahype::mappings::Prediction::restrictData(
       fineGridCell,coarseGridCell,
       exahype::State::AlgorithmSection::TimeStepping);
 

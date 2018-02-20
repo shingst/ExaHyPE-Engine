@@ -82,8 +82,9 @@ public:
   static int MinimumAugmentationStatusForRefining;
 
   /**
-   * Semaphore for fine grid cells restricting volume data to a
-   * coarse grid parent which is a computationally intense operation.
+   * Semaphore for fine grid cells restricting face or
+   * volume data to a coarse grid parent which is a
+   * computationally intense operation.
    */
   static tarch::multicore::BooleanSemaphore RestrictionSemaphore;
 
@@ -184,8 +185,11 @@ private:
   /**
    * Different to compress(), this operation is called automatically by
    * mergeNeighbours(). Therefore the routine is private.
+   *
+   * \note This routine checks if a cell description is
+   * compressed. No previous check is necessary.
    */
-  void uncompress(exahype::records::ADERDGCellDescription& cellDescription) const;
+  void uncompress(CellDescription& cellDescription) const;
 
   /**
    * Mark a cell description of Cell for refinement or erasing based
@@ -458,7 +462,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool predictionCanBePerformedInBackground(
+  static bool isRestrictingOrInvolvedInProlongation(
       CellDescription& cellDescription);
 
   /**
@@ -690,11 +694,11 @@ private:
 
   class CompressionJob {
     private:
-      ADERDGSolver&     _solver;
+      const ADERDGSolver&     _solver;
       CellDescription&  _cellDescription;
     public:
       CompressionJob(
-        ADERDGSolver&     _solver,
+        const ADERDGSolver&     _solver,
         CellDescription&  _cellDescription
       );
 
@@ -1453,10 +1457,6 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  SubcellPosition computeSubcellPositionOfCellOrAncestor(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
@@ -1530,28 +1530,52 @@ public:
       const int element) override;
 
   /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
+   *
+   * \note Uncompresses the cell description arrays before calling
+   * performPredictionAndVolumeIntegral(CellDescription,bool)
+   *
+   * \see performPredictionAndVolumeIntegral(CellDescription,bool)
    */
   static void performPredictionAndVolumeIntegral(
       exahype::solvers::Solver* solver,
       const int cellDescriptionsIndex,
       const int element,
-      const bool vetoSpawnPredictionAsBackgroundJob);
+      const bool isAtRemoteBoundary);
 
   /**
    * Computes the space-time predictor quantities, extrapolates fluxes
    * and (space-time) predictor values to the boundary and
    * computes the volume integral.
+   * Further restricts face data up to coarser grids.
+   * Finally, compresses the patch again
    *
-   * \param[in] vetoSpawnBackgroundJobs  veto spawning the predictor as background job
+   * \note uncompress is performed in this routine. It must
+   * be called before calling this routine if compression is employed.
    *
    * \note Has no const modifier since kernels are not const functions.
+   *
+   * \param[in] isAtRemoteBoundary indicates that we are at a remote boundary.
+   *                               Plays a role in filtering out cells where we cannot
+   *                               start backgroudn tasks.
    */
   void performPredictionAndVolumeIntegral(
       CellDescription& cellDescription,
-      const bool vetoSpawnBackgroundJobs);
+      const double predictorTimeStamp,
+      const double predictorTimeStepSize,
+      const bool isAtRemoteBoundary);
 
-  void validateNoNansInADERDGSolver(
+  /**
+   * Valdiate that the data stored on and for
+   * the cell description is valid.
+   *
+   * \note Must only be called if the compression
+   * is currently not in progress, i.e. processed as
+   * a background task.
+   */
+  void validateCellDescriptionData(
       const CellDescription& cellDescription,
+      const bool validateTimeStepData,
+      const bool afterCompression,
       const std::string& methodTraceOfCaller) const;
 
   /**
@@ -1621,7 +1645,17 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnBackgroundJobs) final override;
+      const bool isAtRemoteBoundary) final override;
+
+  UpdateResult update(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) final override;
+
+  void compress(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) const final override;
 
   /**
    * Computes the surface integral contributions to the
@@ -1647,10 +1681,21 @@ public:
       CellDescription& cellDescription,
       const bool backupPreviousSolution=true);
 
+  /**
+   * Update the solution of a cell description.
+   *
+   * \note Make sure to reset neighbour merge
+   * helper variables in this method call.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
+   */
   void updateSolution(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) final override;
+      const bool backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -1675,23 +1720,24 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void preProcess(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
-  void postProcess(
+  void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void prolongateDataAndPrepareDataRestriction(
+  /** \copydoc Solver::restrict
+   *
+   * Restrict certain flags to the next
+   * parent and restrict data to the
+   * top most parent.
+   */
+  void restriction(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void restrictToNextParent(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const override;
+  /**
+   * Body of the restrict function.
+   */
+  void restriction(const CellDescription& fineGridCellDescription);
 
   /**
    * Restrict the Troubled limiter status of a cell
@@ -1699,20 +1745,37 @@ public:
    *
    * Any other limiter status is ignored.
    *
-   * \note This operation is not thread-safe
+   * \p This operation ensures thread-safety by using a lock.
+   *
+   * \note This function assumes a bottom-up traversal of the grid and must thus
+   * be called from the leaveCell(...) mapping method.
    */
-  void restrictLimiterStatus(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const;
+  void restrictToNextParent(
+      const CellDescription& cellDescription,
+      const int parentElement) const;
 
+  /**
+   * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)
+   * if and only if the fine grid cell (Cell) has a face which intersects with one of the top most parent
+   * cell's faces.
+   *
+   * \note This function is used to restrict face data to the top most
+   * parent. We skip all intermediate parents if they do not
+   * need to hold data (EmptyAncestor).
+   *
+   * \p This operation is always surrounded by
+   * a lock. No locks are required internally.
+   *
+   * \note This function assumes a bottom-up traversal of the grid and must thus
+   * be called from the leaveCell(...) or ascend(...) mapping methods.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   */
   void restrictToTopMostParent(
-      const int cellDescriptionsIndex,
-      const int element,
-      const int parentCellDescriptionsIndex,
-      const int parentElement,
-      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
+        const CellDescription& cellDescription,
+        const int parentCellDescriptionsIndex,
+        const int parentElement,
+        const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2217,9 +2280,12 @@ public:
    * However, we have to take care about the interplay of compression and
    * uncompression.
    *
-   * The routine is triggered indirectly through postProcess()/preProcess().
+   * \param[in] vetoSpawnAsBackgroundJob - switch for manually vetoing the spawning
+   *                                       of background jobs.
    */
-  void compress(exahype::records::ADERDGCellDescription& cellDescription);
+  void compress(
+      exahype::records::ADERDGCellDescription& cellDescription,
+      const bool vetoSpawnAsBackgroundJob) const;
 };
 
 #endif

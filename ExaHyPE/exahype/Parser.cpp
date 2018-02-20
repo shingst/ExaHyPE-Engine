@@ -565,7 +565,7 @@ double exahype::Parser::getFuseAlgorithmicStepsFactor() const {
   else return false;
 }
 
-bool exahype::Parser::getSpawnPredictorAsBackgroundThread() const {
+bool exahype::Parser::getSpawnPredictionAsBackgroundThread() const {
   std::string token = getTokenAfter("global-optimisation", "spawn-predictor-as-background-thread");
   logDebug("getSpawnPredictorAsBackgroundTask()", "found spawn-predictor-as-background-thread"
                                             << token);

@@ -145,6 +145,9 @@ public:
    * Reset the neighbour merge flags
    * and MPI neighbour exchange counters.
    *
+   * Further compress the solver data again if this
+   * is required.
+   *
    * We cannot validate that all merges have been
    * performed since we only consider MPI neighbour
    * exchange but no local exchange in this mapping.

@@ -104,13 +104,6 @@ private:
  public:
 
   /**
-   * \return true if we veto to spawn the prediction as background thread.
-   */
-  static bool vetoSpawnBackgroundJobs(
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
-
-  /**
    * This method first synchronises the time step sizes and time stamps, and
    * then resets the Riemann solve flags and the face data exchange counter for all
    * solvers for which a valid cell description was registered on this cell.
@@ -133,7 +126,7 @@ private:
    *
    * \see enterCellSpecification()
    */
-  static void performPredictionAndProlongateData(
+  static void performPredictionOrProlongate(
       const exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -165,7 +158,7 @@ private:
    * threads. See the documentation of peano::datatraversal::TasksSet for a
    * remark on this.
    */
-  static void restrictDataAndPostProcess(
+  static void restrictData(
       const exahype::Cell&                             fineGridCell,
       const exahype::Cell&                             coarseGridCell,
       const exahype::State::AlgorithmSection& algorithmSection);
@@ -238,7 +231,7 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * \see restrictDataAndPostProcess
+   * \see restrictData
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
