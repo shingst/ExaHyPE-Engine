@@ -84,6 +84,7 @@ namespace exahype {
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
   #endif
   typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
+  typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
   #ifdef ALIGNMENT
@@ -94,9 +95,9 @@ namespace exahype {
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
-    peano::heap::SynchronousDataExchanger< char, true, AlignedDoubleSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< char, true, AlignedDoubleSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, true, AlignedDoubleSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
     std::vector< char, AlignedAllocator >
   >     CompressedDataHeap;
   #else
