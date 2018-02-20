@@ -26,10 +26,18 @@ void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,cons
   
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-  initialdata_(x, &t, Q);
+  //initialdata_(x, &t, Q);
   }
 }
-
+/*
+void DIM::DIMSolver_FV::algebraicSource(const double* const Q,double* S) {
+	const int nVar = DIM::AbstractDIMSolver_FV::NumberOfVariables;
+  // @todo Please implement/augment if required
+  for(int m=0; m < nVar; m++) {
+	S[m]=0.0;  
+  }
+}
+*/
 void DIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
   // Dimensions             = 3
   // Number of variables    = 14 + #parameters
@@ -54,7 +62,7 @@ void DIM::DIMSolver_FV::boundaryValues(
 
   // @todo Please implement/augment if required
   double ti = t + 0.5 * dt;
-  initialdata_(x, &ti, Qgp);
+  //initialdata_(x, &ti, Qgp);
   for(int m=0; m < nVar; m++) {
         stateOutside[m] = Qgp[m];
   }
@@ -124,3 +132,4 @@ hllemriemannsolver_(&basisSize, &normalNonZero, fL,fR,qL, qR,QavL, QavR);
 return 2;
 //std::cout << "closed ---------------------"<< std::endl;	
 }
+

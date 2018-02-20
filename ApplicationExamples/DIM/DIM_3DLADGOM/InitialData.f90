@@ -42,14 +42,17 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	real	:: rr	
 
 	! Plane Wave limiter_value
-	!rr =sqrt(sum(xx(:)**2))
-	!rr=0.25-rr
-	!if(abs(rr).le. 0.25) then
-	!	limiter_value=1
-	!else
-	!	limiter_value=0
-	!end if
-	!return
+	if(ICFlag .eq. 'PlaneWave') then
+	rr =sqrt(sum(xx(:)**2))
+	rr=0.25-rr
+	if(abs(rr).le. 0.25) then
+		limiter_value=1
+	else
+		limiter_value=0
+	end if
+	!limiter_value=0
+	return
+	end if
 	!
 	
 	! Exclude the boundaries
@@ -67,7 +70,8 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!	return
 	!end if
 	if(ICFlag .eq. 'CGeom') then
-		rr = RadiusFromCG(xx(1),xx(2),xx(3))
+		!rr = RadiusFromCG(xx(1),xx(2),xx(3))
+		rr = xx(3)-1000.0
 		if(abs(rr)<500) then
 			limiter_value=1
 		else
@@ -123,10 +127,11 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
         r = x(3)
         !r = RadiusFromCG(x(1),x(2),x(3))
 		ICsig=200.0
-		r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
-        
+		!r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
+        r = x(3)-(1000.0+500.0*sin(x(1)))
 
         up(13)=SmoothInterface(r,ICsig,0.0,1)                 ! Get the smooth value of alpha for that value of r
+		
 		!up(13)=1.0
         ICx0=[0.0, 0.0, -1000.0]
         r = SQRT((x(1)-ICx0(1))**2 + (x(2)-ICx0(2))**2+(x(3)-ICx0(3))**2 ) 
@@ -233,11 +238,13 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		leng=15000.0
 		n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
 		
-		!CGEOMFile="CG.dat"			! DTM file
-		!center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
-		CGEOMFile="trient_003.txt"			! DTM file
-		center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
-		binary_input=.true.
+		CGEOMFile="CG.dat"			! DTM file
+		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
+		binary_input=.false.
+		
+		!CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
+		!center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
+		!binary_input=.true.
 		
 		!leng=15000.0
 		!center=(/600.0, 5110.0/)			! UTM coordinates of the center (with respect to the DTM data file)
@@ -252,7 +259,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 				read(8) scalefactor(1:3)
 				read(8) x_cg(1:nx_cg)
 				read(8) y_cg(1:ny_cg)
-				read(8,*) z_cg      
+				read(8) z_cg      
 			close(8)			
 		else
 			open(8, file=trim(CGEOMFile), action='read')

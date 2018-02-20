@@ -13,7 +13,8 @@
 #include "kernels/aderdg/generic/c/sizes.cpph"
 #include "kernels/KernelUtils.h" // matrix indexing
 
-DIM::ErrorWriter::ErrorWriter() : exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(){
+DIM::ErrorWriter::ErrorWriter() : exahype::plotters::ADERDG2UserDefined::ADERDG2UserDefined(),
+	errors("output/error-"){
   // @TODO Please insert your code here.
   	char name[10];
 	for(int m=0; m < nVar; m++) {

@@ -33,14 +33,14 @@ exahype-project DIM
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:4}
-    cores                    = 4
+    configure                = {background-tasks:8}
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:1}
+    configure                = {hotspot,fair,ranks_per_node:4}
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory
@@ -71,8 +71,8 @@ exahype-project DIM
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables                = 1
-    dmp-relaxation-parameter       = 1e-3 
-    dmp-difference-scaling         = 1e-4 
+    dmp-relaxation-parameter       = 1e+3 
+    dmp-difference-scaling         = 1e+4 
     steps-till-cured           = 5
     // helper-layers              = 2
 /*
@@ -96,14 +96,14 @@ exahype-project DIM
       repeat    = 1e-1
       output    = ./vtk-output-lim/dg
     end plot
-
+/*
      plot user::defined ErrorWriter
        variables const = 14
        time            = 0.0
        repeat          = 1e-1
        output          = ./output/errors
      end plot
-
+*/
     // Seismograms
 /*
    plot probe::ascii ProbeWriter 

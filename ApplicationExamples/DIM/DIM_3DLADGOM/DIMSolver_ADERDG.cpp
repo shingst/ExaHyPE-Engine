@@ -26,7 +26,7 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   // Number of variables + parameters  = 14 + 0
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-    initialdata_(x, &t, Q);
+   // initialdata_(x, &t, Q);
   }
 }
 
@@ -50,7 +50,7 @@ const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
      const double xi = kernels::gaussLegendreNodes[order][i];
      double ti = t + xi * dt;
 
-     initialdata_(x, &ti, Qgp);
+    // initialdata_(x, &ti, Qgp);
     //pdeflux_(F[0], F[1], F[2], Qgp);
 	flux(Qgp, F);
      for(int m=0; m < nVar; m++) {
@@ -59,7 +59,15 @@ const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
      }
   }
 }
-
+/*
+void DIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+	const int nVar = DIM::AbstractDIMSolver_ADERDG::NumberOfVariables;
+  // @todo Please implement/augment if required
+  for(int m=0; m < nVar; m++) {
+	S[m]=0.0;  
+  }
+}
+*/
 exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;

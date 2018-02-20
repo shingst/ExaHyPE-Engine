@@ -72,7 +72,7 @@ class DIM::DIMSolver_FV : public DIM::AbstractDIMSolver_FV {
 
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
 
-    
+	//void algebraicSource(const double* const Q,double* S) override;
     /**
      * Compute the flux tensor.
      *

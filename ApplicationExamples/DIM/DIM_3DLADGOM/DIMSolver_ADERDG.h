@@ -109,7 +109,7 @@ class DIM::DIMSolver_ADERDG : public DIM::AbstractDIMSolver_ADERDG {
      */
     void flux(const double* const Q,double** F) final override;
 
-
+	//void algebraicSource(const double* const Q,double* S) final override;
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
      * 

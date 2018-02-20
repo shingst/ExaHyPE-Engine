@@ -25,6 +25,6 @@
 	!CHARACTER(LEN=10), PARAMETER				:: ICFlag='CGeom'
     INTEGER, PARAMETER             :: nVar = 14                           ! The number of variables of the PDE system  
     INTEGER, PARAMETER             :: nLin = 12
-	REAL, PARAMETER             :: epsilon1 =1.e-4
+	REAL, PARAMETER             :: epsilon1 =1.e-3
 
   END MODULE Parameters  
