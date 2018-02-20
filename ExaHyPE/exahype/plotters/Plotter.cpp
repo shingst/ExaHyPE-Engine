@@ -57,7 +57,7 @@ tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotte
 
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
-        const exahype::Parser& parser,
+        const exahype::parser::Parser& parser,
         Device* device) :
         _solver(solverConfig),
         _identifier(parser.getIdentifierForPlotter(solverConfig, plotterConfig)),
@@ -122,7 +122,7 @@ exahype::plotters::Plotter::Plotter(
 
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
-        const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing)
+        const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing)
     : _solver(solverConfig),
       _identifier(parser.getIdentifierForPlotter(solverConfig, plotterConfig)),
       _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
@@ -472,7 +472,7 @@ exahype::plotters::Plotter::Plotter(
 
 exahype::plotters::Plotter::Plotter(
     const int solverConfig,const int plotterConfig,
-    const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
+    const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
     const int solverDataSource)
 : exahype::plotters::Plotter::Plotter(solverConfig,plotterConfig,parser,postProcessing) {
   _solver   = solverDataSource;

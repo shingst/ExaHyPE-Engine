@@ -12,7 +12,7 @@
 tarch::logging::Log Elastodynamics::MyElastodynamicsSolver::_log( "Elastodynamics::MyElastodynamicsSolver" );
 
 
-void Elastodynamics::MyElastodynamicsSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
+void Elastodynamics::MyElastodynamicsSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

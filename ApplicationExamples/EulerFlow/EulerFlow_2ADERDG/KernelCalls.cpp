@@ -26,7 +26,7 @@
 
 
 
-void kernels::initSolvers(exahype::Parser& parser) {
+void kernels::initSolvers(exahype::parser::Parser& parser) {
   {
   std::string profiler_identifier = parser.getProfilerIdentifier();
   std::string metrics_identifier_list = parser.getMetricsIdentifierList();

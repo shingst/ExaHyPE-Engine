@@ -33,12 +33,12 @@
 #include "peano/heap/CharHeap.h"
 #include "peano/heap/HeapAllocator.h"
 
+#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+
 #include "exahype/State.h"
 
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
-
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
 #if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
@@ -65,6 +65,9 @@ namespace exahype {
   class Cell;
   class Vertex;
 
+  namespace parser {
+  class ParserView;
+  }  // namespace parser
   /**
    * We store the degrees of freedom associated with the ADERDGCellDescription and FiniteVolumesCellDescription
    * instances on this heap.
@@ -1083,7 +1086,7 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
       const std::vector<std::string>& cmdlineargs,
-      const Parser::ParserView& constants) = 0;
+      const exahype::parser::ParserView& parserView) = 0;
 
   /**
    * \return true if the solver is computing in the current algorithmic section.

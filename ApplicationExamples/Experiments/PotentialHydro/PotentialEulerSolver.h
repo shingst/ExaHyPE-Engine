@@ -8,7 +8,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 
 #include <ostream>
@@ -33,14 +33,14 @@ class PotentialHydro::PotentialEulerSolver : public PotentialHydro::AbstractPote
      */
     static tarch::logging::Log _log;
   public:
-    PotentialEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    PotentialEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) final override;
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * @see FiniteVolumesSolver

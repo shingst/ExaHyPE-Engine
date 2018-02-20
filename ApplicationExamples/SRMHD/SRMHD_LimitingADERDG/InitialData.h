@@ -5,7 +5,7 @@
 #include <algorithm> // string lower
 #include <stdlib.h> // getenv
 
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 extern "C" {
 

@@ -14,7 +14,7 @@
 #ifndef _EXAHYPE_RUNNERS_RUNNER_H_
 #define _EXAHYPE_RUNNERS_RUNNER_H_
 
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
 #include "tarch/logging/Log.h"
 
 #include "exahype/State.h"
@@ -36,7 +36,7 @@ class exahype::runners::Runner {
  private:
   static tarch::logging::Log _log;
 
-  exahype::Parser& _parser;
+  exahype::parser::Parser& _parser;
   std::vector<std::string>& _cmdlineargs;
 
 
@@ -384,7 +384,7 @@ class exahype::runners::Runner {
   void preProcessTimeStepInSharedMemoryEnvironment();
   void postProcessTimeStepInSharedMemoryEnvironment();
  public:
-  explicit Runner(Parser& parser, std::vector<std::string>& cmdlineargs);
+  explicit Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs);
   virtual ~Runner();
 
   // Disallow copy and assignment

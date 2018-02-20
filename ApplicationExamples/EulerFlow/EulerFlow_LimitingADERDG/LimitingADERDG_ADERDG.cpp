@@ -7,7 +7,7 @@
 tarch::logging::Log Euler::LimitingADERDG_ADERDG::_log( "Euler::LimitingADERDG_ADERDG" );
 
 
-void Euler::LimitingADERDG_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
+void Euler::LimitingADERDG_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

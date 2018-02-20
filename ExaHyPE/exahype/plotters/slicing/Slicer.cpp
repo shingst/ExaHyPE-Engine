@@ -6,7 +6,7 @@
 #include "CartesianSlicer.h"
 
 #include "tarch/logging/Log.h"
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
 
 #include <sstream>
 
@@ -62,10 +62,10 @@ CartesianSlicer::CartesianSlicer(const dvec& _req, const ivec& _active, int _bas
 	
 CartesianSlicer* CartesianSlicer::fromSelectionQuery(const std::string& select) {
 	dvec r;
-	r(0) = Parser::getValueFromPropertyString(select, "x");
-	r(1) = Parser::getValueFromPropertyString(select, "y");
+	r(0) = exahype::parser::Parser::getValueFromPropertyString(select, "x");
+	r(1) = exahype::parser::Parser::getValueFromPropertyString(select, "y");
 	#if DIMENSIONS==3
-	r(2) = Parser::getValueFromPropertyString(select, "z");
+	r(2) = exahype::parser::Parser::getValueFromPropertyString(select, "z");
 	#endif
 	ivec ron;
 	// NaN means the property was not present in the select string
@@ -139,21 +139,21 @@ std::string CartesianSlicer::planeLabel() const {
 RegionSlicer* RegionSlicer::fromSelectionQuery(const std::string& select) {
 	dvec regionOfInterestLeftBottomFront, regionOfInterestRightTopBack;
 	double x;
-	x = Parser::getValueFromPropertyString( select, "left" );
+	x = exahype::parser::Parser::getValueFromPropertyString( select, "left" );
 	regionOfInterestLeftBottomFront(0) = x!=x ? defaultLeftBottomFront : x; // "-", min
-	x = Parser::getValueFromPropertyString( select, "bottom" );
+	x = exahype::parser::Parser::getValueFromPropertyString( select, "bottom" );
 	regionOfInterestLeftBottomFront(1) = x!=x ? defaultLeftBottomFront : x; // "-", min
 	#if DIMENSIONS==3
-	x = Parser::getValueFromPropertyString( select, "front" );
+	x = exahype::parser::Parser::getValueFromPropertyString( select, "front" );
 	regionOfInterestLeftBottomFront(2) = x!=x ? defaultLeftBottomFront : x; // "-", min
 	#endif
 	
-	x = Parser::getValueFromPropertyString( select, "right" );
+	x = exahype::parser::Parser::getValueFromPropertyString( select, "right" );
 	regionOfInterestRightTopBack(0) = x!=x ? defaultRightTopBack : x;
-	x = Parser::getValueFromPropertyString( select, "top" );
+	x = exahype::parser::Parser::getValueFromPropertyString( select, "top" );
 	regionOfInterestRightTopBack(1) = x!=x ? defaultRightTopBack : x;
 	#if DIMENSIONS==3
-	x = Parser::getValueFromPropertyString( select, "back" );
+	x = exahype::parser::Parser::getValueFromPropertyString( select, "back" );
 	regionOfInterestRightTopBack(2) = x!=x ? defaultRightTopBack : x;
 	#endif
 	

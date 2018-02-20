@@ -52,7 +52,7 @@ public class UserDefinedFiniteVolumesinC implements Solver {
     writer.write("\n\n\n");
     
     //    if (_hasConstants) {
-    //      writer.write(_projectName + "::" + _solverName + "::" + _solverName + "(int nodesPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler, exahype::Parser::ParserView parser):\n");
+    //      writer.write(_projectName + "::" + _solverName + "::" + _solverName + "(int nodesPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler, exahype::parser::ParserView parser):\n");
     //    }
     //    else {
     //      

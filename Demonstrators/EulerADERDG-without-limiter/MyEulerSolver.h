@@ -36,14 +36,14 @@ class EulerADERDG::MyEulerSolver : public EulerADERDG::AbstractMyEulerSolver {
     static double getInitialProfile(const double* const x);
 
   public:
-    MyEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    MyEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
 
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) final override;
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.

@@ -167,7 +167,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
     const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
     const std::vector<std::string>& cmdlineargs,
-    const exahype::Parser::ParserView& parserView) {
+    const exahype::parser::ParserView& parserView) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   _coarsestMeshLevel =

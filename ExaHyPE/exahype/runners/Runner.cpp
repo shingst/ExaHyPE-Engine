@@ -21,7 +21,6 @@
 #include "exahype/repositories/RepositoryFactory.h"
 #include "exahype/mappings/LoadBalancing.h"
 
-
 #include "tarch/Assertions.h"
 
 #include "tarch/logging/CommandLineLogger.h"
@@ -50,6 +49,8 @@
 #include "sharedmemoryoracles/OracleForOnePhaseWithGrainSizeSampling.h"
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"
 
+#include "exahype/parser/ParserView.h"
+
 #ifdef Parallel
 #include "mpibalancing/GreedyBalancing.h"
 #include "mpibalancing/FairNodePoolStrategy.h"
@@ -76,7 +77,7 @@
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
-exahype::runners::Runner::Runner(Parser& parser, std::vector<std::string>& cmdlineargs) :
+exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs) :
     _parser(parser),
     _cmdlineargs(cmdlineargs),
     _boundingBoxSize(0.0),
@@ -131,7 +132,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
+      int primaryRanksPerNode = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
       if (primaryRanksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
@@ -171,7 +172,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   // Configure answering behaviour of global node pool
   // =================================================
   //
-  if (_parser.getMPILoadBalancingType()==Parser::MPILoadBalancingType::Static) {
+  if (_parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static) {
     switch ( exahype::mappings::LoadBalancing::getLoadBalancingAnalysis() ) {
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy:
         logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins");
@@ -256,7 +257,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::BackgroundJob::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   switch (_parser.getMulticoreOracleType()) {
-  case Parser::MulticoreOracleType::Dummy:
+  case exahype::parser::Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
         "use dummy shared memory oracle");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -291,7 +292,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       )
     );
     break;
-  case Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
     logInfo("initSharedMemoryConfiguration()",
         "use learning autotuning shared memory oracle and allow restarts");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -302,7 +303,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
-  case Parser::MulticoreOracleType::AutotuningWithoutLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithoutLearning:
     logInfo("initSharedMemoryConfiguration()",
         "use autotuning shared memory oracle configuration but disable machine learning algorithm");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -310,7 +311,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
-  case Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
     logInfo("initSharedMemoryConfiguration()",
         "use autotuning shared memory oracle but disable search restarts");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -321,7 +322,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
-  case Parser::MulticoreOracleType::GrainSizeSampling:
+  case exahype::parser::Parser::MulticoreOracleType::GrainSizeSampling:
     logInfo("initSharedMemoryConfiguration()",
         "use shared memory oracle sampling");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -369,12 +370,12 @@ void exahype::runners::Runner::initDataCompression() {
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 #ifdef SharedMemoryParallelisation
   switch (_parser.getMulticoreOracleType()) {
-  case Parser::MulticoreOracleType::AutotuningWithoutLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithoutLearning:
     break;
-  case Parser::MulticoreOracleType::Dummy:
-  case Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
-  case Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
-  case Parser::MulticoreOracleType::GrainSizeSampling:
+  case exahype::parser::Parser::MulticoreOracleType::Dummy:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
+  case exahype::parser::Parser::MulticoreOracleType::GrainSizeSampling:
   #ifdef Parallel
     if (
       tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getNumberOfNodes()-1
@@ -635,7 +636,7 @@ int exahype::runners::Runner::run() {
 void exahype::runners::Runner::initSolvers() const {
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    auto->initSolver(
+    solver->initSolver(
       0.0,_domainOffset,_domainSize,_boundingBoxSize,
       _cmdlineargs,_parser.createParserView(solverNumber)
     );

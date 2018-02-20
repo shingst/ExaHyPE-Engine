@@ -99,7 +99,7 @@ int id_for_neighbors(int id[3][3], int i, int j) {
 tarch::logging::Log CA::CellularAutomata_FV::_log( "CA::CellularAutomata_FV" );
 
 
-void CA::CellularAutomata_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
+void CA::CellularAutomata_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // Draw some gnuplot files to proof the correctness of b6.
 }
 

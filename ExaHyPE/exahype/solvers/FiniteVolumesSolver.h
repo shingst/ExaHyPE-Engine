@@ -24,12 +24,13 @@
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
 
-#include "exahype/Parser.h"
-
 namespace exahype {
 namespace solvers {
 class FiniteVolumesSolver;
 }  // namespace solvers
+namespace parser {
+class ParserView;
+}  // namespace parser
 }  // namespace exahype
 
 /**
@@ -478,7 +479,9 @@ public:
     *
     * \param[in] cmdlineargs the command line arguments.
     */
-  virtual void init(const std::vector<std::string>& cmdlineargs,const Parser::ParserView& constants) = 0;
+  virtual void init(
+        const std::vector<std::string>& cmdlineargs,
+        const exahype::parser::ParserView& constants) = 0;
 
   void initSolver(
       const double timeStamp,
@@ -486,7 +489,7 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
       const std::vector<std::string>& cmdlineargs,
-      const exahype::Parser::ParserView& parserView) override;
+      const exahype::parser::ParserView& parserView) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;

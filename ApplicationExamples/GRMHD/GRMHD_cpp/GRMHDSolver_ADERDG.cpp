@@ -27,7 +27,7 @@ constexpr int nDim = DIMENSIONS;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
-void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
+void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());

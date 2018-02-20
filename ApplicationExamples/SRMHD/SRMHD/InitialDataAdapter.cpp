@@ -10,7 +10,7 @@
 #include "MHDSolver.h"
 
 // storage for the constants pointer
-exahype::Parser::ParserView* constants;
+exahype::parser::ParserView* constants;
 
 static const char* specfile_initialdata_key = "initialdata";
 

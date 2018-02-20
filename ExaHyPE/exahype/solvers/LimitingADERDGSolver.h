@@ -602,7 +602,7 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
       const std::vector<std::string>& cmdlineargs,
-      const exahype::Parser::ParserView& parserView) override;
+      const exahype::parser::ParserView& parserView) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;

@@ -8,7 +8,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 #include "AbstractEulerSolver_FV.h"
 
@@ -83,14 +83,14 @@ private:
   static tarch::logging::Log _log;
 
 public:
-  EulerSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants);
+  EulerSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
 
   /**
    * Initialise the solver.
    *
    * \param[in] cmdlineargs the command line arguments.
    */
-  void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) final override;
+  void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
   /**
    * Calls ::sodShockTube if constant 'reference' is set to 'sod'.

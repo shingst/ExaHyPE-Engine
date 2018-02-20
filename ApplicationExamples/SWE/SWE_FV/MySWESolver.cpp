@@ -13,7 +13,7 @@ const double grav= 9.81;
 
 
 
-void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
+void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   //logInfo( "init(...)", "SWE is called with these parameters:" );
   for(size_t i=0; i<cmdlineargs.size(); i++) {
   //  logInfo( "init(...)", "- argument " << i << ": " << cmdlineargs[i] );

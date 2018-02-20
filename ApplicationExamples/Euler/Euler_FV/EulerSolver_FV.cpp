@@ -9,7 +9,7 @@ tarch::logging::Log Euler::EulerSolver_FV::_log("Euler::EulerSolver_FV");
 
 Euler::EulerSolver_FV::Reference Euler::EulerSolver_FV::ReferenceChoice = Euler::EulerSolver_FV::Reference::EntropyWave;
 
-void Euler::EulerSolver_FV::init(const std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
+void Euler::EulerSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   if (constants.isValueValidString("reference")) {
     std::string reference = constants.getValueAsString("reference");
     

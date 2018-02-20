@@ -26,7 +26,7 @@ FV_BC* fvbc;
 // enable nan tracker
 #include <fenv.h>
 
-void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,exahype::Parser::ParserView& constants) {
+void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // try NaN catcher
   // feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 

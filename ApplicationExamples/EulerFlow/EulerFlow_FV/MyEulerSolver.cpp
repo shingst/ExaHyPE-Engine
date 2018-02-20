@@ -7,7 +7,7 @@
 #include "InitialData.h"
 #include "tarch/la/Vector.h"
 
-void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
+void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
 }
 
 bool Euler::MyEulerSolver::useAdjustSolution(

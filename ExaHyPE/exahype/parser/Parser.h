@@ -11,11 +11,13 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#ifndef EXAHYPE_PARSER
-#define EXAHYPE_PARSER
+#ifndef EXAHYPE_PARSER_Parser_H
+#define EXAHYPE_PARSER_Parser_H
 
 namespace exahype {
+namespace parser {
 class Parser;
+}
 }
 
 #include <iostream>
@@ -51,111 +53,8 @@ class Parser;
  *
  * @author Tobias Weinzierl, Dominic Etienne Charrier, Sven Koeppel
  */
-class exahype::Parser {
- public:
-  /**
-   * View on the parser
-   *
-   * An instance of this class is a parser view. While the parser sees the
-   * whole specification file, a view only 'sees' the fragment that is
-   * specific to one solver. As such, we do pass it to solvers (that hold
-   * constants) and then allow these solvers to read their data from the
-   * config file.
-   *
-   * From the user's point of view, this class provides access to key-value
-   * pairs. If you have an instruction alike
-   * <pre>
-  constants         = {rho:0.4567,gamma:-4,alpha:4.04e-5,file:output}
-     </pre>
-   * in your
-   *
-   * @author Tobias Weinzierl
-   */
-  class ParserView {
-   private:
-    Parser& _parser;
-    int _solverNumberInSpecificationFile;
-
-    /**
-     * @return Value for given key. Returns the empty string if there is no
-     *         value. Returns empty string "" if the key does not exist.
-     */
-    std::string getValue(const std::string& key) const;
-
-   public:
-    ParserView(Parser& parser, int solverNumberInSpecificationFile);
-
-    /**
-     * You may use keys without a value. This operation allows you to check
-     * whether there are such keys. Furthermore, you might use this guy as
-     * a preamble to the other getters.
-     */
-    bool hasKey(const std::string& key) const;
-
-    /**
-     * Please ensure that isValueValidXXX holds before you invoke this
-     * operation.
-     */
-    bool getValueAsBool(const std::string& key) const;
-
-    /**
-     * Please ensure that isValueValidXXX holds before you invoke this
-     * operation.
-     */
-    int getValueAsInt(const std::string& key) const;
-
-    /**
-     * Please ensure that isValueValidXXX holds before you invoke this
-     * operation.
-     */
-    double getValueAsDouble(const std::string& key) const;
-
-    /**
-     * Please ensure that isValueValidXXX holds before you invoke this
-     * operation.
-     */
-    std::string getValueAsString(const std::string& key) const;
-
-    /**
-     * Returns the contents of this ParserView as a map, i.e. the keys
-     * mapped to the values which remain as strings (uncasted to their
-     * native description, i.e. bool,int,double).
-     * 
-     * @see getAllAsOrderedMap()
-     **/
-    std::map<std::string, std::string> getAllAsMap() const;
-
-    /**
-     * Returns the contents of this ParserView as an "ordered map", i.e
-     * a vector of key -> value pairs.
-     * 
-     * @see getAllAsMap()
-     **/
-    std::vector< std::pair<std::string, std::string> > getAllAsOrderedMap() const;
-
-    bool isValueValidBool(const std::string& key) const;
-    bool isValueValidInt(const std::string& key) const;
-    bool isValueValidDouble(const std::string& key) const;
-    bool isValueValidString(const std::string& key) const;
-
-    /**
-     * Access the Parser. Can be helpful for obtaining information beyond the
-     * solver constants which are represented by this object.
-     **/
-    const Parser& getParser() const;
-
-    /**
-     * Returns a short string representation of this ParserView. It mentions the
-     * Parser Filename as well as the ParserView's solver name.
-     **/
-    std::string toString() const;
-
-    /**
-     * \see toString()
-     **/
-    void toString(std::ostream& out) const;
-  };
-
+class exahype::parser::Parser {
+  friend class ParserView;
  private:
   static tarch::logging::Log _log;
 
@@ -457,7 +356,7 @@ class exahype::Parser {
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
 
-  ParserView createParserView(int solverNumber);
+  exahype::parser::ParserView createParserView(int solverNumber);
 
   /**
    * Returns an empty string if no log file is specified in the file.

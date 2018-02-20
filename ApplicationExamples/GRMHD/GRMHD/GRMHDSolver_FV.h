@@ -11,7 +11,7 @@
 #include <ostream>
 
 #include "AbstractGRMHDSolver_FV.h"
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 /**
  * We use Peano's logging
@@ -30,14 +30,14 @@ class GRMHD::GRMHDSolver_FV : public GRMHD::AbstractGRMHDSolver_FV {
      */
     static tarch::logging::Log _log;
   public:
-    GRMHDSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants);
+    GRMHDSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) final override;
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * @see FiniteVolumesSolver

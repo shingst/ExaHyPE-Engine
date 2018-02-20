@@ -13,7 +13,7 @@
 tarch::logging::Log EulerADERDG::MyEulerSolver::_log( "EulerADERDG::MyEulerSolver" );
 
 
-void EulerADERDG::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
+void EulerADERDG::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

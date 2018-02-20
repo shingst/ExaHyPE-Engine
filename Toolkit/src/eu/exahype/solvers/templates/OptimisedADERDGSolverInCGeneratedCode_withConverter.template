@@ -15,7 +15,7 @@
 #include "kernels/aderdg/optimised/converter.h"
 
 
-{{Project}}::{{Solver}}::{{Solver}}(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs{{SolverConstructorSignatureExtension}}):
+{{Project}}::{{Solver}}::{{Solver}}(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping{{SolverConstructorSignatureExtension}}):
   exahype::solvers::ADERDGSolver("{{Solver}}",nVar /* numberOfUnknowns */,nParams /* numberOfParameters */,order + 1  /* nodesPerCoordinateAxis */,maximumMeshSize,timeStepping{{SolverConstructorArgumentExtension}}) {
 }
 
