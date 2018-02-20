@@ -1,6 +1,6 @@
 #include "MyElasticWaveSolver.h"
 
-void ElasticWave::MyElasticWaveSolver::init(std::vector<std::string>& cmdlineargs) {
+void ElasticWave::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 

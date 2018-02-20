@@ -36,7 +36,7 @@ class GPR::GPRSolver_FV : public GPR::AbstractGPRSolver_FV {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
 
     /**
      * @see FiniteVolumesSolver

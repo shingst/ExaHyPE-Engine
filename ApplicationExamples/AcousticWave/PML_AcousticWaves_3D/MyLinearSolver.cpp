@@ -8,7 +8,7 @@
 tarch::logging::Log Linear::MyLinearSolver::_log( "Linear::MyLinearSolver" );
 
 
-void Linear::MyLinearSolver::init(std::vector<std::string>& cmdlineargs) {
+void Linear::MyLinearSolver::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 

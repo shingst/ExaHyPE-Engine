@@ -7,7 +7,7 @@
 tarch::logging::Log Euler::LimitingADERDG_ADERDG::_log( "Euler::LimitingADERDG_ADERDG" );
 
 
-void Euler::LimitingADERDG_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void Euler::LimitingADERDG_ADERDG::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 

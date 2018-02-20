@@ -24,7 +24,6 @@ exahype-project Euler
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./Benchmarks/archer/Euler_ADERDG
   architecture const      = knl
-  log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 3

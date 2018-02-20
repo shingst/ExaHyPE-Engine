@@ -9,7 +9,7 @@
 tarch::logging::Log EulerADERDG::MyEulerSolver_ADERDG::_log( "EulerADERDG::MyEulerSolver_ADERDG" );
 
 
-void EulerADERDG::MyEulerSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void EulerADERDG::MyEulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 

@@ -17,7 +17,7 @@
 #include <memory>
 #include <cstring> // memset
 
-void Euler::MyEulerSolver::init(std::vector<std::string>& cmdlineargs) {
+void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs) {
   // This function is called inside the generated constructor.
   // @todo Please implement/augment if required
 

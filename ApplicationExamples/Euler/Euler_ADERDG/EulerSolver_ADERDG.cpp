@@ -27,7 +27,7 @@ tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG")
 
 Euler::EulerSolver_ADERDG::Reference Euler::EulerSolver_ADERDG::ReferenceChoice = Euler::EulerSolver_ADERDG::Reference::EntropyWave;
 
-void Euler::EulerSolver_ADERDG::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
+void Euler::EulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
   if (constants.isValueValidString("reference")) {
     std::string reference = constants.getValueAsString("reference");
     

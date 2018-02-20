@@ -38,7 +38,7 @@ class SWE::MySWESolver: public SWE::AbstractMySWESolver {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
     
     /**
      * We have to adjust the solution exactly once at t=0 to set the initial

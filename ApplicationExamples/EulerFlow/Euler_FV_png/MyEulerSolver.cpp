@@ -12,7 +12,7 @@ tarch::logging::Log Euler::MyEulerSolver::_log( "Euler::MyEulerSolver" );
 
 picopng::Image Image;
 
-void Euler::MyEulerSolver::init(std::vector<std::string>& cmdlineargs) {
+void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs) {
 	// Reading in Initial Data at startup
 	// You might pass your own PNG file on the command line next to the specfile.
 	const char* imagename = cmdlineargs.size() > 1 ? cmdlineargs.back().c_str() : "logo.png";

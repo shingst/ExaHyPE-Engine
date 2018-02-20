@@ -45,7 +45,7 @@ class SRHD::SRHDSolver_ADERDG: public exahype::solvers::ADERDGSolver {
     void volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
     void volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
 
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
     void eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda);
     void flux(const double* const Q,double** F);
     void source(const double* const Q,double* S);

@@ -13,7 +13,7 @@
 tarch::logging::Log GPR::GPRSolver_FV::_log( "GPR::GPRSolver_FV" );
 
 
-void GPR::GPRSolver_FV::init(std::vector<std::string>& cmdlineargs) {
+void GPR::GPRSolver_FV::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 

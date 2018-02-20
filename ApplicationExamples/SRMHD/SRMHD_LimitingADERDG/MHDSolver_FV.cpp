@@ -6,7 +6,7 @@
 
 #include <memory>
 
-void MHD::MHDSolver_FV::init(std::vector<std::string>& cmdlineargs) {
+void MHD::MHDSolver_FV::init(const std::vector<std::string>& cmdlineargs) {
   // All the work is done in MHDSolver_ADERDG::init.
 }
 

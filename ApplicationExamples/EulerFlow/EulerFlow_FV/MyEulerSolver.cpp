@@ -7,7 +7,7 @@
 #include "InitialData.h"
 #include "tarch/la/Vector.h"
 
-void Euler::MyEulerSolver::init(std::vector<std::string>& cmdlineargs) {
+void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs) {
 }
 
 bool Euler::MyEulerSolver::useAdjustSolution(

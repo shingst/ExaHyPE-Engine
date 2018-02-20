@@ -41,7 +41,7 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
 
     /**
      * Patchwise adjust

@@ -40,7 +40,7 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
     
     /**
      * Check if we need to adjust the conserved variables and parameters (together: Q) in a cell

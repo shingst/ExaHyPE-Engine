@@ -35,7 +35,7 @@ class GPR::GPRSolver_ADERDG : public GPR::AbstractGPRSolver_ADERDG {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
 
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.

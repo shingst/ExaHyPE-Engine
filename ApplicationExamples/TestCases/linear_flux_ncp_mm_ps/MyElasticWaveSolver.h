@@ -36,7 +36,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
 
     /**
      * Patchwise adjust

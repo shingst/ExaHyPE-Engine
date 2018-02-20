@@ -40,7 +40,7 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs);
     
    
     

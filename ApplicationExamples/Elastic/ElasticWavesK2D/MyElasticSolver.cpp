@@ -2,7 +2,7 @@
 
 #include "MyElasticSolver_Variables.h"
 
-void Elastic::MyElasticSolver::init(std::vector<std::string>& cmdlineargs) {
+void Elastic::MyElasticSolver::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 

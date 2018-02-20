@@ -12,7 +12,7 @@ const double grav= 9.81;
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
 
-void SWE::MySWESolver::init(std::vector<std::string>& cmdlineargs) {
+void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs) {
   logInfo( "init(...)", "SWE is called with these parameters:" );
   for(size_t i=0; i<cmdlineargs.size(); i++) {
     logInfo( "init(...)", "- argument " << i << ": " << cmdlineargs[i] );

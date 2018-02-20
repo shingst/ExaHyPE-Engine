@@ -9,7 +9,7 @@
 tarch::logging::Log GridDemonstrator::GridDemonstrator_ADERDG::_log( "GridDemonstrator::GridDemonstrator_ADERDG" );
 
 
-void GridDemonstrator::GridDemonstrator_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void GridDemonstrator::GridDemonstrator_ADERDG::init(const std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 
