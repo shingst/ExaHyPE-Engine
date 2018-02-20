@@ -136,10 +136,6 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
             );
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
-
-    lock.lock();
-    finishedWait = _NumberOfBackgroundJobs == 0;
-    lock.free();
   }
 }
 
