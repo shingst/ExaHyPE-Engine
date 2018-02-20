@@ -37,7 +37,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants);
+    void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) final override;
 
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.

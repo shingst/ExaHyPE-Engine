@@ -85,7 +85,7 @@ public:
    *
    * \param[in] cmdlineargs the command line arguments.
    */
-  void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants);
+  void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) final override;
 
   /**
    * Calls ::sodShockTube if constant 'reference' is set to 'sod'.

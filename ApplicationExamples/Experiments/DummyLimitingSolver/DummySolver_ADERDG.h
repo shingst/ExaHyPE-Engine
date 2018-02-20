@@ -35,7 +35,7 @@ class Dummy::DummySolver_ADERDG : public Dummy::AbstractDummySolver_ADERDG {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs) final override;
 
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.

@@ -36,7 +36,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs) final override;
 
     /**
      * Patchwise adjust

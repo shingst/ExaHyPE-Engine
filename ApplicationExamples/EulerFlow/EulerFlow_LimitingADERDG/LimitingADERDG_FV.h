@@ -36,7 +36,7 @@ class Euler::LimitingADERDG_FV : public Euler::AbstractLimitingADERDG_FV {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs) final override;
 
     /**
      * @see FiniteVolumesSolver

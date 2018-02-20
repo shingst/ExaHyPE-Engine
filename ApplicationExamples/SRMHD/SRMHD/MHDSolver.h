@@ -28,7 +28,7 @@ class SRMHD::MHDSolver: public SRMHD::AbstractMHDSolver {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs) final override;
     
    
     

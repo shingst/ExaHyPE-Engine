@@ -32,7 +32,7 @@ class SRHD::SRHDSolver_FV : public exahype::solvers::FiniteVolumesSolver {
 	
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut);
   private:
-  	void init(const std::vector<std::string>& cmdlineargs);
+  	void init(const std::vector<std::string>& cmdlineargs) final override;
     static void adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q);
     static void eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda);
     static void flux(const double* const Q,double** F);
