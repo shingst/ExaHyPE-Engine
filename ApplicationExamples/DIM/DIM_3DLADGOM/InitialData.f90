@@ -236,16 +236,16 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		print *, MyOffset
 		print *, "**********************************************************"
 	if(ICFlag .eq. 'CGeom' .and. ndim .eq. 3) then
-		leng=15000.0
+		!leng=15000.0
 		n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
 		
-		CGEOMFile="CG.dat"			! DTM file
-		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
-		binary_input=.false.
+		!CGEOMFile="CG.dat"			! DTM file
+		!center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
+		!binary_input=.false.
 		
-		!CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
-		!center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
-		!binary_input=.true.
+		CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
+		center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
+		binary_input=.true.
 		
 		!leng=15000.0
 		!center=(/600.0, 5110.0/)			! UTM coordinates of the center (with respect to the DTM data file)
@@ -341,7 +341,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		
         xL_cg=x_cg(1)
         xR_cg=x_cg(nx_cg)
-        yL_cg=x_cg(1)
+        yL_cg=y_cg(1)
         yR_cg=y_cg(ny_cg)
         dx_cg=(xR_cg-xL_cg)/nx_cg
         dy_cg=(yR_cg-yL_cg)/ny_cg
