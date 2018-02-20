@@ -166,8 +166,8 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
     const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-    std::vector<std::string>& cmdlineargs
-) {
+    const std::vector<std::string>& cmdlineargs,
+    const exahype::Parser::ParserView& parserView) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   _coarsestMeshLevel =
@@ -175,8 +175,8 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
 
   _limiterDomainChange=LimiterDomainChange::Regular;
 
-  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs);
-  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs);
+  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
+  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(

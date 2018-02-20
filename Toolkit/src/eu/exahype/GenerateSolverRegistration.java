@@ -218,10 +218,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( new " + _projectName +
                           "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), 0, 0, parser.getTimeStepping("+_kernelNumber+"), cmdlineargs"+
                            (_enableProfiler ? ", std::move(profiler)": ""));
-      if (node.getConstants()!=null) {
-          _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-      }
-      _methodBodyWriter.write( "  ));\n");
+      _methodBodyWriter.write( " ));\n");
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n\n");
       _methodBodyWriter.write("  \n");
   
@@ -265,9 +262,6 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
                           "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+"),"+
                           "cmdlineargs"+
                           (_enableProfiler ? ", std::move(profiler)": ""));
-      if (node.getConstants()!=null) {
-        _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-      }
       _methodBodyWriter.write( " ));\n");
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n\n");
       _methodBodyWriter.write("  \n");
@@ -335,9 +329,6 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
                           "::" + solverNameADERDG+"(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getDMPObservables("+_kernelNumber+"), parser.getLimiterHelperLayers("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
                            (_enableProfiler ? ", std::move(profiler)": "")+
                            ", cmdlineargs");
-      if (node.getConstants()!=null) {
-          _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-        }
       _methodBodyWriter.write( ");\n");
   
       _methodBodyWriter.write("  }\n");
@@ -353,9 +344,6 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
                           "::" + solverNameFV+"(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
                           (_enableProfiler ? ", std::move(profiler)": "")+
                           ",cmdlineargs");
-      if (node.getConstants()!=null) {
-        _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-      }
       _methodBodyWriter.write( ");\n");
       _methodBodyWriter.write("  }\n");
       

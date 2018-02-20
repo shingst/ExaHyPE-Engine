@@ -71,7 +71,7 @@ public class OptimisedADERDG implements Solver {
     //boolean
     context.put("enableProfiler"        , enableProfiler);
     context.put("enableDeepProfiler"    , enableDeepProfiler);
-    context.put("hasConstants"          , hasConstants);
+    // context.put("hasConstants"          , hasConstants);
     context.put("isLinear"              , isLinear);
     context.put("useFlux"               , useFlux);
     context.put("useSource"             , useSource);
@@ -109,14 +109,14 @@ public class OptimisedADERDG implements Solver {
   @Override
   public void writeHeader(java.io.BufferedWriter writer) throws IOException, IllegalArgumentException {
     //reuse the generic template
-	  final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/GenericADERDGSolverHeader.template");
+	  final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/ADERDGSolverHeader.template");
 	  writer.write(templateEngine.render(template, context));
   }
   
   @Override
   public void writeUserImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
       //reuse the generic template
-    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/GenericADERDGSolverInCUserCode.template");
+    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/ADERDGSolverInCUserCode.template");
     writer.write(templateEngine.render(template, context));
   }
   

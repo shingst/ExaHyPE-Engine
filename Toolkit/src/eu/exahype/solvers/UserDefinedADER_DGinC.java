@@ -52,12 +52,13 @@ public class UserDefinedADER_DGinC implements Solver {
     writer.write("#include \"" + _solverName + ".h\"\n");
     writer.write("\n\n\n");
     
-    if (_hasConstants) {
-      writer.write(_projectName + "::" + _solverName + "::" + _solverName + "(int nodesPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler, exahype::Parser::ParserView constants):\n");
-    }
-    else {
-      writer.write(_projectName + "::" + _solverName + "::" + _solverName + "(int nodesPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler):\n");
-    }
+    //    if (_hasConstants) {
+    //      writer.write(_projectName + "::" + _solverName + "::" + _solverName + "(int nodesPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler, exahype::Parser::ParserView constants):\n");
+    //    }
+    //    else {
+    //      
+    //    }
+    writer.write(_projectName + "::" + _solverName + "::" + _solverName + "(int nodesPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler):\n");
 
     writer.write("  exahype::solvers::ADERDGSolver("
             + "\""+_solverName+"\", "+_numberOfVariables+" /* numberOfVariables */, "+_numberOfParameters+" /* numberOfParameters */, nodesPerCoordinateAxis, maximumMeshSize, timeStepping, std::move(profiler)) {\n");

@@ -6,7 +6,7 @@
 tarch::logging::Log {{project}}::{{solver}}::_log( "{{project}}::{{solver}}" );
 
 
-void {{project}}::{{solver}}::init(std::vector<std::string>& cmdlineargs{% if hasConstants %} , exahype::Parser::ParserView& constants {% endif %}) {
+void {{project}}::{{solver}}::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

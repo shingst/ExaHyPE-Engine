@@ -52,7 +52,7 @@ public class GenericFiniteVolumesInC implements Solver {
     
     //boolean
     context.put("enableProfiler"    , enableProfiler);
-    context.put("hasConstants"      , hasConstants);
+    //context.put("hasConstants"      , hasConstants);
     context.put("useFlux"           , useFlux);
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);

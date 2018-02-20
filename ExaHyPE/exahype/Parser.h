@@ -457,7 +457,7 @@ class exahype::Parser {
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
 
-  ParserView getParserView(int solverNumber);
+  ParserView createParserView(int solverNumber);
 
   /**
    * Returns an empty string if no log file is specified in the file.

@@ -59,7 +59,7 @@ public class GenericADERDG implements Solver {
     
     //boolean
     context.put("enableProfiler"        , enableProfiler);
-    context.put("hasConstants"          , hasConstants);
+    // context.put("hasConstants"          , hasConstants);
     context.put("isLinear"              , isLinear);
     context.put("isFortran"             , isFortran);
     context.put("useFlux"               , useFlux);
@@ -98,14 +98,14 @@ public class GenericADERDG implements Solver {
   @Override
   public void writeHeader(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
     final String template = IOUtils.convertRessourceContentToString(
-        "eu/exahype/solvers/templates/GenericADERDGSolverHeader.template");
+        "eu/exahype/solvers/templates/ADERDGSolverHeader.template");
     writer.write(templateEngine.render(template, context));
   }
   
   @Override
   public void writeUserImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
     final String template = IOUtils.convertRessourceContentToString(
-        "eu/exahype/solvers/templates/GenericADERDGSolverInCUserCode.template");
+        "eu/exahype/solvers/templates/ADERDGSolverInCUserCode.template");
     writer.write(templateEngine.render(template, context));
   }
   

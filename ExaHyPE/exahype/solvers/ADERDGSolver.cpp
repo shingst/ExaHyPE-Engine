@@ -831,7 +831,8 @@ void exahype::solvers::ADERDGSolver::initSolver(
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
     const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
-    std::vector<std::string>& cmdlineargs
+    const std::vector<std::string>& cmdlineargs,
+    const exahype::Parser::ParserView& parserView
 ) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
@@ -848,7 +849,7 @@ void exahype::solvers::ADERDGSolver::initSolver(
 
   _meshUpdateRequest = true;
 
-  init(cmdlineargs); // call user define initalisiation
+  init(cmdlineargs,parserView); // call user define initalisiation
 }
 
 bool exahype::solvers::ADERDGSolver::isPerformingPrediction(

@@ -633,8 +633,12 @@ int exahype::runners::Runner::run() {
 }
 
 void exahype::runners::Runner::initSolvers() const {
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    p->initSolver(0.0,_domainOffset,_domainSize,_boundingBoxSize,_cmdlineargs);
+  for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+    auto->initSolver(
+      0.0,_domainOffset,_domainSize,_boundingBoxSize,
+      _cmdlineargs,_parser.createParserView(solverNumber)
+    );
   }
 }
 

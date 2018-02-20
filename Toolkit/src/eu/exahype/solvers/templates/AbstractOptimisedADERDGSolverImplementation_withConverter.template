@@ -42,9 +42,8 @@
 #include <stdio.h>
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
-{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}, exahype::Parser::ParserView constants{% endif %}):
+{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}):
   {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler) {%- endif %}) {
-  init(cmdlineargs {%- if hasConstants %}, constants{% endif %});
 }
 
 

@@ -1236,7 +1236,7 @@ std::string exahype::Parser::getTokenStreamAsString() const {
   return ret.str();
 }
 
-exahype::Parser::ParserView exahype::Parser::getParserView(int solverNumber) {
+exahype::Parser::ParserView exahype::Parser::createParserView(int solverNumber) {
   return ParserView(*this, solverNumber);
 }
 

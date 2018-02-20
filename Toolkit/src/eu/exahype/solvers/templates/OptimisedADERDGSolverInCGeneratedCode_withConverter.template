@@ -17,9 +17,9 @@
 
 {{Project}}::{{Solver}}::{{Solver}}(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs{{SolverConstructorSignatureExtension}}):
   exahype::solvers::ADERDGSolver("{{Solver}}",nVar /* numberOfUnknowns */,nParams /* numberOfParameters */,order + 1  /* nodesPerCoordinateAxis */,maximumMeshSize,timeStepping{{SolverConstructorArgumentExtension}}) {
-  init(cmdlineargs);
-  // PS: If you miss access to user constants here,enable them in the toolkit
 }
+
+
 
 //TODO JMG remove when not needed anymore
 void {{Project}}::{{Solver}}::fluxSplitted(const double* const Q, double* f, double* g{{fluxSplitted_h_signature}}) {
