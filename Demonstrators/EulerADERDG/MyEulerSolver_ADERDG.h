@@ -36,7 +36,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(const std::vector<std::string>& cmdlineargs) final override;
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) final override;
     
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.

@@ -15,7 +15,7 @@ void adjustedsolutionvalues_(const double* const x,const double* w,const double*
 }/* extern "C" */
 
 
-void MHDSolver::MHDSolver::init(const std::vector<std::string>& cmdlineargs) {
+void MHDSolver::MHDSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // This function is called by the constructor.
   // You can access spec file parameters as well as command line arguments (argv as std::vector).
   // @todo Please implement/augment if required.

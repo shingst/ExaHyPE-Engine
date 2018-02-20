@@ -19,7 +19,7 @@ ElasticWaveEquation3D::ElasticWaveEquation::ElasticWaveEquation(double maximumMe
 }
 
 
-void ElasticWaveEquation3D::ElasticWaveEquation::init(const std::vector<std::string>& cmdlineargs) {
+void ElasticWaveEquation3D::ElasticWaveEquation::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

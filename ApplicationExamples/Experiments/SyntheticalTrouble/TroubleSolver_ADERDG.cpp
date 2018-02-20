@@ -18,7 +18,7 @@ constexpr double magicProof = 12345;
 // Number of variables + parameters  = 10 + 0
 
 
-void Synthetical::TroubleSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs) {
+void Synthetical::TroubleSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

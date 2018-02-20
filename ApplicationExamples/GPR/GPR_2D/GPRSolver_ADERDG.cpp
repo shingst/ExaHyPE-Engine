@@ -14,7 +14,7 @@
 tarch::logging::Log GPR::GPRSolver_ADERDG::_log( "GPR::GPRSolver_ADERDG" );
 
 
-void GPR::GPRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs) {
+void GPR::GPRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

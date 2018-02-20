@@ -1,6 +1,6 @@
 #include "MyScalarWaveSolver.h"
 
-void ScalarWave::MyScalarWaveSolver::init(const std::vector<std::string>& cmdlineargs) {
+void ScalarWave::MyScalarWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

@@ -13,7 +13,7 @@
 tarch::logging::Log Linear::MyLinearSolver::_log( "Linear::MyLinearSolver" );
 
 
-void Linear::MyLinearSolver::init(const std::vector<std::string>& cmdlineargs) {
+void Linear::MyLinearSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   static tarch::logging::Log _log("MyLinearSolver::init");
   // @todo Please implement/augment if required
 }

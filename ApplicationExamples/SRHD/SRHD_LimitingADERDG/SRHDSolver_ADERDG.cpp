@@ -12,7 +12,7 @@ void pdeflux_(double* F, const double* const Q);
 void pdeeigenvalues_(double* lambda, const double* const Q, const double* nv);
 }
 
-void SRHD::SRHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs){
+void SRHD::SRHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants){
   // implement if wanted
 }
 

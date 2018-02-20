@@ -1,6 +1,6 @@
 #include "MyAcousticWaveSolver.h"
 
-void AcousticWave::MyAcousticWaveSolver::init(const std::vector<std::string>& cmdlineargs) {
+void AcousticWave::MyAcousticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

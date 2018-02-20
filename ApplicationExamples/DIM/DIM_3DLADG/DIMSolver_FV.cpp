@@ -14,7 +14,7 @@
 tarch::logging::Log DIM::DIMSolver_FV::_log( "DIM::DIMSolver_FV" );
 
 
-void DIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs) {
+void DIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
     std::cout << " ==================================================================================" << std::endl;
 	readcgfile_();

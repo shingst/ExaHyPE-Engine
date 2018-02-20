@@ -31,7 +31,7 @@
 ///// This is a nonconservative version of the EulerSolver written by SvenK
 ///// for JM at 2017-10-24.
 
-void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs) {
+void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // This guy usually should go into the header but it does not make sense to
   // commit a whole header only because of one file.
   static tarch::logging::Log _log("MyEulerSolver::init");

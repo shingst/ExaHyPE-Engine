@@ -8,7 +8,7 @@
 tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveSolver" );
 
 
-void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs) {
+void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

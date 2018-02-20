@@ -10,7 +10,7 @@
 tarch::logging::Log Linear::MyLinearWaveSolver::_log( "Linear::MyLinearWaveSolver" );
 
 
-void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlineargs) {
+void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

@@ -7,7 +7,7 @@ tarch::logging::Log PotentialHydro::PotentialEulerSolver::_log( "PotentialHydro:
 
 constexpr int numberOfVariables = PotentialHydro::PotentialEulerSolver::NumberOfVariables;
 
-void PotentialHydro::PotentialEulerSolver::init(const std::vector<std::string>& cmdlineargs) {
+void PotentialHydro::PotentialEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::Parser::ParserView& constants) {
 }
 
 bool PotentialHydro::PotentialEulerSolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) const {
