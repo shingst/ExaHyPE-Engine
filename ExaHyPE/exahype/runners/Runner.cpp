@@ -829,10 +829,10 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       postProcessTimeStepInSharedMemoryEnvironment();
 
       #if !defined(Parallel)
-      logInfo("createGrid(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+      logInfo("runAsMaster(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
       #else
       if (tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
-        logInfo("createGrid(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+        logInfo("runAsMaster(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
       }
       #endif
 
