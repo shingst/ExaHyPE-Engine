@@ -93,11 +93,11 @@ namespace exahype {
     peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
-  typedef peano::heap::DoubleHeap<
+  typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedDoubleSendReceiveTask, std::vector< char, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedDoubleSendReceiveTask, std::vector< char, AlignedAllocator > >,
     peano::heap::RLEBoundaryDataExchanger< char, true, AlignedDoubleSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    std::vector< double, AlignedAllocator >
+    std::vector< char, AlignedAllocator >
   >     CompressedDataHeap;
   #else
   typedef peano::heap::DoubleHeap<
