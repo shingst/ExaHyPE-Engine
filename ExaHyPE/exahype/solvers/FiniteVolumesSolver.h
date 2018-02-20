@@ -478,7 +478,7 @@ public:
     *
     * \param[in] cmdlineargs the command line arguments.
     */
-  virtual void init(std::vector<std::string>& cmdlineargs) = 0;
+  virtual void init(const std::vector<std::string>& cmdlineargs) = 0;
 
   void initSolver(
       const double timeStamp,
