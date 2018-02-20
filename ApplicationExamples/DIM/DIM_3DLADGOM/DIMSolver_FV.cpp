@@ -26,7 +26,7 @@ void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,cons
   
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-  //initialdata_(x, &t, Q);
+  initialdata_(x, &t, Q);
   }
 }
 /*
@@ -62,7 +62,7 @@ void DIM::DIMSolver_FV::boundaryValues(
 
   // @todo Please implement/augment if required
   double ti = t + 0.5 * dt;
-  //initialdata_(x, &ti, Qgp);
+  initialdata_(x, &ti, Qgp);
   for(int m=0; m < nVar; m++) {
         stateOutside[m] = Qgp[m];
   }

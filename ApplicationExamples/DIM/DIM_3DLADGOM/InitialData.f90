@@ -70,9 +70,9 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!	return
 	!end if
 	if(ICFlag .eq. 'CGeom') then
-		!rr = RadiusFromCG(xx(1),xx(2),xx(3))
-		rr = xx(3)-1000.0
-		if(abs(rr)<500) then
+		rr = RadiusFromCG(xx(1),xx(2),xx(3))
+		!rr = xx(3)-1000.0
+		if(abs(rr)<1000) then
 			limiter_value=1
 		else
 			limiter_value=0
@@ -127,8 +127,9 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
         r = x(3)
         !r = RadiusFromCG(x(1),x(2),x(3))
 		ICsig=200.0
-		!r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
-        r = x(3)-(1000.0+500.0*sin(x(1)))
+		r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
+		!r = RadiusFromCG(x(1),x(2),x(3)) 
+        !r = x(3)-(1000.0+500.0*sin(x(1)))
 
         up(13)=SmoothInterface(r,ICsig,0.0,1)                 ! Get the smooth value of alpha for that value of r
 		
