@@ -159,7 +159,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
         _writer.write("#include \""+subPath+"/DGMatrices.h\"\n");
       }       
 
-      _methodBodyWriter.write("void kernels::initSolvers(exahype::Parser& parser, std::vector<std::string>& cmdlineargs) {\n");
+      _methodBodyWriter.write("void kernels::registerSolvers(exahype::Parser& parser, std::vector<std::string>& cmdlineargs) {\n");
       if (node.getSolver().size() == 0) {
         System.out.println("no solvers specified - create empty kernel calls ... ok");
       }

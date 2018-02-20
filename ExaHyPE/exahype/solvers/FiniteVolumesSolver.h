@@ -473,11 +473,19 @@ public:
 
   void updateMinNextTimeStepSize( double value ) override;
 
+  /**
+    * User defined solver initialisation.
+    *
+    * \param[in] cmdlineargs the command line arguments.
+    */
+  virtual void init(std::vector<std::string>& cmdlineargs) = 0;
+
   void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      std::vector<std::string>& cmdlineargs) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;

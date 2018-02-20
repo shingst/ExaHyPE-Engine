@@ -70,9 +70,9 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!	return
 	!end if
 	if(ICFlag .eq. 'CGeom') then
-		!rr = RadiusFromCG(xx(1),xx(2),xx(3))
-		rr = xx(3)-1000.0
-		if(abs(rr)<500) then
+		rr = RadiusFromCG(xx(1),xx(2),xx(3))
+		!rr = xx(3)-1000.0
+		if(abs(rr)<1000) then
 			limiter_value=1
 		else
 			limiter_value=0
@@ -127,8 +127,9 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
         r = x(3)
         !r = RadiusFromCG(x(1),x(2),x(3))
 		ICsig=200.0
-		!r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
-        r = x(3)-(1000.0+500.0*sin(x(1)))
+		r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
+		!r = RadiusFromCG(x(1),x(2),x(3)) 
+        !r = x(3)-(1000.0+500.0*sin(x(1)))
 
         up(13)=SmoothInterface(r,ICsig,0.0,1)                 ! Get the smooth value of alpha for that value of r
 		
@@ -235,16 +236,16 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		print *, MyOffset
 		print *, "**********************************************************"
 	if(ICFlag .eq. 'CGeom' .and. ndim .eq. 3) then
-		leng=15000.0
+		!leng=15000.0
 		n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
 		
-		CGEOMFile="CG.dat"			! DTM file
-		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
-		binary_input=.false.
+		!CGEOMFile="CG.dat"			! DTM file
+		!center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
+		!binary_input=.false.
 		
-		!CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
-		!center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
-		!binary_input=.true.
+		CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
+		center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
+		binary_input=.true.
 		
 		!leng=15000.0
 		!center=(/600.0, 5110.0/)			! UTM coordinates of the center (with respect to the DTM data file)
@@ -340,7 +341,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		
         xL_cg=x_cg(1)
         xR_cg=x_cg(nx_cg)
-        yL_cg=x_cg(1)
+        yL_cg=y_cg(1)
         yR_cg=y_cg(ny_cg)
         dx_cg=(xR_cg-xL_cg)/nx_cg
         dy_cg=(yR_cg-yL_cg)/ny_cg

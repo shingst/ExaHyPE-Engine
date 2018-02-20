@@ -165,7 +165,8 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
     const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize
+    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+    std::vector<std::string>& cmdlineargs
 ) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
@@ -174,8 +175,8 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
 
   _limiterDomainChange=LimiterDomainChange::Regular;
 
-  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize);
-  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize);
+  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs);
+  _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(

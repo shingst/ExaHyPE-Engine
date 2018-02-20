@@ -20,6 +20,8 @@ module SpecificVarEqn99
         integer :: ix_mid,iy_mid,minpos_deb(2)
         point=(/x_in,y_in,z_in /)
         
+
+		
         if(z_in<zMin_cg-10.0*di_size) then
             DistanceFromSurfaceCG=-1.e+14 
             return
@@ -28,9 +30,20 @@ module SpecificVarEqn99
             DistanceFromSurfaceCG=1.e+14 
             return
         end if
-        ! Fast way
-        ix_mid=floor((x_in-xL_cg)/dx_cg)
+		
+		ix_mid=floor((x_in-xL_cg)/dx_cg)
         iy_mid=floor((y_in-yL_cg)/dy_cg)
+		! Second reduction
+        !if(z_in<minval(z_cg(max(ix_mid-40,1):min(nx_cg,ix_mid+40),max(iy_mid-40,1):min(ny_cg,iy_mid+40)))-10.0*di_size) then
+        !    DistanceFromSurfaceCG=-1.e+14 
+        !    return
+        !end if
+        !if(z_in>maxval(z_cg(max(ix_mid-40,1):min(nx_cg,ix_mid+40),max(iy_mid-40,1):min(ny_cg,iy_mid+40)))+10.0*di_size) then
+        !    DistanceFromSurfaceCG=1.e+14 
+        !    return
+        !end if
+        ! Fast way
+        
         minvals=1.e+14
         minpos=0
         do i=max(ix_mid-40,1),min(nx_cg,ix_mid+40)
@@ -38,7 +51,8 @@ module SpecificVarEqn99
                rr=sqrt((point(1)-x_cg(i))**2+(point(2)-y_cg(j))**2+(point(3)-z_cg(i,j))**2)
                if(rr<minvals(1)) then
                    minvals(1)=rr
-                   minpos(1,:)=(/i,j/);
+                   minpos(1,1)= i!(/i,j/);
+				   minpos(1,2)= j
                 end if
             end do
         end do  
@@ -52,14 +66,6 @@ module SpecificVarEqn99
         !    pause
         !end if
         DistanceFromSurfaceCG=1.e+14
-        !shift(1,1,:)=(/ 0,1  /)
-        !shift(1,2,:)=(/ -1,0  /)
-        !shift(2,1,:)=(/ 1,0  /)
-        !shift(2,2,:)=(/ 0,1  /) 
-        !shift(3,1,:)=(/ 0,-1  /)
-        !shift(3,2,:)=(/ 1,0  /)
-        !shift(4,1,:)=(/ -1,0  /)
-        !shift(4,2,:)=(/ 0,-1  /)
         shift(1,1,:)=(/ 0,1  /)
         shift(1,2,:)=(/ -1,1  /)
         shift(2,1,:)=(/ 1,0  /)
@@ -179,7 +185,7 @@ module SpecificVarEqn99
         real    :: i,j,phi(4),xi,gamma
         integer :: ix(2)
         
-        ix=lookatindex_cg_fast(x_in,y_in)
+        ix=lookatindex_cg(x_in,y_in)
         phi(1)=z_cg(ix(1),ix(2))
         phi(2)=z_cg(ix(1)+1,ix(2))
         phi(3)=z_cg(ix(1),ix(2)+1)
@@ -228,9 +234,10 @@ module SpecificVarEqn99
         
 		
 		
-		lookatindex_cg_fast(1)=floor((x_in-xL_cg)/dx_cg)
-        lookatindex_cg_fast(2)=floor((y_in-yL_cg)/dy_cg)
-        if(minval(lookatindex_cg_fast(:))<0) then
+		lookatindex_cg_fast(1)=floor((x_in-xL_cg)/dx_cg)+1
+        lookatindex_cg_fast(2)=floor((y_in-yL_cg)/dy_cg)+1
+		!print *, 'DyL_cg=',y_in-yL_cg,x_in-xL_cg,lookatindex_cg_fast
+        if(minval(lookatindex_cg_fast(1:2))<0) then
             print *, 'LookIndex error for x_in=',x_in, ' and y_in=',y_in, '! Please choose a larger CG domain'
             stop
         end if
