@@ -76,8 +76,9 @@
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
-exahype::runners::Runner::Runner(Parser& parser) :
+exahype::runners::Runner::Runner(Parser& parser, std::vector<std::string>& cmdlineargs) :
     _parser(parser),
+    _cmdlineargs(cmdlineargs),
     _boundingBoxSize(0.0),
     _meshRefinements(0),
     _localRecomputations(0),
@@ -630,7 +631,7 @@ int exahype::runners::Runner::run() {
 
 void exahype::runners::Runner::initSolvers() const {
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    p->initSolver(0.0,_domainOffset,_domainSize,_boundingBoxSize);
+    p->initSolver(0.0,_domainOffset,_domainSize,_boundingBoxSize,_cmdlineargs);
   }
 }
 

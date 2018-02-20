@@ -44,7 +44,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs{% if hasConstants %}, exahype::Parser::ParserView& constants{% endif %});
+    void init(std::vector<std::string>& cmdlineargs{% if hasConstants %}, exahype::Parser::ParserView& constants{% endif %}) final override;
     
 {%- if patchwiseAdjust %}
     /**

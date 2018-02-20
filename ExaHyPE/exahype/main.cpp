@@ -308,7 +308,7 @@ int exahype::main(int argc, char** argv) {
   //   Init solver registries
   // =====================================
   //
-  kernels::initSolvers(parser, cmdlineargs);
+  kernels::registerSolvers(parser, cmdlineargs);
 
   //
   //   Configure the logging
@@ -362,7 +362,7 @@ int exahype::main(int argc, char** argv) {
                                                              "exahype", false));
   }
 
-  exahype::runners::Runner runner(parser);
+  exahype::runners::Runner runner(parser, cmdlineargs);
   int programExitCode = runner.run();
 
   if (programExitCode == 0) {

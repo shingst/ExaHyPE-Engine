@@ -37,6 +37,8 @@ class exahype::runners::Runner {
   static tarch::logging::Log _log;
 
   exahype::Parser& _parser;
+  std::vector<std::string>& _cmdlineargs;
+
 
   /**
    * The computational domain offset as used by the
@@ -382,7 +384,7 @@ class exahype::runners::Runner {
   void preProcessTimeStepInSharedMemoryEnvironment();
   void postProcessTimeStepInSharedMemoryEnvironment();
  public:
-  explicit Runner(Parser& parser);
+  explicit Runner(Parser& parser, std::vector<std::string>& cmdlineargs);
   virtual ~Runner();
 
   // Disallow copy and assignment

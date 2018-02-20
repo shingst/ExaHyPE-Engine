@@ -600,7 +600,8 @@ public:
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) final override;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      std::vector<std::string>& cmdlineargs) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
