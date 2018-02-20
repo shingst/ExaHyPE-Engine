@@ -1070,11 +1070,13 @@ class exahype::solvers::Solver {
    * The maximum adaptive refinement level is defined
    * with respect to this level.
    */
+
   virtual void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) = 0;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      std::vector<std::string>& cmdlineargs) = 0;
 
   /**
    * \return true if the solver is computing in the current algorithmic section.
