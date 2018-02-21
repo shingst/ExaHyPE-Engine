@@ -10,7 +10,7 @@
 tarch::logging::Log DIM::DIMSolver::_log( "DIM::DIMSolver" );
 
 
-void DIM::DIMSolver::init(std::vector<std::string>& cmdlineargs) {
+void DIM::DIMSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

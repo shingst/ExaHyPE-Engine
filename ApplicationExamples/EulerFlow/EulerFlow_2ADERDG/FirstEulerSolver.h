@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 #include "exahype/profilers/Profiler.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"

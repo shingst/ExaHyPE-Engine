@@ -12,7 +12,7 @@
 tarch::logging::Log GPR::GPRSolver_FV::_log( "GPR::GPRSolver_FV" );
 
 
-void GPR::GPRSolver_FV::init(std::vector<std::string>& cmdlineargs) {
+void GPR::GPRSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 
@@ -69,10 +69,13 @@ void GPR::GPRSolver_FV::boundaryValues(
   stateOutside[16] = stateInside[16];
   */
   double ti = t + 0.5 * dt;
+  // ti = 0.0;
   initialdata_(x, &ti, Qgp);
   for(int m=0; m < nVar; m++) {
         stateOutside[m] = Qgp[m];
+		// printf("  var=%d out = %e, in = %e, diff = %e \n", m, stateOutside[m], stateInside[m], stateInside[m]-stateOutside[m] ); 
   }
+  
 }
 
 //***********************************************************

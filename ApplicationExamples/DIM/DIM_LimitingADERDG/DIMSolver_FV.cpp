@@ -13,7 +13,7 @@
 tarch::logging::Log DIM::DIMSolver_FV::_log( "DIM::DIMSolver_FV" );
 
 
-void DIM::DIMSolver_FV::init(std::vector<std::string>& cmdlineargs) {
+void DIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

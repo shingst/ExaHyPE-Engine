@@ -34,7 +34,7 @@ peano::CommunicationSpecification
 exahype::mappings::PredictionRerun::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can be relaxed?
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
 
@@ -102,7 +102,7 @@ void exahype::mappings::PredictionRerun::beginIteration(
   _localState = solverState;
 
   // background threads
-  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
@@ -122,7 +122,7 @@ void exahype::mappings::PredictionRerun::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::performPredictionAndProlongateData(
+  exahype::mappings::Prediction::performPredictionOrProlongate(
         fineGridCell,
         fineGridVertices,fineGridVerticesEnumerator,
         exahype::State::AlgorithmSection::PredictionRerunAllSend);
@@ -141,7 +141,7 @@ void exahype::mappings::PredictionRerun::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictDataAndPostProcess(
+  exahype::mappings::Prediction::restrictData(
       fineGridCell,coarseGridCell,
       exahype::State::AlgorithmSection::TimeStepping);
 

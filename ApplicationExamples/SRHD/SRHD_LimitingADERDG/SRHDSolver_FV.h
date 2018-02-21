@@ -8,7 +8,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
 
@@ -32,7 +32,7 @@ class SRHD::SRHDSolver_FV : public exahype::solvers::FiniteVolumesSolver {
 	
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut);
   private:
-  	void init(std::vector<std::string>& cmdlineargs);
+  	void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
     static void adjustedSolutionValues(const double* const x,const double w,const double t,const double dt,double* Q);
     static void eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda);
     static void flux(const double* const Q,double** F);

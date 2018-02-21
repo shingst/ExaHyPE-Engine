@@ -60,7 +60,7 @@ exahype-project EulerADERDG
     variables const            = rho:1,j:3,E:1
     order const                = 5
     maximum-mesh-size          = 1e-1    
-    maximum-mesh-depth         = 0 
+    maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear, Legendre
     terms const                = flux
@@ -75,7 +75,7 @@ exahype-project EulerADERDG
     
     plot vtu::Cartesian::vertices::limited::ascii EulerWriter
       variables const = 5
-      time            = 10.0
+      time            = 0.0
       repeat          = 0.001
       output          = ./variables
     end plot
@@ -83,7 +83,7 @@ exahype-project EulerADERDG
     
     plot vtk::Cartesian::subcells::limited::ascii EulerSubcellsWriter
       variables const = 5
-      time            = 10.0
+      time            = 0.0
       repeat          = 0.001
       output          = ./variables-fv
     end plot

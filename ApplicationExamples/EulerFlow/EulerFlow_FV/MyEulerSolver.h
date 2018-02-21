@@ -8,7 +8,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 
 #include <ostream>
@@ -33,14 +33,14 @@ class Euler::MyEulerSolver : public Euler::AbstractMyEulerSolver {
      */
     static tarch::logging::Log _log;
   public:
-    MyEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    MyEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * @see FiniteVolumesSolver

@@ -10,7 +10,7 @@ void initialdata_(const double* x, const double* const t, double* Q);
 // only initialdata_ is used, no more.
 
 void ShearLayer_(const double* x, const double* const t, double* Q);
-void pdelimitervalue_(int* limiter_value, const double* xx);
+void pdelimitervalue_(int* limiter_value, const double* xx,const int* const numberOfObservables, const double* const observablesMin,const double* const observablesMax);
 
 
 

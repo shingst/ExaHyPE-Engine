@@ -29,14 +29,14 @@ class Euler::LimitingADERDG_FV : public Euler::AbstractLimitingADERDG_FV {
      */
     static tarch::logging::Log _log;
   public:
-    LimitingADERDG_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    LimitingADERDG_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * @see FiniteVolumesSolver

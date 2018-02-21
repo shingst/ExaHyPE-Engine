@@ -14,9 +14,7 @@
 {%- if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
 {%- endif %}
-{%- if hasConstants %}
-#include "exahype/Parser.h"
-{%- endif %}
+#include "exahype/parser/Parser.h"
 
 /**
  * We use Peano's logging
@@ -35,14 +33,15 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     static tarch::logging::Log _log;
   public:
-    {{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}, exahype::Parser::ParserView constants{% endif %});
+    {{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
+     * \param[in] constants   access to the constants specified for the solver.
      */
-    void init(std::vector<std::string>& cmdlineargs{% if hasConstants %}, exahype::Parser::ParserView& constants{% endif %});
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override ;
 
     /**
      * @see FiniteVolumesSolver

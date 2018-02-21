@@ -247,8 +247,9 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           if (exahype::State::fuseADERDGPhases()) {
             limitingADERDG->recomputePredictorLocally(
                 cellDescriptionsIndex,element,
-                exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
-                    fineGridVertices,fineGridVerticesEnumerator));
+                exahype::Cell::isAtRemoteBoundary(
+                    fineGridVertices,fineGridVerticesEnumerator)
+            );
             admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
                 cellDescriptionsIndex,element,
                 exahype::State::isFirstIterationOfBatchOrNoBatch(),
@@ -268,11 +269,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
         }
         else if ( performPrediction(solver) ) {
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-              solver,cellDescriptionsIndex,element,
-              exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
-                  fineGridVertices,fineGridVerticesEnumerator));
+              solver,fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::Cell::isAtRemoteBoundary(
+                  fineGridVertices,fineGridVerticesEnumerator)
+          );
 
-          solver->prolongateDataAndPrepareDataRestriction(
+          solver->prolongateAndPrepareRestriction(
               cellDescriptionsIndex,element);
         }
 
@@ -305,7 +307,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if ( exahype::State::fuseADERDGPhases() ) {
-    exahype::mappings::Prediction::restrictDataAndPostProcess(
+    exahype::mappings::Prediction::restrictData(
         fineGridCell,coarseGridCell,
         exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
   }

@@ -563,12 +563,12 @@ namespace mexa {
 	 * RHS of this ordered map. If so, it will unpack this embedded mexa file.
 	 * 
 	 * This is the primarily interface to ExaHyPE. We do not allow the
-	 * exahype::Parser::ParserView instanc  here for not having a
+	 * exahype::parser::ParserView instanc  here for not having a
 	 * reference to the ExaHyPE code at this place (seperation of code bases).
 	 * 
 	 * The usage boils down to as simple as
 	 *
-	 *  exahype::Parser::ParserView view(parser.getParserView(0)); // obtain it
+	 *  exahype::parser::ParserView view(parser.getParserView(0)); // obtain it
 	 *  mexafile foo = exa::fromSpecfile(view.getAllAsOrderedMap(), "specfile.filename...");
 	 *
 	 **/

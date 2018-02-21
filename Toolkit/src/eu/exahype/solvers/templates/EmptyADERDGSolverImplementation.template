@@ -16,7 +16,7 @@
 
 #include "kernels/aderdg/generic/Kernels.h"
 
-{{Project}}::{{Solver}}::{{Solver}}(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::vector<std::string>& cmdlineargs{{SolverConstructorSignatureExtension}}):
+{{Project}}::{{Solver}}::{{Solver}}(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping{{SolverConstructorSignatureExtension}}):
   exahype::solvers::{{Solver}}Solver("{{Solver}}", nVar /* numberOfUnknowns */, nParams /* numberOfParameters */, {{Order}} + 1  /* nodesPerCoordinateAxis */, maximumMeshSize, timeStepping{{SolverConstructorArgumentExtension}}) {
   // @todo Please implement/augment if required
 }

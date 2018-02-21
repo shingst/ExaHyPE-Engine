@@ -33,7 +33,7 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
     static tarch::logging::Log _log;
     CurvilinearTransformation crt;    
   public:
-    ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
 
 
     /**
@@ -41,7 +41,7 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * Patchwise adjust

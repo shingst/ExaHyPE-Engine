@@ -32,10 +32,10 @@ struct RandomInitialDataPerTimestep {
 
 RandomInitialDataPerTimestep* randId;
 
-void GridDemonstrator::GridDemonstrator_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void GridDemonstrator::GridDemonstrator_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
 	// Create random data for all time steps well in advance.
 	// This avoids any problems with MPI and TBB.
-	randId = new RandomInitialDataPerTimestep;
+	randId = new RandomInitialDataPerTimestep;s
 }
 
 bool GridDemonstrator::GridDemonstrator_ADERDG::isPhysicallyAdmissible(

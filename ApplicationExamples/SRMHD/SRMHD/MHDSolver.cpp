@@ -15,7 +15,7 @@
 /* This is the MHDSolver.cpp binding to Fortran functions, as done in SRHD. */
 
 
-void SRMHD::MHDSolver::init(std::vector<std::string>& cmdargs){ //, exahype::Parser::ParserView _constants) {
+void SRMHD::MHDSolver::init(std::vector<std::string>& cmdargs){ //, exahype::parser::ParserView _constants) {
   // just pass the pointer to the crazy Fortran glue code. Should be improved.
   // constants = &_constants;
 }

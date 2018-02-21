@@ -5,7 +5,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 {{ProfilerInclude}}
 

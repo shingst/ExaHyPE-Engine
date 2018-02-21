@@ -14,7 +14,7 @@
 tarch::logging::Log GPR::GPRSolver_ADERDG::_log( "GPR::GPRSolver_ADERDG" );
 
 
-void GPR::GPRSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void GPR::GPRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 
@@ -123,11 +123,11 @@ bool GPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   int limvalue;
-  // pdelimitervalue_(&limvalue,xx);
-  //if(limvalue>0){
-//	  return false;
- // }else{
+  //pdelimitervalue_(&limvalue,&center[0]);
+  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  if(limvalue>0){
+	  return false;
+  }else{
 	  return true;
-	  //return false;
- // };
+  };
 }

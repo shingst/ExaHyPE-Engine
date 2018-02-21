@@ -204,7 +204,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * at least one vertex is inside.
    * Boundary and outside vertices are ignored.
    */
-  static bool isAdjacentToRemoteRankAtInsideFace(
+  static bool isAtRemoteBoundary(
       exahype::Vertex* const               verticesAroundCell,
       const peano::grid::VertexEnumerator& verticesEnumerator);
 

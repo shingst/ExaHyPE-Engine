@@ -18,7 +18,8 @@
 #include <vector>
 #include <cstdlib>
 
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
+
 #include "peano/utils/Globals.h"
 
 #include "tarch/la/Vector.h"
@@ -256,7 +257,7 @@ class exahype::plotters::Plotter {
    */
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
-  Plotter(const int solverConfig,const int plotterConfig,const exahype::Parser& parser,Device* device);
+  Plotter(const int solverConfig,const int plotterConfig,const exahype::parser::Parser& parser,Device* device);
 
   /**
    * @param solverConfig Number of the underlying solver. This number is important to
@@ -266,7 +267,7 @@ class exahype::plotters::Plotter {
    *                      the file is to be read in.
    */
   Plotter(const int solverConfig,const int plotterConfig,
-          const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing);
+          const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing);
 
   /**
    * Plotter constructor for scenarios where we want to use a plotter configuration
@@ -284,7 +285,7 @@ class exahype::plotters::Plotter {
    *               plotter configuration for multiple solvers.
    */
   Plotter(const int solverConfig,const int plotterConfig,
-          const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
+          const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
           const int solverDataSource);
   ~Plotter();
 

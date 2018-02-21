@@ -20,7 +20,7 @@
 #include "peano/peano.h"
 
 #include "exahype/main.h"
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
 #include "exahype/Vertex.h"
 #include "exahype/runners/Runner.h"
 
@@ -288,7 +288,7 @@ int exahype::main(int argc, char** argv) {
   // =====================================
   //
 
-  exahype::Parser parser;
+  exahype::parser::Parser parser;
 
   if(runCompiledSpecfile) {
     std::stringstream specfile;
@@ -308,7 +308,7 @@ int exahype::main(int argc, char** argv) {
   //   Init solver registries
   // =====================================
   //
-  kernels::initSolvers(parser, cmdlineargs);
+  kernels::registerSolvers(parser);
 
   //
   //   Configure the logging
@@ -362,7 +362,7 @@ int exahype::main(int argc, char** argv) {
                                                              "exahype", false));
   }
 
-  exahype::runners::Runner runner(parser);
+  exahype::runners::Runner runner(parser, cmdlineargs);
   int programExitCode = runner.run();
 
   if (programExitCode == 0) {

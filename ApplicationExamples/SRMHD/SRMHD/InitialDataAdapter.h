@@ -6,9 +6,9 @@
 #include <stdlib.h> // getenv
 #include "MHDSolver.h"
 
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
-extern exahype::Parser::ParserView* constants;
+extern exahype::parser::ParserView* constants;
 
 extern "C" {
 

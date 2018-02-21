@@ -52,10 +52,10 @@ void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int
   _filename        = filename;
   _time            = 0.0;
 
-  _x(0) = Parser::getValueFromPropertyString( select, "x" );
-  _x(1) = Parser::getValueFromPropertyString( select, "y" );
+  _x(0) = exahype::parser::Parser::getValueFromPropertyString( select, "x" );
+  _x(1) = exahype::parser::Parser::getValueFromPropertyString( select, "y" );
   #if DIMENSIONS==3
-  _x(2) = Parser::getValueFromPropertyString( select, "z" );
+  _x(2) = exahype::parser::Parser::getValueFromPropertyString( select, "z" );
   #endif
 
   logDebug( "init(...)", "probe at location " << _x << "(select=\""+select+"\")");

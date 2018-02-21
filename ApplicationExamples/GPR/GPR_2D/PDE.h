@@ -11,6 +11,9 @@ void pdesource_(double* S, const double* const Q);
 void pdencp_(double* BgradQ, const double* const Q, const double* const gradQ);
 void pdeeigenvalues_(double* lambda, const double* const Q, double* nv);
 void registerinitialdata_(const char* const id_name, int* id_name_len);
+void pdevarname_(char* MyNameOUT, int* ind);
+void getnumericalsolution_(double* V,double* Q);
+void getexactsolution_(double* V,double* pos,double* timeStamp);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

@@ -347,7 +347,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
           if(useSource) {
             solver.algebraicSource(ws, src);
           } else {
-            std::fill_n(ws, numberOfVariables, 0.0);
+            std::fill_n(src, numberOfVariables, 0.0);
           }
           if(useNCP) {
             double ncp[numberOfVariables];

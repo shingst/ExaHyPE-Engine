@@ -28,9 +28,10 @@ namespace exahype {
 namespace solvers {
 class FiniteVolumesSolver;
 }  // namespace solvers
+namespace parser {
+class ParserView;
+}  // namespace parser
 }  // namespace exahype
-
-
 
 /**
  * Abstract base class for one-step Finite Volumes solvers.
@@ -144,7 +145,9 @@ private:
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
 
-  void compress(CellDescription& cellDescription);
+  void compress(
+      CellDescription& cellDescription,
+      const bool vetoSpawnBackgroundTask) const;
   /**
    * \copydoc ADERDGSolver::computeHierarchicalTransform()
    *
@@ -167,15 +170,39 @@ private:
 
   class CompressionTask {
     private:
-      FiniteVolumesSolver&                             _solver;
+      const FiniteVolumesSolver&                       _solver;
       exahype::records::FiniteVolumesCellDescription&  _cellDescription;
     public:
       CompressionTask(
-        FiniteVolumesSolver&                             _solver,
+        const FiniteVolumesSolver&                       _solver,
         exahype::records::FiniteVolumesCellDescription&  _cellDescription
       );
 
-      void operator()();
+      bool operator()();
+  };
+
+  /**
+   * A job which performs the Finite Volumes solution update
+   * and further updates the local time stamp associated with
+   * the FV cell description.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * do not plan to reduce the admissible time step size or refinement requests
+   * within a consequent reduction step.
+   */
+  class FusedTimeStepJob {
+  private:
+    FiniteVolumesSolver&  _solver;
+    const int             _cellDescriptionsIndex;
+    const int             _element;
+  public:
+    FusedTimeStepJob(
+        FiniteVolumesSolver& _solver,
+        const int            cellDescriptionsIndex,
+        const int            element
+    );
+
+    bool operator()();
   };
 
 public:
@@ -447,11 +474,22 @@ public:
 
   void updateMinNextTimeStepSize( double value ) override;
 
+  /**
+    * User defined solver initialisation.
+    *
+    * \param[in] cmdlineargs the command line arguments.
+    */
+  virtual void init(
+        const std::vector<std::string>& cmdlineargs,
+        const exahype::parser::ParserView& constants) = 0;
+
   void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parserView) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
@@ -490,10 +528,6 @@ public:
   int tryGetElement(
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-
-  SubcellPosition computeSubcellPositionOfCellOrAncestor(
-        const int cellDescriptionsIndex,
-        const int element) const override;
 
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
@@ -625,12 +659,33 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread) final override;
+      const bool isAtRemoteBoundary) final override;
 
+  UpdateResult update(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isAtRemoteBoundary) final override;
+
+  void compress(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) const final override;
+
+  /**
+   * Update the solution of a cell description.
+   *
+   * \note Make sure to reset neighbour merge
+   * helper variables in this method call.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
+   */
   void updateSolution(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) final override;
+      const bool backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -649,31 +704,13 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void preProcess(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
-  void postProcess(
+  void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void prolongateDataAndPrepareDataRestriction(
-      const int cellDescriptionsIndex,
-      const int element) override;
-
-  void restrictToNextParent(
-        const int fineGridCellDescriptionsIndex,
-        const int fineGridElement,
-        const int coarseGridCellDescriptionsIndex,
-        const int coarseGridElement) const override;
-
-  void restrictToTopMostParent(
-      const int cellDescriptionsIndex,
-      const int element,
-      const int parentCellDescriptionsIndex,
-      const int parentElement,
-      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
-
+  void restriction(
+        const int cellDescriptionsIndex,
+        const int element) override;
 
   ///////////////////////////////////
   // NEIGHBOUR

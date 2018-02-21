@@ -34,7 +34,7 @@ peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can relax?
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
 
@@ -107,16 +107,7 @@ void exahype::mappings::Prediction::endIteration(
   // do nothing
 }
 
-bool exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
-    exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  return
-      exahype::State::spawnPredictorAsBackgroundThread()==false ||
-      exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
-          fineGridVertices,fineGridVerticesEnumerator);
-}
-
-void exahype::mappings::Prediction::performPredictionAndProlongateData(
+void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -137,12 +128,15 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
         solver->isPerformingPrediction(algorithmSection) &&
         element!=exahype::solvers::Solver::NotFound
     ) {
+      // this operates only on compute cells
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           solver,fineGridCell.getCellDescriptionsIndex(),element,
-          vetoPerformPredictionAsBackgroundThread(
-              fineGridVertices,fineGridVerticesEnumerator));
+          exahype::Cell::isAtRemoteBoundary(
+              fineGridVertices,fineGridVerticesEnumerator)
+      );
 
-      solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+      // this operates only on helper cells
+      solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }
     endpfor
     grainSize.parallelSectionHasTerminated();
@@ -161,7 +155,7 @@ void exahype::mappings::Prediction::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::performPredictionAndProlongateData(
+  exahype::mappings::Prediction::performPredictionOrProlongate(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
       exahype::State::AlgorithmSection::TimeStepping);
@@ -169,7 +163,7 @@ void exahype::mappings::Prediction::enterCell(
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
-void exahype::mappings::Prediction::restrictDataAndPostProcess(
+void exahype::mappings::Prediction::restrictData(
     const exahype::Cell&                             fineGridCell,
     const exahype::Cell&                             coarseGridCell,
     const exahype::State::AlgorithmSection& algorithmSection) {
@@ -183,30 +177,7 @@ void exahype::mappings::Prediction::restrictDataAndPostProcess(
           solver->isPerformingPrediction(algorithmSection) &&
           fineGridElement!=exahype::solvers::Solver::NotFound
       ) {
-        const int coarseGridElement = solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-        if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
-          tarch::multicore::Lock lock(SemaphoreForRestriction);
-          solver->restrictToNextParent(
-              fineGridCell.getCellDescriptionsIndex(),fineGridElement,
-              coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-          lock.free();
-        }
-
-        exahype::solvers::Solver::SubcellPosition subcellPosition =
-            solver->computeSubcellPositionOfCellOrAncestor(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-        if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-            exahype::amr::onBoundaryOfParent(
-                subcellPosition.subcellIndex,subcellPosition.levelDifference)) {
-          tarch::multicore::Lock lock(SemaphoreForRestriction);
-          solver->restrictToTopMostParent(fineGridCell.getCellDescriptionsIndex(),
-                                          fineGridElement,
-                                          subcellPosition.parentCellDescriptionsIndex,
-                                          subcellPosition.parentElement,
-                                          subcellPosition.subcellIndex);
-          lock.free();
-        }
-
-        solver->postProcess(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+        solver->restriction(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       }
     endpfor
     grainSize.parallelSectionHasTerminated();
@@ -224,7 +195,7 @@ void exahype::mappings::Prediction::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictDataAndPostProcess(
+  exahype::mappings::Prediction::restrictData(
       fineGridCell,coarseGridCell,
       exahype::State::AlgorithmSection::TimeStepping);
 

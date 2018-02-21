@@ -14,7 +14,7 @@
 #ifndef _EXAHYPE_RUNNERS_RUNNER_H_
 #define _EXAHYPE_RUNNERS_RUNNER_H_
 
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
 #include "tarch/logging/Log.h"
 
 #include "exahype/State.h"
@@ -36,7 +36,9 @@ class exahype::runners::Runner {
  private:
   static tarch::logging::Log _log;
 
-  exahype::Parser& _parser;
+  exahype::parser::Parser& _parser;
+  std::vector<std::string>& _cmdlineargs;
+
 
   /**
    * The computational domain offset as used by the
@@ -99,13 +101,13 @@ class exahype::runners::Runner {
    * created the repository. See Orace::loadStatistics().
    */
   void initSharedMemoryConfiguration();
+  void shutdownSharedMemoryConfiguration();
 
   /**
-   * The shared memory environment has to be set up before we create the
+   * The distributed memory environment has to be set up before we create the
    * repository.
    */
   void initDistributedMemoryConfiguration();
-  void shutdownSharedMemoryConfiguration();
   void shutdownDistributedMemoryConfiguration();
 
   int runAsMaster(exahype::repositories::Repository& repository);
@@ -171,6 +173,11 @@ class exahype::runners::Runner {
    * patches.
    */
   void initHeaps();
+
+  /**
+   * Shutdown all heaps.
+   */
+  void shutdownHeaps();
 
   /**
    * Print minimum of current solver time stamps and time step sizes.
@@ -377,7 +384,7 @@ class exahype::runners::Runner {
   void preProcessTimeStepInSharedMemoryEnvironment();
   void postProcessTimeStepInSharedMemoryEnvironment();
  public:
-  explicit Runner(Parser& parser);
+  explicit Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs);
   virtual ~Runner();
 
   // Disallow copy and assignment

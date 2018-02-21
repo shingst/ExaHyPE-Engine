@@ -30,16 +30,17 @@
 #include "peano/utils/Globals.h"
 #include "peano/grid/VertexEnumerator.h"
 #include "peano/heap/DoubleHeap.h"
+#include "peano/heap/CharHeap.h"
 #include "peano/heap/HeapAllocator.h"
+
+#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
 #include "exahype/State.h"
 
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
-#if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
+#if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
@@ -64,6 +65,9 @@ namespace exahype {
   class Cell;
   class Vertex;
 
+  namespace parser {
+  class ParserView;
+  }  // namespace parser
   /**
    * We store the degrees of freedom associated with the ADERDGCellDescription and FiniteVolumesCellDescription
    * instances on this heap.
@@ -74,51 +78,45 @@ namespace exahype {
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
   #ifdef ALIGNMENT
-  #if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
+  #if defined(CompilerICC) && defined(SharedTBB)
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
   #else
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
   #endif
   typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
+  typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
-  #if ALIGNMENT==16
+  #ifdef ALIGNMENT
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
-  #elif ALIGNMENT==32
-  typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    std::vector< double, AlignedAllocator >
-  >     DataHeap;
-  #elif ALIGNMENT==64
-  typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    std::vector< double, AlignedAllocator >
-  >     DataHeap;
-  #elif defined(ALIGNMENT)
-  #error ALIGNMENT choice not supported
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
   #else
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::RLEBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
   >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
+  >     CompressedDataHeap;
   #endif
-
-  typedef peano::heap::PlainCharHeap CompressedDataHeap;
 
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  extern tarch::multicore::BooleanSemaphore BackgroundThreadSemaphore;
+  extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
 
   /**
    * A semaphore for serialising heap access.
@@ -439,7 +437,13 @@ class exahype::solvers::Solver {
    */
   static double CompressionAccuracy;
 
-  static bool SpawnCompressionAsBackgroundThread;
+  static bool SpawnCompressionAsBackgroundJob;
+
+  /**
+   * Set to true if the prediction and/or the fused time step
+   * can be launched as background job.
+   */
+  static bool SpawnPredictionAsBackgroundJob;
 
   /**
    * The type of a solver.
@@ -702,13 +706,13 @@ class exahype::solvers::Solver {
   * data. Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
   */
- static void waitUntilAllBackgroundTasksHaveTerminated();
+ static void waitUntilAllBackgroundJobsHaveTerminated();
 
  protected:
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  static int                                _NumberOfTriggeredTasks;
+  static int                                _NumberOfBackgroundJobs;
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.
@@ -1076,11 +1080,14 @@ class exahype::solvers::Solver {
    * The maximum adaptive refinement level is defined
    * with respect to this level.
    */
+
   virtual void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) = 0;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parserView) = 0;
 
   /**
    * \return true if the solver is computing in the current algorithmic section.
@@ -1206,13 +1213,6 @@ class exahype::solvers::Solver {
   virtual int tryGetElement(
       const int cellDescriptionsIndex,
       const int solverNumber) const = 0;
-
-  /**
-   * \see exahype::amr::computeSubcellPositionOfCellOrAncestor
-   */
-  virtual SubcellPosition computeSubcellPositionOfCellOrAncestor(
-      const int cellDescriptionsIndex,
-      const int element) const = 0;
 
   /**
    * Evaluates the user refinement criterion and sets
@@ -1489,126 +1489,100 @@ class exahype::solvers::Solver {
    * performs an FV update. Performs some additional
    * tasks.
    *
-   * \param[in] vetoSpawnPredictorAsBackgroundThread Flag indicating that the cell hosting the
-   *                                   cell description is adjacent to a remote rank.
+   * \param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
+   *                                    we are in the first iteration of a batch.
+   * \param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
+   *                                    we are in the last iteration of a batch.
+   *                                    (If no batch is run, both flags
+   *                                    \p isFirstIterationOfBatch and
+   *                                    \p isLastIterationOfBatch are true).
+   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   *                                    cell description is adjacent to a remote rank.
    */
   virtual UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool vetoSpawnPredictorAsBackgroundThread) = 0;
+      const bool isAtRemoteBoundary) = 0;
 
   /**
-   * Update the solution of a cell description.
+   * The nonfused update routine.
+   *
+   * <h2>FiniteVolumesSolver</h2>
+   *
+   * This call degenerates to an updateSolution
+   * call for the FiniteVolumesSolver.
+   *
+   * <h2>ADERDGSolver</h2>
+   *
+   * Update the solution and evaluate the refinement criterion.
+   *
+   * <h2>LimitingADERDGSolver</h2>
+   *
+   * Update the ADER-DG and or FV solution and
+   * evaluate the limiter and
+   * the refinement criteria.
    *
    * \note Make sure to reset neighbour merge
    * helper variables in this method call.
    *
    * \note Has no const modifier since kernels are not const functions yet.
-   *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
    */
-  virtual void updateSolution(
+  virtual UpdateResult update(
+          const int cellDescriptionsIndex,
+          const int element,
+          const bool isAtRemoteBoundary) = 0;
+
+  /**
+   * Explicitly ask the solver to compress
+   * a cell description.
+   *
+   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   *                               cell description is adjacent to a remote rank.
+   */
+  virtual void compress(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) = 0;
+      const bool isAtRemoteBoundary) const = 0;
 
   /**
-     * In this method, the solver can perform post-processing
-     * operations, e.g., compression of the
-     * degrees of freedoms.
-     *
-     * \param[in] element Index of the cell description
-     *                    holding the data to send out in
-     *                    the array at address \p cellDescriptionsIndex.
-     *                    This is not the solver number.
-     *
-     * \see tryGetElement
-     */
-    virtual void preProcess(
-        const int cellDescriptionsIndex,
-        const int element) const = 0;
-
-  /**
-   * In this method, the solver can perform post-processing
-   * operations, e.g., compression of the
-   * degrees of freedoms.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array at address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \see tryGetElement
-   *
-   * \note Has no const modifier since a binding in ADERDGSolver::compress disregards
-   * the const modifier.
-   */
-  virtual void postProcess(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
-
-  /**
-    * Prolongates face data from a parent ADERDGCellDescription to
-    * \p cellDescription if the fine grid cell associated with
-    * \p cellDescription is adjacent to a boundary of the
-    * coarse grid cell associated with the parent cell description.
+    * Prolongates face data from a parent cell description to
+    * the cell description at address (cellDescriptionsIndex,element)
+    * in case the fine grid cell associated with the cell description is adjacent to
+    * the hull of the coarse grid cell associated with the parent cell description.
     *
     * Further zero out the face data of ancestors.
     *
     * \note This function assumes a top-down traversal of the grid and must thus
-    * be called from the enterCell(...) or descend(...) mapping methods.
+    * be called from the enterCell(...) mapping method.
     *
-    * \note Calling this method makes only sense if \p cellDescription is of type
-    * Descendant or Ancestor.
+    * \note It is assumed that this operation is applied only to helper cell descriptions
+    * of type Descendant and Ancestor. No cell description of type Cell
+    * must be touched by this operation. Otherwise, we cannot spawn
+    * the prediction and/or the compression as background task.
     *
     * \note Has no const modifier since kernels are not const functions yet.
     */
-  virtual void prolongateDataAndPrepareDataRestriction(
+  virtual void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
   /**
-   * Restricts data to the the next parent independent of
-   * the cell type of the fine grid and coarse grid cell.
+   * Restrict data to a parent on
+   * a coarser level.
    *
-   * \p This operation is always surrounded by
-   * a lock. No locks are required internally.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) or ascend(...) mapping methods.
-   */
-  virtual void restrictToNextParent(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const = 0;
-
-  /**
-   * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)
-   * if and only if the fine grid cell (Cell) has a face which intersects with one of the top most parent
-   * cell's faces.
-   *
-   * \note This function is used to restrict face data to the top most
-   * parent. We skip all intermediate parents if they do not
-   * need to hold data (EmptyAncestor).
-   *
-   * \p This operation is always surrounded by
-   * a lock. No locks are required internally.
+   * \note Thread-safety must be ensured by the implementation itself.
    *
    * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) or ascend(...) mapping methods.
+   * be called from the leaveCell(...) mapping method.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * \note Has no const modifier yet since kernels are not
+   * const yet.
    */
-  virtual void restrictToTopMostParent(
-        const int cellDescriptionsIndex,
-        const int element,
-        const int parentCellDescriptionsIndex,
-        const int parentElement,
-        const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) = 0;
+  virtual void restriction(
+      const int cellDescriptionsIndex,
+      const int element) = 0;
 
   ///////////////////////////////////
   // NEIGHBOUR

@@ -35,7 +35,8 @@ exahype-project EulerADERDG
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+// {manual-pinning}
+    cores                    = 3
     properties-file          = sharedmemory.properties
   end shared-memory
 
@@ -43,9 +44,22 @@ exahype-project EulerADERDG
     identifier               = static_load_balancing
     configure                = {hotspot,fair,ranks_per_node:1}
     buffer-size              = 64
-    timeout                  = 60
+    timeout                  = 160
   end distributed-memory 
   
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    timestep-batch-factor           = 0.0
+    skip-reduction-in-batched-time-steps = off
+    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    double-compression = 0.0
+    // try on here as well -> there is a deadlock here - at least with MPI
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
   solver ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 3
@@ -59,7 +73,7 @@ exahype-project EulerADERDG
     
     plot vtu::Cartesian::vertices::ascii EulerWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 0.001
       output          = ./variables
     end plot

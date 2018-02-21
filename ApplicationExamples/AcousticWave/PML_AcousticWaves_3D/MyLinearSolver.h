@@ -33,14 +33,14 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      */
     static tarch::logging::Log _log;
   public:
-    MyLinearSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    MyLinearSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping);
 
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
     
     /**
      * Check if we need to adjust the conserved variables and parameters (together: Q) in a cell

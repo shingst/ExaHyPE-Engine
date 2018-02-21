@@ -316,7 +316,7 @@ else ifeq ($(call tolower,$(SHAREDMEM)),tbb)
 else ifeq ($(call tolower,$(SHAREDMEM)),tbbinvade)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
 	SYSTEM_LFLAGS   += $(LINK_TBB)
-	COMPILER_CFLAGS += -DSharedTBBInvade
+	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade
 endif
 
 

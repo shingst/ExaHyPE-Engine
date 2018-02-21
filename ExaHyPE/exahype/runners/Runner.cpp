@@ -21,7 +21,6 @@
 #include "exahype/repositories/RepositoryFactory.h"
 #include "exahype/mappings/LoadBalancing.h"
 
-
 #include "tarch/Assertions.h"
 
 #include "tarch/logging/CommandLineLogger.h"
@@ -50,6 +49,8 @@
 #include "sharedmemoryoracles/OracleForOnePhaseWithGrainSizeSampling.h"
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"
 
+#include "exahype/parser/ParserView.h"
+
 #ifdef Parallel
 #include "mpibalancing/GreedyBalancing.h"
 #include "mpibalancing/FairNodePoolStrategy.h"
@@ -68,7 +69,7 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
-#ifdef SharedTBBInvade
+#ifdef TBBInvade
 #include "shminvade/SHMController.h"
 #include "shminvade/SHMSharedMemoryBetweenTasks.h"
 #endif
@@ -76,8 +77,9 @@
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
-exahype::runners::Runner::Runner(Parser& parser) :
+exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs) :
     _parser(parser),
+    _cmdlineargs(cmdlineargs),
     _boundingBoxSize(0.0),
     _meshRefinements(0),
     _localRecomputations(0),
@@ -130,7 +132,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
+      int primaryRanksPerNode = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
       if (primaryRanksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
@@ -170,7 +172,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   // Configure answering behaviour of global node pool
   // =================================================
   //
-  if (_parser.getMPILoadBalancingType()==Parser::MPILoadBalancingType::Static) {
+  if (_parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static) {
     switch ( exahype::mappings::LoadBalancing::getLoadBalancingAnalysis() ) {
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy:
         logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins");
@@ -255,7 +257,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::BackgroundJob::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   switch (_parser.getMulticoreOracleType()) {
-  case Parser::MulticoreOracleType::Dummy:
+  case exahype::parser::Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
         "use dummy shared memory oracle");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -268,13 +270,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
 		 #else
-		 /*
-		 #elif defined(SharedTBBInvade)
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
-         false, //  bool pipelineDescendProcessing          = false,
-         false,  //   bool pipelineAscendProcessing           = false,
-         #else
-*/
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing
@@ -290,7 +285,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       )
     );
     break;
-  case Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
     logInfo("initSharedMemoryConfiguration()",
         "use learning autotuning shared memory oracle and allow restarts");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -301,7 +296,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
-  case Parser::MulticoreOracleType::AutotuningWithoutLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithoutLearning:
     logInfo("initSharedMemoryConfiguration()",
         "use autotuning shared memory oracle configuration but disable machine learning algorithm");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -309,7 +304,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
-  case Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
     logInfo("initSharedMemoryConfiguration()",
         "use autotuning shared memory oracle but disable search restarts");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -320,7 +315,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     peano::datatraversal::autotuning::Oracle::getInstance().loadStatistics(
         _parser.getMulticorePropertiesFile());
     break;
-  case Parser::MulticoreOracleType::GrainSizeSampling:
+  case exahype::parser::Parser::MulticoreOracleType::GrainSizeSampling:
     logInfo("initSharedMemoryConfiguration()",
         "use shared memory oracle sampling");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
@@ -336,7 +331,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
 
 
-  #if  defined(SharedTBBInvade)
+  #if  defined(TBBInvade)
   double localData[3] = { 0.0, 1.0, 1.0 };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
@@ -359,8 +354,8 @@ void exahype::runners::Runner::initDataCompression() {
     logInfo( "initDataCompression()", "switched off any data compression");
   }
   else {
-    exahype::solvers::Solver::SpawnCompressionAsBackgroundThread = _parser.getSpawnDoubleCompressionAsBackgroundTask();
-    logInfo( "initDataCompression()", "store all data with accuracy of " << exahype::solvers::Solver::CompressionAccuracy << ". Use background threads for data conversion=" << exahype::solvers::ADERDGSolver::SpawnCompressionAsBackgroundThread);
+    exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = _parser.getSpawnDoubleCompressionAsBackgroundTask();
+    logInfo( "initDataCompression()", "store all data with accuracy of " << exahype::solvers::Solver::CompressionAccuracy << ". Use background threads for data conversion=" << exahype::solvers::ADERDGSolver::SpawnCompressionAsBackgroundJob);
   }
 }
 
@@ -368,12 +363,12 @@ void exahype::runners::Runner::initDataCompression() {
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 #ifdef SharedMemoryParallelisation
   switch (_parser.getMulticoreOracleType()) {
-  case Parser::MulticoreOracleType::AutotuningWithoutLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithoutLearning:
     break;
-  case Parser::MulticoreOracleType::Dummy:
-  case Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
-  case Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
-  case Parser::MulticoreOracleType::GrainSizeSampling:
+  case exahype::parser::Parser::MulticoreOracleType::Dummy:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithRestartAndLearning:
+  case exahype::parser::Parser::MulticoreOracleType::AutotuningWithLearningButWithoutRestart:
+  case exahype::parser::Parser::MulticoreOracleType::GrainSizeSampling:
   #ifdef Parallel
     if (
       tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getNumberOfNodes()-1
@@ -400,7 +395,6 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   }
 #endif
 }
-
 
 int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
@@ -556,6 +550,16 @@ void exahype::runners::Runner::initHeaps() {
   #endif
 }
 
+void exahype::runners::Runner::shutdownHeaps() {
+  logInfo("shutdownHeaps()","shutdown all heaps");
+  exahype::DataHeap::getInstance().shutdown();
+  exahype::solvers::ADERDGSolver::Heap::getInstance().shutdown();
+  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().shutdown();
+  #ifdef Parallel
+  exahype::MetadataHeap::getInstance().shutdown();
+  #endif
+}
+
 void exahype::runners::Runner::initHPCEnvironment() {
   peano::performanceanalysis::Analysis::getInstance().enable(false);
 }
@@ -565,9 +569,17 @@ int exahype::runners::Runner::run() {
   if ( _parser.isValid() ) {
     initHeaps();
 
-    exahype::State::FuseADERDGPhases                 = _parser.getFuseAlgorithmicSteps();
-    exahype::State::WeightForPredictionRerun         = _parser.getFuseAlgorithmicStepsFactor();
-    exahype::State::SpawnPredictorAsBackgroundThread = _parser.getSpawnPredictorAsBackgroundThread();
+    exahype::State::FuseADERDGPhases          = _parser.getFuseAlgorithmicSteps();
+    exahype::State::WeightForPredictionRerun  = _parser.getFuseAlgorithmicStepsFactor();
+
+    exahype::solvers::Solver::SpawnPredictionAsBackgroundJob =
+        _parser.getSpawnPredictionAsBackgroundThread();
+
+    exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
+    #ifdef Parallel
+    exahype::mappings::MeshRefinement::IsFirstIteration = false;
+    #endif
+
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
@@ -586,11 +598,6 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       initHPCEnvironment();
 
-    exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
-    #ifdef Parallel
-    exahype::mappings::MeshRefinement::IsFirstIteration = false;
-    #endif
-
     if ( _parser.isValid() ) {
       if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
         result = runAsMaster(*repository);
@@ -607,6 +614,8 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
 
+    shutdownHeaps();
+
     delete repository;
   }
   else {
@@ -618,8 +627,12 @@ int exahype::runners::Runner::run() {
 }
 
 void exahype::runners::Runner::initSolvers() const {
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    p->initSolver(0.0,_domainOffset,_domainSize,_boundingBoxSize);
+  for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+    solver->initSolver(
+      0.0,_domainOffset,_domainSize,_boundingBoxSize,
+      _cmdlineargs,_parser.createParserView(solverNumber)
+    );
   }
 }
 
@@ -808,7 +821,13 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       postProcessTimeStepInSharedMemoryEnvironment();
 
-      logDebug("runAsMaster(...)", "state=" << repository.getState().toString());
+      #if !defined(Parallel)
+      logInfo("runAsMaster(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+      #else
+      if (tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
+        logInfo("runAsMaster(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+      }
+      #endif
 
       timeStep += numberOfStepsToRun==0 ? 1 : numberOfStepsToRun;
     }
@@ -817,7 +836,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
-    repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
+    repository.switchToBroadcastAndDropNeighbourMessages();
     repository.iterate(1,false);
 
     printStatistics();
@@ -848,9 +867,14 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
   if (_parser.foundSimulationEndTime()) {
     const double timeIntervalTillEndTime = simulationEndTime - maxTimeStamp;
 
-    batchSize = static_cast<int>(
-      _parser.getTimestepBatchFactor() *
-      std::min(timeIntervalTillNextPlot, timeIntervalTillEndTime) / minTimeStepSize );
+    batchSize =
+      static_cast<int>(
+        std::min (
+            _parser.getTimestepBatchFactor() * std::min(timeIntervalTillNextPlot, simulationEndTime),
+             timeIntervalTillEndTime
+        ) /  minTimeStepSize
+      );
+
   } else {
     batchSize =
       std::min(
@@ -869,7 +893,7 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
 }
 
 void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
-  #if defined(SharedTBBInvade)
+  #if defined(TBBInvade)
   int ranksOnThisNode              = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getNumberOfRegisteredProcesses();
   int myIndexWithinSharedUserData  = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getProcessIndexInSharedDataTable();
 
@@ -927,7 +951,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   }
   #endif
 
-  #if  defined(SharedTBBInvade)
+  #if  defined(TBBInvade)
   static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
@@ -1063,7 +1087,7 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
-  repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
+  repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
@@ -1182,8 +1206,8 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
 
     logInfo(
       "startNewTimeStep(...)",
-      "\tpiped-uncompressed-byes=" << exahype::solvers::ADERDGSolver::PipedUncompressedBytes
-      << "\tpiped-compressed-byes=" << exahype::solvers::ADERDGSolver::PipedCompressedBytes
+      "\tpiped-uncompressed-bytes=" << exahype::solvers::ADERDGSolver::PipedUncompressedBytes
+      << "\tpiped-compressed-bytes=" << exahype::solvers::ADERDGSolver::PipedCompressedBytes
       << "\tcompression-rate=" << (exahype::solvers::ADERDGSolver::PipedCompressedBytes/exahype::solvers::ADERDGSolver::PipedUncompressedBytes)
     );
   }
@@ -1265,10 +1289,10 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     exahype::repositories::Repository& repository, bool plot) {
   // Only one time step (predictor vs. corrector) is used in this case.
-  repository.switchToBroadcastGlobalDataAndMergeNeighbourMessages();  // Riemann -> face2face
+  repository.switchToBroadcastAndMergeNeighbours();  // Riemann -> face2face
   repository.iterate(1,false);
 
-  repository.switchToSolutionUpdate();  // Face to cell + Inside cell
+  repository.switchToUpdateAndReduce();  // Face to cell + Inside cell
   repository.iterate(1,false);
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {

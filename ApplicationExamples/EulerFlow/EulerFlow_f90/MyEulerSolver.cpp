@@ -2,7 +2,7 @@
 
 #include <memory>
 
-void Euler::MyEulerSolver::init(std::vector<std::string>& cmdlineargs) {
+void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // This function is called by the constructor.
   // You can access spec file parameters as well as command line arguments (argv as std::vector).
   // @todo Please implement/augment if required.
