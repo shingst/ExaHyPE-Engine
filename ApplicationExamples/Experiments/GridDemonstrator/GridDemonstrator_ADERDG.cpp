@@ -2,15 +2,40 @@
 
 #include "GridDemonstrator_ADERDG_Variables.h"
 
-#include <math.h>
+#include <cmath>
 #include <random>
 
 
 tarch::logging::Log GridDemonstrator::GridDemonstrator_ADERDG::_log( "GridDemonstrator::GridDemonstrator_ADERDG" );
 
+struct RandomInitialDataPerTimestep {
+	constexpr static int nx = 20; // grid points we want to store in advance in each direction
+	constexpr static int nt = 100; // Time levels we want to store in advance. Is treated periodically.
+	constexpr static double dx = 0.1; // grid distance in each direction
+	constexpr static double dt = 0.5; // time distance
+	constexpr static int numpoints = nt*nx*nx*nx;  // for simplicity, always 3d
+	double out[numpoints];
+	static double rand01() { return ((double) rand() / (RAND_MAX)); } ///< random \in [0,1]
+	RandomInitialDataPerTimestep() {
+		for(int i=0; i<numpoints; i++) out[i] = rand01();		
+	}
+	double interpolate(const double* const x, double t) {
+		int ti, xi[3], index;
+		ti = int(std::floor(t / dt)) % nt;
+		for(int i=0; i<DIMENSIONS; i++) xi[i] = int(std::floor(x[i] / dx)) % nx;
+		if(DIMENSIONS<3) xi[2] = 0;
+		index = nt*ti;
+		for(int i=0; i<DIMENSIONS; i++) index += xi[i]*nx;
+		return out[index];
+	}
+};
+
+RandomInitialDataPerTimestep* randId;
 
 void GridDemonstrator::GridDemonstrator_ADERDG::init(std::vector<std::string>& cmdlineargs) {
-  // @todo Please implement/augment if required
+	// Create random data for all time steps well in advance.
+	// This avoids any problems with MPI and TBB.
+	randId = new RandomInitialDataPerTimestep;
 }
 
 bool GridDemonstrator::GridDemonstrator_ADERDG::isPhysicallyAdmissible(
@@ -105,6 +130,8 @@ bool GridDemonstrator::GridDemonstrator_ADERDG::isPhysicallyAdmissible(
 
 }
 
+
+
 void GridDemonstrator::GridDemonstrator_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 1 + 0
@@ -114,7 +141,7 @@ void GridDemonstrator::GridDemonstrator_ADERDG::adjustPointSolution(const double
   }
   
   // to introduce per timestep randomness:
-  Q[0] = ((double) rand() / (RAND_MAX)); // random \in [0,1]
+  Q[0] = randId->interpolate(x,t);
 }
 
 void GridDemonstrator::GridDemonstrator_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
