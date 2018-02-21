@@ -179,9 +179,9 @@ r"""
                 
                 caption  = "\\textbf{"+", ".join("%s: %s" %  pair for pair in plotDict.items())
                 caption += " (y-scale: "+yScale+"):} "
-                caption += "The bars show measurements for different values of the tuples ("
-                caption += ",".join("%s" % item for item in perPlotSpace.keys()) 
-                caption += ")."
+                caption += "The bars show measurements for different values of the tuples "
+                caption += "-".join(r"\textit{%s}" % item for item in perPlotSpace.keys()) 
+                caption += "."
                 renderedFigure = renderedFigure.replace("{{caption}}",caption)
                 
                 body += renderedFigure.replace("{{file}}",plotFileName+ending) + "\n\n"
@@ -363,7 +363,6 @@ NOTE: The order of the parameters in the section 'per_plot' is preserved.
         plotSizeInches[1] = float(parsedList[0])
         if len(parsedList)>1:
             plotSizeInches[1] = float(parsedList[1])
-    
     
     # plots and per_plot
     plotsSpace     = parseParameterSpace(configParser,"plots")
