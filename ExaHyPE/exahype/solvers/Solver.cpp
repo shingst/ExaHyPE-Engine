@@ -123,13 +123,13 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  const int numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
+  int numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
-  const int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+  int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
 
-  if (!finishedWait) {
+  while (!finishedWait) {
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
             "waiting for roughly "
             << numberOfBackgroundJobs
@@ -138,6 +138,14 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
             );
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
+
+    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+    numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
+    lock.free();
+
+    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+
+    finishedWait = numberOfExaHyPEBackgroundJobs == 0;
   }
 }
 
