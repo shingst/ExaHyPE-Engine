@@ -1826,7 +1826,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnBackgroundJobs) {
+    const bool vetoSpawnPredictionAsBackgroundJob,
+    const bool vetoSpawnCompressionAsBackgroundJob) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   UpdateResult result;
@@ -1835,17 +1836,22 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 
   // This is important to memorise before calling startNewTimeStepFused
   // TODO(Dominic): Add to docu and/or make cleaner
-  const double memorisedPredictorTimeStamp    = cellDescription.getPredictorTimeStamp();
-  const double memorisedPredictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
+  const double predictorTimeStamp    = cellDescription.getPredictorTimeStamp();
+  const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
   result._timeStepSize        = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
   result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
   // and must thus come last. This order is more natural anyway
-  performPredictionAndVolumeIntegral(
-      cellDescription,
-      memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
-      vetoSpawnBackgroundJobs);
+  if ( vetoSpawnPredictionAsBackgroundJob ) {
+    performPredictionAndVolumeIntegralBody(
+          cellDescription,
+          predictorTimeStamp,predictorTimeStepSize,
+          vetoSpawnCompressionAsBackgroundJob);
+  } else {
+    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
+    peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+  }
   return result;
 }
 
@@ -1856,19 +1862,21 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  bool vetoSpawnBackgroundJobs =
+  const bool vetoSpawnBackgroundJobs =
       isAtRemoteBoundary ||
       isRestrictingOrInvolvedInProlongation(cellDescription);
+  const bool vetoSpawnPredictionAsBackgroundJob =
+      vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
 
   if (
       isFirstIterationOfBatch ||
       isLastIterationOfBatch  ||
-      vetoSpawnBackgroundJobs ||
-      !SpawnPredictionAsBackgroundJob
+      vetoSpawnPredictionAsBackgroundJob
   ) {
     exahype::solvers::Solver::UpdateResult updateResult =
         fusedTimeStepBody(cellDescriptionsIndex,element,
-            isFirstIterationOfBatch,isLastIterationOfBatch,vetoSpawnBackgroundJobs);
+            isFirstIterationOfBatch,isLastIterationOfBatch,
+            vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
     return updateResult;
   } else {
     FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
@@ -4227,7 +4235,8 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
-  _solver.fusedTimeStepBody(_cellDescriptionsIndex,_element,false,false,false);
+  _solver.fusedTimeStepBody(
+      _cellDescriptionsIndex,_element,false,false,true,false);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;

@@ -1672,7 +1672,8 @@ public:
         const int element,
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
-        const bool isAtRemoteBoundary);
+        const bool vetoSpawnPredictionAsBackgroundJob,
+        const bool vetoSpawnAnyBackgroundJobs);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
