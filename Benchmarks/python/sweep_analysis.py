@@ -180,7 +180,7 @@ def parseTotalTimes(resultsFolderPath,projectName):
     into another table.
     """
     adaptersTablePath   = resultsFolderPath+"/"+projectName+'.csv'
-    totalTimesTablePath = resultsFolderPath+"/"+projectName+'.total-times.csv'
+    totalTimesTablePath = resultsFolderPath+"/"+projectName+'-total-times.csv'
     try:
         print ("reading table "+adaptersTablePath+"")
         adaptersTableFile  = open(adaptersTablePath, 'r')
@@ -240,6 +240,9 @@ def parseTotalTimes(resultsFolderPath,projectName):
             row.append(str(minSummedCPUTime))
             row.append(str(minSummedUserTime))
             csvwriter.writerow(row)
+            
+            print("created table:")
+            print(totalTimesTablePath)
     except IOError as err:
         print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
 
@@ -254,8 +257,8 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
     firstNonfusedAdapter = "BroadcastAndMergeNeighbours"
     nonfusedAdapters     = [firstNonfusedAdapter, "Prediction", "UpdateAndReduce"]
     
-    adaptersTablePath   = resultsFolderPath+"/"+projectName+'.csv'
-    timeStepTimesTablePath = resultsFolderPath+"/"+projectName+'.timestep-times.csv'
+    adaptersTablePath      = resultsFolderPath+"/"+projectName+'.csv'
+    timeStepTimesTablePath = resultsFolderPath+"/"+projectName+'-timestep-times.csv'
     try:
         print ("reading table "+adaptersTablePath+"")
         adaptersTableFile  = open(adaptersTablePath, 'r')
@@ -320,6 +323,9 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
             row.append(str(minSummedCPUTime))
             row.append(str(minSummedUserTime))
             csvwriter.writerow(row)
+            
+            print("created table:")
+            print(timeStepTimesTablePath) 
     except IOError as err:
         print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
 

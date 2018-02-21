@@ -655,7 +655,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
+    subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -667,17 +667,23 @@ run:
 
 available subprograms:
 
-* build         - build all executables
-* buildMissing  - build only missing executables
-* scripts       - submit the generated jobs
-* cancel        - cancel the submitted jobs
-* parseAdapters - read the job output and parse adapter times
-* parseMetrics  - read the job output and parse likwid metrics
-* cleanAll      - remove the whole sweep benchmark suite
-* cleanBuild    - remove the build subfolder
-* cleanScripts  - remove the scripts subfolder
-* cleanResults  - remove the results subfolder
-* cleanHistory  - clean the submission history
+* build              - build all executables
+* buildMissing       - build only missing executables
+* scripts            - submit the generated jobs
+* cancel             - cancel the submitted jobs
+* parseAdapters      - read the job output and parse adapter times
+* parseTotalTimes    - read the adapter times table and:
+                       Per configuration, calculate the total simulation time 
+                       and minimise over all runs.
+* parseTimeStepTimes - read the adapter times table and:
+                       Per configuration, calculate the time spent per time step
+                       and minimise over all runs.
+* parseMetrics       - read the job output and parse likwid metrics
+* cleanAll           - remove the whole sweep benchmark suite
+* cleanBuild         - remove the build subfolder
+* cleanScripts       - remove the scripts subfolder
+* cleanResults       - remove the results subfolder
+* cleanHistory       - clean the submission history
 
 typical workflow:
 
@@ -688,6 +694,8 @@ typical workflow:
 (after jobs have finished)
 
 ./sweep.py myoptions.ini parseAdapters
+./sweep.py myoptions.ini parseTotalTimes
+./sweep.py myoptions.ini parseTimeStepTimes
 
 """
         print(info) # correctly indented
@@ -744,5 +752,9 @@ typical workflow:
         cancelJobs()
     elif subprogram == "parseAdapters":
         sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName)
+    elif subprogram == "parseTotalTimes":
+        sweep_analysis.parseTotalTimes(resultsFolderPath,projectName)
+    elif subprogram == "parseTimeStepTimes":
+        sweep_analysis.parseTimeStepTimes(resultsFolderPath,projectName)
     elif subprogram == "parseMetrics":
         sweep_analysis.parseMetrics(resultsFolderPath,projectName)
