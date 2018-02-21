@@ -69,7 +69,7 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
-#ifdef SharedTBBInvade
+#ifdef TBBInvade
 #include "shminvade/SHMController.h"
 #include "shminvade/SHMSharedMemoryBetweenTasks.h"
 #endif
@@ -331,7 +331,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
 
 
-  #if  defined(SharedTBBInvade)
+  #if  defined(TBBInvade)
   double localData[3] = { 0.0, 1.0, 1.0 };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
@@ -893,7 +893,7 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
 }
 
 void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
-  #if defined(SharedTBBInvade)
+  #if defined(TBBInvade)
   int ranksOnThisNode              = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getNumberOfRegisteredProcesses();
   int myIndexWithinSharedUserData  = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getProcessIndexInSharedDataTable();
 
@@ -951,7 +951,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   }
   #endif
 
-  #if  defined(SharedTBBInvade)
+  #if  defined(TBBInvade)
   static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
