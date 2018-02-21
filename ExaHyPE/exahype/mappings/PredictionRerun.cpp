@@ -141,9 +141,8 @@ void exahype::mappings::PredictionRerun::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictData(
-      fineGridCell,coarseGridCell,
-      exahype::State::AlgorithmSection::TimeStepping);
+  exahype::mappings::Prediction::restriction(
+      fineGridCell,exahype::State::AlgorithmSection::PredictionRerunAllSend);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

@@ -86,14 +86,9 @@ private:
   std::vector<double> _minTimeStepSizes;
 
   /**
-   * A minimum cell size for each solver.
+   * The maximum level occupied by cells of a solver.
    */
-  std::vector<double> _minCellSizes;
-
-  /**
-   * A maximum cell size for each solver.
-   */
-  std::vector<double> _maxCellSizes;
+  std::vector<int> _maxLevels;
 
   /**
    * Prepare a appropriately sized vector _minTimeStepSizes

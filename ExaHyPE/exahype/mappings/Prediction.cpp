@@ -163,9 +163,8 @@ void exahype::mappings::Prediction::enterCell(
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
-void exahype::mappings::Prediction::restrictData(
+void exahype::mappings::Prediction::restriction(
     const exahype::Cell&                             fineGridCell,
-    const exahype::Cell&                             coarseGridCell,
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
@@ -195,9 +194,8 @@ void exahype::mappings::Prediction::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictData(
-      fineGridCell,coarseGridCell,
-      exahype::State::AlgorithmSection::TimeStepping);
+  exahype::mappings::Prediction::restriction(
+      fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

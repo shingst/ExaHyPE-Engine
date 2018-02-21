@@ -85,13 +85,11 @@ exahype::mappings::PredictionOrLocalRecomputation::descendSpecification(int leve
 void exahype::mappings::PredictionOrLocalRecomputation::prepareLocalTimeStepVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
-  _minCellSizes.resize(numberOfSolvers);
-  _maxCellSizes.resize(numberOfSolvers);
+  _maxLevels.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _minCellSizes    [solverNumber] = std::numeric_limits<double>::max();
-    _maxCellSizes    [solverNumber] = -std::numeric_limits<double>::max(); // "-", min
+    _maxLevels       [solverNumber] = -std::numeric_limits<int>::max(); // "-", min
   }
 }
 
@@ -123,8 +121,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
         std::min(_minTimeStepSizes[solverNumber], workerThread._minTimeStepSizes[solverNumber]);
     _minCellSizes[solverNumber] =
         std::min(_minCellSizes[solverNumber], workerThread._minCellSizes[solverNumber]);
-    _maxCellSizes[solverNumber] =
-        std::max(_maxCellSizes[solverNumber], workerThread._maxCellSizes[solverNumber]);
+    _maxLevels[solverNumber] =
+        std::max(_maxLevels[solverNumber], workerThread._maxLevels[solverNumber]);
   }
 }
 #endif
@@ -174,17 +172,16 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
           performLocalRecomputation( solver )
       ) {
         logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
-            ",_minCellSizes[solverNumber]="<<_maxCellSizes[solverNumber]);
+            ",_minCellSizes[solverNumber]="<<_maxLevels[solverNumber]);
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
-        solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
-        solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
+        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
         if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
           assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
               solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
           assertion3(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString());
+              solver->getNextMaxCellSize(),_maxLevels[solverNumber],solver->toString());
         }
 
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
@@ -260,10 +257,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           }
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-          _minCellSizes[solverNumber] = std::min(
-              fineGridVerticesEnumerator.getCellSize()[0],_minCellSizes[solverNumber]);
-          _maxCellSizes[solverNumber] = std::max(
-              fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
+          _maxLevels[solverNumber] = std::max(
+              fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
           limitingADERDG->determineMinAndMax(cellDescriptionsIndex,element);
         }
@@ -307,9 +302,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if ( exahype::State::fuseADERDGPhases() ) {
-    exahype::mappings::Prediction::restrictData(
-        fineGridCell,coarseGridCell,
-        exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
+    exahype::mappings::Prediction::restriction(
+        fineGridCell,exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

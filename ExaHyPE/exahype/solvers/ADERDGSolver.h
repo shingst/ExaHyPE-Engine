@@ -2170,7 +2170,7 @@ public:
   /**
    * Compiles a message for the master.
    *
-   * Capacity of the message vector can be modified
+   * Capacity (in byte) of the message vector can be modified
    * in case the calling function wants to push additional
    * entries to the back of the vector.
    *

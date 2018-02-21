@@ -695,8 +695,7 @@ class exahype::solvers::Solver {
   static void startNewTimeStepForAllSolvers(
       const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
-      const std::vector<double>& minCellSizes,
-      const std::vector<double>& maxCellSizes,
+      const std::vector<int>& maxLevels,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
@@ -776,20 +775,13 @@ class exahype::solvers::Solver {
   const int _maximumAdaptiveMeshDepth;
 
   /**
-   * The minimum extent in each coordinate direction at least one cell in the grid has.
+   * The maximum tree level which is occupied by
+   * cells of this solver.
    *
    * This value needs to be updated every time the grid has been changed.
    */
-  double _minCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
-  double _nextMinCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
-
-  /**
-   * The maximum extent in each coordinate direction at least one cell in the grid has.
-   *
-   * This value needs to be updated every time the grid has been changed.
-   */
-  double _maxCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
-  double _nextMaxCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
+  int _maxLevel;
+  int _nextMaxLevel;
 
   /**
    * The time stepping mode of this solver.
@@ -926,17 +918,13 @@ class exahype::solvers::Solver {
    */
   int getMaximumAdaptiveMeshLevel() const;
 
-  virtual void updateNextMinCellSize(double minCellSize);
-
-  virtual void updateNextMaxCellSize(double maxCellSize);
-
-  virtual double getNextMinCellSize() const;
-
-  virtual double getNextMaxCellSize() const;
-
-  virtual double getMinCellSize() const;
-
-  virtual double getMaxCellSize() const;
+  /**
+   * \note methods are virtual in order to enable
+   * overriding by LimitingADERDGSolver
+   */
+  virtual void updateNextMaxLevel(int maxLevel);
+  virtual int getNextMaxLevel() const;
+  virtual int getMaxLevel() const;
 
   /**
    * Returns the identifier of this solver.

@@ -170,10 +170,8 @@ exahype::solvers::Solver::Solver(
       _maximumMeshSize(maximumMeshSize),
       _coarsestMeshLevel(3),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
-      _minCellSize(std::numeric_limits<double>::max()),
-      _nextMinCellSize(std::numeric_limits<double>::max()),
-      _maxCellSize(-std::numeric_limits<double>::max()), // "-", min
-      _nextMaxCellSize(-std::numeric_limits<double>::max()), // "-", min
+      _maxLevel(-std::numeric_limits<int>::max()), // "-", min
+      _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)),
       _meshUpdateRequest(false),
@@ -348,28 +346,16 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
- void exahype::solvers::Solver::updateNextMinCellSize(double minCellSize) {
-  _nextMinCellSize = std::min( _nextMinCellSize, minCellSize );
+ void exahype::solvers::Solver::updateNextMaxLevel(int maxLevel) {
+   _nextMaxLevel = std::max( _nextMaxLevel, maxLevel );
 }
 
- void exahype::solvers::Solver::updateNextMaxCellSize(double maxCellSize) {
-  _nextMaxCellSize = std::max( _nextMaxCellSize, maxCellSize );
+int exahype::solvers::Solver::getNextMaxLevel() const {
+  return _nextMaxLevel;
 }
 
- double exahype::solvers::Solver::getNextMinCellSize() const {
-  return _nextMinCellSize;
-}
-
- double exahype::solvers::Solver::getNextMaxCellSize() const {
-  return _nextMaxCellSize;
-}
-
- double exahype::solvers::Solver::getMinCellSize() const {
-  return _minCellSize;
-}
-
- double exahype::solvers::Solver::getMaxCellSize() const {
-  return _maxCellSize;
+int exahype::solvers::Solver::getMaxLevel() const {
+  return _maxLevel;
 }
 
 void exahype::solvers::Solver::resetMeshUpdateRequestFlags() {
@@ -530,10 +516,9 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
     assertion1(solver->getMaxCellSize()>0,solver->getMaxCellSize());
     assertion1(solver->getMinCellSize()>0,solver->getMinCellSize());
 
-    maxDepth =  std::max (
-        maxDepth,
-        tarch::la::round(
-            std::log(solver->getMaxCellSize()/solver->getMinCellSize())/std::log(3)));
+    maxDepth = std::max(
+        maxDepth, solver->getMaxLevel() - solver->getCoarsestMeshLevel()
+    );
   }
 
   assertion1(maxDepth>=0,maxDepth);
@@ -653,8 +638,7 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
-      const std::vector<double>& minCellSizes,
-      const std::vector<double>& maxCellSizes,
+      const std::vector<int>& maxLevels,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -679,8 +663,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       }
     }
     // cell sizes (for AMR)
-    solver->updateNextMinCellSize(minCellSizes[solverNumber]);
-    solver->updateNextMaxCellSize(maxCellSizes[solverNumber]);
+    solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
     // time
     assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);

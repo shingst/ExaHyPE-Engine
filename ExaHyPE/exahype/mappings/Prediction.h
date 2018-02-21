@@ -158,9 +158,8 @@ private:
    * threads. See the documentation of peano::datatraversal::TasksSet for a
    * remark on this.
    */
-  static void restrictData(
-      const exahype::Cell&                             fineGridCell,
-      const exahype::Cell&                             coarseGridCell,
+  static void restriction(
+      const exahype::Cell&  fineGridCell,
       const exahype::State::AlgorithmSection& algorithmSection);
 
   /**

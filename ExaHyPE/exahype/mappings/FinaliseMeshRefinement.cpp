@@ -81,13 +81,11 @@ exahype::mappings::FinaliseMeshRefinement::descendSpecification(int level) const
 void exahype::mappings::FinaliseMeshRefinement::prepareLocalTimeStepVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
-  _minCellSizes.resize(numberOfSolvers);
-  _maxCellSizes.resize(numberOfSolvers);
+  _maxLevels.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _minCellSizes    [solverNumber] = std::numeric_limits<double>::max();
-    _maxCellSizes    [solverNumber] = -std::numeric_limits<double>::max(); // "-", min
+    _maxLevels    [solverNumber]    = -std::numeric_limits<int>::max(); // "-", min
   }
 }
 
@@ -113,8 +111,8 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
         std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
     _minCellSizes[i] =
         std::min(_minCellSizes[i], workerThread._minCellSizes[i]);
-    _maxCellSizes[i] =
-        std::max(_maxCellSizes[i], workerThread._maxCellSizes[i]);
+    _maxLevels[i] =
+        std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
 }
 #endif
@@ -176,10 +174,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
 
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-          _minCellSizes[solverNumber] = std::min(
-              fineGridVerticesEnumerator.getCellSize()[0],_minCellSizes[solverNumber]);
-          _maxCellSizes[solverNumber] = std::max(
-              fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
+          _maxLevels[solverNumber] = std::max(
+              fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
           // determine min and max for LimitingADERDGSolver
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -215,13 +211,12 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
       if (solver->getMeshUpdateRequest()) {
         // cell sizes
-        solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
-        solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
+        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
         if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
           assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
               solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
           assertion3(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString());
+              solver->getNextMaxCellSize(),_maxLevels[solverNumber],solver->toString());
         }
 
         // time

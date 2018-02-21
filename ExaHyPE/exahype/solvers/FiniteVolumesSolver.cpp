@@ -202,10 +202,8 @@ void exahype::solvers::FiniteVolumesSolver::startNewTimeStep() {
       break;
   }
 
-  _minCellSize     = _nextMinCellSize;
-  _maxCellSize     = _nextMaxCellSize;
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 void exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
@@ -229,10 +227,8 @@ void exahype::solvers::FiniteVolumesSolver::startNewTimeStepFused(
          break;
      }
 
-     _minCellSize     = _nextMinCellSize;
-     _maxCellSize     = _nextMaxCellSize;
-     _nextMinCellSize = std::numeric_limits<double>::max();
-     _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+     _maxLevel     = _nextMaxLevel;
+     _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
    }
 }
 
@@ -251,10 +247,8 @@ void exahype::solvers::FiniteVolumesSolver::updateTimeStepSizes() {
       break;
   }
 
-  _minCellSize     = _nextMinCellSize;
-  _maxCellSize     = _nextMaxCellSize;
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 /**
@@ -1369,13 +1363,10 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries timeStepDataToReduce(0,4);
+  DataHeap::HeapEntries timeStepDataToReduce(0,1);
   timeStepDataToReduce.push_back(_minTimeStepSize);
-  timeStepDataToReduce.push_back(_meshUpdateRequest ? 1.0 : -1.0);
-  timeStepDataToReduce.push_back(_minCellSize);
-  timeStepDataToReduce.push_back(_maxCellSize);
 
-  assertion1(timeStepDataToReduce.size()==4,timeStepDataToReduce.size());
+  assertion1(timeStepDataToReduce.size()==1,timeStepDataToReduce.size());
   assertion1(std::isfinite(timeStepDataToReduce[0]),timeStepDataToReduce[0]);
   if (_timeStepping==TimeStepping::Global) {
     assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::max(),
@@ -1385,10 +1376,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("sendDataToMaster(...)","Sending time step data: " <<
-        "data[0]=" << timeStepDataToReduce[0] <<
-        ",data[1]=" << timeStepDataToReduce[1] <<
-        ",data[2]=" << timeStepDataToReduce[2] <<
-        ",data[3]=" << timeStepDataToReduce[3]);
+        "data[0]=" << timeStepDataToReduce[0]);
   }
 
   DataHeap::getInstance().sendData(
@@ -1408,7 +1396,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries receivedTimeStepData(4);
+  DataHeap::HeapEntries receivedTimeStepData(1);
 
   if (true || tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -1419,31 +1407,22 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
       receivedTimeStepData.data(),receivedTimeStepData.size(),workerRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(receivedTimeStepData.size()==4,receivedTimeStepData.size());
+  assertion1(receivedTimeStepData.size()==1,receivedTimeStepData.size());
   assertion1(receivedTimeStepData[0]>=0,receivedTimeStepData[0]);
   assertion1(std::isfinite(receivedTimeStepData[0]),receivedTimeStepData[0]);
   // The master solver has not yet updated its minNextTimeStepSize.
   // Thus it does not yet equal MAX_DOUBLE.
 
   int index=0;
-  _minNextTimeStepSize      = std::min( _minNextTimeStepSize, receivedTimeStepData[index++] );
-  _nextMeshUpdateRequest |= ( receivedTimeStepData[index++] > 0 ) ? true : false;
-  _nextMinCellSize          = std::min( _nextMinCellSize, receivedTimeStepData[index++] );
-  _nextMaxCellSize          = std::max( _nextMaxCellSize, receivedTimeStepData[index++] );
+  _minNextTimeStepSize = std::min( _minNextTimeStepSize, receivedTimeStepData[index++] );
 
   if (true || tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("mergeWithWorkerData(...)","Receiving time step data: " <<
-             "data[0]=" << receivedTimeStepData[0] <<
-             ",data[1]=" << receivedTimeStepData[1] <<
-             ",data[2]=" << receivedTimeStepData[2] <<
-             ",data[3]=" << receivedTimeStepData[3] );
+             "data[0]=" << receivedTimeStepData[0]);
 
     logDebug("mergeWithWorkerData(...)","Updated time step fields: " <<
-             "_minNextTimeStepSize="     << _minNextTimeStepSize <<
-             "_nextMeshUpdateRequest=" << _nextMeshUpdateRequest <<
-             ",_nextMinCellSize="        << _nextMinCellSize <<
-             ",_nextMaxCellSize="        << _nextMaxCellSize);
+             "_minNextTimeStepSize="     << _minNextTimeStepSize);
   }
 }
 
@@ -1503,14 +1482,11 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  std::vector<double> timeStepDataToSend(0,4);
+  std::vector<double> timeStepDataToSend(0,2);
   timeStepDataToSend.push_back(_minTimeStamp); // TODO(Dominic): Append previous time step size
   timeStepDataToSend.push_back(_minTimeStepSize);
 
-  timeStepDataToSend.push_back(_minCellSize);
-  timeStepDataToSend.push_back(_maxCellSize);
-
-  assertion1(timeStepDataToSend.size()==4,timeStepDataToSend.size());
+  assertion1(timeStepDataToSend.size()==2,timeStepDataToSend.size());
   assertion1(std::isfinite(timeStepDataToSend[0]),timeStepDataToSend[0]);
   assertion1(std::isfinite(timeStepDataToSend[1]),timeStepDataToSend[1]);
 
@@ -1523,9 +1499,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("sendDataToWorker(...)","Broadcasting time step data: " <<
         " data[0]=" << timeStepDataToSend[0] <<
-        ",data[1]=" << timeStepDataToSend[1] <<
-        ",data[2]=" << timeStepDataToSend[2] <<
-        ",data[3]=" << timeStepDataToSend[3]);
+        ",data[1]=" << timeStepDataToSend[1]);
     logDebug("sendDataWorker(...)","_minNextTimeStepSize="<<_minNextTimeStepSize);
   }
 
@@ -1539,11 +1513,11 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  std::vector<double> receivedTimeStepData(4);
+  std::vector<double> receivedTimeStepData(2);
   DataHeap::getInstance().receiveData(
       receivedTimeStepData.data(),receivedTimeStepData.size(),masterRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
-  assertion1(receivedTimeStepData.size()==4,receivedTimeStepData.size());
+  assertion1(receivedTimeStepData.size()==2,receivedTimeStepData.size());
 
   if (_timeStepping==TimeStepping::Global) {
     assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::max(),
@@ -1554,16 +1528,11 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("mergeWithMasterData(...)","Received time step data: " <<
         "data[0]="  << receivedTimeStepData[0] <<
-        ",data[1]=" << receivedTimeStepData[1] <<
-        ",data[2]=" << receivedTimeStepData[2] <<
-        ",data[3]=" << receivedTimeStepData[3]);
+        ",data[1]=" << receivedTimeStepData[1]);
   }
 
   _minTimeStamp    = receivedTimeStepData[0];
   _minTimeStepSize = receivedTimeStepData[1];
-
-  _minCellSize              = receivedTimeStepData[2];
-  _maxCellSize              = receivedTimeStepData[3];
 }
 
 bool exahype::solvers::FiniteVolumesSolver::hasToSendDataToMaster(

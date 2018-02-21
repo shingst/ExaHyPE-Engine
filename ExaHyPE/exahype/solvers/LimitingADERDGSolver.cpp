@@ -279,30 +279,16 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused() {
   ensureLimiterTimeStepDataIsConsistent();
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateNextMinCellSize(double minCellSize) {
-  _solver->updateNextMinCellSize(minCellSize);
-  _nextMinCellSize = _solver->getNextMinCellSize();
+void exahype::solvers::LimitingADERDGSolver::updateNextMaxLevel(int maxLevel) {
+  _solver->updateNextMaxLevel(maxLevel);
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateNextMaxCellSize(double maxCellSize) {
-  _solver->updateNextMaxCellSize(maxCellSize);
-  _nextMaxCellSize = _solver->getNextMaxCellSize();
+int exahype::solvers::LimitingADERDGSolver::getNextMaxLevel() const {
+  return _solver->getNextMaxLevel();
 }
 
-double exahype::solvers::LimitingADERDGSolver::getNextMinCellSize() const {
-  return _solver->getNextMinCellSize();
-}
-
-double exahype::solvers::LimitingADERDGSolver::getNextMaxCellSize() const {
-  return _solver->getNextMaxCellSize();
-}
-
-double exahype::solvers::LimitingADERDGSolver::getMinCellSize() const {
-  return _solver->getMinCellSize();
-}
-
-double exahype::solvers::LimitingADERDGSolver::getMaxCellSize() const {
-  return _solver->getMaxCellSize();
+int exahype::solvers::LimitingADERDGSolver::getMaxLevel() const {
+  return _solver->getMaxLevel();
 }
 
 ///////////////////////////////////
@@ -2135,21 +2121,20 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
   DataHeap::HeapEntries messageForMaster =
-      _solver->compileMessageForMaster(5);
+      _solver->compileMessageForMaster(4);
 
   // Send additional data to master
   messageForMaster.push_back(
       exahype::solvers::convertToDouble(_limiterDomainChange));
 
-  assertion1(messageForMaster.size()==5,messageForMaster.size());
+  assertion1(messageForMaster.size()==4,messageForMaster.size());
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("sendDataToMaster(...)","Sending time step data: " <<
         "data[0]=" << messageForMaster[0] <<
         ",data[1]=" << messageForMaster[1] <<
         ",data[2]=" << messageForMaster[2] <<
-        ",data[3]=" << messageForMaster[3] <<
-        ",data[4]=" << messageForMaster[4]);
+        ",data[3]=" << messageForMaster[3]);
   }
   DataHeap::getInstance().sendData(
       messageForMaster.data(), messageForMaster.size(),
@@ -2161,7 +2146,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(5); // !!! Creates and fills the vector
+  DataHeap::HeapEntries messageFromWorker(4); // !!! Creates and fills the vector
   DataHeap::getInstance().receiveData(
       messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
@@ -2170,7 +2155,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
   _solver->mergeWithWorkerData(messageFromWorker);
 
   // merge own flags
-  const int firstEntry=4;
+  const int firstEntry=3;
   LimiterDomainChange workerLimiterDomainChange =
       exahype::solvers::convertToLimiterDomainChange(messageFromWorker[firstEntry]);
   updateNextLimiterDomainChange(workerLimiterDomainChange); // !!! It is important that we merge with the "next" field here
@@ -2181,8 +2166,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
              " messageFromWorker[0]=" << messageFromWorker[0] <<
              " messageFromWorker[1]=" << messageFromWorker[1] <<
              " messageFromWorker[2]=" << messageFromWorker[2] <<
-             " messageFromWorker[3]=" << messageFromWorker[3] <<
-             " messageFromWorker[4]=" << messageFromWorker[4]);
+             " messageFromWorker[3]=" << messageFromWorker[3]);
     logDebug("mergeWithWorkerData(...)","nextLimiterDomainChange=" << static_cast<int>(_nextLimiterDomainChange));
   }
 }
@@ -2243,13 +2227,13 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToWorker(
     const                                        int workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries messageForWorker = _solver->compileMessageForWorker(9);
+  DataHeap::HeapEntries messageForWorker = _solver->compileMessageForWorker(8);
 
   // append additional data
   messageForWorker.push_back(
       exahype::solvers::convertToDouble(_limiterDomainChange));
 
-  assertion1(messageForWorker.size()==9,messageForWorker.size());
+  assertion1(messageForWorker.size()==8,messageForWorker.size());
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("sendDataToWorker(...)","sending data to worker: " <<
@@ -2260,8 +2244,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToWorker(
              ",data[4]=" << messageForWorker[4] <<
              ",data[5]=" << messageForWorker[5] <<
              ",data[6]=" << messageForWorker[6] <<
-             ",data[7]=" << messageForWorker[7] <<
-             ",data[8]=" << messageForWorker[8]);
+             ",data[7]=" << messageForWorker[7]);
   }
   DataHeap::getInstance().sendData(
       messageForWorker.data(), messageForWorker.size(),
@@ -2273,7 +2256,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromMaster(9); // !!! Creates and fills the vector
+  DataHeap::HeapEntries messageFromMaster(8); // !!! Creates and fills the vector
   DataHeap::getInstance().receiveData(
       messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
@@ -2282,7 +2265,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
   _solver->mergeWithMasterData(messageFromMaster);
 
   // merge own data
-  const int firstEntry=8;
+  const int firstEntry=7;
   _limiterDomainChange = exahype::solvers::convertToLimiterDomainChange(messageFromMaster[firstEntry]);
 
   if (tarch::parallel::Node::getInstance().getRank()==
@@ -2295,8 +2278,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
              " messageFromMaster[4]=" << messageFromMaster[4] <<
              " messageFromMaster[5]=" << messageFromMaster[5] <<
              " messageFromMaster[6]=" << messageFromMaster[6] <<
-             " messageFromMaster[7]=" << messageFromMaster[7] <<
-             " messageFromMaster[8]=" << messageFromMaster[8]);
+             " messageFromMaster[7]=" << messageFromMaster[7]);
     logDebug("mergeWithWorkerData(...)","_limiterDomainChange=" << static_cast<int>(_limiterDomainChange));
   }
 }
