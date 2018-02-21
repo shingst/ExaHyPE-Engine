@@ -119,8 +119,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] =
         std::min(_minTimeStepSizes[solverNumber], workerThread._minTimeStepSizes[solverNumber]);
-    _minCellSizes[solverNumber] =
-        std::min(_minCellSizes[solverNumber], workerThread._minCellSizes[solverNumber]);
     _maxLevels[solverNumber] =
         std::max(_maxLevels[solverNumber], workerThread._maxLevels[solverNumber]);
   }

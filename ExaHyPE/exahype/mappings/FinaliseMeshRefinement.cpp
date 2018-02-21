@@ -109,8 +109,6 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
     _minTimeStepSizes[i] =
         std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _minCellSizes[i] =
-        std::min(_minCellSizes[i], workerThread._minCellSizes[i]);
     _maxLevels[i] =
         std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }

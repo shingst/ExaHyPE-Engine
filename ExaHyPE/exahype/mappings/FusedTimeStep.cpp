@@ -182,8 +182,6 @@ void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
     // time step size and cell sizes
     _minTimeStepSizes[i] =
         std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _minCellSizes[i] =
-        std::min(_minCellSizes[i], workerThread._minCellSizes[i]);
     _maxLevels[i] =
         std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
