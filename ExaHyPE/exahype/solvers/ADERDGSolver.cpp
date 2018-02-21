@@ -1861,7 +1861,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
-  auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnBackgroundJobs =
         isAtRemoteBoundary ||
@@ -1874,19 +1874,18 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         isLastIterationOfBatch  ||
         vetoSpawnPredictionAsBackgroundJob
     ) {
-      exahype::solvers::Solver::UpdateResult result =
-          fusedTimeStepBody(cellDescriptionsIndex,element,
-                            isFirstIterationOfBatch,isLastIterationOfBatch,
-                            vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
+      UpdateResult result = fusedTimeStepBody(
+          cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch,
+          vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
       return result;
     } else {
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
       peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-      exahype::solvers::Solver::UpdateResult result;
+      UpdateResult result;
       return result;
     }
   } else {
-    exahype::solvers::Solver::UpdateResult result; // TODO(Dominic): Add a constructor to UpdateResult
+    UpdateResult result; // TODO(Dominic): Add a constructor to UpdateResult
     return result;
   }
 }
@@ -1894,8 +1893,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
       const int cellDescriptionsIndex,
       const int element,
-      const bool isAtRemoteBoundary
-){
+      const bool isAtRemoteBoundary){
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     uncompress(cellDescription);
