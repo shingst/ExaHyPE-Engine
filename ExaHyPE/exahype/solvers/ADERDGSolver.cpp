@@ -1862,27 +1862,32 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  const bool vetoSpawnBackgroundJobs =
-      isAtRemoteBoundary ||
-      isRestrictingOrInvolvedInProlongation(cellDescription);
-  const bool vetoSpawnPredictionAsBackgroundJob =
-      vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
+  if (cellDescription.getType()==CellDescription::Type::Cell) {
+    const bool vetoSpawnBackgroundJobs =
+        isAtRemoteBoundary ||
+        isRestrictingOrInvolvedInProlongation(cellDescription);
+    const bool vetoSpawnPredictionAsBackgroundJob =
+        vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
 
-  if (
-      isFirstIterationOfBatch ||
-      isLastIterationOfBatch  ||
-      vetoSpawnPredictionAsBackgroundJob
-  ) {
-    exahype::solvers::Solver::UpdateResult updateResult =
-        fusedTimeStepBody(cellDescriptionsIndex,element,
-            isFirstIterationOfBatch,isLastIterationOfBatch,
-            vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
-    return updateResult;
+    if (
+        isFirstIterationOfBatch ||
+        isLastIterationOfBatch  ||
+        vetoSpawnPredictionAsBackgroundJob
+    ) {
+      exahype::solvers::Solver::UpdateResult result =
+          fusedTimeStepBody(cellDescriptionsIndex,element,
+                            isFirstIterationOfBatch,isLastIterationOfBatch,
+                            vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
+      return result;
+    } else {
+      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
+      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      exahype::solvers::Solver::UpdateResult result;
+      return result;
+    }
   } else {
-    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
-    peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-    exahype::solvers::Solver::UpdateResult updateResult;
-    return updateResult;
+    exahype::solvers::Solver::UpdateResult result; // TODO(Dominic): Add a constructor to UpdateResult
+    return result;
   }
 }
 
@@ -1892,17 +1897,22 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
       const bool isAtRemoteBoundary
 ){
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  uncompress(cellDescription);
+  if (cellDescription.getType()==CellDescription::Type::Cell) {
+    uncompress(cellDescription);
 
-  UpdateResult result;
-  updateSolution(cellDescriptionsIndex,element,true);
-  result._timeStepSize         = startNewTimeStep(cellDescriptionsIndex,element);
-  result._refinementRequested |= evaluateRefinementCriterionAfterSolutionUpdate(
-      cellDescriptionsIndex,element);
+    UpdateResult result;
+    updateSolution(cellDescriptionsIndex,element,true);
+    result._timeStepSize         = startNewTimeStep(cellDescriptionsIndex,element);
+    result._refinementRequested |= evaluateRefinementCriterionAfterSolutionUpdate(
+        cellDescriptionsIndex,element);
 
-  compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
+    compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
 
-  return result;
+    return result;
+  } else {
+    UpdateResult result;
+    return result;
+  }
 }
 
 void exahype::solvers::ADERDGSolver::compress(
@@ -1941,11 +1951,13 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   if (aderdgSolver!=nullptr) {
     CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
-    aderdgSolver->uncompress(cellDescription);
-    aderdgSolver->synchroniseTimeStepping(cellDescription);
-    aderdgSolver->performPredictionAndVolumeIntegral(
-        cellDescription,cellDescription.getPredictorTimeStamp(),
-        cellDescription.getPredictorTimeStepSize(),isAtRemoteBoundary);
+    if (cellDescription.getType()==CellDescription::Type::Cell) {
+      aderdgSolver->synchroniseTimeStepping(cellDescription);
+      aderdgSolver->uncompress(cellDescription);
+      aderdgSolver->performPredictionAndVolumeIntegral(
+          cellDescription,cellDescription.getPredictorTimeStamp(),
+          cellDescription.getPredictorTimeStepSize(),isAtRemoteBoundary);
+    }
   }
 }
 
@@ -1978,7 +1990,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
     const bool   vetoSpawnAnyBackgroundJob) {
-  validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [pre]");
+  validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
 
   double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
@@ -2004,7 +2016,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
 
   compress(cellDescription,vetoSpawnAnyBackgroundJob);
 
-  validateCellDescriptionData(cellDescription,true,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+  validateCellDescriptionData(cellDescription,true,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
