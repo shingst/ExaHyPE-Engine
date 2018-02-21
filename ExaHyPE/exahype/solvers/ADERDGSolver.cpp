@@ -1830,12 +1830,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool vetoSpawnCompressionAsBackgroundJob) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  UpdateResult result;
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
   updateSolution(cellDescription,isFirstIterationOfBatch);
 
   // This is important to memorise before calling startNewTimeStepFused
   // TODO(Dominic): Add to docu and/or make cleaner
+  UpdateResult result;
   const double predictorTimeStamp    = cellDescription.getPredictorTimeStamp();
   const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
   result._timeStepSize        = startNewTimeStepFused(
@@ -1847,9 +1847,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     performPredictionAndVolumeIntegralBody(
           cellDescription,
           predictorTimeStamp,predictorTimeStepSize,
-          vetoSpawnCompressionAsBackgroundJob);
+          false,vetoSpawnCompressionAsBackgroundJob);
   } else {
-    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
+    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,false/*already uncompressed*/ );
     peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
   }
   return result;
@@ -1874,19 +1874,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         isLastIterationOfBatch  ||
         vetoSpawnPredictionAsBackgroundJob
     ) {
-      UpdateResult result = fusedTimeStepBody(
+      return fusedTimeStepBody(
           cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch,
           vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
-      return result;
     } else {
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
       peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-      UpdateResult result;
-      return result;
+      return UpdateResult();
     }
   } else {
-    UpdateResult result; // TODO(Dominic): Add a constructor to UpdateResult
-    return result;
+    return UpdateResult();
   }
 }
 
@@ -1908,8 +1905,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
 
     return result;
   } else {
-    UpdateResult result;
-    return result;
+    return UpdateResult();
   }
 }
 
@@ -1951,10 +1947,10 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 
     if (cellDescription.getType()==CellDescription::Type::Cell) {
       aderdgSolver->synchroniseTimeStepping(cellDescription);
-      aderdgSolver->uncompress(cellDescription);
       aderdgSolver->performPredictionAndVolumeIntegral(
           cellDescription,cellDescription.getPredictorTimeStamp(),
-          cellDescription.getPredictorTimeStepSize(),isAtRemoteBoundary);
+          cellDescription.getPredictorTimeStepSize(),
+          true,isAtRemoteBoundary);
     }
   }
 }
@@ -1987,7 +1983,12 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     CellDescription& cellDescription,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
+    const bool   uncompressBefore,
     const bool   vetoSpawnAnyBackgroundJob) {
+  if (uncompressBefore) {
+    uncompress(cellDescription);
+  }
+
   validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
 
   double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -2021,6 +2022,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
+    const bool uncompressBefore,
     const bool isAtRemoteBoundary) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
@@ -2031,10 +2033,11 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
     ) {
       performPredictionAndVolumeIntegralBody(
-          cellDescription,predictorTimeStamp,predictorTimeStepSize,vetoSpawnAnyBackgroundJob);
+          cellDescription,predictorTimeStamp,predictorTimeStepSize,
+          uncompressBefore,vetoSpawnAnyBackgroundJob);
     }
     else {
-      PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
+      PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,uncompressBefore );
       peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
     }
   }
@@ -4206,12 +4209,14 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   ADERDGSolver&     solver,
   CellDescription&  cellDescription,
   const double      predictorTimeStamp,
-  const double      predictorTimeStepSize
+  const double      predictorTimeStepSize,
+  const bool        uncompressBefore
 ):
   _solver(solver),
   _cellDescription(cellDescription),
   _predictorTimeStamp(predictorTimeStamp),
-  _predictorTimeStepSize(predictorTimeStepSize){
+  _predictorTimeStepSize(predictorTimeStepSize),
+  _uncompressBefore(uncompressBefore){
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs++;
   lock.free();
@@ -4222,7 +4227,7 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegralBody(
       _cellDescription,
       _predictorTimeStamp,_predictorTimeStepSize,
-      false /*existence of job means there is no veto*/); // ignore return value
+      _uncompressBefore,false /*existence of job means there is no veto*/); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;

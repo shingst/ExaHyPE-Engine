@@ -781,8 +781,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         vetoSpawnBackgroundJobs
     ) {
       // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
-      UpdateResult result;
       updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
+      UpdateResult result;
       result._limiterDomainChange = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(cellDescriptionsIndex,element);
       result._refinementRequested=  evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
       // This is important to memorise before calling startNewTimeStepFused
@@ -797,18 +797,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         _solver->performPredictionAndVolumeIntegral(
             solverPatch,
             memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
-            vetoSpawnBackgroundJobs);
+            false/*already uncompressed*/,vetoSpawnBackgroundJobs);
       }
       return result;
     } else {
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
       peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-      UpdateResult result;
-      return result;
+      return UpdateResult();
     }
   } else {
-    UpdateResult result;
-    return result;
+    return UpdateResult();
   }
 }
 
@@ -1445,7 +1443,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
           solverPatch,
           solverPatch.getPredictorTimeStamp(),
           solverPatch.getPredictorTimeStepSize(),
-          isAtRemoteBoundary);
+          false/*already uncompressed*/,isAtRemoteBoundary);
     }
   }
 }

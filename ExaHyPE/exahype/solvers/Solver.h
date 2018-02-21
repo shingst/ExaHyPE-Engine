@@ -479,6 +479,8 @@ class exahype::solvers::Solver {
     double _timeStepSize                     = std::numeric_limits<double>::max();
     LimiterDomainChange _limiterDomainChange = LimiterDomainChange::Regular;
     bool _refinementRequested                = false;
+
+    UpdateResult() {}
   } UpdateResult;
 
   /**

@@ -714,12 +714,14 @@ private:
       CellDescription& _cellDescription;
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
+      const bool       _uncompressBefore;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
           CellDescription&  cellDescription,
           const double      predictorTimeStamp,
-          const double      predictorTimeStepSize);
+          const double      predictorTimeStepSize,
+          const bool        uncompressBefore);
 
       bool operator()();
   };
@@ -1561,20 +1563,32 @@ public:
       const bool isAtRemoteBoundary);
 
   /**
-   * \see performPredictionAndVolumeIntegral
+   * Computes the space-time predictor quantities, extrapolates fluxes
+   * and (space-time) predictor values to the boundary and
+   * computes the volume integral directly afterwards.
+   * Furthermore, it restricts face data up to coarser grids
+   * and compresses the cell description data again.
+   *
+   * Can be configured to uncompress the cell description
+   * arrays before computing the space-time predictor quantities.
+   *
+   * \see performPredictionAndVolumeIntegralBody
+   *
+   * \param[in] uncompressBefore             uncompress the cell description arrays before computing
+   *                                         the space-time predictor quantities.
+   * \param[in] vetoCompressionBackgroundJob veto that the compression is run as a background task
+   *
+   * \note If this job is called by
    */
   void performPredictionAndVolumeIntegralBody(
       CellDescription& cellDescription,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
+      const bool   uncompressBefore,
       const bool   vetoCompressionBackgroundJob);
 
   /**
-   * Computes the space-time predictor quantities, extrapolates fluxes
-   * and (space-time) predictor values to the boundary and
-   * computes the volume integral.
-   * Further restricts face data up to coarser grids.
-   * Finally, compresses the cell description data again.
+   *
    *
    * \note uncompress is not performed in this routine. It must
    * be called before calling this routine if compression is employed.
@@ -1589,7 +1603,8 @@ public:
       CellDescription& cellDescription,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
-      const bool isAtRemoteBoundary);
+      const bool   uncompress,
+      const bool   isAtRemoteBoundary);
 
   /**
    * Valdiate that the data stored on and for
@@ -1666,6 +1681,7 @@ public:
   void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) final override;
+
 
   UpdateResult fusedTimeStepBody(
         const int cellDescriptionsIndex,
