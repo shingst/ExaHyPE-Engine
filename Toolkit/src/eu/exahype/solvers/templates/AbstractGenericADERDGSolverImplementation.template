@@ -69,7 +69,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
                             sizePSderivatives + sizeTmp_PSderivatives +
                             sizeLQhi + sizeLFhi;
 {%-   if tempVarsOnStack %}
-  double memory[totalSize];
+  double block[totalSize]; double* memory=&block[0];
 {%-   else %}  
   const int index = exahype::DataHeap::getInstance().createData(
       totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
@@ -117,7 +117,7 @@ const int picardIterations = 1;
 {%-   endif %}
 
 {%-   if tempVarsOnStack %}
-  double memory[totalSize];
+  double block[totalSize]; double* memory=&block[0];
 {%-   else %}  
   const int index = exahype::DataHeap::getInstance().createData(
       totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
@@ -204,7 +204,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   
   constexpr int totalSize = sizeStateOut + sizeFluxOut;
 {%- if tempVarsOnStack %}
-  double memory[totalSize];
+  double block[totalSize]; double* memory=&block[0];
 {%- else %}  
   const int index = exahype::DataHeap::getInstance().createData(
       totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
