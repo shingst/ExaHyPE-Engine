@@ -14,7 +14,7 @@
 {%- if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
 {%- endif %}
-#include "exahype/ParserView.h"
+#include "exahype/parser/ParserView.h"
 
 /**
  * We use Peano's logging
