@@ -221,11 +221,11 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /**
-   * Va;odate that a compute cell is not next to
+   * Validate that a compute cell is not next to
    * a compute cell as long as the face is an interior
    * face.
    */
-  void validateThatNeighbourhoodIsValid(
+  void validateNeighbourhood(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
