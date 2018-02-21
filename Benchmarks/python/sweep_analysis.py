@@ -18,26 +18,6 @@ import codecs
 
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
 
-metrics =  [
-            ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
-            ["AVX MFLOP/s",                 "Sum"],
-            ["Memory bandwidth [MBytes/s]", "Sum"],
-            ["Memory data volume [GBytes]", "Sum"],
-            ["L3 bandwidth [MBytes/s]",     "Sum"], 
-            ["L3 data volume [GBytes]",     "Sum"],
-            ["L3 request rate",             "Avg"],
-            ["L3 miss rate",                "Avg"],
-            ["L2 request rate",             "Avg"],
-            ["L2 miss rate",                "Avg"],
-            ["Branch misprediction rate",   "Avg"]
-           ]
-         
-counters = [
-            ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
-            ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
-            ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
-           ]
-
 def parseResultFile(filePath):
     '''
     Reads a single sweep job output file and parses the user time spent within each adapter.
@@ -132,8 +112,8 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         header.append("nodes")
                         header.append("tasks")
                         header.append("cores")
-                        header.append("adapter")
                         header.append("run")
+                        header.append("adapter")
                         header.append("iterations")
                         header.append("total_cputime")
                         header.append("total_usertime")
@@ -155,8 +135,8 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(nodes)
                         row.append(tasks)
                         row.append(cores)
-                        row.append(adapter)
                         row.append(run)
+                        row.append(adapter)
                         row.append(adapters[adapter]["iterations"])
                         row.append(adapters[adapter]["total_cputime"])
                         row.append(adapters[adapter]["total_usertime"])
@@ -182,6 +162,166 @@ def parseAdapterTimes(resultsFolderPath,projectName):
 
     except IOError as err:
         print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
+
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+def linesAreIdenticalUpToIndex(line,previousLine,index):
+    result=True
+    for column in range(0,index):
+        result = result and line[column]==previousLine[column]
+    return result
+    
+def parseTotalTimes(resultsFolderPath,projectName):
+    """
+    Read in the sorted adapter times table, sum up
+    all the total cpu and user time per run configuration,
+    and, per parameter tuple, extract the minimum over all runs 
+    into another table.
+    """
+    adaptersTablePath   = resultsFolderPath+"/"+projectName+'.csv'
+    totalTimesTablePath = resultsFolderPath+"/"+projectName+'.total-times.csv'
+    try:
+        print ("reading table "+adaptersTablePath+"")
+        adaptersTableFile  = open(adaptersTablePath, 'r')
+        header             = next(adaptersTableFile).strip().split(';')
+        csvreader          = csv.reader(tableFile,delimiter=";")
+        
+        runColumn      = header.index("run")
+        adapterColumn  = header.index("adapter")
+        cpuTimeColumn  = header.index("total_cputime")
+        userTimeColumn = header.index("total_usertime")
+        
+        if runColumn >= adapterColumn:
+            print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
+        
+        with open(totalTimesTablePath, 'w') as totalTimesTableFile:
+            csvwriter = csv.writer(totalTimesTableFile, delimiter=";")
+            # write header
+            row = header[0:runColumn]
+            row.append(header[cpuTimeColumn])
+            row.append(header[userTimeColumn])
+            csvwriter.writerow(row)
+            
+            # init
+            summedCPUTime     = 0.0
+            summedUserTime    = 0.0
+            minSummedCPUTime  = 10.0**20
+            minSummedUserTime = 10.0**20
+            previousLine      = None
+            
+            # write intermediate rows
+            for line in csvreader:
+                if previousLine==None:
+                    previousLine=line
+                    
+                if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
+                    summedCPUTime  += float(line[cpuTimeColumn])
+                    summedUserTime += float(line[userTimeColumn])
+                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
+                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
+                    minSummedUserTime = min(minSummedUserTime, summedUserTime)
+                    
+                    summedCPUTime  = 0.0
+                    summedUserTime = 0.0
+                else:
+                    row = previousLine[0:runColumnIndex]
+                    row.append(str(minSummedCPUTime))
+                    row.append(str(minSummedUserTime))
+                    csvwriter.writerow(row)
+                    
+                    minSummedCPUTime  = 10.0**20
+                    minSummedUserTime = 10.0**20
+                
+                previousLine  = line
+            
+            # write last row
+            row = previousLine[0:runColumnIndex]
+            row.append(str(minSummedCPUTime))
+            row.append(str(minSummedUserTime))
+            csvwriter.writerow(row)
+    except IOError as err:
+        print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
+
+
+def parseTimeStepTimes(resultsFolderPath,projectName):
+    """
+    Read in the sorted adapter times table and 
+    extract the time per time step for the fused
+    and nonfused scheme.
+    """
+    fusedAdapters        = ["FusedTimeStep"]
+    firstNonfusedAdapter = "BroadcastAndMergeNeighbours"
+    nonfusedAdapters     = [firstNonfusedAdapter, "Prediction", "UpdateAndReduce"]
+    
+    adaptersTablePath   = resultsFolderPath+"/"+projectName+'.csv'
+    timeStepTimesTablePath = resultsFolderPath+"/"+projectName+'.timestep-times.csv'
+    try:
+        print ("reading table "+adaptersTablePath+"")
+        adaptersTableFile  = open(adaptersTablePath, 'r')
+        header             = next(adaptersTableFile).strip().split(';')
+        csvreader          = csv.reader(tableFile,delimiter=";")
+        
+        runColumn        = header.index("run")
+        adapterColumn    = header.index("adapter")
+        iterationsColumn = header.index("iterations")
+        cpuTimeColumn    = header.index("total_cputime")
+        userTimeColumn   = header.index("total_usertime")
+        
+        if runColumn >= adapterColumn:
+            print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
+        
+        with open(timeStepTimesTablePath, 'w') as timeStepTimesTableFile:
+            csvwriter = csv.writer(timeStepTimesTableFile, delimiter=";")
+            # write header
+            row = header[0:runColumn]
+            row.append(header[cpuTimeColumn])
+            row.append(header[userTimeColumn])
+            csvwriter.writerow(row)
+            
+            # init
+            summedCPUTime     = 0.0
+            summedUserTime    = 0.0
+            minSummedCPUTime  = 10.0**20
+            minSummedUserTime = 10.0**20
+            previousLine      = None
+            fused             = True
+            # write intermediate rows
+            for line in csvreader:
+                if previousLine==None:
+                    previousLine=line
+                if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
+                    adapter = line[adapterColumn]
+                    if adapter==firstNonfusedAdapter:
+                       fused = False
+                    
+                    if (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                        summedCPUTime  += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
+                        summedUserTime += float(line[userTimeColumn]) / float(line[iterationsColumn])
+                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
+                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
+                    minSummedUserTime = min(minSummedUserTime, summedUserTime)
+                    
+                    summedCPUTime  = 0.0
+                    summedUserTime = 0.0
+                else:
+                    row = previousLine[0:runColumnIndex]
+                    row.append(str(minSummedCPUTime))
+                    row.append(str(minSummedUserTime))
+                    csvwriter.writerow(row)
+                    
+                    minSummedCPUTime  = 10.0**20
+                    minSummedUserTime = 10.0**20
+                    fused             = True
+                previousLine  = line
+            
+            # write last row
+            row = previousLine[0:runColumnIndex]
+            row.append(str(minSummedCPUTime))
+            row.append(str(minSummedUserTime))
+            csvwriter.writerow(row)
+    except IOError as err:
+        print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
 
 
 def parseLikwidMetrics(filePath,singlecore=False):
@@ -293,6 +433,26 @@ def parseMetrics(resultsFolderPath,projectName):
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
+    metrics =  [
+            ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
+            ["AVX MFLOP/s",                 "Sum"],
+            ["Memory bandwidth [MBytes/s]", "Sum"],
+            ["Memory data volume [GBytes]", "Sum"],
+            ["L3 bandwidth [MBytes/s]",     "Sum"], 
+            ["L3 data volume [GBytes]",     "Sum"],
+            ["L3 request rate",             "Avg"],
+            ["L3 miss rate",                "Avg"],
+            ["L2 request rate",             "Avg"],
+            ["L2 miss rate",                "Avg"],
+            ["Branch misprediction rate",   "Avg"]
+           ]
+         
+    counters = [
+                ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
+                ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
+                ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
+               ]
+    
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
