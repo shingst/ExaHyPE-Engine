@@ -1821,6 +1821,40 @@ bool exahype::solvers::ADERDGSolver::evaluateRefinementCriterionAfterSolutionUpd
   return false;
 }
 
+exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStepBody(
+    const int cellDescriptionsIndex,
+    const int element,
+    const bool isFirstIterationOfBatch,
+    const bool isLastIterationOfBatch,
+    const bool vetoSpawnPredictionAsBackgroundJob,
+    const bool vetoSpawnCompressionAsBackgroundJob) {
+  auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  UpdateResult result;
+  // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
+  updateSolution(cellDescription,isFirstIterationOfBatch);
+
+  // This is important to memorise before calling startNewTimeStepFused
+  // TODO(Dominic): Add to docu and/or make cleaner
+  const double predictorTimeStamp    = cellDescription.getPredictorTimeStamp();
+  const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
+  result._timeStepSize        = startNewTimeStepFused(
+      cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
+  // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
+  // and must thus come last. This order is more natural anyway
+  if ( vetoSpawnPredictionAsBackgroundJob ) {
+    performPredictionAndVolumeIntegralBody(
+          cellDescription,
+          predictorTimeStamp,predictorTimeStepSize,
+          vetoSpawnCompressionAsBackgroundJob);
+  } else {
+    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
+    peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+  }
+  return result;
+}
+
 exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStep(
     const int cellDescriptionsIndex,
     const int element,
@@ -1828,37 +1862,27 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  bool vetoSpawnBackgroundJobs =
+  const bool vetoSpawnBackgroundJobs =
       isAtRemoteBoundary ||
       isRestrictingOrInvolvedInProlongation(cellDescription);
+  const bool vetoSpawnPredictionAsBackgroundJob =
+      vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
 
-  UpdateResult result;
   if (
       isFirstIterationOfBatch ||
       isLastIterationOfBatch  ||
-      vetoSpawnBackgroundJobs
+      vetoSpawnPredictionAsBackgroundJob
   ) {
-    // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
-    updateSolution(cellDescription,isFirstIterationOfBatch);
-
-    // This is important to memorise before calling startNewTimeStepFused
-    // TODO(Dominic): Add to docu and/or make cleaner
-    const double memorisedPredictorTimeStamp    = cellDescription.getPredictorTimeStamp();
-    const double memorisedPredictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
-    result._timeStepSize        = startNewTimeStepFused(
-        cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-    result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
-    // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
-    // and must thus come last. This order is more natural anyway
-    performPredictionAndVolumeIntegral(
-        cellDescription,
-        memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
-        vetoSpawnBackgroundJobs);
-    return result;
+    exahype::solvers::Solver::UpdateResult updateResult =
+        fusedTimeStepBody(cellDescriptionsIndex,element,
+            isFirstIterationOfBatch,isLastIterationOfBatch,
+            vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
+    return updateResult;
   } else {
     FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
     peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-    return result;
+    exahype::solvers::Solver::UpdateResult updateResult;
+    return updateResult;
   }
 }
 
@@ -1949,6 +1973,40 @@ bool exahype::solvers::ADERDGSolver::isRestrictingOrInvolvedInProlongation(
   return isRestrictingOrInvolvedInProlongation;
 }
 
+void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
+    CellDescription& cellDescription,
+    const double predictorTimeStamp,
+    const double predictorTimeStepSize,
+    const bool   vetoSpawnAnyBackgroundJob) {
+  validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [pre]");
+
+  double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+  double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
+  double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+
+  #if defined(Debug) || defined(Asserts)
+  for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+    assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+  }
+  #endif
+
+  fusedSpaceTimePredictorVolumeIntegral(
+      lduh,lQhbnd,lFhbnd,
+      luh,
+      cellDescription.getOffset()+0.5*cellDescription.getSize(),
+      cellDescription.getSize(),
+      predictorTimeStamp,
+      predictorTimeStepSize);
+
+  // If a PredictionJob is launched, this operation will not perform a restriction.
+  restriction(cellDescription);
+
+  compress(cellDescription,vetoSpawnAnyBackgroundJob);
+
+  validateCellDescriptionData(cellDescription,true,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+}
+
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
     const double predictorTimeStamp,
@@ -1957,41 +2015,16 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription);
+        isRestrictingOrInvolvedInProlongation(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
 
     if (
         vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
     ) {
-      validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [pre]");
-
-      double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-      double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
-      double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
-      double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
-
-      #if defined(Debug) || defined(Asserts)
-      for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-      } 
-      #endif
-
-      fusedSpaceTimePredictorVolumeIntegral(
-          lduh,lQhbnd,lFhbnd,
-          luh,
-          cellDescription.getOffset()+0.5*cellDescription.getSize(),
-          cellDescription.getSize(),
-          predictorTimeStamp,
-          predictorTimeStepSize);
-
-      // If a PredictionJob is launched, this operation will not perform a restriction.
-      restriction(cellDescription);
-
-      compress(cellDescription,vetoSpawnAnyBackgroundJob);
-
-      validateCellDescriptionData(cellDescription,true,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+      performPredictionAndVolumeIntegralBody(
+          cellDescription,predictorTimeStamp,predictorTimeStepSize,vetoSpawnAnyBackgroundJob);
     }
     else {
-      PredictionJob predictionJob( *this, cellDescription );
+      PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
       peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
     }
   }
@@ -4161,10 +4194,14 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 
 exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   ADERDGSolver&     solver,
-  CellDescription&  cellDescription
+  CellDescription&  cellDescription,
+  const double      predictorTimeStamp,
+  const double      predictorTimeStepSize
 ):
   _solver(solver),
-  _cellDescription(cellDescription) {
+  _cellDescription(cellDescription),
+  _predictorTimeStamp(predictorTimeStamp),
+  _predictorTimeStepSize(predictorTimeStepSize){
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs++;
   lock.free();
@@ -4172,11 +4209,10 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
-  _solver.performPredictionAndVolumeIntegral(
+  _solver.performPredictionAndVolumeIntegralBody(
       _cellDescription,
-      _cellDescription.getPredictorTimeStamp(),
-      _cellDescription.getPredictorTimeStepSize(),
-      true); // ignore return value
+      _predictorTimeStamp,_predictorTimeStepSize,
+      false /*existence of job means there is no veto*/); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;
@@ -4199,7 +4235,8 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
-  _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
+  _solver.fusedTimeStepBody(
+      _cellDescriptionsIndex,_element,false,false,true,false);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;

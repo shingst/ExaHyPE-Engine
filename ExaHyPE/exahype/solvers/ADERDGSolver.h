@@ -712,10 +712,14 @@ private:
     private:
       ADERDGSolver&    _solver;
       CellDescription& _cellDescription;
+      const double     _predictorTimeStamp;
+      const double     _predictorTimeStepSize;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
-          CellDescription&  cellDescription);
+          CellDescription&  cellDescription,
+          const double      predictorTimeStamp,
+          const double      predictorTimeStepSize);
 
       bool operator()();
   };
@@ -1557,13 +1561,22 @@ public:
       const bool isAtRemoteBoundary);
 
   /**
+   * \see performPredictionAndVolumeIntegral
+   */
+  void performPredictionAndVolumeIntegralBody(
+      CellDescription& cellDescription,
+      const double predictorTimeStamp,
+      const double predictorTimeStepSize,
+      const bool   vetoCompressionBackgroundJob);
+
+  /**
    * Computes the space-time predictor quantities, extrapolates fluxes
    * and (space-time) predictor values to the boundary and
    * computes the volume integral.
    * Further restricts face data up to coarser grids.
-   * Finally, compresses the patch again
+   * Finally, compresses the cell description data again.
    *
-   * \note uncompress is performed in this routine. It must
+   * \note uncompress is not performed in this routine. It must
    * be called before calling this routine if compression is employed.
    *
    * \note Has no const modifier since kernels are not const functions.
@@ -1653,6 +1666,14 @@ public:
   void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) final override;
+
+  UpdateResult fusedTimeStepBody(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isFirstIterationOfBatch,
+        const bool isLastIterationOfBatch,
+        const bool vetoSpawnPredictionAsBackgroundJob,
+        const bool vetoSpawnAnyBackgroundJobs);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
