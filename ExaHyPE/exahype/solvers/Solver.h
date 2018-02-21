@@ -40,7 +40,7 @@
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
-#if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
+#if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
@@ -78,7 +78,7 @@ namespace exahype {
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
   #ifdef ALIGNMENT
-  #if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
+  #if defined(CompilerICC) && defined(SharedTBB)
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
   #else
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;

@@ -270,13 +270,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
 		 #else
-		 /*
-		 #elif defined(SharedTBBInvade)
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
-         false, //  bool pipelineDescendProcessing          = false,
-         false,  //   bool pipelineAscendProcessing           = false,
-         #else
-*/
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing

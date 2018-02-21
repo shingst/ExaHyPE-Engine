@@ -28,7 +28,7 @@ exahype-project EulerADERDG
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.001
+    end-time                = 0.01
   end computational-domain
   
   
@@ -49,15 +49,15 @@ exahype-project EulerADERDG
   
 
   global-optimisation
-    fuse-algorithmic-steps          = off
+    fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
-    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+    spawn-predictor-as-background-thread = on
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = off
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
-    double-compression = 1e-12
-    spawn-double-compression-as-background-thread = on
+    double-compression = 0.0
+    // try on here as well -> there is a deadlock here - at least with MPI
+    spawn-double-compression-as-background-thread = off
   end global-optimisation
 
   solver ADER-DG MyEulerSolver
@@ -73,7 +73,7 @@ exahype-project EulerADERDG
     
     plot vtu::Cartesian::vertices::ascii EulerWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 0.001
       output          = ./variables
     end plot
