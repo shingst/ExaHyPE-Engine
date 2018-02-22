@@ -59,6 +59,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   std::memset(lFi, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% if useNCP %}
   std::memset(gradQ, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
+{% endif %}
+{% if useSource %}
   std::memset(lSi  , 0, {{nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% endif %}
 
