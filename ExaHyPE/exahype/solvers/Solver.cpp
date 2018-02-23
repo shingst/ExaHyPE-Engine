@@ -513,8 +513,10 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
   int maxDepth = 0;
 
   for (auto solver : exahype::solvers::RegisteredSolvers) {
+/*
     assertion1(solver->getMaxCellSize()>0,solver->getMaxCellSize());
     assertion1(solver->getMinCellSize()>0,solver->getMinCellSize());
+*/
 
     maxDepth = std::max(
         maxDepth, solver->getMaxLevel() - solver->getCoarsestMeshLevel()

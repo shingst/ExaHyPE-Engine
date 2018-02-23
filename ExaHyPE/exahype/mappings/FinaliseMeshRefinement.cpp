@@ -143,8 +143,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     const int numberOfSolvers = static_cast<int>(exahype::solvers::RegisteredSolvers.size());
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined0);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for( int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       if ( solver->getMeshUpdateRequest() ) {
@@ -183,8 +182,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           }
         }
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
 
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
@@ -210,12 +208,12 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
       if (solver->getMeshUpdateRequest()) {
         // cell sizes
         solver->updateNextMaxLevel(_maxLevels[solverNumber]);
-        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+/*        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
           assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
               solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
           assertion3(solver->getNextMaxCellSize()>0,
               solver->getNextMaxCellSize(),_maxLevels[solverNumber],solver->toString());
-        }
+        }*/
 
         // time
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);

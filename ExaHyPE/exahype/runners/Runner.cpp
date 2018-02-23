@@ -246,7 +246,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
 
   if ( _parser.useManualPinning() ) {
-    #ifdef SharedTBB
+    #if defined(SharedTBB) || defined(SharedCPP)
     logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
     tarch::multicore::Core::getInstance().pinThreads( true );
     #else

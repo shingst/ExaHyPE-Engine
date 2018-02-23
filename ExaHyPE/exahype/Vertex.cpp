@@ -83,9 +83,7 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
   dfor2(pos1)
     dfor2(pos2)
       if (hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) { // Implies that we have two valid indices on the correct level
-        auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
-            parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined16);
-        pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
+        for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
           auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
           if (solver->isMergingMetadata(section)) {
             const int cellDescriptionsIndex1 = getCellDescriptionsIndex()[pos1Scalar];
@@ -97,8 +95,7 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
                   cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
             }
           }
-        endpfor
-        grainSize.parallelSectionHasTerminated();
+        }
 
         setMergePerformed(pos1,pos2,true);
       }
@@ -406,9 +403,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
     const int pos1Scalar,
     const tarch::la::Vector<DIMENSIONS,int>&  pos2,
     const int pos2Scalar) const {
-  auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
-    parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined7);
-  pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
+  for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     const int cellDescriptionsIndex1 = getCellDescriptionsIndex()[pos1Scalar];
     const int cellDescriptionsIndex2 = getCellDescriptionsIndex()[pos2Scalar];
@@ -420,8 +415,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
       solver->mergeNeighboursMetadata(
           cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
     }
-  endpfor
-  grainSize.parallelSectionHasTerminated();
+  }
 }
 
 void exahype::Vertex::mergeWithBoundaryData(
@@ -429,9 +423,7 @@ void exahype::Vertex::mergeWithBoundaryData(
     const int pos1Scalar,
     const tarch::la::Vector<DIMENSIONS,int>&  pos2,
     const int pos2Scalar) const {
-  auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
-    parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined8);
-  pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
+  for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     const int cellDescriptionsIndex1 = getCellDescriptionsIndex()[pos1Scalar];
     const int cellDescriptionsIndex2 = getCellDescriptionsIndex()[pos2Scalar];
@@ -449,9 +441,9 @@ void exahype::Vertex::mergeWithBoundaryData(
     if (element2 >= 0){
       solver->mergeWithBoundaryData(cellDescriptionsIndex2,element2,pos2,pos1);
     }
-  endpfor
-  grainSize.parallelSectionHasTerminated();
+  }
 }
+
 
 void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,

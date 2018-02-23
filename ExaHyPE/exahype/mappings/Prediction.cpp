@@ -121,7 +121,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
     if (
@@ -138,7 +138,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
       // this operates only on helper cells
       solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }
-    endpfor
+    }
     grainSize.parallelSectionHasTerminated();
   }
 }
@@ -168,8 +168,7 @@ void exahype::mappings::Prediction::restriction(
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (
@@ -178,8 +177,7 @@ void exahype::mappings::Prediction::restriction(
       ) {
         solver->restriction(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
   }
 }
 

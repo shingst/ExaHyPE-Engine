@@ -209,8 +209,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
         fineGridVertices,fineGridVerticesEnumerator);
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
@@ -237,8 +236,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
         _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
         _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

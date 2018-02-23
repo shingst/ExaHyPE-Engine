@@ -152,8 +152,7 @@ void exahype::mappings::LocalRollback::enterCell(
       fineGridCell.isInitialised()
   ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined10);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -169,8 +168,7 @@ void exahype::mappings::LocalRollback::enterCell(
           limitingADERDGSolver->reinitialiseSolversLocally(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
 
     // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)

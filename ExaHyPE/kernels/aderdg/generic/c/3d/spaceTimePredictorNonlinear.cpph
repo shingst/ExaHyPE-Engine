@@ -79,7 +79,7 @@ namespace {
         }
       }
     }
-    endpfor
+    }
     grainSizeTrivialGuess.parallelSectionHasTerminated();
 
     // 3. Discrete Picard iterations
@@ -119,7 +119,7 @@ namespace {
               // to the end.
             }
           }
-          endpfor
+          }
           grainSizeFluxSourceNCPLoop.parallelSectionHasTerminated();
         }
 
@@ -139,7 +139,7 @@ namespace {
             }
           }
         }
-        endpfor
+        }
         grainSizeCopyRhs.parallelSectionHasTerminated();
 
         // Compute gradients only if nonconservative contributions have to be
@@ -177,7 +177,7 @@ namespace {
             }
           }
         }
-        endpfor
+        }
 
         // y direction (independent from the x and z derivatives)
         //for (int j = 0; j < basisSize; j++) { // z
@@ -206,7 +206,7 @@ namespace {
             }
           }
         }
-        endpfor
+        }
 
         // z direction (independent from the x and y derivatives)
         //for (int j = 0; j < basisSize; j++) { // y
@@ -235,7 +235,7 @@ namespace {
             }
           }
         }
-        endpfor
+        }
 
         if(useSource || useNCP) {
           // source
@@ -273,7 +273,7 @@ namespace {
               }
             }
           }
-          endpfor
+          }
           grainSizeSourceNCP.parallelSectionHasTerminated();
         }
       }  // end time dof
