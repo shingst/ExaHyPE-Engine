@@ -14,7 +14,7 @@
 # COMPILER            Intel             GNU, Manual                Used compiler (and linker)
 # MODE                Release           Debug,                     Verbosity and Debug level
 #                                       Asserts,PeanoProfile,Profile          
-# SHAREDMEM           None              OMP, TBB, TBBInvade        Shared-memory parallelisation
+# SHAREDMEM           None              OMP, TBB, CPP14            Shared-memory parallelisation
 # DISTRIBUTEDMEM      None              MPI                        Distributed-memory parallelisation
 # BOUNDARYCONDITIONS  None              Periodic                   Type of boundary conditions
 # USE_IPO             Off               On                         IPO during compilation (intel only)
@@ -313,10 +313,14 @@ else ifeq ($(call tolower,$(SHAREDMEM)),tbb)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
 	SYSTEM_LFLAGS   += $(LINK_TBB)
 	COMPILER_CFLAGS += -DSharedTBB
+else ifeq ($(call tolower,$(SHAREDMEM)),cpp14)
+	SYSTEM_CFLAGS   += 
+	SYSTEM_LFLAGS   += 
+	COMPILER_CFLAGS += -DSharedCPP
 else ifeq ($(call tolower,$(SHAREDMEM)),tbbinvade)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
 	SYSTEM_LFLAGS   += $(LINK_TBB)
-	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade
+	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade -DSHM_INVADE_NAMESPACE=shminvade -DSHM_INVADE_DEBUG=4
 endif
 
 
