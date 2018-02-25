@@ -169,8 +169,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
       if (
           performLocalRecomputation( solver )
       ) {
-        logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
-            ",_minCellSizes[solverNumber]="<<_maxLevels[solverNumber]);
+//        logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
+//            ",_minCellSizes[solverNumber]="<<_maxLevels[solverNumber]);
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
