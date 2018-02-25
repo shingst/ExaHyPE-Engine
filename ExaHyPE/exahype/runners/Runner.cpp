@@ -243,7 +243,13 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
   const int numberOfThreads = _parser.getNumberOfThreads();
+  #ifdef SharedTBB
   tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
+  #elif SharedCPP
+  tarch::multicore::Core::getInstance().configure(numberOfThreads);
+  #else
+  #error Unknown shared memory variant
+  #endif
 
   if ( _parser.useManualPinning() ) {
     #if defined(SharedTBB) || defined(SharedCPP)

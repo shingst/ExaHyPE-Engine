@@ -315,7 +315,7 @@ else ifeq ($(call tolower,$(SHAREDMEM)),tbb)
 	COMPILER_CFLAGS += -DSharedTBB
 else ifeq ($(call tolower,$(SHAREDMEM)),cpp14)
 	SYSTEM_CFLAGS   += 
-	SYSTEM_LFLAGS   += 
+	SYSTEM_LFLAGS   += -lpthread	
 	COMPILER_CFLAGS += -DSharedCPP
 else ifeq ($(call tolower,$(SHAREDMEM)),tbbinvade)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
