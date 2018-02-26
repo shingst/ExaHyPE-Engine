@@ -152,7 +152,8 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	
 	
 	ifeq ($(call tolower,$(MODE)),debug)
-		COMPILER_CFLAGS += -O0 -ggdb
+		COMPILER_CFLAGS += -g3 -ggdb -debug all  
+		COMPILER_LFLAGS += -g3 
 		ifeq ($(call tolower,$(SHAREDMEM)),tbb)
 			COMPILER_CFLAGS  += -DTBB_USE_DEBUG
 		endif
