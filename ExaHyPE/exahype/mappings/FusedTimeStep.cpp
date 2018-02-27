@@ -64,15 +64,21 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,false);
+      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {

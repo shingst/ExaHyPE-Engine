@@ -42,7 +42,7 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,false);
+        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 
 /* Specifications below are all nop. */

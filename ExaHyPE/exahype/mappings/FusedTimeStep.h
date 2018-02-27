@@ -96,7 +96,9 @@ private:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
    *
-   * Alters the state as we perform a reduction.
+   * Alters the state if we perform a reduction. This
+   * is the case if we perform the last iteration of a batch
+   * or no batch iteration at all.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
   /**
@@ -105,6 +107,10 @@ private:
   peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Run through the whole tree. Avoid fine grid races.
+   *
+   * TODO(Dominic): Theoretically, we should be able to
+   * perform this with "altersState" set to "false".
+   * In practice however, this does not work.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 

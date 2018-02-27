@@ -43,7 +43,7 @@ peano::MappingSpecification
 exahype::mappings::LimiterStatusSpreading::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,false);
+      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 peano::MappingSpecification
 exahype::mappings::LimiterStatusSpreading::enterCellSpecification(int level) const {
