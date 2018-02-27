@@ -68,6 +68,7 @@ constexpr bool debug_tensish = false;
    "assertion in file " << __FILE__ << ", line " << __LINE__ << " failed: " << #expr <<  std::endl; std::abort(); }
 #define tensish_bound(expr) tensish_assert(expr, "out of bounds access")
 
+#include <cmath>
 #include <algorithm> // fill_n
 
 namespace tensish {
