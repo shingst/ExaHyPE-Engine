@@ -20,7 +20,7 @@ exahype-project GPR
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/GPR/GPR_3D
+  output-directory const           = ./ApplicationExamples/GPR/GPR
   architecture const               = noarch
   log-file                         = whatever.log
 
