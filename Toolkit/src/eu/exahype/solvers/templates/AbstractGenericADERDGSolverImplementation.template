@@ -87,10 +87,11 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lFhi               = memory; memory+=sizeLFhi;
 
 const int picardIterations = 1;
+
+ std::vector<int>* pointSources= kernels::aderdg::generic::c::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
 {%-   if usePointSources %}
-  bool hasPointSource=false;
-  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, hasPointSource, PSi, forceVectorSourceN);
-  if(hasPointSource){
+  if(pointSources != nullptr) {
+    kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
     kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }else{
     kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
@@ -310,7 +311,7 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
       abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
       abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

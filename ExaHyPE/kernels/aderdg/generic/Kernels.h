@@ -14,16 +14,14 @@
 #ifndef _EXAHYPE_KERNELS_ADERDG_GENERIC_PDEFLUXES_H_
 #define _EXAHYPE_KERNELS_ADERDG_GENERIC_PDEFLUXES_H_
 
-#include "string.h"
+#include <string>
+#include <vector>
 
 #include "peano/utils/Globals.h"
 #include "tarch/la/Vector.h"
 
-
 #include "kernels/GaussLobattoQuadrature.h"
-
 #include "kernels/GaussLegendreQuadrature.h"
-
 
 #include "kernels/DGMatrices.h"
 
@@ -191,18 +189,25 @@ void volumeUnknownsRestriction(
     double* luhCoarse, const double* luhFine, const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex);
+
+
+template <typename SolverType>
+std::vector<int>* getPointSources(
+    SolverType& solver,
+    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const tarch::la::Vector<DIMENSIONS, double>& dx);
     
 template <typename SolverType>
 void deltaDistribution(
     SolverType& solver,
+    const double* const luh,
     const double t,
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    bool& hasPointSource,
-    double* Psi,
-    double* forceVectorSourceN 
-    );
+    std::vector<int>* pointSources, // will be deleted in the end
+    double* PSi);
+ 
 }  // namespace c
 }  // namespace generic
 }  // namespace aderdg

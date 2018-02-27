@@ -84,6 +84,7 @@ public class GenericADERDG implements Solver {
     context.put("range_0_nDim"      , IntStream.range(0, dimensions)                          .boxed().collect(Collectors.toList()));
     context.put("range_0_nVar"      , IntStream.range(0, numberOfVariables)                   .boxed().collect(Collectors.toList()));
     context.put("range_0_nVarParam" , IntStream.range(0, numberOfVariables+numberOfParameters).boxed().collect(Collectors.toList()));
+    context.put("range_0_numberOfPointSources", IntStream.range(0, numberOfPointSources)      .boxed().collect(Collectors.toList()));
   }
   
   @Override
