@@ -58,16 +58,6 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-  exahype::State _localState;
-
-  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;

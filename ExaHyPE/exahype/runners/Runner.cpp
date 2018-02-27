@@ -1251,10 +1251,10 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     exahype::repositories::Repository& repository, int numberOfStepsToRun) {
 
   if (numberOfStepsToRun==0) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","plot");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","plot");
   }
   else if (numberOfStepsToRun>1) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","run "<<numberOfStepsToRun<< " iterations within one batch");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","run "<<numberOfStepsToRun<< " iterations within one batch");
   }
 
   bool communicatePeanoVertices = !repository.getState().isGridStationary();
@@ -1267,14 +1267,14 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   }
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
     assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
@@ -1283,7 +1283,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   }
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
     repository.switchToPredictionRerun();
     repository.iterate(1,communicatePeanoVertices);
   }

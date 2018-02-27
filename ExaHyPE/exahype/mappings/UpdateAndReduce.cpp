@@ -62,31 +62,31 @@ peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 exahype::mappings::UpdateAndReduce::~UpdateAndReduce() {
@@ -95,8 +95,7 @@ exahype::mappings::UpdateAndReduce::~UpdateAndReduce() {
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::UpdateAndReduce::UpdateAndReduce(
-    const UpdateAndReduce& masterThread)
-  : _localState(masterThread._localState) {
+    const UpdateAndReduce& masterThread) {
   exahype::solvers::initialiseSolverFlags(_solverFlags);
   exahype::solvers::prepareSolverFlags(_solverFlags);
 
@@ -167,8 +166,6 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  _localState = solverState;
-
   exahype::plotters::startPlottingIfAPlotterIsActive(
       solvers::Solver::getMinTimeStampOfAllSolvers());
 
@@ -186,7 +183,6 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
 
   exahype::solvers::initialiseSolverFlags(_solverFlags);
   exahype::solvers::prepareSolverFlags(_solverFlags);
-
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

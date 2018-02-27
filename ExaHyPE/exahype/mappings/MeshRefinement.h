@@ -151,6 +151,8 @@ public:
   /**
    * Avoid fine grid races.  Run through the whole tree.
    * Might be relaxed if vertex semaphores are in place.
+   *
+   * Alters the state as we perform a reduction.
    */
   peano::MappingSpecification leaveCellSpecification(int level) const;
 

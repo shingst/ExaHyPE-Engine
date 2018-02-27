@@ -55,16 +55,6 @@ private:
    */
   static tarch::logging::Log _log;
 
-  /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-   exahype::State _localState;
-
  public:
   /**
    * Level for which we ask what to do. This value is negative

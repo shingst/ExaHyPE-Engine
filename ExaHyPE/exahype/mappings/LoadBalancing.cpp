@@ -29,16 +29,16 @@ peano::CommunicationSpecification   exahype::mappings::LoadBalancing::communicat
  * All empty
  */
 peano::MappingSpecification   exahype::mappings::LoadBalancing::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification   exahype::mappings::LoadBalancing::touchVertexFirstTimeSpecification(int level) const { 
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification   exahype::mappings::LoadBalancing::ascendSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification   exahype::mappings::LoadBalancing::descendSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 
