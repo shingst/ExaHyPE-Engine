@@ -68,15 +68,9 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-  } else {
-    return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-  }
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
@@ -218,7 +212,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
         // this operates only on helper cells
         solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
 
-        _meshUpdateRequests  [solverNumber] =
+        _meshUpdateRequests  [solverNumber]  =
             _meshUpdateRequests  [solverNumber] || result._refinementRequested;
         _limiterDomainChanges[solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
         assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
