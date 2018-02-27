@@ -57,7 +57,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr int sizeLFi                = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeGradQ              = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizePSi                = NumberOfVariables*spaceBasisSize*(Order+2);
-  constexpr int sizeForceVectorSourceN = sizePsi;
+  constexpr int sizeForceVectorSourceN = sizePSi;
   constexpr int sizePSderivatives      = NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeTmp_PSderivatives  = sizePSderivatives;
 
