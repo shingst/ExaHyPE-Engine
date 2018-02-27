@@ -28,6 +28,17 @@
 
 tarch::logging::Log exahype::mappings::LimiterStatusSpreading::_log("exahype::mappings::LimiterStatusSpreading");
 
+void exahype::mappings::LimiterStatusSpreading::initialiseLocalVariables(){
+  const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
+  _limiterDomainChanges.resize(numberOfSolvers);
+  _meshUpdateRequests.resize(numberOfSolvers);
+
+  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+    _limiterDomainChanges[solverNumber] = exahype::solvers::LimiterDomainChange::Regular;
+    _meshUpdateRequests[solverNumber]   = false;
+  }
+}
+
 peano::CommunicationSpecification
 exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -81,23 +92,21 @@ exahype::mappings::LimiterStatusSpreading::descendSpecification(int level) const
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::LimiterStatusSpreading::LimiterStatusSpreading(
     const LimiterStatusSpreading& masterThread) {
-  exahype::solvers::initialiseSolverFlags(_solverFlags);
-  exahype::solvers::prepareSolverFlags(_solverFlags);
+  initialiseLocalVariables();
 }
 #endif
 
 exahype::mappings::LimiterStatusSpreading::~LimiterStatusSpreading() {
-  exahype::solvers::deleteSolverFlags(_solverFlags);
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
 void exahype::mappings::LimiterStatusSpreading::mergeWithWorkerThread(
     const LimiterStatusSpreading& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _solverFlags._meshUpdateRequest[i]  |= workerThread._solverFlags._meshUpdateRequest[i];
-    _solverFlags._limiterDomainChange[i] =
-        std::max ( _solverFlags._limiterDomainChange[i],
-                   workerThread._solverFlags._limiterDomainChange[i] );
+    _meshUpdateRequests[i]  =
+        _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
+    _limiterDomainChanges[i] = std::max ( _limiterDomainChanges[i], workerThread._limiterDomainChanges[i] );
   }
 }
 #endif
@@ -113,17 +122,19 @@ bool exahype::mappings::LimiterStatusSpreading::spreadLimiterStatus(exahype::sol
 void exahype::mappings::LimiterStatusSpreading::beginIteration(
   exahype::State& solverState
 ) {
-  exahype::solvers::initialiseSolverFlags(_solverFlags);
-  exahype::solvers::prepareSolverFlags(_solverFlags);
 
-  // We memorise the previous request per solver
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( spreadLimiterStatus(solver) ) {
-      auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDG->updateNextMeshUpdateRequest(solver->getMeshUpdateRequest());
-      limitingADERDG->updateNextLimiterDomainChange(limitingADERDG->getLimiterDomainChange());
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    // We memorise the previous request per solver
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      if ( spreadLimiterStatus(solver) ) {
+        auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDG->updateNextMeshUpdateRequest(solver->getMeshUpdateRequest());
+        limitingADERDG->updateNextLimiterDomainChange(limitingADERDG->getLimiterDomainChange());
+      }
     }
+
+    initialiseLocalVariables();
   }
 
   #ifdef Parallel
@@ -139,7 +150,7 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
     if ( spreadLimiterStatus(solver) ) {
       auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-      limitingADERDG->updateNextMeshUpdateRequest(_solverFlags._meshUpdateRequest[solverNumber]);
+      limitingADERDG->updateNextMeshUpdateRequest(_meshUpdateRequests[solverNumber]);
       limitingADERDG->updateNextAttainedStableState(!limitingADERDG->getNextMeshUpdateRequest());
       if (limitingADERDG->getNextMeshUpdateRequest()==true) {
         limitingADERDG->updateNextLimiterDomainChange(
@@ -151,8 +162,6 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
       limitingADERDG->setNextAttainedStableState();
     }
   }
-
-  deleteSolverFlags(_solverFlags);
 }
 
 void exahype::mappings::LimiterStatusSpreading::createHangingVertex(
@@ -210,12 +219,10 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
         limitingADERDG->updateLimiterStatusDuringLimiterStatusSpreading(
             cellDescriptionsIndex,element);
 
-        bool meshUpdateRequest =
-            limitingADERDG->
-            evaluateLimiterStatusRefinementCriterion(
+        _meshUpdateRequests[solverNumber] =
+            _meshUpdateRequests[solverNumber] ||
+            limitingADERDG->evaluateLimiterStatusRefinementCriterion(
                 cellDescriptionsIndex,element);
-
-        _solverFlags._meshUpdateRequest[solverNumber] |= meshUpdateRequest;
       }
     }
 

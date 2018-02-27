@@ -77,7 +77,7 @@ private:
   /**
    * Prepare all local variables.
    */
-  void prepareLocalVariables();
+  void initialiseLocalVariables();
 
   /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.

@@ -82,7 +82,7 @@ exahype::mappings::PredictionOrLocalRecomputation::descendSpecification(int leve
 }
 
 
-void exahype::mappings::PredictionOrLocalRecomputation::prepareLocalTimeStepVariables(){
+void exahype::mappings::PredictionOrLocalRecomputation::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
@@ -110,7 +110,7 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
     const PredictionOrLocalRecomputation& masterThread) {
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 }
 // Merge over threads
 void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
@@ -131,7 +131,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   OneSolverRequestedLocalRecomputation =
         exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;

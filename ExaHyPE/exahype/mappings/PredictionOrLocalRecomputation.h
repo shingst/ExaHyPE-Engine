@@ -103,7 +103,7 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    * Prepare a appropriately sized vector _minTimeStepSizes
    * with elements initiliased to MAX_DOUBLE.
    */
-  void prepareLocalTimeStepVariables();
+  void initialiseLocalVariables();
 
   /**
    * \return true if we perform a local recomputation for this solver.

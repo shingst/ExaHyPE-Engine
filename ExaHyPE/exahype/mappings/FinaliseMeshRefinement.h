@@ -73,7 +73,7 @@ class exahype::mappings::FinaliseMeshRefinement {
    * Prepare a appropriately sized vector _minTimeStepSizes
    * with elements initiliased to MAX_DOUBLE.
    */
-  void prepareLocalTimeStepVariables();
+  void initialiseLocalVariables();
 
  public:
   /**
