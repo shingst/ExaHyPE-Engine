@@ -1909,19 +1909,19 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
       cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
       cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
       cellDescription.setExtrapolatedSolution( DataHeap::getInstance().createData(dataPerBoundary, dataPerBoundary ) );
       lock.free();

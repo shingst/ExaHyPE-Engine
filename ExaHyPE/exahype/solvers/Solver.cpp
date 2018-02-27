@@ -89,7 +89,7 @@ bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
 
 int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
 
-void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
+void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);

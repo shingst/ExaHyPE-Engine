@@ -656,13 +656,13 @@ class exahype::solvers::Solver {
       const bool fusedTimeStepping);
 
  /**
-  * Some solvers can deploy data conversion into the background. How this is
-  * done is solver-specific. However, we have to wait until all tasks have
-  * terminated if we want to modify the heap, i.e. insert new data or remove
-  * data. Therefore, the wait (as well as the underlying semaphore) belong
+  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
+  * further. We have to wait until all tasks have terminated if we want to modify the heap,
+  * i.e. insert new data or remove data.
+  * Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
   */
- static void waitUntilAllBackgroundJobsHaveTerminated();
+ static void ensureAllBackgroundJobsHaveTerminated();
 
  protected:
   /**
