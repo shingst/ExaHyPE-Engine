@@ -28,14 +28,18 @@
 tarch::logging::Log exahype::mappings::UpdateAndReduce::_log(
     "exahype::mappings::UpdateAndReduce");
 
-void exahype::mappings::UpdateAndReduce::prepareLocalTimeStepVariables(){
+void exahype::mappings::UpdateAndReduce::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
+  _limiterDomainChanges.resize(numberOfSolvers);
+  _meshUpdateRequests.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _maxLevels       [solverNumber] = -std::numeric_limits<int>::max(); // "-", min
+    _minTimeStepSizes[solverNumber]     = std::numeric_limits<double>::max();
+    _maxLevels[solverNumber]            = -std::numeric_limits<int>::max(); // "-", min
+    _limiterDomainChanges[solverNumber] = exahype::solvers::LimiterDomainChange::Regular;
+    _meshUpdateRequests[solverNumber]   = false;
   }
 }
 
@@ -62,60 +66,50 @@ peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 exahype::mappings::UpdateAndReduce::~UpdateAndReduce() {
-  exahype::solvers::deleteSolverFlags(_solverFlags);
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::UpdateAndReduce::UpdateAndReduce(
-    const UpdateAndReduce& masterThread)
-  : _localState(masterThread._localState) {
-  exahype::solvers::initialiseSolverFlags(_solverFlags);
-  exahype::solvers::prepareSolverFlags(_solverFlags);
-
-  prepareLocalTimeStepVariables();
+    const UpdateAndReduce& masterThread) {
+  initialiseLocalVariables();
 }
 // Merge over threads
 void exahype::mappings::UpdateAndReduce::mergeWithWorkerThread(
     const UpdateAndReduce& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    // solver flags
-    _solverFlags._meshUpdateRequest[i]  |= workerThread._solverFlags._meshUpdateRequest[i];
-    _solverFlags._limiterDomainChange[i] =
-        std::max ( _solverFlags._limiterDomainChange[i],
-            workerThread._solverFlags._limiterDomainChange[i] );
-    // time step size and cell sizes
-    _minTimeStepSizes[i] =
-        std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i] =
-        std::max(_maxLevels[i], workerThread._maxLevels[i]);
+    _meshUpdateRequests[i]   = _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
+    _limiterDomainChanges[i] = std::max ( _limiterDomainChanges[i], workerThread._limiterDomainChanges[i] );
+    _minTimeStepSizes[i]     = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
+    _maxLevels[i]            = std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
 }
 #endif
@@ -145,10 +139,11 @@ void exahype::mappings::UpdateAndReduce::enterCell(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
 
-        _solverFlags._meshUpdateRequest  [solverNumber] |= result._refinementRequested;
-        _solverFlags._limiterDomainChange[solverNumber]  = std::max( _solverFlags._limiterDomainChange[solverNumber], result._limiterDomainChange );
-        assertion(_solverFlags._limiterDomainChange[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-            _solverFlags._meshUpdateRequest[solverNumber]);
+        _meshUpdateRequests  [solverNumber]  =
+            _meshUpdateRequests  [solverNumber] || result._refinementRequested;
+        _limiterDomainChanges[solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
+        assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
+            _meshUpdateRequests[solverNumber]);
         _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                  _minTimeStepSizes[solverNumber]);
         _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
       }
@@ -167,8 +162,6 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  _localState = solverState;
-
   exahype::plotters::startPlottingIfAPlotterIsActive(
       solvers::Solver::getMinTimeStampOfAllSolvers());
 
@@ -182,11 +175,7 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
   }
 
   // temporary variables
-  prepareLocalTimeStepVariables();
-
-  exahype::solvers::initialiseSolverFlags(_solverFlags);
-  exahype::solvers::prepareSolverFlags(_solverFlags);
-
+  initialiseLocalVariables();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -198,13 +187,10 @@ void exahype::mappings::UpdateAndReduce::endIteration(
   exahype::plotters::finishedPlotting();
 
   exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      _solverFlags,_minTimeStepSizes,_maxLevels,
+      _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
       exahype::State::isFirstIterationOfBatchOrNoBatch(),
       exahype::State::isLastIterationOfBatchOrNoBatch(),
       false);
-
-  // delete temporary variables
-  deleteSolverFlags(_solverFlags);
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }

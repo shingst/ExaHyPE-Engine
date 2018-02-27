@@ -52,13 +52,13 @@ peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 
 // Below specs are all nop
@@ -82,7 +82,7 @@ exahype::mappings::PredictionOrLocalRecomputation::descendSpecification(int leve
 }
 
 
-void exahype::mappings::PredictionOrLocalRecomputation::prepareLocalTimeStepVariables(){
+void exahype::mappings::PredictionOrLocalRecomputation::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
@@ -109,9 +109,8 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
-    const PredictionOrLocalRecomputation& masterThread)
-: _localState(masterThread._localState) {
-  prepareLocalTimeStepVariables();
+    const PredictionOrLocalRecomputation& masterThread) {
+  initialiseLocalVariables();
 }
 // Merge over threads
 void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
@@ -129,12 +128,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  _localState = solverState;
-
   OneSolverRequestedLocalRecomputation =
         exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
@@ -169,20 +166,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
       if (
           performLocalRecomputation( solver )
       ) {
-//        logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
-//            ",_minCellSizes[solverNumber]="<<_maxLevels[solverNumber]);
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
         solver->updateNextMaxLevel(_maxLevels[solverNumber]);
-/*
-        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-          assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
-              solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
-          assertion3(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxLevels[solverNumber],solver->toString());
-        }
-*/
 
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 

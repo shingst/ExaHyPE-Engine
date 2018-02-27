@@ -71,40 +71,33 @@ private:
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-  exahype::State _localState;
-
-  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
-
   /**
    * The maximum level occupied by cells of a solver.
    */
   std::vector<int> _maxLevels;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void prepareLocalTimeStepVariables();
-
   /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  exahype::solvers::SolverFlags _solverFlags;
+  std::vector<bool>                                  _meshUpdateRequests;
+  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
+
+  /**
+   * Prepare the vectors _minTimeStepSizes, _maxLevels,
+   * _meshUpdateRequests, _limiterDomainChanges.
+   */
+  void initialiseLocalVariables();
 
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
+   *
+   * Alters the state if we perform a reduction. This
+   * is the case if we perform the last iteration of a batch
+   * or no batch iteration at all.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
   /**
@@ -113,6 +106,10 @@ private:
   peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Run through the whole tree. Avoid fine grid races.
+   *
+   * TODO(Dominic): Theoretically, we should be able to
+   * perform this with "altersState" set to "false".
+   * In practice however, this does not work.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 

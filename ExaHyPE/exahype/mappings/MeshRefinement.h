@@ -77,7 +77,7 @@ private:
   /**
    * Prepare all local variables.
    */
-  void prepareLocalVariables();
+  void initialiseLocalVariables();
 
   /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
@@ -151,6 +151,8 @@ public:
   /**
    * Avoid fine grid races.  Run through the whole tree.
    * Might be relaxed if vertex semaphores are in place.
+   *
+   * Alters the state as we perform a reduction.
    */
   peano::MappingSpecification leaveCellSpecification(int level) const;
 

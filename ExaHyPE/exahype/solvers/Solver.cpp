@@ -69,36 +69,6 @@ const int exahype::solvers::Solver::NotFound = -1;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
-void exahype::solvers::initialiseSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-/*
-  assertion(solverFlags._limiterDomainChange==nullptr);
-  assertion(solverFlags._meshUpdateRequest  ==nullptr);
-*/
-
-  int numberOfSolvers    = exahype::solvers::RegisteredSolvers.size();
-  solverFlags._limiterDomainChange = new LimiterDomainChange[numberOfSolvers];
-  solverFlags._meshUpdateRequest   = new bool               [numberOfSolvers];
-}
-
-void exahype::solvers::prepareSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    solverFlags._limiterDomainChange[solverNumber] = LimiterDomainChange::Regular;
-    solverFlags._meshUpdateRequest[solverNumber]   = false;
-  }
-}
-
-void exahype::solvers::deleteSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  if (solverFlags._limiterDomainChange!=nullptr) {
-    assertion(solverFlags._limiterDomainChange!=nullptr);
-    assertion(solverFlags._meshUpdateRequest  !=nullptr);
-
-    delete[] solverFlags._limiterDomainChange;
-    delete[] solverFlags._meshUpdateRequest;
-    solverFlags._limiterDomainChange = nullptr;
-    solverFlags._meshUpdateRequest   = nullptr;
-  }
-}
-
 double exahype::solvers::convertToDouble(const LimiterDomainChange& limiterDomainChange) {
   return static_cast<double>(static_cast<int>(limiterDomainChange));
 }
@@ -129,13 +99,17 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
 
   int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
 
+  int reported = numberOfExaHyPEBackgroundJobs;
   while (!finishedWait) {
-    logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+	if (numberOfExaHyPEBackgroundJobs < reported) {
+      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
             "waiting for roughly "
             << numberOfBackgroundJobs
-            << " background tasks to complete of which "
-            << numberOfExaHyPEBackgroundJobs << " were spawned by ExaHyPE"
+            << " background tasks to complete while "
+            << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
             );
+      reported = numberOfExaHyPEBackgroundJobs;
+	}
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
 
@@ -638,9 +612,10 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 }
 
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
       const std::vector<int>& maxLevels,
+      const std::vector<bool>& meshUpdateRequests,
+      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -651,11 +626,11 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateRequest(solverFlags._meshUpdateRequest[solverNumber]);
+    solver->updateNextMeshUpdateRequest(meshUpdateRequests[solverNumber]);
     solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
     if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->updateNextLimiterDomainChange(solverFlags._limiterDomainChange[solverNumber]);
+      limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
       if (
           limitingADERDGSolver->getNextMeshUpdateRequest() &&
           limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular

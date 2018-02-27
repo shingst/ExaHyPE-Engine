@@ -58,9 +58,16 @@ private:
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  exahype::solvers::SolverFlags _solverFlags;
+  std::vector<bool>                                  _meshUpdateRequests;
+  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
 
   /**
+   * Initialise the vectors _meshUpdateRequests, _limiterDomainChanges.
+   */
+  void initialiseLocalVariables();
+
+  /**
+   *
    * \return true if we need to perform limiter status spreading
    * for this solver.
    */
@@ -82,6 +89,8 @@ public:
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
   /**
    * Run concurrently on fine grid (whole tree).
+   *
+   * Alters state as we perform a reduction.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 

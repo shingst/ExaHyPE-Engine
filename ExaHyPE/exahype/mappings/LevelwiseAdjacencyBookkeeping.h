@@ -54,9 +54,11 @@ namespace exahype {
  */
 class exahype::mappings::LevelwiseAdjacencyBookkeeping {
   public:
+    peano::MappingSpecification   enterCellSpecification(int level) const;
+
+    // Below all specifications are nop.
     peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
     peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
-    peano::MappingSpecification   enterCellSpecification(int level) const;
     peano::MappingSpecification   leaveCellSpecification(int level) const;
     peano::MappingSpecification   ascendSpecification(int level) const;
     peano::MappingSpecification   descendSpecification(int level) const;
