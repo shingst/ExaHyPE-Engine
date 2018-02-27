@@ -38,7 +38,7 @@ peano::MappingSpecification
 exahype::mappings::LocalRollback::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 /*
@@ -48,35 +48,35 @@ peano::MappingSpecification
 exahype::mappings::LocalRollback::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::LocalRollback::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::LocalRollback::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::LocalRollback::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::LocalRollback::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::LocalRollback::_log(

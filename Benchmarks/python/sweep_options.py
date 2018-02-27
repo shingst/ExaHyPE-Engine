@@ -20,8 +20,8 @@ def parseList(string):
     """
     for line in csv.reader([string],delimiter=","):
       values = line
-      #for i,value in enumerate(values):
-      #    values[i] = value.replace(" ","")
+      for i,value in enumerate(values):
+          values[i] = value.replace("\"","")
       return values
 
 def parseEnvironment(config):

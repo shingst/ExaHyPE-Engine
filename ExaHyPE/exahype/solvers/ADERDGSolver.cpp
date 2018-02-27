@@ -2820,11 +2820,13 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
           getCellDescription(cellDescriptionsIndex1,element1);
 
   peano::datatraversal::TaskSet uncompression(
-    [&] () -> void {
+    [&] () -> bool {
       uncompress(cellDescriptionLeft);
+      return false;
     },
-    [&] () -> void {
+    [&] () -> bool {
       uncompress(cellDescriptionRight);
+      return false;
     },
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
@@ -4465,31 +4467,41 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
   assertion( DataHeap::getInstance().isValidIndex( cellDescription.getFluctuation() ));
 
   peano::datatraversal::TaskSet compressionFactorIdentification(
-    [&]() -> void  { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
+    [&]() -> bool { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).data(),
       getDataPerCell(),
       CompressionAccuracy,true
-      );},
-    [&] () -> void  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&] () -> bool  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getSolution() ).data(),
       getDataPerCell(),
       CompressionAccuracy,true
-      );},
-    [&]() -> void  { compressionOfUpdate = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&]() -> bool  { compressionOfUpdate = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getUpdate() ).data(),
       getUnknownsPerCell(),
       CompressionAccuracy,true
-      );},
-    [&]() -> void  { compressionOfExtrapolatedPredictor = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&]() -> bool  { compressionOfExtrapolatedPredictor = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).data(),
       getDataPerCellBoundary(),
       CompressionAccuracy,true
-      );},
-    [&]() -> void  { compressionOfFluctuation = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&]() -> bool  { compressionOfFluctuation = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getFluctuation() ).data(),
       getUnknownsPerCellBoundary(),
       CompressionAccuracy,true
-      );},
+      );
+      return false;
+      },
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
@@ -4511,7 +4523,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
   assertion(compressionOfFluctuation<=7);
 
   peano::datatraversal::TaskSet runParallelTasks(
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInPreviousSolution(compressionOfPreviousSolution);
       if (compressionOfPreviousSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4544,8 +4556,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInSolution(compressionOfSolution);
       if (compressionOfSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4579,8 +4592,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInUpdate(compressionOfUpdate);
       if (compressionOfUpdate<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4613,8 +4627,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInExtrapolatedPredictor(compressionOfExtrapolatedPredictor);
       if (compressionOfExtrapolatedPredictor<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4647,8 +4662,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInFluctuation(compressionOfFluctuation);
       if (compressionOfFluctuation<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4681,6 +4697,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
@@ -4772,7 +4789,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
   );
 
   peano::datatraversal::TaskSet glueTasks(
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInPreviousSolution()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolution() ), cellDescription.getPreviousSolution());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionCompressed() ));
@@ -4783,8 +4800,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setPreviousSolutionCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInSolution()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getSolution() ), cellDescription.getSolution() );
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getSolutionCompressed() ));
@@ -4795,8 +4813,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setSolutionCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInUpdate()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getUpdate() ), cellDescription.getUpdate());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getUpdateCompressed() ));
@@ -4807,8 +4826,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setUpdateCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInExtrapolatedPredictor()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedPredictor() ), cellDescription.getExtrapolatedPredictor());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedPredictorCompressed() ));
@@ -4819,8 +4839,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setExtrapolatedPredictorCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInFluctuation()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getFluctuation() ), cellDescription.getFluctuation());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getFluctuationCompressed() ));
@@ -4831,6 +4852,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setFluctuationCompressed( -1 );
         lock.free();
       }
+      return false;
     },
     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,

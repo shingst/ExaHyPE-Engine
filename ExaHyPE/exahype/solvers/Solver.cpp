@@ -129,13 +129,17 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
 
   int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
 
+  int reported = numberOfExaHyPEBackgroundJobs;
   while (!finishedWait) {
-    logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+	if (numberOfExaHyPEBackgroundJobs < reported) {
+      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
             "waiting for roughly "
             << numberOfBackgroundJobs
-            << " background tasks to complete of which "
-            << numberOfExaHyPEBackgroundJobs << " were spawned by ExaHyPE"
+            << " background tasks to complete while "
+            << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
             );
+      reported = numberOfExaHyPEBackgroundJobs;
+	}
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
 

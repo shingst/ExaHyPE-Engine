@@ -71,16 +71,6 @@ private:
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-  exahype::State _localState;
-
-  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -105,6 +95,10 @@ private:
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
+   *
+   * Alters the state if we perform a reduction. This
+   * is the case if we perform the last iteration of a batch
+   * or no batch iteration at all.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
   /**
@@ -113,6 +107,10 @@ private:
   peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Run through the whole tree. Avoid fine grid races.
+   *
+   * TODO(Dominic): Theoretically, we should be able to
+   * perform this with "altersState" set to "false".
+   * In practice however, this does not work.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 

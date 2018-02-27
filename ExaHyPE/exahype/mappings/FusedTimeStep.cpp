@@ -64,21 +64,27 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 /**
@@ -87,20 +93,20 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 
@@ -110,8 +116,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    _localState = solverState;
-
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
 
@@ -163,8 +167,7 @@ exahype::mappings::FusedTimeStep::~FusedTimeStep() {
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FusedTimeStep::FusedTimeStep(
-    const FusedTimeStep& masterThread)
-  : _localState(masterThread._localState) {
+    const FusedTimeStep& masterThread) {
   exahype::solvers::initialiseSolverFlags(_solverFlags);
   exahype::solvers::prepareSolverFlags(_solverFlags);
 

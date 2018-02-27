@@ -35,14 +35,14 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,true);
+        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 
 /* Specifications below are all nop. */
@@ -50,25 +50,25 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::BroadcastAndMergeNeighbours::_log(

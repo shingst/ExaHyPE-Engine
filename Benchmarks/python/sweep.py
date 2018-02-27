@@ -106,7 +106,7 @@ def build(buildOnlyMissing=False):
     print("currently loaded modules:")
     subprocess.call("module list",shell=True)
     print("")
-    print("ExaHyPE build environment:")
+    print("ExaHyPE build environment (unmodified):")
     exahypeEnv = ["COMPILER", "MODE", "SHAREDMEM", "DISTRIBUTEDMEM", "EXAHYPE_CC", "PROJECT_C_FLAGS", "PROJECT_L_FLAGS", "COMPILER_CFLAGS", "COMPILER_LFLAGS", "FCOMPILER_CFLAGS", "FCOMPILER_LFLAGS"]
     for variable in exahypeEnv:
         if variable in os.environ:
@@ -167,13 +167,20 @@ def build(buildOnlyMissing=False):
                             with open(exahypeRoot + "/" + buildSpecFilePath, "w") as buildSpecificationFile:
                                 buildSpecificationFile.write(buildSpecFileBody)
                                 
-                            print("building executable for " + \
-                                  "environment="+str(environmentDict) + \
-                                  ", architecture="+architecture + \
-                                  ", optimisation="+optimisation + \
-                                  ", dimension="+dimension + \
-                                  ", order="+order,\
-                                  file=sys.stderr)
+                            print("building executable with: \n" + \
+                                  "- environment="+str(environmentDict) + ",\n"\
+                                  "- architecture='"+architecture + "',\n"\
+                                  "- optimisation='"+optimisation + "',\n"\
+                                  "- dimension="+dimension + ",\n"\
+                                  "- order="+order)
+                            
+                            # clean application folder only
+                            command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
+                            print(command)
+                            process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            process.communicate()
+                            process.wait()
+                            
                             # run toolkit
                             toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFilePath+")"
                             print(toolkitCommand,end="",flush=True)
@@ -187,13 +194,6 @@ def build(buildOnlyMissing=False):
                                 print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
                                 print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                 sys.exit()
-
-                            # clean application folder only
-                            command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
-                            print(command)
-                            process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                            process.communicate()
-                            process.wait()
                             
                             if firstIteration:
                                 command = "make clean"
@@ -220,6 +220,7 @@ def build(buildOnlyMissing=False):
                             moveCommand   = "mv "+oldExecutable+" "+executable
                             print(moveCommand)
                             subprocess.call(moveCommand,shell=True)
+                            print("SUCCESS!")
                             print("--------------------------------------------------------------------------------")
                             print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                             print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)

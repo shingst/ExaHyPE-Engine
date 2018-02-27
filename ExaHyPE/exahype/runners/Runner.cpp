@@ -243,7 +243,13 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
   const int numberOfThreads = _parser.getNumberOfThreads();
+  #ifdef SharedTBB
   tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
+  #elif SharedCPP
+  tarch::multicore::Core::getInstance().configure(numberOfThreads);
+  #else
+  #error Unknown shared memory variant
+  #endif
 
   if ( _parser.useManualPinning() ) {
     #if defined(SharedTBB) || defined(SharedCPP)
@@ -254,7 +260,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     #endif
   }
 
-  tarch::multicore::jobs::BackgroundJob::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+  tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
@@ -1245,10 +1251,10 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     exahype::repositories::Repository& repository, int numberOfStepsToRun) {
 
   if (numberOfStepsToRun==0) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","plot");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","plot");
   }
   else if (numberOfStepsToRun>1) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","run "<<numberOfStepsToRun<< " iterations within one batch");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","run "<<numberOfStepsToRun<< " iterations within one batch");
   }
 
   bool communicatePeanoVertices = !repository.getState().isGridStationary();
@@ -1261,14 +1267,14 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   }
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
     assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
@@ -1277,7 +1283,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   }
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
-    logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
     repository.switchToPredictionRerun();
     repository.iterate(1,communicatePeanoVertices);
   }

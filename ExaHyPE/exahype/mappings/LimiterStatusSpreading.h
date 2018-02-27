@@ -82,6 +82,8 @@ public:
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
   /**
    * Run concurrently on fine grid (whole tree).
+   *
+   * Alters state as we perform a reduction.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 

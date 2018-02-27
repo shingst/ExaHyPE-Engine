@@ -86,10 +86,9 @@ class exahype::mappings::FinaliseMeshRefinement {
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * Finalise the mesh refinement in all cell descriptions registered
-   * for a cell.
+   * Run over whole tree. Run concurrently on fine grid.
    *
-   * Currently, we avoid fine grid races. We might need to reassess this.
+   * Alters state as we perform a reduction.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 
