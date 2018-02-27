@@ -54,6 +54,12 @@ namespace exahype {
  */
 class exahype::mappings::LevelwiseAdjacencyBookkeeping {
   public:
+
+    /**
+     * Since the position of a cell with respect to a particular vertex is unique,
+     * there are no races when writing a cell's heap index into the
+     * vertex' adjacency list.
+     */
     peano::MappingSpecification   enterCellSpecification(int level) const;
 
     // Below all specifications are nop.

@@ -15,7 +15,7 @@ peano::CommunicationSpecification   exahype::mappings::LevelwiseAdjacencyBookkee
 }
 
 peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::AvoidFineGridRaces,false);
+  return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexLastTimeSpecification(int level) const {
