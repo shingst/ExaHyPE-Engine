@@ -132,6 +132,11 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
+
+exahype::mappings::FusedTimeStep::FusedTimeStep() {
+  _backgroundJobsHaveTerminated = false;
+}
+
 void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
@@ -144,16 +149,15 @@ void exahype::mappings::FusedTimeStep::endIteration(
       exahype::State::isLastIterationOfBatchOrNoBatch(),
       true);
 
-  logTraceOutWith1Argument("endIteration(State)", state);
-}
+  _backgroundJobsHaveTerminated = false;
 
-exahype::mappings::FusedTimeStep::~FusedTimeStep() {
-  // do nothing
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FusedTimeStep::FusedTimeStep(
     const FusedTimeStep& masterThread) {
+  _backgroundJobsHaveTerminated = false;
   initialiseLocalVariables();
 }
 // Merge over threads
@@ -236,9 +240,10 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
-  // TODO(Dominic): If there is too much spinning/locking, have
-  // a flag mechanism ensuring that we only check the first time.
+  if ( !_backgroundJobsHaveTerminated ) {
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    _backgroundJobsHaveTerminated = true;
+  }
 
   fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
 
@@ -443,7 +448,8 @@ void exahype::mappings::FusedTimeStep::mergeWithWorker(
 }
 #endif
 
-exahype::mappings::FusedTimeStep::FusedTimeStep() {
+
+exahype::mappings::FusedTimeStep::~FusedTimeStep() {
   // do nothing
 }
 

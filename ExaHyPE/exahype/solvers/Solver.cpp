@@ -101,15 +101,15 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
 
   int reported = numberOfExaHyPEBackgroundJobs;
   while (!finishedWait) {
-	if (numberOfExaHyPEBackgroundJobs < reported) {
+    if (numberOfExaHyPEBackgroundJobs < reported) {
       logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-            "waiting for roughly "
-            << numberOfBackgroundJobs
-            << " background tasks to complete while "
-            << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
-            );
+          "waiting for roughly "
+          << numberOfBackgroundJobs
+          << " background tasks to complete while "
+          << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
+      );
       reported = numberOfExaHyPEBackgroundJobs;
-	}
+    }
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
 
