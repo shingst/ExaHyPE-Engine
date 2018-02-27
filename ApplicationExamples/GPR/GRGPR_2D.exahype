@@ -16,19 +16,19 @@
  DIM, Diffuse Interface Method
 
  */
-exahype-project GPR
+exahype-project GRGPR
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/GPR/GPR
+  output-directory const           = ./ApplicationExamples/GPR/GRGPR
   architecture const               = noarch
   log-file                         = whatever.log
 
   computational-domain
-    dimension const         = 3
-    width                   = 1.0, 0.3, 0.3
-    offset                  = -0.5, -0.15, -0.15
-    end-time                = 0.1
+    dimension const         = 2
+    width                   = 6.0, 6.0
+    offset                  = 0.5, -3.0
+    end-time                = 5.0
   end computational-domain
   
   shared-memory
@@ -40,7 +40,7 @@ exahype-project GPR
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:4}
+    configure                = {hotspot,fair,ranks_per_node:1}
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory
@@ -58,16 +58,16 @@ exahype-project GPR
 
   solver Limiting-ADER-DG GPRSolver
     /* gamma is actually parts of a matrix... */
-    variables const                = rho:1,vel:3,p:1,A:9,j:3
+    variables const                = rho:1,vel:3,p:1,A:9,lapse:1,shift:3,gamma:6,k:6
     order const                    = 3
-    maximum-mesh-size              = 0.1
+    maximum-mesh-size              = 0.2
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source
 	optimisation const = generic
     language const                 = C
-    limiter-type const         = godunov
+    limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables                = 1
@@ -76,32 +76,31 @@ exahype-project GPR
     steps-till-cured           = 5
     // helper-layers              = 2
 
-    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
-      variables const = 17
-      time      = 0.0
-      repeat    = 5e-3
-      output    = ./vtk-output/primitives
-    end plot
-
     plot vtu::Cartesian::vertices::ascii ConservedWriter
-      variables const = 17
+      variables const = 30
       time      = 0.0
-      repeat    = 5e-3
+      repeat    = 0.05
       output    = ./vtk-output/conserved
     end plot
 
-    plot vtu::Cartesian::vertices::limited::ascii Plotter
-      variables const = 17
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
+      variables const = 30
       time      = 0.0
-      repeat    = 5e-3
-      output    = ./vtk-output-lim/dg
+      repeat    = 0.05
+      output    = ./vtk-output/primitives
     end plot
-
      plot user::defined ErrorWriter
-       variables const = 17
+       variables const = 30
        time            = 0.0
-       repeat          = 5e-3
+       repeat          = 1e-0
        output          = ./output/errors
      end plot
+
+    plot vtu::Cartesian::vertices::limited::ascii Plotter
+      variables const = 30
+      time      = 0.0
+      repeat    = 0.05
+      output    = ./vtk-output-lim/dg
+    end plot
   end solver
 end exahype-project

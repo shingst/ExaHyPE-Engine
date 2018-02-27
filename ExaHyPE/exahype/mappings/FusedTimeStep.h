@@ -74,23 +74,22 @@ private:
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
-
   /**
    * The maximum level occupied by cells of a solver.
    */
   std::vector<int> _maxLevels;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void prepareLocalTimeStepVariables();
-
   /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  exahype::solvers::SolverFlags _solverFlags;
+  std::vector<bool>                                  _meshUpdateRequests;
+  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
+
+  /**
+   * Prepare the vectors _minTimeStepSizes, _maxLevels,
+   * _meshUpdateRequests, _limiterDomainChanges.
+   */
+  void initialiseLocalVariables();
 
  public:
   /**
