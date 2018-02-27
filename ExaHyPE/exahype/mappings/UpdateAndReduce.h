@@ -73,8 +73,8 @@ private:
   std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
 
   /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
+   * Prepare the vectors _minTimeStepSizes, _maxLevels,
+   * _meshUpdateRequests, _limiterDomainChanges.
    */
   void initialiseLocalVariables();
 
