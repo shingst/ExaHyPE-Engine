@@ -150,7 +150,8 @@ private:
   #endif
 
   /**
-   * Nop.
+   * Merge with the neighbours but check beforehand
+   * if all backgrounds have terminated.
    */
   void touchVertexFirstTime(
       exahype::Vertex& fineGridVertex,
@@ -188,7 +189,7 @@ private:
 
 
   /**
-   * Nop.
+   * Perform a restriction for solvers who requested it.
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

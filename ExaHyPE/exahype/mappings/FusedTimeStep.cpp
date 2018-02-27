@@ -76,7 +76,7 @@ peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+      peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
@@ -128,9 +128,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
     initialiseLocalVariables();
   }
-
-  // background threads
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -234,7 +231,18 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
+  logTraceInWith6Arguments("touchVertexFirstTime(...)", fineGridVertex,
+                           fineGridX, fineGridH,
+                           coarseGridVerticesEnumerator.toString(),
+                           coarseGridCell, fineGridPositionOfVertex);
+
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  // TODO(Dominic): If there is too much spinning/locking, have
+  // a flag mechanism ensuring that we only check the first time.
+
   fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
+
+  logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
 
 void exahype::mappings::FusedTimeStep::leaveCell(
