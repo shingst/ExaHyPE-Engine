@@ -99,8 +99,11 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
 
   int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
 
+  #ifdef Asserts
   int reported = numberOfExaHyPEBackgroundJobs;
+  #endif
   while (!finishedWait) {
+    #ifdef Asserts
     if (numberOfExaHyPEBackgroundJobs < reported) {
       logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
           "waiting for roughly "
@@ -110,6 +113,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
       );
       reported = numberOfExaHyPEBackgroundJobs;
     }
+    #endif
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
 
