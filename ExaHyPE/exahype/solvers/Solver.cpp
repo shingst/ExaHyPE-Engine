@@ -97,10 +97,9 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
-  int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-
   #ifdef Asserts
-  int reported = numberOfExaHyPEBackgroundJobs;
+  int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+  int reported               = numberOfExaHyPEBackgroundJobs;
   #endif
   while (!finishedWait) {
     #ifdef Asserts
@@ -120,10 +119,11 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
     lock.free();
-
-    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-
     finishedWait = numberOfExaHyPEBackgroundJobs == 0;
+
+    #ifdef Asserts
+    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+    #endif
   }
 }
 
