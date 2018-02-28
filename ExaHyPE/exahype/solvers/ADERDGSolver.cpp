@@ -602,10 +602,8 @@ void exahype::solvers::ADERDGSolver::startNewTimeStep() {
       break;
   }
 
-  _minCellSize     = _nextMinCellSize;
-  _maxCellSize     = _nextMaxCellSize;
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
@@ -634,10 +632,8 @@ void exahype::solvers::ADERDGSolver::startNewTimeStepFused(
         break;
     }
 
-    _minCellSize     = _nextMinCellSize;
-    _maxCellSize     = _nextMaxCellSize;
-    _nextMinCellSize = std::numeric_limits<double>::max();
-    _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+    _maxLevel     = _nextMaxLevel;
+    _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
   }
 }
 
@@ -661,10 +657,8 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
 
   _stabilityConditionWasViolated = false;
 
-  _minCellSize     = _nextMinCellSize;
-  _maxCellSize     = _nextMaxCellSize;
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
@@ -685,10 +679,8 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizes() {
       break;
   }
 
-  _minCellSize     = _nextMinCellSize;
-  _maxCellSize     = _nextMaxCellSize;
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 void exahype::solvers::ADERDGSolver::zeroTimeStepSizes() {
@@ -725,8 +717,8 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep() {
       break;
   }
 
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
@@ -757,8 +749,8 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
       break;
   }
 
-  _nextMinCellSize = std::numeric_limits<double>::max();
-  _nextMaxCellSize = -std::numeric_limits<double>::max(); // "-", min
+  _maxLevel     = _nextMaxLevel;
+  _nextMaxLevel = -std::numeric_limits<int>::max(); // "-", min
 }
 
 void exahype::solvers::ADERDGSolver::updateMinNextPredictorTimeStepSize(
@@ -1735,7 +1727,7 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
   const bool validateTimeStepData,
   const bool afterCompression,
   const std::string& methodTraceOfCaller) const {
-  #if true || defined(Debug) || defined(Asserts)
+  #if defined(Debug) || defined(Asserts)
   if (validateTimeStepData) {
     assertion2(std::isfinite(cellDescription.getPredictorTimeStepSize()),
         cellDescription.toString(),toString());
@@ -1830,12 +1822,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool vetoSpawnCompressionAsBackgroundJob) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  UpdateResult result;
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
   updateSolution(cellDescription,isFirstIterationOfBatch);
 
   // This is important to memorise before calling startNewTimeStepFused
   // TODO(Dominic): Add to docu and/or make cleaner
+  UpdateResult result;
   const double predictorTimeStamp    = cellDescription.getPredictorTimeStamp();
   const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
   result._timeStepSize        = startNewTimeStepFused(
@@ -1847,9 +1839,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     performPredictionAndVolumeIntegralBody(
           cellDescription,
           predictorTimeStamp,predictorTimeStepSize,
-          vetoSpawnCompressionAsBackgroundJob);
+          false,vetoSpawnCompressionAsBackgroundJob);
   } else {
-    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
+    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,false/*already uncompressed*/ );
     peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
   }
   return result;
@@ -1874,19 +1866,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
         isLastIterationOfBatch  ||
         vetoSpawnPredictionAsBackgroundJob
     ) {
-      UpdateResult result = fusedTimeStepBody(
+      return fusedTimeStepBody(
           cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch,
           vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs);
-      return result;
     } else {
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
       peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-      UpdateResult result;
-      return result;
+      return UpdateResult();
     }
   } else {
-    UpdateResult result; // TODO(Dominic): Add a constructor to UpdateResult
-    return result;
+    return UpdateResult();
   }
 }
 
@@ -1908,8 +1897,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
 
     return result;
   } else {
-    UpdateResult result;
-    return result;
+    return UpdateResult();
   }
 }
 
@@ -1951,10 +1939,10 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 
     if (cellDescription.getType()==CellDescription::Type::Cell) {
       aderdgSolver->synchroniseTimeStepping(cellDescription);
-      aderdgSolver->uncompress(cellDescription);
       aderdgSolver->performPredictionAndVolumeIntegral(
           cellDescription,cellDescription.getPredictorTimeStamp(),
-          cellDescription.getPredictorTimeStepSize(),isAtRemoteBoundary);
+          cellDescription.getPredictorTimeStepSize(),
+          true,isAtRemoteBoundary);
     }
   }
 }
@@ -1987,7 +1975,12 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     CellDescription& cellDescription,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
+    const bool   uncompressBefore,
     const bool   vetoSpawnAnyBackgroundJob) {
+  if (uncompressBefore) {
+    uncompress(cellDescription);
+  }
+
   validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
 
   double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -2021,6 +2014,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
+    const bool uncompressBefore,
     const bool isAtRemoteBoundary) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
@@ -2031,10 +2025,11 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
     ) {
       performPredictionAndVolumeIntegralBody(
-          cellDescription,predictorTimeStamp,predictorTimeStepSize,vetoSpawnAnyBackgroundJob);
+          cellDescription,predictorTimeStamp,predictorTimeStepSize,
+          uncompressBefore,vetoSpawnAnyBackgroundJob);
     }
     else {
-      PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize );
+      PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,uncompressBefore );
       peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
     }
   }
@@ -2825,11 +2820,13 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
           getCellDescription(cellDescriptionsIndex1,element1);
 
   peano::datatraversal::TaskSet uncompression(
-    [&] () -> void {
+    [&] () -> bool {
       uncompress(cellDescriptionLeft);
+      return false;
     },
-    [&] () -> void {
+    [&] () -> bool {
       uncompress(cellDescriptionRight);
+      return false;
     },
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
@@ -3627,10 +3624,9 @@ void exahype::solvers::ADERDGSolver::dropNeighbourData(
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  DataHeap::HeapEntries messageForMaster(0,std::max(4,capacity));
+  DataHeap::HeapEntries messageForMaster(0,std::max(3,capacity));
   messageForMaster.push_back(_minPredictorTimeStepSize);
-  messageForMaster.push_back(_minCellSize);
-  messageForMaster.push_back(_maxCellSize);
+  messageForMaster.push_back(_maxLevel);
   messageForMaster.push_back(_meshUpdateRequest ? 1.0 : -1.0);
   return messageForMaster;
 }
@@ -3655,7 +3651,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     const int                                    level) const {
   DataHeap::HeapEntries messageForMaster = compileMessageForMaster();
 
-  assertion1(messageForMaster.size()==4,messageForMaster.size());
+  assertion1(messageForMaster.size()==3,messageForMaster.size());
   assertion1(std::isfinite(messageForMaster[0]),messageForMaster[0]);
   if (_timeStepping==TimeStepping::Global) {
     assertionNumericalEquals1(_minNextTimeStepSize,std::numeric_limits<double>::max(),
@@ -3667,8 +3663,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     logDebug("sendDataToMaster(...)","Sending time step data: " <<
              "data[0]=" << messageForMaster[0] <<
              ",data[1]=" << messageForMaster[1] <<
-             ",data[2]=" << messageForMaster[2] <<
-             ",data[3]=" << messageForMaster[3]);
+             ",data[2]=" << messageForMaster[2]);
   }
 
   DataHeap::getInstance().sendData(
@@ -3684,9 +3679,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   // Thus it does not equal MAX_DOUBLE.
 
   int index=0;
-  _minNextTimeStepSize   = std::min( _minNextTimeStepSize, message[index++] );
-  _nextMinCellSize       = std::min( _nextMinCellSize, message[index++] );
-  _nextMaxCellSize       = std::max( _nextMaxCellSize, message[index++] );
+  _minNextTimeStepSize    = std::min( _minNextTimeStepSize, message[index++] );
+  _nextMaxLevel           = std::max( _nextMaxLevel,        static_cast<int>(message[index++]) );
   _nextMeshUpdateRequest |= (message[index++]) > 0 ? true : false;
 
   if (true || tarch::parallel::Node::getInstance().getRank()==
@@ -3694,13 +3688,11 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
     logDebug("mergeWithWorkerData(...)","[post] Receiving time step data: " <<
         "data[0]=" << message[0] <<
         ",data[1]=" << message[1] <<
-        ",data[2]=" << message[2] <<
-        ",data[3]=" << message[3] );
+        ",data[2]=" << message[2] );
     logDebug("mergeWithWorkerData(...)","[post] Updated time step fields: " <<
         ",_minNextPredictorTimeStepSize=" << _minNextTimeStepSize <<
         ",_nextMeshUpdateRequest=" << _nextMeshUpdateRequest <<
-        ",_nextMinCellSize=" << _nextMinCellSize <<
-        ",_nextMaxCellSize=" << _nextMaxCellSize);
+        ",_nextMaxLevel=" << _nextMaxLevel);
   }
 }
 
@@ -3715,7 +3707,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(4);
+  DataHeap::HeapEntries messageFromWorker(3);
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -3726,7 +3718,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
       messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(messageFromWorker.size()==4,messageFromWorker.size());
+  assertion1(messageFromWorker.size()==3,messageFromWorker.size());
   mergeWithWorkerData(messageFromWorker);
 }
 
@@ -3895,20 +3887,19 @@ void exahype::solvers::ADERDGSolver::dropWorkerData(
 ///////////////////////////////////
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) const {
-  DataHeap::HeapEntries messageForWorker(0,std::max(8,capacity));
+  DataHeap::HeapEntries messageForWorker(0,std::max(7,capacity));
   messageForWorker.push_back(_minCorrectorTimeStamp);
   messageForWorker.push_back(_minCorrectorTimeStepSize);
   messageForWorker.push_back(_minPredictorTimeStamp);
   messageForWorker.push_back(_minPredictorTimeStepSize);
 
-  messageForWorker.push_back(_minCellSize);
-  messageForWorker.push_back(_maxCellSize);
+  messageForWorker.push_back(_maxLevel);
 
   messageForWorker.push_back(_meshUpdateRequest ? 1.0 : -1.0);
 
   messageForWorker.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
 
-  assertion1(messageForWorker.size()==8,messageForWorker.size());
+  assertion1(messageForWorker.size()==7,messageForWorker.size());
   assertion1(std::isfinite(messageForWorker[0]),messageForWorker[0]);
   assertion1(std::isfinite(messageForWorker[1]),messageForWorker[1]);
   assertion1(std::isfinite(messageForWorker[2]),messageForWorker[2]);
@@ -3937,8 +3928,7 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
             ",data[3]=" << messageForWorker[3] <<
             ",data[4]=" << messageForWorker[4] <<
             ",data[5]=" << messageForWorker[5] <<
-            ",data[6]=" << messageForWorker[6] <<
-            ",data[7]=" << messageForWorker[7]);
+            ",data[6]=" << messageForWorker[6]);
     logDebug("sendDataWorker(...)","_minNextPredictorTimeStepSize="<<_minNextTimeStepSize);
   }
 
@@ -3955,8 +3945,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
   _minPredictorTimeStamp         = message[index++];
   _minPredictorTimeStepSize      = message[index++];
 
-  _minCellSize                   = message[index++];
-  _maxCellSize                   = message[index++];
+  _maxLevel                      = message[index++];
 
   _meshUpdateRequest             = (message[index++] > 0.0) ? true : false;
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
@@ -3969,12 +3958,12 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromMaster(8);
+  DataHeap::HeapEntries messageFromMaster(7);
   DataHeap::getInstance().receiveData(
       messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
 
-  assertion1(messageFromMaster.size()==8,messageFromMaster.size());
+  assertion1(messageFromMaster.size()==7,messageFromMaster.size());
   mergeWithMasterData(messageFromMaster);
 
   if (_timeStepping==TimeStepping::Global) {
@@ -3990,9 +3979,8 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
             ",data[2]=" << messageFromMaster[2] <<
             ",data[3]=" << messageFromMaster[3] <<
             ",data[4]=" << messageFromMaster[4] <<
-            ",data[5]=" << messageFromMaster[5]<<
-            ",data[6]=" << messageFromMaster[6]<<
-            ",data[7]=" << messageFromMaster[7]);
+            ",data[5]=" << messageFromMaster[5] <<
+            ",data[6]=" << messageFromMaster[6]);
   }
 }
 
@@ -4206,12 +4194,14 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   ADERDGSolver&     solver,
   CellDescription&  cellDescription,
   const double      predictorTimeStamp,
-  const double      predictorTimeStepSize
+  const double      predictorTimeStepSize,
+  const bool        uncompressBefore
 ):
   _solver(solver),
   _cellDescription(cellDescription),
   _predictorTimeStamp(predictorTimeStamp),
-  _predictorTimeStepSize(predictorTimeStepSize){
+  _predictorTimeStepSize(predictorTimeStepSize),
+  _uncompressBefore(uncompressBefore){
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs++;
   lock.free();
@@ -4222,7 +4212,7 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegralBody(
       _cellDescription,
       _predictorTimeStamp,_predictorTimeStepSize,
-      false /*existence of job means there is no veto*/); // ignore return value
+      _uncompressBefore,false /*existence of job means there is no veto*/); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;
@@ -4477,31 +4467,41 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
   assertion( DataHeap::getInstance().isValidIndex( cellDescription.getFluctuation() ));
 
   peano::datatraversal::TaskSet compressionFactorIdentification(
-    [&]() -> void  { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
+    [&]() -> bool { compressionOfPreviousSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).data(),
       getDataPerCell(),
       CompressionAccuracy,true
-      );},
-    [&] () -> void  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&] () -> bool  { compressionOfSolution = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getSolution() ).data(),
       getDataPerCell(),
       CompressionAccuracy,true
-      );},
-    [&]() -> void  { compressionOfUpdate = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&]() -> bool  { compressionOfUpdate = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getUpdate() ).data(),
       getUnknownsPerCell(),
       CompressionAccuracy,true
-      );},
-    [&]() -> void  { compressionOfExtrapolatedPredictor = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&]() -> bool  { compressionOfExtrapolatedPredictor = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).data(),
       getDataPerCellBoundary(),
       CompressionAccuracy,true
-      );},
-    [&]() -> void  { compressionOfFluctuation = peano::heap::findMostAgressiveCompression(
+      );
+      return false;
+      },
+    [&]() -> bool  { compressionOfFluctuation = peano::heap::findMostAgressiveCompression(
       DataHeap::getInstance().getData( cellDescription.getFluctuation() ).data(),
       getUnknownsPerCellBoundary(),
       CompressionAccuracy,true
-      );},
+      );
+      return false;
+      },
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
@@ -4523,7 +4523,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
   assertion(compressionOfFluctuation<=7);
 
   peano::datatraversal::TaskSet runParallelTasks(
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInPreviousSolution(compressionOfPreviousSolution);
       if (compressionOfPreviousSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4556,8 +4556,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInSolution(compressionOfSolution);
       if (compressionOfSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4591,8 +4592,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInUpdate(compressionOfUpdate);
       if (compressionOfUpdate<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4625,8 +4627,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInExtrapolatedPredictor(compressionOfExtrapolatedPredictor);
       if (compressionOfExtrapolatedPredictor<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4659,8 +4662,9 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       cellDescription.setBytesPerDoFInFluctuation(compressionOfFluctuation);
       if (compressionOfFluctuation<7) {
         tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -4693,6 +4697,7 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         lock.free();
         #endif
       }
+      return false;
     },
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
@@ -4724,31 +4729,31 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getUpdate()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedPredictor()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(unknownsPerCellBoundary ) );
       lock.free();
     }
     if (cellDescription.getFluctuation()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setFluctuation( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
       lock.free();
@@ -4784,7 +4789,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
   );
 
   peano::datatraversal::TaskSet glueTasks(
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInPreviousSolution()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolution() ), cellDescription.getPreviousSolution());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getPreviousSolutionCompressed() ));
@@ -4795,8 +4800,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setPreviousSolutionCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInSolution()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getSolution() ), cellDescription.getSolution() );
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getSolutionCompressed() ));
@@ -4807,8 +4813,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setSolutionCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInUpdate()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getUpdate() ), cellDescription.getUpdate());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getUpdateCompressed() ));
@@ -4819,8 +4826,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setUpdateCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInExtrapolatedPredictor()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedPredictor() ), cellDescription.getExtrapolatedPredictor());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getExtrapolatedPredictorCompressed() ));
@@ -4831,8 +4839,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setExtrapolatedPredictorCompressed( -1 );
         lock.free();
       }
+      return false;
     },
-    [&]() -> void {
+    [&]() -> bool {
       if (cellDescription.getBytesPerDoFInFluctuation()<7) {
         assertion1( DataHeap::getInstance().isValidIndex( cellDescription.getFluctuation() ), cellDescription.getFluctuation());
         assertion( CompressedDataHeap::getInstance().isValidIndex( cellDescription.getFluctuationCompressed() ));
@@ -4843,6 +4852,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
           cellDescription.setFluctuationCompressed( -1 );
         lock.free();
       }
+      return false;
     },
     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,

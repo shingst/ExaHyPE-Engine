@@ -36,6 +36,8 @@ class LoadBalancing;
  * The mapping plugs into leaveCell() only and basically realises the ideas
  * from the class documentation of mpibalancing::HotSpotBalancing.
  * 
+ * TODO(Dominic): Multicoreise this mapping.
+ *
  * @author Tobias Weinzierl
  */
 class exahype::mappings::LoadBalancing {
@@ -59,10 +61,9 @@ class exahype::mappings::LoadBalancing {
      * Nothing to be done
      */
     peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
-    /**
-     * Nothing to be done
-     */
     peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
+    peano::MappingSpecification   ascendSpecification(int level) const;
+    peano::MappingSpecification   descendSpecification(int level) const;
 
     /**
      * Operation degenerates to nop if we translate without MPI.
@@ -77,16 +78,6 @@ class exahype::mappings::LoadBalancing {
      * @see leaveCell() for a discussion of the restriction mechanism.
      */
     peano::MappingSpecification   leaveCellSpecification(int level) const;
-
-    /**
-     * Nothing to be done
-     */
-    peano::MappingSpecification   ascendSpecification(int level) const;
-
-    /**
-     * Nothing to be done
-     */
-    peano::MappingSpecification   descendSpecification(int level) const;
 
     /**
      * The load balancing does rely on an analysed tree grammar, i.e.

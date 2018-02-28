@@ -38,7 +38,7 @@ peano::MappingSpecification
 exahype::mappings::GlobalRollback::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 // Everything below is nop.
@@ -46,35 +46,35 @@ peano::MappingSpecification
 exahype::mappings::GlobalRollback::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::GlobalRollback::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::GlobalRollback::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::GlobalRollback::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::GlobalRollback::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::GlobalRollback::_log(
@@ -140,8 +140,7 @@ void exahype::mappings::GlobalRollback::enterCell(
 
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined2);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for(int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -161,8 +160,7 @@ void exahype::mappings::GlobalRollback::enterCell(
 
         limitingADERDGSolver->rollbackSolverSolutionsGlobally(fineGridCell.getCellDescriptionsIndex(),element);
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
 
     // !!! The following has to be done after GlobalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)

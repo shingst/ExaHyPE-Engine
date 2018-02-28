@@ -28,8 +28,6 @@
 
 #include "peano/utils/UserInterface.h"
 
-tarch::multicore::BooleanSemaphore exahype::mappings::Prediction::SemaphoreForRestriction;
-
 peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -42,39 +40,39 @@ peano::MappingSpecification
 exahype::mappings::Prediction::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::Prediction::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 // The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::Prediction::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::Prediction::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::Prediction::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::Prediction::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::Prediction::_log(
@@ -87,8 +85,7 @@ exahype::mappings::Prediction::~Prediction() {
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::Prediction::Prediction(const Prediction& masterThread)
-  : _localState(masterThread._localState) {
+exahype::mappings::Prediction::Prediction(const Prediction& masterThread) {
   // do nothing
 }
 
@@ -99,7 +96,7 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-  _localState = solverState;
+  // do nothing
 }
 
 void exahype::mappings::Prediction::endIteration(
@@ -121,7 +118,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
     if (
@@ -138,7 +135,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
       // this operates only on helper cells
       solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }
-    endpfor
+    }
     grainSize.parallelSectionHasTerminated();
   }
 }
@@ -163,14 +160,12 @@ void exahype::mappings::Prediction::enterCell(
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
-void exahype::mappings::Prediction::restrictData(
+void exahype::mappings::Prediction::restriction(
     const exahype::Cell&                             fineGridCell,
-    const exahype::Cell&                             coarseGridCell,
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (
@@ -179,8 +174,7 @@ void exahype::mappings::Prediction::restrictData(
       ) {
         solver->restriction(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
   }
 }
 
@@ -195,9 +189,8 @@ void exahype::mappings::Prediction::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictData(
-      fineGridCell,coarseGridCell,
-      exahype::State::AlgorithmSection::TimeStepping);
+  exahype::mappings::Prediction::restriction(
+      fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

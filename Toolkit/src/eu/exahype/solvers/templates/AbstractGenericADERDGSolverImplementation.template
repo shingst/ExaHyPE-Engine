@@ -53,61 +53,42 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- endif %}
   constexpr int spaceTimeBasisSize = spaceBasisSize*(Order+1);
 {%- if isLinear %}
-{%-   if tempVarsOnStack %}
-  double lQi[(NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2)]; // size: basisSize2 * (basisSize + 1) * numberOfData;
-  double lFi[(DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize]; // also stores the source; size: basisSize3 * DIMENSIONS+1 * numberOfVariables
-  double gradQ[DIMENSIONS*NumberOfVariables*spaceTimeBasisSize]; //  nullptr if not useNCP, size: basisSize3 * DIMENSIONS * numberOfVariables
-  double PSi[NumberOfVariables*spaceBasisSize*(Order+2)]; // nullptr if bnot usePointSource,  size: basisSize2 * (basisSize + 1) * numberOfVariables
-  double PSderivatives[NumberOfVariables*spaceTimeBasisSize]; // nullptr if bnot usePointSource, size: basisSize2 * (basisSize + 1) * numberOfVariables 
-  double tmp_PSderivatives[NumberOfVariables*spaceTimeBasisSize]; // it's actually lFi used here as a temp array //TODO do something cleaner?
-  
-  double lFhi[(DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize]; // also stores the source
-  double lQhi[(NumberOfVariables+NumberOfParameters)*spaceBasisSize];
-{%-   else %}
-  constexpr int sizeLQi           = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
-  constexpr int sizeLFi           = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
-  constexpr int sizeGradQ         = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
-  constexpr int sizePSi           = NumberOfVariables*spaceBasisSize*(Order+2);
-  constexpr int sizePSderivatives = NumberOfVariables*spaceTimeBasisSize;
-  
-  const int indexLQi               = exahype::DataHeap::getInstance().createData(
-     sizeLQi,sizeLQi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexLFi               = exahype::DataHeap::getInstance().createData(
-     sizeLFi,sizeLFi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexGradQ             = exahype::DataHeap::getInstance().createData(
-     sizeGradQ,sizeGradQ,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexPSi               = exahype::DataHeap::getInstance().createData(
-     sizePSi,sizePSi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexForceVectorSouceN = exahype::DataHeap::getInstance().createData(
-     sizePSi,sizePSi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequir\
-ed);
-  const int indexPSderivatives     = exahype::DataHeap::getInstance().createData(
-     sizePSderivatives,sizePSderivatives,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexTmp_PSderivatives = exahype::DataHeap::getInstance().createData(
-     sizePSderivatives,sizePSderivatives,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* lQi               = exahype::DataHeap::getInstance().getData(indexLQi).data();
-  double* lFi               = exahype::DataHeap::getInstance().getData(indexLFi).data();
-  double* gradQ             = exahype::DataHeap::getInstance().getData(indexGradQ).data();
-  double* PSi               = exahype::DataHeap::getInstance().getData(indexPSi).data();
-  double* forceVectorSourceN= exahype::DataHeap::getInstance().getData(indexForceVectorSouceN).data();
-  double* PSderivatives     = exahype::DataHeap::getInstance().getData(indexPSderivatives).data();
-  double* tmp_PSderivatives = exahype::DataHeap::getInstance().getData(indexTmp_PSderivatives).data();
-  
+  constexpr int sizeLQi                = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
+  constexpr int sizeLFi                = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
+  constexpr int sizeGradQ              = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
+  constexpr int sizePSi                = NumberOfVariables*spaceBasisSize*(Order+2);
+  constexpr int sizePSderivatives      = NumberOfVariables*spaceTimeBasisSize;
+  constexpr int sizeTmp_PSderivatives  = sizePSderivatives;
+
   constexpr int sizeLQhi = (NumberOfVariables+NumberOfParameters)*spaceBasisSize;
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
-  const int indexLQhi               = exahype::DataHeap::getInstance().createData(
-     sizeLQhi,sizeLQhi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexLFhi     = exahype::DataHeap::getInstance().createData(
-     sizeLFhi,sizeLFhi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* lQhi = exahype::DataHeap::getInstance().getData(indexLQhi).data();
-  double* lFhi = exahype::DataHeap::getInstance().getData(indexLFhi).data();
+  
+  constexpr int totalSize = sizeLQi + sizeLFi + sizeGradQ +
+                            sizePSi + sizePSderivatives + sizeTmp_PSderivatives +
+                            sizeLQhi + sizeLFhi;
+{%-   if tempVarsOnStack %}
+  double block[totalSize]; double* memory=&block[0];
+{%-   else %}  
+  const int index = exahype::DataHeap::getInstance().createData(
+      totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  double* memory = exahype::DataHeap::getInstance().getData(index).data();
 {%-   endif %}
+  double* lQi                = memory; memory+=sizeLQi;
+  double* lFi                = memory; memory+=sizeLFi;
+  double* gradQ              = memory; memory+=sizeGradQ;
+  double* PSi                = memory; memory+=sizePSi;
+  double* PSderivatives      = memory; memory+=sizePSderivatives;
+  double* tmp_PSderivatives  = memory; memory+=sizeTmp_PSderivatives;
+  
+  double* lQhi               = memory; memory+=sizeLQhi;
+  double* lFhi               = memory; memory+=sizeLFhi;
 
 const int picardIterations = 1;
+
+ std::vector<int>* pointSources= kernels::aderdg::generic::c::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
 {%-   if usePointSources %}
-  bool hasPointSource=false;
-  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, hasPointSource, PSi, forceVectorSourceN);
-  if(hasPointSource){
+  if(pointSources != nullptr) {
+    kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
     kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }else{
     kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
@@ -116,83 +97,50 @@ const int picardIterations = 1;
   kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
 {%-   endif %}
   kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource || useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
-  
-{%-   if !tempVarsOnStack %}
-{%-     if !noTimeAveraging %}
-  exahype::DataHeap::getInstance().deleteData(indexLQhi,true);
-  exahype::DataHeap::getInstance().deleteData(indexLFhi,true);
-{%-     endif %}
-  exahype::DataHeap::getInstance().deleteData(indexLQi,true);
-  exahype::DataHeap::getInstance().deleteData(indexLFi,true);
-  exahype::DataHeap::getInstance().deleteData(indexGradQ,true);
-  exahype::DataHeap::getInstance().deleteData(indexPSi,true);
-  exahype::DataHeap::getInstance().deleteData(indexForceVectorSouceN,true);
-  exahype::DataHeap::getInstance().deleteData(indexPSderivatives,true);
-  exahype::DataHeap::getInstance().deleteData(indexTmp_PSderivatives,true);
-{%-   endif %}  
+
 {%- else %}
-{%-   if tempVarsOnStack %}
-  double lQi[(NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize];
-  double rhs[(NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize];
-  double lFi[(DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize]; // also stores the source
-  double gradQ[DIMENSIONS*NumberOfVariables*spaceTimeBasisSize];
-  
-{%-     if noTimeAveraging %}
-  double* lQhi = lQi;
-  double* lFhi = lFi;
-{%-     else %}
-  double lQhi[(NumberOfVariables+NumberOfParameters)*spaceBasisSize];
-  double lFhi[(DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize]; // also stores the source
-{%-     endif %}
-{%-   else %}
   constexpr int sizeLQi   = (NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize;
+  constexpr int sizeRhs   = sizeLQi;
   constexpr int sizeLFi   = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeGradQ = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
   
-  const int indexLQi      = exahype::DataHeap::getInstance().createData(
-     sizeLQi,sizeLQi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexRhs      = exahype::DataHeap::getInstance().createData(
-     sizeLQi,sizeLQi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexLFi      = exahype::DataHeap::getInstance().createData(
-     sizeLFi,sizeLFi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexGradQ    = exahype::DataHeap::getInstance().createData(
-     sizeGradQ,sizeGradQ,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* lQi   = exahype::DataHeap::getInstance().getData(indexLQi).data();
-  double* rhs   = exahype::DataHeap::getInstance().getData(indexRhs).data();
-  double* lFi   = exahype::DataHeap::getInstance().getData(indexLFi).data();
-  double* gradQ = exahype::DataHeap::getInstance().getData(indexGradQ).data();
-  
-{%-     if noTimeAveraging %}
-  double* lQhi = lQi;
-  double* lFhi = lFi;
-{%-     else %}
   constexpr int sizeLQhi = (NumberOfVariables+NumberOfParameters)*spaceBasisSize;
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
+
+{%-   if noTimeAveraging %}
+  const int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ;
+{%-   else %}  
+  const int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ +
+                        sizeLQhi + sizeLFhi;
+{%-   endif %}
+
+{%-   if tempVarsOnStack %}
+  double block[totalSize]; double* memory=&block[0];
+{%-   else %}  
+  const int index = exahype::DataHeap::getInstance().createData(
+      totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  double* memory = exahype::DataHeap::getInstance().getData(index).data();
+{%-   endif %}
+      
+  double* lQi   = memory; memory+=sizeLQi;
+  double* rhs   = memory; memory+=sizeRhs;
+  double* lFi   = memory; memory+=sizeLFi;
+  double* gradQ = memory; memory+=sizeGradQ;
   
-  const int indexLQhi     = exahype::DataHeap::getInstance().createData(
-     sizeLQhi,sizeLQhi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexLFhi     = exahype::DataHeap::getInstance().createData(
-     sizeLFhi,sizeLFhi,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* lQhi = exahype::DataHeap::getInstance().getData(indexLQhi).data();
-  double* lFhi = exahype::DataHeap::getInstance().getData(indexLFhi).data();
-{%-     endif %}
+{%-   if noTimeAveraging %}
+  double* lQhi = lQi;
+  double* lFhi = lFi;
+{%-   else %}
+  double* lQhi = memory; memory+=sizeLQhi;
+  double* lFhi = memory; memory+=sizeLFhi;
 {%-   endif %}
 
   const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
   kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
-{%-   if !tempVarsOnStack %}
-{%-     if !noTimeAveraging %}
-
-  exahype::DataHeap::getInstance().deleteData(indexLQhi,true);
-  exahype::DataHeap::getInstance().deleteData(indexLFhi,true);
-{%-     endif %}
-
-  exahype::DataHeap::getInstance().deleteData(indexLQi,true);
-  exahype::DataHeap::getInstance().deleteData(indexRhs,true);
-  exahype::DataHeap::getInstance().deleteData(indexLFi,true);
-  exahype::DataHeap::getInstance().deleteData(indexGradQ,true);
-{%-   endif %}
+{%- endif %}
+{%- if !tempVarsOnStack %}
+  exahype::DataHeap::getInstance().deleteData(index,true);
 {%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
@@ -249,23 +197,20 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
 {%- else %}
   constexpr int basisSize     = (Order+1);
 {%- endif %}
+  constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
+  constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
+  
+  constexpr int totalSize = sizeStateOut + sizeFluxOut;
 {%- if tempVarsOnStack %}
-  
-  double stateOut[(NumberOfVariables+NumberOfParameters)*basisSize];
-  double fluxOut[NumberOfVariables*basisSize];
-{%- else %}
-  
-  constexpr int sizeState = (NumberOfVariables+NumberOfParameters)*basisSize;
-  constexpr int sizeFlux  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
-  
-  const int indexStateOut = exahype::DataHeap::getInstance().createData(
-     sizeState,sizeState,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexFluxOut  = exahype::DataHeap::getInstance().createData(
-     sizeFlux,sizeFlux,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* stateOut = exahype::DataHeap::getInstance().getData(indexStateOut).data();
-  double* fluxOut  = exahype::DataHeap::getInstance().getData(indexFluxOut).data();
-  
+  double block[totalSize]; double* memory=&block[0];
+{%- else %}  
+  const int index = exahype::DataHeap::getInstance().createData(
+      totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  double* memory = exahype::DataHeap::getInstance().getData(index).data();
 {%- endif %}
+  double* stateOut = memory; memory+=sizeStateOut;
+  double* fluxOut  = memory; memory+=sizeFluxOut;
+
   kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
   
   if (faceIndex % 2 == 0) {
@@ -281,8 +226,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
   }
 {%- if !tempVarsOnStack %}
-  exahype::DataHeap::getInstance().deleteData(indexStateOut,true);
-  exahype::DataHeap::getInstance().deleteData(indexFluxOut,true);
+  exahype::DataHeap::getInstance().deleteData(index,true);
 {%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("boundaryConditions");
@@ -364,7 +308,7 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
       abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
       abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

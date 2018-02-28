@@ -47,47 +47,45 @@ peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
     touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-void exahype::mappings::FinaliseMeshRefinement::prepareLocalTimeStepVariables(){
+void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
-  _minCellSizes.resize(numberOfSolvers);
-  _maxCellSizes.resize(numberOfSolvers);
+  _maxLevels.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _minCellSizes    [solverNumber] = std::numeric_limits<double>::max();
-    _maxCellSizes    [solverNumber] = -std::numeric_limits<double>::max(); // "-", min
+    _maxLevels    [solverNumber]    = -std::numeric_limits<int>::max(); // "-", min
   }
 }
 
@@ -102,7 +100,7 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 }
 
 // Merge over threads
@@ -111,10 +109,8 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
     _minTimeStepSizes[i] =
         std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _minCellSizes[i] =
-        std::min(_minCellSizes[i], workerThread._minCellSizes[i]);
-    _maxCellSizes[i] =
-        std::max(_maxCellSizes[i], workerThread._maxCellSizes[i]);
+    _maxLevels[i] =
+        std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
 }
 #endif
@@ -130,7 +126,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
   #endif
 
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -147,8 +143,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     const int numberOfSolvers = static_cast<int>(exahype::solvers::RegisteredSolvers.size());
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined0);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for( int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       if ( solver->getMeshUpdateRequest() ) {
@@ -176,10 +171,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
 
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-          _minCellSizes[solverNumber] = std::min(
-              fineGridVerticesEnumerator.getCellSize()[0],_minCellSizes[solverNumber]);
-          _maxCellSizes[solverNumber] = std::max(
-              fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
+          _maxLevels[solverNumber] = std::max(
+              fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
           // determine min and max for LimitingADERDGSolver
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -189,8 +182,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           }
         }
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
 
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
@@ -215,14 +207,13 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
       if (solver->getMeshUpdateRequest()) {
         // cell sizes
-        solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
-        solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
-        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
+/*        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
           assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
               solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
           assertion3(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString());
-        }
+              solver->getNextMaxCellSize(),_maxLevels[solverNumber],solver->toString());
+        }*/
 
         // time
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);

@@ -29,19 +29,17 @@ peano::CommunicationSpecification   exahype::mappings::LoadBalancing::communicat
  * All empty
  */
 peano::MappingSpecification   exahype::mappings::LoadBalancing::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification   exahype::mappings::LoadBalancing::touchVertexFirstTimeSpecification(int level) const { 
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification   exahype::mappings::LoadBalancing::ascendSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification   exahype::mappings::LoadBalancing::descendSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,true);
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
-
-
 
 /**
  * All is done cell-wisely.
@@ -54,7 +52,6 @@ peano::MappingSpecification   exahype::mappings::LoadBalancing::enterCellSpecifi
   #endif
 }
 
-
 peano::MappingSpecification   exahype::mappings::LoadBalancing::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
@@ -63,6 +60,25 @@ peano::MappingSpecification   exahype::mappings::LoadBalancing::leaveCellSpecifi
 tarch::logging::Log                exahype::mappings::LoadBalancing::_log( "exahype::mappings::LoadBalancing" ); 
 
 
+
+
+
+#if defined(SharedMemoryParallelisation)
+exahype::mappings::LoadBalancing::LoadBalancing(const LoadBalancing&  masterThread) {
+  _numberOfLocalCells = 0;
+}
+
+
+void exahype::mappings::LoadBalancing::mergeWithWorkerThread(const LoadBalancing& workerThread) {
+  _numberOfLocalCells += workerThread._numberOfLocalCells;
+}
+#endif
+
+void exahype::mappings::LoadBalancing::beginIteration(
+  exahype::State&  solverState
+) {
+  _numberOfLocalCells = 0;
+}
 
 void exahype::mappings::LoadBalancing::enterCell(
       exahype::Cell&                 fineGridCell,
@@ -150,19 +166,6 @@ exahype::mappings::LoadBalancing::LoadBalancing() {
 exahype::mappings::LoadBalancing::~LoadBalancing() {
   // do nothing
 }
-
-
-#if defined(SharedMemoryParallelisation)
-exahype::mappings::LoadBalancing::LoadBalancing(const LoadBalancing&  masterThread) {
-  // do nothing
-}
-
-
-void exahype::mappings::LoadBalancing::mergeWithWorkerThread(const LoadBalancing& workerThread) {
-  // do nothing
-}
-#endif
-
 
 void exahype::mappings::LoadBalancing::createHangingVertex(
       exahype::Vertex&     fineGridVertex,
@@ -397,14 +400,6 @@ void exahype::mappings::LoadBalancing::touchVertexLastTime(
 ) {
   // do nothing
 }
-
-
-void exahype::mappings::LoadBalancing::beginIteration(
-  exahype::State&  solverState
-) {
-  _numberOfLocalCells = 0;
-}
-
 
 
 void exahype::mappings::LoadBalancing::descend(

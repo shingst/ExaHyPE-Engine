@@ -42,39 +42,39 @@ peano::MappingSpecification
 exahype::mappings::PredictionRerun::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 // The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::PredictionRerun::_log(
@@ -87,8 +87,7 @@ exahype::mappings::PredictionRerun::~PredictionRerun() {
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread)
-  : _localState(masterThread._localState) {
+exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) {
   // do nothing
 }
 
@@ -99,10 +98,7 @@ void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
 
 void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
-  _localState = solverState;
-
-  // background threads
-  exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
@@ -141,9 +137,8 @@ void exahype::mappings::PredictionRerun::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictData(
-      fineGridCell,coarseGridCell,
-      exahype::State::AlgorithmSection::TimeStepping);
+  exahype::mappings::Prediction::restriction(
+      fineGridCell,exahype::State::AlgorithmSection::PredictionRerunAllSend);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

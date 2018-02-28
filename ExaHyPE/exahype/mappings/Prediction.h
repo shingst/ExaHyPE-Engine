@@ -86,21 +86,6 @@ private:
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
-
-  /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-   exahype::State _localState;
-
-  /**
-   * A semaphore for restrictions.
-   */
-  static tarch::multicore::BooleanSemaphore SemaphoreForRestriction;
  public:
 
   /**
@@ -158,9 +143,8 @@ private:
    * threads. See the documentation of peano::datatraversal::TasksSet for a
    * remark on this.
    */
-  static void restrictData(
-      const exahype::Cell&                             fineGridCell,
-      const exahype::Cell&                             coarseGridCell,
+  static void restriction(
+      const exahype::Cell&  fineGridCell,
       const exahype::State::AlgorithmSection& algorithmSection);
 
   /**

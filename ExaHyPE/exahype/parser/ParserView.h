@@ -53,6 +53,7 @@ class ParserView;
  */
 class exahype::parser::ParserView {
 private:
+  static tarch::logging::Log _log;
   exahype::parser::Parser& _parser;
   int _solverNumberInSpecificationFile;
 

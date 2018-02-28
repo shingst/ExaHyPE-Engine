@@ -84,16 +84,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   #endif
 
   /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-  exahype::State _localState;
-
-  /**
    * Flag indicating if one solver requested a local recomputation.
    * Is set in beginIteration(...).
    */
@@ -105,20 +95,15 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   std::vector<double> _minTimeStepSizes;
 
   /**
-   * A minimum cell size for each solver.
+   * The maximum level occupied by cells of a solver.
    */
-  std::vector<double> _minCellSizes;
-
-  /**
-   * A maximum cell size for each solver.
-   */
-  std::vector<double> _maxCellSizes;
+  std::vector<int> _maxLevels;
 
   /**
    * Prepare a appropriately sized vector _minTimeStepSizes
    * with elements initiliased to MAX_DOUBLE.
    */
-  void prepareLocalTimeStepVariables();
+  void initialiseLocalVariables();
 
   /**
    * \return true if we perform a local recomputation for this solver.
@@ -165,6 +150,8 @@ class exahype::mappings::PredictionOrLocalRecomputation {
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
+   *
+   * Alters state as we perform a reduction.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
   /**

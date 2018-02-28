@@ -38,6 +38,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr double CFL                  = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
+    double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
     {%- endif %}
     
     // virtual getters for the constexpr's
@@ -96,7 +97,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      *
      * See superclass for function's semantics.
      */
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) override;
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
        
     /**
      * Default implementation. Please overwrite.

@@ -69,36 +69,6 @@ const int exahype::solvers::Solver::NotFound = -1;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
-void exahype::solvers::initialiseSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-/*
-  assertion(solverFlags._limiterDomainChange==nullptr);
-  assertion(solverFlags._meshUpdateRequest  ==nullptr);
-*/
-
-  int numberOfSolvers    = exahype::solvers::RegisteredSolvers.size();
-  solverFlags._limiterDomainChange = new LimiterDomainChange[numberOfSolvers];
-  solverFlags._meshUpdateRequest   = new bool               [numberOfSolvers];
-}
-
-void exahype::solvers::prepareSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    solverFlags._limiterDomainChange[solverNumber] = LimiterDomainChange::Regular;
-    solverFlags._meshUpdateRequest[solverNumber]   = false;
-  }
-}
-
-void exahype::solvers::deleteSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  if (solverFlags._limiterDomainChange!=nullptr) {
-    assertion(solverFlags._limiterDomainChange!=nullptr);
-    assertion(solverFlags._meshUpdateRequest  !=nullptr);
-
-    delete[] solverFlags._limiterDomainChange;
-    delete[] solverFlags._meshUpdateRequest;
-    solverFlags._limiterDomainChange = nullptr;
-    solverFlags._meshUpdateRequest   = nullptr;
-  }
-}
-
 double exahype::solvers::convertToDouble(const LimiterDomainChange& limiterDomainChange) {
   return static_cast<double>(static_cast<int>(limiterDomainChange));
 }
@@ -119,7 +89,7 @@ bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
 
 int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
 
-void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
+void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -127,25 +97,33 @@ void exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated() {
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
+  #ifdef Asserts
   int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-
+  int reported               = numberOfExaHyPEBackgroundJobs;
+  #endif
   while (!finishedWait) {
-    logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-            "waiting for roughly "
-            << numberOfBackgroundJobs
-            << " background tasks to complete of which "
-            << numberOfExaHyPEBackgroundJobs << " were spawned by ExaHyPE"
-            );
+    #ifdef Asserts
+    if (numberOfExaHyPEBackgroundJobs < reported) {
+      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+          "waiting for roughly "
+          << numberOfBackgroundJobs
+          << " background tasks to complete while "
+          << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
+      );
+      reported = numberOfExaHyPEBackgroundJobs;
+    }
+    #endif
 
     peano::datatraversal::TaskSet::processBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
     lock.free();
-
-    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-
     finishedWait = numberOfExaHyPEBackgroundJobs == 0;
+
+    #ifdef Asserts
+    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+    #endif
   }
 }
 
@@ -170,10 +148,8 @@ exahype::solvers::Solver::Solver(
       _maximumMeshSize(maximumMeshSize),
       _coarsestMeshLevel(3),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
-      _minCellSize(std::numeric_limits<double>::max()),
-      _nextMinCellSize(std::numeric_limits<double>::max()),
-      _maxCellSize(-std::numeric_limits<double>::max()), // "-", min
-      _nextMaxCellSize(-std::numeric_limits<double>::max()), // "-", min
+      _maxLevel(-std::numeric_limits<int>::max()), // "-", min
+      _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)),
       _meshUpdateRequest(false),
@@ -348,28 +324,16 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
- void exahype::solvers::Solver::updateNextMinCellSize(double minCellSize) {
-  _nextMinCellSize = std::min( _nextMinCellSize, minCellSize );
+ void exahype::solvers::Solver::updateNextMaxLevel(int maxLevel) {
+   _nextMaxLevel = std::max( _nextMaxLevel, maxLevel );
 }
 
- void exahype::solvers::Solver::updateNextMaxCellSize(double maxCellSize) {
-  _nextMaxCellSize = std::max( _nextMaxCellSize, maxCellSize );
+int exahype::solvers::Solver::getNextMaxLevel() const {
+  return _nextMaxLevel;
 }
 
- double exahype::solvers::Solver::getNextMinCellSize() const {
-  return _nextMinCellSize;
-}
-
- double exahype::solvers::Solver::getNextMaxCellSize() const {
-  return _nextMaxCellSize;
-}
-
- double exahype::solvers::Solver::getMinCellSize() const {
-  return _minCellSize;
-}
-
- double exahype::solvers::Solver::getMaxCellSize() const {
-  return _maxCellSize;
+int exahype::solvers::Solver::getMaxLevel() const {
+  return _maxLevel;
 }
 
 void exahype::solvers::Solver::resetMeshUpdateRequestFlags() {
@@ -527,13 +491,14 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
   int maxDepth = 0;
 
   for (auto solver : exahype::solvers::RegisteredSolvers) {
+/*
     assertion1(solver->getMaxCellSize()>0,solver->getMaxCellSize());
     assertion1(solver->getMinCellSize()>0,solver->getMinCellSize());
+*/
 
-    maxDepth =  std::max (
-        maxDepth,
-        tarch::la::round(
-            std::log(solver->getMaxCellSize()/solver->getMinCellSize())/std::log(3)));
+    maxDepth = std::max(
+        maxDepth, solver->getMaxLevel() - solver->getCoarsestMeshLevel()
+    );
   }
 
   assertion1(maxDepth>=0,maxDepth);
@@ -651,10 +616,10 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 }
 
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
-      const std::vector<double>& minCellSizes,
-      const std::vector<double>& maxCellSizes,
+      const std::vector<int>& maxLevels,
+      const std::vector<bool>& meshUpdateRequests,
+      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -665,11 +630,11 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateRequest(solverFlags._meshUpdateRequest[solverNumber]);
+    solver->updateNextMeshUpdateRequest(meshUpdateRequests[solverNumber]);
     solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
     if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->updateNextLimiterDomainChange(solverFlags._limiterDomainChange[solverNumber]);
+      limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
       if (
           limitingADERDGSolver->getNextMeshUpdateRequest() &&
           limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
@@ -679,8 +644,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       }
     }
     // cell sizes (for AMR)
-    solver->updateNextMinCellSize(minCellSizes[solverNumber]);
-    solver->updateNextMaxCellSize(maxCellSizes[solverNumber]);
+    solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
     // time
     assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);

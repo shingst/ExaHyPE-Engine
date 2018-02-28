@@ -58,41 +58,25 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-  exahype::State _localState;
-
-  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
-
   /**
-   * A minimum cell size for each solver.
+   * The maximum level occupied by cells of a solver.
    */
-  std::vector<double> _minCellSizes;
-
-  /**
-   * A maximum cell size for each solver.
-   */
-  std::vector<double> _maxCellSizes;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void prepareLocalTimeStepVariables();
-
+  std::vector<int> _maxLevels;
   /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  exahype::solvers::SolverFlags _solverFlags;
+  std::vector<bool>                                  _meshUpdateRequests;
+  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
+
+  /**
+   * Prepare the vectors _minTimeStepSizes, _maxLevels,
+   * _meshUpdateRequests, _limiterDomainChanges.
+   */
+  void initialiseLocalVariables();
 
  public:
   /**

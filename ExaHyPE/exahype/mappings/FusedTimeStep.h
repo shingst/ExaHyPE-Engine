@@ -71,45 +71,39 @@ private:
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-  exahype::State _localState;
-
-  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
-
   /**
-   * A minimum cell size for each solver.
+   * The maximum level occupied by cells of a solver.
    */
-  std::vector<double> _minCellSizes;
-
-  /**
-   * A maximum cell size for each solver.
-   */
-  std::vector<double> _maxCellSizes;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void prepareLocalTimeStepVariables();
-
+  std::vector<int> _maxLevels;
   /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  exahype::solvers::SolverFlags _solverFlags;
+  std::vector<bool>                                  _meshUpdateRequests;
+  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
+
+  /**
+   * Prepare the vectors _minTimeStepSizes, _maxLevels,
+   * _meshUpdateRequests, _limiterDomainChanges.
+   */
+  void initialiseLocalVariables();
+
+  /**
+   * Indicates that the background tasks have terminated.
+   * No further checks are required in this case.
+   */
+  bool _backgroundJobsHaveTerminated = false;
 
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
+   *
+   * Alters the state if we perform a reduction. This
+   * is the case if we perform the last iteration of a batch
+   * or no batch iteration at all.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
   /**
@@ -118,6 +112,9 @@ private:
   peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Run through the whole tree. Avoid fine grid races.
+   *
+   * Alters the state as we have a counter which checks
+   * if we have waited for the background jobs to complete.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
@@ -158,7 +155,8 @@ private:
   #endif
 
   /**
-   * Nop.
+   * Merge with the neighbours but check beforehand
+   * if all backgrounds have terminated.
    */
   void touchVertexFirstTime(
       exahype::Vertex& fineGridVertex,
@@ -196,7 +194,7 @@ private:
 
 
   /**
-   * Nop.
+   * Perform a restriction for solvers who requested it.
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -220,12 +218,12 @@ private:
    * For all solvers, overwrite the current
    * gridUpdateRequested value with the next value.
    *
-   * Further update the global solver states (next)limiterDomainHasChanged
+   * Update the global solver states (next)limiterDomainHasChanged
    * with values from the temporary variables.
    *
    * Finish plotting if a plotter is active.
    *
-   * Further deallocates temporary variables.
+   * Reset the _backgroundJobsHaveTerminated switch.
    */
   void endIteration(exahype::State& solverState);
 

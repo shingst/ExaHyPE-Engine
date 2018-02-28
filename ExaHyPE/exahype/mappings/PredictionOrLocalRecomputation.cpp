@@ -52,13 +52,13 @@ peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 
 // Below specs are all nop
@@ -82,16 +82,14 @@ exahype::mappings::PredictionOrLocalRecomputation::descendSpecification(int leve
 }
 
 
-void exahype::mappings::PredictionOrLocalRecomputation::prepareLocalTimeStepVariables(){
+void exahype::mappings::PredictionOrLocalRecomputation::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
-  _minCellSizes.resize(numberOfSolvers);
-  _maxCellSizes.resize(numberOfSolvers);
+  _maxLevels.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _minCellSizes    [solverNumber] = std::numeric_limits<double>::max();
-    _maxCellSizes    [solverNumber] = -std::numeric_limits<double>::max(); // "-", min
+    _maxLevels       [solverNumber] = -std::numeric_limits<int>::max(); // "-", min
   }
 }
 
@@ -111,9 +109,8 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
-    const PredictionOrLocalRecomputation& masterThread)
-: _localState(masterThread._localState) {
-  prepareLocalTimeStepVariables();
+    const PredictionOrLocalRecomputation& masterThread) {
+  initialiseLocalVariables();
 }
 // Merge over threads
 void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
@@ -121,10 +118,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithWorkerThread(
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     _minTimeStepSizes[solverNumber] =
         std::min(_minTimeStepSizes[solverNumber], workerThread._minTimeStepSizes[solverNumber]);
-    _minCellSizes[solverNumber] =
-        std::min(_minCellSizes[solverNumber], workerThread._minCellSizes[solverNumber]);
-    _maxCellSizes[solverNumber] =
-        std::max(_maxCellSizes[solverNumber], workerThread._maxCellSizes[solverNumber]);
+    _maxLevels[solverNumber] =
+        std::max(_maxLevels[solverNumber], workerThread._maxLevels[solverNumber]);
   }
 }
 #endif
@@ -133,12 +128,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  _localState = solverState;
-
   OneSolverRequestedLocalRecomputation =
         exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
@@ -173,19 +166,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
       if (
           performLocalRecomputation( solver )
       ) {
-        logDebug("endIteration(state)","_minCellSizes[solverNumber]="<<_minCellSizes[solverNumber]<<
-            ",_minCellSizes[solverNumber]="<<_maxCellSizes[solverNumber]);
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
-        solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
-        solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
-        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-          assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
-              solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
-          assertion3(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString());
-        }
+        solver->updateNextMaxLevel(_maxLevels[solverNumber]);
 
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 
@@ -232,8 +216,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
     const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined3);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if ( element!=exahype::solvers::Solver::NotFound ) {
@@ -260,10 +243,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           }
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
-          _minCellSizes[solverNumber] = std::min(
-              fineGridVerticesEnumerator.getCellSize()[0],_minCellSizes[solverNumber]);
-          _maxCellSizes[solverNumber] = std::max(
-              fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
+          _maxLevels[solverNumber] = std::max(
+              fineGridVerticesEnumerator.getLevel(),_maxLevels[solverNumber]);
 
           limitingADERDG->determineMinAndMax(cellDescriptionsIndex,element);
         }
@@ -279,8 +260,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
         }
 
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
+
 
     if ( OneSolverRequestedLocalRecomputation ) {
       exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
@@ -307,9 +288,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if ( exahype::State::fuseADERDGPhases() ) {
-    exahype::mappings::Prediction::restrictData(
-        fineGridCell,coarseGridCell,
-        exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
+    exahype::mappings::Prediction::restriction(
+        fineGridCell,exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
@@ -330,9 +310,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
     dfor2(pos1)
       dfor2(pos2)
         if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
-          auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
-              parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined5);
-          pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
+          for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             if ( performLocalRecomputation(solver) ) {
               const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
@@ -352,15 +330,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
             #ifdef Debug // TODO(Dominic)
             _interiorFaceMerges++;
             #endif
-          endpfor
-          grainSize.parallelSectionHasTerminated();
+          }
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
         if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
-          auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
-              parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined6);
-          pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
+          for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
             const int cellDescriptionsIndex2 = fineGridVertex.getCellDescriptionsIndex()[pos2Scalar];
@@ -406,8 +381,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               _boundaryFaceMerges++;
               #endif
             }
-          endpfor
-          grainSize.parallelSectionHasTerminated();
+          }
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
         }

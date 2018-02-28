@@ -65,20 +65,15 @@ class exahype::mappings::FinaliseMeshRefinement {
   std::vector<double> _minTimeStepSizes;
 
   /**
-   * A minimum cell size for each solver.
+   * The maximum level occupied by cells of a solver.
    */
-  std::vector<double> _minCellSizes;
-
-  /**
-   * A maximum cell size for each solver.
-   */
-  std::vector<double> _maxCellSizes;
+  std::vector<int> _maxLevels;
 
   /**
    * Prepare a appropriately sized vector _minTimeStepSizes
    * with elements initiliased to MAX_DOUBLE.
    */
-  void prepareLocalTimeStepVariables();
+  void initialiseLocalVariables();
 
  public:
   /**
@@ -91,10 +86,9 @@ class exahype::mappings::FinaliseMeshRefinement {
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * Finalise the mesh refinement in all cell descriptions registered
-   * for a cell.
+   * Run over whole tree. Run concurrently on fine grid.
    *
-   * Currently, we avoid fine grid races. We might need to reassess this.
+   * Alters state as we perform a reduction.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 

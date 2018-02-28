@@ -658,12 +658,9 @@ public:
    */
   void rollbackToPreviousTimeStepFused() final override;
 
-  void updateNextMinCellSize(double minCellSize) final override;
-  void updateNextMaxCellSize(double maxCellSize) final override;
-  double getNextMinCellSize() const final override;
-  double getNextMaxCellSize() const final override;
-  double getMinCellSize() const final override;
-  double getMaxCellSize() const final override;
+  void updateNextMaxLevel(int maxLevel) final override;
+  int getNextMaxLevel() const final override;
+  int getMaxLevel() const final override;
 
   bool isValidCellDescriptionIndex(
       const int cellDescriptionsIndex) const final override;

@@ -14,7 +14,7 @@
 # COMPILER            Intel             GNU, Manual                Used compiler (and linker)
 # MODE                Release           Debug,                     Verbosity and Debug level
 #                                       Asserts,PeanoProfile,Profile          
-# SHAREDMEM           None              OMP, TBB, TBBInvade        Shared-memory parallelisation
+# SHAREDMEM           None              OMP, TBB, CPP14            Shared-memory parallelisation
 # DISTRIBUTEDMEM      None              MPI                        Distributed-memory parallelisation
 # BOUNDARYCONDITIONS  None              Periodic                   Type of boundary conditions
 # USE_IPO             Off               On                         IPO during compilation (intel only)
@@ -152,7 +152,11 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	
 	
 	ifeq ($(call tolower,$(MODE)),debug)
-	    COMPILER_CFLAGS += -O0 -ggdb
+		COMPILER_CFLAGS += -g3 -ggdb -debug all  
+		COMPILER_LFLAGS += -g3 
+		ifeq ($(call tolower,$(SHAREDMEM)),tbb)
+			COMPILER_CFLAGS  += -DTBB_USE_DEBUG=1
+		endif
 	else ifeq ($(call tolower,$(MODE)),asserts)
 		COMPILER_CFLAGS += -g3
 		COMPILER_LFLAGS += -g3
@@ -225,6 +229,9 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	ifeq ($(call tolower,$(MODE)),debug)
 		COMPILER_CFLAGS  += -O0 -ggdb
 		FCOMPILER_CFLAGS += -ggdb
+		ifeq ($(call tolower,$(SHAREDMEM)),tbb)
+			COMPILER_CFLAGS  += -DTBB_USE_DEBUG=1
+		endif
 	else ifeq ($(call tolower,$(MODE)),asserts)
 		COMPILER_CFLAGS  += -g3
 		COMPILER_LFLAGS  += -g3
@@ -313,10 +320,14 @@ else ifeq ($(call tolower,$(SHAREDMEM)),tbb)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
 	SYSTEM_LFLAGS   += $(LINK_TBB)
 	COMPILER_CFLAGS += -DSharedTBB
+else ifeq ($(call tolower,$(SHAREDMEM)),cpp14)
+	SYSTEM_CFLAGS   += 
+	SYSTEM_LFLAGS   += -lpthread	
+	COMPILER_CFLAGS += -DSharedCPP
 else ifeq ($(call tolower,$(SHAREDMEM)),tbbinvade)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
 	SYSTEM_LFLAGS   += $(LINK_TBB)
-	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade
+	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade -DSHM_INVADE_NAMESPACE=shminvade -DSHM_INVADE_DEBUG=4
 endif
 
 

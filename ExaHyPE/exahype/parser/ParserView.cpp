@@ -27,6 +27,8 @@
 
 #include "exahype/parser/Parser.h"
 
+tarch::logging::Log exahype::parser::ParserView::_log( "exahype::parser::ParserView" );
+
 exahype::parser::ParserView::ParserView(exahype::parser::Parser& parser,
                                         int solverNumberInSpecificationFile)
     : _parser(parser),

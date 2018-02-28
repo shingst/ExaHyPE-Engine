@@ -38,7 +38,7 @@ bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
 
 tarch::logging::Log exahype::mappings::MeshRefinement::_log("exahype::mappings::MeshRefinement");
 
-void exahype::mappings::MeshRefinement::prepareLocalVariables(){
+void exahype::mappings::MeshRefinement::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _attainedStableState.resize(numberOfSolvers);
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
@@ -65,13 +65,13 @@ peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
@@ -85,26 +85,26 @@ peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _localState(masterThread._localState) {
-  prepareLocalVariables();
+  initialiseLocalVariables();
 }
 
 
@@ -127,7 +127,7 @@ void exahype::mappings::MeshRefinement::beginIteration(
 ) {
   _localState = solverState;
 
-  prepareLocalVariables();
+  initialiseLocalVariables();
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

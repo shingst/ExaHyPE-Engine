@@ -185,7 +185,7 @@ def parseTotalTimes(resultsFolderPath,projectName):
         print ("reading table "+adaptersTablePath+"")
         adaptersTableFile  = open(adaptersTablePath, 'r')
         header             = next(adaptersTableFile).strip().split(';')
-        csvreader          = csv.reader(tableFile,delimiter=";")
+        csvreader          = csv.reader(adaptersTableFile,delimiter=";")
         
         runColumn      = header.index("run")
         adapterColumn  = header.index("adapter")
@@ -202,7 +202,7 @@ def parseTotalTimes(resultsFolderPath,projectName):
             row.append(header[cpuTimeColumn])
             row.append(header[userTimeColumn])
             csvwriter.writerow(row)
-            
+ 
             # init
             summedCPUTime     = 0.0
             summedUserTime    = 0.0
@@ -214,18 +214,22 @@ def parseTotalTimes(resultsFolderPath,projectName):
             for line in csvreader:
                 if previousLine==None:
                     previousLine=line
-                    
+                  
                 if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
                     summedCPUTime  += float(line[cpuTimeColumn])
                     summedUserTime += float(line[userTimeColumn])
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
                     minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-                    minSummedUserTime = min(minSummedUserTime, summedUserTime)
-                    
-                    summedCPUTime  = 0.0
-                    summedUserTime = 0.0
+                    minSummedUserTime = min(minSummedUserTime, summedUserTime) 
+                    summedCPUTime     = 0.0
+                    summedUserTime    = 0.0
                 else:
-                    row = previousLine[0:runColumnIndex]
+                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
+                    minSummedUserTime = min(minSummedUserTime, summedUserTime) 
+                    summedCPUTime     = 0.0
+                    summedUserTime    = 0.0
+                    
+                    row = previousLine[0:runColumn]
                     row.append(str(minSummedCPUTime))
                     row.append(str(minSummedUserTime))
                     csvwriter.writerow(row)
@@ -236,7 +240,12 @@ def parseTotalTimes(resultsFolderPath,projectName):
                 previousLine  = line
             
             # write last row
-            row = previousLine[0:runColumnIndex]
+            minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
+            minSummedUserTime = min(minSummedUserTime, summedUserTime) 
+            summedCPUTime     = 0.0
+            summedUserTime    = 0.0
+            
+            row = previousLine[0:runColumn]
             row.append(str(minSummedCPUTime))
             row.append(str(minSummedUserTime))
             csvwriter.writerow(row)
@@ -263,7 +272,7 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
         print ("reading table "+adaptersTablePath+"")
         adaptersTableFile  = open(adaptersTablePath, 'r')
         header             = next(adaptersTableFile).strip().split(';')
-        csvreader          = csv.reader(tableFile,delimiter=";")
+        csvreader          = csv.reader(adaptersTableFile,delimiter=";")
         
         runColumn        = header.index("run")
         adapterColumn    = header.index("adapter")
@@ -293,6 +302,7 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
             for line in csvreader:
                 if previousLine==None:
                     previousLine=line
+               
                 if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
                     adapter = line[adapterColumn]
                     if adapter==firstNonfusedAdapter:
@@ -303,12 +313,16 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
                         summedUserTime += float(line[userTimeColumn]) / float(line[iterationsColumn])
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
                     minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-                    minSummedUserTime = min(minSummedUserTime, summedUserTime)
-                    
-                    summedCPUTime  = 0.0
-                    summedUserTime = 0.0
+                    minSummedUserTime = min(minSummedUserTime, summedUserTime)        
+                    summedCPUTime     = 0.0
+                    summedUserTime    = 0.0
                 else:
-                    row = previousLine[0:runColumnIndex]
+                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
+                    minSummedUserTime = min(minSummedUserTime, summedUserTime)        
+                    summedCPUTime     = 0.0
+                    summedUserTime    = 0.0
+                    
+                    row = previousLine[0:runColumn]
                     row.append(str(minSummedCPUTime))
                     row.append(str(minSummedUserTime))
                     csvwriter.writerow(row)
@@ -316,10 +330,16 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
                     minSummedCPUTime  = 10.0**20
                     minSummedUserTime = 10.0**20
                     fused             = True
+
                 previousLine  = line
             
             # write last row
-            row = previousLine[0:runColumnIndex]
+            minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
+            minSummedUserTime = min(minSummedUserTime, summedUserTime)        
+            summedCPUTime     = 0.0
+            summedUserTime    = 0.0
+            
+            row = previousLine[0:runColumn]
             row.append(str(minSummedCPUTime))
             row.append(str(minSummedUserTime))
             csvwriter.writerow(row)
