@@ -36,11 +36,11 @@ The parameter space spawned by these five independent
 quantities shall be explored:
 
 \begin{align}
-n& \in \{ 1,5,7,9,20 \} \quad\text{unknowns}
+n& \in \{ 1,5,7,9,20, 60 \} \quad\text{unknowns}
 \\
-C_S &\in \{ 0, 10^2, 10^3, 10^4 \} \quad\text{FLOPS}
+C_S &\in \{ 1, 10^2, 10^3, 10^4 \} \quad\text{FLOPS}
 \\
-C_{NCP} &\in \{ 0, 10^2, 10^3, 10^4 \} \quad\text{FLOPS}
+C_{NCP} &\in \{ 1, 10^2, 10^3, 10^4 \} \quad\text{FLOPS}
 \\
 \text{grid} &\in  \{ \text{unigrid}, \text{spherical limiting} \}
 \\
@@ -86,12 +86,62 @@ the scheme shall always implement eq \eqref{pde}.
 \end{itemize}
 
 \section{Implementation}
-We chose to implement an Ackermann function to consume the FLOP.
-The application can be found at ...
+We chose to implement an Ackermann function to artificially consume
+FLOPs, and it is also a function that the compiler shouldn't be able to
+optimise away. A table of values is here 
+\begin{center}
+\begin{tabular}{c|c|c}
+input & itr  & $\sim$ itrs\\ 
+\hline
+F(1,1)& 3 & $1$\\
+F(2,2)& 54 & $10$\\
+F(2,3)& 110 & $10^{2}$\\
+F(3,2)& 3903 & $10^{3}$\\
+F(3,3) & 34386 & $10^{4}$
+\end{tabular}
+\end{center}
 
 \section{Results}
-Please fill out this section...
+The results in this section were run on iboga which has 20 cores per
+node. This means that for 28 MPI ranks, there has to be internode
+communication. Perhaps testing this on supermuc would be interesting.
 
+\subsection{Unigrid}
+
+The domain of the grid size is $1000\times1000\times1000$ with 
+\texttt{maximum-mesh-size} $=40$.
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+params & $n=60$ & $C_{S} = 1$ & $C_{NCP} = 1$\\
+\hline
+ranks & 1 & 20 & 28\\
+\hline
+walltime (s) & 98.99 & 49.37 & 12.01
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+params & $n=60$ & $C_{S} = 10^{2}$ & $C_{NCP} = 10^{2}$\\
+\hline
+ranks & 1 & 20 & 28\\
+\hline
+walltime (s) & 388.17 & 193.25 & 47.67
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+params & $n=60$ & $C_{S} = 10^{3}$ & $C_{NCP} = 10^{3}$\\
+\hline
+ranks & 1 & 20 & 28\\
+\hline
+walltime (s) & - & 1480.41 & 371.37
+\end{tabular}
+\end{center}
+
+For these cases, there is always a speedup of roughly 8.
 
 
 \end{document}
