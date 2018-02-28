@@ -60,8 +60,8 @@ exahype-project GPR
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,p:1,A:9,j:3
     order const                    = 3
-    maximum-mesh-size              = 0.02
-    maximum-mesh-depth             = 0
+    maximum-mesh-size              = 0.05
+    maximum-mesh-depth             = 1
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source
