@@ -57,7 +57,6 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr int sizeLFi                = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeGradQ              = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizePSi                = NumberOfVariables*spaceBasisSize*(Order+2);
-  constexpr int sizeForceVectorSourceN = sizePSi;
   constexpr int sizePSderivatives      = NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeTmp_PSderivatives  = sizePSderivatives;
 
@@ -65,8 +64,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
   
   constexpr int totalSize = sizeLQi + sizeLFi + sizeGradQ +
-                            sizePSi + sizeForceVectorSourceN +
-                            sizePSderivatives + sizeTmp_PSderivatives +
+                            sizePSi + sizePSderivatives + sizeTmp_PSderivatives +
                             sizeLQhi + sizeLFhi;
 {%-   if tempVarsOnStack %}
   double block[totalSize]; double* memory=&block[0];
@@ -79,7 +77,6 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* lFi                = memory; memory+=sizeLFi;
   double* gradQ              = memory; memory+=sizeGradQ;
   double* PSi                = memory; memory+=sizePSi;
-  double* forceVectorSourceN = memory; memory+=sizeForceVectorSourceN;
   double* PSderivatives      = memory; memory+=sizePSderivatives;
   double* tmp_PSderivatives  = memory; memory+=sizeTmp_PSderivatives;
   
