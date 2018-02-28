@@ -78,7 +78,7 @@ exahype::mappings::FinaliseMeshRefinement::descendSpecification(int level) const
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-void exahype::mappings::FinaliseMeshRefinement::prepareLocalTimeStepVariables(){
+void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
@@ -100,7 +100,7 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 }
 
 // Merge over threads
@@ -126,7 +126,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
   #endif
 
-  prepareLocalTimeStepVariables();
+  initialiseLocalVariables();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

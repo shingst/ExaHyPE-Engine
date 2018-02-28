@@ -74,23 +74,28 @@ private:
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
-
   /**
    * The maximum level occupied by cells of a solver.
    */
   std::vector<int> _maxLevels;
-
-  /**
-   * Prepare a appropriately sized vector _minTimeStepSizes
-   * with elements initiliased to MAX_DOUBLE.
-   */
-  void prepareLocalTimeStepVariables();
-
   /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  exahype::solvers::SolverFlags _solverFlags;
+  std::vector<bool>                                  _meshUpdateRequests;
+  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
+
+  /**
+   * Prepare the vectors _minTimeStepSizes, _maxLevels,
+   * _meshUpdateRequests, _limiterDomainChanges.
+   */
+  void initialiseLocalVariables();
+
+  /**
+   * Indicates that the background tasks have terminated.
+   * No further checks are required in this case.
+   */
+  bool _backgroundJobsHaveTerminated = false;
 
  public:
   /**
@@ -108,9 +113,8 @@ private:
   /**
    * Run through the whole tree. Avoid fine grid races.
    *
-   * TODO(Dominic): Theoretically, we should be able to
-   * perform this with "altersState" set to "false".
-   * In practice however, this does not work.
+   * Alters the state as we have a counter which checks
+   * if we have waited for the background jobs to complete.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
@@ -151,7 +155,8 @@ private:
   #endif
 
   /**
-   * Nop.
+   * Merge with the neighbours but check beforehand
+   * if all backgrounds have terminated.
    */
   void touchVertexFirstTime(
       exahype::Vertex& fineGridVertex,
@@ -189,7 +194,7 @@ private:
 
 
   /**
-   * Nop.
+   * Perform a restriction for solvers who requested it.
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -213,12 +218,12 @@ private:
    * For all solvers, overwrite the current
    * gridUpdateRequested value with the next value.
    *
-   * Further update the global solver states (next)limiterDomainHasChanged
+   * Update the global solver states (next)limiterDomainHasChanged
    * with values from the temporary variables.
    *
    * Finish plotting if a plotter is active.
    *
-   * Further deallocates temporary variables.
+   * Reset the _backgroundJobsHaveTerminated switch.
    */
   void endIteration(exahype::State& solverState);
 

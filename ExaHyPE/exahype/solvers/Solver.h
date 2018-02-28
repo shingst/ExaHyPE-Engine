@@ -354,54 +354,8 @@ namespace exahype {
      * Converts a double to a LimiterDomainChange.
      */
     LimiterDomainChange convertToLimiterDomainChange(const double value);
-
-    /**
-     * Temporary variables that
-     * hold information if the grid has been updated
-     * or if the limiter domain has changed.
-     *
-     * Used if we employ multiple threads.
-     */
-    class SolverFlags;
-
-    /**
-     * Sets the limiter domain has changed flags per
-     * solver to false.
-     */
-    void initialiseSolverFlags(SolverFlags& solverFlags);
-
-    /**
-     * Sets the limiter domain has changed flags per
-     * solver to false.
-     */
-    void prepareSolverFlags(SolverFlags& solverFlags);
-
-    /**
-     * Sets the limiter domain has changed flags per
-     * solver to false.
-     */
-    void deleteSolverFlags(SolverFlags& solverFlags);
   }
 }
-
-
-class exahype::solvers::SolverFlags {
-public:
-  /**
-   * Per solver, we hold a status flag indicating
-   * if the limiter domain of the solver has
-   * changed.
-   *
-   * The flag has only a meaning for the LimitingADERDGSolver.
-   */
-  LimiterDomainChange* _limiterDomainChange = nullptr;
-
-  /**
-   * Per solver, we hold a status flag indicating
-   * if the solver has requested a mesh update.
-   */
-  bool* _meshUpdateRequest = nullptr;
-};
 
 /**
  * Describes one solver.
@@ -683,31 +637,32 @@ class exahype::solvers::Solver {
   /**
    * Starts a new time step on all solvers.
    *
-   * \param[in] solverFlags      flags for each solver indicating if a a mesh update
-   *                     is necessary or if the limiter domain has changed.
-   * \param[in] minTimeStepSizes the minimum CFL-stable time step size for all solvers
-   * \param[in] minCellSizes     the minimum cell size found in the grid for each solver.
-   * \param[in] maxCellSizes     the maximum cell size found in the grid for each solver.
+   * \param[in] meshUpdateRequests   flags for each solver indicating if a mesh update is necessary.
+   * \param[in] limiterDomainChanges flags for each solver indicating if the limiter domain has changed.
+   * \param[in] minTimeStepSizes     the minimum CFL-stable time step size for all solvers.
+   * \param[in] minCellSizes         the minimum cell size found in the grid for each solver.
+   * \param[in] maxCellSizes         the maximum cell size found in the grid for each solver.
    * \param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
    * \param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
    * \param[in] fusedTimeStepping fused time stepping is used or not
    */
   static void startNewTimeStepForAllSolvers(
-      const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
       const std::vector<int>& maxLevels,
+      const std::vector<bool>& meshUpdateRequests,
+      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
  /**
-  * Some solvers can deploy data conversion into the background. How this is
-  * done is solver-specific. However, we have to wait until all tasks have
-  * terminated if we want to modify the heap, i.e. insert new data or remove
-  * data. Therefore, the wait (as well as the underlying semaphore) belong
+  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
+  * further. We have to wait until all tasks have terminated if we want to modify the heap,
+  * i.e. insert new data or remove data.
+  * Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
   */
- static void waitUntilAllBackgroundJobsHaveTerminated();
+ static void ensureAllBackgroundJobsHaveTerminated();
 
  protected:
   /**

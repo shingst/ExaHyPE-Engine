@@ -38,7 +38,7 @@ bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
 
 tarch::logging::Log exahype::mappings::MeshRefinement::_log("exahype::mappings::MeshRefinement");
 
-void exahype::mappings::MeshRefinement::prepareLocalVariables(){
+void exahype::mappings::MeshRefinement::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _attainedStableState.resize(numberOfSolvers);
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
@@ -104,7 +104,7 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _localState(masterThread._localState) {
-  prepareLocalVariables();
+  initialiseLocalVariables();
 }
 
 
@@ -127,7 +127,7 @@ void exahype::mappings::MeshRefinement::beginIteration(
 ) {
   _localState = solverState;
 
-  prepareLocalVariables();
+  initialiseLocalVariables();
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

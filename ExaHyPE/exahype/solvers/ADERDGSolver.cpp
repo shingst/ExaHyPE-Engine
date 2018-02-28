@@ -4729,31 +4729,31 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getUpdate()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedPredictor()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(unknownsPerCellBoundary ) );
       lock.free();
     }
     if (cellDescription.getFluctuation()==-1) {
-      waitUntilAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
         cellDescription.setFluctuation( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
       lock.free();

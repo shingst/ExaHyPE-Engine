@@ -98,7 +98,7 @@ void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
 
 void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
-  exahype::solvers::Solver::waitUntilAllBackgroundJobsHaveTerminated();
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
