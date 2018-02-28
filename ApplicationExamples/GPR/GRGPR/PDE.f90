@@ -31,7 +31,13 @@ REAL 	::gamma_cov_st(0:4,0:4),gamma_mix_st(0:3,0:3),pi_contr_st(0:3,0:3),temp_st
   kAB(3,2) = Q(29) 
   kAB(3,3) = Q(30) 
   detkAB   = kAB(1,1)*kAB(2,2)*kAB(3,3)-kAB(1,1)*kAB(2,3)*kAB(3,2)-kAB(2,1)*kAB(1,2)*kAB(3,3)+kAB(2,1)*kAB(1,3)*kAB(3,2)+kAB(3,1)*kAB(1,2)*kAB(2,3)-kAB(3,1)*kAB(1,3)*kAB(2,2)  
-
+ if(maxval(abs(Q(:))) .lt. 1.e-3) then
+	print *, "Warning (F)!"
+	f=0.
+	g=0.
+	hz=0.
+	return
+  end if
   CALL PDECons2Prim(V,Q)
   !
   gamma1 = gamma/(gamma-1.0)
@@ -56,7 +62,7 @@ REAL 	::gamma_cov_st(0:4,0:4),gamma_mix_st(0:3,0:3),pi_contr_st(0:3,0:3),temp_st
   A(3,:) = (/ V(12), V(13),  V(14) /)         
   detA   = A(1,1)*A(2,2)*A(3,3)-A(1,1)*A(2,3)*A(3,2)-A(2,1)*A(1,2)*A(3,3)+A(2,1)*A(1,3)*A(3,2)+A(3,1)*A(1,2)*A(2,3)-A(3,1)*A(1,3)*A(2,2) 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,20)
   gp = SQRT(gp)
   gm = 1./gp
   ! 
@@ -278,10 +284,16 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
       delta(i,i) = 1.0
   ENDDO 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+ if(maxval(abs(Q(:))) .lt. 1.e-3) then
+	print *, "Warning (21)!"
+	BgradQ=0.
+	return
+  end if
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,21)
   gp = SQRT(gp)
   gm = 1./gp
   ! 
+
   CALL PDECons2Prim(Vc,Q)
 
   gamma1 = gamma/(gamma-1.0)
@@ -555,7 +567,7 @@ CALL PDECons2Prim(V,Q)
   g_cov(3,1) = g_cov(1,3) 
   g_cov(3,2) = g_cov(2,3) 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,22)
   gp = SQRT(gp)
   gm = 1./gp
   !  
@@ -647,6 +659,11 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
 	S= 0. 
   S = 0.
   !
+   if(maxval(abs(Q(:))) .lt. 1.e-3) then
+	print *, "Warning (S)!"
+	S=0.
+	return
+  end if
   CALL PDECons2Prim(V,Q)  
   rho = V(1) 
   !
@@ -681,7 +698,7 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
   A(3,:) = (/ V(12), V(13),  V(14) /)         
   detA   = A(1,1)*A(2,2)*A(3,3)-A(1,1)*A(2,3)*A(3,2)-A(2,1)*A(1,2)*A(3,3)+A(2,1)*A(1,3)*A(3,2)+A(3,1)*A(1,2)*A(2,3)-A(3,1)*A(1,3)*A(2,2) 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,23)
   gp = SQRT(gp)
   gm = 1./gp
   ! 
@@ -812,45 +829,6 @@ RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind)
 	MyNameOUT=MyName(ind+1)
     END SUBROUTINE PDEVarName
 
-RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv) 
-  USE Parameters, ONLY : nVar, nDim
-  USE iso_c_binding
-  IMPLICIT NONE
-  ! Argument list 
-  REAL :: An(nVar,nVar)
-  REAL :: Q(nVar), nv(3) 
-  INTENT(IN)  :: Q,nv
-  INTENT(OUT) :: An  
-  ! Local variables
-    ! Linear elasticity variables
-   REAL :: A(nVar,nVar), B(nVar,nVar), C(nVar,nVar), Vp(nVar)
-   
-   PRINT *, ' Impossible error! ' 
-   
-   !An = 0
-  !RETURN
-    
-	!print *, maxval(nv),lam,mu,irho
-
-	!CALL PDECons2Prim(Vp,Q)
-	VP = 0.0
-	VP(2:4) = Q(2:4)/Q(1) 
-	
-    A = 0.0
-    B = 0.0
-    C = 0.0 
-
-    if( nDim .eq. 2) then
-        An = A*nv(1) + B*nv(2)         
-    else
-        An = A*nv(1) + B*nv(2) + C*nv(3)     
-    end if
-    
-    
-
-  
-END SUBROUTINE PDEMatrixB
-
 
 RECURSIVE SUBROUTINE PDEJacobian(An,Q,gradQ,nv) 
   USE Parameters, ONLY : nVar, nDim, gamma, cs
@@ -916,10 +894,13 @@ RECURSIVE SUBROUTINE PDEJacobian(An,Q,gradQ,nv)
       delta(i,i) = 1.0
   ENDDO 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,24)
   gp = SQRT(gp)
   gm = 1./gp
   ! 
+   if(maxval(abs(Q(:))) .lt. 1.e-3) then
+	print *, "Warning (24)!"
+  end if
   CALL PDECons2Prim(Vc,Q)
   gamma1 = gamma/(gamma-1.0)
   rho    = Vc(1)

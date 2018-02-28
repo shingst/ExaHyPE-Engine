@@ -73,6 +73,7 @@ void GRGPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double 
 exahype::solvers::Solver::RefinementControl GRGPR::GPRSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
+  //return exahype::solvers::Solver::RefinementControl::Refine;
 }
 
 //*****************************************************************************
@@ -126,7 +127,7 @@ void GRGPR::GPRSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   assertion(numberOfObservables==1);
   ReadOnlyVariables vars(Q);
 
-  observables[0]=1.0; //extract alpha
+  pdedefineobservables_(&numberOfObservables,observables,Q);
 }
 
 bool GRGPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
@@ -135,11 +136,11 @@ bool GRGPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   int limvalue;
-  return true;
-  /*pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  //return true;
+  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{
 	  return true;
-  };*/
+  };
 }

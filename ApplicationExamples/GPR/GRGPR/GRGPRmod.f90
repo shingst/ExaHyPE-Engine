@@ -5,7 +5,7 @@
 
 	contains
 
- SUBROUTINE MatrixInverse3x3(M,iM,det) 
+ SUBROUTINE MatrixInverse3x3(M,iM,det,whereindex) 
     !---------------
     ! compute the determinant det of the NxN-matrix M
     !---------------
@@ -18,13 +18,16 @@
     ! output variables
     REAL    :: ComputeDet,Id(3,3)
     INTEGER :: i,j
-    ! 
+	INTEGER :: whereindex
+
+	
     det = M(1,1)*M(2,2)*M(3,3)-M(1,1)*M(2,3)*M(3,2)-M(2,1)*M(1,2)*M(3,3)+M(2,1)*M(1,3)*M(3,2)+M(3,1)*M(1,2)*M(2,3)-M(3,1)*M(1,3)*M(2,2) !ComputeDet(M,3)
     IF(ABS(det).LT.1e-20) THEN
         print *, 'FATAL ERROR: det = 0'
         WRITE(*,*) M(1,1:3)
         WRITE(*,*) M(2,1:3)
         WRITE(*,*) M(3,1:3)
+		print *, 'Whereindex=',whereindex
         STOP
     ENDIF 
     !

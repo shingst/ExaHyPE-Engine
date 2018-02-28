@@ -19,7 +19,9 @@ void GRGPR::GPRSolver_FV::adjustSolution(const double* const x,const double t,co
   // Number of variables    = 30 + #parameters
   
   // @todo Please implement/augment if required
-  initialdata_(x, &t, Q);
+  if (tarch::la::equals(t,0.0)) {
+    initialdata_(x, &t, Q);
+  }
 }
 
 void GRGPR::GPRSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {

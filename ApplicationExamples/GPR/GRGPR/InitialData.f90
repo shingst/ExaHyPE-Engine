@@ -15,7 +15,7 @@ END SUBROUTINE InitialData
 
 RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, observablesMin, observablesMax)
 	USE, INTRINSIC :: ISO_C_BINDING
-	USE Parameters, ONLY : nVar, nDim
+	USE Parameters, ONLY : nVar, nDim, tol
 	IMPLICIT NONE 
 	! Argument list 
 	REAL, INTENT(IN)               :: xx(nDim)        ! 
@@ -25,11 +25,50 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	real	:: rr	
 
 	limiter_value=0
-	return
-	if(observablesMin(1).ge.1.1 .and. observablesMax(1).le. 2.6) then
-		limiter_value=1
-	end if
+	!return
+	!if(observablesMin(1).ge.1.1 .and. observablesMax(1).le. 2.6) then
+	!	limiter_value=1
+	!end if
+  IF (observablesMin(1).LT.tol) THEN
+     limiter_value=1
+     RETURN
+  ENDIF
+  ! pressure check 
+  IF (observablesMin(5).LT.0.0) THEN 
+     limiter_value=1  
+     RETURN 
+  ENDIF 
+  ! Check for superluminar velocities 
+  IF(SUM(observablesMax(2:4)**2).GE.1.0) THEN
+      limiter_value=1 
+  ENDIF
+  
+  if(maxval(abs(observablesMax(:)-observablesMin(:)))>2.e-4) then
+        limiter_value=1 
+  ENDIF
 END SUBROUTINE PDElimitervalue
+
+RECURSIVE SUBROUTINE PDEdefineobservables(numberOfObservables,observables,Q)
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE Parameters, ONLY : nVar, nDim
+	IMPLICIT NONE 
+	! Argument list 
+	INTEGER, INTENT(IN)	:: numberOfObservables
+	REAL, INTENT(INOUT) :: observables(numberOfObservables)        !
+	REAL, INTENT(IN)  :: Q(nVar) 
+	REAL :: V(nVar)
+	INTEGER :: ii
+	
+	!observables = 1.0
+	!return
+	  CALL PDECons2Prim(V,Q) 
+	  DO ii=1,numberOfObservables
+		observables(ii)=V(ii)
+	  END DO
+	! compute observables from Q
+	
+	
+END SUBROUTINE PDEdefineobservables
 
 RECURSIVE SUBROUTINE CurvedGaussian(x, t, Q)
     USE, INTRINSIC :: ISO_C_BINDING
@@ -56,10 +95,18 @@ RECURSIVE SUBROUTINE CurvedGaussian(x, t, Q)
 	yp = x(1)*SIN(x(2)) 
 	r   = x(1)                      ! radius 
 	phi = x(2)                      ! angle
-	Jac(1,:) = (/ COS(phi), -r*SIN(phi), 0.0 /) 
-	Jac(2,:) = (/ SIN(phi), +r*COS(phi), 0.0 /)  
-	Jac(3,:) = (/ 0.0,       0.0       , 1.0 /)
-	CALL MatrixInverse3x3(Jac,invJac,p) 
+	!Jac(1,:) = (/ COS(phi), -r*SIN(phi), 0.0 /) 
+	!Jac(2,:) = (/ SIN(phi), +r*COS(phi), 0.0 /)  
+	!Jac(3,:) = (/ 0.0,       0.0       , 1.0 /)
+	Jac=0.
+	Jac(1,1)=COS(phi)
+	Jac(1,2)=-r*SIN(phi)
+	Jac(2,1)=SIN(phi)
+	Jac(2,2)=+r*COS(phi)
+	Jac(3,3)=1.
+	
+	
+	CALL MatrixInverse3x3(Jac,invJac,p,0) 
 	kAB = MATMUL( TRANSPOSE(Jac), Jac )
 	rho = 1.0
 	p   = 1.0
@@ -88,6 +135,9 @@ RECURSIVE SUBROUTINE CurvedGaussian(x, t, Q)
        up(19:24) = (/ kAB(1,1), kAB(1,2), kAB(1,3), kAB(2,2), kAB(2,3), kAB(3,3) /)     ! spatial part of the space-time metric 
        up(25:30) = (/ kAB(1,1), kAB(1,2), kAB(1,3), kAB(2,2), kAB(2,3), kAB(3,3) /)     ! matter metric 
        !
+	    if(abs(up(19)) .lt. 1.e-3) then
+			print *, "Warning (0)!",Q
+		  end if
        CALL PDEPrim2Cons(Q,up) 
 	
 END SUBROUTINE CurvedGaussian

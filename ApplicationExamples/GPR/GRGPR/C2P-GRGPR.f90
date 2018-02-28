@@ -52,7 +52,7 @@ SUBROUTINE PDEPrim2Cons(Q,V)
   A(3,:) = (/ V(12), V(13),  V(14) /)         
   detA   = A(1,1)*A(2,2)*A(3,3)-A(1,1)*A(2,3)*A(3,2)-A(2,1)*A(1,2)*A(3,3)+A(2,1)*A(1,3)*A(3,2)+A(3,1)*A(1,2)*A(2,3)-A(3,1)*A(1,3)*A(2,2) 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,10)
   gp = SQRT(gp)
   gm = 1./gp
   !
@@ -163,6 +163,7 @@ SUBROUTINE PDECons2Prim(V,Q)
   lapse = Q(15)
   shift = Q(16:18)
   !
+
   gammaij = Q(19:24) 
   g_cov(1,1) = Q(19)
   g_cov(1,2) = Q(20)
@@ -174,7 +175,8 @@ SUBROUTINE PDECons2Prim(V,Q)
   g_cov(3,1) = g_cov(1,3) 
   g_cov(3,2) = g_cov(2,3) 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,11)
   !     
   gp = SQRT(gp)
   gm = 1./gp
@@ -368,7 +370,7 @@ SUBROUTINE GRGPRNewton(V,Q,iErr,iNewton)
   g_cov(3,1) = g_cov(1,3) 
   g_cov(3,2) = g_cov(2,3) 
   !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
+  CALL MatrixInverse3x3(g_cov,g_contr,gp,12)
   !     
   gp = SQRT(gp)
   gm = 1./gp
