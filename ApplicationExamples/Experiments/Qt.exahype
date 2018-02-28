@@ -8,47 +8,47 @@
  * No 671698. For copyrights and licensing, please consult the webpage.
  *
  * Released under the BSD 3 Open Source License.
- * For the full license text, see Lq:ICENSE.txt
+ * For the full license text, see LICENSE.txt
  **/
  
 /**
 
- This is an application solely to demonstrate and run grid stuff.
+ A project for testing the scaling. 
 
  */
-exahype-project  GridDemonstrator
+exahype-project  Qt
+
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/Experiments/GridDemonstrator
+  output-directory const  = ./ApplicationExamples/Experiments/Qt
   architecture const      = noarch
   log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 3
-    width                    = 40.0, 40.0
-    offset                   = -20.0, -20.0
-   // end-time               = 0.1
-    time-steps  = 20
+    width                    = 1000.0, 1000.0, 1000.0
+    offset                   = 0.0, 0.0, 0.0
+    end-time                 = 25.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {greedy-naive,FCFS}
-    buffer-size              = 64
-    timeout                  = 60
+    configure                = {hotspot,fair,ranks_per_node:20,virtually-expand-domain}
+    buffer-size              = 100000
+    timeout                  = 120
   end distributed-memory
 
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
+    spawn-predictor-as-background-thread = on
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
@@ -56,14 +56,15 @@ exahype-project  GridDemonstrator
     spawn-double-compression-as-background-thread = off
   end global-optimisation
 
-  solver Limiting-ADER-DG GridDemonstrator
-    variables const    = 20
-    order const        = 2
-    maximum-mesh-size  = 10.0
-    maximum-mesh-depth = 3
+solver Limiting-ADER-DG Demonstrator
+    variables const    = 60
+    order const        = 5
+    //step size should be 40 to give 27x27x27 grid
+    maximum-mesh-size  = 40.0 
+//    maximum-mesh-depth = 3
     time-stepping      = global
     type const         = nonlinear, Legendre
-    terms const        = source
+    terms const        = source, ncp
     optimisation const = generic
     language const     = C
 
@@ -75,20 +76,6 @@ exahype-project  GridDemonstrator
     dmp-relaxation-parameter       = 1e-2 
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
-
-    plot vtk::Legendre::cells::ascii Writer
-      variables const = 1
-      time            = 0.0
-      repeat          = 0.1e-4
-      output          = ./full
-    end plot
-    
-    plot vtk::patches::boxes::ascii Writer
-      variables const = 1
-      time = 0.0
-      repeat = 0.000001
-      output = ./cells
-    end plot
 
   end solver
 end exahype-project
