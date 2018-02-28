@@ -22,6 +22,8 @@
 #include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
 #include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
 #include "exahype/plotters/FlashHDF5/ADERDG2FlashHDF5.h"
+#include "exahype/plotters/Tecplot/ADERDG2Tecplot.h"
+
 #include "exahype/plotters/VTK/FiniteVolumes2VTK.h"
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/LimitingADERDGSubcells2CartesianVTK.h"
@@ -353,6 +355,11 @@ exahype::plotters::Plotter::Plotter(
       if(equalsIgnoreCase(_identifier, Patch2VTUGapsBinary::getIdentifier())) {
         _device = new Patch2VTUGapsBinary(postProcessing, solvertype);
       }
+
+      if(equalsIgnoreCase(_identifier, ADERDG2Tecplot::getIdentifier())) {
+        _device = new ADERDG2Tecplot(postProcessing, solvertype);
+      }
+
     break;
     case exahype::solvers::Solver::Type::FiniteVolumes:
       /**
