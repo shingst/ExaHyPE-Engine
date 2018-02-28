@@ -496,7 +496,7 @@ public:
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,
-          const int element) override;
+          const int element) const override;
 
   void startNewTimeStep() override;
 

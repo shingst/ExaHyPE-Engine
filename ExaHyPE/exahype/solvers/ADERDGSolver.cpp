@@ -570,7 +570,7 @@ void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
 
 void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
       const int cellDescriptionsIndex,
-      const int element) {
+      const int element) const {
   synchroniseTimeStepping(Heap::getInstance().getData(cellDescriptionsIndex)[element]);
 }
 
@@ -2819,6 +2819,10 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
           :
           getCellDescription(cellDescriptionsIndex1,element1);
 
+  // synchronise time stepping if necessary
+  synchroniseTimeStepping(cellDescriptionLeft);
+  synchroniseTimeStepping(cellDescriptionRight);
+
   peano::datatraversal::TaskSet uncompression(
     [&] () -> bool {
       uncompress(cellDescriptionLeft);
@@ -2828,8 +2832,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
       uncompress(cellDescriptionRight);
       return false;
     },
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
     true
   );
 
@@ -2881,10 +2885,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion3(normalDirection==(faceIndexLeft - (faceIndexLeft %2))/2,normalDirection,faceIndexLeft,faceIndexRight);
     assertion3(normalDirection<DIMENSIONS,normalDirection,faceIndexLeft,faceIndexRight);
 
-    // Synchronise time stepping TODO(Dominic): Move outside
-    synchroniseTimeStepping(pLeft);
-    synchroniseTimeStepping(pRight);
-
     assertion3(std::isfinite(pLeft.getCorrectorTimeStepSize()),pLeft.toString(),faceIndexLeft,normalDirection);
     assertion3(std::isfinite(pRight.getCorrectorTimeStepSize()),pRight.toString(),faceIndexRight,normalDirection);
     assertion3(pLeft.getCorrectorTimeStepSize()>=0.0,pLeft.toString(),faceIndexLeft,normalDirection);
@@ -2930,8 +2930,9 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
     return; // We only consider faces; no corners.
   }
 
-  CellDescription& cellDescription =
-      getCellDescription(cellDescriptionsIndex,element);
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  synchroniseTimeStepping(cellDescription);
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
@@ -2967,8 +2968,6 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
     assertion5(std::isfinite(FIn[i]), p.toString(),faceIndex, direction, i, FIn[i]);
   } 
   #endif
-
-  synchroniseTimeStepping(p);
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
   boundaryConditions(
@@ -3472,14 +3471,12 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  if (tarch::la::countEqualEntries(src,dest)!=(DIMENSIONS-1)) {
-    return; // We only consider faces; no corners.
-  }
-  const int direction    = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation  = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex    = 2*direction+orientation;
+  assertionEquals(tarch::la::countEqualEntries(src,dest),DIMENSIONS-1); // only faces
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  synchroniseTimeStepping(cellDescription);
+
   CellDescription::Type neighbourType =
       static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
   if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
@@ -3488,8 +3485,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int dataPerFace = getBndFaceSize();
     const int dofPerFace  = getBndFluxSize();
 
-    const int receivedlQhbndIndex       = DataHeap::getInstance().createData(dataPerFace, dataPerFace);
-    const int receivedlFhbndIndex       = DataHeap::getInstance().createData(dofPerFace,  dofPerFace);
+    const int receivedlQhbndIndex = DataHeap::getInstance().createData(dataPerFace, dataPerFace);
+    const int receivedlFhbndIndex = DataHeap::getInstance().createData(dofPerFace,  dofPerFace);
     assertion(!DataHeap::getInstance().getData(receivedlQhbndIndex).empty());
     assertion(!DataHeap::getInstance().getData(receivedlFhbndIndex).empty());
     assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
@@ -3499,15 +3496,16 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     double* lFhbnd = DataHeap::getInstance().getData(receivedlFhbndIndex).data();
 
     #ifdef Asserts
-    tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
-        exahype::Cell::computeFaceBarycentre(
-            cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
-    logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
-        fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
+        tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
+            exahype::Cell::computeFaceBarycentre(
+                cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
+        logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
+            fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
     #endif
 
     // Send order: lQhbnd,lFhbnd
     // Receive order: lFhbnd,lQhbnd
+    // TODO(Dominic): If anarchic time stepping, receive the time step too.
     DataHeap::getInstance().receiveData(
         lFhbnd,dofPerFace,
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
@@ -3515,7 +3513,10 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
         lQhbnd,dataPerFace,
         fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
 
-    // TODO(Dominic): If anarchic time stepping, receive the time step too.
+    const int direction    = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation  = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex    = 2*direction+orientation;
+
     solveRiemannProblemAtInterface(
         cellDescription,
         faceIndex,
@@ -3545,10 +3546,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   logDebug("solveRiemannProblemAtInterface(...)",
       "cell-description=" << cellDescription.toString());
 
-  double* QL = 0;
-  double* QR = 0;
-  double* FL = 0;
-  double* FR = 0;
+  double* QL = 0; double* QR = 0;
+  double* FL = 0; double* FR = 0;
 
   assertion1(DataHeap::getInstance().getData(indexOfQValues).size()>=
       static_cast<unsigned int>(dataPerFace),cellDescription.toString());
@@ -3571,8 +3570,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     FL = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
         (faceIndex * dofPerFace);
   }
-
-  synchroniseTimeStepping(cellDescription);
 
   const int direction = (faceIndex - faceIndex%2)/2; // faceIndex=2*normalNonZero+f, f=0,1
   assertion2(direction<DIMENSIONS,faceIndex,direction);

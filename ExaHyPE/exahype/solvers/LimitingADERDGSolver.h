@@ -609,7 +609,7 @@ public:
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,
-          const int element) final override;
+          const int element) const final override;
 
   /**
    * We always override the limiter time step

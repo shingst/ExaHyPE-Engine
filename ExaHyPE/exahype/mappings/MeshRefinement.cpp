@@ -390,7 +390,7 @@ void exahype::mappings::MeshRefinement::enterCell(
         if (element!=exahype::solvers::Solver::NotFound) {
           if (adjustSolution) {
             solver->zeroTimeStepSizes(cellDescriptionsIndex,element);
-            solver->synchroniseTimeStepping(cellDescriptionsIndex,element);
+            solver->synchroniseTimeStepping(cellDescriptionsIndex,element); // TODO(Dominic): Merge with adjustSolution
             solver->adjustSolution(cellDescriptionsIndex,element);
 
             if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {

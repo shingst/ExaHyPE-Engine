@@ -182,7 +182,7 @@ void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
 
 void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
     const int cellDescriptionsIndex,
-    const int element) {
+    const int element) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   synchroniseTimeStepping(cellDescription);
 }
@@ -856,6 +856,9 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
   CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
   CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
 
+  synchroniseTimeStepping(cellDescription1);
+  synchroniseTimeStepping(cellDescription2);
+
 //  if (cellDescriptionsIndex1==2516 ||
 //      cellDescriptionsIndex2==2516) {
 //    std::cout << "cell1: "<< cellDescriptionsIndex1 << "," << cellDescription1.toString() << std::endl;
@@ -864,8 +867,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
 
   if (cellDescription1.getType()==CellDescription::Cell ||
       cellDescription2.getType()==CellDescription::Cell) {
-    synchroniseTimeStepping(cellDescription1);
-    synchroniseTimeStepping(cellDescription2);
 
     assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
     assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
@@ -905,8 +906,9 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
     const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
+  synchroniseTimeStepping(cellDescription);
+
   if (cellDescription.getType()==CellDescription::Cell) {
-    synchroniseTimeStepping(cellDescription);
     uncompress(cellDescription);
 
     double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -1251,18 +1253,14 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  if (tarch::la::countEqualEntries(src,dest)!=(DIMENSIONS-1)) {
-    return; // We only consider faces; no corners.
-  }
+  assertionEquals(tarch::la::countEqualEntries(src,dest),DIMENSIONS-1); // We only consider faces; no corners.
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
   synchroniseTimeStepping(cellDescription);
+
   CellDescription::Type neighbourType =
       static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
-
-  const int direction    = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation  = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex    = 2*direction+orientation;
 
   // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
   // Solving Riemann problems at a Ancestor Ancestor boundary might lead to problems
@@ -1284,6 +1282,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
         ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
     );
 
+    const int direction   = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
+
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     //
     // Copy the received boundary layer into a ghost layer of the solution.
@@ -1293,11 +1295,11 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     // corner neighbours. This is why we currently adapt a GATHER-UPDATE algorithm
     // instead of a SOLVE RIEMANN PROBLEM AT BOUNDARY-UPDATE INTERIOR scheme.
     const int numberOfFaceDof      = getDataPerPatchFace();
-//    const int receivedBoundaryLayerIndex = DataHeap::getInstance().createData(0, numberOfFaceDof);
+    //    const int receivedBoundaryLayerIndex = DataHeap::getInstance().createData(0, numberOfFaceDof);
     double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()
-        + (faceIndex * numberOfFaceDof);
-//    double* luhbnd = DataHeap::getInstance().getData(receivedBoundaryLayerIndex).data();
-//    assertion(DataHeap::getInstance().getData(receivedBoundaryLayerIndex).empty());
+                  + (faceIndex * numberOfFaceDof);
+    //    double* luhbnd = DataHeap::getInstance().getData(receivedBoundaryLayerIndex).data();
+    //    assertion(DataHeap::getInstance().getData(receivedBoundaryLayerIndex).empty());
 
 
     // Send order: minMax,lQhbnd,lFhbnd
@@ -1317,7 +1319,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
 
-//    DataHeap::getInstance().deleteData(receivedBoundaryLayerIndex,true);
+    //    DataHeap::getInstance().deleteData(receivedBoundaryLayerIndex,true);
   } else  {
     logDebug(
         "mergeWithNeighbourData(...)", "drop one array from rank " <<

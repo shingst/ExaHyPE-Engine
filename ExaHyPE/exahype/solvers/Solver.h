@@ -1069,7 +1069,7 @@ class exahype::solvers::Solver {
    */
   virtual void synchroniseTimeStepping(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element) const = 0;
 
   /**
    * This routine is called if we perform

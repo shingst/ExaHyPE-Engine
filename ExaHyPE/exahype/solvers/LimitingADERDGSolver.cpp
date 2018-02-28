@@ -205,7 +205,7 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
     const int cellDescriptionsIndex,
-    const int solverElement) {
+    const int solverElement) const {
   _solver->synchroniseTimeStepping(cellDescriptionsIndex,solverElement);
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
@@ -766,7 +766,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         isLastIterationOfBatch  ||
         vetoSpawnBackgroundJobs
     ) {
-      // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
+      // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
       updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
       UpdateResult result;
       result._limiterDomainChange = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(cellDescriptionsIndex,element);
@@ -1489,8 +1489,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighbours(
       cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
 }
 
-// TODO(Dominic): Remove limiterstatus1 and limiterStatus2 argument.
-// They depend on the isRecomputation value
 void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus(
     const int                                 cellDescriptionsIndex1,
     const int                                 element1,
@@ -1499,6 +1497,9 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2,
     const bool                                isRecomputation) const {
+  synchroniseTimeStepping(cellDescriptionsIndex1,element1);
+  synchroniseTimeStepping(cellDescriptionsIndex2,element2);
+
   SolverPatch& solverPatch1 = ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
   SolverPatch& solverPatch2 = ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
   const int limiterElement1 = tryGetLimiterElement(cellDescriptionsIndex1,solverPatch1.getSolverNumber());
@@ -1645,6 +1646,8 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryDataBasedOnLimiter
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
       const bool                                isRecomputation) {
+  synchroniseTimeStepping(cellDescriptionsIndex,element);
+
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
@@ -1856,6 +1859,8 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
     const bool                                   isRecomputation,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
+  synchroniseTimeStepping(cellDescriptionsIndex,element);
+
   if ( level==getMaximumAdaptiveMeshLevel() ) {
     SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
