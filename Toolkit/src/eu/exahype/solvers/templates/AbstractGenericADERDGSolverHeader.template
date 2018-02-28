@@ -38,7 +38,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr double CFL                  = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
-    const double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
+    double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
     {%- endif %}
     
     // virtual getters for the constexpr's

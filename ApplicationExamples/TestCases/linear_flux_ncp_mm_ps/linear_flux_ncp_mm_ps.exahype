@@ -28,27 +28,18 @@ exahype-project  Elastic
 
   computational-domain
     dimension const          = 3
-    width                    = 10.0, 10.0, 10.0
+    width                    = 30.0, 30.0, 30.0
     offset                   = 0.0, 0.0, 0.0
     end-time                 = 10.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:28}	
-    cores                    = 28
+    configure                = {background-tasks:8}
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
  
-
-//   distributed-memory
-//     identifier               = static_load_balancing
-//     configure                = {greedy-naive,FCFS}
-// //    configure                = {hotspot,fair,ranks_per_node:4}
-//     buffer-size              = 64
-//     timeout                  = 60
-//   end distributed-memory
-
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
@@ -64,9 +55,9 @@ exahype-project  Elastic
   solver ADER-DG MyElasticWaveSolver
     variables const    = v:3,sigma:6
     parameters const  = rho:1,cp:1,cs:1
-    order const        = 6
+    order const        = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 0.5
+    maximum-mesh-size  = 1.5
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
@@ -79,8 +70,8 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.005
-      output          = ./reference_solution
-      select          = x:3.7,y:2.5,z:2.5
+      output          = ./solution_new
+      select          = x:16.0,y:15.0,z:15.0
     end plot
     
   end solver
