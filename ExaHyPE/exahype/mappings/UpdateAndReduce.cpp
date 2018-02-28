@@ -78,7 +78,7 @@ peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,false);
+      peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::UpdateAndReduce::ascendSpecification(int level) const {

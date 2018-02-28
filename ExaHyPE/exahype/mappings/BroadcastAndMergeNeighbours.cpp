@@ -56,7 +56,7 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,false);
+      peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastAndMergeNeighbours::ascendSpecification(int level) const {

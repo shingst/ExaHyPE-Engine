@@ -2471,12 +2471,12 @@ void exahype::solvers::ADERDGSolver::restriction(
 
 void exahype::solvers::ADERDGSolver::restriction(
     const CellDescription& fineGridCellDescription) {
-  const int coarseGridElement = tryGetElement(
+  const int parentElement = tryGetElement(
       fineGridCellDescription.getParentIndex(),fineGridCellDescription.getSolverNumber());
 
-  if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
+  if (parentElement!=exahype::solvers::Solver::NotFound) {
     // restrict some flags to direct parent
-    restrictToNextParent(fineGridCellDescription,coarseGridElement);
+    restrictToNextParent(fineGridCellDescription,parentElement);
 
     exahype::solvers::Solver::SubcellPosition subcellPosition =
             exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(

@@ -43,7 +43,7 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
         peano::MappingSpecification::Nop,
-        peano::MappingSpecification::AvoidFineGridRaces,false);
+        peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::touchVertexLastTimeSpecification(int level) const {
@@ -55,7 +55,7 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidFineGridRaces,false);
+      peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::ascendSpecification(int level) const {
