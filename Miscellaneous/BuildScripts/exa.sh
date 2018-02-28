@@ -246,21 +246,7 @@ case $CMD in
 		;;
 	"peano-analysis") # Quickly start Peanos Domaincomposition analysis script.
 		set -e
-		exec python $GITROOT/Peano/peano/performanceanalysis/domaindecompositionanalysis.py $@
-		# copy stuff to the stage
-		stageroot="$HOME/public_html/exahype/domaindecompositionanalysis/"
-		stagesub="$(date +%Y-%m-%dT%H-%M-%S)"
-		if [[ -e "$stageroot" ]]; then
-			stagedir="$stageroot/$stagesub"
-			echo "Copying output to $stagedir"
-			mkdir $stagedir
-			cp *pdf *png *html *log ExaHyPE-* $stagedir/
-			./ExaHyPE-* --version > $stagedir/ExaHyPE-VERSION.txt
-			# try to obtain the parameter file
-			cp ../$(basename $(pwd)).exahype $stagedir/
-		else
-			echo "Stageroot $stageroot not available"
-		fi
+		exec python $GITROOT/Peano/peano/performanceanalysis/performanceanalysis.py $@
 		;;
 	"run") # quickly start an application inside it's directory. Cleans VTK files before.
 		cdapp
