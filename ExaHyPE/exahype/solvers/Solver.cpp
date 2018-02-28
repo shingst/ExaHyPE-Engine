@@ -663,8 +663,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         limitingADERDGSolver->setNextLimiterDomainChange();
         assertion(
             limitingADERDGSolver->getLimiterDomainChange()
-            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-            solver->getMeshUpdateRequest());
+            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || solver->getMeshUpdateRequest());
       }
     }
 

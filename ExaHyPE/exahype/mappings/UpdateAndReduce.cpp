@@ -188,9 +188,7 @@ void exahype::mappings::UpdateAndReduce::endIteration(
 
   exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
-      exahype::State::isFirstIterationOfBatchOrNoBatch(),
-      exahype::State::isLastIterationOfBatchOrNoBatch(),
-      false);
+      true,true,false);
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
