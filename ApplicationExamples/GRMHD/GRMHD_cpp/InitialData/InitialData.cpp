@@ -46,7 +46,7 @@ bool GlobalInitialData::setIdByName(const std::string& _name) {
 	}
 }
 
-void GlobalInitialData::setByParameters(const mexa::mexafile& parameters) {
+GlobalInitialData& GlobalInitialData::setByParameters(const mexa::mexafile& parameters) {
 	std::string idseckey = "initialdata";
 	std::string idnamekey = "name";
 	mexa::mexafile idparam = parameters(idseckey);
@@ -61,6 +61,25 @@ void GlobalInitialData::setByParameters(const mexa::mexafile& parameters) {
 	} else {
 		id->readParameters(idparam);
 	}
+	return *this;
+}
+
+GlobalInitialData& GlobalInitialData::prepare() {
+	if(!alreadyPrepared) {
+		id->prepare();
+	}
+	alreadyPrepared = true;
+	return *this;
+}
+
+bool GlobalInitialData::ensureGlobalIDareSet(bool doCrash) {
+	bool isSet = (getInstance().id != nullptr);
+	if(doCrash && !isSet) {
+		static tarch::logging::Log _log("InitialData");
+		logError("InitialData()", "Cannot access InitialData because no initial Data has been defined yet.");
+		std::abort();
+	}
+	return isSet;
 }
 
 #include "PDE/PDE.h"
@@ -71,12 +90,7 @@ constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 void InitialData(const double* x, double t, double* Q) {
 	for(int i=0;i<nVar;i++) Q[i] = 0.0; // Zeroize
 	
-	if(GlobalInitialData::getInstance().id == nullptr) {
-		static tarch::logging::Log _log("InitialData");
-		logError("InitialData()", "Cannot access InitialData because no initial Data has been defined yet.");
-		std::abort();
-	}
-	
+        GlobalInitialData::ensureGlobalIDareSet();	
 	GlobalInitialData::getInitialDataCode().Interpolate(x,t,Q);
 	
 	  // also store the positions for debugging
