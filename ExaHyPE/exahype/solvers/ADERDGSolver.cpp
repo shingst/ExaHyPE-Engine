@@ -486,7 +486,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag); //TODO JMG only if using deepProfiling
   }
 
-
   CompressedDataHeap::getInstance().setName("compressed-data");
 }
 
@@ -2502,13 +2501,15 @@ void exahype::solvers::ADERDGSolver::restrictToNextParent(
       const int parentElement) const {
   CellDescription& parentCellDescription =
       ADERDGSolver::getCellDescription(cellDescription.getParentIndex(),parentElement);
+
   tarch::multicore::Lock lock(CoarseGridSemaphore);
-  if (cellDescription.getLimiterStatus()>=ADERDGSolver::_minimumLimiterStatusForTroubledCell) {
-      if(parentCellDescription.getType()==CellDescription::Type::Ancestor) {
-        parentCellDescription.setLimiterStatus(ADERDGSolver::_minimumLimiterStatusForTroubledCell);
-        parentCellDescription.setFacewiseLimiterStatus(0);
-      }
-    }
+  if (
+      cellDescription.getLimiterStatus()>=ADERDGSolver::_minimumLimiterStatusForTroubledCell &&
+      parentCellDescription.getType()==CellDescription::Type::Ancestor
+  ) {
+    parentCellDescription.setLimiterStatus(ADERDGSolver::_minimumLimiterStatusForTroubledCell);
+    parentCellDescription.setFacewiseLimiterStatus(0);
+  }
   lock.free();
 }
 

@@ -503,7 +503,7 @@ int exahype::solvers::LimitingADERDGSolver::computeMinimumLimiterStatusForRefine
   assertion(levelDelta>=0);
   const int status = _solver->getMinimumLimiterStatusForActiveFVPatch()-1 + (levelDelta-1);
   return (_solver->getMinimumLimiterStatusForTroubledCell()-status>=2) ?
-      status : _solver->getMinimumLimiterStatusForTroubledCell()-2;
+          status : _solver->getMinimumLimiterStatusForTroubledCell()-2;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCriterion(
@@ -779,11 +779,18 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
       // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
       // and must thus come last. This order is more natural anyway
-      if (solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell()) {
+      if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {
         _solver->performPredictionAndVolumeIntegral(
             solverPatch,
             memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
             false/*already uncompressed*/,vetoSpawnBackgroundJobs);
+      } else {
+        // just perform a restriction of the limiter status to the next parent
+        const int parentElement = tryGetElement(
+            solverPatch.getParentIndex(),solverPatch.getSolverNumber());
+        if (parentElement!=exahype::solvers::Solver::NotFound) {
+          _solver->restrictToNextParent(solverPatch,parentElement);
+        }
       }
       return result;
     } else {
@@ -821,7 +828,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
           cellDescriptionsIndex,element);   // !!! limiter status must be updated before refinement criterion is evaluated
       result._refinementRequested |= evaluateRefinementCriterionAfterSolutionUpdate(
           cellDescriptionsIndex,element);
-
 
       // compress again
       if (CompressionAccuracy>0.0) {
