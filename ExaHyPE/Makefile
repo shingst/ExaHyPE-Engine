@@ -142,11 +142,13 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	  FC=$(EXAHYPE_FC)
 	endif
 	
-	#TODO SVENK shouldn't have to go O0
-	FCOMPILER_CFLAGS  += -O2 -r8 -cpp -auto
 	# REMOVING "-fast" as it induces compiler bugs!
 	LINK_FORTRAN	  += -lifcore
 
+	# Note, check out these ifort compiler flags:
+	#   -reentrance  -recursive
+	
+	FCOMPILER_CFLAGS  += -r8 -cpp -auto
 	COMPILER_CFLAGS   += -restrict -std=c++11 -pedantic -Wall
 	#COMPILER_LFLAGS   +=
 	
@@ -166,6 +168,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_CFLAGS += -p -pg -g3 -O3 -ip
 		COMPILER_LFLAGS += -p -pg
 	else
+		FCOMPILER_CFLAGS  += -O2
 		#COMPILER_CFLAGS   += -fast -ip
 		COMPILER_CFLAGS   += -O3 -ip
 	endif
