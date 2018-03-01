@@ -20,12 +20,12 @@ GRMHD::GlobalBoundaryConditions& GRMHD::GlobalBoundaryConditions::getInstance() 
 
 // face indices: 0 x=xmin 1 x=xmax, 2 y=ymin 3 y=ymax 4 z=zmin 5 z=zmax
 // corresponding 0-left, 1-right, 2-front, 3-back, 4-bottom, 5-top
-static constexpr int EXAHYPE_FACE_LEFT = 0;
-static constexpr int EXAHYPE_FACE_RIGHT = 1;
-static constexpr int EXAHYPE_FACE_FRONT = 2;
-static constexpr int EXAHYPE_FACE_BACK = 3;
-static constexpr int EXAHYPE_FACE_BOTTOM = 4;
-static constexpr int EXAHYPE_FACE_TOP = 5;
+static constexpr int EXAHYPE_FACE_LEFT = 0;     // Dimension 1
+static constexpr int EXAHYPE_FACE_RIGHT = 1;    // Dimension 1
+static constexpr int EXAHYPE_FACE_FRONT = 2;    // Dimension 2
+static constexpr int EXAHYPE_FACE_BACK = 3;     // Dimension 2
+static constexpr int EXAHYPE_FACE_BOTTOM = 4;   // Dimension 3
+static constexpr int EXAHYPE_FACE_TOP = 5;      // Dimension 3
 
 // solver-unspecific number of Variables
 #include "AbstractGRMHDSolver_FV.h"
@@ -51,7 +51,11 @@ GRMHD::BoundaryConditions::BoundaryConditions(Solver_ADERDG* _aderdg_solver) :
 	}
 
 bool GRMHD::BoundaryConditions::allFacesDefined() {
-	return (left != nullptr && right != nullptr && front != nullptr && back != nullptr && bottom != nullptr && top != nullptr);
+	return (
+		left != nullptr && right != nullptr &&
+		front != nullptr && back != nullptr &&
+		(DIMENSIONS==3?(bottom != nullptr && top != nullptr):true)
+	);
 }
 
 /// Apply by looking up the saved boundarymethods
@@ -61,8 +65,10 @@ void GRMHD::BoundaryConditions::apply(BOUNDARY_SIGNATURE) {
 		case EXAHYPE_FACE_FRONT:  (this->*front )(BOUNDARY_CALL); break;
 		case EXAHYPE_FACE_BOTTOM: (this->*bottom)(BOUNDARY_CALL); break;
 		case EXAHYPE_FACE_RIGHT:  (this->*right )(BOUNDARY_CALL); break;
+		#if DIMENSIONS==3
 		case EXAHYPE_FACE_BACK:   (this->*back  )(BOUNDARY_CALL); break;
 		case EXAHYPE_FACE_TOP:    (this->*top   )(BOUNDARY_CALL); break;
+		#endif
 		default: throw std::runtime_error("Inconsistent face index");
 	}
 }
@@ -86,16 +92,20 @@ bool GRMHD::BoundaryConditions::setFromParameters(const mexa::mexafile& constant
 	SET_BC(right);
 	SET_BC(front);
 	SET_BC(back);
-	SET_BC(top);
-	SET_BC(bottom);
+	if(DIMENSIONS==3) {
+		SET_BC(top);
+		SET_BC(bottom);
+	}
 	if(!allFacesDefined() && raiseOnFailure) {
 		logError("setFromparameters()", "Not all boundary faces have been defined. Cannot continue. I got the constants definition " << constants.toString());
 		if(left==nullptr) logError("setFromparameters()", "left boundary is not defined");
 		if(right==nullptr) logError("setFromparameters()", "right boundary is not defined");
 		if(front==nullptr) logError("setFromparameters()", "front boundary is not defined");
 		if(back==nullptr) logError("setFromparameters()", "back boundary is not defined");
-		if(top==nullptr) logError("setFromparameters()", "top boundary is not defined");
-		if(bottom==nullptr) logError("setFromparameters()", "bottom boundary is not defined");
+		if(DIMENSIONS==3) {
+			if(top==nullptr) logError("setFromparameters()", "top boundary is not defined");
+			if(bottom==nullptr) logError("setFromparameters()", "bottom boundary is not defined");
+		}
 		std::abort();
 	}
 	return allFacesDefined();
