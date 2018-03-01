@@ -73,7 +73,7 @@ constexpr bool debug_tensish = false;
 
 namespace tensish {
 	// helper
-	inline const double SQ(double x) { return x*x; }
+	inline double SQ(double x) { return x*x; }
 	
 	/*****************************************************************************/
 	/*                                                                           */

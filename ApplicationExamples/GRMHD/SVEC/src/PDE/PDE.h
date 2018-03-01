@@ -488,7 +488,7 @@ namespace SVEC {
 			// Ideal EOS:
 			// 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
 			// 2.0 used for TOV stars
-			static constexpr double gamma = 4./3.; //2.0;
+			static constexpr double gamma = 2.0; //4./3.;
 	
 			// Divergence cleaning:
 			// 1.0 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
