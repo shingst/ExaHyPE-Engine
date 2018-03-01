@@ -87,7 +87,7 @@ RepeatedPlotter/time = 0.0
 RepeatedPlotter/repeat = 0.001
 
 AllQuantitiesPlotter <= RepeatedPlotter
-AllQuantitiesPlotter/variables = "@{BaseSolver/variables}"
+AllQuantitiesPlotter/variables = BaseSolver/variables
 
 writer/integrals <= RepeatedPlotter
 writer/integrals/type = FVSolver::plotter_type # the basis does not really change anything

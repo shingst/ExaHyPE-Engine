@@ -61,13 +61,17 @@ bool GRMHD::BoundaryConditions::allFacesDefined() {
 /// Apply by looking up the saved boundarymethods
 void GRMHD::BoundaryConditions::apply(BOUNDARY_SIGNATURE) {
 	switch(faceIndex) {
+		// Dim 1
 		case EXAHYPE_FACE_LEFT:   (this->*left  )(BOUNDARY_CALL); break;
-		case EXAHYPE_FACE_FRONT:  (this->*front )(BOUNDARY_CALL); break;
-		case EXAHYPE_FACE_BOTTOM: (this->*bottom)(BOUNDARY_CALL); break;
 		case EXAHYPE_FACE_RIGHT:  (this->*right )(BOUNDARY_CALL); break;
-		#if DIMENSIONS==3
+		
+		// Dim 2
+		case EXAHYPE_FACE_FRONT:  (this->*front )(BOUNDARY_CALL); break;
 		case EXAHYPE_FACE_BACK:   (this->*back  )(BOUNDARY_CALL); break;
+		
+		#if DIMENSIONS==3
 		case EXAHYPE_FACE_TOP:    (this->*top   )(BOUNDARY_CALL); break;
+		case EXAHYPE_FACE_BOTTOM: (this->*bottom)(BOUNDARY_CALL); break;
 		#endif
 		default: throw std::runtime_error("Inconsistent face index");
 	}

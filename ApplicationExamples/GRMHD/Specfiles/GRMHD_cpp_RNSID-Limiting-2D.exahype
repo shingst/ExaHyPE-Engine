@@ -81,14 +81,14 @@ exahype-project GRMHD
                          initialdata/name:rnsid
     
     plot vtk::Cartesian::vertices::limited::ascii ConservedWriter
-      variables const = 2
+      variables const = 23
       time      = 0.0
       repeat    = 0.001
       output    = ./vtk-output/conserved
     end plot
     
     plot vtk::Cartesian::vertices::limited::ascii PrimitiveWriter
-      variables const = 2
+      variables const = 23
       time      = 0.0
       repeat    = 0.001
       output    = ./vtk-output/primitive

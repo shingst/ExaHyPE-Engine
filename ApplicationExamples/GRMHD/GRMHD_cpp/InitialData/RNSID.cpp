@@ -31,8 +31,9 @@ rnsid::rnsid() {
 	id = new RNSID::rnsid();
 	
 	// A TOV star
-	id->axes_ratio = 1.0;
-	id->rnsid_rho_min = 1e-10;
+	// id->axes_ratio = 1.0;
+	// id->rnsid_rho_min = 1e-10;
+	// see readParameters below
 	
 	// mapping for quantity vector
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts var;
@@ -56,8 +57,6 @@ rnsid::rnsid() {
 	id->hydro_idx.vely  = var.vel + 1; // 2
 	id->hydro_idx.velz  = var.vel + 2; // 3
 	id->hydro_idx.press = 4; // we store the pressure
-	
-	id->Run();
 }
 
 void rnsid::readParameters(const mexa::mexafile& para) {
@@ -68,11 +67,25 @@ void rnsid::readParameters(const mexa::mexafile& para) {
 	 * too bad if you have proper parameter files.
 	 **/
 	
+	// The most important quantity: rho_center
 	id->rho_center = para["rho_center"].as_double();
+
+	// The most important stuff: EOS.
+	id->RNS_Gamma = para["eos_gamma"].as_double();  // typically: 2.0
+	id->RNS_K = para["eos_K"].as_double(); // typically: 100
+	
+	// for security
+	if(id->RNS_Gamma != SVEC::GRMHD::Parameters::gamma) {
+		static tarch::logging::Log _log("rnsid");
+		logError("readParameters()", "In the moment, Gamma="<<SVEC::GRMHD::Parameters::gamma<<" is a compile-time constant. However, the RNSID parameter is "<< id->RNS_Gamma<<", please change to same value.");
+	}
+	
+	// other stuff
 	id->log_enth_center = para["log_enth_center"].as_double();
 	id->rho_cut = para["rho_cut"].as_double();
 	id->rnsid_rho_min = para["rho_min"].as_double();
 	
+	// also important:
 	id->axes_ratio = para["axes_ratio"].as_double();
 	id->accuracy = para["accuracy"].as_double();
 	id->perturbation = para["perturbation"].get_bool();
@@ -81,6 +94,10 @@ void rnsid::readParameters(const mexa::mexafile& para) {
 	id->A_diff = para["A_diff"].get_double();
 	
 	id->zero_shift = para["zero_shift"].get_bool();
+}
+
+void rnsid::prepare() {
+ 	id->Run();
 }
 
 void rnsid::Interpolate(const double* pos, double t, double* Q) {
