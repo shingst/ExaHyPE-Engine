@@ -85,8 +85,9 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 const int picardIterations = 1;
 
- std::vector<int>* pointSources= kernels::aderdg::generic::c::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
 {%-   if usePointSources %}
+  std::vector<int>* pointSources= kernels::aderdg::generic::c::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
+   
   if(pointSources != nullptr) {
     kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
     kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
