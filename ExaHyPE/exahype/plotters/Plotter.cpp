@@ -22,7 +22,7 @@
 #include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
 #include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
 #include "exahype/plotters/FlashHDF5/ADERDG2FlashHDF5.h"
-#include "exahype/plotters/Tecplot/ADERDG2Tecplot.h"
+#include "exahype/plotters/Tecplot/ExaHyPE2Tecplot.h"
 
 #include "exahype/plotters/VTK/FiniteVolumes2VTK.h"
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
@@ -207,6 +207,13 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
+      
+      if(equalsIgnoreCase(_identifier, LimitingADERDG2Tecplot::getIdentifier())) {
+        _device = new LimitingADERDG2Tecplot(postProcessing,
+	        static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth()
+	);
+      }
 
       // plot only the FV subcells
       if (equalsIgnoreCase( _identifier, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier() )) {
@@ -357,7 +364,7 @@ exahype::plotters::Plotter::Plotter(
       }
 
       if(equalsIgnoreCase(_identifier, ADERDG2Tecplot::getIdentifier())) {
-        _device = new ADERDG2Tecplot(postProcessing, solvertype);
+        _device = new ADERDG2Tecplot(postProcessing);
       }
 
     break;
@@ -445,6 +452,13 @@ exahype::plotters::Plotter::Plotter(
       if(equalsIgnoreCase(_identifier, Patch2VTUGapsBinary::getIdentifier())) {
         _device = new Patch2VTUGapsBinary(postProcessing, solvertype);
       }
+
+      if(equalsIgnoreCase(_identifier, FiniteVolumes2Tecplot::getIdentifier())) {
+        _device = new FiniteVolumes2Tecplot(postProcessing,
+	     static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+
     break;
   }
 
