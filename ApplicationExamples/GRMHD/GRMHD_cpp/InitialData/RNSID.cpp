@@ -21,7 +21,11 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {}
 
 #else /* RNSID_AVAILABLE */
 
+// A small Fortran helper routine
+extern "C" void rnsid_2d_cartesian2cylindrical_(double*Cartesian, double*Cylindrical, double*xGP_cylindrical);
+
 #include "rnsid/rnsid.h"
+#include <array>
 
 rnsid::rnsid() {
 	id = new RNSID::rnsid();
@@ -79,10 +83,31 @@ void rnsid::readParameters(const mexa::mexafile& para) {
 	id->zero_shift = para["zero_shift"].get_bool();
 }
 
-void rnsid::Interpolate(const double* x, double t, double* Q) {
+void rnsid::Interpolate(const double* pos, double t, double* Q) {
 	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
-	double V[nVar] = {0.0};
-	id->Interpolate(x, V);
+	double V[nVar] = {0.0}; // primitive variables, as returned by rnsid
+	
+	if(DIMENSIONS == 2) {
+		// in 2D, we interpret the coordinates (x,y) as (r,z)
+		// Transfrom from cylindrical coordinates to cartesian ones:
+		const double r=pos[0], z=pos[1], phi = 0;
+
+		double pos_cylindrical[3] = { r, z, phi };
+		double pos_cartesian[3]   = { r*std::cos(phi), r*std::sin(phi), z  };
+		
+		double  V_Cartesian[nVar];  // intermediate step from rnsid
+		double *V_Cylindrical = V; // cylindrical output
+		
+		id->Interpolate(pos_cartesian, V_Cartesian);
+
+		// Transform the metric from Cartesian back to cylindrical coordinates.
+		// ALERT: This is suitable for the GRMHD part but does not cover the curvature
+		//        part (CCZ4). It is ignored here anyway.
+
+		rnsid_2d_cartesian2cylindrical_(V_Cartesian, V_Cylindrical, pos_cartesian);
+	} else {
+		id->Interpolate(pos, V);
+	}
 	
 	// treatment of the atmostphere PROBABLY not done by RNSID
 	const double atmo_rho = SVEC::GRMHD::Parameters::atmo_rho;
@@ -96,6 +121,7 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 	
 	//NVARS(i) printf("V[%d]=%e\n", i, V[i]);
 	for(int i=0;i<nVar;i++) Q[i] = 0.0;
+	
 	Prim2Cons p2c(Q, V);
 	//NVARS(i) printf("Q[%d]=%e\n", i, Q[i]);
 	p2c.copyFullStateVector();
