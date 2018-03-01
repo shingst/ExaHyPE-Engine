@@ -1,0 +1,164 @@
+##mexa  # This is an ExaHyPE meta specification v1 file.
+#
+# GRMHD RNSID Neutron Star in 2D.
+#
+# Purpose: Run a Neuton Star in 2D (r,z) coordinates in pure GRMHD,
+#          compare with Trento Code, see Cowling modes.
+# Started at: 2018-03-01 by SvenK
+#
+# To choose an individual solver:
+#   Solver = DGSolver
+
+<< "@mexa/exahype-single-base.xpar"
+
+# DEBUGGING
+#Solver = DGSolver
+
+# Options:
+Options/solver/dg = DGsolver
+Options/solver/fv = FVsolver
+Options/solver/limiting = LimitingSolver
+# This line makes trouble => should again debug and write a test for it.
+### Options/simulation/shocktube_rp1 = Shocktubes/RP1
+
+
+Project::Name = "GRMHD"
+#Project::directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
+Project::directory = "GMRHD_cpp"
+
+BaseSolver::variables = "rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1"
+BaseSolver::time_stepping = "global"
+BaseSolver::maximum_mesh_size = Grid/maximum_mesh_size
+BaseSolver::maximum_mesh_depth = Grid/maximum_mesh_depth
+
+BaseKernel::terms = "flux,ncp,source"
+BaseKernel::optimisation = "generic"
+BaseKernel::language = "C"
+
+####
+#### Solvers
+####
+
+# The ADER-DG solver
+DGSolver <= BaseSolver
+DGSolver::name = "GRMHDSolver_DG"
+DGSolver::type = "ADER-DG"
+DGSolver::order = Grid/order
+DGSolver::kernel <= BaseKernel
+DGSolver::kernel::type = "nonlinear"
+DGSolver::plotter_type = "vtk::Legendre::vertices::binary"
+
+# The Finite volume solver
+FVSolver <= BaseSolver
+FVSolver::name = "GRMHDSolver_FV"
+FVSolver::type = "Finite-Volumes"
+FVSolver::patch_size = 10
+FVSolver::kernel <= BaseKernel
+FVSolver::kernel::type = "godunov"
+FVSolver::plotter_type = "vtk::Cartesian::vertices::binary"
+
+
+# A limiting solver
+LimitingSolver <= BaseSolver
+LimitingSolver::name = "GRMHDSolver"
+LimitingSolver::type = "Limiting-ADER-DG"
+LimitingSolver::order = DGSolver::order
+LimitingSolver::kernel = DGSolver::kernel
+LimitingSolver::limiter::kernel = FVSolver::kernel
+LimitingSolver::limiter::dmp_observables = 2
+LimitingSolver::limiter::dmp_relaxation_parameter = 0.01
+LimitingSolver::limiter::dmp_difference_scaling = 0.001
+LimitingSolver::limiter::steps_till_cured = 0
+LimitingSolver::plotter_type = "vtk::Cartesian::vertices::limited::ascii"
+
+# The plotters registration
+Plotters::integrals <= writer/integrals
+Plotters::conserved <= writer/conserved
+Plotters::primitive <= writer/primitive
+Plotters::conserved::type = Solver::plotter_type
+Plotters::primitive::type = Solver::plotter_type
+
+
+####
+#### Plotters
+####
+
+RepeatedPlotter/time = 0.0
+RepeatedPlotter/repeat = 0.001
+
+AllQuantitiesPlotter <= RepeatedPlotter
+AllQuantitiesPlotter/variables = "@{BaseSolver/variables}"
+
+writer/integrals <= RepeatedPlotter
+writer/integrals/type = FVSolver::plotter_type # the basis does not really change anything
+writer/integrals/variables = 0
+writer/integrals/name = "IntegralsWriter"
+writer/integrals/output = "./output/global-integrals"
+
+writer/conserved <= AllQuantitiesPlotter
+writer/primitive <= AllQuantitiesPlotter
+writer/diff      <= AllQuantitiesPlotter
+writer/conserved/output = "./vtk-output/conserved"
+writer/diff/output      = "./vtk-output/diff-with-id"
+writer/primitive/output = "./vtk-output/primitive"
+writer/conserved/name = "ConservedWriter"
+writer/diff/name = "DifferenceWithIDWriter"
+writer/primitive/name = "PrimitiveWriter"
+
+
+####
+#### Actual Simulations and InitialData
+####
+
+# a neutron star in 2d in (r,z) coordinates:
+Coord/Dimension = 2
+Coord/width/x = 20.0
+Coord/width/y = 20.0
+Coord/width/z = 20.0
+Coord/offset/x = 0.0
+Coord/offset/y = 0.0
+Coord/offset/z = 0.0
+Coord/end_time = 20
+
+Grid/order = 3
+Grid/maximum_mesh_size = 5.0
+Grid/maximum_mesh_depth = 0
+
+# dim 1
+Boundaries/left = "wall"
+Boundaries/right = "outflow"
+
+# dim 2
+Boundaries/front = "wall"
+Boundaries/back = "outflow"
+
+# dim 3, irrelevant
+Boundaries/bottom = "illegal"
+Boundaries/top = "illegal"
+
+
+rnsid2d/eos_gamma = 2.0
+rnsid2d/eos_K = 100
+
+rnsid2d/rho_center = 1.28e-3
+rnsid2d/axes_ratio = 1.0
+
+# okay, currently, for safety, all possible parameters shall
+# be given as there are no defaults.
+
+rnsid2d/log_enth_center = -1
+rnsid2d/rho_cut = 1e-10
+rnsid2d/rho_min = 1e-10
+
+rnsid2d/accuracy = 1e-7
+rnsid2d/perturbation = No
+rnsid2d/rotation_type = "uniform"
+rnsid2d/A_diff = 1.0
+rnsid2d/zero_shift = False
+
+
+# collect simulation steering data
+
+Parameters::Boundaries = Boundaries
+Parameters::initialdata = rnsid2d
+Parameters::initialdata/name = "rnsid"
