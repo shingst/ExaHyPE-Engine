@@ -21,6 +21,47 @@
 
 #include "kernels/DGBasisFunctions.h"
 
+std::vector<int>* {{codeNamespace}}::getPointSources(
+  {{solverName}}& solver,
+  const tarch::la::Vector<DIMENSIONS, double>& center,
+  const tarch::la::Vector<DIMENSIONS, double>& dx
+){
+  std::vector<int>* pointSources=nullptr;
+  for (int m =0 ; m < {{nPointSources}}; m++) {
+    const double* const x_ps = solver.pointSourceLocation[m];
+    if(   center[0]-0.5*dx[0] < x_ps[0] && x_ps[0] < center[0]+0.5*dx[0]
+       && center[1]-0.5*dx[1] < x_ps[1] && x_ps[1] < center[1]+0.5*dx[1]
+{% if nDim == 3 %}
+       && center[2]-0.5*dx[2] < x_ps[2] && x_ps[2] < center[2]+0.5*dx[2]
+{% endif %}
+      ){
+      
+      if(pointSources==nullptr){
+        pointSources=new std::vector<int>();  //needs to be deleted in deltaDistribution
+      }
+      pointSources->push_back(m);
+    }
+  }
+  return pointSources;
+}
+
+void {{codeNamespace}}::deltaDistribution(
+    {{solverName}}& solver,
+    const double* const luh,
+    const double t,
+    const double dt,
+    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    std::vector<int>* pointSources, // will be deleted in the end
+    double* PSi
+){
+  printf("WARNING: PointSources are currently disabled");
+  delete pointSources;
+}
+	
+
+//TODO JMG : Broken, fix when generic done
+/*
 void {{codeNamespace}}::deltaDistribution(
     {{solverName}}& solver,
     const double t,
@@ -97,3 +138,5 @@ void {{codeNamespace}}::deltaDistribution(
     }// time loop
   }
 }
+*/
+

@@ -80,7 +80,6 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {%- if usePointSources %} 
   double PSi[{{optNamespace}}::getPSiSize()] __attribute__((aligned(ALIGNMENT)));
   double PSderivatives[{{optNamespace}}::getPSiSize()] __attribute__((aligned(ALIGNMENT)));
-  double* tempPointForceSources[2] = {PSi, PSderivatives};
   {%- else %}
   constexpr double* PSi = nullptr;
   constexpr double* PSderivatives = nullptr;
@@ -119,7 +118,6 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {%- if usePointSources %} 
   double* PSi = allocateArray({{optNamespace}}::getPSiSize());
   double* PSderivatives = allocateArray({{optNamespace}}::getPSiSize());
-  double* tempPointForceSources[2] = {PSi, PSderivatives};
   {%- else %}
   constexpr double* PSi = nullptr;
   constexpr double* PSderivatives = nullptr;
@@ -127,11 +125,17 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- endif %}  
 
 {%- if usePointSources %}
+  std::vector<int>* pointSources = {{optNamespace}}::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
+   
+  if(pointSources != nullptr) {
 {%- if  isLinear %}
   // perform pointsource
-  {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, center, dx, tempPointForceSources);
+    {{optNamespace}}::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
+    
 {%- else %}
+    delete pointSources;
 {%- endif %}
+  } //TODO JMG use non pointSource version of stp when false
 {%- endif %}
 
 {%- if  isLinear %}
@@ -359,6 +363,6 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
