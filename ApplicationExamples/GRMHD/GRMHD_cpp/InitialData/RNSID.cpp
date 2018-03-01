@@ -11,6 +11,7 @@ using namespace tensish;
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdexcept>
 
 rnsid::rnsid() {
         printf("Cannot call RNSID as not compiled with -DRNSID_AVAILABLE");
@@ -22,10 +23,11 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {}
 #else /* RNSID_AVAILABLE */
 
 // A small Fortran helper routine
-extern "C" void rnsid_2d_cartesian2cylindrical_(double*Cartesian, double*Cylindrical, double*xGP_cylindrical);
+extern "C" void rnsid_2d_cartesian2cylindrical_(double* Cartesian, const double* const Cylindrical, const double* const xGP_cylindrical);
 
 #include "rnsid/rnsid.h"
 #include <array>
+#include <cmath>
 
 rnsid::rnsid() {
 	id = new RNSID::rnsid();
@@ -107,12 +109,16 @@ void rnsid::Interpolate(const double* pos, double t, double* Q) {
 	if(DIMENSIONS == 2) {
 		// in 2D, we interpret the coordinates (x,y) as (r,z)
 		// Transfrom from cylindrical coordinates to cartesian ones:
-		const double r=pos[0], z=pos[1], phi = 0;
+		const double r=pos[0], z=pos[1], phi = 0.25*M_PI;
 
 		double pos_cylindrical[3] = { r, z, phi };
 		double pos_cartesian[3]   = { r*std::cos(phi), r*std::sin(phi), z  };
 		
-		double  V_Cartesian[nVar];  // intermediate step from rnsid
+		if(r==0) {
+			throw std::domain_error("RNSID cannot be evaluated in 2D at the axis (radius=0) because coordinates are singular.");
+		}
+		
+		double  V_Cartesian[nVar] = {0.0};  // intermediate step from rnsid
 		double *V_Cylindrical = V; // cylindrical output
 		
 		id->Interpolate(pos_cartesian, V_Cartesian);
@@ -121,7 +127,7 @@ void rnsid::Interpolate(const double* pos, double t, double* Q) {
 		// ALERT: This is suitable for the GRMHD part but does not cover the curvature
 		//        part (CCZ4). It is ignored here anyway.
 
-		rnsid_2d_cartesian2cylindrical_(V_Cartesian, V_Cylindrical, pos_cartesian);
+		rnsid_2d_cartesian2cylindrical_(V_Cylindrical, V_Cartesian, pos_cylindrical);
 	} else {
 		id->Interpolate(pos, V);
 	}
