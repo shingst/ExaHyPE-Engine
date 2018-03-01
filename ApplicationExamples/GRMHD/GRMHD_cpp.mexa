@@ -20,12 +20,11 @@ ExaHyPE::output_directory = project::directory
 ExaHyPE::architecture = "noarch"
 ExaHyPE::log_file = "whatever.log"
 
-# Meta registration of a single global solver.
+ExaHyPE::solvers += Solver
 
 Solver::plotters = Plotters
 Solver::constants = Simulation
 
-### ExaHyPE::solvers += Solver # not here.
 
 ExaHyPE::computational_domain = Simulation/grid
 ExaHyPE::computational_domain::end_time = Simulation/end_time

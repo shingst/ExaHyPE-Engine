@@ -86,13 +86,6 @@ exahype-project GRMHD
       repeat    = 0.00590278
       output    = ./vtk-output/conserved
     end plot
-
-    plot vtk::Cartesian::cells::ascii IntegralsWriter
-      variables const = 0
-      time = 1000.0
-      repeat = 0.000001
-      output = ./output/global-integrals
-    end plot
     
     plot vtk::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 23
@@ -100,7 +93,7 @@ exahype-project GRMHD
       repeat    = 0.000666667
       output    = ./vtk-output/primitive
     end plot
-
+    
     plot vtk::Cartesian::cells::ascii IntegralsWriter
       variables const = 0
       time = 1000.0
