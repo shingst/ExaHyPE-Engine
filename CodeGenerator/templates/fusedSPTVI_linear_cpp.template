@@ -154,6 +154,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if nDim == 3 %}
       F[2] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}];
 {% endif %}
+#ifdef USE_IPO
+      #pragma forceinline recursive
+#endif
       solver.{{solverName}}::flux(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
     }
 
@@ -283,6 +286,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if nDim==3 %}
       std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
 {% endif %}
+#ifdef USE_IPO
+      #pragma forceinline recursive
+#endif
       solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, tmpArray, tmpArray+{{ncpOutputShift}});
       for(int d = 0; d < {{nDim}}; d++) {
         #pragma simd
@@ -303,6 +309,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if nDim == 3 %}
       std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
 {% endif %}
+#ifdef USE_IPO
+      #pragma forceinline recursive
+#endif
       solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, tmpArray);
       std::copy_n(tmpArray, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}); //x
       std::copy_n(tmpArray+{{1*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}); //y
@@ -314,6 +323,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
 {% if useSource %}
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+#ifdef USE_IPO
+      #pragma forceinline recursive
+#endif
       solver.{{solverName}}::algebraicSource(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, lSi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
     }
 {% endif %} {# useSource #}
