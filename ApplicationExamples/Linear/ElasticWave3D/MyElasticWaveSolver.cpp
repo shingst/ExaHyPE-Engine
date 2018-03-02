@@ -108,7 +108,7 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   
   double left_vertex[3];
   double right_vertex[3];
-  
+
   for(int i = 0 ; i<DIMENSIONS; i++){
     left_vertex[i]  = center[i] - dx[i]*0.5;
     right_vertex[i] = center[i] + dx[i]*0.5;
@@ -118,25 +118,31 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   for(int i = 0 ; i<DIMENSIONS; i++){
     pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
   }
-  
-  
+ if (tarch::la::equals(t,0.0)) {
   if(pointSourceInElement){
-    // @todo Please implement/augment if required
+    std::cout << "refine ps" << std::endl;
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
-  
-  kernels::idx4 id((Order+1),(Order+1),(Order+1),(NumberOfParameters+NumberOfVariables));
-  double max_velocity=0;
-  for(int k = 0 ; k<(Order+1); k++){
-    for(int j = 0 ; j<(Order+1); j++){
-      for(int i = 0 ; i<(Order+1); i++){
+ }else{
+   if(pointSourceInElement){
+     std::cout << "keep ps " << std::endl;
+     return exahype::solvers::Solver::RefinementControl::Keep;
+   }
+ }
 
-	double u=luh[id(k,j,i,0)];
-	double v=luh[id(k,j,i,1)];
-	double w=luh[id(k,j,i,2)];
-	max_velocity=std::max(max_velocity,sqrt(u*u+v*v+w*w));
-      }}}
-      
+ kernels::idx4 id((Order+1),(Order+1),(Order+1),(NumberOfParameters+NumberOfVariables));
+ double max_velocity=0;
+ for(int k = 0 ; k<(Order+1); k++){
+   for(int j = 0 ; j<(Order+1); j++){
+     for(int i = 0 ; i<(Order+1); i++){
+       double u=luh[id(k,j,i,0)];
+       double v=luh[id(k,j,i,1)];
+       double w=luh[id(k,j,i,2)];
+       max_velocity=std::max(max_velocity,sqrt(u*u+v*v+w*w));
+     }
+   }
+ }
+ 
   //  std::cout<< max_velocity      << std::endl;
   bool wave=max_velocity > 1.0e-8*(getMaxLevel()-level+1);
   if(wave){
@@ -145,13 +151,10 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   }
   if (level > getCoarsestMeshLevel()){
     std::cout << "erase" << std::endl;
-    std::cout << center[0] << std::endl;
-    std::cout << center[1] << std::endl;
-    std::cout << center[2] << std::endl;    
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
-  //  std::cout << "keep" << std::endl;
+  //std::cout << "keep" << std::endl;
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 

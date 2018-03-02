@@ -181,10 +181,30 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
 {%- endif %}
 
 {%- if usePointSources %}
+
     /**
-     * Compute a pointSource contribution.
+     * Initialise the locations of point sources
+     * Point source n will be located at pointSourceLocation[n][:]
+     *
+     * \param[in] cmdlineargs the command line arguments.
+     * \param[in] constants   access to the constants specified for the solver.
+     */
+    void initPointSourceLocations(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants);
+
+
+    /**
+     * Compute the contribution of a point source.
+     *
+     * This function should return the force vector of a point source n
+     * located at pointSourceLocation[n][:] as defined in initPointSourceLocations()
      * 
-     * @TODO: Document me, please.
+     *
+     * \param[in]  Q the vector of unknowns at the given position
+     * \param[in]  x a position //LR TODO: Is x really needed ?
+     * \param[in]  t point in time 
+     * \param[in]  dt the current time step size//LR TODO: Is dt really needed ?
+     * \param[out] forceVector the force vector of the point source
+     * 
     **/
      void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
 {%- else -%}
