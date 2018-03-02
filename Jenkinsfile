@@ -2,6 +2,11 @@
 import hudson.FilePath;
 import jenkins.model.Jenkins
 
+class Config implements Serializable {
+    String exahypeFile
+    String name
+}
+
 def slurmBatch(code) {
 sh '''#!/usr/bin/env bash
 set -euo pipefail
@@ -80,10 +85,77 @@ fi
 }
 
 
-def build(path, name, workspace) {
+def build(config, workspace) {
     node ('mac-intel') {
-	ws("${env.JOB_NAME}-${name}-build") {
+	ws("${env.JOB_NAME}-${config.name}-build") {
+	    deleteDir()
+	    def directory=sh(returnStdout: true,
+			     script: "dirname ${config.exahypeFile}"
+	    ).trim()
+	    echo "Directory is $directory"
 slurmBatch '''
+set -x
+IFS=$'\n\t'
+pwd
+
+module load git subversion java/1.8 scons >/dev/null 2>&1
+module unload pythonLib intel >/dev/null 2>&1
+module load intel/17.0 >/dev/null 2>&1
+module unload mpi.intel >/dev/null 2>&1
+module load mpi.intel/2017 >/dev/null 2>&1
+module unload gcc >/dev/null 2>&1
+module load gcc/7 >/dev/null 2>&1
+module unload tbb >/dev/null 2>&1
+module load tbb/2017 cmake binutils >/dev/null 2>&1
+module switch python/3.5_intel >/dev/null 2>&1
+module list
+
+# Fix linker flags
+export COMPILER_LFLAGS='-pthread'
+export PROJECT_LFLAGS="-lrt" 
+
+set -euo pipefail
+''' + """
+cp -r ${workspace}/. .
+path=${config.exahypeFile}
+""" + '''
+ls
+
+# Build toolkit
+Peano/checkout-update-peano.sh
+Toolkit/build.sh
+
+# Build example
+echo "Building $path"
+dir="$(readlink -f $(dirname ${path}))"
+
+java -jar Toolkit/dist/ExaHyPE.jar --not-interactive ${path}
+cd $dir
+make -j 32
+'''
+	    // Stash files for later reuse
+	    // This is needed because the run step could run on another node!
+	    stash includes: "${directory}/**", name: "exahype-${config.name}"
+	    deleteDir()}
+    }
+
+}
+
+def assembleBuildMatrix(combinations, workspace) {
+    def buildMatrix = combinations.collectEntries {
+	["${it.name}" : {
+	    -> build(it, "${workspace}")
+	}]
+    }
+    return buildMatrix
+}
+
+def run(config, workspace) {
+    node ('mac-intel') {
+	ws("${env.JOB_NAME}-${config.name}-run") {
+	    unstash "exahype-${config.name}"
+	    slurmBatch """
+""" + '''
 set -x
 IFS=$'\n\t'
 pwd
@@ -99,42 +171,31 @@ module load tbb/2017 cmake binutils >/dev/null 2>&1
 module switch python/3.5_intel >/dev/null 2>&1
 
 set -euo pipefail
-''' + """
-cp -r ${workspace}/* .
-path=${path}
-""" + '''
+
 ls
+file="$(find . -name '*\\.exahype')"
+echo "File is called ${file}."
+project_name="$(grep -o "exahype-project .*" "${file}" | sed "s/exahype-project\\s*//g")"
+echo "Project is called ${project_name}"
 
-# Fix linker flags
-export PROJECT_LFLAGS="-lrt" 
+directory="$(dirname "${file}")"
+cd "${directory}"
 
-# Build toolkit
-Peano/checkout-update-peano.sh
-Toolkit/build.sh
-
-# Build example
-echo "Building $path"
-dir="$(readlink -f $(dirname ${path}))"
-
-java -jar Toolkit/dist/ExaHyPE.jar --not-interactive ${path}
-cd $dir
-make -j 32
+ls
+eval "./ExaHyPE-${project_name} *.exahype"
 '''
-	    deleteDir()
-	}
+	    deleteDir()}
     }
-
 }
 
-def assembleBuildMatrix(combinations, workspace) {
-    def buildMatrix = combinations.collectEntries {
-	["${it[0]}" : {
-	    -> build(it[1], it[0], "${workspace}")
+def assembleRunMatrix(combinations, workspace) {
+    def runMatrix = combinations.collectEntries {
+	["${it.name}" : {
+	    -> run(it, "${workspace}")
 	}]
     }
-    return buildMatrix
+    return runMatrix
 }
-
 
 pipeline {
     agent { label 'mac-intel' }
@@ -148,6 +209,8 @@ pipeline {
 		checkout scm
 		sh 'ls'
 		sh 'pwd'
+		sh '/lrz/sys/tools/git/latest/bin/git rev-parse --short HEAD'
+
 		// script {
 		// config = load "scripts/Jenkins/Config.groovy"
 		// ...
@@ -165,13 +228,23 @@ pipeline {
 		    files.each { d -> echo d.getPath() }
 		    testCases = []
 		    for (file in files) {
-			testCases << [file.getName(), file.getPath()]
+			testCases << new Config(exahypeFile: file.path,
+						name: file.name)
 		    }
 		    def buildMatrix = assembleBuildMatrix(testCases, "${workspace}")
 		    parallel buildMatrix
 		}
 	    }
 	}
+	stage ('Run') {
+	    steps {
+		script {
+		    def runMatrix = assembleRunMatrix(testCases, "${workspace}")
+		    parallel runMatrix
+		}
+	    }
+	}
+
     }
 
 	post {
