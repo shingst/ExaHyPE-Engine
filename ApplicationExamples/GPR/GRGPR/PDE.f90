@@ -1,6 +1,7 @@
 ! GRMHD PDE.f90
 ! Trento (EQNTYPE4)
 
+
 RECURSIVE SUBROUTINE PDEFlux(f,g,hz,Q)
   USE Parameters, ONLY: nVar, nDim, cs, gamma
   USE GRGPRmod
@@ -787,6 +788,48 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
 	  
 END SUBROUTINE PDESource
 
+RECURSIVE SUBROUTINE PDEAuxName(MyNameOUT,ind) 
+  USE Parameters, ONLY: nVar  
+  IMPLICIT NONE     
+  CHARACTER(LEN=10):: MyName(nVar),MyNameOUT
+  INTEGER			:: ind
+
+  ! EQNTYPE93
+  MyName(1) = 'rho' 
+  MyName(2) = 'u' 
+  MyName(3) = 'v'
+  MyName(4) = 'w'
+  MyName(5) = 'p' 
+  MyName(6)  = 'A11' 
+  MyName(7)  = 'A12' 
+  MyName(8)  = 'A13' 
+  MyName(9)  = 'A21' 
+  MyName(10) = 'A22' 
+  MyName(11) = 'A23' 
+  MyName(12) = 'A31' 
+  MyName(13) = 'A32' 
+  MyName(14) = 'A33' 
+  ! 
+  MyName(15) = 'lapse' 
+  MyName(16) = 'Shift^1' 
+  MyName(17) = 'Shift^2' 
+  MyName(18) = 'Shift^3' 
+  MyName(19) = 'Gamma_11' 
+  MyName(20) = 'Gamma_12' 
+  MyName(21) = 'Gamma_13' 
+  MyName(22) = 'Gamma_22' 
+  MyName(23) = 'Gamma_23' 
+  MyName(24) = 'Gamma_33' 
+  MyName(25) = 'k_11' 
+  MyName(26) = 'k_12' 
+  MyName(27) = 'k_13' 
+  MyName(28) = 'k_22' 
+  MyName(29) = 'k_23' 
+  MyName(30) = 'k_33' 
+	
+	MyNameOUT=MyName(ind+1)
+    END SUBROUTINE PDEAuxName
+
 RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind) 
   USE Parameters, ONLY: nVar  
   IMPLICIT NONE     
@@ -1153,4 +1196,16 @@ RECURSIVE SUBROUTINE getExactSolution(V,pos, timeStamp)
   V=1
 END SUBROUTINE getExactSolution
 
-
+RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh) 
+  USE Parameters, ONLY: nVar , nDim  
+  IMPLICIT NONE  
+	Integer, intent(out) :: refine_flag
+	real, intent(in) :: max_luh(nVar),min_luh(nVar)
+  if(abs(max_luh(4)-min_luh(4))>1.e-4) then
+	refine_flag=2
+	!print *, 'refine->',max_luh(1:5),min_luh(1:5)
+	else
+	!print *, 'not refine->',max_luh(1:5),min_luh(1:5)
+	refine_flag=0
+  end if
+END SUBROUTINE pderefinecriteria
