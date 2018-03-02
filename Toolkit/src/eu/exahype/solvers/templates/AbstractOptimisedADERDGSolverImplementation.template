@@ -125,12 +125,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- endif %}  
 
 {%- if usePointSources %}
-  std::vector<int>* pointSources = {{optNamespace}}::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
+  std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),center,dx);
    
   if(pointSources != nullptr) {
 {%- if  isLinear %}
   // perform pointsource
-    {{optNamespace}}::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
+    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
     
 {%- else %}
     delete pointSources;

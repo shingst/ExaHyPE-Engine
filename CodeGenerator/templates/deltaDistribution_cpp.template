@@ -12,6 +12,7 @@
  **/ #}
 
 #include <cstring>
+#include <vector>
  
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
@@ -47,18 +48,66 @@ std::vector<int>* {{codeNamespace}}::getPointSources(
 
 void {{codeNamespace}}::deltaDistribution(
     {{solverName}}& solver,
-    const double* const luh,
+    const double* const restrict luh,
     const double t,
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     std::vector<int>* pointSources, // will be deleted in the end
-    double* PSi
+    double* restrict PSi
 ){
-  printf("WARNING: PointSources are currently disabled");
+#ifdef __INTEL_COMPILER
+  __assume_aligned(luh, ALIGNMENT);
+  __assume_aligned(PSi, ALIGNMENT);
+#endif
+
+  std::memset(PSi, 0, {{(nDof+1)*(nDof**nDim)*nVarPad}}*sizeof(double));
+
+  double tn;
+  double x1[{{nDim}}];
+  double forceVectorSource[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+  std::memset(forceVectorSource, 0, {{nVarPad}}*sizeof(double));
+  
+  //loop over all quadrature points
+  for (int t_it = 0; t_it < {{nDof+1}}; t_it++) { // time loop
+    t_it == 0 ? tn = t : tn = dt * nodes[t_it-1] + t; //First Point in time is current time, then use GL nodes in time
+    for (int z = 0; z < {{nDof3D}}; z++) {   //z loop
+{% if nDim == 3 %}
+      x1[2] = center[2]+dx[2] * (nodes[z] - 0.5); //transform onto element
+{% endif %}
+      for (int y = 0; y < {{nDof}}; y++) {  //y loop
+        x1[1] = center[1] + dx[1] * (nodes[y] - 0.5); //transform onto element
+        for (int x = 0; x < {{nDof}}; x++) {  //x loop
+          x1[0] = center[0] + dx[0] * (nodes[x] - 0.5); //transform onto element
+          //loop over all point sources  
+          for (int p : *pointSources) {
+            // get the source vector located at quadrature node x at time tn
+#ifdef USE_IPO
+            #pragma forceinline recursive
+#endif
+            solver.{{solverName}}::pointSource(luh + ((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nData}}, x1, tn, dt, forceVectorSource, p);
+            
+            // Map point source location onto reference element
+            const double* const x_ps = solver.pointSourceLocation[p];
+            const double update =   kernels::basisFunctions[{{nDof-1}}][x]((x_ps[0] - center[0]) / dx[0] + 0.5)
+                                  * kernels::basisFunctions[{{nDof-1}}][y]((x_ps[1] - center[1]) / dx[1] + 0.5)
+{% if nDim == 3 %}
+                                  * kernels::basisFunctions[{{nDof-1}}][z]((x_ps[2] - center[2]) / dx[2] + 0.5)
+{% endif %} 
+                                  / ( weights3[(z+{{nDof3D}}+y)*{{nDof}}+x] * dx[0] * dx[1] {%if nDim == 3%} * dx[2] {% endif %} );
+
+            #pragma simd
+            for (int n = 0; n < {{nVarPad}}; n++) { //evaluate
+              PSi[(((t_it*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] += update * forceVectorSource[n];
+            } // u
+          }//point sources
+        }// x loop
+      }// y loop
+    }// z loop
+  }// time loop
   delete pointSources;
 }
-	
+
 
 //TODO JMG : Broken, fix when generic done
 /*
