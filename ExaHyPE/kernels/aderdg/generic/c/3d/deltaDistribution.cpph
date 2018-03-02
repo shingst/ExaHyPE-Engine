@@ -99,7 +99,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
   double forceVectorSource[numberOfVariables];
   //loop over all quadrature points
   for (int n = 0; n < basisSize+1; n++) { // time loop
-    n == 0 ? tn = t : tn = dt * gaussLegendreNodes[order][n-1] + t; //First Point in time is current time, then use GL nodes in time
+    n == 0 ? tn = t : tn = dt * quad_nodes[index_nodes(n-1)] + t; //First Point in time is current time, then use GL nodes in time
     for (int i = 0; i < basisSize; i++) {   //z loop
       quad_node_on_element[2] = center[2]+dx[2] * (quad_nodes[index_nodes(i)] - 0.5); //transform onto element
       for (int j = 0; j < basisSize; j++) {  //y loop
