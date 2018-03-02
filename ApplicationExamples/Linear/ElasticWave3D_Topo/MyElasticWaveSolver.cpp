@@ -1,257 +1,59 @@
 #include "MyElasticWaveSolver.h"
-
 #include "MyElasticWaveSolver_Variables.h"
 
-#include "CurvilinearTransformation.h"
+#include "../../../ExaHyPE/kernels/KernelUtils.h"
 
 tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveSolver" );
 
 void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
+  initPointSourceLocations();
+
+  double fault_position=3.0/9.0 * _domainSize[0];
+  transformation = new CurvilinearTransformation(MyElasticWaveSolver::Order+1,
+						 _coarsestMeshLevel, fault_position,
+						 &_domainOffset[0],
+						 &_domainSize[0]);
 }
+
 
 void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 9 + 16
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-    
     constexpr int basisSize = MyElasticWaveSolver::Order+1;
     int numberOfData=MyElasticWaveSolver::NumberOfParameters+MyElasticWaveSolver::NumberOfVariables;
 
     kernels::idx4 id_xyzf(basisSize,basisSize,basisSize,numberOfData);
     kernels::idx3 id_xyz(basisSize,basisSize,basisSize);
 
-    int num_nodes = basisSize;
+    constexpr int num_nodes=MyElasticWaveSolver::Order+1;
 
-    double offset_x=center[0]-0.5*dx[0];
-    double offset_y=center[1]-0.5*dx[1];
-    double offset_z=center[2]-0.5*dx[2];  
+    double gl_vals_x[num_nodes*num_nodes*num_nodes];
+    double gl_vals_y[num_nodes*num_nodes*num_nodes];
+    double gl_vals_z[num_nodes*num_nodes*num_nodes];
 
-    double width_x=dx[0];
-    double width_y=dx[1];
-    double width_z=dx[2];
-
-
-    //Number of elements on the unit square
-    int ne_x = std::round(1/dx[0]);
-    int ne_y = std::round(1/dx[1]);
-    int ne_z = std::round(1/dx[2]);			    
-
-    //Number of nodes on the unit square
-    int nx = ne_x *(num_nodes-1) + 1;
-    int ny = ne_y *(num_nodes-1) + 1;
-    int nz = ne_z *(num_nodes-1) + 1;
-
-    //first local node indeces in global domain
-    int i_m;
-    int j_m;
-    int k_m;
-
-    // Coordiantes of the undeformed domain (cuboidal)
-    double a_x = 0;
-    double a_y = 0;
-    double a_z = 0;
+    double jacobian[num_nodes*num_nodes*num_nodes];
+    double q_x[num_nodes*num_nodes*num_nodes];
+    double q_y[num_nodes*num_nodes*num_nodes];
+    double q_z[num_nodes*num_nodes*num_nodes];
   
-    double b_x = 10.0;
-    double b_y = 10.0;
-    double b_z = 10.0;
-    
-    // Position of interface in x  
-    double fault_position = 5.0;
+    double r_x[num_nodes*num_nodes*num_nodes];
+    double r_y[num_nodes*num_nodes*num_nodes];
+    double r_z[num_nodes*num_nodes*num_nodes];
 
-    // Width of the current block    
-    double blockWidth_x;
-    double blockWidth_y = b_y-a_y; //equal to width of the rectangle
-    double blockWidth_z = b_z-a_z; //equal to width of the rectangle
+    double s_x[num_nodes*num_nodes*num_nodes];
+    double s_y[num_nodes*num_nodes*num_nodes];
+    double s_z[num_nodes*num_nodes*num_nodes];  
 
-
-    double recWidth_x = b_x-a_x; //width in x of the rectangle
-
-    //relative position of the fault on the unit square
-    double fault_ref = (fault_position-a_x)/(recWidth_x);
-    
-    // number of the current block
-    int n = center[0] > fault_ref ? 1 : 0 ;
-  
-    if(n == 0){
-      blockWidth_x=(fault_position-a_x);
-      ne_x = std::round((ne_x+1)*fault_ref);
-      nx =  ne_x *(num_nodes-1)+1;
-      
-      i_m =  std::round((offset_x)/width_x) *(num_nodes-1);
-      j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
-      k_m =  std::round((offset_z)/width_z) *(num_nodes-1);
-    }else{
-      double ne_x0 = std::round((ne_x+1)*fault_ref);
-      ne_x = std::round(1/dx[0])-ne_x0;
-      nx =  ne_x *(num_nodes-1)+1;
-      blockWidth_x= (b_x-fault_position);
-
-      i_m =  std::floor((offset_x-fault_ref)/width_x) *(num_nodes-1);
-      j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
-      k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
-    }
-
-    double* left_bnd_x = new double[ny*nz];
-    double* left_bnd_y = new double[ny*nz];
-    double* left_bnd_z = new double[ny*nz];  
-    double* right_bnd_x = new double[ny*nz];
-    double* right_bnd_y = new double[ny*nz];
-    double* right_bnd_z = new double[ny*nz];  
-    double* bottom_bnd_x = new double[nx*nz];
-    double* bottom_bnd_y = new double[nx*nz];
-    double* bottom_bnd_z = new double[nx*nz];  
-    double* top_bnd_x = new double[nx*nz];
-    double* top_bnd_y = new double[nx*nz];
-    double* top_bnd_z = new double[nx*nz];  
-    double* front_bnd_x = new double[nx*ny];
-    double* front_bnd_y = new double[nx*ny];
-    double* front_bnd_z = new double[nx*ny];  
-    double* back_bnd_x = new double[nx*ny];
-    double* back_bnd_y = new double[nx*ny];
-    double* back_bnd_z = new double[nx*ny];  
-  
-    // getBoundaryCurves3D( num_nodes,
-    // 		       offset_x,  offset_y,  offset_z,
-    // 		       width_x,  width_y ,  width_z ,
-    // 		       left_bnd_x,  left_bnd_y,  left_bnd_z,
-    // 		       right_bnd_x,  right_bnd_y,  right_bnd_z,
-    // 		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-    // 		       top_bnd_x,  top_bnd_y,  top_bnd_z,
-    // 		       front_bnd_x,  front_bnd_y,  front_bnd_z,
-    // 		       back_bnd_x,  back_bnd_y,  back_bnd_z);
-  
-    // getBoundaryCurves3D_fixedTopFace_forBlock( num_nodes,
-    // 					     nx,ny,nz,n	,	     
-    // 					     block_width_x,  block_width_y ,  block_width_z ,
-    // 					     left_bnd_x,  left_bnd_y,  left_bnd_z,
-    // 					     right_bnd_x,  right_bnd_y,  right_bnd_z,
-    // 					     bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-    // 					     top_bnd_x,  top_bnd_y,  top_bnd_z,
-    // 					     front_bnd_x,  front_bnd_y,  front_bnd_z,
-    // 					     back_bnd_x,  back_bnd_y,  back_bnd_z);
-
-    getBoundaryCurves3D_cutOffTopography_withFault( num_nodes,
-						    nx,ny,nz,n,fault_position,
-						    a_x, a_y, a_z,
-						    b_x, b_y, b_z,
-						    blockWidth_x,  blockWidth_y,  blockWidth_z,
-						    left_bnd_x,  left_bnd_y,  left_bnd_z,
-						    right_bnd_x,  right_bnd_y,  right_bnd_z,
-						    bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-						    top_bnd_x,  top_bnd_y,  top_bnd_z,
-						    front_bnd_x,  front_bnd_y,  front_bnd_z,
-						    back_bnd_x,  back_bnd_y,  back_bnd_z);
-
-   
-    kernels::idx2 id_xy(ny,nx); // back front
-    kernels::idx2 id_xz(nz,nx); // botton top
-    kernels::idx2 id_yz(nz,ny); //left right
-
-
-    double* curvilinear_x = new double[num_nodes*num_nodes*num_nodes];
-    double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
-    double* curvilinear_z = new double[num_nodes*num_nodes*num_nodes];  
-
- 	
-    int i_p = i_m + num_nodes;
-    int j_p = j_m + num_nodes;
-    int k_p = k_m + num_nodes;   
-
-  
-    transFiniteInterpolation3D( nx,  ny,  nz,
-				k_m,  k_p ,
-				j_m,  j_p ,
-				i_m,  i_p ,
-				num_nodes,
-				width_x,width_y,width_z,
-				left_bnd_x,
-				right_bnd_x,
-				bottom_bnd_x,
-				top_bnd_x,
-				front_bnd_x,
-				back_bnd_x,
-				curvilinear_x
-				);
-
-    transFiniteInterpolation3D( nx,  ny,  nz,
-				k_m,  k_p ,
-				j_m,  j_p ,
-				i_m,  i_p ,
-				num_nodes,
-				width_x,width_y,width_z,
-				left_bnd_y,
-				right_bnd_y,
-				bottom_bnd_y,
-				top_bnd_y,
-				front_bnd_y,
-				back_bnd_y,
-				curvilinear_y
-				);
-
-  
-    transFiniteInterpolation3D( nx,  ny,  nz,
-				k_m,  k_p ,
-				j_m,  j_p ,
-				i_m,  i_p ,
-				num_nodes,
-				width_x,width_y,width_z,			      
-				left_bnd_z,
-				right_bnd_z,
-				bottom_bnd_z,
-				top_bnd_z,
-				front_bnd_z,
-				back_bnd_z,
-				curvilinear_z
-				);
-    delete left_bnd_x;
-    delete left_bnd_y;
-    delete left_bnd_z;
-    delete right_bnd_x;
-    delete right_bnd_y;
-    delete right_bnd_z;
-    delete bottom_bnd_x;
-    delete bottom_bnd_y;
-    delete bottom_bnd_z;
-    delete top_bnd_x;
-    delete top_bnd_y;
-    delete top_bnd_z;
-    delete front_bnd_x;
-    delete front_bnd_y;
-    delete front_bnd_z;
-    delete back_bnd_x;
-    delete back_bnd_y;
-    delete back_bnd_z;
-  
-    double* gl_vals_x = new double[num_nodes*num_nodes*num_nodes];
-    double* gl_vals_y = new double[num_nodes*num_nodes*num_nodes];
-    double* gl_vals_z = new double[num_nodes*num_nodes*num_nodes];
-
-    double* jacobian = new double[num_nodes*num_nodes*num_nodes];
-    
-    double* q_x = new double[num_nodes*num_nodes*num_nodes];
-    double* q_y = new double[num_nodes*num_nodes*num_nodes];
-    double* q_z = new double[num_nodes*num_nodes*num_nodes];
-  
-    double* r_x = new double[num_nodes*num_nodes*num_nodes];
-    double* r_y = new double[num_nodes*num_nodes*num_nodes];
-    double* r_z = new double[num_nodes*num_nodes*num_nodes];
-
-    double* s_x = new double[num_nodes*num_nodes*num_nodes];
-    double* s_y = new double[num_nodes*num_nodes*num_nodes];
-    double* s_z = new double[num_nodes*num_nodes*num_nodes];  
-  
-    metricDerivativesAndJacobian3D(num_nodes,
-				   curvilinear_x,  curvilinear_y,  curvilinear_z,
-				   gl_vals_x,  gl_vals_y,  gl_vals_z,
-				   q_x,  q_y,  q_z,
-				   r_x,  r_y,  r_z,
-				   s_x,  s_y,  s_z,				  
+    transformation->genCoordinates(center,
+				   dx,    
+				   gl_vals_x,gl_vals_y,gl_vals_z,
 				   jacobian,
-				   width_x,  width_y,  width_z
-				   );
-
+				   q_x,q_y,q_z,
+				   r_x,r_y,r_z,
+				   s_x,s_y,s_z);
 
     for (int k=0; k< num_nodes; k++){
       for (int j=0; j< num_nodes; j++){
@@ -303,23 +105,9 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,22)] = gl_vals_x[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,23)] = gl_vals_y[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,24)] = gl_vals_z[id_xyz(k,j,i)];
-
 	}
       }
     }
-    delete gl_vals_x;
-    delete gl_vals_y;
-    delete gl_vals_z;
-    delete jacobian;
-    delete q_x;
-    delete q_y;
-    delete q_z;
-    delete r_x;
-    delete r_y;
-    delete r_z;
-    delete s_x;
-    delete s_y;
-    delete s_z;
   }
 }
 
@@ -501,44 +289,81 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
   BgradQ[26]=-(s_z*v_s+s_y*w_s); //sigma_yz    
 }
 
-void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void  Elastic::MyElasticWaveSolver::initPointSourceLocations() {
+  constexpr double a_x = 0.0;
+  constexpr double a_y = 0.0;
+  constexpr double a_z = 0.0;
+  
+  constexpr double b_x = 10.0;
+  constexpr double b_y = 10.0;
+  constexpr double b_z = 10.0;
+
+  constexpr double blockWidth_y = (b_y-a_y);
+  constexpr double blockWidth_x = (b_x-a_x);
+  constexpr double blockWidth_z = (b_z-a_z);
+
+  double x1,y1,z1;
+  double fault_ref_x,fault_ref_y,fault_ref_z;
+    
+  x1 = 5.0;
+  y1 = 5.0;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[0][0]=fault_ref_x;
+  pointSourceLocation[0][1]=fault_ref_y;
+  pointSourceLocation[0][2]=fault_ref_z;
+
+  x1 = 7.5;
+  y1 = 5.0;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+    
+  pointSourceLocation[1][0] = fault_ref_x;
+  pointSourceLocation[1][1] = fault_ref_y;
+  pointSourceLocation[1][2] = fault_ref_z;
+
+  x1 = 5.0;
+  y1 = 2.5;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+
+  pointSourceLocation[2][0] = fault_ref_x;
+  pointSourceLocation[2][1] = fault_ref_y;
+  pointSourceLocation[2][2] = fault_ref_z;
+
+  x1 = 5.0;
+  y1 = 7.5;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[3][0] = fault_ref_x;
+  pointSourceLocation[3][1] = fault_ref_y;
+  pointSourceLocation[3][2] = fault_ref_z;
+}
+
+
+void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
 
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
   double pi = 3.14159265359;
   double sigma = 0.1149;
   double t0 = 0.7;
-  //double t0 = 0.1;
   double f = 0.0;
   double M0 = 1000.0;
-
-  double a_x = 0.0;
-  double a_y = 0.0;
-  double a_z = 0.0;
-  
-  double b_x = 10.0;
-  double b_y = 10.0;
-  double b_z = 10.0;
- 
-  double blockWidth_y = (b_y-a_y);
-  double blockWidth_x = (b_x-a_x);
-  double blockWidth_z = (b_z-a_z);
 
   if(n == 0){
     
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
-    double x1 = 5.0;
-    double y1 = 5.0;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
@@ -548,24 +373,10 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
     forceVector[6] = 0.0;
     forceVector[7] = 0.0;
     forceVector[8] = 0.0;
-    
-
-    
+  
   }else if(n == 1){
     
     f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 7.5;
-    double y1 = 5.0;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
 
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
@@ -580,19 +391,7 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
   }else if(n == 2){
     
     f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 5.0;
-    double y1 = 2.5;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
+  
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
@@ -605,18 +404,6 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
   }else if(n == 3){
     
     f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 5.0;
-    double y1 = 7.5;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
 
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;

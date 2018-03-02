@@ -17,13 +17,8 @@ tarch::logging::Log {{project}}::{{solver}}::_log( "{{project}}::{{solver}}" );
 void {{project}}::{{solver}}::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 
-{%- if usePointSources %}  
-  {%- for i in range_0_numberOfPointSources %}
-    {%- for d in range_0_nDim %}
-  pointSourceLocation[{{i}}][{{d}}]=0.0;
-    {%- endfor %}
-    
-  {%- endfor %}
+{%- if usePointSources %}
+  initPointSourceLocations(cmdlineargs,constants);	
 {%- endif %}    
 }
 
@@ -124,6 +119,18 @@ void  {{project}}::{{solver}}::nonConservativeProduct(const double* const Q,cons
 {%- endif %}
 
 {%- if usePointSources %}
+
+void  {{project}}::{{solver}}::initPointSourceLocations(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants){
+  // @todo Please implement/augment if required
+
+{%- for i in range_0_numberOfPointSources %}
+{%- for d in range_0_nDim %}
+  pointSourceLocation[{{i}}][{{d}}]=0.0;
+{%- endfor %}
+    
+{%- endfor %}
+}
+
 void  {{project}}::{{solver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, int n) {
   // @todo Please implement/augment if required
 }

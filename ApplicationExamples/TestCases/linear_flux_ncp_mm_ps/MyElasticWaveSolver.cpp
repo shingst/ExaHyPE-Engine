@@ -237,7 +237,7 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
 void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, int n) {
   constexpr double pi = 3.14159265359;
   constexpr double sigma = 0.1149;
-  constexpr double t0 = 0.1;
+  constexpr double t0 = 0.7;
   double f = 0.0;
   constexpr  double M0 = 1000.0;
 
