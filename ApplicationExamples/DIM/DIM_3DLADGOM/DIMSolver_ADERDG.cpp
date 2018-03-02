@@ -27,7 +27,9 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
     initialdata_(x, &t, Q);
+	//Q[14]=0.0;
   }
+  //Q[14]=0.0;
 }
 
 void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
@@ -108,10 +110,11 @@ void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
 void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
     double* observables,const int numberOfObservables,
     const double* const Q) const {
-  assertion(numberOfObservables==1);
+  assertion(numberOfObservables==2);
   ReadOnlyVariables vars(Q);
 
   observables[0]=Q[12]; //extract alpha
+  //observables[1]=Q[14];
 }
 
 bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
@@ -140,12 +143,23 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
  // return true;
   // Slow bug has to works
   //pdelimitervalue_(&limvalue,xx);
+  //if (tarch::la::equals(t,0.0)) {
   pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{
 	  return true;
   };
+  /*}else{
+	if(!tarch::la::equals(observablesMax[1],observablesMin[1])){
+		std::cout << "different max an min limiter values " << observablesMax[1] << " " <<observablesMin[1] << std::endl;
+	}
+	if (tarch::la::equals(observablesMax[1],0.0)) {  
+		  return true;
+	}else{ 
+		return false;
+	}
+  }*/
 }
 
 void  DIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {

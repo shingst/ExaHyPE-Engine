@@ -27,7 +27,9 @@ void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,cons
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
   initialdata_(x, &t, Q);
+  //Q[14]=1.0;
   }
+  //Q[14]=1.0;
 }
 /*
 void DIM::DIMSolver_FV::algebraicSource(const double* const Q,double* S) {
