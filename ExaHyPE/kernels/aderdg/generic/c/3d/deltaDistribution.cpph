@@ -136,6 +136,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
       }// y loop
     }// z loop
   }// time loop
+  delete pointSources;
 }
 
 #endif  // DIMENSIONS == 3

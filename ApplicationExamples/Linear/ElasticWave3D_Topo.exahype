@@ -40,7 +40,6 @@ exahype-project  Elastic
     properties-file          = sharedmemory.properties
   end shared-memory
  
-
 //   distributed-memory
 //     identifier               = static_load_balancing
 //     configure                = {greedy-naive,FCFS}
@@ -66,7 +65,7 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1,jacobian:1,metric_derivative:9,curve_grid:3
     order const        = 4
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 0.15
+    maximum-mesh-size  = 0.045
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre

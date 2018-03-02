@@ -18,6 +18,8 @@
 #include "tarch/logging/Log.h"
 #include "tarch/la/Vector.h"
 
+#include "CurvilinearTransformation.h"
+
 namespace Elastic{
   class MyElasticWaveSolver;
 }
@@ -28,6 +30,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * Log device
      */
     static tarch::logging::Log _log;
+    CurvilinearTransformation* transformation;
   public:
     MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
 
@@ -132,7 +135,8 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * 
      * @TODO: Document me, please.
     **/
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+    void initPointSourceLocations();
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
 
     /**
      * @TODO LR : document
