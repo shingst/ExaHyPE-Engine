@@ -2,7 +2,7 @@
 #
 # Generate the combinations from the GRMHD_cpp_Shocktubes.mexa file.
 
-MEXA="exa gmexa"
+MEXA="exa mexa"
 infile="GRMHD_cpp_Shocktubes.mexa"
 
 mkdir -p Specfiles

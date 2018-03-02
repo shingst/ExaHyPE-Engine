@@ -21,6 +21,10 @@
 
 #include <math.h>
 
+#include "peano/utils/Loop.h"
+
+#include "kernels/KernelUtils.h"
+
 #include "kernels/GaussLegendreQuadrature.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
@@ -143,8 +147,9 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
 }
 
 void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, double* Q) {
-  const double gamma     = 1.4;
-  constexpr double width = 0.3;
+  const double gamma         = 1.4;
+  constexpr double width     = 0.3;
+  constexpr double amplitude = 0.3;
 
   #if DIMENSIONS==2
   tarch::la::Vector<DIMENSIONS,double> xVec(x[0],x[1]);
@@ -157,7 +162,7 @@ void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, doub
   #endif
   const double distance  = tarch::la::norm2( xVec - x0 - v0 * t );
 
-  Q[0] = 0.5 + 0.3 * std::exp(-distance / std::pow(width, DIMENSIONS));
+  Q[0] = 0.5 + amplitude * std::exp(-distance / std::pow(width, DIMENSIONS));
   Q[1] = Q[0] * v0[0];
   Q[2] = Q[0] * v0[1];
   Q[3] = 0.0;
@@ -333,7 +338,29 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
     const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  double largestRho   = -std::numeric_limits<double>::max();
+  double smallestRho  = +std::numeric_limits<double>::max();
+
+  kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
+  dfor(i,Order+1) {
+    const double* Q = luh + idx_luh(i(1),i(0),0);
+
+    largestRho  = std::max (largestRho,   Q[0]);
+    smallestRho = std::min (smallestRho,  Q[0]);
+  }
+
+  assertion(largestRho>=smallestRho);
+  const double ratio = ( largestRho-smallestRho ) / smallestRho *
+                      (1+0.1 * getMaximumMeshSize() / dx[0] );
+  //  std::cout << level << std::endl;
+
+  if ( ratio > 0.05 ) {
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+  else if ( ratio < 0.02 ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+  else return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const double t,const double dt,

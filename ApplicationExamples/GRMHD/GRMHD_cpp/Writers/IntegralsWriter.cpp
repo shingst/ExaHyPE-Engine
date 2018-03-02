@@ -143,6 +143,12 @@ void GRMHD::IntegralsWriter::mapQuantities(
 	primitives.addValue(V, dV);
 
 	// now do the convergence test, as we have exact initial data
+	
+	// Quick ugly fix (SVEN): do not do the convergence test at the axis,
+	//   for the 2D RNSID.
+	if(pos[0]==0 || pos[1]==0)
+		return;
+	
 	double ExactCons[nVar], ExactPrim[nVar];
 	
 	//id->Interpolate(xpos, timeStamp, ExactCons);

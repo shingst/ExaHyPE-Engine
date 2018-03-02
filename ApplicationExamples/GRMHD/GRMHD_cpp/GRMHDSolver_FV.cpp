@@ -26,7 +26,7 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
 	std::cout << "ID configuration: \n" << mf("initialdata").toString();
 	std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
 	std::cout << "ID subquery NAME: '" << mf("initialdata").get("name").get_string() << "'\n";
-	GlobalInitialData::getInstance().setByParameters(mf);
+	GlobalInitialData::getInstance().setByParameters(mf).prepare();
 	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf("boundaries"));
 }
 

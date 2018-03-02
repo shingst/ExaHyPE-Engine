@@ -37,7 +37,7 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 	std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
 	std::cout << "ID subquery NAME: '" << mf("initialdata").get("name").get_string() << "'\n";
 	
-	GlobalInitialData::getInstance().setByParameters(mf);
+	GlobalInitialData::getInstance().setByParameters(mf).prepare();
 	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf("boundaries"));
 }
 

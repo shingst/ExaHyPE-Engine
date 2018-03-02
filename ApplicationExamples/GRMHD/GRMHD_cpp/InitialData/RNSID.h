@@ -19,6 +19,7 @@ struct rnsid : public InitialDataCode {
 	RNSID::rnsid *id;
 	
 	rnsid();
+	void prepare() override;
 	void Interpolate(const double* x, double t, double* Q) override;
 	void readParameters(const mexa::mexafile& parameters) override;
 };
