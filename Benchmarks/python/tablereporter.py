@@ -121,11 +121,12 @@ def createPlots():
                 figure.set_size_inches(plotSizeInches)
                 #figure.set_size_inches(2.40,2.20) # width: 0.470 * SIAM SISC \textwidth (=5.125in)
                 
-                filename = plotFolderPath + "/" + plotPrefix + "-" + "-".join(plotDict.values())
+                plotFileName = plotFolderPath + "/" + plotPrefix + "-" + \
+                               "-".join(plotDict.values()).replace(".","_").replace("/","_")
                 for format in ["pdf", "png"]:
-                    figure.savefig('%s-%s.%s' % (filename,yScale,format), bbox_inches="tight", dpi=300)
+                    figure.savefig('%s-%s.%s' % (plotFileName,yScale,format), bbox_inches="tight", dpi=300)
                     pyplot.close(figure)
-                    print("created plot: %s-%s.%s" % (filename,yScale,format))
+                    print("created plot: %s-%s.%s" % (plotFileName,yScale,format))
 
 def renderPDF():
     """
@@ -170,7 +171,8 @@ r"""
     body = ""
     counter = 0
     for plotDict in dictProduct(plotsSpace):
-        plotFileName = plotFolder + "/" + plotPrefix + "-" + "-".join(plotDict.values())
+        plotFileName = plotFolder + "/" + plotPrefix + "-" + \
+                       "-".join(plotDict.values()).replace(".","_").replace("/","_")
         
         for yScale in yScales:
             ending = "-"+yScale+".pdf"
