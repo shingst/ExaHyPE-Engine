@@ -1859,7 +1859,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnBackgroundJobs =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription);
+        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription);
     const bool vetoSpawnPredictionAsBackgroundJob =
         vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
 
@@ -1911,7 +1911,7 @@ void exahype::solvers::ADERDGSolver::compress(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription);
+        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription);
     compress(cellDescription,vetoSpawnAnyBackgroundJob);
   }
 }
@@ -1949,28 +1949,35 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::isRestrictingOrInvolvedInProlongation(
+bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(
     CellDescription& cellDescription) {
-  bool isRestrictingOrInvolvedInProlongation = cellDescription.getIsAugmented();
+  bool isInvolvedInProlongationOrParentNeedsToRestrictToo = cellDescription.getIsAugmented();
 
   // this might be the expensive part (mostly integer stuff though)
-  exahype::solvers::Solver::SubcellPosition subcellPosition =
+  SubcellPosition subcellPosition =
       exahype::amr::computeSubcellPositionOfCellOrAncestor
       <CellDescription,Heap>(cellDescription);
-  if ( subcellPosition.parentElement!=NotFound ) {
-    auto& parentCellDescription =
+  if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& parentCellDescription =
           exahype::solvers::ADERDGSolver::getCellDescription(
               subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-
-    isRestrictingOrInvolvedInProlongation |=
-        subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-        cellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell &&
-        parentCellDescription.getHelperStatus()>0 &&
+    if (
         exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference);
+            subcellPosition.subcellIndex,subcellPosition.levelDifference)
+    ) {
+      // check if the parent needs to restrict to its parent too
+      SubcellPosition parentSubcellPosition =
+          exahype::amr::computeSubcellPositionOfCellOrAncestor
+          <CellDescription,Heap>(parentCellDescription);
+
+      isInvolvedInProlongationOrParentNeedsToRestrictToo |=
+          parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+          exahype::amr::onBoundaryOfParent(
+              parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
+    }
   }
 
-  return isRestrictingOrInvolvedInProlongation;
+  return isInvolvedInProlongationOrParentNeedsToRestrictToo;
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
@@ -2004,7 +2011,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
       predictorTimeStamp,
       predictorTimeStepSize);
 
-  // If a PredictionJob is launched, this operation will not perform a restriction.
+  // If a PredictionJob is launched, this operation will only perform a restriction
+  // if the parent of this cell does not need to restrict itself.
   restriction(cellDescription);
 
   compress(cellDescription,vetoSpawnAnyBackgroundJob);
@@ -2021,7 +2029,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
+        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
 
     if (
         vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
@@ -3491,6 +3499,20 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
     assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
 
+    const int direction    = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation  = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex    = 2*direction+orientation;
+
+    assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
+        faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+    #ifdef Asserts
+    tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
+        exahype::Cell::computeFaceBarycentre(
+            cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
+    logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
+        fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
+    #endif
+
     const int dataPerFace = getBndFaceSize();
     const int dofPerFace  = getBndFluxSize();
 
@@ -3498,33 +3520,19 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int receivedlFhbndIndex = DataHeap::getInstance().createData(dofPerFace,  dofPerFace);
     assertion(!DataHeap::getInstance().getData(receivedlQhbndIndex).empty());
     assertion(!DataHeap::getInstance().getData(receivedlFhbndIndex).empty());
-    assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
-        faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
 
     double* lQhbnd = DataHeap::getInstance().getData(receivedlQhbndIndex).data();
     double* lFhbnd = DataHeap::getInstance().getData(receivedlFhbndIndex).data();
-
-    #ifdef Asserts
-        tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
-            exahype::Cell::computeFaceBarycentre(
-                cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
-        logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
-            fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
-    #endif
 
     // Send order: lQhbnd,lFhbnd
     // Receive order: lFhbnd,lQhbnd
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     DataHeap::getInstance().receiveData(
-        lFhbnd,dofPerFace,
+        lFhbnd,dofPerFace,s
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
     DataHeap::getInstance().receiveData(
         lQhbnd,dataPerFace,
         fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
-
-    const int direction    = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation  = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex    = 2*direction+orientation;
 
     solveRiemannProblemAtInterface(
         cellDescription,

@@ -460,10 +460,18 @@ class exahype::solvers::Solver {
     int levelDifference;
 
     SubcellPosition() :
-      parentCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex),
+      parentCellDescriptionsIndex(),
       parentElement(NotFound),
       subcellIndex(-1),
       levelDifference(-1) {}
+
+    void invalidate() {
+      parentCellDescriptionsIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+      parentElement = NotFound;
+      subcellIndex =  -1;
+      levelDifference = -1;
+    }
+
     ~SubcellPosition() {}
   } SubcellPosition;
 

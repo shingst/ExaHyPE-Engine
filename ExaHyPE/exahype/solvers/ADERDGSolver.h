@@ -443,15 +443,19 @@ private:
    * This is the case if the following conditions hold:
    *
    * - The cell's (inside) faces are not adjacent to a remote boundary,
-   *   i.e. no data has to send to a neighbouring rank.
+   *   i.e. no data has to be send to a neighbouring rank.
    *
    * - A cell description is not augmented. Otherwise it
    *   needs to prolongate face data such that its
-   *   children can compute their
+   *   children can perform their prolongation.
    *
    * - A cell description is not at the boundary
-   *   of a parent Ancestor which needs to solve Riemann
-   *   problems with its neighbours.
+   *   of a parent Ancestor which needs needs to restrict data
+   *   to a coarser level Ancestor itself. If the Ancestor doesn't
+   *   have a coarser level Ancestor, the restriction operation
+   *   does not need to wait for data from finer levels first.
+   *   (Problem could be circumevented by restricting directly
+   *   to all parents in the tree and not waiting for the hira
    *
    * The (later) goal of this method will be too prioritise
    * certain cells --- especially the ones at the remote boundary --
@@ -465,7 +469,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool isRestrictingOrInvolvedInProlongation(
+  static bool isInvolvedInProlongationOrParentNeedsToRestrictToo(
       CellDescription& cellDescription);
 
   /**

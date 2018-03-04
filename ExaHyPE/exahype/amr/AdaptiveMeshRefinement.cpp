@@ -1,5 +1,3 @@
-#include "exahype/amr/AdaptiveMeshRefinement.h"
-
 /**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
@@ -12,6 +10,8 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
+
+#include "exahype/amr/AdaptiveMeshRefinement.h"
 
 tarch::la::Vector<DIMENSIONS,int> exahype::amr::computeSubcellIndex(
       const tarch::la::Vector<DIMENSIONS,double>& childOffset,
@@ -46,12 +46,10 @@ tarch::la::Vector<DIMENSIONS-1,int> exahype::amr::getSubfaceIndex(
 bool exahype::amr::onBoundaryOfParent(
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
     const int levelDelta){
+  bool result = false;
   for (int d = 0; d < DIMENSIONS; d++) {
-    // Check if cell is at "left" or "right" d face of parent
-    if (subcellIndex[d] == 0 ||
-        subcellIndex[d] == tarch::la::aPowI(levelDelta,3)-1) {
-      return true;
-    }
+    result |= subcellIndex[d] == 0;
+    result |= subcellIndex[d] == tarch::la::aPowI(levelDelta,3)-1;
   }
-  return false;
+  return result;
 }

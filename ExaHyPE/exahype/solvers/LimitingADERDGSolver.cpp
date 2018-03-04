@@ -763,7 +763,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
-        isAtRemoteBoundary || ADERDGSolver::isRestrictingOrInvolvedInProlongation(solverPatch);
+        isAtRemoteBoundary || ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
 
     if (
         isFirstIterationOfBatch ||
@@ -852,7 +852,7 @@ void exahype::solvers::LimitingADERDGSolver::compress(
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
-        isAtRemoteBoundary || ADERDGSolver::isRestrictingOrInvolvedInProlongation(solverPatch);
+        isAtRemoteBoundary || ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
     _solver->compress(solverPatch,vetoSpawnBackgroundJobs);
     const int limiterElement =
         tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
