@@ -73,6 +73,30 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
   return barycentre;
 }
 
+exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementCriterion(
+    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+  bool canErase   = true;
+  bool mustRefine = false;
+  dfor2(pos)
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int& cellDescriptionsIndex = getCellDescriptionsIndex()[posScalar];
+      exahype::solvers::Solver::RefinementControl control =
+          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,h);
+      canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
+      mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
+    }
+  enddforx
+
+  if (mustRefine) {
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  } else if (canErase) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  } else {
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+}
+
 void exahype::Vertex::mergeOnlyNeighboursMetadata(
     const exahype::State::AlgorithmSection& section,
     const tarch::la::Vector<DIMENSIONS, double>& x,

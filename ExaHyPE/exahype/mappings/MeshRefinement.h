@@ -85,6 +85,13 @@ private:
   State _localState;
 
   /**
+   * We use this semaphore for refining along the
+   * boundary of the computational domain in order
+   * to avoid hanging nodes.
+   */
+  static tarch::multicore::BooleanSemaphore BoundarySemaphore;
+
+  /**
    * TODO(Tobias): Add docu.
    */
   void refineSafely(
@@ -95,30 +102,27 @@ private:
 
 
   /**
-   * Enforce that all uniform grids populated
-   * by at least one solver and all the levels above have no hanging nodes.
+   * Ensure that we have no hanging nodes at the domain boundary,
    *
-   * TODO(Dominic): Evaluate impact of this method.
-   * TODO(Dominic): We might need boundary refinement to
-   * get rid of hanging nodes on the boundary. However
-   * this should not be a problem in ExaHyPE since
-   * we always refine cellwisely when we perform adaptive
-   * refinement.
+   * In case any inside vertex is refined, refine any boundary vertex as well.
+   * In case all inside vertices are unrefined, erase any boundary vertex.
+   *
+   * \note Thread-safe as reads and writes to the boundary vertices are locked.
    */
-  void ensureRegularityOnCoarserGrids(
+  void ensureRegularityAlongBoundary(
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
 
   /**
-   * Erase fine grid vertices as long as it does not
-   * harm the regularity at the boundary.
+   * Call erase on an inside fine grid vertex as long as it does not
+   * harm the regularity at the remote boundary.
    *
-   * This means to enforce that all uniform grids populated
-   * by at least one solver and all the levels above have no hanging nodes.
+   * \note Only erasing inside vertices ensures that we do not compete
+   * with routine eraseButPreserveRegularityAlongRemoteBoundary(...).
    */
-  void eraseVerticesButPreserveRegularityOnCoarserGrids(
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
+  void eraseButPreserveRegularityAlongRemoteBoundary(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const;
 
 public:
 
@@ -130,9 +134,9 @@ public:
    * FinaliseMeshRefinement::beginIteration(...).
    */
   static bool IsFirstIteration;
+
   /**
-   * Switched off in serial mode where everything is done in the creational
-   * routines. Switched on in parallel mode.
+   * Main plug-in point for triggering refinement ans grid erasing events.
    */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
 

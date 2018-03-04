@@ -533,7 +533,7 @@ bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
   return true;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
+void exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -542,10 +542,20 @@ bool exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber) {
-  const int fineGridCellElement =
-      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  // TODO(Dominic): Keep the condition for later
+//  return fineGridCellElement!=exahype::solvers::Solver::NotFound;
+}
 
-  return fineGridCellElement!=exahype::solvers::Solver::NotFound;
+exahype::solvers::Solver::RefinementControl
+exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
+     const int& cellDescriptionsIndex,
+     const int& solverNumber,
+     const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+  if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
+    return RefinementControl::Refine;
+  } else {
+    return RefinementControl::Erase;
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
@@ -1263,6 +1273,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   CellDescription::Type neighbourType =
       static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
 
+  const int direction   = tarch::la::equalsReturnIndex(src, dest);
+  const int orientation = (1 + src(direction) - dest(direction))/2;
+  const int faceIndex   = 2*direction+orientation;
+
   // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
   // Solving Riemann problems at a Ancestor Ancestor boundary might lead to problems
   // if one Ancestor is just used for restriction.
@@ -1282,10 +1296,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
         ", src=" << src << ", dest=" << dest <<
         ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
     );
-
-    const int direction   = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
 
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     //

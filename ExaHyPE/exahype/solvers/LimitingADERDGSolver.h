@@ -820,7 +820,7 @@ public:
       const bool initialGrid,
       const int solverNumber) final override;
 
-  bool updateStateInLeaveCell(
+  void updateStateInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -829,6 +829,11 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) final override;
+
+  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+        const int& cellDescriptionsIndex,
+        const int& solverNumber,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,

@@ -439,7 +439,7 @@ void exahype::solvers::LimitingADERDGSolver::vetoErasingChildrenRequestBasedOnLi
   }
 }
 
-bool exahype::solvers::LimitingADERDGSolver::updateStateInLeaveCell(
+void exahype::solvers::LimitingADERDGSolver::updateStateInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -462,10 +462,19 @@ bool exahype::solvers::LimitingADERDGSolver::updateStateInLeaveCell(
     _solver->restrictToNextParent(solverPatch,parentSolverElement);
   }
 
-  return _solver->updateStateInLeaveCell(
+  _solver->updateStateInLeaveCell(
       fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
       coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
       fineGridPositionOfCell,solverNumber);
+}
+
+exahype::solvers::Solver::RefinementControl
+exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
+      const int& cellDescriptionsIndex,
+      const int& solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+  return _solver->eraseOrRefineAdjacentVertices(
+             cellDescriptionsIndex,solverNumber,cellSize);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::attainedStableState(

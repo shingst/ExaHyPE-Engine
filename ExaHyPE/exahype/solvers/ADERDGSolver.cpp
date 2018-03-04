@@ -1000,12 +1000,10 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
                solverNumber); // TODO(Dominic): Can directly refine if we directly evaluate initial conditions here.
     result._newComputeCellAllocated |= true;
   }
-
   else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     // Fine grid cell based adaptive mesh refinement operations.
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
-
 
     // TODO(Dominic): Reevaluate this whole section
     #ifdef Parallel
@@ -1438,7 +1436,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
+void exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1475,23 +1473,60 @@ bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
               fineGridPositionOfCell,
               coarseGridCellDescription);
     }
-
-    bool eraseFineGridVertices =
-        (fineGridCellDescription.getType()==CellDescription::Type::Cell ||
-         fineGridCellDescription.getType()==CellDescription::Type::Descendant)
-        &&
-        fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-        &&
-        !fineGridCellDescription.getIsAugmented()
-        &&
-        fineGridCellDescription.getAugmentationStatus()==0
-        &&
-        fineGridCellDescription.getPreviousAugmentationStatus()==0;
-
-    return eraseFineGridVertices;
   }
+}
 
-  return false;
+exahype::solvers::Solver::RefinementControl
+exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
+    const int& cellDescriptionsIndex,
+    const int& solverNumber,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+  const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
+  if (element!=NotFound) {
+    CellDescription& cellDescription = getCellDescription(
+        cellDescriptionsIndex,element);
+
+    bool refineAdjacentVertices =
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::AugmentingRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested;
+
+    #ifdef Asserts
+    assertion1(
+        cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::RefiningRequested ||
+        cellDescription.getType()==CellDescription::Type::Cell,
+        cellDescription.toString());
+    assertion1(
+        cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::AugmentingRequested ||
+        cellDescription.getType()==CellDescription::Type::Cell ||
+        cellDescription.getType()==CellDescription::Type::Descendant,
+        cellDescription.toString());
+    #endif
+
+    bool eraseAdjacentVertices =
+        (cellDescription.getType()==CellDescription::Type::Cell ||
+        cellDescription.getType()==CellDescription::Type::Descendant)
+        &&
+        (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::DeaugmentingChildrenRequestedTriggered)
+        &&
+        !cellDescription.getIsAugmented()
+        &&
+        cellDescription.getAugmentationStatus()==0
+        &&
+        cellDescription.getPreviousAugmentationStatus()==0; // TODO(Dominic): Might not be necessary
+
+    if (refineAdjacentVertices) {
+      return RefinementControl::Refine;
+    } else if (eraseAdjacentVertices) {
+      return RefinementControl::Erase;
+    } else {
+      return RefinementControl::Keep;
+    }
+  } else if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
+    return RefinementControl::Refine;
+  } else {
+    return RefinementControl::Erase;
+  }
 }
 
 void exahype::solvers::ADERDGSolver::prepareVolumeDataRestriction(

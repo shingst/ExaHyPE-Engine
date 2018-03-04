@@ -468,7 +468,9 @@ class exahype::solvers::Solver {
     void invalidate() {
       parentCellDescriptionsIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
       parentElement = NotFound;
-      subcellIndex =  -1;
+      for (int i=0; i<DIMENSIONS; i++) {
+        subcellIndex[i] = -1;
+      }
       levelDifference = -1;
     }
 
@@ -1228,7 +1230,7 @@ class exahype::solvers::Solver {
    * event. This is a single event.
    * Returns false in all other scenarios.
    */
-  virtual bool updateStateInLeaveCell(
+  virtual void updateStateInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1237,6 +1239,15 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) = 0;
+
+  /**
+   * \return if the vertices around a cell should be erased, kept,
+   * or refined.
+   */
+  virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+      const int& cellDescriptionsIndex,
+      const int& solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
 
   /**
    * Returns true if the solver has attained
