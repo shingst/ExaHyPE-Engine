@@ -384,10 +384,6 @@ bool exahype::solvers::LimitingADERDGSolver::markForRefinement(
             initialGrid,
             solverNumber);
 
-    vetoErasingChildrenRequestBasedOnLimiterStatus(
-        fineGridCell.getCellDescriptionsIndex(),fineGridSolverElement,
-        coarseGridCell.getCellDescriptionsIndex());
-
     return refineFineGridCell;
   }
 
@@ -404,6 +400,13 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::Limitin
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const bool initialGrid,
     const int solverNumber)  {
+  const int solverElement = _solver->tryGetElement(
+      fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  if (solverElement!=exahype::solvers::Solver::NotFound) {
+    vetoErasingChildrenRequestBasedOnLimiterStatus(
+          fineGridCell.getCellDescriptionsIndex(),solverElement);
+  }
+
   UpdateStateInEnterCellResult result =
       _solver->updateStateInEnterCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
@@ -415,28 +418,24 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::Limitin
 
 void exahype::solvers::LimitingADERDGSolver::vetoErasingChildrenRequestBasedOnLimiterStatus(
     const int fineGridCellDescriptionsIndex,
-    const int fineGridSolverElement,
-    const int coarseGridCellDescriptionsIndex) const {
+    const int fineGridSolverElement) const {
   SolverPatch& fineGridSolverPatch = ADERDGSolver::getCellDescription(
           fineGridCellDescriptionsIndex,fineGridSolverElement);
 
+  const int minLimiterStatusForRefinement =
+      computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel());
   if (
-      fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ErasingChildrenRequested
-      ||
-      fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ChangeChildrenToDescendantsRequested
+      (fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ErasingChildrenRequested ||
+      fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ChangeChildrenToDescendantsRequested)
+      &&
+      (getLimiterDomainChange()!=LimiterDomainChange::Regular ||
+      fineGridSolverPatch.getLimiterStatus()>=minLimiterStatusForRefinement ||
+      fineGridSolverPatch.getPreviousLimiterStatus()>=minLimiterStatusForRefinement)
+      // TODO(Dominic): Add to docu: This is necessary for not erasing cells in global recomputation and it further adds some laziness in erasing.
+      // TODO(Dominic): Add to docu: We always veto based on the previous limiter status too
+      // in case we need to go back in time
   ) {
-    if (getLimiterDomainChange()!=LimiterDomainChange::Regular) { // TODO(Dominic): Add to docu: We always veto in case we go back in time
-      fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
-    }
-    else if (
-        fineGridSolverPatch.getLimiterStatus()>=
-        computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel())
-        ||
-        fineGridSolverPatch.getPreviousLimiterStatus()>=
-        computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel()) // TODO(Dominic): Add to docu: This is necessary for not erasing cells in global recomputation and it further adds some laziness in erasing.
-    ) {
-      fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
-    }
+    fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
   }
 }
 
@@ -687,10 +686,13 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused(
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
-void exahype::solvers::LimitingADERDGSolver::adjustSolution(
+void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int solverElement) {
-  _solver->adjustSolution(
+  zeroTimeStepSizes(cellDescriptionsIndex,solverElement);      // TODO(Dominic): Still necessary?
+  synchroniseTimeStepping(cellDescriptionsIndex,solverElement);
+
+  _solver->adjustSolutionDuringMeshRefinement(
       cellDescriptionsIndex,solverElement);
 
   const int limiterElement =
@@ -700,9 +702,11 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolution(
     LimiterPatch& limiterPatch = FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
     copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
 
-    _limiter->adjustSolution(
+    _limiter->adjustSolutionDuringMeshRefinement(
         cellDescriptionsIndex,limiterElement);
   }
+
+  updateLimiterStatusAndMinAndMaxAfterAdjustSolution(cellDescriptionsIndex,solverElement);
 }
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatchForSolverPatch(

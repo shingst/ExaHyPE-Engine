@@ -650,7 +650,7 @@ public:
         const int cellDescriptionsIndex,
         const int element) const final override;
 
-  void adjustSolution(
+  void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
       const int element) final override;
 

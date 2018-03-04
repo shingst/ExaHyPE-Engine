@@ -350,6 +350,8 @@ void exahype::mappings::MeshRefinement::enterCell(
         }
       }
 
+      // TODO(Dominic): Merge this
+
       // TODO(Dominic): It is normally only necessary to check the
       // refinement criterion if we need to adjust the solution
       // However mark for refinement currently does some more things
@@ -384,20 +386,13 @@ void exahype::mappings::MeshRefinement::enterCell(
       adjustSolution              |= result._newComputeCellAllocated;
 
       // Synchronise time stepping and adjust the solution if required
-      if (fineGridCell.isInitialised()) {
+      if ( adjustSolution && fineGridCell.isInitialised() ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
-          if (adjustSolution) {
-            solver->zeroTimeStepSizes(cellDescriptionsIndex,element);
-            solver->synchroniseTimeStepping(cellDescriptionsIndex,element); // TODO(Dominic): Merge with adjustSolution
-            solver->adjustSolution(cellDescriptionsIndex,element);
-
-            if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  updateLimiterStatusAndMinAndMaxAfterAdjustSolution(cellDescriptionsIndex,element);
-            }
-          }
+          solver->adjustSolutionDuringMeshRefinement(cellDescriptionsIndex,element);
+          // TODO(Dominic): Merge the min max crit. and the refinement criterion with the above
+          // function as well.
         }
 
         exahype::Cell::resetNeighbourMergeFlags(

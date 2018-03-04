@@ -926,6 +926,9 @@ void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentIndex(
   }
 }
 
+// TODO(Dominic): Distinguish between evaluating the physics-based (includes limiter) refinement criteria
+// and evaluating the flagging-based refinement criteria
+
 bool exahype::solvers::ADERDGSolver::markForRefinement(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -1094,7 +1097,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 
   if (vetoErasing) {
     const int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
-                                              fineGridCellDescription.getSolverNumber());
+                                                    fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
       auto& coarseGridCellDescription = getCellDescription(
           fineGridCellDescription.getParentIndex(),coarseGridCellElement);
@@ -2207,19 +2210,24 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(
   cellDescription.setPreviousCorrectorTimeStepSize(std::numeric_limits<double>::max()); // TODO(Dominic): get rid of the last time level.
 }
 
-void exahype::solvers::ADERDGSolver::adjustSolution(
+void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element) {
   // reset helper variables
   CellDescription& cellDescription  = getCellDescription(cellDescriptionsIndex,element);
 
+  zeroTimeStepSizes(cellDescriptionsIndex,element);       // TODO(Dominic): Still necessary?
+  synchroniseTimeStepping(cellDescription);
+
   // initial conditions
-  if (cellDescription.getType()==CellDescription::Type::Cell &&
-      cellDescription.getRefinementEvent()==CellDescription::None) {
-    double* luh = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  if (
+      cellDescription.getType()==CellDescription::Type::Cell &&
+      cellDescription.getRefinementEvent()==CellDescription::None
+  ) {
+    double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
 
     adjustSolution(
-      luh,
+      solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
       cellDescription.getCorrectorTimeStamp(),
@@ -2227,7 +2235,7 @@ void exahype::solvers::ADERDGSolver::adjustSolution(
 
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
-      assertion3(std::isfinite(luh[i]),cellDescription.toString(),"setInitialConditions(...)",i);
+      assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
     }
     #endif
   }

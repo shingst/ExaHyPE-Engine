@@ -329,8 +329,7 @@ private:
    */
   void vetoErasingChildrenRequestBasedOnLimiterStatus(
       const int fineGridCellDescriptionsIndex,
-      const int fineGridSolverElement,
-      const int coarseGridCellDescriptionsIndex) const;
+      const int fineGridSolverElement) const;
 
   /**
    * Depending on the finest adaptive mesh level and the given level,
@@ -903,7 +902,7 @@ public:
    * This includes computing, sending, and merging
    * of the min/max values.
    */
-  void adjustSolution(
+  void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
       const int element) final override;
 

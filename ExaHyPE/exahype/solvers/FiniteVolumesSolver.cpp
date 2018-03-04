@@ -1,5 +1,5 @@
 /**
- * This file is part of the ExaHyPE project.
+o * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
  *
@@ -678,28 +678,29 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
   rollbackToPreviousTimeStep(cellDescriptionsIndex,element);
 }
 
-void exahype::solvers::FiniteVolumesSolver::adjustSolution(
+void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element) {
   // reset helper variables
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  assertion(cellDescription.getType()==CellDescription::Cell);
 
-  if (cellDescription.getType()==CellDescription::Cell
-//      && cellDescription.getRefinementEvent()==CellDescription::None
-      ) {
-    double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  zeroTimeStepSizes(cellDescriptionsIndex,element);        // TODO(Dominic): Still necessary?
+  synchroniseTimeStepping(cellDescription);
 
-    adjustSolution(
-          solution,
-          cellDescription.getOffset()+0.5*cellDescription.getSize(),
-          cellDescription.getSize(),
-          cellDescription.getTimeStamp(),
-          cellDescription.getTimeStepSize());
+  double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  adjustSolution(
+      solution,
+      cellDescription.getOffset()+0.5*cellDescription.getSize(),
+      cellDescription.getSize(),
+      cellDescription.getTimeStamp(),
+      cellDescription.getTimeStepSize());
 
-    for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
-      assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+  #ifdef Asserts
+  for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
+    assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
   }
+  #endif
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStep(

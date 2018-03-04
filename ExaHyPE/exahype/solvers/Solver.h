@@ -1175,7 +1175,7 @@ class exahype::solvers::Solver {
    * that takes the limiter status into account.
    */
   virtual bool markForRefinement(
-        exahype::Cell& fineGridCell,
+        exahype::Cell& fineGridCell, // TODO(Dominic): Clean up signature
         exahype::Vertex* const fineGridVertices,
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
         exahype::Cell& coarseGridCell,
@@ -1411,7 +1411,7 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void adjustSolution(
+  virtual void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
