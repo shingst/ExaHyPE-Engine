@@ -222,8 +222,8 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 
   /**
    * Validate that a compute cell is not next to
-   * a compute cell as long as the face is an interior
-   * face.
+   * an invalid cell description index as long as their
+   * interface is an interior face.
    */
   void validateNeighbourhood(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
