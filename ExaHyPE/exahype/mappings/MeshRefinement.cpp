@@ -491,10 +491,10 @@ void exahype::mappings::MeshRefinement::leaveCell(
     fineGridCell.shutdownMetaData();
   }
 
-  if (eraseFineGridVertices) {
-    eraseVerticesButPreserveRegularityOnCoarserGrids(
-        fineGridVertices,fineGridVerticesEnumerator);
-  }
+//  if (eraseFineGridVertices) {
+//    eraseVerticesButPreserveRegularityOnCoarserGrids(
+//        fineGridVertices,fineGridVerticesEnumerator);
+//  }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
