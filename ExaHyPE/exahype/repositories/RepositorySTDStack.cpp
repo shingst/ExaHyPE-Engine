@@ -225,7 +225,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   #endif
   
   for (int i=0; i<numberOfIterations; i++) {
-
     if (numberOfIterations==1) {
       _solverState.currentlyRunsMultipleIterations(State::BatchState::NoBatch);
     }

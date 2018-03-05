@@ -75,16 +75,23 @@ class exahype::records::ADERDGCellDescription {
   #endif
 
   /**
+   * @defgroup AMRInfo AMR information
+   *
+   * Additional information that is necessary to realise adaptive mesh
+   * refinement (AMR).
+   */
+  ///@{
+  /**
    * The index of the ADERDGCellDescription that is the parent of
    * this ADERDGCellDescription or "-1" if no parent is specified.
    */
   parallelise persistent int parentIndex;
   
   /**
-   * Flag indicating that a cell description is augmented,
-   * i.e. is a parent of virtual subcells.
+   * Flag indicating that a cell description is a 
+   * parent of virtual subcells.
    */
-  parallelise persistent bool isAugmented;
+  parallelise persistent bool hasVirtualChildren;
  
   /**
    * Type of a cell description.
@@ -101,42 +108,36 @@ class exahype::records::ADERDGCellDescription {
    * associated to this cell description is not neighbouring
    * a cell that holds a cell description of type \p
    * Cell.
-   *
-   * TODO(Dominic):
-   * MasterWorkerBoundaryDescendant and MasterWorkerBoundaryAncestor are set
-   * as type of an ADERDGCellDescription if the ADERDGCellDescription
-   * needs to communicate data to a neighbour process, or a worker/master
-   * process. The worker is not allowed to change the type of these cells.
-   * The worker does further no
    */
-
   enum Type {
     Erased,
     Ancestor,
     Cell,
     Descendant
   };
-  
-  /**
-   * Can be used to flag a cell description as newly created.
-   * 
-   * Is currently only used for ancestors.
-   */
-  persistent packed bool newlyCreated;
-
-  /**
-   * @defgroup AMRInfo AMR information
-   *
-   * Additional information that is necessary to realise adaptive mesh
-   * refinement (AMR).
-   */
-  ///@{
+ 
   /**
    * The type of this ADERDGCellDescription. See the documentation of Cell for
    * more details.
    */
   parallelise persistent packed Type type;
-
+  
+  /**
+   * Using this enum, we can manifest the evaluation
+   * of the refinement criterion. It is then
+   * not necessary to evaluate the refinement criterion
+   * in every cell but only in the first iteration of
+   * a mesh update or in case a new cell is introduced.
+   */
+  enum RefinementRequest {
+    Pending,
+    Keep,
+    Erase,
+    Refine
+  };
+  
+  persistent packed RefinementRequest refinementRequest;
+  
   enum RefinementEvent {
     /**
      * In this state, the cell description is ready to
@@ -175,7 +176,7 @@ class exahype::records::ADERDGCellDescription {
      * In this case, we do not erase the children
      * of the Ancestor but change their type to (Empty)Descendant.
      */
-    ChangeChildrenToDescendantsRequested,
+    ChangeChildrenToVirtualChildrenRequested,
     /**
      * Change children to descendants.
      * An Ancestor cell description can adopt 
@@ -186,31 +187,10 @@ class exahype::records::ADERDGCellDescription {
      * In this case, we do not erase the children
      * of the Ancestor but change their type to (Empty)Descendant.
      */
-    ChangeChildrenToDescendants,
+    ChangeChildrenToVirtualChildren,
     
     RefiningRequested,           
-    Refining,                    
-    
-    /**
-     * This refinement event is set on 
-     * a cell description of type 
-     * Descendant or Cell in every 
-     * grid setup iteration
-     * if no other event is set. 
-     * 
-     * If the cell description has children,
-     * the first traversed child sets
-     * this event to DeaugmentingChildrenRequestedTriggered.
-     * 
-     * We have to rely on this mechanism since we
-     * cannot guess based on the cell description type if
-     * a cell description has children as opposed to the
-     * physics based refinement where we have
-     * Ancestor and EmptyAncestor parent cell descriptions and
-     * child cell descriptions of type Cell.
-     */
-    DeaugmentingChildrenRequestedTriggered,
-    
+    Refining,
     /**
      * If this refinement event is set, 
      * the parent Descendant or Cell asks its
@@ -220,7 +200,7 @@ class exahype::records::ADERDGCellDescription {
      * they leave the parent's RefinementEvent
      * unchanged. 
      */
-    DeaugmentingChildrenRequested,
+    ErasingVirtualChildrenRequested,
     /**
      * After all children of a parent left
      * the parent's refinement event DeaugmentingChildrenRequested
@@ -231,9 +211,10 @@ class exahype::records::ADERDGCellDescription {
      * the child cell descriptions need to be
      * removed from the grid.
      */
-    DeaugmentingChildren, 
-    AugmentingRequested,         
-    Augmenting                   
+    ErasingVirtualChildren, 
+    
+    VirtualRefiningRequested,         
+    VirtualRefining  
   };
 
   /**

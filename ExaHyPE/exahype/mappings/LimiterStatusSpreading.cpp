@@ -216,13 +216,15 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
           element!=exahype::solvers::Solver::NotFound
       ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+
         limitingADERDG->updateLimiterStatusDuringLimiterStatusSpreading(
             cellDescriptionsIndex,element);
 
+        auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(
+            cellDescriptionsIndex,element);
         _meshUpdateRequests[solverNumber] =
             _meshUpdateRequests[solverNumber] ||
-            limitingADERDG->evaluateLimiterStatusRefinementCriterion(
-                cellDescriptionsIndex,element);
+              limitingADERDG->evaluateLimiterStatusRefinementCriterion(solverPatch);
       }
     }
 

@@ -374,47 +374,10 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   assertion(fineGridCell.isInside());
 
-  bool oneSolverRequestsRefinement = false;
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (solver->getMeshUpdateRequest()) {
-      bool adjustSolution = exahype::mappings::MeshRefinement::IsFirstIteration;
-
-      // Update limiter status and allocate limiter patch if necessary
-      // Further evaluate the limiter status based refinement criterion
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
-        const int element               = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-        if (element!=exahype::solvers::Solver::NotFound) {
-          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-          adjustSolution |= limitingADERDGSolver->
-              updateLimiterStatusDuringLimiterStatusSpreading(cellDescriptionsIndex,element);
-          oneSolverRequestsRefinement |= limitingADERDGSolver->
-              evaluateLimiterStatusRefinementCriterion(cellDescriptionsIndex,element);
-        }
-      }
-
-      // TODO(Dominic): Merge this
-
-      // TODO(Dominic): It is normally only necessary to check the
-      // refinement criterion if we need to adjust the solution
-      // However mark for refinement currently does some more things
-      // Additionally, we would need to memorise where to refine /
-      // erase in order to not break the behaviour of the
-      // state machine
-      oneSolverRequestsRefinement |=
-          solver->markForRefinement(
-              fineGridCell,
-              fineGridVertices,
-              fineGridVerticesEnumerator,
-              coarseGridCell,
-              coarseGridVertices,
-              coarseGridVerticesEnumerator,
-              fineGridPositionOfCell,
-              IsInitialMeshRefinement,
-              solverNumber);
-
-      exahype::solvers::Solver::UpdateStateInEnterCellResult result =
+      bool newComputeCellAllocated =
           solver->updateStateInEnterCell(
               fineGridCell,
               fineGridVertices,
@@ -426,23 +389,23 @@ void exahype::mappings::MeshRefinement::enterCell(
               IsInitialMeshRefinement,
               solverNumber);
 
-      oneSolverRequestsRefinement |= result._refinementRequested;
-      adjustSolution              |= result._newComputeCellAllocated;
-
       // Synchronise time stepping and adjust the solution if required
-      if ( adjustSolution && fineGridCell.isInitialised() ) {
+      if (
+          exahype::mappings::MeshRefinement::IsFirstIteration ||
+          newComputeCellAllocated
+       ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
           solver->adjustSolutionDuringMeshRefinement(cellDescriptionsIndex,element);
-          // TODO(Dominic): Merge the min max crit. and the refinement criterion with the above
-          // function as well.
         }
-
-        exahype::Cell::resetNeighbourMergeFlags(
-            fineGridCell.getCellDescriptionsIndex());
       }
     }
+  }
+
+  if (fineGridCell.isInitialised()) {
+    exahype::Cell::resetNeighbourMergeFlags(
+        fineGridCell.getCellDescriptionsIndex());
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

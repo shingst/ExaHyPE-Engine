@@ -302,21 +302,7 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
 ///////////////////////////////////
 // MODIFY CELL DESCRIPTION
 ///////////////////////////////////
-bool exahype::solvers::FiniteVolumesSolver::markForRefinement(
-    exahype::Cell& fineGridCell,
-    exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const bool initialGrid,
-    const int solverNumber) {
-  // do nothing
-  return false;
-}
-
-exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::FiniteVolumesSolver::updateStateInEnterCell(
+bool exahype::solvers::FiniteVolumesSolver::updateStateInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -327,24 +313,21 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::FiniteV
     const bool initialGrid,
     const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
-  UpdateStateInEnterCellResult result;
-
-  int fineGridCellElement =
+  const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (fineGridCellElement==exahype::solvers::Solver::NotFound &&
+  if (
+      fineGridCellElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
-      tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
+      tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
+  ) {
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
                solverNumber);
-
-    result._newComputeCellAllocated = true;
+    return true;
     // Fine grid cell based adaptive mesh refinement operations are not implemented.
-  } else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
-    // do nothing
+  } else {
+    return false;
   }
-
-  return result;
 }
 
 void exahype::solvers::FiniteVolumesSolver::addNewCell(
@@ -691,13 +674,16 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element) {
-  // reset helper variables
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion(cellDescription.getType()==CellDescription::Cell);
 
   zeroTimeStepSizes(cellDescriptionsIndex,element);        // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
 
+  adjustSolution(cellDescription);
+}
+
+void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cellDescription) {
   double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   adjustSolution(
       solution,

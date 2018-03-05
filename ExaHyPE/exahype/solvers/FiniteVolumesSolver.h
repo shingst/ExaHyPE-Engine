@@ -99,6 +99,12 @@ private:
    */
   void synchroniseTimeStepping(CellDescription& cellDescription) const;
 
+  /**
+   * Simply adjust the solution if necessary. Do not modify the time step
+   * data or anything else.
+   */
+  void adjustSolution(CellDescription& cellDescription);
+
 #ifdef Parallel
   /**
    * Data messages per neighbour communication.
@@ -559,19 +565,7 @@ public:
    */
   void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
-
-  bool markForRefinement(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) override;
-
-  UpdateStateInEnterCellResult updateStateInEnterCell(
+  bool updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

@@ -581,6 +581,9 @@ int exahype::runners::Runner::run() {
     exahype::solvers::Solver::SpawnPredictionAsBackgroundJob =
         _parser.getSpawnPredictionAsBackgroundThread();
 
+    exahype::solvers::Solver::SpawnAMRBackgroundJobs =
+        _parser.getSpawnAMRBackgroundThreads();
+
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
     #ifdef Parallel
     exahype::mappings::MeshRefinement::IsFirstIteration = false;

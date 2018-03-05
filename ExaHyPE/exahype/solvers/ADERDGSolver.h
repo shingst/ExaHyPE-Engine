@@ -70,7 +70,7 @@ public:
    * and add child cells of type Descendant to
    * the grid.
    */
-  static int MinimumAugmentationStatusForAugmentation;
+  static int MinimumAugmentationStatusForVirtualRefining;
   /**
    * The minimum augmentation status for refining
    * a cell. Note that there should be at least layer
@@ -195,10 +195,24 @@ private:
   void uncompress(CellDescription& cellDescription) const;
 
   /**
+   * Simply adjust the solution if necessary. Do not modify the time step
+   * data or anything else.
+   */
+  void adjustSolution(CellDescription& cellDescription);
+
+  /**
+   * Query the user's refinement criterion and
+   * write a refinement request back to the cell description.
+   */
+  void markForRefinement(CellDescription& cellDescription);
+
+  /**
    * Mark a cell description of Cell for refinement or erasing based
    * on a user supplied physics based refinement criterion.
    *
-   * <h2>Erasing</h2>
+   * TODO(Dominic): Move docu below to appropriate location.
+   *
+   * <h2>Erasing</h2> TODO(Dominic): Move docu.
    * Note that we use a not so obvious strategy for performing
    * erasing operations. We first set an erasing request on
    * a parent cell description of type Ancestor or EmptyAncestor,
@@ -227,19 +241,19 @@ private:
    *
    * \note Thread-safe.
    */
-  bool markForRefinement(CellDescription& fineGridCellDescription);
+  void decideOnRefinement(CellDescription& fineGridCellDescription);
 
   /**
    * Performs three operations:
-   * 1. Checks if a DeaugmentingChildrenRequestedTriggered event on the coarse
-   * grid parent can be changed to a DeaugmentingChildrenRequested event.
+   * 1. Checks if a ErasingVirtualChildrenRequestedTriggered event on the coarse
+   * grid parent can be changed to a ErasingVirtualChildrenRequested event.
    * In this case, the triggered request becomes an actual request.
    * The fine grid children can however still veto this request.
    * 2.
    *
    * \note Thread-safe.
    */
-  bool markForAugmentation(CellDescription& fineGridCellDescription);
+  void decideOnVirtualRefinement(CellDescription& fineGridCellDescription);
 
   /*
    * Change the erasing children request to a change children to descendants
@@ -247,8 +261,8 @@ private:
    * if the coarse grid cell has children itself (of type Descendant).
    * Rationale: We cannot directly erase a Cell that has children (of type Descendant).
    *
-   * Further, reset the deaugmenting children request if a coarse grid
-   * Descendant has children (of type Descendant). Rationale:
+   * Further, reset the erasing virtual children request if a coarse grid
+   * Descendant has virtual children itself (of type Descendant). Rationale:
    * We cannot erase a coarse grid cell that has children (of type Descendant)
    * before erasing the children.
    *
@@ -266,7 +280,7 @@ private:
    *
    * \note Not thread-safe!
    */
-  void vetoErasingOrDeaugmentingChildrenRequest(
+  void vetoErasingRequestsIfNecessary(
       CellDescription& coarseGridCellDescription,
       const int fineGridCellDescriptionsIndex);
 
@@ -357,7 +371,7 @@ private:
    *
    * \note This operations is not thread-safe
    */
-  void addNewDescendantIfAugmentingRequested(
+  void addNewDescendantIfVirtualRefiningRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1498,18 +1512,7 @@ public:
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
 
-  bool markForRefinement(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) override;
-
-   UpdateStateInEnterCellResult updateStateInEnterCell(
+   bool updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -2118,7 +2121,7 @@ public:
    *
    * If the cell description is of type Descendant and
    * is next to a cell description of type Cell
-   * or is augmented, i.e. has children of type Descendant itself,
+   * or is virtually refined, i.e. has children of type Descendant itself,
    * we set the hasToHoldDataForMasterWorkerCommunication flag
    * on the cell description to true and allocate the required
    * memory.

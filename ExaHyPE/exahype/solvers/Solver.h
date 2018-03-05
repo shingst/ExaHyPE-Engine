@@ -395,9 +395,17 @@ class exahype::solvers::Solver {
 
   /**
    * Set to true if the prediction and/or the fused time step
-   * can be launched as background job.
+   * should be launched as background job whenever possible.
+   *
+   * TODO(Dominic): Rename as we start other background jobs as well
    */
   static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * Set to true if the mesh refinement iterations
+   * should run background jobs whenever possible.
+   */
+  static bool SpawnAMRBackgroundJobs;
 
   /**
    * The type of a solver.
@@ -436,14 +444,6 @@ class exahype::solvers::Solver {
 
     UpdateResult() {}
   } UpdateResult;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  typedef struct UpdateStateInEnterCellResult {
-    bool _refinementRequested = false;
-    bool _newComputeCellAllocated   = false;
-  } UpdateStateInEnterCellResult;
 
   /**
    * This struct is used in the AMR context
@@ -1170,38 +1170,12 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * Evaluates the user refinement criterion and sets
-   * the RefinementEvent of a cell description to RefinementRequested
-   * if the users criterion has been accepted,
-   * or vetoes the ErasingChildrenRequested RefinementEvent
-   * set on an Ancestor if
-   * the users criterion returns a keep.
-   *
-   * \note We moved this routine out of the updateStateInEnterCell
-   * since it does a-priori refinement, and we want to
-   * reuse the updateStateInEnterCell and updateStateInLeaveCell methods
-   * for a-posteriori refinement performed by the LimitingADERDGSolver
-   * in scenarios where the mesh is refined based on a criterion
-   * that takes the limiter status into account.
-   */
-  virtual bool markForRefinement(
-        exahype::Cell& fineGridCell, // TODO(Dominic): Clean up signature
-        exahype::Vertex* const fineGridVertices,
-        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-        const bool initialGrid,
-        const int solverNumber) = 0;
-
-  /**
    * Modify a cell description in enter cell event.
    * This event should be used for single cell operations
    * like marking for refinement, erasing, augmenting,
    * or deaugmenting.
    *
-   * \return a struct of type UpdateStateInEnterCellResult.
+   * \return a struct of type bool.
    *
    * \note We use this at the moment only
    * for refinement events. We can consider later
@@ -1209,7 +1183,7 @@ class exahype::solvers::Solver {
    * (solution update, predictor comp.) into
    * this hook.
    */
-  virtual UpdateStateInEnterCellResult updateStateInEnterCell(
+  virtual bool updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

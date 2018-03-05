@@ -251,14 +251,20 @@ private:
    * patch, and projects the solver patch's DG solution
    * onto the FV limiter patch.
    *
+   * Adjusts the limiter patch's solution
+   * as long if that is requested.
+   *
    * \return The index of the patch in the heap
    * vector at address \p cellDescriptionsIndex.
    *
    * \note Thread-safe.
+   *
+   * TODO(Dominic): A few lines are candidates for
+   * being run as background job.
    */
   int allocateLimiterPatch(
-          const int cellDescriptionsIndex,
-          const int solverElement) const;
+      const int cellDescriptionsIndex,
+      const int solverElement) const;
 
   /**
    * Deallocates the limiter patch for solver patches
@@ -328,8 +334,7 @@ private:
    * the limiter status.
    */
   void vetoErasingChildrenRequestBasedOnLimiterStatus(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridSolverElement) const;
+      SolverPatch& solverPatch) const;
 
   /**
    * Depending on the finest adaptive mesh level and the given level,
@@ -729,8 +734,7 @@ public:
    * only considers direct (face) neighbours, we need to refine all cells with
    * a limiter status Troubled-1 and Troubled-2.
    */
-  bool evaluateLimiterStatusRefinementCriterion(
-      const int cellDescriptionsIndex,const int solverElement) const;
+  bool evaluateLimiterStatusRefinementCriterion(const SolverPatch& solverPatch) const;
 
 
   /**
@@ -744,6 +748,8 @@ public:
       const int element) const;
 
   /**
+   * TODO(Dominic): Update docu.
+   *
    * Based on the limiter status of a solver patch
    * and the solver patch's type, we perform the
    * following actions:
@@ -761,16 +767,7 @@ public:
    *
    * Legend: O: Ok, T: Troubled, NT: NeighbourOfTroubled1..2, NNT: NeighbourOfTroubled3..4
    */
-  bool markForRefinementBasedOnLimiterStatus(
-        exahype::Cell& fineGridCell,
-        exahype::Vertex* const fineGridVertices,
-        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-        const bool initialGrid,
-        const int solverNumber);
+  void markForRefinementBasedOnLimiterStatus(SolverPatch& solverPatch) const;
 
   /**
    * Update the cellwise limiter status using the facewise limiter status
@@ -793,23 +790,14 @@ public:
    * in order to use the updateLimiterStatusAfterSetInitialConditions function
    * afterwards which calls determineLimiterStatus(...) again.
    *
+   * \note calls synchroniseTimeStepping
+   *
    * returns true if a new limiter patch was allocated.
    */
-  bool updateLimiterStatusDuringLimiterStatusSpreading(
+  void updateLimiterStatusDuringLimiterStatusSpreading(
       const int cellDescriptionsIndex, const int solverElement) const;
 
-  bool markForRefinement(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) final override;
-
-  UpdateStateInEnterCellResult updateStateInEnterCell(
+  bool updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

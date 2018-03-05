@@ -6,7 +6,7 @@
    }
    
    
-   exahype::records::ADERDGCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+   exahype::records::ADERDGCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
    _solverNumber(solverNumber),
    _neighbourMergePerformed(neighbourMergePerformed),
    _isInside(isInside),
@@ -14,9 +14,9 @@
    _hasToHoldDataForMasterWorkerCommunication(hasToHoldDataForMasterWorkerCommunication),
    _faceDataExchangeCounter(faceDataExchangeCounter),
    _parentIndex(parentIndex),
-   _isAugmented(isAugmented),
-   _newlyCreated(newlyCreated),
+   _hasVirtualChildren(hasVirtualChildren),
    _type(type),
+   _refinementRequest(refinementRequest),
    _refinementEvent(refinementEvent),
    _level(level),
    _offset(offset),
@@ -68,13 +68,13 @@
    
    
    exahype::records::ADERDGCellDescription::ADERDGCellDescription(const PersistentRecords& persistentRecords):
-   _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._isInside, persistentRecords._adjacentToRemoteRank, persistentRecords._hasToHoldDataForMasterWorkerCommunication, persistentRecords._faceDataExchangeCounter, persistentRecords._parentIndex, persistentRecords._isAugmented, persistentRecords._newlyCreated, persistentRecords._type, persistentRecords._refinementEvent, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInUpdate, persistentRecords._bytesPerDoFInExtrapolatedPredictor, persistentRecords._bytesPerDoFInFluctuation) {
+   _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._isInside, persistentRecords._adjacentToRemoteRank, persistentRecords._hasToHoldDataForMasterWorkerCommunication, persistentRecords._faceDataExchangeCounter, persistentRecords._parentIndex, persistentRecords._hasVirtualChildren, persistentRecords._type, persistentRecords._refinementRequest, persistentRecords._refinementEvent, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInUpdate, persistentRecords._bytesPerDoFInExtrapolatedPredictor, persistentRecords._bytesPerDoFInFluctuation) {
       
    }
    
    
-   exahype::records::ADERDGCellDescription::ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
-   _persistentRecords(solverNumber, neighbourMergePerformed, isInside, adjacentToRemoteRank, hasToHoldDataForMasterWorkerCommunication, faceDataExchangeCounter, parentIndex, isAugmented, newlyCreated, type, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
+   exahype::records::ADERDGCellDescription::ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+   _persistentRecords(solverNumber, neighbourMergePerformed, isInside, adjacentToRemoteRank, hasToHoldDataForMasterWorkerCommunication, faceDataExchangeCounter, parentIndex, hasVirtualChildren, type, refinementRequest, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
       
    }
    
@@ -113,21 +113,33 @@
          case None: return "None";
          case ErasingChildrenRequested: return "ErasingChildrenRequested";
          case ErasingChildren: return "ErasingChildren";
-         case ChangeChildrenToDescendantsRequested: return "ChangeChildrenToDescendantsRequested";
-         case ChangeChildrenToDescendants: return "ChangeChildrenToDescendants";
+         case ChangeChildrenToVirtualChildrenRequested: return "ChangeChildrenToVirtualChildrenRequested";
+         case ChangeChildrenToVirtualChildren: return "ChangeChildrenToVirtualChildren";
          case RefiningRequested: return "RefiningRequested";
          case Refining: return "Refining";
-         case DeaugmentingChildrenRequestedTriggered: return "DeaugmentingChildrenRequestedTriggered";
-         case DeaugmentingChildrenRequested: return "DeaugmentingChildrenRequested";
-         case DeaugmentingChildren: return "DeaugmentingChildren";
-         case AugmentingRequested: return "AugmentingRequested";
-         case Augmenting: return "Augmenting";
+         case ErasingVirtualChildrenRequested: return "ErasingVirtualChildrenRequested";
+         case ErasingVirtualChildren: return "ErasingVirtualChildren";
+         case VirtualRefiningRequested: return "VirtualRefiningRequested";
+         case VirtualRefining: return "VirtualRefining";
       }
       return "undefined";
    }
    
    std::string exahype::records::ADERDGCellDescription::getRefinementEventMapping() {
-      return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToDescendantsRequested=3,ChangeChildrenToDescendants=4,RefiningRequested=5,Refining=6,DeaugmentingChildrenRequestedTriggered=7,DeaugmentingChildrenRequested=8,DeaugmentingChildren=9,AugmentingRequested=10,Augmenting=11)";
+      return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,ErasingVirtualChildrenRequested=7,ErasingVirtualChildren=8,VirtualRefiningRequested=9,VirtualRefining=10)";
+   }
+   std::string exahype::records::ADERDGCellDescription::toString(const RefinementRequest& param) {
+      switch (param) {
+         case Pending: return "Pending";
+         case Keep: return "Keep";
+         case Erase: return "Erase";
+         case Refine: return "Refine";
+      }
+      return "undefined";
+   }
+   
+   std::string exahype::records::ADERDGCellDescription::getRefinementRequestMapping() {
+      return "RefinementRequest(Pending=0,Keep=1,Erase=2,Refine=3)";
    }
    std::string exahype::records::ADERDGCellDescription::toString(const Type& param) {
       switch (param) {
@@ -178,11 +190,11 @@
       out << ",";
       out << "parentIndex:" << getParentIndex();
       out << ",";
-      out << "isAugmented:" << getIsAugmented();
-      out << ",";
-      out << "newlyCreated:" << getNewlyCreated();
+      out << "hasVirtualChildren:" << getHasVirtualChildren();
       out << ",";
       out << "type:" << toString(getType());
+      out << ",";
+      out << "refinementRequest:" << toString(getRefinementRequest());
       out << ",";
       out << "refinementEvent:" << toString(getRefinementEvent());
       out << ",";
@@ -304,9 +316,9 @@
          getHasToHoldDataForMasterWorkerCommunication(),
          getFaceDataExchangeCounter(),
          getParentIndex(),
-         getIsAugmented(),
-         getNewlyCreated(),
+         getHasVirtualChildren(),
          getType(),
+         getRefinementRequest(),
          getRefinementEvent(),
          getLevel(),
          getOffset(),
@@ -376,7 +388,7 @@
                , MPI_CXX_BOOL		 //hasToHoldDataForMasterWorkerCommunication
                , MPI_INT		 //faceDataExchangeCounter
                , MPI_INT		 //parentIndex
-               , MPI_CXX_BOOL		 //isAugmented
+               , MPI_CXX_BOOL		 //hasVirtualChildren
                , MPI_INT		 //type
                , MPI_INT		 //refinementEvent
                , MPI_INT		 //level
@@ -434,7 +446,7 @@
                , 1		 //hasToHoldDataForMasterWorkerCommunication
                , DIMENSIONS_TIMES_TWO		 //faceDataExchangeCounter
                , 1		 //parentIndex
-               , 1		 //isAugmented
+               , 1		 //hasVirtualChildren
                , 1		 //type
                , 1		 //refinementEvent
                , 1		 //level
@@ -527,9 +539,9 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._parentIndex))), 		&disp[6] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[7] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[7] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[7] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[7] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[8] );
@@ -795,9 +807,9 @@
                , MPI_CXX_BOOL		 //hasToHoldDataForMasterWorkerCommunication
                , MPI_INT		 //faceDataExchangeCounter
                , MPI_INT		 //parentIndex
-               , MPI_CXX_BOOL		 //isAugmented
-               , MPI_CXX_BOOL		 //newlyCreated
+               , MPI_CXX_BOOL		 //hasVirtualChildren
                , MPI_INT		 //type
+               , MPI_INT		 //refinementRequest
                , MPI_INT		 //refinementEvent
                , MPI_INT		 //level
                , MPI_DOUBLE		 //offset
@@ -854,9 +866,9 @@
                , 1		 //hasToHoldDataForMasterWorkerCommunication
                , DIMENSIONS_TIMES_TWO		 //faceDataExchangeCounter
                , 1		 //parentIndex
-               , 1		 //isAugmented
-               , 1		 //newlyCreated
+               , 1		 //hasVirtualChildren
                , 1		 //type
+               , 1		 //refinementRequest
                , 1		 //refinementEvent
                , 1		 //level
                , DIMENSIONS		 //offset
@@ -948,19 +960,19 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._parentIndex))), 		&disp[6] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[7] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[7] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[7] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[7] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._newlyCreated))), 		&disp[8] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[8] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._newlyCreated))), 		&disp[8] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[8] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[9] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._refinementRequest))), 		&disp[9] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[9] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._refinementRequest))), 		&disp[9] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[10] );
@@ -1436,12 +1448,12 @@
    
    
    exahype::records::ADERDGCellDescriptionPacked::PersistentRecords::PersistentRecords() {
-      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
+      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
          std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
       }
-      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
+      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 < (8 * sizeof(int))));
       if ((6 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1452,12 +1464,12 @@
    }
    
    
-   exahype::records::ADERDGCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+   exahype::records::ADERDGCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
    _solverNumber(solverNumber),
    _hasToHoldDataForMasterWorkerCommunication(hasToHoldDataForMasterWorkerCommunication),
    _faceDataExchangeCounter(faceDataExchangeCounter),
    _parentIndex(parentIndex),
-   _isAugmented(isAugmented),
+   _hasVirtualChildren(hasVirtualChildren),
    _level(level),
    _offset(offset),
    _size(size),
@@ -1496,8 +1508,8 @@
       setNeighbourMergePerformed(neighbourMergePerformed);
       setIsInside(isInside);
       setAdjacentToRemoteRank(adjacentToRemoteRank);
-      setNewlyCreated(newlyCreated);
       setType(type);
+      setRefinementRequest(refinementRequest);
       setRefinementEvent(refinementEvent);
       setCompressionState(compressionState);
       setBytesPerDoFInPreviousSolution(bytesPerDoFInPreviousSolution);
@@ -1505,12 +1517,12 @@
       setBytesPerDoFInUpdate(bytesPerDoFInUpdate);
       setBytesPerDoFInExtrapolatedPredictor(bytesPerDoFInExtrapolatedPredictor);
       setBytesPerDoFInFluctuation(bytesPerDoFInFluctuation);
-      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
+      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
          std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
       }
-      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
+      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 < (8 * sizeof(int))));
       if ((6 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1521,12 +1533,12 @@
    }
    
    exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked() {
-      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
+      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
          std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
       }
-      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
+      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 < (8 * sizeof(int))));
       if ((6 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1538,13 +1550,13 @@
    
    
    exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked(const PersistentRecords& persistentRecords):
-   _persistentRecords(persistentRecords._solverNumber, persistentRecords.getNeighbourMergePerformed(), persistentRecords.getIsInside(), persistentRecords.getAdjacentToRemoteRank(), persistentRecords._hasToHoldDataForMasterWorkerCommunication, persistentRecords._faceDataExchangeCounter, persistentRecords._parentIndex, persistentRecords._isAugmented, persistentRecords.getNewlyCreated(), persistentRecords.getType(), persistentRecords.getRefinementEvent(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInUpdate(), persistentRecords.getBytesPerDoFInExtrapolatedPredictor(), persistentRecords.getBytesPerDoFInFluctuation()) {
-      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
+   _persistentRecords(persistentRecords._solverNumber, persistentRecords.getNeighbourMergePerformed(), persistentRecords.getIsInside(), persistentRecords.getAdjacentToRemoteRank(), persistentRecords._hasToHoldDataForMasterWorkerCommunication, persistentRecords._faceDataExchangeCounter, persistentRecords._parentIndex, persistentRecords._hasVirtualChildren, persistentRecords.getType(), persistentRecords.getRefinementRequest(), persistentRecords.getRefinementEvent(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInUpdate(), persistentRecords.getBytesPerDoFInExtrapolatedPredictor(), persistentRecords.getBytesPerDoFInFluctuation()) {
+      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
          std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
       }
-      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
+      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 < (8 * sizeof(int))));
       if ((6 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1555,14 +1567,14 @@
    }
    
    
-   exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
-   _persistentRecords(solverNumber, neighbourMergePerformed, isInside, adjacentToRemoteRank, hasToHoldDataForMasterWorkerCommunication, faceDataExchangeCounter, parentIndex, isAugmented, newlyCreated, type, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
-      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
+   exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+   _persistentRecords(solverNumber, neighbourMergePerformed, isInside, adjacentToRemoteRank, hasToHoldDataForMasterWorkerCommunication, faceDataExchangeCounter, parentIndex, hasVirtualChildren, type, refinementRequest, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
+      if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
          std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
       }
-      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
+      assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+20 < (8 * sizeof(int))));
       if ((6 >= (8 * sizeof(int)))) {
          std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
          std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -1581,6 +1593,14 @@
    
    std::string exahype::records::ADERDGCellDescriptionPacked::getTypeMapping() {
       return exahype::records::ADERDGCellDescription::getTypeMapping();
+   }
+   
+   std::string exahype::records::ADERDGCellDescriptionPacked::toString(const RefinementRequest& param) {
+      return exahype::records::ADERDGCellDescription::toString(param);
+   }
+   
+   std::string exahype::records::ADERDGCellDescriptionPacked::getRefinementRequestMapping() {
+      return exahype::records::ADERDGCellDescription::getRefinementRequestMapping();
    }
    
    std::string exahype::records::ADERDGCellDescriptionPacked::toString(const RefinementEvent& param) {
@@ -1643,11 +1663,11 @@
       out << ",";
       out << "parentIndex:" << getParentIndex();
       out << ",";
-      out << "isAugmented:" << getIsAugmented();
-      out << ",";
-      out << "newlyCreated:" << getNewlyCreated();
+      out << "hasVirtualChildren:" << getHasVirtualChildren();
       out << ",";
       out << "type:" << toString(getType());
+      out << ",";
+      out << "refinementRequest:" << toString(getRefinementRequest());
       out << ",";
       out << "refinementEvent:" << toString(getRefinementEvent());
       out << ",";
@@ -1769,9 +1789,9 @@
          getHasToHoldDataForMasterWorkerCommunication(),
          getFaceDataExchangeCounter(),
          getParentIndex(),
-         getIsAugmented(),
-         getNewlyCreated(),
+         getHasVirtualChildren(),
          getType(),
+         getRefinementRequest(),
          getRefinementEvent(),
          getLevel(),
          getOffset(),
@@ -1838,7 +1858,7 @@
                , MPI_CXX_BOOL		 //hasToHoldDataForMasterWorkerCommunication
                , MPI_INT		 //faceDataExchangeCounter
                , MPI_INT		 //parentIndex
-               , MPI_CXX_BOOL		 //isAugmented
+               , MPI_CXX_BOOL		 //hasVirtualChildren
                , MPI_INT		 //level
                , MPI_DOUBLE		 //offset
                , MPI_DOUBLE		 //size
@@ -1887,7 +1907,7 @@
                , 1		 //hasToHoldDataForMasterWorkerCommunication
                , DIMENSIONS_TIMES_TWO		 //faceDataExchangeCounter
                , 1		 //parentIndex
-               , 1		 //isAugmented
+               , 1		 //hasVirtualChildren
                , 1		 //level
                , DIMENSIONS		 //offset
                , DIMENSIONS		 //size
@@ -1959,9 +1979,9 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[3] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[4] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[4] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[5] );
@@ -2194,7 +2214,7 @@
                , MPI_CXX_BOOL		 //hasToHoldDataForMasterWorkerCommunication
                , MPI_INT		 //faceDataExchangeCounter
                , MPI_INT		 //parentIndex
-               , MPI_CXX_BOOL		 //isAugmented
+               , MPI_CXX_BOOL		 //hasVirtualChildren
                , MPI_INT		 //level
                , MPI_DOUBLE		 //offset
                , MPI_DOUBLE		 //size
@@ -2243,7 +2263,7 @@
                , 1		 //hasToHoldDataForMasterWorkerCommunication
                , DIMENSIONS_TIMES_TWO		 //faceDataExchangeCounter
                , 1		 //parentIndex
-               , 1		 //isAugmented
+               , 1		 //hasVirtualChildren
                , 1		 //level
                , DIMENSIONS		 //offset
                , DIMENSIONS		 //size
@@ -2315,9 +2335,9 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[3] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[4] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[4] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
             #endif
             #ifdef MPI2
             MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[5] );
@@ -2773,14 +2793,14 @@
       }
       
       
-      exahype::records::ADERDGCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+      exahype::records::ADERDGCellDescription::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
       _solverNumber(solverNumber),
       _neighbourMergePerformed(neighbourMergePerformed),
       _isInside(isInside),
       _parentIndex(parentIndex),
-      _isAugmented(isAugmented),
-      _newlyCreated(newlyCreated),
+      _hasVirtualChildren(hasVirtualChildren),
       _type(type),
+      _refinementRequest(refinementRequest),
       _refinementEvent(refinementEvent),
       _level(level),
       _offset(offset),
@@ -2832,13 +2852,13 @@
       
       
       exahype::records::ADERDGCellDescription::ADERDGCellDescription(const PersistentRecords& persistentRecords):
-      _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._isInside, persistentRecords._parentIndex, persistentRecords._isAugmented, persistentRecords._newlyCreated, persistentRecords._type, persistentRecords._refinementEvent, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInUpdate, persistentRecords._bytesPerDoFInExtrapolatedPredictor, persistentRecords._bytesPerDoFInFluctuation) {
+      _persistentRecords(persistentRecords._solverNumber, persistentRecords._neighbourMergePerformed, persistentRecords._isInside, persistentRecords._parentIndex, persistentRecords._hasVirtualChildren, persistentRecords._type, persistentRecords._refinementRequest, persistentRecords._refinementEvent, persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords._compressionState, persistentRecords._bytesPerDoFInPreviousSolution, persistentRecords._bytesPerDoFInSolution, persistentRecords._bytesPerDoFInUpdate, persistentRecords._bytesPerDoFInExtrapolatedPredictor, persistentRecords._bytesPerDoFInFluctuation) {
          
       }
       
       
-      exahype::records::ADERDGCellDescription::ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
-      _persistentRecords(solverNumber, neighbourMergePerformed, isInside, parentIndex, isAugmented, newlyCreated, type, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
+      exahype::records::ADERDGCellDescription::ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+      _persistentRecords(solverNumber, neighbourMergePerformed, isInside, parentIndex, hasVirtualChildren, type, refinementRequest, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
          
       }
       
@@ -2877,21 +2897,33 @@
             case None: return "None";
             case ErasingChildrenRequested: return "ErasingChildrenRequested";
             case ErasingChildren: return "ErasingChildren";
-            case ChangeChildrenToDescendantsRequested: return "ChangeChildrenToDescendantsRequested";
-            case ChangeChildrenToDescendants: return "ChangeChildrenToDescendants";
+            case ChangeChildrenToVirtualChildrenRequested: return "ChangeChildrenToVirtualChildrenRequested";
+            case ChangeChildrenToVirtualChildren: return "ChangeChildrenToVirtualChildren";
             case RefiningRequested: return "RefiningRequested";
             case Refining: return "Refining";
-            case DeaugmentingChildrenRequestedTriggered: return "DeaugmentingChildrenRequestedTriggered";
-            case DeaugmentingChildrenRequested: return "DeaugmentingChildrenRequested";
-            case DeaugmentingChildren: return "DeaugmentingChildren";
-            case AugmentingRequested: return "AugmentingRequested";
-            case Augmenting: return "Augmenting";
+            case ErasingVirtualChildrenRequested: return "ErasingVirtualChildrenRequested";
+            case ErasingVirtualChildren: return "ErasingVirtualChildren";
+            case VirtualRefiningRequested: return "VirtualRefiningRequested";
+            case VirtualRefining: return "VirtualRefining";
          }
          return "undefined";
       }
       
       std::string exahype::records::ADERDGCellDescription::getRefinementEventMapping() {
-         return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToDescendantsRequested=3,ChangeChildrenToDescendants=4,RefiningRequested=5,Refining=6,DeaugmentingChildrenRequestedTriggered=7,DeaugmentingChildrenRequested=8,DeaugmentingChildren=9,AugmentingRequested=10,Augmenting=11)";
+         return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,ErasingVirtualChildrenRequested=7,ErasingVirtualChildren=8,VirtualRefiningRequested=9,VirtualRefining=10)";
+      }
+      std::string exahype::records::ADERDGCellDescription::toString(const RefinementRequest& param) {
+         switch (param) {
+            case Pending: return "Pending";
+            case Keep: return "Keep";
+            case Erase: return "Erase";
+            case Refine: return "Refine";
+         }
+         return "undefined";
+      }
+      
+      std::string exahype::records::ADERDGCellDescription::getRefinementRequestMapping() {
+         return "RefinementRequest(Pending=0,Keep=1,Erase=2,Refine=3)";
       }
       std::string exahype::records::ADERDGCellDescription::toString(const Type& param) {
          switch (param) {
@@ -2932,11 +2964,11 @@
          out << ",";
          out << "parentIndex:" << getParentIndex();
          out << ",";
-         out << "isAugmented:" << getIsAugmented();
-         out << ",";
-         out << "newlyCreated:" << getNewlyCreated();
+         out << "hasVirtualChildren:" << getHasVirtualChildren();
          out << ",";
          out << "type:" << toString(getType());
+         out << ",";
+         out << "refinementRequest:" << toString(getRefinementRequest());
          out << ",";
          out << "refinementEvent:" << toString(getRefinementEvent());
          out << ",";
@@ -3055,9 +3087,9 @@
             getNeighbourMergePerformed(),
             getIsInside(),
             getParentIndex(),
-            getIsAugmented(),
-            getNewlyCreated(),
+            getHasVirtualChildren(),
             getType(),
+            getRefinementRequest(),
             getRefinementEvent(),
             getLevel(),
             getOffset(),
@@ -3124,7 +3156,7 @@
                   , MPI_CXX_BOOL		 //neighbourMergePerformed
                   , MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //parentIndex
-                  , MPI_CXX_BOOL		 //isAugmented
+                  , MPI_CXX_BOOL		 //hasVirtualChildren
                   , MPI_INT		 //type
                   , MPI_INT		 //refinementEvent
                   , MPI_INT		 //level
@@ -3179,7 +3211,7 @@
                   , DIMENSIONS_TIMES_TWO		 //neighbourMergePerformed
                   , DIMENSIONS_TIMES_TWO		 //isInside
                   , 1		 //parentIndex
-                  , 1		 //isAugmented
+                  , 1		 //hasVirtualChildren
                   , 1		 //type
                   , 1		 //refinementEvent
                   , 1		 //level
@@ -3257,9 +3289,9 @@
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._parentIndex))), 		&disp[3] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[4] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[4] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[5] );
@@ -3522,9 +3554,9 @@
                   , MPI_CXX_BOOL		 //neighbourMergePerformed
                   , MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //parentIndex
-                  , MPI_CXX_BOOL		 //isAugmented
-                  , MPI_CXX_BOOL		 //newlyCreated
+                  , MPI_CXX_BOOL		 //hasVirtualChildren
                   , MPI_INT		 //type
+                  , MPI_INT		 //refinementRequest
                   , MPI_INT		 //refinementEvent
                   , MPI_INT		 //level
                   , MPI_DOUBLE		 //offset
@@ -3578,9 +3610,9 @@
                   , DIMENSIONS_TIMES_TWO		 //neighbourMergePerformed
                   , DIMENSIONS_TIMES_TWO		 //isInside
                   , 1		 //parentIndex
-                  , 1		 //isAugmented
-                  , 1		 //newlyCreated
+                  , 1		 //hasVirtualChildren
                   , 1		 //type
+                  , 1		 //refinementRequest
                   , 1		 //refinementEvent
                   , 1		 //level
                   , DIMENSIONS		 //offset
@@ -3657,19 +3689,19 @@
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._parentIndex))), 		&disp[3] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[4] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._isAugmented))), 		&disp[4] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._hasVirtualChildren))), 		&disp[4] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._newlyCreated))), 		&disp[5] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[5] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._newlyCreated))), 		&disp[5] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[5] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[6] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._refinementRequest))), 		&disp[6] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._type))), 		&disp[6] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._refinementRequest))), 		&disp[6] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescription[0]._persistentRecords._refinementEvent))), 		&disp[7] );
@@ -4145,12 +4177,12 @@
       
       
       exahype::records::ADERDGCellDescriptionPacked::PersistentRecords::PersistentRecords() {
-         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 >= (8 * sizeof(int)))) {
+         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 < (8 * sizeof(int))));
+         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
          if ((6 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -4161,10 +4193,10 @@
       }
       
       
-      exahype::records::ADERDGCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+      exahype::records::ADERDGCellDescriptionPacked::PersistentRecords::PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
       _solverNumber(solverNumber),
       _parentIndex(parentIndex),
-      _isAugmented(isAugmented),
+      _hasVirtualChildren(hasVirtualChildren),
       _level(level),
       _offset(offset),
       _size(size),
@@ -4202,8 +4234,8 @@
       _iterationsToCureTroubledCell(iterationsToCureTroubledCell) {
          setNeighbourMergePerformed(neighbourMergePerformed);
          setIsInside(isInside);
-         setNewlyCreated(newlyCreated);
          setType(type);
+         setRefinementRequest(refinementRequest);
          setRefinementEvent(refinementEvent);
          setCompressionState(compressionState);
          setBytesPerDoFInPreviousSolution(bytesPerDoFInPreviousSolution);
@@ -4211,12 +4243,12 @@
          setBytesPerDoFInUpdate(bytesPerDoFInUpdate);
          setBytesPerDoFInExtrapolatedPredictor(bytesPerDoFInExtrapolatedPredictor);
          setBytesPerDoFInFluctuation(bytesPerDoFInFluctuation);
-         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 >= (8 * sizeof(int)))) {
+         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 < (8 * sizeof(int))));
+         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
          if ((6 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -4227,12 +4259,12 @@
       }
       
       exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked() {
-         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 >= (8 * sizeof(int)))) {
+         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 < (8 * sizeof(int))));
+         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
          if ((6 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -4244,13 +4276,13 @@
       
       
       exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked(const PersistentRecords& persistentRecords):
-      _persistentRecords(persistentRecords._solverNumber, persistentRecords.getNeighbourMergePerformed(), persistentRecords.getIsInside(), persistentRecords._parentIndex, persistentRecords._isAugmented, persistentRecords.getNewlyCreated(), persistentRecords.getType(), persistentRecords.getRefinementEvent(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInUpdate(), persistentRecords.getBytesPerDoFInExtrapolatedPredictor(), persistentRecords.getBytesPerDoFInFluctuation()) {
-         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 >= (8 * sizeof(int)))) {
+      _persistentRecords(persistentRecords._solverNumber, persistentRecords.getNeighbourMergePerformed(), persistentRecords.getIsInside(), persistentRecords._parentIndex, persistentRecords._hasVirtualChildren, persistentRecords.getType(), persistentRecords.getRefinementRequest(), persistentRecords.getRefinementEvent(), persistentRecords._level, persistentRecords._offset, persistentRecords._size, persistentRecords._previousCorrectorTimeStamp, persistentRecords._previousCorrectorTimeStepSize, persistentRecords._correctorTimeStepSize, persistentRecords._correctorTimeStamp, persistentRecords._predictorTimeStepSize, persistentRecords._predictorTimeStamp, persistentRecords._solution, persistentRecords._solutionAverages, persistentRecords._solutionCompressed, persistentRecords._previousSolution, persistentRecords._previousSolutionAverages, persistentRecords._previousSolutionCompressed, persistentRecords._update, persistentRecords._updateAverages, persistentRecords._updateCompressed, persistentRecords._extrapolatedPredictor, persistentRecords._extrapolatedPredictorAverages, persistentRecords._extrapolatedPredictorCompressed, persistentRecords._fluctuation, persistentRecords._fluctuationAverages, persistentRecords._fluctuationCompressed, persistentRecords._solutionMin, persistentRecords._solutionMax, persistentRecords._facewiseAugmentationStatus, persistentRecords._augmentationStatus, persistentRecords._previousAugmentationStatus, persistentRecords._facewiseHelperStatus, persistentRecords._helperStatus, persistentRecords._facewiseLimiterStatus, persistentRecords._limiterStatus, persistentRecords._previousLimiterStatus, persistentRecords._iterationsToCureTroubledCell, persistentRecords.getCompressionState(), persistentRecords.getBytesPerDoFInPreviousSolution(), persistentRecords.getBytesPerDoFInSolution(), persistentRecords.getBytesPerDoFInUpdate(), persistentRecords.getBytesPerDoFInExtrapolatedPredictor(), persistentRecords.getBytesPerDoFInFluctuation()) {
+         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 < (8 * sizeof(int))));
+         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
          if ((6 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -4261,14 +4293,14 @@
       }
       
       
-      exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& isAugmented, const bool& newlyCreated, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
-      _persistentRecords(solverNumber, neighbourMergePerformed, isInside, parentIndex, isAugmented, newlyCreated, type, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
-         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 >= (8 * sizeof(int)))) {
+      exahype::records::ADERDGCellDescriptionPacked::ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const std::bitset<DIMENSIONS_TIMES_TWO>& isInside, const int& parentIndex, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHelperStatus, const int& helperStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseLimiterStatus, const int& limiterStatus, const int& previousLimiterStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation):
+      _persistentRecords(solverNumber, neighbourMergePerformed, isInside, parentIndex, hasVirtualChildren, type, refinementRequest, refinementEvent, level, offset, size, previousCorrectorTimeStamp, previousCorrectorTimeStepSize, correctorTimeStepSize, correctorTimeStamp, predictorTimeStepSize, predictorTimeStamp, solution, solutionAverages, solutionCompressed, previousSolution, previousSolutionAverages, previousSolutionCompressed, update, updateAverages, updateCompressed, extrapolatedPredictor, extrapolatedPredictorAverages, extrapolatedPredictorCompressed, fluctuation, fluctuationAverages, fluctuationCompressed, solutionMin, solutionMax, facewiseAugmentationStatus, augmentationStatus, previousAugmentationStatus, facewiseHelperStatus, helperStatus, facewiseLimiterStatus, limiterStatus, previousLimiterStatus, iterationsToCureTroubledCell, compressionState, bytesPerDoFInPreviousSolution, bytesPerDoFInSolution, bytesPerDoFInUpdate, bytesPerDoFInExtrapolatedPredictor, bytesPerDoFInFluctuation) {
+         if ((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
             std::cerr << "to your data type spec to guide DaStGen how many bits (no-of-bits) a data type has on your machine. DaStGen then can split up the bitfields into several attributes. " << std::endl; 
          }
-         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+18 < (8 * sizeof(int))));
+         assertion((DIMENSIONS_TIMES_TWO+DIMENSIONS_TIMES_TWO+19 < (8 * sizeof(int))));
          if ((6 >= (8 * sizeof(int)))) {
             std::cerr << "Packed-Type in " << __FILE__ << " too small. Either use bigger data type or append " << std::endl << std::endl;
             std::cerr << "  Packed-Type: int hint-size no-of-bits;  " << std::endl << std::endl;
@@ -4287,6 +4319,14 @@
       
       std::string exahype::records::ADERDGCellDescriptionPacked::getTypeMapping() {
          return exahype::records::ADERDGCellDescription::getTypeMapping();
+      }
+      
+      std::string exahype::records::ADERDGCellDescriptionPacked::toString(const RefinementRequest& param) {
+         return exahype::records::ADERDGCellDescription::toString(param);
+      }
+      
+      std::string exahype::records::ADERDGCellDescriptionPacked::getRefinementRequestMapping() {
+         return exahype::records::ADERDGCellDescription::getRefinementRequestMapping();
       }
       
       std::string exahype::records::ADERDGCellDescriptionPacked::toString(const RefinementEvent& param) {
@@ -4339,11 +4379,11 @@
          out << ",";
          out << "parentIndex:" << getParentIndex();
          out << ",";
-         out << "isAugmented:" << getIsAugmented();
-         out << ",";
-         out << "newlyCreated:" << getNewlyCreated();
+         out << "hasVirtualChildren:" << getHasVirtualChildren();
          out << ",";
          out << "type:" << toString(getType());
+         out << ",";
+         out << "refinementRequest:" << toString(getRefinementRequest());
          out << ",";
          out << "refinementEvent:" << toString(getRefinementEvent());
          out << ",";
@@ -4462,9 +4502,9 @@
             getNeighbourMergePerformed(),
             getIsInside(),
             getParentIndex(),
-            getIsAugmented(),
-            getNewlyCreated(),
+            getHasVirtualChildren(),
             getType(),
+            getRefinementRequest(),
             getRefinementEvent(),
             getLevel(),
             getOffset(),
@@ -4529,7 +4569,7 @@
                MPI_Datatype subtypes[Attributes] = {
                     MPI_INT		 //solverNumber
                   , MPI_INT		 //parentIndex
-                  , MPI_CXX_BOOL		 //isAugmented
+                  , MPI_CXX_BOOL		 //hasVirtualChildren
                   , MPI_INT		 //level
                   , MPI_DOUBLE		 //offset
                   , MPI_DOUBLE		 //size
@@ -4576,7 +4616,7 @@
                int blocklen[Attributes] = {
                     1		 //solverNumber
                   , 1		 //parentIndex
-                  , 1		 //isAugmented
+                  , 1		 //hasVirtualChildren
                   , 1		 //level
                   , DIMENSIONS		 //offset
                   , DIMENSIONS		 //size
@@ -4638,9 +4678,9 @@
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[2] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[3] );
@@ -4871,7 +4911,7 @@
                MPI_Datatype subtypes[Attributes] = {
                     MPI_INT		 //solverNumber
                   , MPI_INT		 //parentIndex
-                  , MPI_CXX_BOOL		 //isAugmented
+                  , MPI_CXX_BOOL		 //hasVirtualChildren
                   , MPI_INT		 //level
                   , MPI_DOUBLE		 //offset
                   , MPI_DOUBLE		 //size
@@ -4918,7 +4958,7 @@
                int blocklen[Attributes] = {
                     1		 //solverNumber
                   , 1		 //parentIndex
-                  , 1		 //isAugmented
+                  , 1		 //hasVirtualChildren
                   , 1		 //level
                   , DIMENSIONS		 //offset
                   , DIMENSIONS		 //size
@@ -4980,9 +5020,9 @@
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._parentIndex))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._isAugmented))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._hasVirtualChildren))), 		&disp[2] );
                #endif
                #ifdef MPI2
                MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyADERDGCellDescriptionPacked[0]._persistentRecords._level))), 		&disp[3] );
