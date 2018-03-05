@@ -23,6 +23,8 @@ tarch::logging::Log GRGPR::GPRSolver_ADERDG::_log( "GRGPR::GPRSolver_ADERDG" );
 
 void GRGPR::GPRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
+  const int order = GRGPR::AbstractGPRSolver_ADERDG::Order;
+  inittecplot_(&order,&order);
 }
 
 void GRGPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -72,8 +74,71 @@ void GRGPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double 
 
 exahype::solvers::Solver::RefinementControl GRGPR::GPRSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  const int nVar = GRGPR::AbstractGPRSolver_ADERDG::NumberOfVariables;
+  const int order = GRGPR::AbstractGPRSolver_ADERDG::Order;
+  const int basisSize = order + 1;
+  int refine_flag;
+  double max_luh[nVar];
+  double min_luh[nVar];
+  
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+ 
+  for(int m = 0; m <nVar ; m++){
+	max_luh[m]=-1.e+14;
+	min_luh[m]=1.e+14;
+  }
+  
+#if DIMENSIONS==3
+	kernels::idx4 id_xyz_dof(basisSize,basisSize,basisSize,nVar);
+#else
+	kernels::idx3 id_xy_dof(basisSize,basisSize,nVar);
+#endif
+  
+  for(int i = 0; i < basisSize; i++){
+		for(int j = 0; j <basisSize ; j++){
+#if DIMENSIONS==3	
+			for(int k = 0; k <basisSize ; k++){
+#endif
+#if DIMENSIONS==3
+				for(int m = 0; m <nVar ; m++){
+					if(luh[id_xyz_dof(i,j,k,m)]<min_luh[m]){
+						min_luh[m]=luh[id_xyz_dof(i,j,k,m)];
+					}
+					if(luh[id_xyz_dof(i,j,k,m)]>max_luh[m]){
+						max_luh[m]=luh[id_xyz_dof(i,j,k,m)];
+					}
+				}
+#else
+				for(int m = 0; m <nVar ; m++){
+					if(luh[id_xy_dof(i,j,m)]<min_luh[m]){
+						min_luh[m]=luh[id_xy_dof(i,j,m)];
+					}
+					if(luh[id_xy_dof(i,j,m)]>max_luh[m]){
+						max_luh[m]=luh[id_xy_dof(i,j,m)];
+					}
+				}	
+#endif
+		
+
+#if DIMENSIONS==3				
+			}
+#endif			
+		}
+	}		  
+  pderefinecriteria_(&refine_flag,&max_luh[0],&min_luh[0]);
+  if(refine_flag>1){
+	  return exahype::solvers::Solver::RefinementControl::Refine;
+  }else{
+		if(refine_flag>0){
+			return exahype::solvers::Solver::RefinementControl::Keep;
+		}else{
+			//return exahype::solvers::Solver::RefinementControl::Recoarse;
+			return exahype::solvers::Solver::RefinementControl::Keep;
+		};
+  }
+  
   //return exahype::solvers::Solver::RefinementControl::Refine;
+  
 }
 
 //*****************************************************************************
@@ -136,7 +201,7 @@ bool GRGPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   int limvalue;
-  //return true;
+  return true;
   pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;

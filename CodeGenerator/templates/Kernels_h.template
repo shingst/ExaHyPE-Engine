@@ -24,6 +24,7 @@
 #ifndef __INTEL_COMPILER
 #include <mm_malloc.h>
 #endif
+#include <vector>
 
 //forward declaration of the user solver
 namespace {{solverNamespace}} {
@@ -142,13 +143,13 @@ namespace {{namespaceName}} {
   
   void deltaDistribution(
     {{solverName}}& solver,
-    const double* const luh,
+    const double* const restrict luh,
     const double t,
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     std::vector<int>* pointSources, // will be deleted in the end
-    double* PSi
+    double* restrict PSi
   );
 {% endif %}
   

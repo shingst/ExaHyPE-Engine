@@ -365,16 +365,21 @@ class exahype::runners::Runner {
       const tarch::la::Vector<DIMENSIONS, double>& boundingBoxSize) const;
 
   /**
-   * If the user specifies a non-cubic computational domain or
-   * turns the virtual expansion of the bounding box on,
-   * the actual computational domain shrinks a little bit.
-   * The actual computational domain consists only of
-   * cells that are completely inside of the
-   * domain. This is usually not the case for
-   * all cells if one of the above is specified
-   * by the user.
+   * Find the smallest scaled computational domain consisting of hypercubes
+   * such that the original computational domain fits completely into it.
    *
-   * Compute the size of the shrunk domain.
+   * We scale Peano's bounding box such that the longest edge
+   * of the rectangular computational domain aligns with it.
+   * We further use only hypercubes to build our mesh.
+   * The shorter edges of the computational domain thus cannot be resolved
+   * exactly in general.
+   *
+   * They might be either clipped or we scale the computational domain a
+   * little bit such that the shorter edges are also integral multiples of the
+   * edge lengths of the hypercubes.
+   *
+   * We do the latter here in order to enable boundary treatment approaches
+   * such as the immersed boundary method.
    */
   tarch::la::Vector<DIMENSIONS, double> determineScaledDomainSize(
       const tarch::la::Vector<DIMENSIONS, double>& domainSize,

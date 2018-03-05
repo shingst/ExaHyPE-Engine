@@ -6,8 +6,8 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
   exahype::solvers::Solver::SubcellPosition subcellPosition;
   if (
       (pChild.getType()==CellDescription::Cell || 
-       pChild.getType()==CellDescription::Ancestor)
-      && 
+      pChild.getType()==CellDescription::Ancestor)
+      &&
       CellDescriptionHeap::getInstance().isValidIndex(pChild.getParentIndex())
   ) {
     CellDescription* pParent = 0;
@@ -25,45 +25,44 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
     // 2. If the current parent is an EmptyAncestor,
     // try to determine iteratively the next parent that holds data.
     if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound) {
-    while (
+      while (
           pParent->getType()==CellDescription::Ancestor            &&
           pParent->getHelperStatus()==0                            &&
           #ifdef Parallel
           !pParent->getHasToHoldDataForMasterWorkerCommunication() &&
           #endif
           CellDescriptionHeap::getInstance().isValidIndex(pParent->getParentIndex())
-    ) {
-      const int currentParentIndex = pParent->getParentIndex();
-      int parentElement=0;
-      for (auto& p : CellDescriptionHeap::getInstance().getData(currentParentIndex)) {  // Loop over cell descriptions
-        if (p.getSolverNumber() == pChild.getSolverNumber()) {
-          subcellPosition.parentCellDescriptionsIndex = pParent->getParentIndex();
-          subcellPosition.parentElement               = parentElement;
-          pParent = &p;
-          break;
+      ) {
+        const int currentParentIndex = pParent->getParentIndex();
+        int parentElement=0;
+        for (auto& p : CellDescriptionHeap::getInstance().getData(currentParentIndex)) {  // Loop over cell descriptions
+          if (p.getSolverNumber() == pChild.getSolverNumber()) {
+            subcellPosition.parentCellDescriptionsIndex = pParent->getParentIndex();
+            subcellPosition.parentElement               = parentElement;
+            pParent = &p;
+            break;
+          }
+          ++parentElement;
         }
-        ++parentElement;
       }
-    }
-    assertion2(pParent->getType()==CellDescription::Ancestor,
-        pChild.toString(),pParent->toString());
+      assertion2(pParent->getType()==CellDescription::Ancestor,
+                 pChild.toString(),pParent->toString());
 
-    if (
-        pParent->getHelperStatus()==0 
-        #ifdef Parallel
-        && !pParent->getHasToHoldDataForMasterWorkerCommunication()
-        #endif
-    ) {
-      exahype::solvers::Solver::SubcellPosition subcellPositionWithInvalidIndices;
-      return subcellPositionWithInvalidIndices;
-    }
-
-    subcellPosition.subcellIndex =
-        computeSubcellIndex(
-            pChild.getOffset(),pChild.getSize(),
-            pParent->getOffset());
-    subcellPosition.levelDifference =
-        pChild.getLevel() - pParent->getLevel();
+      if (
+          pParent->getHelperStatus()==0
+          #ifdef Parallel
+          && !pParent->getHasToHoldDataForMasterWorkerCommunication()
+          #endif
+      ) {
+        subcellPosition.invalidate();
+      } else {
+        subcellPosition.subcellIndex =
+            computeSubcellIndex(
+                pChild.getOffset(),pChild.getSize(),
+                pParent->getOffset());
+        subcellPosition.levelDifference =
+            pChild.getLevel() - pParent->getLevel();
+      }
     }
   }
 
@@ -74,17 +73,19 @@ template <class CellDescription,class CellDescriptionHeap>
 exahype::solvers::Solver::SubcellPosition
 exahype::amr::computeSubcellPositionOfCellOrAncestor(
     const CellDescription& pChild) {
-  exahype::solvers::Solver::SubcellPosition subcellPosition;
-  if (pChild.getType()==CellDescription::Cell
+  if (
+      pChild.getType()==CellDescription::Cell
       || 
       (pChild.getType()==CellDescription::Ancestor &&
       pChild.getHelperStatus()>0)
   ) {
-    subcellPosition = computeSubcellPositionOfCellOrAncestorOrEmptyAncestor
+    exahype::solvers::Solver::SubcellPosition subcellPosition =
+        computeSubcellPositionOfCellOrAncestorOrEmptyAncestor
         <CellDescription,CellDescriptionHeap>(pChild);
+    return subcellPosition;
+  } else {
+    return exahype::solvers::Solver::SubcellPosition();
   }
-
-  return subcellPosition;
 }
 
 template <class CellDescription,class CellDescriptionHeap,bool topMost>

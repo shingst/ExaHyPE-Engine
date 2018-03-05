@@ -42,17 +42,17 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	real	:: rr	
 
 	! Plane Wave limiter_value
-	if(ICFlag .eq. 'PlaneWave') then
-	rr =sqrt(sum(xx(:)**2))
-	rr=0.25-rr
-	if(abs(rr).le. 0.25) then
-		limiter_value=1
-	else
-		limiter_value=0
-	end if
+	!if(ICFlag .eq. 'PlaneWave') then
+	!rr =sqrt(sum(xx(:)**2))
+	!rr=0.1-rr
+	!if(abs(rr).le. 0.25) then
+	!	limiter_value=1
+	!else
+	!	limiter_value=0
+	!end if
 	!limiter_value=0
-	return
-	end if
+	!return
+	!end if
 	!
 	
 	! Exclude the boundaries
@@ -150,6 +150,7 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
 RECURSIVE SUBROUTINE InitialPlaneWave(x, t, Q)
     USE, INTRINSIC :: ISO_C_BINDING
     USE Parameters, ONLY : nVar, nDim
+	USE	:: SpecificVarEqn99
     IMPLICIT NONE 
     ! Argument list 
     REAL, INTENT(IN)               :: t
@@ -165,7 +166,7 @@ RECURSIVE SUBROUTINE InitialPlaneWave(x, t, Q)
     ICuR(:)=(/ 0.4, 0.2, 0.2, 0.0, 0.0, 0.0, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /)
     ICA=1.0     ! wave length
     ICxd=0.25   ! radius of the circle
-    ICsig=3e-3  ! smoothing parameter
+    ICsig=1e-2  ! smoothing parameter
     ICQR(:)= (/0.0, 1.0 /)
     ! Initialize the variables vector V
     up = ICuL + ICuR*SIN(2*Pi*(x(1)-2.0*t)/ICA)
@@ -177,7 +178,7 @@ RECURSIVE SUBROUTINE InitialPlaneWave(x, t, Q)
 	! Way one to compute alpha
 	ICsig=1.e-2  ! smoothing parameter
 	r=ICxd-r
-	CALL SmoothInterface(up(13),r,ICsig,0.0,0)
+	up(13)=SmoothInterface(r,ICsig,0.0,0)
     !up(13)=1.0
 	
     !up(1:9) = up(1:9)*up(13)
@@ -354,38 +355,38 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 	end if
 end subroutine ReadCGFile
 
-RECURSIVE SUBROUTINE SmoothInterface(alpha,r,ICsig,epsilon,smooth_order)
-    USE, INTRINSIC :: ISO_C_BINDING
-    USE Parameters, ONLY : nVar, nDim
-    IMPLICIT NONE 
-    ! Argument list 
-    REAL, INTENT(IN)               :: r,ICsig
-    REAL, INTENT(OUT)              :: alpha        ! 
-
-    REAL    :: eta,xi
-        real :: epsilon
-        integer :: smooth_order
-        
-        if(epsilon<0) then
-            epsilon=1.e-9    
-        end if
-        if(smooth_order<0) then
-            smooth_order=4   
-        end if
-        eta=0.8 ! Optimal for v1
-        ! =============== WAY 1 ================================
-        if(r>(1+eta)*ICsig) then
-            xi=1    
-        elseif(r<-(1-eta)*ICsig) then
-            xi=0
-        else
-            xi = (r+(1-eta)*ICsig)/(2.0*ICsig) 
-        end if
-        ! =============== WAY 2 ================================
-        alpha  = (1.0-epsilon)*(1-xi)**smooth_order + (0.0+epsilon)*xi**smooth_order 
-        if(smooth_order .eq. 0) then
-            xi = 0.5+0.5*ERF(r/(2*ICsig))  
-            alpha  = (1.0-epsilon)*(1-xi) + (0.0+epsilon)*xi
-        end if
-END SUBROUTINE SmoothInterface
+!RECURSIVE SUBROUTINE SmoothInterface(alpha,r,ICsig,epsilon,smooth_order)
+!    USE, INTRINSIC :: ISO_C_BINDING
+!    USE Parameters, ONLY : nVar, nDim
+!    IMPLICIT NONE 
+!    ! Argument list 
+!    REAL, INTENT(IN)               :: r,ICsig
+!    REAL, INTENT(OUT)              :: alpha        ! 
+!
+!    REAL    :: eta,xi
+!        real :: epsilon
+!        integer :: smooth_order
+!        
+!        if(epsilon<0) then
+!            epsilon=1.e-9    
+!        end if
+ !       if(smooth_order<0) then
+ !           smooth_order=4   
+ !       end if
+ !       eta=0.8 ! Optimal for v1
+ !       ! =============== WAY 1 ================================
+ !       if(r>(1+eta)*ICsig) then
+ !           xi=1    
+ !       elseif(r<-(1-eta)*ICsig) then
+ !           xi=0
+!        else
+ !           xi = (r+(1-eta)*ICsig)/(2.0*ICsig) 
+ !       end if
+ !       ! =============== WAY 2 ================================
+ !       alpha  = (1.0-epsilon)*(1-xi)**smooth_order + (0.0+epsilon)*xi**smooth_order 
+ !       if(smooth_order .eq. 0) then
+ !           xi = 0.5+0.5*ERF(r/(2*ICsig))  
+ !           alpha  = (1.0-epsilon)*(1-xi) + (0.0+epsilon)*xi
+ !       end if
+!END SUBROUTINE SmoothInterface
 

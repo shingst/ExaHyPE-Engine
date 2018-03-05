@@ -1,5 +1,5 @@
 /**
- * This file is part of the ExaHyPE project.
+o * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
  *
@@ -533,7 +533,7 @@ bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
   return true;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
+void exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -542,10 +542,20 @@ bool exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber) {
-  const int fineGridCellElement =
-      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  // TODO(Dominic): Keep the condition for later
+//  return fineGridCellElement!=exahype::solvers::Solver::NotFound;
+}
 
-  return fineGridCellElement!=exahype::solvers::Solver::NotFound;
+exahype::solvers::Solver::RefinementControl
+exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
+     const int& cellDescriptionsIndex,
+     const int& solverNumber,
+     const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+  if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
+    return RefinementControl::Refine;
+  } else {
+    return RefinementControl::Erase;
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
@@ -678,28 +688,29 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
   rollbackToPreviousTimeStep(cellDescriptionsIndex,element);
 }
 
-void exahype::solvers::FiniteVolumesSolver::adjustSolution(
+void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element) {
   // reset helper variables
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  assertion(cellDescription.getType()==CellDescription::Cell);
 
-  if (cellDescription.getType()==CellDescription::Cell
-//      && cellDescription.getRefinementEvent()==CellDescription::None
-      ) {
-    double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  zeroTimeStepSizes(cellDescriptionsIndex,element);        // TODO(Dominic): Still necessary?
+  synchroniseTimeStepping(cellDescription);
 
-    adjustSolution(
-          solution,
-          cellDescription.getOffset()+0.5*cellDescription.getSize(),
-          cellDescription.getSize(),
-          cellDescription.getTimeStamp(),
-          cellDescription.getTimeStepSize());
+  double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  adjustSolution(
+      solution,
+      cellDescription.getOffset()+0.5*cellDescription.getSize(),
+      cellDescription.getSize(),
+      cellDescription.getTimeStamp(),
+      cellDescription.getTimeStepSize());
 
-    for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
-      assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+  #ifdef Asserts
+  for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
+    assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
   }
+  #endif
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStep(
@@ -1262,6 +1273,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   CellDescription::Type neighbourType =
       static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
 
+  const int direction   = tarch::la::equalsReturnIndex(src, dest);
+  const int orientation = (1 + src(direction) - dest(direction))/2;
+  const int faceIndex   = 2*direction+orientation;
+
   // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
   // Solving Riemann problems at a Ancestor Ancestor boundary might lead to problems
   // if one Ancestor is just used for restriction.
@@ -1281,10 +1296,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
         ", src=" << src << ", dest=" << dest <<
         ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
     );
-
-    const int direction   = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
 
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     //

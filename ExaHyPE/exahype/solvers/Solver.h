@@ -460,10 +460,20 @@ class exahype::solvers::Solver {
     int levelDifference;
 
     SubcellPosition() :
-      parentCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex),
+      parentCellDescriptionsIndex(),
       parentElement(NotFound),
       subcellIndex(-1),
       levelDifference(-1) {}
+
+    void invalidate() {
+      parentCellDescriptionsIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+      parentElement = NotFound;
+      for (int i=0; i<DIMENSIONS; i++) {
+        subcellIndex[i] = -1;
+      }
+      levelDifference = -1;
+    }
+
     ~SubcellPosition() {}
   } SubcellPosition;
 
@@ -1175,7 +1185,7 @@ class exahype::solvers::Solver {
    * that takes the limiter status into account.
    */
   virtual bool markForRefinement(
-        exahype::Cell& fineGridCell,
+        exahype::Cell& fineGridCell, // TODO(Dominic): Clean up signature
         exahype::Vertex* const fineGridVertices,
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
         exahype::Cell& coarseGridCell,
@@ -1220,7 +1230,7 @@ class exahype::solvers::Solver {
    * event. This is a single event.
    * Returns false in all other scenarios.
    */
-  virtual bool updateStateInLeaveCell(
+  virtual void updateStateInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1229,6 +1239,15 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) = 0;
+
+  /**
+   * \return if the vertices around a cell should be erased, kept,
+   * or refined.
+   */
+  virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+      const int& cellDescriptionsIndex,
+      const int& solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
 
   /**
    * Returns true if the solver has attained
@@ -1411,7 +1430,7 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void adjustSolution(
+  virtual void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
       const int element) = 0;
 

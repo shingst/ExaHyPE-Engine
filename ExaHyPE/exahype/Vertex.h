@@ -207,6 +207,19 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
 
   /**
+   * Evaluate if the current vertex can be erased, must be refined,
+   * or should be kept.
+   *
+   * \note We do not evaluate any physics-based refinement criterion in
+   * this function. This is done cell-wisely and usually triggered in enterCell(..).
+   * Instead, we simply check here the refinement events and flags of
+   * adjacent cell descriptions (which might have been modified earlier by
+   * a physics-based refinement criterion.)
+   */
+  exahype::solvers::Solver::RefinementControl evaluateRefinementCriterion(
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
    * Loop over all neighbouring cells and merge
    * the metadata of cell descriptions in neighbouring
    * cells which are owned by the same solver.
@@ -222,8 +235,8 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 
   /**
    * Validate that a compute cell is not next to
-   * a compute cell as long as the face is an interior
-   * face.
+   * an invalid cell description index as long as their
+   * interface is an interior face.
    */
   void validateNeighbourhood(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,

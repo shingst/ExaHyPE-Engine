@@ -926,6 +926,9 @@ void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentIndex(
   }
 }
 
+// TODO(Dominic): Distinguish between evaluating the physics-based (includes limiter) refinement criteria
+// and evaluating the flagging-based refinement criteria
+
 bool exahype::solvers::ADERDGSolver::markForRefinement(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -997,12 +1000,10 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
                solverNumber); // TODO(Dominic): Can directly refine if we directly evaluate initial conditions here.
     result._newComputeCellAllocated |= true;
   }
-
   else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     // Fine grid cell based adaptive mesh refinement operations.
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
-
 
     // TODO(Dominic): Reevaluate this whole section
     #ifdef Parallel
@@ -1094,7 +1095,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 
   if (vetoErasing) {
     const int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
-                                              fineGridCellDescription.getSolverNumber());
+                                                    fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
       auto& coarseGridCellDescription = getCellDescription(
           fineGridCellDescription.getParentIndex(),coarseGridCellElement);
@@ -1435,7 +1436,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
+void exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1472,23 +1473,60 @@ bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
               fineGridPositionOfCell,
               coarseGridCellDescription);
     }
-
-    bool eraseFineGridVertices =
-        (fineGridCellDescription.getType()==CellDescription::Type::Cell ||
-         fineGridCellDescription.getType()==CellDescription::Type::Descendant)
-        &&
-        fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-        &&
-        !fineGridCellDescription.getIsAugmented()
-        &&
-        fineGridCellDescription.getAugmentationStatus()==0
-        &&
-        fineGridCellDescription.getPreviousAugmentationStatus()==0;
-
-    return eraseFineGridVertices;
   }
+}
 
-  return false;
+exahype::solvers::Solver::RefinementControl
+exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
+    const int& cellDescriptionsIndex,
+    const int& solverNumber,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+  const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
+  if (element!=NotFound) {
+    CellDescription& cellDescription = getCellDescription(
+        cellDescriptionsIndex,element);
+
+    bool refineAdjacentVertices =
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::AugmentingRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested;
+
+    #ifdef Asserts
+    assertion1(
+        cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::RefiningRequested ||
+        cellDescription.getType()==CellDescription::Type::Cell,
+        cellDescription.toString());
+    assertion1(
+        cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::AugmentingRequested ||
+        cellDescription.getType()==CellDescription::Type::Cell ||
+        cellDescription.getType()==CellDescription::Type::Descendant,
+        cellDescription.toString());
+    #endif
+
+    bool eraseAdjacentVertices =
+        (cellDescription.getType()==CellDescription::Type::Cell ||
+        cellDescription.getType()==CellDescription::Type::Descendant)
+        &&
+        (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::DeaugmentingChildrenRequestedTriggered)
+        &&
+        !cellDescription.getIsAugmented()
+        &&
+        cellDescription.getAugmentationStatus()==0
+        &&
+        cellDescription.getPreviousAugmentationStatus()==0; // TODO(Dominic): Might not be necessary
+
+    if (refineAdjacentVertices) {
+      return RefinementControl::Refine;
+    } else if (eraseAdjacentVertices) {
+      return RefinementControl::Erase;
+    } else {
+      return RefinementControl::Keep;
+    }
+  } else if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
+    return RefinementControl::Refine;
+  } else {
+    return RefinementControl::Erase;
+  }
 }
 
 void exahype::solvers::ADERDGSolver::prepareVolumeDataRestriction(
@@ -1856,7 +1894,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnBackgroundJobs =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription);
+        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription);
     const bool vetoSpawnPredictionAsBackgroundJob =
         vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
 
@@ -1908,7 +1946,7 @@ void exahype::solvers::ADERDGSolver::compress(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription);
+        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription);
     compress(cellDescription,vetoSpawnAnyBackgroundJob);
   }
 }
@@ -1946,28 +1984,35 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::isRestrictingOrInvolvedInProlongation(
+bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(
     CellDescription& cellDescription) {
-  bool isRestrictingOrInvolvedInProlongation = cellDescription.getIsAugmented();
+  bool isInvolvedInProlongationOrParentNeedsToRestrictToo = cellDescription.getIsAugmented();
 
   // this might be the expensive part (mostly integer stuff though)
-  exahype::solvers::Solver::SubcellPosition subcellPosition =
+  SubcellPosition subcellPosition =
       exahype::amr::computeSubcellPositionOfCellOrAncestor
       <CellDescription,Heap>(cellDescription);
-  if ( subcellPosition.parentElement!=NotFound ) {
-    auto& parentCellDescription =
+  if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& parentCellDescription =
           exahype::solvers::ADERDGSolver::getCellDescription(
               subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-
-    isRestrictingOrInvolvedInProlongation |=
-        subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-        cellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell &&
-        parentCellDescription.getHelperStatus()>0 &&
+    if (
         exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference);
+            subcellPosition.subcellIndex,subcellPosition.levelDifference)
+    ) {
+      // check if the parent needs to restrict to its parent too
+      SubcellPosition parentSubcellPosition =
+          exahype::amr::computeSubcellPositionOfCellOrAncestor
+          <CellDescription,Heap>(parentCellDescription);
+
+      isInvolvedInProlongationOrParentNeedsToRestrictToo |=
+          parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+          exahype::amr::onBoundaryOfParent(
+              parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
+    }
   }
 
-  return isRestrictingOrInvolvedInProlongation;
+  return isInvolvedInProlongationOrParentNeedsToRestrictToo;
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
@@ -2001,7 +2046,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
       predictorTimeStamp,
       predictorTimeStepSize);
 
-  // If a PredictionJob is launched, this operation will not perform a restriction.
+  // If a PredictionJob is launched, this operation will only perform a restriction
+  // if the parent of this cell does not need to restrict itself.
   restriction(cellDescription);
 
   compress(cellDescription,vetoSpawnAnyBackgroundJob);
@@ -2018,7 +2064,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary ||
-        isRestrictingOrInvolvedInProlongation(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
+        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
 
     if (
         vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
@@ -2207,19 +2253,24 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(
   cellDescription.setPreviousCorrectorTimeStepSize(std::numeric_limits<double>::max()); // TODO(Dominic): get rid of the last time level.
 }
 
-void exahype::solvers::ADERDGSolver::adjustSolution(
+void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element) {
   // reset helper variables
   CellDescription& cellDescription  = getCellDescription(cellDescriptionsIndex,element);
 
+  zeroTimeStepSizes(cellDescriptionsIndex,element);       // TODO(Dominic): Still necessary?
+  synchroniseTimeStepping(cellDescription);
+
   // initial conditions
-  if (cellDescription.getType()==CellDescription::Type::Cell &&
-      cellDescription.getRefinementEvent()==CellDescription::None) {
-    double* luh = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  if (
+      cellDescription.getType()==CellDescription::Type::Cell &&
+      cellDescription.getRefinementEvent()==CellDescription::None
+  ) {
+    double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
 
     adjustSolution(
-      luh,
+      solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
       cellDescription.getCorrectorTimeStamp(),
@@ -2227,7 +2278,7 @@ void exahype::solvers::ADERDGSolver::adjustSolution(
 
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
-      assertion3(std::isfinite(luh[i]),cellDescription.toString(),"setInitialConditions(...)",i);
+      assertion3(std::isfinite(solution[i]),cellDescription.toString(),"setInitialConditions(...)",i);
     }
     #endif
   }
@@ -3483,6 +3534,20 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
     assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
 
+    const int direction    = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation  = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex    = 2*direction+orientation;
+
+    assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
+        faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+    #ifdef Asserts
+    tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
+        exahype::Cell::computeFaceBarycentre(
+            cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
+    logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
+        fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
+    #endif
+
     const int dataPerFace = getBndFaceSize();
     const int dofPerFace  = getBndFluxSize();
 
@@ -3490,33 +3555,19 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int receivedlFhbndIndex = DataHeap::getInstance().createData(dofPerFace,  dofPerFace);
     assertion(!DataHeap::getInstance().getData(receivedlQhbndIndex).empty());
     assertion(!DataHeap::getInstance().getData(receivedlFhbndIndex).empty());
-    assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
-        faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
 
     double* lQhbnd = DataHeap::getInstance().getData(receivedlQhbndIndex).data();
     double* lFhbnd = DataHeap::getInstance().getData(receivedlFhbndIndex).data();
-
-    #ifdef Asserts
-        tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
-            exahype::Cell::computeFaceBarycentre(
-                cellDescription.getOffset(),cellDescription.getSize(),direction,orientation);
-        logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
-            fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
-    #endif
 
     // Send order: lQhbnd,lFhbnd
     // Receive order: lFhbnd,lQhbnd
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     DataHeap::getInstance().receiveData(
-        lFhbnd,dofPerFace,
+        lFhbnd,dofPerFace,s
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
     DataHeap::getInstance().receiveData(
         lQhbnd,dataPerFace,
         fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
-
-    const int direction    = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation  = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex    = 2*direction+orientation;
 
     solveRiemannProblemAtInterface(
         cellDescription,

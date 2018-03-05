@@ -28,15 +28,18 @@ exahype-project  Elastic
 
   computational-domain
     dimension const          = 3
-    width                    = 40.0, 40.0, 40.0
-    offset                   = 0.0, 0.0, 0.0
+//    width                    = 58.0, 58.0, 58.0
+//    offset                   = -26.0, 0.0, -26.0
+    width                    = 4.0, 4.0, 4.0
+    offset                   = -0.5, -0.5, -0.5
+
     end-time                 = 10.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
-    configure                = {}	
-    cores                    = 4
+    configure                = {background-tasks:1}	
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory
  
@@ -64,46 +67,22 @@ exahype-project  Elastic
   solver ADER-DG MyElasticWaveSolver
     variables const    = v:3,sigma:6
     parameters const  = rho:1,cp:1,cs:1
-    order const        = 6
+    order const        = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 1.5
-    maximum-mesh-depth = 0
+    maximum-mesh-size  = 1.0
+    maximum-mesh-depth = 1
     time-stepping      = global
     type const         = linear, Legendre
-    terms const        = flux,ncp,materialparameters,pointsources:4
+    terms const        = flux,ncp,materialparameters,pointsources:1
     optimisation const = generic,patchwiseadjust
     language const     = C
 
     plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12
       time            = 0.0
-      repeat          = 1.0
+      repeat          = 0.05
       output          = ./conserved
     end plot
-
-    /* this is the fake plotter used to compute global integrals */
-    /* it has no output fields. */
-    /*
-    plot vtk::Cartesian::vertices::ascii ComputeGlobalIntegrals
-      variables const = 0
-      time            = 0.0
-      repeat          = 0.05
-      output          = ./output/these-files-should-not-be-there
-    end plot
-
-    plot vtk::Cartesian::vertices::ascii PrimitivesWriter
-      variables const = 3
-      time            = 0.0
-      repeat          = 0.05
-      output          = ./primitive
-    end plot
-
-    plot vtk::Cartesian::vertices::ascii ExactPrimitivesWriter
-      variables const = 3
-      time            = 0.0
-      repeat          = 0.05
-      output          = ./exact-primitive
-    end plot */
 
     /* Do not need the time series for a point in the moment*/
     plot probe::ascii ProbeWriter
@@ -111,7 +90,8 @@ exahype-project  Elastic
       time            = 0.0
       repeat          = 0.005
       output          = ./seismogram
-      select          = x:0.0,y:26.0,z:28.0
+//      select          = x:3.919,y:0.0,z:3.919
+      select          = x:3.0,y:0.0,z:3.0
     end plot
     
   end solver

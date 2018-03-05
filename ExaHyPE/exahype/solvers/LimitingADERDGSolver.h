@@ -329,8 +329,7 @@ private:
    */
   void vetoErasingChildrenRequestBasedOnLimiterStatus(
       const int fineGridCellDescriptionsIndex,
-      const int fineGridSolverElement,
-      const int coarseGridCellDescriptionsIndex) const;
+      const int fineGridSolverElement) const;
 
   /**
    * Depending on the finest adaptive mesh level and the given level,
@@ -821,7 +820,7 @@ public:
       const bool initialGrid,
       const int solverNumber) final override;
 
-  bool updateStateInLeaveCell(
+  void updateStateInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -830,6 +829,11 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) final override;
+
+  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+        const int& cellDescriptionsIndex,
+        const int& solverNumber,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -903,7 +907,7 @@ public:
    * This includes computing, sending, and merging
    * of the min/max values.
    */
-  void adjustSolution(
+  void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
       const int element) final override;
 

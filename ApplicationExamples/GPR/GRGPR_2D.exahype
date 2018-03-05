@@ -61,13 +61,13 @@ exahype-project GRGPR
     variables const                = rho:1,vel:3,p:1,A:9,lapse:1,shift:3,gamma:6,k:6
     order const                    = 3
     maximum-mesh-size              = 0.3
-    maximum-mesh-depth             = 1
+    maximum-mesh-depth             = 2
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source
 	optimisation const = generic
     language const                 = C
-    limiter-type const         = musclhancock
+    limiter-type const         = godunov
     limiter-optimisation const = generic
     limiter-language const     = C
     dmp-observables                = 5
@@ -75,7 +75,7 @@ exahype-project GRGPR
     dmp-difference-scaling         = 1e-4 
     steps-till-cured           = 5
     // helper-layers              = 2
-
+/*
     plot vtu::Cartesian::vertices::ascii ConservedWriter
       variables const = 30
       time      = 0.0
@@ -96,18 +96,26 @@ exahype-project GRGPR
       repeat    = 0.05
       output    = ./vtk-output/primitives
     end plot
+*/
      plot user::defined ErrorWriter
        variables const = 30
        time            = 0.0
        repeat          = 1e-0
        output          = ./output/errors
      end plot
-
+/*
     plot vtu::Cartesian::vertices::limited::ascii Plotter
       variables const = 30
       time      = 0.0
       repeat    = 0.05
       output    = ./vtk-output-lim/dg
     end plot
+*/
+     plot user::defined TecplotWriter
+       variables const = 30
+       time            = 0.0
+       repeat          = 0.05
+       output          = ./output/tecplot
+     end plot
   end solver
 end exahype-project

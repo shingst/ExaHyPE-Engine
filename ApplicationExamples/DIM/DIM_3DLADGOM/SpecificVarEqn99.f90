@@ -20,9 +20,7 @@ module SpecificVarEqn99
         integer :: ix_mid,iy_mid,minpos_deb(2)
         point=(/x_in,y_in,z_in /)
         
-
-		
-        if(z_in<zMin_cg-10.0*di_size) then
+       if(z_in<zMin_cg-10.0*di_size) then
             DistanceFromSurfaceCG=-1.e+14 
             return
         end if
@@ -30,20 +28,9 @@ module SpecificVarEqn99
             DistanceFromSurfaceCG=1.e+14 
             return
         end if
-		
-		ix_mid=floor((x_in-xL_cg)/dx_cg)
-        iy_mid=floor((y_in-yL_cg)/dy_cg)
-		! Second reduction
-        !if(z_in<minval(z_cg(max(ix_mid-40,1):min(nx_cg,ix_mid+40),max(iy_mid-40,1):min(ny_cg,iy_mid+40)))-10.0*di_size) then
-        !    DistanceFromSurfaceCG=-1.e+14 
-        !    return
-        !end if
-        !if(z_in>maxval(z_cg(max(ix_mid-40,1):min(nx_cg,ix_mid+40),max(iy_mid-40,1):min(ny_cg,iy_mid+40)))+10.0*di_size) then
-        !    DistanceFromSurfaceCG=1.e+14 
-        !    return
-        !end if
         ! Fast way
-        
+        ix_mid=floor((x_in-xL_cg)/dx_cg)
+        iy_mid=floor((y_in-yL_cg)/dy_cg)
         minvals=1.e+14
         minpos=0
         do i=max(ix_mid-40,1),min(nx_cg,ix_mid+40)
@@ -51,11 +38,19 @@ module SpecificVarEqn99
                rr=sqrt((point(1)-x_cg(i))**2+(point(2)-y_cg(j))**2+(point(3)-z_cg(i,j))**2)
                if(rr<minvals(1)) then
                    minvals(1)=rr
-                   minpos(1,1)= i!(/i,j/);
-				   minpos(1,2)= j
+                   minpos(1,:)=(/i,j/);
                 end if
             end do
-        end do  
+        end do 
+		if(point(3)-z_cg(minpos(1,1),minpos(1,2))>0) then
+			DistanceFromSurfaceCG=minvals(1)
+		else
+			DistanceFromSurfaceCG=-minvals(1)
+		end if
+		if(minvals(1)>2.0*di_size) then
+			!rr=RadiusFromCG(point(1),point(2),point(3))
+			return
+		end if
         !if(maxval(abs(minpos_deb-minpos(1,:)))>0) then
         !    print *, 'Warning Distance search!'
         !    print *, minpos(1,:),minpos_deb
@@ -65,7 +60,23 @@ module SpecificVarEqn99
         !    print *, y_in,yL_cg,dy_cg
         !    pause
         !end if
-        DistanceFromSurfaceCG=1.e+14
+		
+		!rr=RadiusFromCG(point(1),point(2),point(3))
+		!if(rr>0) then
+		!	sign=+1.0    
+		!else
+		!	sign=-1.0     
+		!end if
+		
+        !DistanceFromSurfaceCG=1.e+14
+        !shift(1,1,:)=(/ 0,1  /)
+        !shift(1,2,:)=(/ -1,0  /)
+        !shift(2,1,:)=(/ 1,0  /)
+        !shift(2,2,:)=(/ 0,1  /) 
+        !shift(3,1,:)=(/ 0,-1  /)
+        !shift(3,2,:)=(/ 1,0  /)
+        !shift(4,1,:)=(/ -1,0  /)
+        !shift(4,2,:)=(/ 0,-1  /)
         shift(1,1,:)=(/ 0,1  /)
         shift(1,2,:)=(/ -1,1  /)
         shift(2,1,:)=(/ 1,0  /)
@@ -78,7 +89,8 @@ module SpecificVarEqn99
         shift(5,2,:)=(/ 0,-1  /)
         shift(6,1,:)=(/ -1,1  /)
         shift(6,2,:)=(/ -1,0  /)
-		np_nv_norm=100;
+		
+		np_nv_norm=100.0
         do l=1,6
             minpos(2,:)=minpos(1,:)+shift(l,1,:)
             minpos(3,:)=minpos(1,:)+shift(l,2,:)
@@ -108,7 +120,7 @@ module SpecificVarEqn99
             end if
             np=np_prj
             call GetTirangleMinPoint(xx(:,1),xx(:,2),xx(:,3),np)
-            if(abs(np_norm)<1.e-1 .and. maxval(np-np_prj)>1.e-6) then ! Normal vector perturbation problem
+            if(abs(np_norm)<5.e-1*di_size .and. maxval(np-np_prj)>1.e-6) then ! Normal vector perturbation problem
                 cycle    
             end if
             
@@ -185,7 +197,7 @@ module SpecificVarEqn99
         real    :: i,j,phi(4),xi,gamma
         integer :: ix(2)
         
-        ix=lookatindex_cg(x_in,y_in)
+        ix=lookatindex_cg_fast(x_in,y_in)
         phi(1)=z_cg(ix(1),ix(2))
         phi(2)=z_cg(ix(1)+1,ix(2))
         phi(3)=z_cg(ix(1),ix(2)+1)
@@ -441,14 +453,11 @@ module SpecificVarEqn99
         real    :: r
         real    :: SmoothInterface
         real    :: eta,ICsig,xi 
-        real, optional :: epsilon
+        real :: epsilon
         integer, optional :: smooth_order_in
 		real	:: smooth_order
-        
-        if(.not. present(epsilon)) then
-            epsilon=1.e-9    
-        end if
 
+		!epsilon=0.0
 		smooth_order=0.5
         eta=-0.6
         ! =============== WAY 1 ================================
@@ -467,6 +476,8 @@ module SpecificVarEqn99
         !end if
     end function SmoothInterface
     
+	
+	
     function xy2t(x,ind)
 		USE, INTRINSIC :: ISO_C_BINDING
         implicit none

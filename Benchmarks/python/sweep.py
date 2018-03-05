@@ -323,7 +323,7 @@ def verifyAllExecutablesExist(justWarn=False):
               "       Then rerun the 'build' subprogram.",file=sys.stderr)
         sys.exit()
 
-def verifySweepAgreesWithHistoricExperiments():
+def verifySweepAgreesWithHistoricalExperiments():
     """
     If there are any previous experiments ensure that the sweep 
     parameter spaces contain the same axes.
@@ -728,7 +728,7 @@ typical workflow:
     coreCounts = options.coreCounts
     runNumbers = options.runNumbers
     
-    verifySweepAgreesWithHistoricExperiments()
+    verifySweepAgreesWithHistoricalExperiments()
     
     # select subprogram
     if subprogram == "cleanAll":
