@@ -39,7 +39,7 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 	   << ")";
 }
 
-//fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double** tempPointForceSources) {
+
 
 int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) {
 {%- if enableProfiler %}
