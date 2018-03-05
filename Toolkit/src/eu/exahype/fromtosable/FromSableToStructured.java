@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.io.BufferedWriter;
 import java.util.*;
 
-import eu.exahype.analysis.DepthFirstAdapter;
 import eu.exahype.node.*;
 
 import eu.exahype.variables.Variables;
+
+import java.lang.reflect.*;
+
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 
 /**
@@ -20,22 +24,91 @@ import eu.exahype.variables.Variables;
  * regexpes or similiar.
  *
  **/
-public class FromSableToStructured extends DepthFirstAdapter {
+public class FromSableToStructured  {
   /// This maps an [hierarchical path key] -> [value]
   // private java.util.Map<String, String> _data;
   Structured _data;
+  
+  /// Wheter to include null references to optional members 
+  boolean _includeMissingOptionals;
   
   public FromSableToStructured() {
     //_data = new java.util.HashMap<String,String>();
     _data = new StructuredDumper();
   }
+
+  /// Chainable setter (argument factory like)
+  public FromSableToStructured setIncludeMissingOptionals(boolean includeMissingOptionals) {
+    _includeMissingOptionals = includeMissingOptionals;
+    return this;
+  }
   
-  public void dump() {
-  // where does entry come from
-  /*   for(Entry<String,String> entry : _data.entrySet()) {
-        System.out.println(entry.getKey() + "=" + entry.getValue());
-     }
-  */
+  public void dump(Node root) {
+    dump(root, "");
+  }
+  
+  /**
+   * A recursive serialzer for a SableCC Node tree (AST).
+   *
+   *  obj: A Node subclass from eu.exahype.node.*
+   *  path: A path such as /foo/bar/baz
+   **/
+  public void dump(Object obj, String path) {
+    if(obj == null) {
+      // the null/None type
+      _data.put(path, "<None>");
+      return;
+    }
+    String qualifiedname = obj.getClass().getName(); // w namespace
+    String clsname = obj.getClass().getSimpleName(); // w.o. namespace
+    boolean sableNode = qualifiedname.startsWith("eu.exahype.node");
+    if(sableNode && clsname.startsWith("A") || clsname.equals("Start")) {
+      Field[] allFields = obj.getClass().getDeclaredFields();
+      for (Field field : allFields) {
+	  field.setAccessible(true);
+          Pattern p = Pattern.compile("^_(.*)_$");
+          Matcher m = p.matcher(field.getName());
+          if (m.find()) {
+          //if(field.getName().matches("_.*_")) {
+             // this is one of the sableCC guys
+             String fieldName = m.group(1);
+             try {
+	       Object target = field.get(obj);
+               if(target != null || _includeMissingOptionals) {
+                  dump(target, path + "/" + fieldName);
+	       } else {
+	          System.out.println(path + ": Skipping field " + field.getName());
+	       }
+	     } catch(IllegalAccessException e) {
+	       System.out.println(e.toString());
+	     }
+          } else {
+             System.out.println(path + ": Field "+field.toGenericString()+" not interesting");
+          }
+       }
+    } else if(sableNode && clsname.startsWith("P")) {
+      // Pointer: Look it up
+      try {
+        Class aclass = Class.forName("A" + clsname.substring(1, clsname.length()));
+        dump(aclass.cast(obj), path);
+      } catch(ClassNotFoundException e) {
+        System.out.println(e.toString());
+      }
+    } else if(sableNode && clsname.startsWith("T")) {
+      // Token: Finalize it
+      _data.put(path, ((Token) obj).getText());
+    } else if (obj instanceof Collection<?>){
+      // it is something like LinkedList<PSolver>
+      int i = 0;
+      for(Object child : (Collection)obj) {
+         dump(child, path+"["+Integer.toString(i)+"]");
+         i++;
+      }
+    } else if(clsname.equals("EOF")) {
+      // the SableCC end node.
+    } else {
+      throw new RuntimeException("Unknown class: " + clsname);
+    }
   }
   
   public void mandatory(String target, Token token) {
@@ -46,134 +119,5 @@ public class FromSableToStructured extends DepthFirstAdapter {
     if(token != null)
       _data.put(target, token.getText());
     return (token != null);
-  }
-
-  @Override
-  public void inAPaths(APaths node) {
-    // see below for an implementation which traverses nicer.
-    System.out.println("APath: " + node.toString());
-  }
-
-  @Override
-  public void inAProject(AProject node) {
-    // for debugging:
-    System.out.println("AProject: " + node.toString());
-  
-    mandatory("project/name", node.getName());
-    
-    APaths paths = (APaths) node.getPaths();
-    mandatory("project/paths/peano-path", paths.getPeanoKernelPath());
-    mandatory("project/paths/exahype-path", paths.getExahypePath());
-    mandatory("project/paths/output-directory",  paths.getOutputDirectory());
-    
-    AArchitecture architecture = (AArchitecture) node.getArchitecture();
-    mandatory("project/get-architecture", architecture.getIdentifier());
-    
-    ALogfile logfile = (ALogfile) node.getLogfile();
-    optional("project/logfile", logfile.getFilename());
-    
-    AComputationalDomain computationalDomain = (AComputationalDomain) node.getComputationalDomain();
-    // *probably* todo: As integer. Better not here but detect
-    // somewhere centrally.
-    int dimensions = Integer.parseInt(computationalDomain.getDimension().getText());
-    _data.put("project/computational_domain/dimensions", dimensions);
-    
-    mandatory("project/computational_domain/width/x", computationalDomain.getWidthX());
-    mandatory("project/computational_domain/width/y", computationalDomain.getWidthY());
-    if(dimensions>2)
-    mandatory("project/computational_domain/width/z", computationalDomain.getWidthZ());
-
-    mandatory("project/computational_domain/offset/x", computationalDomain.getOffsetX());
-    mandatory("project/computational_domain/offset/y", computationalDomain.getOffsetY());
-    if(dimensions>2)
-    mandatory("project/computational_domain/offset/z", computationalDomain.getOffsetZ());
-
-    optional("project/computational_domain/endTime", computationalDomain.getEndTime());
-    optional("project/computational_domain/timeSteps", computationalDomain.getTimeSteps());
-    
-    ASharedMemory sharedMemory = (ASharedMemory) node.getSharedMemory();
-    if(sharedMemory != null) {
-        mandatory("project/shared_memory/identifier", sharedMemory.getIdentifier());
-        mandatory("project/shared_memory/cores", sharedMemory.getCores());
-        mandatory("project/shared_memory/properties_file", sharedMemory.getPropertiesFile());
-    }
-  }
-
-
-  /// Child of AProject
-  @Override
-  public void inAProfiling(AProfiling node) {
-    /*
-        @SuppressWarnings("hiding") TIdentifier _profiler_,
-        @SuppressWarnings("hiding") List<PItem> _metrics_,
-        @SuppressWarnings("hiding") TFilename _likwidInc_,
-        @SuppressWarnings("hiding") TFilename _likwidLib_,
-        @SuppressWarnings("hiding") TFilename _ipcmInc_,
-        @SuppressWarnings("hiding") TFilename _ipcmLib_,
-        @SuppressWarnings("hiding") TTokenOnOff _deepProfiling_)
-    */
-  };
-  
-  /// Child of AProject
-  @Override
-  public void inADistributedMemory(ADistributedMemory node) {
-        mandatory("project/distributed_memory/identifier", node.getIdentifier());
-        mandatory("project/distributed_memory/configure", node.getConfigure());
-        mandatory("project/distributed_memory/buffer_size", node.getBuffersize());
-        mandatory("project/distributed_memory/timeout", node.getTimeout());
-  }
-  
-  
-  /// Child of AProject
-  @Override
-  public void inAOptimisation(AOptimisation node) {
-        String prefix = "project/distributed_memory";
-        optional(prefix+"fuseAlgorithmSteps", node.getFuseAlgorithmSteps());
-        optional(prefix+"fuseAlgorithmStepsFactor", node.getFuseAlgorithmStepsFactor());
-        optional(prefix+"spawnPredictor", node.getSpawnPredictor());
-        optional(prefix+"batchTimesteps", node.getBatchTimesteps());
-        optional(prefix+"skipReduction", node.getSkipReduction());
-        optional(prefix+"disableAmr", node.getDisableAmr());
-        // usw., for
-        //  TFloatNumber _doubleCompression_,
-        // TTokenOnOff _spawnDoubleCompression_)
-  }
-  
-  public void registerVariables(Variables quantities) {
-  }
-
-  @Override
-  public void inAAderdgSolver(AAderdgSolver node) {
-    String solverName    = node.getName().getText();
-    _data.put("domain/solver/name", node.getName().getText());
-    _data.put("domain/solver/language", node.getLanguage().getText());
-    int     order        = Integer.parseInt(node.getOrder().getText());
-    // interestingly, here the constants start:
-    boolean hasConstants = node.getConstants()!=null;
-    // make use of the structured variables class
-    Variables quantities  = new Variables(solverName, node);
-
-    // can feed this into the data.
-    Map<String,Integer> variables = quantities.getVariablesMap();
-    Map<String,Integer> parameters = quantities.getParametersMap();    
-  }
-
-  @Override
-  public void inAFiniteVolumesSolver(AFiniteVolumesSolver node) {
-    String solverName    = node.getName().getText();
-    String  language     = node.getLanguage().getText();
-    int     patchSize    = Integer.parseInt(node.getPatchSize().getText());
-    boolean hasConstants = node.getConstants()!=null;
-    Variables variables  = new Variables(solverName, node);
-    boolean isFortran    = language.equals("Fortran");
-  }
-  
-  @Override
-  public void inALimitingAderdgSolver(ALimitingAderdgSolver node) {
-    String solverName    = node.getName().getText();
-    String  language     = node.getLanguage().getText();
-    int     order        = Integer.parseInt(node.getOrder().getText());
-    boolean hasConstants = node.getConstants()!=null;
-    String  limiterLanguage  = node.getLanguageLimiter().getText();
   }
 }
