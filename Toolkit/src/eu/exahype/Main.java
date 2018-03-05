@@ -58,9 +58,12 @@ public class Main {
     options.addOption("c", "clean-opt", false, "Clean optimized kernels (only applicable if optimized kernels are used in Specfile)");
     options.addOption("n", "not-interactive", false, "Run non-interactively in non-stop mode");
     options.addOption("i", "interactive", false, "Run interactively. This is the default. [Deprecated, use --non-interactive instead]");
+
     options.addOption("q", "quiet", false, "Be quiet, do not say so much");
     options.addOption("h", "help", false, "Show usage information");
-    options.addOption("e", "export", false, "Export specification file contents into something else, dump on stdout. Does not involve the toolkit afterwards.");
+
+    options.addOption("e", "export", false, "Export specification file contents into JSON on stdout. Does not involve the toolkit afterwards.");
+    options.addOption("u", "export-null", false, "Export: Include nulls for unset values");
 
     CommandLineParser parser = new DefaultParser();
 
@@ -91,7 +94,7 @@ public class Main {
         Node document = parseFile(inputFileName);
         
         if(line.hasOption("export")) {
-          exportSpecfile(document);
+          exportSpecfile(document, line.hasOption("include-null"));
           System.exit(0);
         }
 
@@ -116,9 +119,9 @@ public class Main {
     if(verbose) System.out.println(msg);
   }
   
-  public void exportSpecfile(Node document) {
+  public void exportSpecfile(Node document, boolean includeMissingOptionals) {
     FromSableToStructured exporter = new FromSableToStructured();
-    exporter.setIncludeMissingOptionals(true).printJson(document, System.out);
+    System.out.print(exporter.setIncludeMissingOptionals(includeMissingOptionals).toJSON(document));
     return;
   }
 

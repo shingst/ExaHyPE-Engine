@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
 
 import java.io.OutputStream;
 
-import javax.json.*;
+import org.json.*;
 
 
 /**
@@ -36,15 +36,9 @@ public class FromSableToStructured  {
   /// Wheter to include null references to optional members 
   boolean _includeMissingOptionals;
   
-  JsonBuilderFactory factory;
-  
   public FromSableToStructured() {
     //_data = new java.util.HashMap<String,String>();
 //    _data = new StructuredDumper();
-
-     Map<String, Object> config = new HashMap<String, Object>();
-     // config.put(JsonGenerator.PRETTY_PRINTING, true);
-     factory = Json.createBuilderFactory(config);
   }
 
   /// Chainable setter (argument factory like)
@@ -53,11 +47,51 @@ public class FromSableToStructured  {
     return this;
   }
   
-  public void printJson(Node document, OutputStream out) {
-    JsonWriter writer = Json.createWriter(out);
-    JsonObject data = (JsonObject) dump(document);
-    writer.writeObject(data);
-    writer.close();	
+  public String toJSON(Node document) {
+    try{
+      int indentFactor = 4;
+      return (dumpDocument((Start)document)).toString(indentFactor);
+    } catch(JSONException e) {
+      System.err.println("Could not create JSON: " + e.toString());
+      System.exit(-1);
+      return "";
+    }
+  }
+  
+  /**
+   * Jump already to the main sub node in the head node.
+   * This sugar makes use of exahype.grammar knowledge. If you want to
+   * be generic, just use dump() with any Node.
+   **/
+  public JSONObject dumpDocument(Start document) {
+    return (JSONObject) dump(document.getPProject());
+  }
+  
+  /**
+   * Try to make sense of a Token by exploiting knowledge of the exahype.grammar.
+   *
+   **/
+  public Object parseToken(Token t) {
+    String s = t.getText();
+    String clsname = t.getClass().getSimpleName(); // w.o. namespace
+    
+    // ExaHyPE booleans
+    if(clsname.equals("TTokenOnOff")) {
+      Boolean truth = s.toLowerCase().equals("on");
+      return truth;
+    }
+    
+    try {
+      Integer i = Integer.parseInt(s);
+      return i;
+    } catch(NumberFormatException nfe) {}
+    
+    try {
+      Double d = Double.parseDouble(s);
+      return d;
+    } catch(NumberFormatException nfe) {}
+    
+    return s;
   }
   
   /**
@@ -66,11 +100,11 @@ public class FromSableToStructured  {
    *  obj: A Node subclass from eu.exahype.node.*
    *  path: A path such as /foo/bar/baz
    **/
-  public JsonValue dump(Object obj) {
+  public Object dump(Object obj) {
     if(obj == null) {
       // the null/None type
       //path.put("<None>");
-      return JsonValue.NULL;
+      return JSONObject.NULL;
     }
     String qualifiedname = obj.getClass().getName(); // w namespace
     String clsname = obj.getClass().getSimpleName(); // w.o. namespace
@@ -79,7 +113,7 @@ public class FromSableToStructured  {
     if(sableNode && clsname.startsWith("A") || clsname.equals("Start")) {
       // A node can be mapped to a structure (dictionary)
       Field[] allFields = obj.getClass().getDeclaredFields();
-      JsonObjectBuilder out_obj = factory.createObjectBuilder();
+      JSONObject out_obj = new JSONObject();
       for (Field field : allFields) {
 	  field.setAccessible(true);
           Pattern p = Pattern.compile("^_(.*)_$");
@@ -90,7 +124,7 @@ public class FromSableToStructured  {
              try {
 	       Object target = field.get(obj);
                if(target != null || _includeMissingOptionals) {
-                  out_obj.add(fieldName, dump(target));
+                  out_obj.put(fieldName, dump(target));
 	       } else {
 	          //System.out.println(path.pathtoString() + ": Skipping field " + field.getName());
 	       }
@@ -101,7 +135,7 @@ public class FromSableToStructured  {
              //System.out.println(path.pathtoString() + ": Field "+field.toGenericString()+" not interesting");
           }
        }
-       return out_obj.build();
+       return out_obj;
     } else if(sableNode && clsname.startsWith("P")) {
       // Pointer: Look up and pass throught
       try {
@@ -112,21 +146,18 @@ public class FromSableToStructured  {
       }
     } else if(sableNode && clsname.startsWith("T")) {
       // Token: Finally a primitive value
-      String primitive = ((Token) obj).getText();
-      // the most ugly way to cast java.lang.String to javax.json.JsonString:
-      String key="tmp";
-      return factory.createObjectBuilder().add(key, primitive).build().getJsonString(key);
+      return parseToken((Token) obj);
     } else if (obj instanceof Collection<?>){
       // a list (such as LinkedList<PSolver>) can be mapped to an array
       //Structured lst = path.put_list(path);
-      JsonArrayBuilder out_lst = factory.createArrayBuilder();
+      JSONArray out_lst = new JSONArray();
       for(Object child : (Collection)obj) {
-         out_lst.add(dump(child));
+         out_lst.put(dump(child));
       }
-      return out_lst.build();
+      return out_lst;
     } else if(clsname.equals("EOF")) {
       // the SableCC end node.
-      return JsonValue.NULL;
+      return JSONObject.NULL;
     } else {
       throw new RuntimeException("Unknown class: " + clsname);
     }
