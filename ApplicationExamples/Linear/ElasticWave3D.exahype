@@ -28,8 +28,11 @@ exahype-project  Elastic
 
   computational-domain
     dimension const          = 3
-    width                    = 58.0, 58.0, 58.0
-    offset                   = -26.0, 0.0, -26.0
+//    width                    = 58.0, 58.0, 58.0
+//    offset                   = -26.0, 0.0, -26.0
+    width                    = 4.0, 4.0, 4.0
+    offset                   = -0.5, -0.5, -0.5
+
     end-time                 = 10.0
   end computational-domain
 
@@ -66,8 +69,8 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1
     order const        = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 4.5
-    maximum-mesh-depth = 0
+    maximum-mesh-size  = 1.0
+    maximum-mesh-depth = 1
     time-stepping      = global
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,pointsources:1
@@ -77,7 +80,7 @@ exahype-project  Elastic
     plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12
       time            = 0.0
-      repeat          = 0.5
+      repeat          = 0.05
       output          = ./conserved
     end plot
 
@@ -87,7 +90,8 @@ exahype-project  Elastic
       time            = 0.0
       repeat          = 0.005
       output          = ./seismogram
-      select          = x:3.919,y:0.0,z:3.919
+//      select          = x:3.919,y:0.0,z:3.919
+      select          = x:3.0,y:0.0,z:3.0
     end plot
     
   end solver

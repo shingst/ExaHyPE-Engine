@@ -57,7 +57,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  double z  =  (offset_z+width_z*kernels::gaussLegendreNodes[basisSize-1][k]);
 
 	  // velocity
-	  luh[id_xyzf(k,j,i,0)]  = 0;
+	  luh[id_xyzf(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5)))/0.01;
 	  luh[id_xyzf(k,j,i,1)]  = 0;
 	  luh[id_xyzf(k,j,i,2)]  = 0;
 	
@@ -118,14 +118,15 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   for(int i = 0 ; i<DIMENSIONS; i++){
     pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
   }
+  
  if (tarch::la::equals(t,0.0)) {
   if(pointSourceInElement){
-    std::cout << "refine ps" << std::endl;
+    //std::cout << "refine ps" << std::endl;
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
  }else{
    if(pointSourceInElement){
-     std::cout << "keep ps " << std::endl;
+     //std::cout << "keep ps " << std::endl;
      return exahype::solvers::Solver::RefinementControl::Keep;
    }
  }
@@ -146,11 +147,11 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   //  std::cout<< max_velocity      << std::endl;
   bool wave=max_velocity > 1.0e-8*(getMaxLevel()-level+1);
   if(wave){
-    std::cout << "refine" << std::endl;
+    //std::cout << "refine" << std::endl;
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
   if (level > getCoarsestMeshLevel()){
-    std::cout << "erase" << std::endl;
+    //std::cout << "erase" << std::endl;
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
 
@@ -307,7 +308,7 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
      * @TODO LR : document
      */
 void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs) {
-  double rho = Q[9];  
+   double rho = Q[9];  
   double c_p = Q[10];
   double c_s = Q[11];  
   double mu     = rho*c_s*c_s;
@@ -355,7 +356,7 @@ void Elastic::MyElasticWaveSolver::multiplyMaterialParameterMatrix(const double*
 
   rhs[24]= mu*rhs[24];
   rhs[25]= mu*rhs[25];
-  rhs[26]= mu*rhs[26];  
+  rhs[26]= mu*rhs[26];
 }
 
 void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
@@ -570,7 +571,7 @@ void Elastic::MyElasticWaveSolver::localBasis(double* n, double * m, double* l, 
       l[1] = -(n[0]*m[2]-n[2]*m[0]);
       l[2] = n[0]*m[1]-n[1]*m[0];
   }
-}
+} 
 
 
 
