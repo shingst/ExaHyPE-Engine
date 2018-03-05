@@ -23,6 +23,8 @@
 #
 
 
+import copy
+
 import Backend
 from utils import TemplatingUtils
 from utils.MatmulConfig import MatmulConfig
@@ -33,6 +35,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
 
     # name of generated output file
     m_filename       = "fusedSpaceTimePredictorVolumeIntegral.cpp"
+    m_filename_noPS  = "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp"
     
     m_filename_asm   = "asm_fstpvi" 
 
@@ -56,6 +59,11 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
             self.m_context["gemm_flux_y"] = gemmName+"_flux_y"
             self.m_context["gemm_flux_z"] = gemmName+"_flux_z"
             TemplatingUtils.renderAsFile("fusedSPTVI_linear_cpp.template", self.m_filename, self.m_context)
+            if(self.m_context["usePointSources"]):
+                localContext = copy.copy(self.m_context)
+                localContext["usePointSources"] = False
+                localContext["nameSuffix"] = "_WithoutPS"
+                TemplatingUtils.renderAsFile("fusedSPTVI_linear_cpp.template", self.m_filename_noPS, localContext)
         else:
             self.m_context["nDof_seq"] = range(0,self.m_context["nDof"])
             self.m_context["gemm_rhs_x"] = gemmName+"_rhs_x"
