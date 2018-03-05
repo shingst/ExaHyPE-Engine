@@ -59,6 +59,7 @@ unpack_deps:
 #	jar xf ../lib/jtwig-core.jar org/jtwig
 #	jar xf ../lib/mustache.jar   com/github/mustachejava
 #	jar xf ../lib/handlebars.jar com/github/jknack
+	jar xf ../lib/javax.json-api-1.0.jar   javax/json
 
 jar:
 	jar cmf ./Manifest.txt ExaHyPE.jar .

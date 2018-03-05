@@ -1,15 +1,14 @@
 package eu.exahype.fromtosable;
 
 /**
- * This class represents a dictionary entry.
- *
+ * This class represents a list.
  *
  * A quick naive way to store structured JSON-like information
  * with absolute paths.
  *
  * -> There is LinkedHashMap as ordereddict in java to use.
  **/
-public interface Structured {
+public interface StructuredList {
 
   /** Make a new one from this type */
   public Structured makeInstance();

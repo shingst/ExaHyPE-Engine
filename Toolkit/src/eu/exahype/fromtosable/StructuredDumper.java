@@ -3,6 +3,7 @@ package eu.exahype.fromtosable;
 /**
  * Just Dummy.
  **/
+ /*
 public class StructuredDumper implements Structured {
   public void put(String key, String value) {
      System.out.println("["+key+"] = \"" + value + "\"");
@@ -17,3 +18,4 @@ public class StructuredDumper implements Structured {
      put(key, "<boolean>" + Boolean.toString(value));
   }
 }
+*/

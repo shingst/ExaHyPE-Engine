@@ -117,14 +117,9 @@ public class Main {
   }
   
   public void exportSpecfile(Node document) {
-    // Begin: Sven testing JSON export.
-	FromSableToStructured exporter = new FromSableToStructured();
-	exporter.setIncludeMissingOptionals(true).dump(document);
-	//exporter.dump();
-	System.out.println("Done, Slurped everything.\n");
-	
-	// Exit here for testing
-	return;
+    FromSableToStructured exporter = new FromSableToStructured();
+    exporter.setIncludeMissingOptionals(true).printJson(document, System.out);
+    return;
   }
 
   public Node parseFile(String inputFileName) {
