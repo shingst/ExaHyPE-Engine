@@ -199,6 +199,12 @@ class exahype::parser::Parser {
    */
   bool getSpawnPredictionAsBackgroundThread() const;
 
+  /**
+   * \return if the mesh refinement iterations should
+   * use background-threads whenever this is possible.
+   */
+  bool getSpawnAMRBackgroundThreads() const;
+
   double getTimestepBatchFactor() const;
   bool getSkipReductionInBatchedTimeSteps() const;
 

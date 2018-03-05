@@ -44,6 +44,7 @@ exahype-project  Elastic
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on

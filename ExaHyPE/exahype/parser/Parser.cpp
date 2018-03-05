@@ -586,6 +586,25 @@ bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   return result;
 }
 
+bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
+  std::string token = getTokenAfter("global-optimisation", "spawn-amr-background-threads");
+  logDebug("getSpawnAMRBackgroundThreads()", "found spawn-amr-background-threads"
+                                            << token);
+
+  bool result = token.compare("on") == 0;
+
+  if (token.compare(_noTokenFound) == 0) {
+    result = false;  // default value
+  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+    logError("getSpawnAMRBackgroundThreads()",
+             "spawn-amr-background-threads is required in the "
+             "global-optimisation segment and has to be either on or off: "
+                 << token);
+    _interpretationErrorOccured = true;
+  }
+  return result;
+}
+
 bool exahype::parser::Parser::getExchangeBoundaryDataInBatchedTimeSteps() const {
   std::string token = getTokenAfter(
       "global-optimisation",
