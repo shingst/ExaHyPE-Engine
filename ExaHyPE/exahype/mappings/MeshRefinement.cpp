@@ -182,7 +182,7 @@ void exahype::mappings::MeshRefinement::refineSafely(
   }
 }
 
-void exahype::mappings::MeshRefinement::eraseButPreserveRegularityAlongRemoteBoundary(
+void exahype::mappings::MeshRefinement::eraseIfInsideAndNotRemote(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const {
   if (
@@ -192,7 +192,7 @@ void exahype::mappings::MeshRefinement::eraseButPreserveRegularityAlongRemoteBou
       #endif
       !fineGridVertex.isHangingNode()
       &&
-      fineGridVertex.isInside()       && // important. Otherwise, we compete with
+      fineGridVertex.isInside()       && // otherwise, we compete with ensureRegularityAlongBoundary
       fineGridVertex.getRefinementControl()
       == Vertex::Records::RefinementControl::Refined
   ) {
@@ -214,7 +214,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
   if ( refinementControl==exahype::solvers::Solver::RefinementControl::Refine ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
   } else if ( refinementControl==exahype::solvers::Solver::RefinementControl::Erase ) {
-    eraseButPreserveRegularityAtRemoteBoundary(fineGridVertex,fineGridH);
+    eraseIfInsideAndNotRemote(fineGridVertex,fineGridH);
   }
 }
 
