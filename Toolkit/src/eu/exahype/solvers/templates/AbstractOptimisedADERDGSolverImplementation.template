@@ -130,11 +130,10 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),center,dx);
    
   if(pointSources != nullptr) {
-  // perform pointsource
-    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
+    // perform pointsource
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
   } else {
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
   }
 {%- else %}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
