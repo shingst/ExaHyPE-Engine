@@ -32,9 +32,8 @@
 
 #include "exahype/mappings/LimiterStatusSpreading.h"
 
-bool exahype::mappings::MeshRefinement::IsFirstIteration = true;
-
-bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
+bool exahype::mappings::MeshRefinement::IsFirstIteration        = true;
+bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = true;
 
 tarch::logging::Log exahype::mappings::MeshRefinement::_log("exahype::mappings::MeshRefinement");
 
@@ -158,9 +157,8 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   }
 
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
-  #ifdef Parallel
+
   exahype::mappings::MeshRefinement::IsFirstIteration = false;
-  #endif
 }
 
 void exahype::mappings::MeshRefinement::refineSafely(

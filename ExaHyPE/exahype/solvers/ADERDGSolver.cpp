@@ -1059,14 +1059,14 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
   else if (
       fineGridCellDescription.getType()==CellDescription::Type::Ancestor  &&
       fineGridCellDescription.getRefinementEvent()==CellDescription::None &&
-      fineGridCellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Refine
-      // this means the the former Cell now Ancestor was refined already during
-      // the current mesh refinement iterations
+      fineGridCellDescription.getRefinementRequest()==CellDescription::RefinementRequest::Pending
+      // this means the the former Cell now Ancestor was not yet refined during the current
+      // mesh refinement iterations.
   ) {
     fineGridCellDescription.setRefinementEvent(CellDescription::ErasingChildrenRequested);
   }
 
-  if (fineGridCellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Erase) {
+  if ( fineGridCellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Erase ) {
     const int coarseGridCellElement = tryGetElement(
         fineGridCellDescription.getParentIndex(),fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
@@ -2207,7 +2207,7 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(
 void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element) {
-  CellDescription& cellDescription  = getCellDescription(cellDescriptionsIndex,element);
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion(cellDescription.getRefinementEvent()==CellDescription::None); // TODO(Dominic): Probably have to allow more states
 
   zeroTimeStepSizes(cellDescriptionsIndex,element); // TODO(Dominic): Still necessary?
@@ -2219,7 +2219,7 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
-  assertion(cellDescription.getRefinementEvent()==CellDescription::None); // TODO(Dominic): Probably have to allow more states
+  assertion1(cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString()); // TODO(Dominic): Probably have to allow more states
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);

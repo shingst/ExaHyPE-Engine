@@ -122,9 +122,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   OneSolverRequestedMeshUpdate =
       exahype::solvers::Solver::oneSolverRequestedMeshUpdate();
 
-  #ifdef Parallel
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
-  #endif
 
   initialiseLocalVariables();
 

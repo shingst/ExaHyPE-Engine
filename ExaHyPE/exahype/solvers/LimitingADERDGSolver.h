@@ -797,6 +797,16 @@ public:
   void updateLimiterStatusDuringLimiterStatusSpreading(
       const int cellDescriptionsIndex, const int solverElement) const;
 
+  /**\copydoc exahype::solvers::Solver::updateStateInEnterCell
+   *
+   * <h2>Limiter status-based refinement</h2>
+   *
+   * We do not mark for refinement based on the limiter status
+   * as long as the refinement request of the cell description
+   * is still in the pending state. In this case,
+   * the physical admissibility detection and the user's refinement
+   * criterion have not been evaluated.
+   */
   bool updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,

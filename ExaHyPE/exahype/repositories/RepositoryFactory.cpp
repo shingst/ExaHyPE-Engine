@@ -1,6 +1,5 @@
 #include "exahype/repositories/RepositoryFactory.h"
 
-#include "exahype/repositories/RepositoryArrayStack.h"
 #include "exahype/repositories/RepositorySTDStack.h"
 
 #include "exahype/records/RepositoryState.h"

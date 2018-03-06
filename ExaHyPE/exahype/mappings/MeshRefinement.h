@@ -126,12 +126,28 @@ private:
 
 public:
 
+  /**
+   * Indicates that we perform the initial
+   * mesh refinement.
+   *
+   * \note Must be initialised with true!
+   */
   static bool IsInitialMeshRefinement;
 
   /**
+   * We use this state to call adjust solution at the beginning
+   * of a batch of mesh refinement iterations.
+   *
+   * In parallel builds, we further use it to determine if
+   * we need to drop MPI messages from neighbours or not.
+   * In the first iteration, we don't
+   * expect any messages from neighbours.
+   *
    * This variable is unset in MeshRefinement::beginIteration(...) in the first iteration
    * of MeshRefinement and then reset in
    * FinaliseMeshRefinement::beginIteration(...).
+   *
+   * \note Must be initialised with true!
    */
   static bool IsFirstIteration;
 
