@@ -123,19 +123,17 @@ void exahype::mappings::LimiterStatusSpreading::beginIteration(
   exahype::State& solverState
 ) {
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    // We memorise the previous request per solver
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( spreadLimiterStatus(solver) ) {
-        auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDG->updateNextMeshUpdateRequest(solver->getMeshUpdateRequest());
-        limitingADERDG->updateNextLimiterDomainChange(limitingADERDG->getLimiterDomainChange());
-      }
+  // We memorise the previous request per solver
+  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+    if ( spreadLimiterStatus(solver) ) {
+      auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDG->updateNextMeshUpdateRequest(solver->getMeshUpdateRequest());
+      limitingADERDG->updateNextLimiterDomainChange(limitingADERDG->getLimiterDomainChange());
     }
-
-    initialiseLocalVariables();
   }
+
+  initialiseLocalVariables();
 
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {

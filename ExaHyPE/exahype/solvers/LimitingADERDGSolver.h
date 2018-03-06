@@ -264,8 +264,7 @@ private:
    */
   int allocateLimiterPatch(
       const int cellDescriptionsIndex,
-      const int solverElement,
-      const bool vetoBackgroundJob) const;
+      const int solverElement) const;
 
   /**
    * Project the DG solution onto the FV
@@ -273,7 +272,7 @@ private:
    * the so-obtained FV solution if requested
    * by the user.
    */
-  void adjustLimiterPatchSolution(
+  void adjustLimiterSolution(
       SolverPatch&  solverPatch,
       LimiterPatch& limiterPatch) const;
 
@@ -411,6 +410,13 @@ private:
   static void copyTimeStepDataFromSolverPatch(
       const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
+  /**
+   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   */
+  void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element);
+
 #ifdef Parallel
 
   /**
@@ -465,13 +471,6 @@ private:
       const int     faceIndex,
       const double* const min, const double* const  max) const;
 
-  /**
-   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
-   */
-  void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element);
-
 #endif
 
   /**
@@ -521,13 +520,13 @@ private:
    * A job that calls LimitingADERDGSolver::projectDGSolutionOnFVSpace(...)
    * and
    */
-  class AllocateLimiterPatchJob {
+  class AdjustLimiterSolutionJob {
   private:
     LimitingADERDGSolver& _solver;
     SolverPatch&          _solverPatch;
     LimiterPatch&         _limiterPatch;
   public:
-    AllocateLimiterPatchJob(
+    AdjustLimiterSolutionJob(
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
         LimiterPatch&         limiterPatch);
@@ -769,7 +768,6 @@ public:
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
-
   /**
    * \return true in case a cell on a coarser mesh level is marked as
    * Troubled or in case a cell on a coarser
@@ -1084,7 +1082,7 @@ public:
     * Set iterations to cure troubled cells
     * to the maximum level.
     */
-   void rollbackSolverSolutionsGlobally(
+   void rollbackSolutionGlobally(
           const int cellDescriptionsIndex,
           const int element) const;
 
@@ -1128,7 +1126,7 @@ public:
    * Helper cell limiter patches can be deallocated during
    * the mesh refinement iterations.
    */
-  void reinitialiseSolversLocally(
+  void rollbackSolutionLocally(
       const int cellDescriptionsIndex,
       const int element) const;
 

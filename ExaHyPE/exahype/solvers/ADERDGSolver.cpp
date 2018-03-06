@@ -4273,7 +4273,7 @@ exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSol
   lock.free();
 }
 
-bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator() {
+bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);

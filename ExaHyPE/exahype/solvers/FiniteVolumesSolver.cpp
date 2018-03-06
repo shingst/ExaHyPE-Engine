@@ -2203,7 +2203,7 @@ exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::Ad
   lock.free();
 }
 
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::operator() {
+bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);

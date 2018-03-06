@@ -158,7 +158,7 @@ void exahype::mappings::GlobalRollback::enterCell(
           limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
         }
 
-        limitingADERDGSolver->rollbackSolverSolutionsGlobally(fineGridCell.getCellDescriptionsIndex(),element);
+        limitingADERDGSolver->rollbackSolutionGlobally(fineGridCell.getCellDescriptionsIndex(),element);
       }
     }
 

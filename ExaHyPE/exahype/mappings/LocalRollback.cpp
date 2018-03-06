@@ -103,6 +103,8 @@ void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
   OneSolverRequestedLocalRecomputation =
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+
+  std::cout << "OneSolverRequestedLocalRecomputation="<<OneSolverRequestedLocalRecomputation<<std::endl;
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
@@ -165,7 +167,7 @@ void exahype::mappings::LocalRollback::enterCell(
           } else {
             limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
           }
-          limitingADERDGSolver->reinitialiseSolversLocally(fineGridCell.getCellDescriptionsIndex(),element);
+          limitingADERDGSolver->rollbackSolutionLocally(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
     }
