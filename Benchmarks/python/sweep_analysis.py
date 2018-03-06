@@ -18,6 +18,26 @@ import codecs
 
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
 
+metrics =  [
+        ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
+        ["AVX MFLOP/s",                 "Sum"],
+        ["Memory bandwidth [MBytes/s]", "Sum"],
+        ["Memory data volume [GBytes]", "Sum"],
+        ["L3 bandwidth [MBytes/s]",     "Sum"], 
+        ["L3 data volume [GBytes]",     "Sum"],
+        ["L3 request rate",             "Avg"],
+        ["L3 miss rate",                "Avg"],
+        ["L2 request rate",             "Avg"],
+        ["L2 miss rate",                "Avg"],
+        ["Branch misprediction rate",   "Avg"]
+       ]
+     
+counters = [
+            ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
+            ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
+            ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
+           ]
+
 def parseResultFile(filePath):
     '''
     Reads a single sweep job output file and parses the user time spent within each adapter.
@@ -459,25 +479,6 @@ def parseMetrics(resultsFolderPath,projectName):
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
-    metrics =  [
-            ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
-            ["AVX MFLOP/s",                 "Sum"],
-            ["Memory bandwidth [MBytes/s]", "Sum"],
-            ["Memory data volume [GBytes]", "Sum"],
-            ["L3 bandwidth [MBytes/s]",     "Sum"], 
-            ["L3 data volume [GBytes]",     "Sum"],
-            ["L3 request rate",             "Avg"],
-            ["L3 miss rate",                "Avg"],
-            ["L2 request rate",             "Avg"],
-            ["L2 miss rate",                "Avg"],
-            ["Branch misprediction rate",   "Avg"]
-           ]
-         
-    counters = [
-                ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
-                ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
-                ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
-               ]
     
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
@@ -498,7 +499,7 @@ def parseMetrics(resultsFolderPath,projectName):
                 cores               = match.group(6)
                 run                 = match.group(7)
                 
-                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName,cores=="1")
+                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores=="1")
 
                 # TODO(Dominic): workaround. parameters 
                 if len(environmentDict) is 0:
