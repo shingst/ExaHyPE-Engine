@@ -1264,7 +1264,10 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
     const int cellDescriptionsIndex, const int solverElement) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
 
-  // 1. Rollback solution to previous time step
+  // 1. Ensure limiter patch is allocated
+  ensureRequiredLimiterPatchIsAllocated(cellDescriptionsIndex,solverElement);
+
+  // 2. Rollback solution to previous time step
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
       assertion(solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None);
@@ -1305,15 +1308,8 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
     const int cellDescriptionsIndex, const int solverElement) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
 
-  // TODO(Dominic): Add to docu: Assumes that no merge is performed in adapter FinaliseMeshRefinementAndReinitialisation
-  // 0. Update the limiter status (do not overwrite the previous limiter status)
-  // solverPatch.setLimiterStatus(ADERDGSolver::determineLimiterStatus(solverPatch));
-  // solverPatch.setFacewiseLimiterStatus(0);
-
   // 1. Ensure limiter patch is allocated
-  bool allocated = ensureRequiredLimiterPatchIsAllocated(cellDescriptionsIndex,solverElement);
-
-  std::cout << "allocated=" << allocated <<std::endl;
+  ensureRequiredLimiterPatchIsAllocated(cellDescriptionsIndex,solverElement);
 
   // 2. Now roll back to the last valid solution
   if (
@@ -1325,9 +1321,6 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
 
     if (solverPatch.getPreviousLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch()) {
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
-      if (allocated) {
-        std::cout << "how is that possible?" <<std::endl;
-      }
       _limiter->swapSolutionAndPreviousSolution(limiterPatch);
       projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
     }
