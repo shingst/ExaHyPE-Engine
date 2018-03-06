@@ -9,7 +9,7 @@ void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlinea
   // @todo Please implement/augment if required
   initPointSourceLocations();
 
-  double fault_position=3.0/9.0 * _domainSize[0];
+  double fault_position=1.0/3.0 * _domainSize[0] + _domainOffset[0]; // fault has no effect
   transformation = new CurvilinearTransformation(MyElasticWaveSolver::Order+1,
 						 _coarsestMeshLevel, fault_position,
 						 &_domainOffset[0],

@@ -1,0 +1,11 @@
+!AffineMap
+matrix:
+  x: [1.0, 0.0, 0.0]
+  y: [0.0, 0.0, 1.0]
+translation:
+  x: 0.0
+  y: 0.0
+components: !ASAGI
+  file: trient_003_44_48_9_13.nc
+  parameters: [z]
+  var: z

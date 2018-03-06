@@ -34,12 +34,15 @@ java_version_proof:
 	@echo "This was determined on your Path variable ${PATH}"
 
 clean:
+#	Note: deleting the objects (=files where the suffix .java has been
+#	      replaced by .class) will not find all .class files, as in Java
+#	      a java file can also create multiple .class files (anonymous classes).
 	rm -f $(OBJECTS)
 	rm -f files.mk
 	rm -f ../dist/ExaHyPE.jar
 	rm -rf eu/exahype/node
 #	delete unpacked dependencies:
-	rm -rf org/
+#	rm -rf org/
 
 
 createParser:
@@ -57,8 +60,8 @@ unpack_deps:
 #	jar xf ../lib/jtwig-core.jar org/jtwig
 #	jar xf ../lib/mustache.jar   com/github/mustachejava
 #	jar xf ../lib/handlebars.jar com/github/jknack
-	jar xf ../lib/commons-cli.jar          org/apache/commons/cli
-	jar xf ../lib/json-java.jar            org/json
+#	jar xf ../lib/commons-cli.jar          org/apache/commons/cli
+#	jar xf ../lib/json-java.jar            org/json
 
 jar:
 	jar cmf ./Manifest.txt ExaHyPE.jar .
