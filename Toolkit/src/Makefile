@@ -38,10 +38,8 @@ clean:
 	rm -f files.mk
 	rm -f ../dist/ExaHyPE.jar
 	rm -rf eu/exahype/node
-
-#	delete unpacked dependencies.
-	rm -rf org/jtwig
-	rm -rf com/github/
+#	delete unpacked dependencies:
+	rm -rf org/
 
 
 createParser:
@@ -59,6 +57,8 @@ unpack_deps:
 #	jar xf ../lib/jtwig-core.jar org/jtwig
 #	jar xf ../lib/mustache.jar   com/github/mustachejava
 #	jar xf ../lib/handlebars.jar com/github/jknack
+	jar xf ../lib/commons-cli.jar          org/apache/commons/cli
+	jar xf ../lib/json-java.jar            org/json
 
 jar:
 	jar cmf ./Manifest.txt ExaHyPE.jar .

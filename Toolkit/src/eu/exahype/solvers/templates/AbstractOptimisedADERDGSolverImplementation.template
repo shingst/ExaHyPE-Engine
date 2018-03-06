@@ -46,83 +46,52 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
 
+  constexpr int totalSize = {{optNamespace}}::getFusedSTPVISize();
 {%- if tempVarsOnStack %}
-  double lQi[{{optNamespace}}::getlQiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- if useFlux %}
-  double lFi[{{optNamespace}}::getlFiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- else %}
-  constexpr double* lFi = nullptr;
-  {%- endif %}
-  {%- if (!isLinear && useNCP) || useSource %}
-  double lSi[{{optNamespace}}::getlSiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- else %}
-  constexpr double* lSi = nullptr;
-  {%- endif %}
-  double lQhi[{{optNamespace}}::getlQhiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- if useFlux %}
-  double lFhi[{{optNamespace}}::getlFhiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- else %}
-  constexpr double* lFhi = nullptr;
-  {%- endif %}
-  {%- if (!isLinear && useNCP) || useSource %}
-  double lShi[{{optNamespace}}::getlShiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- else %}
-  constexpr double* lShi = nullptr;
-  {%- endif %}
-  {%- if useNCP %}
-  double gradQ[{{optNamespace}}::getgradQSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- else %}
-  constexpr double* gradQ = nullptr;
-  {%- endif %}
-  {%- if !isLinear %}
-  double rhs[{{optNamespace}}::getlQiSize()] __attribute__((aligned(ALIGNMENT))); //same size as lQi
-  {% endif %}
-  {%- if usePointSources %} 
-  double PSi[{{optNamespace}}::getPSiSize()] __attribute__((aligned(ALIGNMENT)));
-  double PSderivatives[{{optNamespace}}::getPSiSize()] __attribute__((aligned(ALIGNMENT)));
-  {%- else %}
-  constexpr double* PSi = nullptr;
-  constexpr double* PSderivatives = nullptr;
-  {%- endif %}
+  double memory[totalSize] __attribute__((aligned(ALIGNMENT)));
 {%- else %}
-  double* lQi = allocateArray({{optNamespace}}::getlQiSize());
+  //const int index = exahype::DataHeap::getInstance().createData(totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  //double* memory = exahype::DataHeap::getInstance().getData(index).data();
+  double* memory = allocateArray(totalSize);
+{%- endif %}
+
+  double* lQi = memory + {{optNamespace}}::getlQiShift();
   {%- if useFlux %}
-  double* lFi = allocateArray({{optNamespace}}::getlFiSize());
+  double* lFi = memory + {{optNamespace}}::getlFiShift();
   {%- else %}
   constexpr double* lFi = nullptr;
   {%- endif %}
   {%- if (!isLinear && useNCP) || useSource %}
-  double* lSi = allocateArray({{optNamespace}}::getlSiSize());
+  double* lSi = memory + {{optNamespace}}::getlSiShift();
   {%- else %}
   constexpr double* lSi = nullptr;
   {%- endif %}
-  double* lQhi = allocateArray({{optNamespace}}::getlQhiSize());
+  double* lQhi = memory + {{optNamespace}}::getlQhiShift();
   {%- if useFlux %}
-  double* lFhi = allocateArray({{optNamespace}}::getlFhiSize());
+  double* lFhi = memory + {{optNamespace}}::getlFhiShift();
   {%- else %}
   constexpr double* lFhi = nullptr;
   {%- endif %}
   {%- if (!isLinear && useNCP) || useSource %}
-  double* lShi = allocateArray({{optNamespace}}::getlShiSize());
+  double* lShi = memory + {{optNamespace}}::getlShiShift();
   {%- else %}
   constexpr double* lShi = nullptr;
   {%- endif %}
   {%- if useNCP %}
-  double* gradQ = allocateArray({{optNamespace}}::getgradQSize());
+  double* gradQ = memory + {{optNamespace}}::getgradQShift();
   {%- else %}
   constexpr double* gradQ = nullptr;
   {%- endif %}
   {%- if !isLinear %}
-  double* rhs = allocateArray({{optNamespace}}::getlQiSize()); //same size as lQi
+  double* rhs = memory + {{optNamespace}}::getrhsShift(); //same size as lQi
   {% endif %}
   {%- if usePointSources %} 
-  double* PSi = allocateArray({{optNamespace}}::getPSiSize());
-  double* PSderivatives = allocateArray({{optNamespace}}::getPSiSize());
+  double* PSi = memory + {{optNamespace}}::getPSiShift();
+  double* PSderivatives = memory + {{optNamespace}}::getPSderivativesShift();
   {%- else %}
   constexpr double* PSi = nullptr;
   constexpr double* PSderivatives = nullptr;
   {%- endif %}
-{%- endif %}  
 
 {%- if  isLinear %}
 {%- if usePointSources %}
@@ -130,11 +99,10 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),center,dx);
    
   if(pointSources != nullptr) {
-  // perform pointsource
-    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
+    // perform pointsource
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
   } else {
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
   }
 {%- else %}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
@@ -144,33 +112,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
 {%- endif %}
 
+
 {%- if !tempVarsOnStack %}
-  freeArray(lQi);
-  {%- if useFlux %}
-  freeArray(lFi);
-  {%- endif %}
-  {%- if (!isLinear && useNCP) || useSource %}
-  freeArray(lSi);
-  {%- endif %}
-  freeArray(lQhi);
-  {%- if useFlux %}
-  freeArray(lFhi);
-  {%- endif %}
-  {%- if (!isLinear && useNCP) || useSource %}
-  freeArray(lShi);
-  {%- endif %}
-  {%- if useNCP %}
-  freeArray(gradQ);
-  {%- endif %}
-  {%- if !isLinear %}
-  freeArray(rhs);
-  {% endif %}
-  {%- if usePointSources %} 
-  freeArray(PSi);
-  freeArray(PSderivatives);
-  {%- endif %}
+  //exahype::DataHeap::getInstance().deleteData(index,true);
+  freeArray(memory);
 {%- endif %}
-  
+ 
 {%- if enableProfiler %}
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
@@ -218,7 +165,6 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 
 
 
-//void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
@@ -228,8 +174,12 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   double stateOut[{{optNamespace}}::getBndFaceSize()] __attribute__((aligned(ALIGNMENT)));
   double fluxOut[ {{optNamespace}}::getBndFluxSize()] __attribute__((aligned(ALIGNMENT)));
 {%- else %}
-  double* stateOut = allocateArray({{optNamespace}}::getBndFaceSize());
-  double* fluxOut  =  allocateArray({{optNamespace}}::getBndFluxSize());
+  constexpr int totalSize = {{optNamespace}}::getBoundaryConditionsSize();
+  //const int index = exahype::DataHeap::getInstance().createData(totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+  //double* memory = exahype::DataHeap::getInstance().getData(index).data();
+  double* memory = allocateArray(totalSize);
+  double* stateOut = memory + {{optNamespace}}::getBndFaceShift();
+  double* fluxOut  = memory + {{optNamespace}}::getBndFluxShift();
 {%- endif %}
 
   {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, cellCentre, cellSize, t, dt, faceIndex, direction);
@@ -242,8 +192,8 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   }
   
 {%- if !tempVarsOnStack %}
-  freeArray(stateOut);
-  freeArray(fluxOut);
+  //exahype::DataHeap::getInstance().deleteData(index,true);
+  freeArray(memory);
 {%- endif %}
   
 {%- if enableProfiler %}
@@ -279,22 +229,6 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 }
 {%- endif %}
 
-/*
-//legacy
-void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
-{%- if usePointSources %}
-{%- if enableProfiler %}
-  _profiler->start("deltaDistribution");
-{%- endif %}
-  {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, center, dx, tempPointForceSources);
-{%- if enableProfiler %}
-  _profiler->stop("deltaDistribution");
-{%- endif %}
-{%- else %}
-  //Point sources aren't defined, this method should be empty
-{%- endif %}
-}
-*/
 
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {

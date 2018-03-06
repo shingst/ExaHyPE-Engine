@@ -3519,7 +3519,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     // Receive order: lFhbnd,lQhbnd
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     DataHeap::getInstance().receiveData(
-        lFhbnd,dofPerFace,s
+        lFhbnd,dofPerFace,
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
     DataHeap::getInstance().receiveData(
         lQhbnd,dataPerFace,
