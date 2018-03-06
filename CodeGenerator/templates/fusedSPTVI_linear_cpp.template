@@ -46,7 +46,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     double* restrict lSi,   // for NCP or Source
     double* restrict lQhi,
     double* restrict lFhi,
-    double* restrict lShi,  // for NCP or Source
+    double* restrict lShi,  // for Source
     double* restrict gradQ, // for NCP or Source
     double* restrict PSi,   // for pointSource
     double* restrict PSderivatives, // for pointSource
@@ -569,7 +569,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   __assume_aligned(lFhi,     ALIGNMENT);
 {% endif %}{# useFlux #}
   __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
-{% if useSourceOrNCP %}
+{% if useSource %}
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(lShi,     ALIGNMENT);
 {% endif %}
