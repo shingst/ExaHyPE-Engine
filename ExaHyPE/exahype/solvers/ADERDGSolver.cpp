@@ -2204,7 +2204,7 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(
   cellDescription.setPreviousCorrectorTimeStepSize(std::numeric_limits<double>::max()); // TODO(Dominic): get rid of the last time level.
 }
 
-void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
+void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     const int cellDescriptionsIndex,
     const int element) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
@@ -2216,6 +2216,17 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
   // initial conditions
   adjustSolution(cellDescription);
   markForRefinement(cellDescription);
+}
+
+void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
+    const int cellDescriptionsIndex,
+    const int element) {
+  if (exahype::solvers::Solver::SpawnAMRBackgroundJobs) {
+    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescriptionsIndex,element);
+    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+  } else {
+    adjustSolutionDuringMeshRefinementBody(cellDescriptionsIndex,element);
+  }
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
@@ -4250,6 +4261,27 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
   return false;
 }
 
+exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
+  ADERDGSolver& solver,
+  const int     cellDescriptionsIndex,
+  const int     element):
+  _solver(solver),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfBackgroundJobs++;
+  lock.free();
+}
+
+bool exahype::solvers::ADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator() {
+  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
+  lock.free();
+  return false;
+}
 
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,

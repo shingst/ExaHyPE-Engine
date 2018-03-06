@@ -47,7 +47,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
       case UseAdapterLimiterStatusSpreading: return "UseAdapterLimiterStatusSpreading";
       case UseAdapterPredictionOrLocalRecomputation: return "UseAdapterPredictionOrLocalRecomputation";
       case UseAdapterGlobalRollback: return "UseAdapterGlobalRollback";
-      case UseAdapterBroadcastAndMergeNeighbours: return "UseAdapterBroadcastAndMergeNeighbours";
+      case UseAdapterMergeNeighbours: return "UseAdapterMergeNeighbours";
       case UseAdapterUpdateAndReduce: return "UseAdapterUpdateAndReduce";
       case UseAdapterPrediction: return "UseAdapterPrediction";
       case NumberOfAdapters: return "NumberOfAdapters";
@@ -56,7 +56,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
 }
 
 std::string exahype::records::RepositoryState::getActionMapping() {
-   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotTree=5,UseAdapterFinaliseMeshRefinement=6,UseAdapterFinaliseMeshRefinementOrLocalRollback=7,UseAdapterFusedTimeStep=8,UseAdapterPredictionRerun=9,UseAdapterBroadcastAndDropNeighbourMessages=10,UseAdapterLimiterStatusSpreading=11,UseAdapterPredictionOrLocalRecomputation=12,UseAdapterGlobalRollback=13,UseAdapterBroadcastAndMergeNeighbours=14,UseAdapterUpdateAndReduce=15,UseAdapterPrediction=16,NumberOfAdapters=17)";
+   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotTree=5,UseAdapterFinaliseMeshRefinement=6,UseAdapterFinaliseMeshRefinementOrLocalRollback=7,UseAdapterFusedTimeStep=8,UseAdapterPredictionRerun=9,UseAdapterBroadcastAndDropNeighbourMessages=10,UseAdapterLimiterStatusSpreading=11,UseAdapterPredictionOrLocalRecomputation=12,UseAdapterGlobalRollback=13,UseAdapterMergeNeighbours=14,UseAdapterUpdateAndReduce=15,UseAdapterPrediction=16,NumberOfAdapters=17)";
 }
 
 

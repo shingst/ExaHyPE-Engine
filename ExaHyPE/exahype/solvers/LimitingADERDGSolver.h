@@ -264,7 +264,18 @@ private:
    */
   int allocateLimiterPatch(
       const int cellDescriptionsIndex,
-      const int solverElement) const;
+      const int solverElement,
+      const bool vetoBackgroundJob) const;
+
+  /**
+   * Project the DG solution onto the FV
+   * limiter space and further adjust
+   * the so-obtained FV solution if requested
+   * by the user.
+   */
+  void adjustLimiterPatchSolution(
+      SolverPatch&  solverPatch,
+      LimiterPatch& limiterPatch) const;
 
   /**
    * Deallocates the limiter patch for solver patches
@@ -454,6 +465,13 @@ private:
       const int     faceIndex,
       const double* const min, const double* const  max) const;
 
+  /**
+   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   */
+  void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element);
+
 #endif
 
   /**
@@ -478,6 +496,41 @@ private:
         LimitingADERDGSolver& solver,
         const int             cellDescriptionsIndex,
         const int             element);
+
+    bool operator()();
+  };
+
+  /**
+   * A job that calls LimitingADERDGSolver::adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    LimitingADERDGSolver& _solver;
+    const int             _cellDescriptionsIndex;
+    const int             _element;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        LimitingADERDGSolver& solver,
+        const int             cellDescriptionsIndex,
+        const int             element);
+
+    bool operator()();
+  };
+
+  /**
+   * A job that calls LimitingADERDGSolver::projectDGSolutionOnFVSpace(...)
+   * and
+   */
+  class AllocateLimiterPatchJob {
+  private:
+    LimitingADERDGSolver& _solver;
+    SolverPatch&          _solverPatch;
+    LimiterPatch&         _limiterPatch;
+  public:
+    AllocateLimiterPatchJob(
+        LimitingADERDGSolver& solver,
+        SolverPatch&          solverPatch,
+        LimiterPatch&         limiterPatch);
 
     bool operator()();
   };

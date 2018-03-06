@@ -13,8 +13,8 @@
  * @author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#ifndef EXAHYPE_MAPPINGS_BroadcastAndMergeNeighbours_H_
-#define EXAHYPE_MAPPINGS_BroadcastAndMergeNeighbours_H_
+#ifndef EXAHYPE_MAPPINGS_MergeNeighbours_H_
+#define EXAHYPE_MAPPINGS_MergeNeighbours_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -33,7 +33,7 @@
 
 namespace exahype {
   namespace mappings {
-    class BroadcastAndMergeNeighbours;
+    class MergeNeighbours;
   }
 }
 
@@ -59,12 +59,27 @@ namespace exahype {
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::BroadcastAndMergeNeighbours {
+class exahype::mappings::MergeNeighbours {
 private:
   /**
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
+
+  /**
+   * Indicates that the background tasks have terminated.
+   * No further checks are required in this case.
+   *
+   * Is initialised with false for the main thread
+   * and for the worker threads.
+   * As the worker threads; mappings are destroyed but
+   * the main thread's mapping continues to
+   * exist we reset this value in endIteration(State) to false.
+   *
+   * We process background jobs in touchVertexFirstTime(...)
+   * and set this flag here as well.
+   */
+  bool _backgroundJobsHaveTerminated = false;
 
 public:
 
@@ -164,13 +179,13 @@ public:
   /**
    * Initialise temporary variables on worker thread.
    */
-  BroadcastAndMergeNeighbours(const BroadcastAndMergeNeighbours& masterThread);
+  MergeNeighbours(const MergeNeighbours& masterThread);
 #endif
 
   /**
    * Free previously allocated temporary variables.
    */
-  virtual ~BroadcastAndMergeNeighbours();
+  virtual ~MergeNeighbours();
 
   /**
    * Initialise temporary variables
@@ -277,7 +292,7 @@ public:
    * If the overlapping cell holds cell
    * descriptions of type Descendant on the master (and worker) side,
    * we thus need to send data from the master rank to the worker rank.
-   * This operation is performed in the mapping BroadcastAndMergeNeighbours since
+   * This operation is performed in the mapping MergeNeighbours since
    * it is a top-down broadcast type operation.
    *
    * Ancestors are used for storing restricted
@@ -419,13 +434,13 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndMergeNeighbours();
+  MergeNeighbours();
 
 #if defined(SharedMemoryParallelisation)
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const BroadcastAndMergeNeighbours& workerThread);
+  void mergeWithWorkerThread(const MergeNeighbours& workerThread);
 #endif
 
   /**

@@ -139,6 +139,10 @@ void exahype::mappings::MeshRefinement::beginIteration(
     }
     //assertion2(!solver->getNextMeshUpdateRequest(),solver->toString(),tarch::parallel::Node::getInstance().getRank());
   }
+
+  // background threads
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);

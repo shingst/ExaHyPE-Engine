@@ -100,6 +100,7 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
+  _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
   initialiseLocalVariables();
 }
 
@@ -140,6 +141,11 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       OneSolverRequestedMeshUpdate &&
       fineGridCell.isInitialised()
   ) {
+    if ( !_backgroundJobsHaveTerminated ) {
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+      _backgroundJobsHaveTerminated = true;
+    }
+
     const int numberOfSolvers = static_cast<int>(exahype::solvers::RegisteredSolvers.size());
     for( int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -206,12 +212,6 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
       if (solver->getMeshUpdateRequest()) {
         // cell sizes
         solver->updateNextMaxLevel(_maxLevels[solverNumber]);
-/*        if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-          assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
-              solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
-          assertion3(solver->getNextMaxCellSize()>0,
-              solver->getNextMaxCellSize(),_maxLevels[solverNumber],solver->toString());
-        }*/
 
         // time
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
@@ -231,6 +231,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     }
   }
 
+  _backgroundJobsHaveTerminated = false;
 }
 
 #ifdef Parallel

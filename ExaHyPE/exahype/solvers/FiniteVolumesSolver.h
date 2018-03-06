@@ -105,6 +105,13 @@ private:
    */
   void adjustSolution(CellDescription& cellDescription);
 
+  /**
+   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   */
+  void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element);
+
 #ifdef Parallel
   /**
    * Data messages per neighbour communication.
@@ -207,6 +214,23 @@ private:
         const int            cellDescriptionsIndex,
         const int            element
     );
+
+    bool operator()();
+  };
+
+  /**
+   * A job that calls FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    FiniteVolumesSolver&  _solver;
+    const int             _cellDescriptionsIndex;
+    const int             _element;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        FiniteVolumesSolver& solver,
+        const int            cellDescriptionsIndex,
+        const int            element);
 
     bool operator()();
   };

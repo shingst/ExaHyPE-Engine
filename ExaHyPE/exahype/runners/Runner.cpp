@@ -584,11 +584,6 @@ int exahype::runners::Runner::run() {
     exahype::solvers::Solver::SpawnAMRBackgroundJobs =
         _parser.getSpawnAMRBackgroundThreads();
 
-    exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
-    #ifdef Parallel
-    exahype::mappings::MeshRefinement::IsFirstIteration = false;
-    #endif
-
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
@@ -706,7 +701,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinement();
+  repository.switchToMeshRefinementAndPlotTree();
 
   while (
     (
@@ -1298,7 +1293,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     exahype::repositories::Repository& repository, bool plot) {
   // Only one time step (predictor vs. corrector) is used in this case.
-  repository.switchToBroadcastAndMergeNeighbours();  // Riemann -> face2face
+  repository.switchToMergeNeighbours();  // Riemann -> face2face
   repository.iterate(1,false);
 
   repository.switchToUpdateAndReduce();  // Face to cell + Inside cell

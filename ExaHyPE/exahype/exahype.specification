@@ -33,7 +33,7 @@ event-mapping:
   name: BroadcastAndDropNeighbourMessages
   
 event-mapping:
-  name: BroadcastAndMergeNeighbours
+  name: MergeNeighbours
  
 event-mapping:
   name: Plot
@@ -119,8 +119,8 @@ adapter:
  
 // Additional adapters for 4 phase time stepping
 adapter: 
-  name: BroadcastAndMergeNeighbours
-  merge-with-user-defined-mapping: BroadcastAndMergeNeighbours
+  name: MergeNeighbours
+  merge-with-user-defined-mapping: MergeNeighbours
 
 adapter:
   name: UpdateAndReduce

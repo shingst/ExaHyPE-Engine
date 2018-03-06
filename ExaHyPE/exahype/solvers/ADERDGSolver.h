@@ -201,6 +201,13 @@ private:
   void adjustSolution(CellDescription& cellDescription);
 
   /**
+   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   */
+  void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element);
+
+  /**
    * Query the user's refinement criterion and
    * write a refinement request back to the cell description.
    */
@@ -767,6 +774,23 @@ private:
           const int     element);
 
       bool operator()();
+  };
+
+  /**
+   * A job that calls ADERDGSolver::adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    ADERDGSolver& _solver;
+    const int     _cellDescriptionsIndex;
+    const int     _element;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        ADERDGSolver& solver,
+        const int     cellDescriptionsIndex,
+        const int     element);
+
+    bool operator()();
   };
 
 public:

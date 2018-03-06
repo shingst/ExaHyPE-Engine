@@ -79,7 +79,7 @@ class exahype::repositories::Repository {
     virtual void switchToLimiterStatusSpreading() = 0;    
     virtual void switchToPredictionOrLocalRecomputation() = 0;    
     virtual void switchToGlobalRollback() = 0;    
-    virtual void switchToBroadcastAndMergeNeighbours() = 0;    
+    virtual void switchToMergeNeighbours() = 0;    
     virtual void switchToUpdateAndReduce() = 0;    
     virtual void switchToPrediction() = 0;    
 
@@ -93,7 +93,7 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterLimiterStatusSpreading() const = 0;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const = 0;
     virtual bool isActiveAdapterGlobalRollback() const = 0;
-    virtual bool isActiveAdapterBroadcastAndMergeNeighbours() const = 0;
+    virtual bool isActiveAdapterMergeNeighbours() const = 0;
     virtual bool isActiveAdapterUpdateAndReduce() const = 0;
     virtual bool isActiveAdapterPrediction() const = 0;
 

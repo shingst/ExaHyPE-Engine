@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_BroadcastAndMergeNeighbours_H_
-#define EXAHYPE_ADAPTERS_BroadcastAndMergeNeighbours_H_
+#ifndef EXAHYPE_ADAPTERS_MergeNeighbours_H_
+#define EXAHYPE_ADAPTERS_MergeNeighbours_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,13 +18,13 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/BroadcastAndMergeNeighbours.h"
+ #include "exahype/mappings/MergeNeighbours.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class BroadcastAndMergeNeighbours;
+        class MergeNeighbours;
       } 
 }
 
@@ -36,11 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::BroadcastAndMergeNeighbours {
+class exahype::adapters::MergeNeighbours {
   private:
-    typedef mappings::BroadcastAndMergeNeighbours Mapping0;
+    typedef mappings::MergeNeighbours Mapping0;
 
-     Mapping0  _map2BroadcastAndMergeNeighbours;
+     Mapping0  _map2MergeNeighbours;
 
 
   public:
@@ -52,16 +52,16 @@ class exahype::adapters::BroadcastAndMergeNeighbours {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    BroadcastAndMergeNeighbours();
+    MergeNeighbours();
 
     #if defined(SharedMemoryParallelisation)
-    BroadcastAndMergeNeighbours(const BroadcastAndMergeNeighbours& masterThread);
+    MergeNeighbours(const MergeNeighbours& masterThread);
     #endif
 
-    virtual ~BroadcastAndMergeNeighbours();
+    virtual ~MergeNeighbours();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const BroadcastAndMergeNeighbours& workerThread);
+    void mergeWithWorkerThread(const MergeNeighbours& workerThread);
     #endif
 
     void createInnerVertex(

@@ -134,7 +134,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 
 exahype::mappings::FusedTimeStep::FusedTimeStep() {
-  _backgroundJobsHaveTerminated = false;
 }
 
 void exahype::mappings::FusedTimeStep::endIteration(
@@ -157,7 +156,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FusedTimeStep::FusedTimeStep(
     const FusedTimeStep& masterThread) {
-  _backgroundJobsHaveTerminated = false;
+  _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
   initialiseLocalVariables();
 }
 // Merge over threads

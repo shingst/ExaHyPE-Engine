@@ -631,7 +631,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused(
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
-void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
+void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     const int cellDescriptionsIndex,
     const int solverElement) {
   zeroTimeStepSizes(cellDescriptionsIndex,solverElement);      // TODO(Dominic): Still necessary?
@@ -662,6 +662,17 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
       copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
       _limiter->adjustSolution(limiterPatch);
     } // TODO(Dominic): Add to docu: We adjust the limiter patch here but we do not allocate it.
+  }
+}
+
+void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
+    const int cellDescriptionsIndex,
+    const int element) {
+  if (exahype::solvers::Solver::SpawnAMRBackgroundJobs) {
+    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescriptionsIndex,element);
+    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+  } else {
+    adjustSolutionDuringMeshRefinementBody(cellDescriptionsIndex,element);
   }
 }
 
@@ -1161,9 +1172,18 @@ void exahype::solvers::LimitingADERDGSolver::ensureNoUnrequiredLimiterPatchIsAll
   }
 }
 
+void exahype::solvers::LimitingADERDGSolver::adjustLimiterPatchSolution(
+    SolverPatch& solverPatch,
+    LimiterPatch& limiterPatch) const {
+  projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
+  copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
+  _limiter->adjustSolution(limiterPatch);
+}
+
 int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
         const int cellDescriptionsIndex,
-        const int solverElement) const {
+        const int solverElement,
+        const bool vetoBackgroundJob) const {
   assertion(solverElement!=Solver::NotFound);
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
 
@@ -1192,13 +1212,13 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
   LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(
       solverPatch,cellDescriptionsIndex,limiterElement);
   _limiter->ensureNecessaryMemoryIsAllocated(limiterPatch);
-
-  // TODO(Dominic): background job candidate
-  projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
-  copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
-  _limiter->adjustSolution(limiterPatch);
-
   limiterPatch.setIsInside(solverPatch.getIsInside());
+
+  if ( vetoBackgroundJob ) {
+    adjustLimiterPatchSolution(solverPatch,limiterPatch);
+  } else {
+
+  }
 
   return limiterElement;
 }
@@ -2313,6 +2333,58 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
+  lock.free();
+  return false;
+}
+
+
+exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
+    LimitingADERDGSolver&     solver,
+  const int                cellDescriptionsIndex,
+  const int                element):
+  _solver(solver),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfBackgroundJobs++;
+  lock.free();
+}
+
+bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator() {
+  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfBackgroundJobs--;
+  assertion( _NumberOfBackgroundJobs>=0 );
+  lock.free();
+  return false;
+}
+
+// TODO(Dominic): Work to do:
+// projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
+// copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
+// _limiter->adjustSolution(limiterPatch);
+
+// need solverPatch,limiterPatch,LimitingADERDGSolver
+
+exahype::solvers::LimitingADERDGSolver::AllocateLimiterPatchJob::AllocateLimiterPatchJob(
+  LimitingADERDGSolver& solver,
+  SolverPatch&          solverPatch,
+  LimiterPatch&         limiterPatch) :
+  _solver(solver),
+  _solverPatch(solverPatch),
+  _limiterPatch(limiterPatch) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  _NumberOfBackgroundJobs++;
+  lock.free();
+}
+
+bool exahype::solvers::LimitingADERDGSolver::AllocateLimiterPatchJob::operator() {
+  _solver.adjustLimiterPatchSolution(solverPatch,limiterPatch);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;
