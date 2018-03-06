@@ -15,6 +15,7 @@
 namespace {{namespaceName}} {
 {% endfor %}
 
+  // Global configuration 
   constexpr int getNumberOfVariable()        {return {{nVar}};}
   constexpr int getNumberOfVariablePadded()  {return {{nVarPad}};}
   
@@ -31,44 +32,110 @@ namespace {{namespaceName}} {
   constexpr bool isLinear()                  {return {{isLinearCText}};}
 
 {% if isLinear %}  
-  constexpr int getlQiSize()      {return {{nDataPad*(nDof**nDim)*(1+nDof)}};} // == lQi size
-  constexpr int getlFiSize()      {return {{nVarPad*(nDof**(nDim+1))*(2*nDim+1)}};} // == lFi size //TODO JMG check useFlux and fix
+  {% set lQiSize = nDataPad*(nDof**nDim)*(1+nDof) %}
+  {% set lFiSize = nVarPad*(nDof**(nDim+1))*(2*nDim+1) %}
 {% else %}
-  constexpr int getlQiSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQi size
+  {% set lQiSize = nDataPad*(nDof**(nDim+1)) %}
 {% if useFlux %}
-  constexpr int getlFiSize() {return {{nVarPad*(nDof**(nDim+1))*nDim}};} // == lFi size
+  {% set lFiSize = nVarPad*(nDof**(nDim+1))*nDim %}
 {% else %}
-  constexpr int getlFiSize() {return -1;} // == lFi size
+  {% set lFiSize = -1 %}
 {% endif %}
 {% endif %}
-  constexpr int getlSiSize() {return {{nVarPad*(nDof**(nDim+1))}};} // == lSi size
+{% if (not isLinear and useNCP) or useSource %}
+  {% set lSiSize = nVarPad*(nDof**(nDim+1)) %}
+{% else %}
+  {% set lSiSize = -1 %}
+{% endif %}
 {% if useNCP %}
-  constexpr int getgradQSize() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == gradQ size
+  {% set gradQSize = nVarPad*(nDof**(nDim+1))*(nDim+1) %}
 {% else %}
-  constexpr int getgradQSize() {return -1;} // == gradQ size, unused because !useNCP so -1 to not allocate
+  {% set gradQSize = -1 %}
 {% endif %}
-{% if noTimeAveraging %}
-  constexpr int getlQhiSize()               {return -1;} // == lQhi size, unused because noTimeAveraging so -1 to not allocate
-  constexpr int getlFhiSize()           {return -1;} // == lFhi size, unused because noTimeAveraging so -1 to not allocate
-{% else %}
-  constexpr int getlQhiSize()               {return {{nDataPad*(nDof**nDim)}};}  // == lQhi size
+  {% set lQhiSize = nDataPad*(nDof**nDim) %}
 {% if useFlux %}
-  constexpr int getlFhiSize()           {return {{nVarPad*(nDof**nDim)*nDim}};} // == lFhi size
+  {% set lFhiSize = nVarPad*(nDof**nDim)*nDim %}
 {% else %}
-  constexpr int getlFhiSize()           {return -1;} // == lFhi size, unused
+  {% set lFhiSize = -1 %}
 {% endif %}
-  constexpr int getlShiSize()           {return  {{nVarPad*(nDof**nDim)}};} // == lShi size
+{% if (not isLinear and useNCP) or useSource %}
+  {% set lShiSize = nVarPad*(nDof**nDim) %}
+{% else %}
+  {% set lShiSize = -1 %}
 {% endif %}
 {% if usePointSources %}
-  constexpr int getPSiSize()      {return {{(nDof+1) * (nDof ** nDim) * nVarPad}};} // == PSi (and forceVectorSourceN) size
+  {% set PSiSize = (nDof+1)*(nDof**nDim)*nVarPad %}
 {% else%}
-  constexpr int getPSiSize()      {return -1;} //unused, not allocated
+  {% set PSiSize = -1 %}
 {% endif %}
+  {% set BndFaceSize = nDataPad*(nDof*nDof3D) %}
+  {% set BndFaceTotalSize = 2*nDim*nDataPad*(nDof*nDof3D) %}
+  {% set BndFluxSize = nVarPad*(nDof*nDof3D) %}
+  {% set BndFluxTotalSize = 2*nDim*nVarPad*(nDof*nDof3D) %}
 
-  constexpr int getBndFaceSize()                    {return {{nDataPad*(nDof*nDof3D)}};} // == QR/QL size
-  constexpr int getBndTotalSize()                   {return {{2*nDim*nDataPad*(nDof*nDof3D)}};} // == lQhbnd size
-  constexpr int getBndFluxSize()                    {return {{nVarPad*(nDof*nDof3D)}};} // == FR/FL size
-  constexpr int getBndFluxTotalSize()               {return {{2*nDim*nVarPad*(nDof*nDof3D)}};} // == lFhbnd size
+  // Array sizes
+  constexpr int getlQiSize()   {return {{lQiSize}};}
+{# //TODO JMG check useFlux and fix for linear #}
+  constexpr int getlFiSize()   {return {{lFiSize}};} 
+  constexpr int getlSiSize()   {return {{lSiSize}};}
+  constexpr int getgradQSize() {return {{gradQSize}};}
+  constexpr int getlQhiSize()  {return {{lQhiSize}};}
+  constexpr int getlFhiSize()  {return {{lFhiSize}};}
+  constexpr int getlShiSize()  {return {{lShiSize}};}
+  constexpr int getPSiSize()   {return {{PSiSize}};}
+
+  constexpr int getBndFaceSize()      {return {{BndFaceSize}};} // == QR/QL size
+  constexpr int getBndFaceTotalSize() {return {{BndFaceTotalSize}};} // == lQhbnd size
+  constexpr int getBndFluxSize()      {return {{BndFluxSize}};} // == FR/FL size
+  constexpr int getBndFluxTotalSize() {return {{BndFluxTotalSize}};} // == lFhbnd size
+
+  //Shifts for fusedSTPVI local memory
+{% set shift = 0 %}  
+  constexpr int getlQiShift()   {return {{shift}};}
+{% set shift = shift+lQiSize %}  
+{%- if useFlux %}
+  constexpr int getlFiShift()   {return {{shift}};}
+{% set shift = shift+lFiSize %} 
+{%- endif %}
+{%- if (not isLinear and useNCP) or useSource %}
+  constexpr int getlSiShift()   {return {{shift}};}
+{% set shift = shift+lSiSize %} 
+{%- endif %}
+  constexpr int getlQhiShift()  {return {{shift}};}
+{% set shift = shift+lQhiSize %}
+{%- if useFlux %}
+  constexpr int getlFhiShift()  {return {{shift}};}
+{% set shift = shift+lFhiSize %}
+{%- endif %}
+{%- if (not isLinear and useNCP) or useSource %}
+  constexpr int getlShiShift()  {return {{shift}};}
+{% set shift = shift+lShiSize %}
+{%- endif %}
+{%- if useNCP %}
+  constexpr int getgradQShift() {return {{shift}};}
+{% set shift = shift+gradQSize %}
+{%- endif %}
+{%- if not isLinear %}
+  constexpr int getrhsShift()   {return {{shift}};} //Same size as lQi
+{% set shift = shift+lQiSize %} 
+{% endif %}
+{%- if usePointSources %} 
+  constexpr int getPSiShift()   {return {{shift}};}
+{% set shift = shift+PSiSize %}
+  constexpr int getPSderivativesShift() {return {{shift}};} //same size as PSi
+{% set shift = shift+PSiSize %} 
+{%- endif %}
+
+  constexpr int getFusedSTPVISize() {return {{shift}};}
+  
+  //Shifts for BoundaryConditions
+{% set shift2 = 0 %} 
+  constexpr int getBndFaceShift() {return {{shift2}};}
+{% set shift2 = shift2+BndFaceSize %}   
+  constexpr int getBndFluxShift()  {return {{shift2}};}
+{% set shift2 = shift2+BndFluxSize %}  
+  
+  constexpr int getBoundaryConditionsSize() {return {{shift2}};}
 
 {% for namespaceName in codeNamespaceList %}
 }
