@@ -95,13 +95,16 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
-def build(buildOnlyMissing=False):
+def build(buildOnlyMissing=False, skipMakeClean=False):
     """
     Build the executables.
     
     Args:
     buildOnlyMissing(bool):
        Build only missing executables.
+    
+    skipMakeClean(bool):
+        Do not run make clean, only clean application folder
     """
     print("currently loaded modules:")
     subprocess.call("module list",shell=True)
@@ -143,7 +146,7 @@ def build(buildOnlyMissing=False):
         for architecture in architectures:
             for optimisation in optimisations:
                 for dimension in dimensions:
-                    if not firstIteration:
+                    if not firstIteration and not skipMakeClean:
                         command = "make clean"
                         print(command)
                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -656,7 +659,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
+    subprograms = ["build","buildMissing","buildObjectsOnly","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -670,6 +673,7 @@ available subprograms:
 
 * build              - build all executables
 * buildMissing       - build only missing executables
+* buildLocally       - rebuild only the local application folder (no make clean)
 * scripts            - submit the generated jobs
 * cancel             - cancel the submitted jobs
 * parseAdapters      - read the job output and parse adapter times
@@ -744,7 +748,9 @@ typical workflow:
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":
-        build(True)
+        build(buildOnlyMissing=True)
+    elif subprogram == "buildLocally":
+        build(skipMakeClean=True)
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
