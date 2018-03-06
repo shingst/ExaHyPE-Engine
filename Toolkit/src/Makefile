@@ -86,6 +86,6 @@ files.mk:
 
 
 $(OBJECTS): %.class : %.java
-	javac -sourcepath . $<  
+	javac -cp ../lib/commons-cli.jar -sourcepath . $<  
 
 
