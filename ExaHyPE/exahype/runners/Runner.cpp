@@ -701,7 +701,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinementAndPlotTree();
+  repository.switchToMeshRefinement();
 
   while (
     (
