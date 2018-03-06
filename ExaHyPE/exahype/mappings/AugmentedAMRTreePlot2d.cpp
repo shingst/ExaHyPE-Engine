@@ -88,20 +88,20 @@ std::map<tarch::la::Vector<DIMENSIONS + 1, double>, int,
 std::map<int,double> exahype::mappings::AugmentedAMRTreePlot2d::_level2OffsetMap;
 
 exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d()
-    : _vtkWriter(0),
-      _vertexWriter(0),
-      _cellWriter(0),
-      _cellNumberWriter(0),
-      _cellTypeWriter(0),
-      _cellDescriptionIndexWriter(0),
-      _refinementEventWriter(0),
-      _refinementRequestWriter(0),
-      _cellDataWriter(0),
-      _augmentationStatusWriter(0),
-      _helperStatusWriter(0),
-      _limiterStatusWriter(0),
-      _previousLimiterStatusWriter(0),
-      _hasVirtualChildrenWriter(0),
+    : _vtkWriter(nullptr),
+      _vertexWriter(nullptr),
+      _cellWriter(nullptr),
+      _cellNumberWriter(nullptr),
+      _cellTypeWriter(nullptr),
+      _cellDescriptionIndexWriter(nullptr),
+      _refinementEventWriter(nullptr),
+      _refinementRequestWriter(nullptr),
+      _cellDataWriter(nullptr),
+      _augmentationStatusWriter(nullptr),
+      _helperStatusWriter(nullptr),
+      _limiterStatusWriter(nullptr),
+      _previousLimiterStatusWriter(nullptr),
+      _hasVirtualChildrenWriter(nullptr),
       _cellCounter(0) {}
 
 exahype::mappings::AugmentedAMRTreePlot2d::~AugmentedAMRTreePlot2d() {}
@@ -378,45 +378,42 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
       for (auto& pFine : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(
                fineGridCell.getCellDescriptionsIndex())) {
         if (pFine.getSolverNumber() == solverNumber) {
-          _cellTypeWriter->plotCell(cellIndex,
-                                    static_cast<int>(pFine.getType()));
-          _refinementEventWriter->plotCell(
-              cellIndex, static_cast<int>(pFine.getRefinementEvent()));
-          _refinementRequestWriter->plotCell(
-              cellIndex, static_cast<int>(pFine.getRefinementRequest()));
-          _augmentationStatusWriter->plotCell(cellIndex,pFine.getAugmentationStatus());
-          _helperStatusWriter->plotCell(cellIndex,pFine.getHelperStatus());
-          _limiterStatusWriter->plotCell(cellIndex,pFine.getLimiterStatus());
-          _previousLimiterStatusWriter->plotCell(cellIndex,pFine.getPreviousLimiterStatus());
-          _hasVirtualChildrenWriter->plotCell(cellIndex,pFine.getHasVirtualChildren() ? 1 : 0);
+          _cellTypeWriter->plotCell(              cellIndex, static_cast<int>(pFine.getType()));
+          _refinementEventWriter->plotCell(       cellIndex, static_cast<int>(pFine.getRefinementEvent()));
+          _refinementRequestWriter->plotCell(     cellIndex, static_cast<int>(pFine.getRefinementRequest()));
+          _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolution() > -1) +
+                                                                  static_cast<int>(pFine.getExtrapolatedPredictor() > -1));
+          _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
+          _helperStatusWriter->plotCell(          cellIndex, pFine.getHelperStatus());
+          _limiterStatusWriter->plotCell(         cellIndex, pFine.getLimiterStatus());
+          _previousLimiterStatusWriter->plotCell( cellIndex, pFine.getPreviousLimiterStatus());
+          _hasVirtualChildrenWriter->plotCell(    cellIndex, pFine.getHasVirtualChildren() ? 1 : 0);
           solverFound = true;
         }
       }
 
       if (!solverFound) {
-        _cellTypeWriter->plotCell(cellIndex, -1);
-        _refinementEventWriter->plotCell(cellIndex, -1);
-        _refinementRequestWriter->plotCell(cellIndex, -1);
-        _cellDataWriter->plotCell(cellIndex, 0);
-        _augmentationStatusWriter->plotCell(cellIndex,-1);
-        _helperStatusWriter->plotCell(cellIndex,-1);
-        _limiterStatusWriter->plotCell(cellIndex, -1);
-        _previousLimiterStatusWriter->plotCell(cellIndex,-1);
-        _hasVirtualChildrenWriter->plotCell(cellIndex,0);
+        _cellTypeWriter->plotCell(             cellIndex, -1);
+        _refinementEventWriter->plotCell(      cellIndex, -1);
+        _refinementRequestWriter->plotCell(    cellIndex, -1);
+        _cellDataWriter->plotCell(             cellIndex,  0);
+        _augmentationStatusWriter->plotCell(   cellIndex, -1);
+        _helperStatusWriter->plotCell(         cellIndex, -1);
+        _limiterStatusWriter->plotCell(        cellIndex, -1);
+        _previousLimiterStatusWriter->plotCell(cellIndex, -1);
+        _hasVirtualChildrenWriter->plotCell(   cellIndex,  0);
       }
 
     } else {
-      _cellTypeWriter->plotCell(
-          cellIndex,
-          static_cast<int>(fineGridCell.getCellDescriptionsIndex()));
-      _refinementEventWriter->plotCell(cellIndex, -1);
-      _refinementRequestWriter->plotCell(cellIndex, -1);
-      _cellDataWriter->plotCell(cellIndex, 0);
-      _augmentationStatusWriter->plotCell(cellIndex,-1);
-      _helperStatusWriter->plotCell(cellIndex,-1);
-      _limiterStatusWriter->plotCell(cellIndex, -1);
-      _previousLimiterStatusWriter->plotCell(cellIndex,-1);
-      _hasVirtualChildrenWriter->plotCell(cellIndex,0);
+      _cellTypeWriter->plotCell(             cellIndex, static_cast<int>(fineGridCell.getCellDescriptionsIndex()));
+      _refinementEventWriter->plotCell(      cellIndex, -1);
+      _refinementRequestWriter->plotCell(    cellIndex, -1);
+      _cellDataWriter->plotCell(             cellIndex,  0);
+      _augmentationStatusWriter->plotCell(   cellIndex, -1);
+      _helperStatusWriter->plotCell(         cellIndex, -1);
+      _limiterStatusWriter->plotCell(        cellIndex, -1);
+      _previousLimiterStatusWriter->plotCell(cellIndex, -1);
+      _hasVirtualChildrenWriter->plotCell(   cellIndex,  0);
     }
 
     _cellCounter++;
@@ -450,7 +447,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::beginIteration(
   _cellDescriptionIndexWriter =
       _vtkWriter->createCellDataWriter("NoPatch=-1,ValidPatch>=0", 1);
   _refinementEventWriter = _vtkWriter->createCellDataWriter(
-      "refinement-event(NoPatch=-1,None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,ErasingVirtualChildrenRequested=7,ErasingVirtualChildren=8,VirtualRefiningRequested=9,VirtualRefining=10)",
+      "refinement-event(NoPatch=-1,None=0,ErasChildReq=1,ErasChild=2,ChildToVirtReq=3,ChildToVirt=4,RefReq=5,Ref=6,ErasVirtRequ=7,ErasVirtual=8,VirtRefReq=9,VirtRef=10)",
       1);
   _refinementRequestWriter = _vtkWriter->createCellDataWriter(
       "refinement-request(NoPatch=-1,Pending=0,Keep=1,Erase=2,Refine=3)",

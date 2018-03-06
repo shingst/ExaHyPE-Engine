@@ -105,6 +105,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setParentIndex(parentIndex);
   newCellDescription.setLevel(level);
   newCellDescription.setRefinementEvent(refinementEvent);
+  newCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
 
   newCellDescription.setHasVirtualChildren(false);
   newCellDescription.setAugmentationStatus(0);
@@ -1058,8 +1059,9 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
   else if (
       fineGridCellDescription.getType()==CellDescription::Type::Ancestor  &&
       fineGridCellDescription.getRefinementEvent()==CellDescription::None &&
-      !fineGridCellDescription.getRefinementRequest()==CellDescription::RefinementRequest::Refine
-      // we do not erase newly created Ancestors
+      fineGridCellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Refine
+      // this means the the former Cell now Ancestor was refined already during
+      // the current mesh refinement iterations
   ) {
     fineGridCellDescription.setRefinementEvent(CellDescription::ErasingChildrenRequested);
   }
@@ -1793,7 +1795,6 @@ bool exahype::solvers::ADERDGSolver::evaluateRefinementCriterionAfterSolutionUpd
                       cellDescription.getCorrectorTimeStamp()+cellDescription.getCorrectorTimeStepSize(),
                       cellDescription.getLevel());
 
-    // TODO(Dominic): Set cell description refinement events? Yes or no?
     return refinementControl==RefinementControl::Refine;
   }
 
