@@ -124,7 +124,7 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
   int k_m = std::round((offset_z)/dx[2])*(_num_nodes-1);    
   
   if(n == 0){
-    i_m = std::round( offset_x                 /dx[0])*(_num_nodes-1);
+    i_m = std::round((offset_x-_left_vertex[0])/dx[0])*(_num_nodes-1);
   }else{
     i_m = std::round((offset_x-_fault_position)/dx[0])*(_num_nodes-1); //subtract fault position from offset
   }
@@ -1256,7 +1256,7 @@ int CurvilinearTransformation::getBlock(const tarch::la::Vector<DIMENSIONS,doubl
 					const tarch::la::Vector<DIMENSIONS,double>& dx){
 
   //check four outer elements
-  if(center[0] < _dx){
+  if(center[0] < _dx + _left_vertex[0]){
     return 0;
   }else if(center[0] > _right_vertex[0]-_dx){
     return 1;
