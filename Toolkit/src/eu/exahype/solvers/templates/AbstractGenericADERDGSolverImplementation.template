@@ -72,6 +72,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double* block = new double[totalSize]; 
 {%-   endif %}
   double* memory = block;
+  std::memset(block, 0, totalSize*sizeof(double)); //TODO LR: find which array is assumed to be initialized to 0 in the kernel, fix it, and remove this line.
   
   double* lQi                = memory; memory+=sizeLQi;
   double* lFi                = memory; memory+=sizeLFi;
