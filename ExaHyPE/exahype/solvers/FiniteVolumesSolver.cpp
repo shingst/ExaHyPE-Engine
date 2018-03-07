@@ -673,7 +673,8 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(
     const int cellDescriptionsIndex,
-    const int element) {
+    const int element,
+    const bool isInitialMeshRefinement) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion(cellDescription.getType()==CellDescription::Cell);
 
@@ -681,17 +682,6 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBo
   synchroniseTimeStepping(cellDescription);
 
   adjustSolution(cellDescription);
-}
-
-void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
-    const int cellDescriptionsIndex,
-    const int element) {
-  if (exahype::solvers::Solver::SpawnAMRBackgroundJobs) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescriptionsIndex,element);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-  } else {
-    adjustSolutionDuringMeshRefinementBody(cellDescriptionsIndex,element);
-  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolution(CellDescription& cellDescription) {
@@ -2182,29 +2172,6 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
-  lock.free();
-  return false;
-}
-
-
-exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
-  FiniteVolumesSolver&     solver,
-  const int                cellDescriptionsIndex,
-  const int                element):
-  _solver(solver),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
-  lock.free();
-}
-
-bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
-  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   _NumberOfBackgroundJobs--;

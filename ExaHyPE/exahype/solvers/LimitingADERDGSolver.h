@@ -414,8 +414,9 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element);
+      const int  cellDescriptionsIndex,
+      const int  element,
+      const bool isInitialMeshRefinement) final override;
 
 #ifdef Parallel
 
@@ -492,23 +493,6 @@ private:
     const int             _element;
   public:
     FusedTimeStepJob(
-        LimitingADERDGSolver& solver,
-        const int             cellDescriptionsIndex,
-        const int             element);
-
-    bool operator()();
-  };
-
-  /**
-   * A job that calls LimitingADERDGSolver::adjustSolutionDuringMeshRefinementBody(...).
-   */
-  class AdjustSolutionDuringMeshRefinementJob {
-  private:
-    LimitingADERDGSolver& _solver;
-    const int             _cellDescriptionsIndex;
-    const int             _element;
-  public:
-    AdjustSolutionDuringMeshRefinementJob(
         LimitingADERDGSolver& solver,
         const int             cellDescriptionsIndex,
         const int             element);
@@ -948,17 +932,6 @@ public:
   void rollbackToPreviousTimeStepFused(
       const int cellDescriptionsIndex,
       const int solverElement) const final override;
-
-  /**
-   * TODO(Dominic): I need the whole limiter recomputation
-   * procedure also for the initial conditions.
-   *
-   * This includes computing, sending, and merging
-   * of the min/max values.
-   */
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,
-      const int element) final override;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,

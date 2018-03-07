@@ -117,6 +117,7 @@
          case ChangeChildrenToVirtualChildren: return "ChangeChildrenToVirtualChildren";
          case RefiningRequested: return "RefiningRequested";
          case Refining: return "Refining";
+         case Prolongating: return "Prolongating";
          case ErasingVirtualChildrenRequested: return "ErasingVirtualChildrenRequested";
          case ErasingVirtualChildren: return "ErasingVirtualChildren";
          case VirtualRefiningRequested: return "VirtualRefiningRequested";
@@ -126,7 +127,7 @@
    }
    
    std::string exahype::records::ADERDGCellDescription::getRefinementEventMapping() {
-      return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,ErasingVirtualChildrenRequested=7,ErasingVirtualChildren=8,VirtualRefiningRequested=9,VirtualRefining=10)";
+      return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,Prolongating=7,ErasingVirtualChildrenRequested=8,ErasingVirtualChildren=9,VirtualRefiningRequested=10,VirtualRefining=11)";
    }
    std::string exahype::records::ADERDGCellDescription::toString(const RefinementRequest& param) {
       switch (param) {
@@ -2901,6 +2902,7 @@
             case ChangeChildrenToVirtualChildren: return "ChangeChildrenToVirtualChildren";
             case RefiningRequested: return "RefiningRequested";
             case Refining: return "Refining";
+            case Prolongating: return "Prolongating";
             case ErasingVirtualChildrenRequested: return "ErasingVirtualChildrenRequested";
             case ErasingVirtualChildren: return "ErasingVirtualChildren";
             case VirtualRefiningRequested: return "VirtualRefiningRequested";
@@ -2910,7 +2912,7 @@
       }
       
       std::string exahype::records::ADERDGCellDescription::getRefinementEventMapping() {
-         return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,ErasingVirtualChildrenRequested=7,ErasingVirtualChildren=8,VirtualRefiningRequested=9,VirtualRefining=10)";
+         return "RefinementEvent(None=0,ErasingChildrenRequested=1,ErasingChildren=2,ChangeChildrenToVirtualChildrenRequested=3,ChangeChildrenToVirtualChildren=4,RefiningRequested=5,Refining=6,Prolongating=7,ErasingVirtualChildrenRequested=8,ErasingVirtualChildren=9,VirtualRefiningRequested=10,VirtualRefining=11)";
       }
       std::string exahype::records::ADERDGCellDescription::toString(const RefinementRequest& param) {
          switch (param) {

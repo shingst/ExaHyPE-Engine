@@ -109,8 +109,9 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element);
+      const int  cellDescriptionsIndex,
+      const int  element,
+      const bool isInitialMeshRefinement) final override;
 
 #ifdef Parallel
   /**
@@ -214,23 +215,6 @@ private:
         const int            cellDescriptionsIndex,
         const int            element
     );
-
-    bool operator()();
-  };
-
-  /**
-   * A job that calls FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(...).
-   */
-  class AdjustSolutionDuringMeshRefinementJob {
-  private:
-    FiniteVolumesSolver&  _solver;
-    const int             _cellDescriptionsIndex;
-    const int             _element;
-  public:
-    AdjustSolutionDuringMeshRefinementJob(
-        FiniteVolumesSolver& solver,
-        const int            cellDescriptionsIndex,
-        const int            element);
 
     bool operator()();
   };
@@ -672,10 +656,6 @@ public:
   void rollbackToPreviousTimeStepFused(
         const int cellDescriptionsIndex,
         const int element) const final override;
-
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,
-      const int element) final override;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,

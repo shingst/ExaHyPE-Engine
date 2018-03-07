@@ -189,8 +189,26 @@ class exahype::records::ADERDGCellDescription {
      */
     ChangeChildrenToVirtualChildren,
     
+    /**
+     * If this refinement event is set, 
+     * a cell asks to be refined.
+     */
     RefiningRequested,           
+    
+    /**
+     * If this refinement event is set, 
+     * the grid is ready to host the children
+     * of the current cell. 
+     * This event is set by the children.
+     */
     Refining,
+    
+    /**
+     * This event notifies a child cell that it needs
+     * to prolongate data down from the parent.
+     */
+    Prolongating,
+    
     /**
      * If this refinement event is set, 
      * the parent Descendant or Cell asks its

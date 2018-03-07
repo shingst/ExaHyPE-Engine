@@ -643,11 +643,18 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused(
 
 void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     const int cellDescriptionsIndex,
-    const int solverElement) {
+    const int solverElement,
+    const bool isInitialMeshRefinement) {
+  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
+  if (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::Prolongating) {
+    _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
+    solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
+  }
+  assertion(solverPatch.getRefinementEvent()==SolverPatch::None);
+
   zeroTimeStepSizes(cellDescriptionsIndex,solverElement);      // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescriptionsIndex,solverElement);
 
-  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     assertion2(solverPatch.getRefinementEvent()==SolverPatch::None,solverPatch.toString(),cellDescriptionsIndex);
 
@@ -672,17 +679,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
       _limiter->adjustSolution(limiterPatch);
     } // TODO(Dominic): Add to docu: We adjust the limiter patch here but we do not allocate it.
-  }
-}
-
-void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
-    const int cellDescriptionsIndex,
-    const int element) {
-  if (exahype::solvers::Solver::SpawnAMRBackgroundJobs) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescriptionsIndex,element);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-  } else {
-    adjustSolutionDuringMeshRefinementBody(cellDescriptionsIndex,element);
   }
 }
 
@@ -2349,36 +2345,6 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   lock.free();
   return false;
 }
-
-
-exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
-  LimitingADERDGSolver&     solver,
-  const int                cellDescriptionsIndex,
-  const int                element):
-  _solver(solver),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element) {
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
-  lock.free();
-}
-
-bool exahype::solvers::LimitingADERDGSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
-  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
-  lock.free();
-  return false;
-}
-
-// TODO(Dominic): Work to do:
-// projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
-// copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
-// _limiter->adjustSolution(limiterPatch);
-
-// need solverPatch,limiterPatch,LimitingADERDGSolver
 
 exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::AdjustLimiterSolutionJob(
   LimitingADERDGSolver& solver,

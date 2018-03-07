@@ -367,10 +367,39 @@ class exahype::solvers::Solver {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    Solver&       _solver;
+    const int     _cellDescriptionsIndex;
+    const int     _element;
+    const bool    _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        Solver&       solver,
+        const int     cellDescriptionsIndex,
+        const int     element,
+        const bool    isInitialMeshRefinement);
+
+    bool operator()();
+  };
+
  protected:
 
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
+
+  /**
+   * \see body adjustSolutionDuringMeshRefinement(...).
+   * Must be implemented by the subclasses.
+   */
+  virtual void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isInitialMeshRefinement) = 0;
+
  public:
 
   /**
@@ -1404,9 +1433,10 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void adjustSolutionDuringMeshRefinement(
+  void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element,
+      const bool isInitialMeshRefinement);
 
   /**
    * Fuse algorithmic phases of the solvers.

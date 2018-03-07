@@ -205,7 +205,8 @@ private:
    */
   void adjustSolutionDuringMeshRefinementBody(
       const int cellDescriptionsIndex,
-      const int element);
+      const int element,
+      const bool isInitialMeshRefinement) final override;
 
   /**
    * Query the user's refinement criterion and
@@ -316,7 +317,11 @@ private:
    *
    * \return True if a fine grid cell can be erased.
    */
-  void startOrFinishCollectiveRefinementOperations(
+
+  void startOrFinishCollectiveRefiningOperations(
+      CellDescription& fineGridCellDescription);
+
+  void startOrFinishCollectiveErasingOperations(
       CellDescription& fineGridCellDescription);
 
   /**
@@ -433,11 +438,11 @@ private:
    * Set the value of the mergedLimiterStatus elements to Troubled
    * in case the coarse grid cell descriptions' values are Troubled.
    * Otherwise, set it to Ok.
+   *
+   * \note No static or const modifiers as kernels are not const.
    */
   void prolongateVolumeData(
-      CellDescription&       fineGridCellDescription,
-      const CellDescription& coarseGridCellDescription,
-      const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
+      CellDescription& fineGridCellDescription,
       const bool initialGrid);
 
   /**
@@ -774,23 +779,6 @@ private:
           const int     element);
 
       bool operator()();
-  };
-
-  /**
-   * A job that calls ADERDGSolver::adjustSolutionDuringMeshRefinementBody(...).
-   */
-  class AdjustSolutionDuringMeshRefinementJob {
-  private:
-    ADERDGSolver& _solver;
-    const int     _cellDescriptionsIndex;
-    const int     _element;
-  public:
-    AdjustSolutionDuringMeshRefinementJob(
-        ADERDGSolver& solver,
-        const int     cellDescriptionsIndex,
-        const int     element);
-
-    bool operator()();
   };
 
 public:
@@ -1713,11 +1701,6 @@ public:
   void rollbackToPreviousTimeStepFused(
       const int cellDescriptionsIndex,
       const int element) const override final;
-
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,
-      const int element) final override;
-
 
   UpdateResult fusedTimeStepBody(
         const int cellDescriptionsIndex,

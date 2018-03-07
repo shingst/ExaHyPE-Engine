@@ -388,7 +388,7 @@ void exahype::mappings::MeshRefinement::enterCell(
               coarseGridVertices,
               coarseGridVerticesEnumerator,
               fineGridPositionOfCell,
-              IsInitialMeshRefinement,
+              exahype::mappings::MeshRefinement::IsInitialMeshRefinement,
               solverNumber);
 
       // Synchronise time stepping and adjust the solution if required
@@ -399,7 +399,8 @@ void exahype::mappings::MeshRefinement::enterCell(
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
-          solver->adjustSolutionDuringMeshRefinement(cellDescriptionsIndex,element);
+          solver->adjustSolutionDuringMeshRefinement(
+              cellDescriptionsIndex,element,IsInitialMeshRefinement);
         }
       }
     }
