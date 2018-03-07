@@ -67,12 +67,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
                             sizePSi + sizePSderivatives + sizeTmp_PSderivatives +
                             sizeLQhi + sizeLFhi;
 {%-   if tempVarsOnStack %}
-  double block[totalSize]; double* memory=&block[0];
+  double block[totalSize];
 {%-   else %}  
-  const int index = exahype::DataHeap::getInstance().createData(
-      totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* memory = exahype::DataHeap::getInstance().getData(index).data();
+  double* block = new double[totalSize]; 
 {%-   endif %}
+  double* memory = block;
+  
   double* lQi                = memory; memory+=sizeLQi;
   double* lFi                = memory; memory+=sizeLFi;
   double* gradQ              = memory; memory+=sizeGradQ;
@@ -109,19 +109,18 @@ const int picardIterations = 1;
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
 
 {%-   if noTimeAveraging %}
-  const int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ;
+  constexpr int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ;
 {%-   else %}  
-  const int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ +
+  constexpr int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ +
                         sizeLQhi + sizeLFhi;
 {%-   endif %}
 
 {%-   if tempVarsOnStack %}
-  double block[totalSize]; double* memory=&block[0];
+  double block[totalSize];
 {%-   else %}  
-  const int index = exahype::DataHeap::getInstance().createData(
-      totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* memory = exahype::DataHeap::getInstance().getData(index).data();
+  double* block = new double[totalSize];
 {%-   endif %}
+  double* memory = block;
       
   double* lQi   = memory; memory+=sizeLQi;
   double* rhs   = memory; memory+=sizeRhs;
@@ -141,7 +140,7 @@ const int picardIterations = 1;
 
 {%- endif %}
 {%- if !tempVarsOnStack %}
-  exahype::DataHeap::getInstance().deleteData(index,true);
+  delete[] block;
 {%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
@@ -203,12 +202,12 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   
   constexpr int totalSize = sizeStateOut + sizeFluxOut;
 {%- if tempVarsOnStack %}
-  double block[totalSize]; double* memory=&block[0];
+  double block[totalSize];
 {%- else %}  
-  const int index = exahype::DataHeap::getInstance().createData(
-      totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* memory = exahype::DataHeap::getInstance().getData(index).data();
+  double* block = new double[totalSize];
 {%- endif %}
+  double* memory = block;
+
   double* stateOut = memory; memory+=sizeStateOut;
   double* fluxOut  = memory; memory+=sizeFluxOut;
 
@@ -227,7 +226,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
   }
 {%- if !tempVarsOnStack %}
-  exahype::DataHeap::getInstance().deleteData(index,true);
+  delete[] block;
 {%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("boundaryConditions");
