@@ -1,0 +1,296 @@
+{# /**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/ #}
+
+#include <algorithm>
+#include <cstring>
+
+#include "tarch/la/ScalarOperations.h"
+
+#include "{{pathToOptKernel}}/Kernels.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
+
+#include "{{solverHeader}}"
+
+//Fortran (Limiter.f90): GetSubcellData
+void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) {
+  
+  std::memset(lim, 0, sizeof(double)*{{((nDofLim+2*ghostLayerWidth)**nDim)*nVar}});
+  //tensor operation
+  for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // We can skip x,y,z>=basisSizeLim+ghostLayerWidth
+    for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
+      for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
+        for (int iz = 0; iz < {{nDof3D}}; iz++) {
+          for (int iy = 0; iy < {{nDof}}; iy++) {
+            for (int ix = 0; ix < {{nDof}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                lim[((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nVar}}+n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n] 
+{% if nDim == 3 %}
+                                        * dg2fv[(z-{{ghostLayerWidth3D}})*{{nDofPad}}+iz]
+{% endif %}
+                                        * dg2fv[(y-{{ghostLayerWidth}})*{{nDofPad}}+iy]
+                                        * dg2fv[(x-{{ghostLayerWidth}})*{{nDofPad}}+ix];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+}
+
+//Fortran (Limiter.f90): PutSubcellData
+void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const luh) {
+  
+  std::memset(luh, 0, sizeof(double)*{{(nDof**nDim)*nData}});
+  //tensor operation
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      for (int x = 0; x < {{nDof}}; x++) {
+        for (int iz = {{ghostLayerWidth3D}}; iz < {{nDofLim3D+ghostLayerWidth3D}}; iz++) { // We can skip ix,iy,iz>=basisSizeLim+ghostLayerWidth
+          for (int iy = {{ghostLayerWidth}}; iy < {{nDofLim+ghostLayerWidth}}; iy++) {
+            for (int ix = {{ghostLayerWidth}}; ix < {{nDofLim+ghostLayerWidth}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                luh[((z*{{nDof}}+y)*{{nDof}}+x)*{{nData}}+n] += lim[((iz*{{nDofLim+2*ghostLayerWidth}}+iy)*{{nDofLim+2*ghostLayerWidth}}+ix)*{{nVar}}+n] 
+{% if nDim == 3 %}
+                                        * fv2dg[z*{{nDofLimPad}}+iz-{{ghostLayerWidth3D}}]
+{% endif %}
+                                        * fv2dg[y*{{nDofLimPad}}+iy-{{ghostLayerWidth}}]
+                                        * fv2dg[x*{{nDofLimPad}}+ix-{{ghostLayerWidth}}];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+}
+
+//TODO JMG: Not optimized yet
+bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
+    const double* const luh,
+    const exahype::solvers::ADERDGSolver* solver,
+    const double relaxationParameter,const double differenceScaling,
+    double* boundaryMinPerObservable, double* boundaryMaxPerObservable
+) {
+  
+  const int numberOfObservables = solver->getDMPObservables();
+
+  double* localMinPerObservable = new double[numberOfObservables];
+  double* localMaxPerObservable = new double[numberOfObservables];
+
+  // 1. Determine the new cell-local -minimum and maximummin and max
+  findCellLocalMinAndMax(luh,solver,localMinPerObservable,localMaxPerObservable);
+
+  // 2. Compare to the boundary minimum and maximum
+  bool discreteMaximumPrincipleSatisfied=true;
+  for(int v = 0; v < numberOfObservables; v++) {
+    double boundaryMin = boundaryMinPerObservable[v];
+    for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
+      boundaryMin = std::min( boundaryMin, boundaryMinPerObservable[i*numberOfObservables+v] );
+    }
+    double boundaryMax = boundaryMaxPerObservable[v];
+    for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
+      boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*numberOfObservables+v] );
+    }
+    double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
+
+    assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
+    scaledDifference = std::max( scaledDifference, relaxationParameter );
+
+    if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
+       (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
+      discreteMaximumPrincipleSatisfied=false;
+    }
+
+    // TODO(Dominic): A little hacky
+
+    // We have the new min and max directly available now and
+    // overwrite the block for face 0 with it
+    boundaryMinPerObservable[v] = localMinPerObservable[v];
+    boundaryMaxPerObservable[v] = localMaxPerObservable[v];
+
+    // In the block for face 1, we write the boundary min and max
+    boundaryMinPerObservable[v+numberOfObservables] = boundaryMin;
+    boundaryMaxPerObservable[v+numberOfObservables] = boundaryMax;
+  }
+
+  // clean up
+  delete[] localMinPerObservable;
+  delete[] localMaxPerObservable;
+
+  return discreteMaximumPrincipleSatisfied;
+}
+
+//TODO JMG observable not optimized
+void {{codeNamespace}}::findCellLocalLimiterMinAndMax(
+    const double* const lim,
+    const exahype::solvers::ADERDGSolver* solver,
+    double* const localMinPerVariables, double* const localMaxPerVariables
+) {
+  
+  const int numberOfObservables = solver->getDMPObservables();
+  std::fill_n(localMinPerVariables,numberOfObservables,std::numeric_limits<double>::max());
+  std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::max());
+
+  double* observables = new double[numberOfObservables];
+  
+  for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // skip the last element
+    for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
+      for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,lim+(((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nVar}}));
+
+        for (int v = 0; v < numberOfObservables; v++) {
+          localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
+          localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
+        }
+      }
+    }
+  }
+
+  // clean up
+  delete[] observables;
+}
+
+/**
+ * localMinPerVariables, localMaxPerVariables are double[numberOfVariables]
+ */
+void {{codeNamespace}}::findCellLocalMinAndMax(
+    const double* const luh,
+    const exahype::solvers::ADERDGSolver* solver,
+    double* const localMinPerVariables, double* const localMaxPerVariables
+) {
+  
+  const int numberOfObservables = solver->getDMPObservables();
+  std::fill_n(localMinPerVariables,numberOfObservables,std::numeric_limits<double>::max());
+  std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::max());
+
+  double* observables = new double[numberOfObservables];
+
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      for (int x = 0; x < {{nDof}}; x++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,luh+(((z*{{nDof}}+y)*{{nDof}}+x)*{{nData}}));
+
+        for (int v = 0; v < numberOfObservables; v++) {
+          localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
+          localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
+        }
+      }
+    }
+  }
+  compareWithADERDGSolutionAtGaussLobattoNodes(luh, solver, localMinPerVariables, localMaxPerVariables);
+  compareWithADERDGSolutionAtFVSubcellCenters (luh, solver, localMinPerVariables, localMaxPerVariables);
+
+  // clean up
+  delete[] observables;
+}
+
+//*************************
+//*** Private functions ***
+//*************************
+/**
+ * Auxilliary function to findMinMax
+ * Project to GaussLobatto and modify the min/max if required
+ */
+void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
+    const double* const luh,
+    const exahype::solvers::ADERDGSolver* solver,
+    double* min, 
+    double* max
+) {
+
+  const int numberOfObservables = solver->getDMPObservables();
+  double* observables = new double[numberOfObservables];
+  double lobValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+  for (int z = 0; z<{{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      for (int x = 0; x < {{nDof}}; x++) {
+        std::memset(lobValues, 0, sizeof(double)*{{nVarPad}});
+        for (int iz = 0; iz < {{nDof3D}}; iz++) {
+          for (int iy = 0; iy < {{nDof}}; iy++) {
+            for (int ix = 0; ix < {{nDof}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                lobValues[n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n]
+{% if nDim == 3 %}
+                            * uh2lob[z*{{nDofPad}}+iz]
+{% endif %}
+                            * uh2lob[y*{{nDofPad}}+iy]
+                            * uh2lob[x*{{nDofPad}}+ix];
+              }
+            }
+          }
+        }
+
+        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,lobValues);
+        for (int n = 0; n < numberOfObservables; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+
+  // clean up
+  delete[] observables;
+}
+
+/**
+ * Auxilliary function to findMinMax
+ * Project onto FV subcell nodes and modify the min/max if required
+ */
+void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
+    const double* const luh,
+    const exahype::solvers::ADERDGSolver* solver,
+    double* min, 
+    double* max
+) {
+  
+  const int numberOfObservables = solver->getDMPObservables();
+
+  double* observables = new double[numberOfObservables];
+  double limValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+
+  //tensor operation
+  for (int z = 0; z < {{nDofLim3D}}; z++) {
+    for (int y = 0; y < {{nDofLim}}; y++) {
+      for (int x = 0; x < {{nDofLim}}; x++) {
+        std::memset(limValues, 0, sizeof(double)*{{nVarPad}});
+        for (int iz = 0; iz < {{nDof3D}}; iz++) {
+          for (int iy = 0; iy < {{nDof}}; iy++) {
+            for (int ix = 0; ix < {{nDof}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                limValues[n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n]
+{% if nDim == 3 %}
+                                * dg2fv[z*{{nDofPad}}+iz]
+{% endif %}
+                                * dg2fv[y*{{nDofPad}}+iy]
+                                * dg2fv[x*{{nDofPad}}+ix];
+              }
+            }
+          }
+        }
+
+        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,limValues);
+        for (int n = 0; n < numberOfObservables; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+
+  // clean up
+  delete[] observables;
+}

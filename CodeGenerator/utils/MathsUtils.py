@@ -17,7 +17,7 @@
 
 import Backend
 
-
+import math
 
 
 #****************************************
@@ -81,8 +81,12 @@ def matrixDeterminant(M):
     return determinant    
 
 
-#inverse matrix M    
+#inverse matrix M
 def matrixInverse(M):
+    #return matrixInverse_cofactor(M)
+    return matrixInverse_Pivot(M)
+
+def matrixInverse_cofactor(M):
     determinant = matrixDeterminant(M)
     cofactors = []
     for i in range(len(M)):
@@ -96,6 +100,49 @@ def matrixInverse(M):
         for j in range(len(M)):
             cofactors[i][j] = cofactors[i][j]/determinant
     return cofactors
+
+def matrixInverse_Pivot(M):
+    n = len(M)
+    c = [[0.0 for _ in range(2*n)] for _ in range(n)]
+  
+    for i in range(n):
+        for j in range(n):
+            c[i][j] = M[j][i]
+            c[i][j+n] = 0.0
+        c[i][i+n]  =1.0
+
+    #Forward elimination and row swapping (if necessary)
+    for i in range(n):
+        ml = i
+        mlV = math.fabs(c[i][i])
+        for j in range(i+1, n):
+            if(math.fabs(c[j][i]) > mlV):
+                ml = j
+                mlV = math.fabs(c[j][i])
+        for k in range(0, 2*n):
+            tmp = c[ml][k]
+            c[ml][k] = c[i][k]
+            c[i][k] = tmp
+
+        if c[i][i] == 0.:
+            raise ValueError("MatrixInverse: Matrix is singular")
+        
+        piv = 1. / c[i][i]
+        for k in range(0, 2*n):
+            c[i][k] *= piv
+        for j in range(i+1, n):
+            tmp = c[j][i]
+            for k in range(0, 2*n):
+                c[j][k] -= tmp*c[i][k]
+    
+    #Back substitution
+    for i in range(n-1,-1,-1):
+        for j in range(i-1,-1,-1):
+            tmp = c[j][i];
+            for k in range(0, 2*n):
+                c[j][k] -= tmp*c[i][k]
+
+    return [[c[i][j+n] for i in range(n)] for j in range(n)]
 
 # zero-pad a vector    
 def vectorPad(v,padSize):
@@ -175,6 +222,60 @@ def getGaussLegendre(nDof):
         return  [0.03333567215434358, 0.07472567457529024, 0.1095431812579912, 0.1346333596549983, 0.1477621123573766, 0.1477621123573766, 0.1346333596549983, 0.1095431812579912, 0.07472567457529024, 0.03333567215434358], \
                 [0.01304673574141413, 0.06746831665550773, 0.1602952158504878, 0.2833023029353764, 0.4255628305091844, 0.5744371694908156, 0.7166976970646236, 0.8397047841495122, 0.9325316833444923, 0.9869532642585859]
 
+
+
+#****************************************
+#****************************************
+#*********** Gauss-Lobatto **************
+#****************************************
+#****************************************  
+
+# return Gauss-Lobatto weight, point (taken from generic GaussLobattoQuadrature.cpp)
+def getGaussLobatto(nDof):
+    if nDof < 1:
+        raise ValueError("order must be positive")
+        
+    if nDof > 10:
+        raise ValueError("order is currently limited to 9")
+        
+    if nDof == 1:
+        return [1.0000000000000000], [0.5000000000000000]
+
+    if nDof == 2:
+        return [0.5, 0.5,], \
+               [1.0, 0.0]
+  
+    if nDof == 3:
+        return [0.1666666666666667, 0.6666666666666666, 0.1666666666666667], \
+               [1.0, 0.5, 0.0]  
+
+    if nDof == 4:
+        return [0.08333333333333333, 0.4166666666666667, 0.4166666666666667, 0.08333333333333333], \
+               [1.0, 0.7236067977499789, 0.2763932022500211, 0.0]
+  
+    if nDof == 5:
+        return [0.05, 0.2722222222222221, 0.3555555555555556, 0.2722222222222221, 0.05], \
+               [1.0, 0.8273268353539885, 0.5, 0.1726731646460115, 0.0]  
+
+    if nDof == 6:
+        return [0.03333333333333333, 0.1892374781489235, 0.2774291885177432, 0.2774291885177432, 0.1892374781489235, 0.03333333333333333], \
+               [1.0, 0.8825276619647324, 0.6426157582403226, 0.3573842417596774, 0.1174723380352676, 0.0]
+
+    if nDof == 7:
+        return [0.02380952380952381, 0.138413023680783, 0.2158726906049313, 0.2438095238095238, 0.2158726906049313, 0.138413023680783, 0.02380952380952381], \
+               [1.0, 0.9151119481392835, 0.7344243967353571, 0.5, 0.2655756032646429, 0.08488805186071652, 0.0] 
+
+    if nDof == 8:
+        return [0.01785714285714286, 0.1053521135717531, 0.1705613462417522, 0.2062293973293519, 0.2062293973293519, 0.1705613462417522, 0.1053521135717531, 0.01785714285714286], \
+               [1.0, 0.9358700742548033, 0.7958500907165711, 0.6046496089512394, 0.3953503910487606, 0.2041499092834289, 0.06412992574519671, 0.0]  
+
+    if nDof == 9:
+        return [0.01388888888888889, 0.08274768078040276, 0.1372693562500808, 0.1732142554865232, 0.1857596371882086, 0.1732142554865232, 0.1372693562500808, 0.08274768078040276, 0.01388888888888889], \
+               [1.0, 0.94987899770573, 0.8385931397553689, 0.6815587319130891, 0.5, 0.3184412680869109, 0.1614068602446311, 0.05012100229426991, 0.0] 
+
+    if nDof == 10:
+        return [0.01111111111111111, 0.06665299542553503, 0.1124446710315632, 0.1460213418398419, 0.1637698805919487, 0.1637698805919487, 0.1460213418398419, 0.1124446710315632, 0.06665299542553503, 0.01111111111111111], \
+               [1.0, 0.9597669540832294, 0.8693869325527526, 0.7389624749052223, 0.5826394788331934, 0.4173605211668065, 0.2610375250947777, 0.1306130674472474, 0.04023304591677057, 0.0]
 
 
 #****************************************
@@ -359,4 +460,66 @@ def assembleFineGridProjector1d(xGPN, j, N):
         for m in range(0, N): # DG basis
             fineGridProjector1d[m][i] = phi_i[m]
     return fineGridProjector1d    
-  
+
+
+#****************************************
+#****************************************
+#*************** Limiter ****************
+#****************************************
+#****************************************
+
+
+# Convert from one basis to another
+def assembleQuadratureConversion(fromQ, toQ, N):
+    conversionMat = [[0.0 for _ in range(N)] for _ in range(N)]
+    for i in range(0, N):
+        phi, _ = BaseFunc1d(toQ[i], fromQ, N)
+        for j in range(0, N):
+            conversionMat[j][i] = phi[j] #check order
+    return conversionMat
+
+
+def assembleDGToFV(nodes, weights, N, Nlim):
+    dg2fv = [[0.0 for _ in range(Nlim)] for _ in range(N)]
+    dxi = 1.0 / float(Nlim)
+    xLeft = 0.0
+    xi = 0.0
+    for i in range(0, Nlim):
+        xLeft = i*dxi
+        for j in range(0, N):
+            xi = xLeft + dxi*nodes[j]
+            phi, _ = BaseFunc1d(xi, nodes, N)
+            for k in range(0, N):
+                dg2fv[k][i] += weights[j]*phi[k]
+    return dg2fv
+
+def assembleFVToDG(dg2fv, weights, N, Nlim):
+    fv2dg = [[0.0 for _ in range(N)] for _ in range(Nlim)]
+    lsqm = [[0.0 for _ in range(N+1)] for _ in range(N+1)]
+    lsqrhs = [[0.0 for _ in range(Nlim)] for _ in range(N+1)]
+    
+    dxi = 1.0 / float(Nlim)
+    
+    for i in range(0, N):
+        for j in range(0, N):
+            for k in range(0, Nlim):
+                lsqm[j][i] += 2* dg2fv[i][k] * dg2fv[j][k]
+        lsqm[N][i] = weights[i]
+    for i in range(0, N):
+        lsqm[i][N] = -weights[i]
+    lsqm[N][N] = 0.0
+    
+    ilsqm = matrixInverse(lsqm)
+    
+    for i in range(0, Nlim):
+        for j in range(0, N):
+            lsqrhs[j][i] = 2*dg2fv[j][i]
+        lsqrhs[N][i] = dxi;
+        
+    for i in range(0, Nlim):
+        for j in range(0, N):
+            for k in range(0, N+1):
+                fv2dg[i][j] += ilsqm[j][k] * lsqrhs[k][i]
+                
+    return fv2dg
+

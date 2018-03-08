@@ -103,7 +103,11 @@ l_parser.add_argument("--usePointSources",
 l_parser.add_argument("--noTimeAveraging",
                       action="store_true",
                       help="disable time averaging in the spacetimepredictor (less memory usage, more computation)")
-
+l_parser.add_argument("--useLimiter",
+                      type=int,
+                      default=-1,
+                      metavar='useLimiter',
+                      help="enable limiter with the given ghostLayerWidth")
 l_commandLineArguments = l_parser.parse_args()
 
 config = { 
@@ -130,6 +134,8 @@ config = {
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
            "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
            "useLibxsmm"            : True,
+           "ghostLayerWidth"       : l_commandLineArguments.useLimiter,
+           "useLimiter"            : l_commandLineArguments.useLimiter >= 0,
            "runtimeDebug"          : False #for debug
           }
 

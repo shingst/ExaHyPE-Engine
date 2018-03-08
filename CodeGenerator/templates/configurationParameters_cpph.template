@@ -30,6 +30,13 @@ namespace {{namespaceName}} {
   constexpr int getDimension()               {return {{nDim}};}
 
   constexpr bool isLinear()                  {return {{isLinearCText}};}
+  
+{% if useLimiter %}
+  // Limiter configuration
+  constexpr int getBasisSizeLimiter()        {return {{nDofLim}};}
+  constexpr int getBasisSizeLimiterPadded()  {return {{nDofLimPad}};}
+  constexpr int getGhostLayerWidth()         {return {{ghostLayerWidth}};}
+{% endif %}
 
 {% if isLinear %}  
   {% set lQiSize = nDataPad*(nDof**nDim)*(1+nDof) %}

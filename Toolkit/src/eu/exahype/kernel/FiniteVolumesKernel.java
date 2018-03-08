@@ -81,31 +81,42 @@ public class FiniteVolumesKernel {
   }
   
   public KernelType getKernelType() {
-	if ( type.contains(MUSCL_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
-      return  KernelType.Unknown;
-	}
-	if ( 
-      type.contains(MUSCL_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
-      || 
-      type.contains(MUSCL_OPTION_ID)
-    ) {
-	  return  KernelType.GenericMUSCLHancock;
-	}
-	if ( type.contains(GODUNOV_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
-      return  KernelType.Unknown;
-	}
-	if ( 
-      type.contains(GODUNOV_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
-      || 
-      type.contains(GODUNOV_OPTION_ID)
-    ) {
-	  return  KernelType.GenericGodunov;
-	}
-	if ( type.contains(USER_DEFINED_OPTION_ID) ) {
-      return  KernelType.UserDefined;
+    if ( type.contains(MUSCL_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
+        return  KernelType.Unknown;
     }
+    if ( 
+        type.contains(MUSCL_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
+        || 
+        type.contains(MUSCL_OPTION_ID)
+      ) {
+      return  KernelType.GenericMUSCLHancock;
+    }
+    if ( type.contains(GODUNOV_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
+        return  KernelType.Unknown;
+    }
+    if ( 
+        type.contains(GODUNOV_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
+        || 
+        type.contains(GODUNOV_OPTION_ID)
+      ) {
+      return  KernelType.GenericGodunov;
+    }
+    //if ( type.contains(USER_DEFINED_OPTION_ID) ) {
+    //  return  KernelType.UserDefined; //Not supported anymore
+    //}
 		
     return KernelType.Unknown;
+  }
+  
+  public int getGhostLayerWidth() throws UnsupportedOperationException, IllegalArgumentException {
+    switch (getKernelType()) {
+      case GenericMUSCLHancock:
+        return 2;
+      case GenericGodunov:
+        return 1;
+
+    }
+    throw new IllegalArgumentException("Kerneltype not recognized");
   }
 
   public boolean usesOptimisedKernels() {

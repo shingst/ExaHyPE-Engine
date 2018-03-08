@@ -22,13 +22,14 @@ public class CodeGeneratorHelper {
   private static String useSourceOptionFlag          = "--useSource";
   private static String useMaterialParamOptionFlag   = "--useMaterialParam";
   private static String usePointSourcesOptionFlag    = "--usePointSources";
+  private static String useLimiterOptionFlag         = "--useLimiter";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
   private static String enableDeepProfilerOptionFlag = "--enableDeepProfiler";
   
   
   //Internal states
   //---------------
-  private Collection<String> _optKernelsPaths;      //stores the paths to the generated code (used for imports in the KernelRegistration and in the Makefile)
+  private Map<String,String> _optKernelsPaths;      //stores the paths to the generated code (used for imports in the KernelRegistration and in the Makefile)
   private Map<String,String> _optKernelsNamespaces; //stores the namespace used. The specific namespace depend on the solvername (assume projectname is constant)
   private String _pathToApplication = null;
   
@@ -38,7 +39,7 @@ public class CodeGeneratorHelper {
   private static volatile CodeGeneratorHelper instance = null;
 
   private CodeGeneratorHelper() {
-    _optKernelsPaths = new HashSet<String>();
+    _optKernelsPaths = new HashMap<String,String>();
     _optKernelsNamespaces = new HashMap<String,String>();
   }
 
@@ -53,6 +54,11 @@ public class CodeGeneratorHelper {
       return instance;
   }
   
+  // shortcut method to build a unique key out of projectname + solver name
+  private static String getKey(String projectName, String solverName) {
+    return projectName + "::" + solverName;
+  }
+  
   
   //Setter
   //------
@@ -63,12 +69,17 @@ public class CodeGeneratorHelper {
   
   //Getter
   //------
+  
+  public String getIncludePath(String projectName, String solverName) {
+    return _optKernelsPaths.get(getKey(projectName,solverName));
+  }
+  
   public Collection<String> getIncludePaths() {
-    return _optKernelsPaths;
+    return _optKernelsPaths.values();
   }
   
   public String getNamespace(String projectName, String solverName) {
-    return _optKernelsNamespaces.get(projectName+"::"+solverName);
+    return _optKernelsNamespaces.get(getKey(projectName,solverName));
   }
   
   public Collection<String> getNamespaces() {
@@ -105,13 +116,14 @@ public class CodeGeneratorHelper {
                     + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
                     + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
-                    + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "");
+                    + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
+                    + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "");
 
     // set up the command to execute the code generator
     String args =   " " + _pathToApplication 
                   + " " + optKernelPath 
                   + " " + namespace
-                  + " " + projectName + "::" + solverName 
+                  + " " + projectName + "::" + solverName
                   + " " + numberOfUnknowns 
                   + " " + numberOfParameters 
                   + " " + order 
@@ -155,8 +167,8 @@ public class CodeGeneratorHelper {
         throw new IOException();
     }
     
-    _optKernelsPaths.add(optKernelPath);
-    _optKernelsNamespaces.put(projectName+"::"+solverName, namespace);
+    _optKernelsPaths.put(getKey(projectName,solverName),optKernelPath);
+    _optKernelsNamespaces.put(getKey(projectName,solverName), namespace);
     
     return optKernelPath;
     

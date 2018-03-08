@@ -45,6 +45,7 @@ public class OptimisedADERDG implements Solver {
     final int     maxPicardIterations    = kernel.maxPicardIterations();
     final int     numberOfPointSources   = kernel.getNumberOfPointSources();
     
+    
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, dimensions,
         microarchitecture, enableDeepProfiler, kernel);

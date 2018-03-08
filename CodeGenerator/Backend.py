@@ -87,6 +87,10 @@ def generateContext(i_config):
     context["solverHeader"]      = context["solverName"].split("::")[1] + ".h"
     context["codeNamespaceList"] = context["codeNamespace"].split("::")
     context["guardNamespace"]    = "_".join(context["codeNamespaceList"]).upper()
+    context["nDofLim"] = 2*context["nDof"]-1 #for limiter
+    context["nDofLimPad"] = getSizeWithPadding(context["nDofLim"])
+    context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
+    context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
     return context
 
     
@@ -151,6 +155,10 @@ def generateComputeKernels():
     deltaDistributionGenerator = DeltaDistributionGenerator.DeltaDistributionGenerator(generateContext(g_config))
     deltaDistributionGenerator.generateCode()
     g_runtimes["deltaDistributionGenerator"] = time.perf_counter() - start
+    start = time.perf_counter()
+    limiterGenerator = LimiterGenerator.LimiterGenerator(generateContext(g_config))
+    limiterGenerator.generateCode()
+    g_runtimes["LimiterGenerator"] = time.perf_counter() - start
 
 
 def executeLibxsmmGenerator(i_commandLineParameters):

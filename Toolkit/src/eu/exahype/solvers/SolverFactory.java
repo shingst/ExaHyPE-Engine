@@ -95,13 +95,13 @@ public class SolverFactory {
               return new eu.exahype.solvers.GenericFiniteVolumesGodunovInC(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, namingSchemeNames, patchSize, _enableProfiler, hasConstants, kernel);
             }
             break;
-        case UserDefined: 
-            if (isFortran) {
-              return new eu.exahype.solvers.UserDefinedFiniteVolumesinFortran(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
-            }
-            else {
-              return new eu.exahype.solvers.UserDefinedFiniteVolumesinC(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
-            }
+        //case UserDefined: //Not supported anymore 
+        //    if (isFortran) {
+        //      return new eu.exahype.solvers.UserDefinedFiniteVolumesinFortran(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
+        //    }
+        //    else {
+        //     return new eu.exahype.solvers.UserDefinedFiniteVolumesinC(_projectName, solverName,_dimensions,numberOfVariables, numberOfParameters, patchSize, _enableProfiler, hasConstants);
+        //    }
         }
       System.err.println("ERROR: solver configuration is not supported: "+kernel.toString() );
       return null;
@@ -113,7 +113,14 @@ public class SolverFactory {
   
   public Solver createLimiterSolver(String solverName, ADERDGKernel aderdgKernel, FiniteVolumesKernel FVKernel, Solver ADERDGsolver, Solver FVsolver) { //take the kernel to know if generic or optimised
     try {
-      return new eu.exahype.solvers.Limiter(_projectName, solverName, ADERDGsolver, FVsolver); //TODO JMG optimized vs generic
+      switch (aderdgKernel.getKernelType()) {
+        case GenericADERDG: 
+          return new eu.exahype.solvers.GenericLimiter(_projectName, solverName, ADERDGsolver, FVsolver);
+        case OptimisedADERDG:
+          return new eu.exahype.solvers.OptimisedLimiter(_projectName, solverName, ADERDGsolver, FVsolver);
+      }
+      System.err.println("ERROR: solver configuration is not supported: "+aderdgKernel.toString()+FVKernel.toString());
+      return null;
     } catch(Exception e) {
       System.err.println("ERROR: can't create the solver. Error: "+e );
       return null;

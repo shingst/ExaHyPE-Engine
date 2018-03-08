@@ -49,6 +49,8 @@ public class ADERDGKernel {
   private Map<String, Integer> terms;
   private Map<String, Integer> optimisation;
   
+  private int ghostLayerWidth = -1;
+  
   public ADERDGKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AAderdgSolver) {
       type = parseIds(((AAderdgSolver) solver).getKernelType());
@@ -176,6 +178,19 @@ public class ADERDGKernel {
       return terms.get(POINTSOURCES_OPTION_ID);
     }
     return -1;
+  }
+  
+  //Used set the GhostLayerWidth for LimitingSolver
+  public void setGhostLayerWidth(int glw) {
+    this.ghostLayerWidth = glw;
+  }
+  
+  public int getGhostLayerWidth() {
+    return ghostLayerWidth; // -1 by default
+  }
+  
+  public boolean useLimiter() {
+    return ghostLayerWidth > -1;
   }
   
   //(type: [...], terms: [...], opt: [...])

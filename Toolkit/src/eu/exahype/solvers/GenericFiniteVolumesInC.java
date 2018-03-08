@@ -23,7 +23,7 @@ public class GenericFiniteVolumesInC implements Solver {
 
   public GenericFiniteVolumesInC(
       String type, String projectName, String solverName, int dimensions, int numberOfVariables, int numberOfParameters, Set<String> namingSchemeNames, int patchSize,
-      int ghostLayerWidth, boolean enableProfiler, boolean hasConstants,
+      boolean enableProfiler, boolean hasConstants,
       FiniteVolumesKernel kernel) {
         
     _solverName         = solverName;
@@ -33,6 +33,7 @@ public class GenericFiniteVolumesInC implements Solver {
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSources    = kernel.usePointSources();
     final boolean tempVarsOnStack    = kernel.tempVarsOnStack();
+    final int     ghostLayerWidth    = kernel.getGhostLayerWidth();
     
     templateEngine = new TemplateEngine();
     context = new Context();

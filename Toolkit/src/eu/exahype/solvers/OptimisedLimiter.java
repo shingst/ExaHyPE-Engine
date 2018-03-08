@@ -12,19 +12,28 @@ import minitemp.Context;
 import minitemp.TemplateEngine;
 
 import eu.exahype.io.IOUtils;
+import eu.exahype.CodeGeneratorHelper;
 
 
-public class Limiter implements Solver {
+public class OptimisedLimiter implements Solver {
   //Internal states
   //--------------- 
   private String         solverName;
   private Context        context;
   private TemplateEngine templateEngine;
   
-  public Limiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver) 
+  public OptimisedLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver) 
       throws IOException, IllegalArgumentException {    
     
     this.solverName                 = solverName;
+    
+    final String aderdgSolverName   = ADERDGSolver.getSolverName();
+    final String optKernelPath      = CodeGeneratorHelper.getInstance().getIncludePath(projectName, aderdgSolverName);
+    final String optNamespace       = CodeGeneratorHelper.getInstance().getNamespace(projectName, aderdgSolverName);
+    
+    if(optKernelPath == null || optNamespace == null) {
+      throw new IllegalArgumentException("Optimized code not found!");
+    }
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -35,6 +44,8 @@ public class Limiter implements Solver {
     context.put("abstractSolver"      , getAbstractSolverName());
     context.put("ADERDGAbstractSolver", ADERDGSolver.getAbstractSolverName());
     context.put("FVAbstractSolver"    , FVSolver.getAbstractSolverName());
+    context.put("optKernelPath"       , optKernelPath);
+    context.put("optNamespace"        , optNamespace);
   }
     
   @Override
@@ -44,23 +55,23 @@ public class Limiter implements Solver {
   
   @Override
   public void writeHeader(java.io.BufferedWriter writer) throws IOException, IllegalArgumentException {
-    throw new IllegalArgumentException("eu.exahype.solvers.Limiter::writeHeader should not be called"); //No user implementation required
+    throw new IllegalArgumentException("eu.exahype.solvers.OptimisedLimiter::writeHeader should not be called"); //No user implementation required
   }
   
   @Override
   public void writeUserImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
-      throw new IllegalArgumentException("eu.exahype.solvers.Limiter::writeHeader should not be called"); //No user implementation required
+      throw new IllegalArgumentException("eu.exahype.solvers.OptimisedLimiter::writeHeader should not be called"); //No user implementation required
   }
   
   @Override
   public void writeAbstractHeader(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {      
-    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractLimiterSolverHeader.template");
+    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractGenericLimiterSolverHeader.template"); //use the same as Generic
     writer.write(templateEngine.render(template, context));
   }
   
   @Override
   public void writeAbstractImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
-    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractLimiterSolverImplementation.template");
+    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractOptimisedLimiterSolverImplementation.template");
     writer.write(templateEngine.render(template, context));
   }
   
