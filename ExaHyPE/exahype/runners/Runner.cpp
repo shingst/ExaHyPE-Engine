@@ -723,7 +723,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
       std::max (
           exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 4,
               // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
-          exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
+          exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell()+1);
   if (extraIterations>0) {
     logInfo("createGrid()", "more status spreading.");
   }

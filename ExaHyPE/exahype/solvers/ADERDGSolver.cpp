@@ -1014,30 +1014,28 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
 }
 
 void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
-  assertion(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None);
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
+  assertion(cellDescription.getRefinementRequest()==CellDescription::RefinementRequest::Pending);
 
-  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    assertion(cellDescription.getRefinementRequest()==CellDescription::RefinementRequest::Pending);
+  double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  exahype::solvers::Solver::RefinementControl refinementControl =
+      refinementCriterion(
+          solution,cellDescription.getOffset()+0.5*cellDescription.getSize(),
+          cellDescription.getSize(),
+          cellDescription.getCorrectorTimeStamp()+cellDescription.getCorrectorTimeStepSize(),
+          cellDescription.getLevel());
 
-    double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    exahype::solvers::Solver::RefinementControl refinementControl =
-        refinementCriterion(
-            solution,cellDescription.getOffset()+0.5*cellDescription.getSize(),
-            cellDescription.getSize(),
-            cellDescription.getCorrectorTimeStamp()+cellDescription.getCorrectorTimeStepSize(),
-            cellDescription.getLevel());
-
-    switch (refinementControl) {
-      case exahype::solvers::Solver::RefinementControl::Keep:
-        cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Keep);
-        break;
-      case exahype::solvers::Solver::RefinementControl::Erase:
-        cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Erase);
-        break;
-      case exahype::solvers::Solver::RefinementControl::Refine:
-        cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Refine);
-        break;
-    }
+  switch (refinementControl) {
+  case exahype::solvers::Solver::RefinementControl::Keep:
+    cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Keep);
+    break;
+  case exahype::solvers::Solver::RefinementControl::Erase:
+    cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Erase);
+    break;
+  case exahype::solvers::Solver::RefinementControl::Refine:
+    cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Refine);
+    break;
   }
 }
 
@@ -2224,40 +2222,38 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     const bool isInitialMeshRefinement) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  if (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating) {
-    prolongateVolumeData(cellDescription,isInitialMeshRefinement);
-    cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-  }
-  assertion(cellDescription.getRefinementEvent()==CellDescription::None);
-
   zeroTimeStepSizes(cellDescriptionsIndex,element); // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
 
-  // initial conditions
-  adjustSolution(cellDescription);
-  markForRefinement(cellDescription);
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
+    if (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating) {
+      prolongateVolumeData(cellDescription,isInitialMeshRefinement);
+      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+    }
+    adjustSolution(cellDescription);
+    markForRefinement(cellDescription);
+  }
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
-  assertion1(cellDescription.getRefinementEvent()==CellDescription::None,cellDescription.toString()); // TODO(Dominic): Probably have to allow more states
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
 
-  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
+  cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
 
-    double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    adjustSolution(
+  double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  adjustSolution(
       solution,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
       cellDescription.getCorrectorTimeStamp(),
       cellDescription.getCorrectorTimeStepSize());
 
-    #if defined(Debug) || defined(Asserts)
-    for (int i=0; i<getUnknownsPerCell(); i++) {
-      assertion3(std::isfinite(solution[i]),cellDescription.toString(),"adjustSolution(...)",i);
-    }
-    #endif
+  #if defined(Debug) || defined(Asserts)
+  for (int i=0; i<getUnknownsPerCell(); i++) {
+    assertion3(std::isfinite(solution[i]),cellDescription.toString(),"adjustSolution(...)",i);
   }
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::updateSolution(

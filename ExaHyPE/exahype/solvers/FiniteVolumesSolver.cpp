@@ -758,7 +758,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   if (backupPreviousSolution) {
     std::copy(newSolution,newSolution+getDataPerPatch()+getGhostDataPerPatch(),solution); // Copy (current solution) in old solution field.
   }
-  validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution");
+
+  validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[pre]");
 
   //    std::cout << "[pre] solution:" << std::endl;
   //    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
@@ -802,7 +803,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 //    std::cout << "[post] solution:" << std::endl;
 //    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
 //  }
-  validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution");
+  validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[post]");
 }
 
 void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(

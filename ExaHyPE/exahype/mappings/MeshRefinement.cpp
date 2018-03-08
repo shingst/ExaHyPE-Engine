@@ -398,6 +398,7 @@ void exahype::mappings::MeshRefinement::enterCell(
        ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+
         if (element!=exahype::solvers::Solver::NotFound) {
           solver->adjustSolutionDuringMeshRefinement(
               cellDescriptionsIndex,element,IsInitialMeshRefinement);

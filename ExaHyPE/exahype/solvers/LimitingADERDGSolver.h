@@ -278,27 +278,18 @@ private:
 
   /**
    * Deallocates the limiter patch for solver patches
-   * that of type Cell and flagged with limiter status
-   * Ok (0).
-   *
-   * \note This operation should never be performed during the mesh refinement
-   * iterations if it is not ensured that the previous limiter status
-   * is Ok (0).
+   * of type which have a limiterStatus and
+   * previousLimiterStatus with value 0.
    *
    * Otherwise, a limiter patch holding a valid FV solution
    * might be removed in one of the first iterations but is
    * then required after the limiter status spreading has converged to
-   * perform a troubled cell recomputation.
+   * perform a troubled cell recomputation or is required
+   * for performing a global rollback.
    */
   void ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
       const int cellDescriptionsIndex,
       const int solverElement) const;
-
-  /**
-   * Allocates a limiter patch and performs a DG to FV projection
-   */
-  void allocateLimiterPatchAfterSolutionUpdate(
-      const int cellDescriptionsIndex,const int solverElement) const;
 
   /**
    * Update the limiter status based on the cell-local solution values.
@@ -1046,7 +1037,8 @@ public:
     */
    bool ensureRequiredLimiterPatchIsAllocated(
            const int cellDescriptionsIndex,
-           const int solverElement) const;
+           const int solverElement,
+           const int limiterStatus) const;
 
 
    /**
