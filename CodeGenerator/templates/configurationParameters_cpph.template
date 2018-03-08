@@ -36,6 +36,7 @@ namespace {{namespaceName}} {
   constexpr int getBasisSizeLimiter()        {return {{nDofLim}};}
   constexpr int getBasisSizeLimiterPadded()  {return {{nDofLimPad}};}
   constexpr int getGhostLayerWidth()         {return {{ghostLayerWidth}};}
+  constexpr int getNumberOfObservable()      {return {{nObs}};}
 {% endif %}
 
 {% if isLinear %}  

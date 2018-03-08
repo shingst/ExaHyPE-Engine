@@ -136,12 +136,12 @@ config = {
            "codeNamespace"         : l_commandLineArguments.namespace,
            "pathToOutputDirectory" : os.path.join(os.path.dirname(__file__),pathFromHereToExaHyPERoot,l_commandLineArguments.pathToApplication,l_commandLineArguments.pathToOptKernel),
            "architecture"          : l_commandLineArguments.architecture,
+           "useLimiter"            : l_commandLineArguments.useLimiter >= 0,
+           "nObs"                  : l_commandLineArguments.useLimiter,
+           "ghostLayerWidth"       : l_commandLineArguments.ghostLayerWidth,
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
            "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
            "useLibxsmm"            : True,
-           "useLimiter"            : l_commandLineArguments.useLimiter >= 0,
-           "nObservable"           : l_commandLineArguments.useLimiter,
-           "ghostLayerWidth"       : l_commandLineArguments.ghostLayerWidth,
            "runtimeDebug"          : False #for debug
           }
 

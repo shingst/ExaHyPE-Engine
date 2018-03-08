@@ -77,36 +77,33 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
   
 }
 
-//TODO JMG: Not optimized yet
+
 bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
     const double* const luh,
     const exahype::solvers::ADERDGSolver* solver,
     const double relaxationParameter,const double differenceScaling,
     double* boundaryMinPerObservable, double* boundaryMaxPerObservable
 ) {
-  
-  const int numberOfObservables = solver->getDMPObservables();
 
-  double* localMinPerObservable = new double[numberOfObservables];
-  double* localMaxPerObservable = new double[numberOfObservables];
+  double localMinPerObservable[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  double localMaxPerObservable[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
 
   // 1. Determine the new cell-local -minimum and maximummin and max
   findCellLocalMinAndMax(luh,solver,localMinPerObservable,localMaxPerObservable);
 
   // 2. Compare to the boundary minimum and maximum
   bool discreteMaximumPrincipleSatisfied=true;
-  for(int v = 0; v < numberOfObservables; v++) {
+  for(int v = 0; v < {{nObs}}; v++) {
     double boundaryMin = boundaryMinPerObservable[v];
-    for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
-      boundaryMin = std::min( boundaryMin, boundaryMinPerObservable[i*numberOfObservables+v] );
+    for (int i=1; i<{{2*nDim}}; i++) {
+      boundaryMin = std::min( boundaryMin, boundaryMinPerObservable[i*{{nObs}}+v] );
     }
     double boundaryMax = boundaryMaxPerObservable[v];
-    for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
-      boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*numberOfObservables+v] );
+    for (int i=1; i<{{2*nDim}}; i++) {
+      boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*{{nObs}}+v] );
     }
     double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
 
-    assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
     scaledDifference = std::max( scaledDifference, relaxationParameter );
 
     if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
@@ -122,45 +119,38 @@ bool {{codeNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(
     boundaryMaxPerObservable[v] = localMaxPerObservable[v];
 
     // In the block for face 1, we write the boundary min and max
-    boundaryMinPerObservable[v+numberOfObservables] = boundaryMin;
-    boundaryMaxPerObservable[v+numberOfObservables] = boundaryMax;
+    boundaryMinPerObservable[v+{{nObs}}] = boundaryMin;
+    boundaryMaxPerObservable[v+{{nObs}}] = boundaryMax;
   }
-
-  // clean up
-  delete[] localMinPerObservable;
-  delete[] localMaxPerObservable;
 
   return discreteMaximumPrincipleSatisfied;
 }
 
-//TODO JMG observable not optimized
+
 void {{codeNamespace}}::findCellLocalLimiterMinAndMax(
     const double* const lim,
     const exahype::solvers::ADERDGSolver* solver,
     double* const localMinPerVariables, double* const localMaxPerVariables
 ) {
   
-  const int numberOfObservables = solver->getDMPObservables();
-  std::fill_n(localMinPerVariables,numberOfObservables,std::numeric_limits<double>::max());
-  std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::max());
+  std::fill_n(localMinPerVariables,{{nObs}},std::numeric_limits<double>::max());
+  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::max());
 
-  double* observables = new double[numberOfObservables];
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   
   for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // skip the last element
     for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
       for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,lim+(((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nVar}}));
+        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},lim+(((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nVar}}));
 
-        for (int v = 0; v < numberOfObservables; v++) {
+        for (int v = 0; v < {{nObs}}; v++) {
           localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
           localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
         }
       }
     }
   }
-
-  // clean up
-  delete[] observables;
+  
 }
 
 /**
@@ -172,18 +162,17 @@ void {{codeNamespace}}::findCellLocalMinAndMax(
     double* const localMinPerVariables, double* const localMaxPerVariables
 ) {
   
-  const int numberOfObservables = solver->getDMPObservables();
-  std::fill_n(localMinPerVariables,numberOfObservables,std::numeric_limits<double>::max());
-  std::fill_n(localMaxPerVariables,numberOfObservables,-std::numeric_limits<double>::max());
+  std::fill_n(localMinPerVariables,{{nObs}},std::numeric_limits<double>::max());
+  std::fill_n(localMaxPerVariables,{{nObs}},-std::numeric_limits<double>::max());
 
-  double* observables = new double[numberOfObservables];
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
 
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,luh+(((z*{{nDof}}+y)*{{nDof}}+x)*{{nData}}));
+        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},luh+(((z*{{nDof}}+y)*{{nDof}}+x)*{{nData}}));
 
-        for (int v = 0; v < numberOfObservables; v++) {
+        for (int v = 0; v < {{nObs}}; v++) {
           localMinPerVariables[v] = std::min ( localMinPerVariables[v], observables[v] );
           localMaxPerVariables[v] = std::max ( localMaxPerVariables[v], observables[v] );
         }
@@ -193,8 +182,6 @@ void {{codeNamespace}}::findCellLocalMinAndMax(
   compareWithADERDGSolutionAtGaussLobattoNodes(luh, solver, localMinPerVariables, localMaxPerVariables);
   compareWithADERDGSolutionAtFVSubcellCenters (luh, solver, localMinPerVariables, localMaxPerVariables);
 
-  // clean up
-  delete[] observables;
 }
 
 //*************************
@@ -211,8 +198,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     double* max
 ) {
 
-  const int numberOfObservables = solver->getDMPObservables();
-  double* observables = new double[numberOfObservables];
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   double lobValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
   for (int z = 0; z<{{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
@@ -233,8 +219,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
           }
         }
 
-        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,lobValues);
-        for (int n = 0; n < numberOfObservables; n++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},lobValues);
+        
+        for (int n = 0; n < {{nObs}}; n++) {
           min[n] = std::min( min[n], observables[n] );
           max[n] = std::max( max[n], observables[n] );
         }
@@ -242,8 +229,6 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     }
   }
 
-  // clean up
-  delete[] observables;
 }
 
 /**
@@ -257,9 +242,8 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     double* max
 ) {
   
-  const int numberOfObservables = solver->getDMPObservables();
 
-  double* observables = new double[numberOfObservables];
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
   double limValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 
   //tensor operation
@@ -282,8 +266,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
           }
         }
 
-        solver->mapDiscreteMaximumPrincipleObservables(observables,numberOfObservables,limValues);
-        for (int n = 0; n < numberOfObservables; n++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},limValues);
+        
+        for (int n = 0; n < {{nObs}}; n++) {
           min[n] = std::min( min[n], observables[n] );
           max[n] = std::max( max[n], observables[n] );
         }
@@ -291,6 +276,4 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     }
   }
 
-  // clean up
-  delete[] observables;
 }
