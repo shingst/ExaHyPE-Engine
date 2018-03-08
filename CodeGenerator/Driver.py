@@ -107,7 +107,12 @@ l_parser.add_argument("--useLimiter",
                       type=int,
                       default=-1,
                       metavar='useLimiter',
-                      help="enable limiter with the given ghostLayerWidth")
+                      help="enable limiter with the given number of observable")
+l_parser.add_argument("--ghostLayerWidth",
+                      type=int,
+                      default=0,
+                      metavar='ghostLayerWidth',
+                      help="use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0")
 l_commandLineArguments = l_parser.parse_args()
 
 config = { 
@@ -134,8 +139,9 @@ config = {
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
            "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
            "useLibxsmm"            : True,
-           "ghostLayerWidth"       : l_commandLineArguments.useLimiter,
            "useLimiter"            : l_commandLineArguments.useLimiter >= 0,
+           "nObservable"           : l_commandLineArguments.useLimiter,
+           "ghostLayerWidth"       : l_commandLineArguments.ghostLayerWidth,
            "runtimeDebug"          : False #for debug
           }
 

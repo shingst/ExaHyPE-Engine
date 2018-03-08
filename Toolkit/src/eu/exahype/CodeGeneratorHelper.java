@@ -23,6 +23,7 @@ public class CodeGeneratorHelper {
   private static String useMaterialParamOptionFlag   = "--useMaterialParam";
   private static String usePointSourcesOptionFlag    = "--usePointSources";
   private static String useLimiterOptionFlag         = "--useLimiter";
+  private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
   private static String enableDeepProfilerOptionFlag = "--enableDeepProfiler";
   
@@ -117,7 +118,9 @@ public class CodeGeneratorHelper {
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
                     + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
-                    + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "");
+                    + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")
+                    + (kernel.useLimiter() ?  ghostLayerWidthOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "")
+                    ;
 
     // set up the command to execute the code generator
     String args =   " " + _pathToApplication 

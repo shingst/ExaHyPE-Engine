@@ -50,6 +50,7 @@ public class ADERDGKernel {
   private Map<String, Integer> optimisation;
   
   private int ghostLayerWidth = -1;
+  private int numberOfObservables = -1;
   
   public ADERDGKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AAderdgSolver) {
@@ -189,10 +190,20 @@ public class ADERDGKernel {
     return ghostLayerWidth; // -1 by default
   }
   
-  public boolean useLimiter() {
-    return ghostLayerWidth > -1;
+  //Used set the numberOfObservable for LimitingSolver
+  public void setNumberOfObservables(int obs) {
+    this.numberOfObservables = obs;
   }
   
+  public int getNumberOfObservables() {
+    return numberOfObservables; // -1 by default
+  }
+  
+  // useLimiter only if the two limiter parameter have been set
+  public boolean useLimiter() {
+    return ghostLayerWidth > -1 && numberOfObservables > -1;
+  }
+
   //(type: [...], terms: [...], opt: [...])
   public String toString() {
     StringBuilder sb = new StringBuilder();

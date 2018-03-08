@@ -443,7 +443,7 @@ Productions
         token_kernel_limiter_type        [kernel_limiter_type_const]:token_const       [kernel_limiter_type_equals]:token_equals              [kernel_limiter_type]:ids
 		token_kernel_limiter_opt         [kernel_limiter_opt_const]:token_const        [kernel_limiter_opt_equals]:token_equals               [kernel_limiter_opt]:ids
         token_language_limiter           [language_limiter_const]:token_const  [language_limiter_equals]:token_equals         [language_limiter]:identifier
-        token_dmp_observables                                                  [dmp_observables_equals]:token_equals          [dmp_observables]:int_number
+        token_dmp_observables            [kernel_limiter_obs_const]:token_const        [dmp_observables_equals]:token_equals          [dmp_observables]:int_number
         token_dmp_relaxation_parameter                                         [dmp_relaxation_parameter_equals]:token_equals [dmp_relaxation_parameter]:float_number
         token_dmp_difference_scaling                                           [dmp_difference_scaling_equals]:token_equals   [dmp_difference_scaling]:float_number
         steps_till_cured?

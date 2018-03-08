@@ -193,12 +193,13 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   
   @Override
   public void inALimitingAderdgSolver(ALimitingAderdgSolver node) {
-    String solverName    = node.getName().getText();
-    String  language     = node.getLanguage().getText();
-    int     order        = Integer.parseInt(node.getOrder().getText());
-    boolean hasConstants = node.getConstants()!=null;
+    String solverName        = node.getName().getText();
+    String  language         = node.getLanguage().getText();
+    int     order            = Integer.parseInt(node.getOrder().getText());
+    int     DmpObservables   = Integer.parseInt(node.getDmpObservables().getText());
+    boolean hasConstants     = node.getConstants()!=null;
     
-    boolean isFortran    = language.equals("Fortran");
+    boolean isFortran        = language.equals("Fortran");
     
     int     patchSize        = 2*order+1;
     String  limiterLanguage  = node.getLanguageLimiter().getText();
@@ -213,6 +214,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
       ADERDGKernel         aderdgKernel  = new ADERDGKernel(node);
       FiniteVolumesKernel  FVKernel      = new FiniteVolumesKernel(node);
       aderdgKernel.setGhostLayerWidth(FVKernel.getGhostLayerWidth());
+      aderdgKernel.setNumberOfObservables(DmpObservables);
       
       SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _enableDeepProfiler, _microarchitecture);
       Solver solverAderdg  = solverFactory.createADERDGSolver(
