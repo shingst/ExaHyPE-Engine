@@ -380,6 +380,7 @@ void spaceTimePredictorLinear(SolverType& solver,
   
   //double* lFhi = tempFluxUnknowns;
   idx5 idx_lFhi(DIMENSIONS+1, basisSize, basisSize, basisSize, numberOfVariables);
+  std::fill_n(lFhi,(DIMENSIONS+1)*basisSize3 * numberOfVariables, 0);
 
   // Immediately compute the time-averaged space-time polynomials
   // Fortran: lQhi(:,:,:,:) = lQi(:,:,:,:,1)
