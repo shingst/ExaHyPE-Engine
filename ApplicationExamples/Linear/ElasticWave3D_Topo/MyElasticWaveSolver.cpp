@@ -105,6 +105,10 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,22)] = gl_vals_x[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,23)] = gl_vals_y[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,24)] = gl_vals_z[id_xyz(k,j,i)];
+	  //	  std::cout << std::endl;
+	  //	  std::cout << luh[id_xyzf(k,j,i,22)] << std::endl;
+	  //	  std::cout << luh[id_xyzf(k,j,i,23)] << std::endl;
+	  //	  std::cout << luh[id_xyzf(k,j,i,24)] << std::endl;
 	}
       }
     }

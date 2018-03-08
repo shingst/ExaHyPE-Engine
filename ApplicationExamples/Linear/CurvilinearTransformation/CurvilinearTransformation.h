@@ -5,28 +5,59 @@
 #include "tarch/la/Vector.h"
 #include "kernels/aderdg/generic/Kernels.h"
 struct Boundary_single_coordinate{
-  double* left;
-  double* right;
-  double* bottom;
-  double* top;
-  double* front;
-  double* back;
+  std::vector<double> left;
+  std::vector<double> right;
+  std::vector<double> bottom;
+  std::vector<double> top;
+  std::vector<double> front;
+  std::vector<double> back;
   Boundary_single_coordinate(int nx, int ny, int nz){
-    left  =new double[ny*nz];
-    right =new double[ny*nz];
-    bottom=new double[nx*nz];
-    top   =new double[nx*nz];
-    front =new double[nx*ny];
-    back  =new double[nx*ny];
+    left  .resize(ny*nz);
+    right .resize(ny*nz);
+    bottom.resize(nx*nz);
+    top   .resize(nx*nz);
+    front .resize(nx*ny);
+    back  .resize(nx*ny);
   }
   ~Boundary_single_coordinate(){
-    delete[] left;
-    delete[] right;
-    delete[] bottom;
-    delete[] top;
-    delete[] front; 
-    delete[] back;  
   }
+
+  friend std::ostream& operator<< (std::ostream& stream, const Boundary_single_coordinate& boundary){
+
+    stream << std::endl;
+    stream << "Left" << std::endl;
+    for(int i = 0 ; i<boundary.left.size(); i++){
+      stream << boundary.left[i] << std::endl;
+    }
+
+    stream << "Right" << std::endl;
+    for(int i = 0 ; i<boundary.right.size(); i++){
+      stream << boundary.right[i] << std::endl;
+    }
+
+    stream << "Bottom" << std::endl;
+    for(int i = 0 ; i<boundary.bottom.size(); i++){
+      stream << boundary.bottom[i] << std::endl;
+    }
+
+    stream << "Top" << std::endl;
+    for(int i = 0 ; i<boundary.top.size(); i++){
+      stream << boundary.top[i] << std::endl;
+    }
+
+    stream << "Front" << std::endl;
+    for(int i = 0 ; i<boundary.front.size(); i++){
+      stream << boundary.front[i] << std::endl;
+    }
+
+    stream << "Back" << std::endl;
+    for(int i = 0 ; i<boundary.back.size()-1; i++){
+      stream << boundary.back[i] << std::endl;
+    }
+
+    return stream << boundary.back[boundary.back.size()-1] << std::endl;
+  }
+
 
 };
 

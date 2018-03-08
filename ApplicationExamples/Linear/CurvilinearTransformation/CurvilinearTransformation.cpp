@@ -48,7 +48,6 @@ CurvilinearTransformation::CurvilinearTransformation(const int num_nodes, const 
 
   double fault_ref=(fault_position-_left_vertex[0])/(_rect_width[0]);   //relative position of the fault
   double ne_x_block;  
-  
   for(int n=0 ; n<2 ; ++n){
     if(n == 0){
       _block_width_x[n] = fault_position -_left_vertex[0];
@@ -112,7 +111,7 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
 					       double* s_x,double* s_y,double* s_z){
   
   int n = getBlock(center,dx); //find current block
-
+  //std::cout << "getBlock: "<<n << std::endl;
   double offset_x=center[0] - dx[0] * 0.5;
   double offset_y=center[1] - dx[1] * 0.5;
   double offset_z=center[2] - dx[2] * 0.5;  
@@ -120,8 +119,8 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
   //index of the first node within the block
   int i_m;
   //within the block = the domain
-  int j_m = std::round((offset_y)/dx[1])*(_num_nodes-1);
-  int k_m = std::round((offset_z)/dx[2])*(_num_nodes-1);    
+  int j_m = std::round((offset_y -_left_vertex[1])/dx[1])*(_num_nodes-1);
+  int k_m = std::round((offset_z -_left_vertex[2])/dx[2])*(_num_nodes-1);    
   
   if(n == 0){
     i_m = std::round((offset_x-_left_vertex[0])/dx[0])*(_num_nodes-1);
@@ -133,11 +132,16 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
   int i_p = i_m + _num_nodes;
   int j_p = j_m + _num_nodes;
   int k_p = k_m + _num_nodes;
-  
 
   double curvilinear_x[_num_nodes*_num_nodes*_num_nodes];
   double curvilinear_y[_num_nodes*_num_nodes*_num_nodes];
   double curvilinear_z[_num_nodes*_num_nodes*_num_nodes];
+
+  /*  std::cout << "Block: "<< n << std::endl;
+  std::cout << "boundary_x"<< *_boundary_x[n] << std::endl;
+
+  std::cout <<"Indeces: " <<i_m << " " << j_m << " " << k_m << " " << std::endl;*/
+  
 
   //perform transfinite interpolation along boundary curves
   transFiniteInterpolation3D(n,
@@ -146,6 +150,11 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
 			     i_m, i_p,
 			     _boundary_x[n],
 			     curvilinear_x);
+
+  /*  std::cout << "curvilinear" << std::endl;
+  for(int i=0; i< _num_nodes*_num_nodes*_num_nodes; i++){
+    std::cout << curvilinear_x[i] << std::endl;
+    }*/
   
   transFiniteInterpolation3D(n,
 			     k_m, k_p,
@@ -180,7 +189,8 @@ double CurvilinearTransformation::fault(double y, double z){
   double fault_surface;
   
   //fault_surface=0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
-  fault_surface=y*0.1;
+  //fault_surface=y*0.1;
+  fault_surface=0.;
   return  fault_surface;
 }
 
@@ -208,6 +218,7 @@ double topography_fromASAGI(double x, double z, double* topography, easi::Arrays
   query.x(0,2)=0;
   model->evaluate(query,adapter);
   topo = -topography[0];
+  //  std::cout<< topo <<std::endl;
   return topo;
 }
 #endif
@@ -342,11 +353,11 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	if (n == 0){
 	  y = boundary_y->right[id_yz(k,j)];
 	  z = boundary_z->right[id_yz(k,j)];
-	  boundary_x->right[id_yz(k,j)] = interpolate_fault_surface(x_synt_fault.data(), y_synt_fault.data(), boundary_z->right, y, z); //get interpolated x on syntetic fault
+	  boundary_x->right[id_yz(k,j)] = interpolate_fault_surface(x_synt_fault.data(), y_synt_fault.data(), boundary_z->right.data(), y, z); //get interpolated x on syntetic fault
 	}else if (n == 1){
 	  y = boundary_y->left[id_yz(k,j)];
 	  z = boundary_z->left[id_yz(k,j)];
-	  boundary_x->left[id_yz(k,j)]  = interpolate_fault_surface(x_synt_fault.data(), y_synt_fault.data(), boundary_z->left, y, z); //get interpolated x on syntetic fault
+	  boundary_x->left[id_yz(k,j)]  = interpolate_fault_surface(x_synt_fault.data(), y_synt_fault.data(), boundary_z->left.data(), y, z); //get interpolated x on syntetic fault
 	}
       }
     }
@@ -387,7 +398,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] = _left_vertex[0] + i*distance_x_right;
       }
       
-      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->bottom);
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->bottom.data());
 
       /** boundary_x->top:
        *                         boundary_x->right(0,0)	   
@@ -413,7 +424,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] = _left_vertex[0] + i*distance_x_right;
       }
       
-      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->top);
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->top.data());
     }else if (n == 1) {
 
       /** boundary_x->bottom:
@@ -441,18 +452,18 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] =  boundary_x->left[id_yz(nz-1,ny-1)] + i*distance_x_right;
       }
       
-      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->bottom);
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->bottom.data());
 
       /** boundary_x->top:
        *
        *      boundary_x->left(0,0)        
-       *                x---------x         
-       *                )         |         ^
-       *                 )        |         |
+       *                      x---------x         
+       *                      )         |         ^
+       *                       )        |         |
        * boundary_x->left(:,0)  (       |  right_vertex_x
-       *                   )      |         |
-       *                   )      |         v
-       *                    x-----x         
+       *                         )      |         |
+       *                         )      |         v
+       *                          x-----x         
        *       boundary_x->left(nz-1,0)          
        **/
       
@@ -467,7 +478,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] =  boundary_x->left[id_yz(nz-1,0)] + i*distance_x_right;
       }
       // left right bottom top
-      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->top);
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->top.data());
     }
 
     //given top surface
@@ -515,7 +526,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       right_edge_y[j] = boundary_y->top[id_xz(nz-1,0)] + j*distance_y_right;
     }
     // left right bottom top
-    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y, boundary_y->left);
+    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y, boundary_y->left.data());
 
     /** boundary_y->right:
      *
@@ -541,7 +552,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       right_edge_y[j] = boundary_y->top[id_xz(nz-1,nx-1)] + j*distance_y_right;
     }
     // left right bottom top
-    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y, boundary_y->right);
+    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y, boundary_y->right.data());
   }
  
   /** boundary_y->front:
@@ -573,7 +584,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       right_edge_y[j] = boundary_y->top[id_xz(0,nx-1)] + j*distance_y_right;
     }
     // left right bottom top
-    transFiniteInterpolation_singleCoordinate(nx, ny, left_edge_y, right_edge_y, top_edge_y, bottom_edge_y,boundary_y->front);
+    transFiniteInterpolation_singleCoordinate(nx, ny, left_edge_y, right_edge_y, top_edge_y, bottom_edge_y,boundary_y->front.data());
 
     /** boundary_y->back:
      *
@@ -599,7 +610,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       right_edge_y[j] = boundary_y->top[id_xz(nz-1,nx-1)] + j*distance_y_right;
     }
     // left right bottom top
-    transFiniteInterpolation_singleCoordinate(nx, ny, left_edge_y, right_edge_y,  top_edge_y, bottom_edge_y,boundary_y->back);
+    transFiniteInterpolation_singleCoordinate(nx, ny, left_edge_y, right_edge_y,  top_edge_y, bottom_edge_y,boundary_y->back.data());
     
   }
   {
@@ -639,7 +650,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] = _left_vertex[0] + i*distance_x_right;
       }
       // left right bottom top
-      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  boundary_x->back); //interpolate boundary_x->back
+      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  boundary_x->back.data()); //interpolate boundary_x->back
 
       /** boundary_x->front:
        *
@@ -668,7 +679,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] = _left_vertex[0] + i*distance_x_right;
       }   
       // left right bottom top
-      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->front); //interpolate boundary_y->front
+      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->front.data()); //interpolate boundary_y->front
     }else if (n == 1){
       /** boundary_x->back:
        *
@@ -695,7 +706,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] = boundary_x->left[id_yz(nz-1,ny-1)] + i*distance_x_right;
       }
       // left right bottom top
-      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  boundary_x->back); //interpolate boundary_x->back
+      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  boundary_x->back.data()); //interpolate boundary_x->back
 
       /** boundary_x->front:
        *
@@ -722,7 +733,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_edge_x[i] = boundary_x->left[id_yz(0,ny-1)] + i*distance_x_right;
       }
       // left right bottom top
-      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->front);
+      transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, boundary_x->front.data());
     }
 
     for(int j = 0 ; j< ny; j++){
@@ -760,12 +771,12 @@ void CurvilinearTransformation::transFiniteInterpolation3D(int n,
   double q,r,s;
 
 
-  double* left_bnd   = boundary->left;
-  double* right_bnd  = boundary->right;
-  double* top_bnd    = boundary->top;
-  double* bottom_bnd = boundary->bottom;
-  double* front_bnd  = boundary->front;
-  double* back_bnd   = boundary->back;
+  double* left_bnd   = boundary->left.data();
+  double* right_bnd  = boundary->right.data();
+  double* top_bnd    = boundary->top.data();
+  double* bottom_bnd = boundary->bottom.data();
+  double* front_bnd  = boundary->front.data();
+  double* back_bnd   = boundary->back.data();
     
 
   for(int i=i_m ; i< i_p ; i++){
@@ -1428,8 +1439,8 @@ int CurvilinearTransformation::getBlock(const tarch::la::Vector<DIMENSIONS,doubl
 // 					       double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
 // 					       double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
 
- 
   
+ 
 //   double pi = 3.14159265359;
 
 
