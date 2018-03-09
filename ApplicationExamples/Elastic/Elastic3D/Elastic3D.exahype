@@ -43,7 +43,7 @@ exahype-project  ElasticWaveEquation3D
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:5}
+    configure                = {hotspot,fair,ranks-per-node:5}
     buffer-size              = 160000
     timeout                  = 480
   end distributed-memory

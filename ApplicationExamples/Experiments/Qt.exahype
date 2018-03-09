@@ -40,7 +40,7 @@ exahype-project  Qt
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:20,virtually-expand-domain}
+    configure                = {hotspot,fair,ranks-per-node:20,virtually-expand-domain}
     buffer-size              = 100000
     timeout                  = 120
   end distributed-memory

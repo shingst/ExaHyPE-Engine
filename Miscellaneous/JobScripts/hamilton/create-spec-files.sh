@@ -13,7 +13,7 @@ do
 for i in 0 1 2 3
 do 
 
-sed -e 's,ranks_per_node:[0-9]\+,ranks_per_node:'"${NRANKS_PER_NODE}"',' \
+sed -e 's,ranks-per-node:[0-9]\+,ranks-per-node:'"${NRANKS_PER_NODE}"',' \
     -e 's,end-time                 =.\+,end-time                 = '"${T[$i]}"',' \
     -e 's,maximum-mesh-size =.\+,maximum-mesh-size = '"${h[$i]}"',' \
     $1 > ${1%.exahype}-${NRANKS_PER_NODE}-$i.exahype # ${1%.exahype} removes the suffix ".exahype"
