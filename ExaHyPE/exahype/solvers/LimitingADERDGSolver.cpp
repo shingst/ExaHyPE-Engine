@@ -332,7 +332,7 @@ void exahype::solvers::LimitingADERDGSolver::updateLimiterStatusDuringLimiterSta
   deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,solverElement);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::updateStateInEnterCell(
+bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -356,7 +356,7 @@ bool exahype::solvers::LimitingADERDGSolver::updateStateInEnterCell(
   }
 
   return
-      _solver->updateStateInEnterCell(
+      _solver->progressMeshRefinementInEnterCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
           coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
           fineGridPositionOfCell,initialGrid,solverNumber);
@@ -382,7 +382,7 @@ void exahype::solvers::LimitingADERDGSolver::vetoErasingChildrenRequestBasedOnLi
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateStateInLeaveCell(
+bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -404,10 +404,11 @@ void exahype::solvers::LimitingADERDGSolver::updateStateInLeaveCell(
     _solver->restrictToNextParent(solverPatch,parentSolverElement);
   }
 
-  _solver->updateStateInLeaveCell(
-      fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-      coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
-      fineGridPositionOfCell,solverNumber);
+  return
+      _solver->progressMeshRefinementInLeaveCell(
+          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
+          coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
+          fineGridPositionOfCell,solverNumber);
 }
 
 exahype::solvers::Solver::RefinementControl

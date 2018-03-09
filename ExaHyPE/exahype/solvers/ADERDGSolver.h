@@ -303,25 +303,13 @@ private:
    * Starts of finish collective operations from a
    * fine cell description point of view.
    *
-   * Resets the refinement event of a fine grid cell of type
-   * Descendant to None if it was set to Refining.
-   * The latter event indicates that the fine grid cells in
-   * the next finer level have all been initialised with
-   * type EmptyAncestor/Ancestor.
-   *
-   * Resets the augmentation event of a fine grid cell of type
-   * Descendant to None if it was set to Augmenting.
-   * The latter event indicates that the fine grid cells in
-   * the next finer level have all been initialised with
-   * type Descendant.
-   *
-   * \return True if a fine grid cell can be erased.
+   * \return true if a new compute cell
+   * was allocated as result of an erasing operation.
    */
-
-  void startOrFinishCollectiveRefiningOperations(
+  void progressCollectiveRefinementOperationsInEnterCell(
       CellDescription& fineGridCellDescription);
 
-  void startOrFinishCollectiveErasingOperations(
+  bool progressCollectiveRefinementOperationsInLeaveCell(
       CellDescription& fineGridCellDescription);
 
   /**
@@ -1524,7 +1512,7 @@ public:
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
 
-   bool updateStateInEnterCell(
+   bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1535,7 +1523,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  void updateStateInLeaveCell(
+  bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

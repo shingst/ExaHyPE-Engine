@@ -302,7 +302,7 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
 ///////////////////////////////////
 // MODIFY CELL DESCRIPTION
 ///////////////////////////////////
-bool exahype::solvers::FiniteVolumesSolver::updateStateInEnterCell(
+bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -516,7 +516,7 @@ bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
   return true;
 }
 
-void exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
+bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -525,8 +525,7 @@ void exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber) {
-  // TODO(Dominic): Keep the condition for later
-//  return fineGridCellElement!=exahype::solvers::Solver::NotFound;
+  return false;
 }
 
 exahype::solvers::Solver::RefinementControl

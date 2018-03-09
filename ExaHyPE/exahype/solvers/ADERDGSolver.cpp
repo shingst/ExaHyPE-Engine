@@ -930,7 +930,7 @@ void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentIndex(
 ///////////////////////////////////
 // CELL-LOCAL MESH REFINEMENT
 ///////////////////////////////////
-bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
+bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -950,7 +950,7 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
   ) {
-    logDebug("updateStateInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<" at level "<<fineGridVerticesEnumerator.getLevel());
+    logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<" at level "<<fineGridVerticesEnumerator.getLevel());
 
     addNewCell(
         fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
@@ -981,7 +981,7 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
 
     updateAugmentationStatus(fineGridCellDescription);
 
-    startOrFinishCollectiveRefiningOperations(fineGridCellDescription);
+    progressCollectiveRefinementOperationsInEnterCell(fineGridCellDescription);
 
     decideOnRefinement(fineGridCellDescription);
     decideOnVirtualRefinement(fineGridCellDescription);
@@ -1250,7 +1250,7 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
     fineGridCell.addNewCellDescription( // (EmptyDescendant),None
         coarseGridCellDescription.getSolverNumber(),
         CellDescription::Type::Descendant,
-        CellDescription::None,
+        CellDescription::None, // This should be removed from the signature and defaulted to none
         fineGridVerticesEnumerator.getLevel(),
         coarseGridCellDescriptionsIndex,
         fineGridVerticesEnumerator.getCellSize(),
@@ -1390,14 +1390,13 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
         (cellDescription.getType()!=CellDescription::Cell ||
-         cellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Pending);
-
+        cellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Pending);
   } else {
     return true;
   }
 }
 
-void exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
+bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1406,6 +1405,8 @@ void exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
      const int solverNumber) {
+  bool newComputeCell = false;
+
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
@@ -1413,7 +1414,7 @@ void exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
             fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
 
     // start or finish collective operations
-    startOrFinishCollectiveErasingOperations(fineGridCellDescription);
+    newComputeCell |= progressCollectiveRefinementOperationsInLeaveCell(fineGridCellDescription);
 
     const int coarseGridCellElement =
         tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -1435,6 +1436,7 @@ void exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
               coarseGridCellDescription);
     }
   }
+  return newComputeCell;
 }
 
 exahype::solvers::Solver::RefinementControl
@@ -1499,7 +1501,7 @@ void exahype::solvers::ADERDGSolver::prepareVolumeDataRestriction(
   std::fill_n(previousSolution,getDataPerCell(),0.0);
 }
 
-void exahype::solvers::ADERDGSolver::startOrFinishCollectiveRefiningOperations(
+void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnterCell(
      CellDescription& fineGridCellDescription) {
   switch (fineGridCellDescription.getRefinementEvent()) {
     case CellDescription::Refining:
@@ -1537,10 +1539,11 @@ void exahype::solvers::ADERDGSolver::startOrFinishCollectiveRefiningOperations(
   }
 }
 
-void exahype::solvers::ADERDGSolver::startOrFinishCollectiveErasingOperations(
+bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
      CellDescription& fineGridCellDescription) {
+  bool newComputeCell = false;
   switch (fineGridCellDescription.getRefinementEvent()) {
-    case CellDescription::ErasingChildrenRequested:
+    case CellDescription::RefinementEvent::ErasingChildrenRequested:
       fineGridCellDescription.setType(CellDescription::Type::Cell);
       fineGridCellDescription.setAugmentationStatus(0);
       fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
@@ -1548,21 +1551,24 @@ void exahype::solvers::ADERDGSolver::startOrFinishCollectiveErasingOperations(
       fineGridCellDescription.setFacewiseHelperStatus(MaximumHelperStatus); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       prepareVolumeDataRestriction(fineGridCellDescription);
-      fineGridCellDescription.setRefinementEvent(CellDescription::ErasingChildren);
+      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
       break;
-    case CellDescription::ErasingChildren:
-      fineGridCellDescription.setRefinementEvent(CellDescription::None);
+    case CellDescription::RefinementEvent::ErasingChildren:
+      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+      fineGridCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
+      newComputeCell = true;
       break;
-    case CellDescription::ErasingVirtualChildrenRequested:
-      fineGridCellDescription.setRefinementEvent(CellDescription::ErasingVirtualChildren);
+    case CellDescription::RefinementEvent::ErasingVirtualChildrenRequested:
+      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingVirtualChildren);
       break;
-    case CellDescription::ErasingVirtualChildren:
+    case CellDescription::RefinementEvent::ErasingVirtualChildren:
       fineGridCellDescription.setHasVirtualChildren(false);
-      fineGridCellDescription.setRefinementEvent(CellDescription::None);
+      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
       break;
     default:
       break;
   }
+  return newComputeCell;
 }
 
 void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(

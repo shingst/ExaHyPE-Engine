@@ -823,7 +823,7 @@ public:
   void updateLimiterStatusDuringLimiterStatusSpreading(
       const int cellDescriptionsIndex, const int solverElement) const;
 
-  /**\copydoc exahype::solvers::Solver::updateStateInEnterCell
+  /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
    *
    * <h2>Limiter status-based refinement</h2>
    *
@@ -833,7 +833,7 @@ public:
    * the physical admissibility detection and the user's refinement
    * criterion have not been evaluated.
    */
-  bool updateStateInEnterCell(
+  bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -844,7 +844,7 @@ public:
       const bool initialGrid,
       const int solverNumber) final override;
 
-  void updateStateInLeaveCell(
+  bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

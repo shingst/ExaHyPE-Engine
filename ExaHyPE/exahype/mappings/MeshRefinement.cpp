@@ -379,8 +379,8 @@ void exahype::mappings::MeshRefinement::enterCell(
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (solver->getMeshUpdateRequest()) {
-      bool newComputeCellAllocated =
-          solver->updateStateInEnterCell(
+      const bool newComputeCell =
+          solver->progressMeshRefinementInEnterCell(
               fineGridCell,
               fineGridVertices,
               fineGridVerticesEnumerator,
@@ -391,10 +391,10 @@ void exahype::mappings::MeshRefinement::enterCell(
               exahype::mappings::MeshRefinement::IsInitialMeshRefinement,
               solverNumber);
 
-      // Synchronise time stepping and adjust the solution if required
+      // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
           exahype::mappings::MeshRefinement::IsFirstIteration ||
-          newComputeCellAllocated
+          newComputeCell
        ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
@@ -430,17 +430,18 @@ void exahype::mappings::MeshRefinement::leaveCell(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
     if (solver->getMeshUpdateRequest()) {
-      solver->updateStateInLeaveCell(
-          fineGridCell,
-          fineGridVertices,
-          fineGridVerticesEnumerator,
-          coarseGridCell,
-          coarseGridVertices,
-          coarseGridVerticesEnumerator,
-          fineGridPositionOfCell,
-          solverNumber);
+      const bool newComputeCell =
+          solver->progressMeshRefinementInLeaveCell(
+              fineGridCell,
+              fineGridVertices,
+              fineGridVerticesEnumerator,
+              coarseGridCell,
+              coarseGridVertices,
+              coarseGridVerticesEnumerator,
+              fineGridPositionOfCell,
+              solverNumber);
 
-      bool isStable =
+      const bool isStable =
           solver->attainedStableState(
               fineGridCell,
               fineGridVertices,
@@ -449,6 +450,18 @@ void exahype::mappings::MeshRefinement::leaveCell(
 
       _attainedStableState[solverNumber] =
           _attainedStableState[solverNumber] && isStable;
+
+
+      // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
+      if ( newComputeCell ) {
+        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+        const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+
+        if (element!=exahype::solvers::Solver::NotFound) {
+          solver->adjustSolutionDuringMeshRefinement(
+              cellDescriptionsIndex,element,IsInitialMeshRefinement);
+        }
+      }
     }
   }
 

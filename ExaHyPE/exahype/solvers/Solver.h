@@ -1212,7 +1212,7 @@ class exahype::solvers::Solver {
    * (solution update, predictor comp.) into
    * this hook.
    */
-  virtual bool updateStateInEnterCell(
+  virtual bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1227,13 +1227,10 @@ class exahype::solvers::Solver {
    * Refinement routine that should be used for
    * collective children-parent operations.
    *
-   * \return true if the vertices around a
-   * parent cell can be erased after this
-   * parent cell has finished an erasing
-   * event. This is a single event.
-   * Returns false in all other scenarios.
+   * \return If a new compute cell was introduced
+   * as part of a refinement operation.
    */
-  virtual void updateStateInLeaveCell(
+  virtual bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

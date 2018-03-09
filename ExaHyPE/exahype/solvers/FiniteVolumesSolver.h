@@ -573,7 +573,7 @@ public:
    */
   void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
-  bool updateStateInEnterCell(
+  bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -584,7 +584,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  void updateStateInLeaveCell(
+  bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
