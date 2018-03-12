@@ -21,4 +21,9 @@
 
 // fusedSpaceTimePredictorVolumeIntegral gemms
 #include "{{pathToOptKernel}}/asm_fstpvi.c"
+
+{% if useLimiter %}
+// Limiter gemms
+#include "{{pathToOptKernel}}/asm_limiter.c"
+{% endif %}
 {% endif %} {# useLibxsmm #}

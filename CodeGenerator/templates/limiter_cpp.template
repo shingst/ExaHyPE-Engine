@@ -19,6 +19,10 @@
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
 
+{% if useLibxsmm %}
+#include "{{pathToOptKernel}}/gemmsCPP.h"
+{% endif %}
+
 #include "{{solverHeader}}"
 
 //Fortran (Limiter.f90): GetSubcellData
@@ -26,6 +30,41 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
   
   std::memset(lim, 0, sizeof(double)*{{((nDofLim+2*ghostLayerWidth)**nDim)*nVar}});
   //tensor operation
+{% if useLibxsmm %}
+  double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
+  
+  //Compact projection without ghostlayer
+  for (int z = 0; z < {{nDofLim3D}}; z++) {
+    for (int iz = 0; iz < {{nDof3D}}; iz++) {
+      for (int y = 0; y < {{nDofLim}}; y++) {
+        for (int iy = 0; iy < {{nDof}}; iy++) {
+          #pragma vector aligned
+          for (int it = 0; it < {{nDofLim*nDofPad}}; it++) {
+            coeff[it] = dg2fv[it] 
+{% if nDim==3 %} 
+                      * dg2fv[z*{{nDofPad}}+iz]
+{% endif %} 
+                      * dg2fv[y*{{nDofPad}}+iy];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}});
+        
+          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
+        }
+      }
+    }
+  }
+  //space out for ghostlayer (in place)
+  for (int z = {{nDofLim3D-1}}; z >= 0; z--) {
+    for (int y = {{nDofLim-1}}; y >= 0; y--) {
+      std::copy_n(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, {{nVar*nDofLim}}, lim+(((z+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth}}+y+{{ghostLayerWidth}})*{{nDofLim+2*ghostLayerWidth}}+{{ghostLayerWidth}})*{{nVar}}); // no overlap since we have ghostlayers at the beginning
+      std::memset(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, 0, sizeof(double)*{{nVar*nDofLim}}); //delete the memory block that was moved to ensure ghostlayers are set at 0.
+    }
+  }
+{% else %} {# useLibxsmm #}
   for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // We can skip x,y,z>=basisSizeLim+ghostLayerWidth
     for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
       for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
@@ -46,7 +85,7 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
       }
     }
   }
-  
+{% endif %} {# useLibxsmm #}  
 }
 
 //Fortran (Limiter.f90): PutSubcellData
@@ -54,6 +93,33 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
   
   std::memset(luh, 0, sizeof(double)*{{(nDof**nDim)*nData}});
   //tensor operation
+{% if useLibxsmm %}
+  double coeff[{{nDof*nDofLimPad}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
+  
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int iz = 0; iz < {{nDofLim3D}}; iz++) {
+      for (int y = 0; y < {{nDof}}; y++) { 
+        for (int iy = 0; iy < {{nDofLim}}; iy++) {
+          #pragma vector aligned
+          for (int it = 0; it < {{nDof*nDofLimPad}}; it++) {
+            coeff[it] = fv2dg[it] 
+{% if nDim==3 %} 
+                      * fv2dg[z*{{nDofLimPad}}+iz]
+{% endif %} 
+                      * fv2dg[y*{{nDofLimPad}}+iy];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_fv2dg}}(lim+((iz+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth3D}}+iy+{{ghostLayerWidth}})*{{(nDofLim+2*ghostLayerWidth)*nVar}}+{{ghostLayerWidth*nVar}}, coeff, luh+(z*{{nDof3D}}+y)*{{nDof*nData}}); //ignore ghostlayer
+        
+          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
+        }
+      }
+    }
+  }
+{% else %}{# useLibxsmm #}
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
@@ -74,6 +140,7 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
       }
     }
   }
+{% endif %}{# useLibxsmm #}
   
 }
 
@@ -199,6 +266,45 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
 ) {
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  
+{% if useLibxsmm %}
+  double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  double lobValues[{{nVar*nDof}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
+  
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      std::memset(lobValues, 0, sizeof(double)*{{nVar*nDof}});
+      for (int iz = 0; iz < {{nDof3D}}; iz++) {
+        for (int iy = 0; iy < {{nDof}}; iy++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = uh2lob[it] 
+{% if nDim==3 %} 
+                      * uh2lob[z*{{nDofPad}}+iz]
+{% endif %} 
+                      * uh2lob[y*{{nDofPad}}+iy];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_uh2lob}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lobValues);
+        
+          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
+        }
+      }
+      
+      for (int x = 0; x < {{nDof}}; x++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lobValues+x*{{nVar}});
+    
+        for (int n = 0; n < {{nObs}}; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+{% else %}{# useLibxsmm #}
   double lobValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
   for (int z = 0; z<{{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
@@ -228,6 +334,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
       }
     }
   }
+{% endif %}{# useLibxsmm #}
 
 }
 
@@ -244,6 +351,45 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
   
 
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  
+{% if useLibxsmm %}
+  double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  double limValues[{{nVar*nDofLim}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
+  
+  for (int z = 0; z < {{nDofLim3D}}; z++) {
+    for (int y = 0; y < {{nDofLim}}; y++) {
+      std::memset(limValues, 0, sizeof(double)*{{nVar*nDofLim}});
+      for (int iz = 0; iz < {{nDof3D}}; iz++) {
+        for (int iy = 0; iy < {{nDof}}; iy++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDofLim*nDofPad}}; it++) {
+            coeff[it] = dg2fv[it] 
+{% if nDim==3 %} 
+                      * dg2fv[z*{{nDofPad}}+iz]
+{% endif %} 
+                      * dg2fv[y*{{nDofPad}}+iy];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, limValues);
+        
+          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
+        }
+      }
+      
+      for (int x = 0; x < {{nDofLim}}; x++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, limValues+x*{{nVar}});
+    
+        for (int n = 0; n < {{nObs}}; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+{% else %}{# useLibxsmm #}
   double limValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 
   //tensor operation
@@ -266,7 +412,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
           }
         }
 
-        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},limValues);
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, limValues);
         
         for (int n = 0; n < {{nObs}}; n++) {
           min[n] = std::min( min[n], observables[n] );
@@ -275,5 +421,6 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
       }
     }
   }
+{% endif %}{# useLibxsmm #}
 
 }

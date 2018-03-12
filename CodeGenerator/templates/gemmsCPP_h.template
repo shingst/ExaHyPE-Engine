@@ -61,6 +61,15 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const do
 {% endif %}
 {% endif %} {# useFlux #}
 
+
+{% if useLimiter %}
+// Limiter gemms
+void {{gemm_prefix}}_{{nVar}}_{{nDofLim}}_{{nDof}}_dg2fv(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDofLim}}_fv2dg(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_uh2lob(const double* A, const double* B, double* C);
+{% endif %}
+
+
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}

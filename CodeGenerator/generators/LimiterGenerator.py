@@ -21,7 +21,9 @@
 #
 
 
+import Backend
 from utils import TemplatingUtils
+from utils.MatmulConfig import MatmulConfig
 
 
 class LimiterGenerator:
@@ -35,5 +37,105 @@ class LimiterGenerator:
         self.m_context = i_context
         
 
-    def generateCode(self):  
+    def generateCode(self):
+        self.m_context["gemm_dg2fv"] = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDofLim"])+"_"+str(self.m_context["nDof"])+"_dg2fv"
+        self.m_context["gemm_fv2dg"] = "gemm_"+str(self.m_context["nVar"]) +"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDofLim"])+"_fv2dg"
+        self.m_context["gemm_uh2lob"] = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_uh2lob"
+        
         TemplatingUtils.renderAsFile("limiter_cpp.template", self.m_filename, self.m_context)
+        # generates gemms
+        if(self.m_context["useLibxsmm"]):
+            self.generateGemms()
+
+    def generateGemms(self):
+        # define a sequence of matmul configs
+        l_matmulList = []
+
+        #-----------------------------
+        # implementation file
+        #-----------------------------        
+        l_dg2fv = MatmulConfig(  # M
+                                    self.m_context["nVar"],      \
+                                    # N
+                                    self.m_context["nDofLim"],       \
+                                    # K
+                                    self.m_context["nDof"],       \
+                                    # LDA
+                                    self.m_context["nData"],   \
+                                    # LDB
+                                    self.m_context["nDofPad"],    \
+                                    # LDC
+                                    self.m_context["nVar"],   \
+                                    # alpha 
+                                    1,                            \
+                                    # beta
+                                    1,                            \
+                                    # alignment A
+                                    1,                            \
+                                    # alignment C
+                                    1,                            \
+                                    # name
+                                    "dg2fv",                     \
+                                    # prefetching
+                                    "nopf",                       \
+                                    # type
+                                    "gemm")
+        l_matmulList.append(l_dg2fv)
+        l_fv2dg = MatmulConfig(  # M
+                                    self.m_context["nVar"],      \
+                                    # N
+                                    self.m_context["nDof"],       \
+                                    # K
+                                    self.m_context["nDofLim"],       \
+                                    # LDA
+                                    self.m_context["nVar"],   \
+                                    # LDB
+                                    self.m_context["nDofLimPad"],    \
+                                    # LDC
+                                    self.m_context["nData"],   \
+                                    # alpha 
+                                    1,                            \
+                                    # beta
+                                    1,                            \
+                                    # alignment A
+                                    1,                            \
+                                    # alignment C
+                                    1,                            \
+                                    # name
+                                    "fv2dg",                     \
+                                    # prefetching
+                                    "nopf",                       \
+                                    # type
+                                    "gemm")
+        l_matmulList.append(l_fv2dg)
+        l_uh2lob = MatmulConfig(  # M
+                                    self.m_context["nVar"],      \
+                                    # N
+                                    self.m_context["nDof"],       \
+                                    # K
+                                    self.m_context["nDof"],       \
+                                    # LDA
+                                    self.m_context["nData"],   \
+                                    # LDB
+                                    self.m_context["nDofPad"],    \
+                                    # LDC
+                                    self.m_context["nVar"],   \
+                                    # alpha 
+                                    1,                            \
+                                    # beta
+                                    1,                            \
+                                    # alignment A
+                                    1,                            \
+                                    # alignment C
+                                    1,                            \
+                                    # name
+                                    "uh2lob",                     \
+                                    # prefetching
+                                    "nopf",                       \
+                                    # type
+                                    "gemm")
+        l_matmulList.append(l_uh2lob)
+        
+        
+        
+        Backend.generateAssemblerCode("asm_"+self.m_filename, l_matmulList)
