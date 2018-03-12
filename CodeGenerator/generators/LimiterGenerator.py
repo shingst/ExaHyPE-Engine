@@ -38,6 +38,8 @@ class LimiterGenerator:
         
 
     def generateCode(self):
+        if(not self.m_context['useLimiter']):
+            return None
         self.m_context["gemm_dg2fv"] = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDofLim"])+"_"+str(self.m_context["nDof"])+"_dg2fv"
         self.m_context["gemm_fv2dg"] = "gemm_"+str(self.m_context["nVar"]) +"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDofLim"])+"_fv2dg"
         self.m_context["gemm_uh2lob"] = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_uh2lob"
