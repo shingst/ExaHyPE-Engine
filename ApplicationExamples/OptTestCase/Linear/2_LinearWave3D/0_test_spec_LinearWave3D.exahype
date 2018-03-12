@@ -22,14 +22,14 @@ exahype-project  Linear
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/OptTestCase/Linear/1_LinearWave2D
+  output-directory const  = ./ApplicationExamples/OptTestCase/Linear/2_LinearWave3D
   architecture const      = hsw
   log-file                = mylogfile.log
 
   computational-domain
-    dimension const          = 2
-    width                    = 10.0, 10.0
-    offset                   = 0.0, 0.0
+    dimension const          = 3
+    width                    = 10.0, 10.0, 10.0
+    offset                   = 0.0, 0.0, 0.0
     end-time                 = 10.0
   end computational-domain
 
@@ -63,7 +63,7 @@ exahype-project  Linear
   end global-optimisation
 
   solver ADER-DG MyLinearWaveSolver
-    variables const    = p:1,v:2
+    variables const    = p:1,v:3
     parameters const  = rho:1,c:1
     order const        = 3
     /* 27 points: 0.05, 9 points: 0.15 */
@@ -71,19 +71,19 @@ exahype-project  Linear
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
-    terms const        = flux,ncp,materialparameters,pointsources:1
+    terms const        = flux,ncp,materialparameters,pointsources:4
     optimisation const = optimised,patchwiseadjust
     language const     = C
 
     //plot Peano::Legendre::cells::hdf5 ConservedQuantitiesWriter
     //plot Peano::Legendre::cells::ascii ConservedQuantitiesWriter
     //plot vtk::Legendre::cells::binary ConservedQuantitiesWriter
-/*    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
-      variables const = 3
+    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
+      variables const = 4
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1e-1
       output          = ./conserved
-    end plot*/
+    end plot
 
     /* this is the fake plotter used to compute global integrals */
     /* it has no output fields. */
@@ -114,7 +114,7 @@ exahype-project  Linear
       time            = 0.0
       repeat          = 0.05
       output          = ./seismogram
-      select          = x:0.2,y:0.2
+      select          = x:0.5,y:0.5,z:0.5
     end plot
     */
   end solver

@@ -134,7 +134,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      * 
      * @TODO: Document me, please.
     **/
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) final override;
 
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
 

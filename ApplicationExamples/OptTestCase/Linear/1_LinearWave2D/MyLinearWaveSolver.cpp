@@ -13,6 +13,8 @@ tarch::logging::Log Linear::MyLinearWaveSolver::_log( "Linear::MyLinearWaveSolve
 
 void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
+    pointSourceLocation[0][0] = 5.0;
+    pointSourceLocation[0][1] = 5.0;
 }
 
 void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
@@ -39,7 +41,6 @@ void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Ve
 
     for (int j=0; j< basisSize; j++){
       for (int i=0; i< basisSize; i++){
-     
 	double x  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
 	double y  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
 
@@ -224,7 +225,7 @@ void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const i
 }
 
 
-void Linear::MyLinearWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n){
+void Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
   double pi = 3.14159265359;
   double sigma = 0.1149;
@@ -242,23 +243,10 @@ void Linear::MyLinearWaveSolver::pointSource(const double* const x,const double 
   //f = M0*t/(t0*t0)*std::exp(-t/t0);
 
   if(n == 0){
-  
-    x0[0] = 5.0;
-    x0[1] = 5.0;
-    
     forceVector[0] = 1.*f;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
-  }else if(n == 1){
-  
-    x0[0] = 5.0;
-    x0[1] = 2.5;
-    
-    forceVector[0] = 0.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-
-  }    
+  }
 }
 
 void Linear::MyLinearWaveSolver::riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat){

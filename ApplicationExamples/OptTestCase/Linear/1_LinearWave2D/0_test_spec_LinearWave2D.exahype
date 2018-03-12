@@ -78,12 +78,12 @@ exahype-project  Linear
     //plot Peano::Legendre::cells::hdf5 ConservedQuantitiesWriter
     //plot Peano::Legendre::cells::ascii ConservedQuantitiesWriter
     //plot vtk::Legendre::cells::binary ConservedQuantitiesWriter
-/*    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
+    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
       variables const = 3
       time            = 0.0
       repeat          = 1e-2
       output          = ./conserved
-    end plot*/
+    end plot
 
     /* this is the fake plotter used to compute global integrals */
     /* it has no output fields. */

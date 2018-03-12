@@ -12,6 +12,29 @@ tarch::logging::Log Linear::MyLinearWaveSolver::_log( "Linear::MyLinearWaveSolve
 
 void Linear::MyLinearWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
+  double a_x = 0.0;
+  double a_y = 0.0;
+  double a_z = 0.0;
+  
+  double b_x = 10.0;
+  double b_y = 10.0;
+  double b_z = 10.0;
+ 
+  double blockWidth_y = (b_y-a_y);
+  double blockWidth_x = (b_x-a_x);
+  double blockWidth_z = (b_z-a_z);
+
+  double x1 = 5.0;
+  double y1 = 5.0;
+  double z1 = 5.0;
+
+  double fault_ref_x = (x1-a_x)/(blockWidth_x);
+  double fault_ref_y = (y1-a_y)/(blockWidth_y);
+  double fault_ref_z = (z1-a_z)/(blockWidth_z);
+    
+  pointSourceLocation[0][0] = fault_ref_x;
+  pointSourceLocation[0][1] = fault_ref_y;
+  pointSourceLocation[0][2] = fault_ref_z;
 }
 
 void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
@@ -494,112 +517,25 @@ void Linear::MyLinearWaveSolver::coefficientMatrix(const double* const Q,const i
   }
 }
 
-void  Linear::MyLinearWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void  Linear::MyLinearWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
   // @todo Please implement/augment if required
 
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
   double pi = 3.14159265359;
   double sigma = 0.1149;
   double t0 = 0.7;
-  //double t0 = 0.1;
   double f = 0.0;
   double M0 = 1000.0;
-
-  double a_x = 0.0;
-  double a_y = 0.0;
-  double a_z = 0.0;
-  
-  double b_x = 10.0;
-  double b_y = 10.0;
-  double b_z = 10.0;
- 
-  double blockWidth_y = (b_y-a_y);
-  double blockWidth_x = (b_x-a_x);
-  double blockWidth_z = (b_z-a_z);
 
   if(n == 0){
     
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
-    double x1 = 5.0;
-    double y1 = 5.0;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
     forceVector[0] = 1.*f;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
     forceVector[3] = 0.0;
     
-  }else if(n == 1){
-    
-    f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 7.5;
-    double y1 = 5.0;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
-    
-  }else if(n == 2){
-    
-    f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 5.0;
-    double y1 = 2.5;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
-    
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
-  }else if(n == 3){
-    
-    f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 5.0;
-    double y1 = 7.5;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
   }
 }
 

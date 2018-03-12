@@ -22,15 +22,15 @@ exahype-project  Linear
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/OptTestCase/Linear/1_LinearWave2D
+  output-directory const  = ./ApplicationExamples/OptTestCase/Linear/4_LinearWave3D_Topo
   architecture const      = hsw
   log-file                = mylogfile.log
 
   computational-domain
-    dimension const          = 2
-    width                    = 10.0, 10.0
-    offset                   = 0.0, 0.0
-    end-time                 = 10.0
+    dimension const          = 3
+    width                    = 1.0, 1.0, 1.0
+    offset                   = 0.0, 0.0, 0.0
+    end-time                 = 4.0
   end computational-domain
 
   /*shared-memory
@@ -63,11 +63,11 @@ exahype-project  Linear
   end global-optimisation
 
   solver ADER-DG MyLinearWaveSolver
-    variables const    = p:1,v:2
-    parameters const  = rho:1,c:1
-    order const        = 3
+    variables const    = p:1,v:3
+    parameters const  = rho:1,c:1,jacobian:1,metric_derivative:9,curve_grid:3
+    order const        = 4
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 0.5
+    maximum-mesh-size  = 0.15
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
@@ -78,12 +78,12 @@ exahype-project  Linear
     //plot Peano::Legendre::cells::hdf5 ConservedQuantitiesWriter
     //plot Peano::Legendre::cells::ascii ConservedQuantitiesWriter
     //plot vtk::Legendre::cells::binary ConservedQuantitiesWriter
-/*    plot vtk::Legendre::cells::ascii ConservedQuantitiesWriter
-      variables const = 3
+    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
+      variables const = 19
       time            = 0.0
       repeat          = 1e-2
       output          = ./conserved
-    end plot*/
+    end plot
 
     /* this is the fake plotter used to compute global integrals */
     /* it has no output fields. */
@@ -106,7 +106,7 @@ exahype-project  Linear
       time            = 0.0
       repeat          = 0.05
       output          = ./exact-primitive
-    end plot */
+    end plot*/
 
     /* Do not need the time series for a point in the moment
     plot probe::ascii ProbeWriter

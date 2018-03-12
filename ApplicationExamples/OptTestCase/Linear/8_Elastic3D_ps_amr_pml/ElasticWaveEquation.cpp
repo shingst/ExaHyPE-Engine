@@ -569,7 +569,7 @@ void  ElasticWaveEquation3D::ElasticWaveEquation::nonConservativeProduct(const d
 
 }
 
-void  ElasticWaveEquation3D::ElasticWaveEquation::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
+void  ElasticWaveEquation3D::ElasticWaveEquation::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
   
   static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
   double jacobian;

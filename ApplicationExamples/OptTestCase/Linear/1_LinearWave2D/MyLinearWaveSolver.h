@@ -128,7 +128,8 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
     void coefficientMatrix(const double* const Q,const int d,double* Bn);
 
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n);
+
     //    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override; 
 
 
