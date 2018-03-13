@@ -183,8 +183,8 @@ void GRMHD::BoundaryConditions::reflective(BOUNDARY_SIGNATURE) {
 void GRMHD::BoundaryConditions::exact(BOUNDARY_SIGNATURE) {
 	if(workingForADERDG(BOUNDARY_CALL)) {
 		double Qgp[nVar], Fs[nDim][nVar], *F[nDim];
-		for(int d=0; d<nDim; d++)
-			F[d] = Fs[d];
+		for(int di=0; di<nDim; di++)
+			F[di] = Fs[di];
 		// zeroise stateOut, fluxOut
 		for(int m=0; m<nVar; m++) {
 			stateOut[m] = 0;
