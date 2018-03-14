@@ -17,6 +17,7 @@ namespace RNSID {
  **/
 struct rnsid : public InitialDataCode {
 	RNSID::rnsid *id;
+	bool hasBeenPrepared; ///< a guard to ensure the preparation took place
 	
 	rnsid();
 	void prepare() override;

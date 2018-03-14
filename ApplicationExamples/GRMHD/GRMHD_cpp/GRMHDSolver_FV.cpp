@@ -101,7 +101,7 @@ void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
 		//NVARS(m) printf("Q[%d]=%e\n", m, Q[m]);
 		//std::abort();
 		// Set everything to some neutral value
-		DFOR(i) NVARS(m) F[i][m] = 0;
+		for(int i=0;i<DIMENSIONS;i++) NVARS(m) F[i][m] = 0;
 		return;
 	}
 	

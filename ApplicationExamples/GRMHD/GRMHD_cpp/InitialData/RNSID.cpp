@@ -31,6 +31,7 @@ extern "C" void rnsid_2d_cartesian2cylindrical_(double* Cartesian, const double*
 
 rnsid::rnsid() {
 	id = new RNSID::rnsid();
+	hasBeenPrepared = false;
 	
 	// A TOV star
 	// id->axes_ratio = 1.0;
@@ -100,11 +101,16 @@ void rnsid::readParameters(const mexa::mexafile& para) {
 
 void rnsid::prepare() {
  	id->Run();
+	hasBeenPrepared = true;
 }
 
 void rnsid::Interpolate(const double* pos, double t, double* Q) {
 	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 	double V[nVar] = {0.0}; // primitive variables, as returned by rnsid
+	
+	if(!hasBeenPrepared) {
+		throw std::runtime_error("Calling initial data interplation without preparation.");
+	}
 	
 	if(DIMENSIONS == 2) {
 		// in 2D, we interpret the coordinates (x,y) as (r,z)
