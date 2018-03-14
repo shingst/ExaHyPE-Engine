@@ -28,10 +28,10 @@ exahype-project  Elastic
 
   computational-domain
     dimension const          = 3
-//    width                    = 58.0, 58.0, 58.0
-//    offset                   = -26.0, 0.0, -26.0
-    width                    = 10.0, 10.0, 10.0
-    offset                   = -5.0, 0.0, -5.0
+    width                    = 40.0, 40.0, 40.0
+    offset                   = -20.0, 0.0, -20.0
+//    width                    = 10.0, 10.0, 10.0
+//    offset                   = -5.0, 0.0, -5.0
     end-time                 = 10.0
   end computational-domain
 
@@ -67,7 +67,7 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1
     order const        = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 1.5
+    maximum-mesh-size  = 9.0
     maximum-mesh-depth = 2
     time-stepping      = global
     type const         = linear, Legendre
@@ -75,14 +75,14 @@ exahype-project  Elastic
     optimisation const = generic,patchwiseadjust
     language const     = C
 
-    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
+/*    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12
       time            = 0.0
-      repeat          = 1.0e-2
-      output          = ./conserved
-    end plot
+      repeat          = 0.01
+      output          = ./loh1_amr/conserved
+    end plot*/
 
-    /* Do not need the time series for a point in the moment*/
+/*    /* Do not need the time series for a point in the moment*/
 /*    plot probe::ascii ProbeWriter_1
       variables const = 9
       time            = 0.0
@@ -115,7 +115,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.05
-      output          = ./receiver_5
+      output          = ./loh1_amr/receiver_5
       select          = x:3.919,y:0.0,z:3.919
     end plot
 /*    plot probe::ascii ProbeWriter_6
@@ -146,5 +146,5 @@ exahype-project  Elastic
       output          = ./receiver_9
       select          = x:8.647,y:0.0,z:5.764
     end plot*/
-  end solver
+  end solver 
 end exahype-project

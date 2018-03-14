@@ -113,11 +113,11 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
 exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
 
   //std::cout << "keep" << std::endl;
-  if (!tarch::la::equals(t,0.0)) {
+
+  if(!tarch::la::equals(t,0.0)){
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
-
-  
+ 
   double left_vertex[3];
   double right_vertex[3];
 
@@ -141,6 +141,15 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   if(pointSourceInElement){
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
+
+  /*  for(int k ; k< (Order+1); k++){
+    for(int j ; j< (Order+1); j++){
+      for(int i ; i< (Order+1); i++){
+	double abs_velocity=sqrt(luh[]);
+      }
+    }
+  }*/
+  
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
