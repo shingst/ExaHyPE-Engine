@@ -60,13 +60,36 @@ getappname() {
 		abort "Usage: $0 $CMD <AppName>";
 	fi
 }
+# set $SPECFILE or die
+getspecfile() {
+	SPECFILE="$PAR"
+	
+	# an ugly workaround for what cdapp is doing...
+	if [ -z "$USER_CALLING_DIR" ]; then PREFIX="${USER_CALLING_DIR}/"; else PREFIX=""; fi
+	
+	if ! [[ -e "$PREFIX$SPECFILE" ]]; then
+		SPECFILE="$(subreq find "$PREFIX$SPECFILE")" || abort "Could not resolve a specfile from '$SPECFILE' in PWD '$PREFIX'."
+	fi
+	export SPECFILE
+}
+
 # To be called at the beginning of a command. Change to application directory and
 # obtain the application name afterwards. *If* no application name was given, try
 # to guess the application name from the current directory (pwd).
 cdapp() {
 	export USER_CALLING_DIR="$PWD"
-	cdroot;
-	getappname;
+	cdroot
+
+	if [[ -f "$PAR" ]] && grep exahype-project "$PAR" 2>&1 >/dev/null; then
+		# A specfile is given. Try to determine the application name from there.
+		# This is somewhat ugly here.
+		APPNAME=$(grep exahype-project "$PAR" | head -n1 | awk '{print $2}')
+		if [ -z "$APPNAME" ]; then
+			die "at cdapp, could not determine application name from specfile '$PAR'"
+		fi
+	else
+		getappname
+	fi
 	cd $(subreq find appdir "$APPNAME") || abort "Could not go to app";
 }
 
@@ -94,11 +117,11 @@ case $CMD in
 		cdroot; getappname
 		SPECFILE="$(subreq find specfile "$APPNAME")" || abort "Could not find specfile: $SPECFILE"
 		info "Running ExaHyPE.jar on $SPECFILE"
-		exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE
+		pop # remove SPECFILE of $@
+		verbose exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE ${@}
 		;;
 	"compile") # Invokes the toolkit and compilation of an application
-		cdapp;
-		export SPECFILE="$(subreq find specfile "$APPNAME")" || abort "Could not retrieve specfile of $APPNAME, I just got $SPECFILE"
+		cdapp; getspecfile
 		export ABSCODEDIR="$GITROOT"
 		$SCRIPTDIR/compile.sh "$SPECFILE"
 		;;
