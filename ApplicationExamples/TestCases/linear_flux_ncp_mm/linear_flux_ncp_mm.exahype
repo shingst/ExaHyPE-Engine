@@ -23,7 +23,7 @@ exahype-project  Elastic
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/TestCases/linear_flux_ncp_mm
-  architecture const      = hsw
+  architecture const      = noarch
   log-file                = mylogfile.log
 
   computational-domain
