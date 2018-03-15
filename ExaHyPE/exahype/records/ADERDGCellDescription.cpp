@@ -1245,7 +1245,6 @@
          else {
          
             MPI_Request* sendRequestHandle = new MPI_Request();
-            MPI_Status   status;
             int          flag = 0;
             int          result;
             
@@ -1277,11 +1276,11 @@
                << ": " << tarch::parallel::MPIReturnValueToString(result);
                _log.error( "send(int)",msg.str() );
             }
-            result = MPI_Test( sendRequestHandle, &flag, &status );
+            result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
             while (!flag) {
                if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                if (result!=MPI_SUCCESS) {
                   std::ostringstream msg;
                   msg << "testing for finished send task for exahype::records::ADERDGCellDescription "
@@ -1331,8 +1330,7 @@
       void exahype::records::ADERDGCellDescription::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
          if (communicateSleep<0) {
          
-            MPI_Status  status;
-            const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &status);
+            const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), MPI_STATUS_IGNORE);
             if ( result != MPI_SUCCESS ) {
                std::ostringstream msg;
                msg << "failed to start to receive exahype::records::ADERDGCellDescription from node "
@@ -1344,7 +1342,6 @@
          else {
          
             MPI_Request* sendRequestHandle = new MPI_Request();
-            MPI_Status   status;
             int          flag = 0;
             int          result;
             
@@ -1373,11 +1370,11 @@
                _log.error( "receive(int)", msg.str() );
             }
             
-            result = MPI_Test( sendRequestHandle, &flag, &status );
+            result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
             while (!flag) {
                if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                if (result!=MPI_SUCCESS) {
                   std::ostringstream msg;
                   msg << "testing for finished receive task for exahype::records::ADERDGCellDescription failed: "
@@ -2585,7 +2582,6 @@
          else {
          
             MPI_Request* sendRequestHandle = new MPI_Request();
-            MPI_Status   status;
             int          flag = 0;
             int          result;
             
@@ -2617,11 +2613,11 @@
                << ": " << tarch::parallel::MPIReturnValueToString(result);
                _log.error( "send(int)",msg.str() );
             }
-            result = MPI_Test( sendRequestHandle, &flag, &status );
+            result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
             while (!flag) {
                if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                if (result!=MPI_SUCCESS) {
                   std::ostringstream msg;
                   msg << "testing for finished send task for exahype::records::ADERDGCellDescriptionPacked "
@@ -2671,8 +2667,7 @@
       void exahype::records::ADERDGCellDescriptionPacked::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
          if (communicateSleep<0) {
          
-            MPI_Status  status;
-            const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &status);
+            const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), MPI_STATUS_IGNORE);
             if ( result != MPI_SUCCESS ) {
                std::ostringstream msg;
                msg << "failed to start to receive exahype::records::ADERDGCellDescriptionPacked from node "
@@ -2684,7 +2679,6 @@
          else {
          
             MPI_Request* sendRequestHandle = new MPI_Request();
-            MPI_Status   status;
             int          flag = 0;
             int          result;
             
@@ -2713,11 +2707,11 @@
                _log.error( "receive(int)", msg.str() );
             }
             
-            result = MPI_Test( sendRequestHandle, &flag, &status );
+            result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
             while (!flag) {
                if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                if (result!=MPI_SUCCESS) {
                   std::ostringstream msg;
                   msg << "testing for finished receive task for exahype::records::ADERDGCellDescriptionPacked failed: "
@@ -3975,7 +3969,6 @@
             else {
             
                MPI_Request* sendRequestHandle = new MPI_Request();
-               MPI_Status   status;
                int          flag = 0;
                int          result;
                
@@ -4007,11 +4000,11 @@
                   << ": " << tarch::parallel::MPIReturnValueToString(result);
                   _log.error( "send(int)",msg.str() );
                }
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                while (!flag) {
                   if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                   if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-                  result = MPI_Test( sendRequestHandle, &flag, &status );
+                  result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                   if (result!=MPI_SUCCESS) {
                      std::ostringstream msg;
                      msg << "testing for finished send task for exahype::records::ADERDGCellDescription "
@@ -4061,8 +4054,7 @@
          void exahype::records::ADERDGCellDescription::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
             if (communicateSleep<0) {
             
-               MPI_Status  status;
-               const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &status);
+               const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), MPI_STATUS_IGNORE);
                if ( result != MPI_SUCCESS ) {
                   std::ostringstream msg;
                   msg << "failed to start to receive exahype::records::ADERDGCellDescription from node "
@@ -4074,7 +4066,6 @@
             else {
             
                MPI_Request* sendRequestHandle = new MPI_Request();
-               MPI_Status   status;
                int          flag = 0;
                int          result;
                
@@ -4103,11 +4094,11 @@
                   _log.error( "receive(int)", msg.str() );
                }
                
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                while (!flag) {
                   if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                   if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-                  result = MPI_Test( sendRequestHandle, &flag, &status );
+                  result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                   if (result!=MPI_SUCCESS) {
                      std::ostringstream msg;
                      msg << "testing for finished receive task for exahype::records::ADERDGCellDescription failed: "
@@ -5271,7 +5262,6 @@
             else {
             
                MPI_Request* sendRequestHandle = new MPI_Request();
-               MPI_Status   status;
                int          flag = 0;
                int          result;
                
@@ -5303,11 +5293,11 @@
                   << ": " << tarch::parallel::MPIReturnValueToString(result);
                   _log.error( "send(int)",msg.str() );
                }
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                while (!flag) {
                   if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                   if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-                  result = MPI_Test( sendRequestHandle, &flag, &status );
+                  result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                   if (result!=MPI_SUCCESS) {
                      std::ostringstream msg;
                      msg << "testing for finished send task for exahype::records::ADERDGCellDescriptionPacked "
@@ -5357,8 +5347,7 @@
          void exahype::records::ADERDGCellDescriptionPacked::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
             if (communicateSleep<0) {
             
-               MPI_Status  status;
-               const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &status);
+               const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), MPI_STATUS_IGNORE);
                if ( result != MPI_SUCCESS ) {
                   std::ostringstream msg;
                   msg << "failed to start to receive exahype::records::ADERDGCellDescriptionPacked from node "
@@ -5370,7 +5359,6 @@
             else {
             
                MPI_Request* sendRequestHandle = new MPI_Request();
-               MPI_Status   status;
                int          flag = 0;
                int          result;
                
@@ -5399,11 +5387,11 @@
                   _log.error( "receive(int)", msg.str() );
                }
                
-               result = MPI_Test( sendRequestHandle, &flag, &status );
+               result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                while (!flag) {
                   if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
                   if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-                  result = MPI_Test( sendRequestHandle, &flag, &status );
+                  result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
                   if (result!=MPI_SUCCESS) {
                      std::ostringstream msg;
                      msg << "testing for finished receive task for exahype::records::ADERDGCellDescriptionPacked failed: "
