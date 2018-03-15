@@ -18,6 +18,7 @@ def parseList(string):
     into a list of strings:
     [ 'val1,val2' ,'val3', 'val4,val5' ]
     """
+    string = string.replace("\r","").replace("\n","").replace("\t","")
     for line in csv.reader([string],delimiter=","):
       values = line
       for i,value in enumerate(values):
