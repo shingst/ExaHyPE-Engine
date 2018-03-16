@@ -9,6 +9,7 @@
 #include "PDE.h"
 #include "kernels/GaussLegendreQuadrature.h"
 #include <cmath>
+#include <algorithm>
 
 #include "kernels/aderdg/generic/c/sizes.cpph"
 #include "kernels/KernelUtils.h" // matrix indexing
@@ -33,7 +34,9 @@ GPR::ErrorWriter::ErrorWriter() : exahype::plotters::ADERDG2UserDefined::ADERDG2
 		//printf("***********************************************************");
 		//printf(name);
 		//printf("\n");
-		errors.add(m, name);
+    std::string name_str(name);
+    std::replace( name_str.begin(), name_str.end(), ' ', '_');
+		errors.add(m, name_str.substr(0,4));
     }
 
 }
