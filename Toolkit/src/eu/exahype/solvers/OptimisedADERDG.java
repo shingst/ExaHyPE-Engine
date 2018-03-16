@@ -42,6 +42,7 @@ public class OptimisedADERDG implements Solver {
     final boolean patchwiseAdjust        = kernel.patchwiseAdjust();
     final boolean tempVarsOnStack        = kernel.tempVarsOnStack();
     final boolean useMaxPicardIterations = kernel.useMaxPicardIterations();
+    final boolean countFlops             = kernel.useFlopsDebug();
     final int     maxPicardIterations    = kernel.maxPicardIterations();
     final int     numberOfPointSources   = kernel.getNumberOfPointSources();
     
@@ -83,6 +84,7 @@ public class OptimisedADERDG implements Solver {
     context.put("patchwiseAdjust"       , patchwiseAdjust);
     context.put("tempVarsOnStack"       , tempVarsOnStack);
     context.put("useMaxPicardIterations", useMaxPicardIterations);
+    context.put("countFlops"            , countFlops);
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));

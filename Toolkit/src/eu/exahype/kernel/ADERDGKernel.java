@@ -44,6 +44,7 @@ public class ADERDGKernel {
   public static final String TEMP_VARS_ON_STACK_OPTION_ID = "usestack";
   public static final String MAX_PICARD_ITER_ID           = "maxpicarditer";
   public static final String CONVERTER_OPTION_ID          = "converter"; //for debug only, not in guidebook
+  public static final String FLOPS_OPTION_ID              = "flops"; //for debug only, not in guidebook
   
   private Set<String> type;
   private Map<String, Integer> terms;
@@ -172,6 +173,10 @@ public class ADERDGKernel {
   
   public boolean useConverterDebug() {
     return optimisation.containsKey(CONVERTER_OPTION_ID);
+  }
+  
+  public boolean useFlopsDebug() {
+    return optimisation.containsKey(FLOPS_OPTION_ID);
   }
   
   public int getNumberOfPointSources() {

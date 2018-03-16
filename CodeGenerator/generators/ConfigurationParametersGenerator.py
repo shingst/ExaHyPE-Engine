@@ -37,5 +37,9 @@ class ConfigurationParametersGenerator:
 
     def generateCode(self):
         self.m_context["isLinearCText"] = "true" if self.m_context["isLinear"] else "false" #c++ true/false instead of True/False
+        self.m_context["useFluxFactor"] =        1 if self.m_context["useFlux"]        else 0
+        self.m_context["useNCPFactor"] =         1 if self.m_context["useNCP"]         else 0
+        self.m_context["useSourceFactor"] =      1 if self.m_context["useSource"]      else 0
+        self.m_context["useSourceOrNCPFactor"] = 1 if self.m_context["useSourceOrNCP"] else 0
 
         TemplatingUtils.renderAsFile("configurationParameters_cpph.template", self.m_filename, self.m_context)

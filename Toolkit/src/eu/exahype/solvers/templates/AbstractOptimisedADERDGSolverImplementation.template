@@ -15,6 +15,10 @@
 
 #include <stdio.h>
 
+{%- if countFlops  %}
+unsigned long {{project}}::{{abstractSolver}}::flops = 0;
+{%- endif %}
+
 // We define the constructor of the actual solver here in order to regenerate it easily.
 {{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
   {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler) {%- endif %}) {
@@ -101,11 +105,20 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   if(pointSources != nullptr) {
     // perform pointsource
     picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
+{%- if countFlops  %}
+    flops += 0; // TODO JMG
+{%- endif %}  
   } else {
     picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
+{%- if countFlops  %}
+    flops += 0; // TODO JMG
+{%- endif %} 
   }
 {%- else %}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, nullptr);
+{%- if countFlops  %}
+  flops += 0; // TODO JMG
+{%- endif %} 
 {%- endif %}
   
 {%- else %}
@@ -122,6 +135,10 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
 
+{%- if countFlops && !isLinear %}
+  flops += picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
+{%- endif %}
+
   return picardIt;
 }
 
@@ -132,6 +149,9 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
   _profiler->start("solutionUpdate");
 {%- endif %}
   {{optNamespace}}::solutionUpdate( luh, lduh, dt );
+{%- if countFlops  %}
+  flops += {{optNamespace}}::solutionUpdate_flops;
+{%- endif %} 
 {%- if enableProfiler %}
   _profiler->stop("solutionUpdate");
 {%- endif %}
@@ -144,6 +164,9 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double*
   _profiler->start("surfaceIntegral");
 {%- endif %}
   {{optNamespace}}::surfaceIntegral( lduh, lFhbnd, inverseDx );
+{%- if countFlops  %}
+  flops += {{optNamespace}}::surfaceIntegral_flops;
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("surfaceIntegral");
 {%- endif %}
@@ -158,6 +181,13 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
   _profiler->start("riemannSolver");
 {%- endif %}
   {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, dt, normalNonZeroIndex {%- if enableDeepProfiler %}, _profiler.get(){% endif %});
+{%- if countFlops  %}
+{%- if isLinear %}
+  flops += 0; //TODO JMG
+{%- else %}
+  flops += {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor * ncpPDEFlops + 2*eigenvaluesFlops;
+{%- endif %}
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("riemannSolver");
 {%- endif %}
@@ -195,7 +225,11 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   //exahype::DataHeap::getInstance().deleteData(index,true);
   freeArray(memory);
 {%- endif %}
-  
+
+{%- if countFlops  %}
+  flops += {{optNamespace}}::boundaryConditions_flops + {{optNamespace}}::boundaryConditions_factor * boundaryValuesFlops;
+{%- endif %}
+
 {%- if enableProfiler %}
   _profiler->stop("boundaryConditions");
 {%- endif %}
@@ -208,6 +242,9 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
   _profiler->start("stableTimeStepSize");
 {%- endif %}
   double d = {{optNamespace}}::stableTimeStepSize(*static_cast<{{solver}}*>(this), luh, inverseDx );
+{%- if countFlops  %}
+  flops += {{optNamespace}}::stableTimeStepSize_flops + {{optNamespace}}::stableTimeStepSize_factor * eigenvaluesFlops;
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("stableTimeStepSize");
 {%- endif %}
@@ -222,7 +259,9 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
   _profiler->start("solutionAdjustment");
 {%- endif %}
   {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
-
+{%- if countFlops  %}
+  flops += {{optNamespace}}::solutionAdjustment_flops;
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {%- endif %}
@@ -236,6 +275,9 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
   _profiler->start("faceUnknownsProlongation");
 {%- endif %}
   {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex);
+{%- if countFlops  %}
+  flops += {{optNamespace}}::faceUnknownsProlongation_flops * (fineGridLevel - coarseGridLevel);
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->start("faceUnknownsProlongation");
 {%- endif %}
@@ -248,6 +290,9 @@ void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoar
   _profiler->start("faceUnknownsRestriction");
 {%- endif %}
   {{optNamespace}}::faceUnknownsRestriction( lQhbndCoarse, lFhbndCoarse, lQhbndFine, lFhbndFine, coarseGridLevel, fineGridLevel, subfaceIndex);
+{%- if countFlops  %}
+  flops += {{optNamespace}}::faceUnknownsRestriction_flops * (fineGridLevel - coarseGridLevel);
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("faceUnknownsRestriction");
 {%- endif %}
@@ -260,6 +305,9 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine
   _profiler->start("volumeUnknownsProlongation");
 {%- endif %}
   {{optNamespace}}::volumeUnknownsProlongation( luhFine, luhCoarse, coarseGridLevel, fineGridLevel, subcellIndex);
+{%- if countFlops  %}
+  flops += {{optNamespace}}::volumeUnknownsProlongation_flops * (fineGridLevel - coarseGridLevel);
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("volumeUnknownsProlongation");
 {%- endif %}
@@ -272,6 +320,9 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
   _profiler->start("volumeUnknownsRestriction");
 {%- endif %}
   {{optNamespace}}::volumeUnknownsRestriction( luhCoarse, luhFine, coarseGridLevel, fineGridLevel, subcellIndex);
+{%- if countFlops  %}
+  flops += {{optNamespace}}::volumeUnknownsRestriction_flops * (fineGridLevel - coarseGridLevel);
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("volumeUnknownsRestriction");
 {%- endif %}

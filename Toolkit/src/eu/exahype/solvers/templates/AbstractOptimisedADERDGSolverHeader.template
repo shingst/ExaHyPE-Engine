@@ -63,6 +63,21 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     
     {{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping  {%- if enableProfiler %}
     , std::unique_ptr<exahype::profilers::Profiler> profiler  {%- endif %});
+    
+{%- if countFlops %}
+    // Change to the correct values
+    static constexpr unsigned long fluxPDEFlops = 0;
+    static constexpr unsigned long ncpPDEFlops = 0;
+    static constexpr unsigned long sourcesPDEFlops = 0;
+    static constexpr unsigned long matparamPDEFlops = 0;
+    static constexpr unsigned long pointsourcesFlops = 0;
+    static constexpr unsigned long eigenvaluesFlops = 0;
+    static constexpr unsigned long boundaryValuesFlops = 0;
+
+    static unsigned long flops;
+
+    virtual ~{{abstractSolver}}(){printf("\nFlops = %lu\n", flops);}
+{%- endif %}
 
     /**
      * This operation should be overwritten in your application-specific 
