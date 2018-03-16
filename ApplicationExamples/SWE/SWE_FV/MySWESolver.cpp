@@ -1,57 +1,95 @@
 #include "MySWESolver.h"
-#include "InitialData.h"
+#include "../InitialData.h"
 #include "MySWESolver_Variables.h"
 
-#include "kernels/KernelUtils.h"
-
-using namespace kernels;
-
-const double grav= 9.81;
+const double grav = 9.81;
 
 
-//tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
-
-
+tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
 void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  //logInfo( "init(...)", "SWE is called with these parameters:" );
-  for(size_t i=0; i<cmdlineargs.size(); i++) {
-  //  logInfo( "init(...)", "- argument " << i << ": " << cmdlineargs[i] );
-  }
+  // @todo Please implement/augment if required
 }
 
+void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+    // Dimensions             = 2
+    // Number of variables    = 4 + #parameters
 
-bool SWE::MySWESolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const {
-  return tarch::la::equals(t,0.0);
+    if (tarch::la::equals(t, 0.0)) {
+//        MySWESolver::Variables vars(Q);
+//
+//        if (x[0] <= 5){
+//            vars.h() = x[0];
+//        }
+//        else {
+//            vars.h() = 10 - x[0];
+//        }
+//        vars.hu() = 0.0;
+//        vars.hv() = 0.0;
+//        vars.b() = 0.0;
+
+        MySWESolver::Variables vars(Q);
+
+        if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
+            vars.h() = 4.0;
+            vars.hu()= 0.0;
+            vars.hv()= 0.0;
+            vars.b() = 0;
+        } else {
+            vars.h() = 3.0;
+            vars.hu()= 0.0;
+            vars.hv()= 0.0;
+            vars.b() = 0.0;
+        }
+    }
 }
 
-
-void SWE::MySWESolver::adjustSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
-  assertion(tarch::la::equals(t, 0.0));
-
-  initialData(x,Q);
-}
-
-
-void SWE::MySWESolver::eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda) {
+void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
   // Dimensions             = 2
-  // Number of variables    = 3 (#unknowns + #parameters)
-  ReadOnlyVariables vars(Q);
-  Variables eigs(lambda);  
+  // Number of variables    = 4 + #parameters
 
+  ReadOnlyVariables vars(Q);
+  Variables eigs(lambda);
 
   const double c= std::sqrt(grav*vars.h());
   const double ih = 1./vars.h();
-
-  double u_n = Q[normalNonZeroIndex + 1] * ih;
+  double u_n = Q[dIndex + 1] *ih;
 
   eigs.h() = u_n + c ;
   eigs.hu()= u_n -c;
   eigs.hv()= u_n ;
 }
 
+void SWE::MySWESolver::boundaryValues(
+    const double* const x,
+    const double t,const double dt,
+    const int faceIndex,
+    const int d,
+    const double* const stateInside,
+    double* stateOutside) {
+  // Dimensions             = 2
+  // Number of variables    = 4 + #parameters
+
+  stateOutside[0] = stateInside[0];
+  stateOutside[1] = stateInside[1];
+  stateOutside[2] = stateInside[2];
+  stateOutside[3] = stateInside[3];
+
+    //for WALL BCs
+    stateOutside[d+1]=-stateInside[d+1];
+}
+
+//***********************************************************
+//*********************** PDE *******************************
+//***********************************************************
+
+//to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
+
 
 void SWE::MySWESolver::flux(const double* const Q,double** F) {
+  // Dimensions                        = 2
+  // Number of variables + parameters  = 3 + 1
+
   ReadOnlyVariables vars(Q);
 
   const double ih = 1./vars.h();
@@ -69,49 +107,5 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
 }
 
 
-void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut)
- {
-  // Dimensions             = 2
-  // Number of variables    = 3 + 1
 
-  //for OUTFLOW and WALL
-  stateOut[0] = stateIn[0];
-  stateOut[1] = stateIn[1];
-  stateOut[2] = stateIn[2];
-  stateOut[3] = stateIn[3];
 
-  //for WALL BCs
-  stateOut[normalNonZero+1]=-stateIn[normalNonZero+1];
-}
-
-  return true;
-}
-
-void SWE::MySWESolver::coefficientMatrix(const double* const Q, const int d, double* Bn)
-{
-  idx2 idx_Bn(NumberOfVariables+NumberOfParameters,NumberOfVariables+NumberOfParameters);
-
-  Bn[0] = 0.0;
-  Bn[1] = 0.0;
-  Bn[2] = 0.0;
-  Bn[3] = 0.0;
-  Bn[4] = 0.0;
-  Bn[5] = 0.0;
-  Bn[6] = 0.0;
-  Bn[7] = 0.0;
-  Bn[8] = 0.0;
-  Bn[9] = 0.0;
-  Bn[10]= 0.0;
-  Bn[11]= 0.0;
-  Bn[12]= 0.0;
-  Bn[13]= 0.0;
-  Bn[14]= 0.0;
-  Bn[15]= 0.0;    
-
-  Bn[idx_Bn(3,d+1)]=grav*Q[0]; //g*h
-}
-
-exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
-}
