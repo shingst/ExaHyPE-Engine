@@ -87,7 +87,7 @@ namespace exahype {
   typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
-  #if defined(ALIGNMENT) and defined(PeanosSymmetricBoundaryExchanger)
+  #if defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
@@ -161,7 +161,7 @@ namespace exahype {
    * It is assumed by the metadata send routines of the solvers that
    * all data exchangers of the MetadataHeap create copies of the data to send.
    */
-  #if defined(PeanosSymmetricBoundaryExchanger)
+  #if defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::Heap<
       peano::heap::records::CharHeapData,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
