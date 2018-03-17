@@ -160,22 +160,18 @@ namespace exahype {
    *
    * It is assumed by the metadata send routines of the solvers that
    * all data exchangers of the MetadataHeap create copies of the data to send.
+   *
+   * <h2> Implementation </h2>
+   *
+   * These meta data are not symmetric, i..e we can use the RLE heap but we
+   * may not use any symmetric heap.
    */
-  #if defined(UsePeanosSymmetricBoundaryExchanger)
-  typedef peano::heap::Heap<
-      peano::heap::records::CharHeapData,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::SymmetricBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
-  >     MetadataHeap;
-  #else
   typedef peano::heap::Heap<
       peano::heap::records::CharHeapData,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
       peano::heap::RLEBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
   >     MetadataHeap;
-  #endif
 
   /**
    * Defines an invalid metadata entry.
