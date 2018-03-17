@@ -87,7 +87,20 @@ namespace exahype {
   typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
-  #ifdef ALIGNMENT
+  #if defined(ALIGNMENT) and defined(PeanosSymmetricBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    std::vector< double, AlignedAllocator >
+  >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif defined(ALIGNMENT)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
@@ -148,12 +161,21 @@ namespace exahype {
    * It is assumed by the metadata send routines of the solvers that
    * all data exchangers of the MetadataHeap create copies of the data to send.
    */
+  #if defined(PeanosSymmetricBoundaryExchanger)
+  typedef peano::heap::Heap<
+      peano::heap::records::CharHeapData,
+      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
+      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
+      peano::heap::SymmetricBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
+  >     MetadataHeap;
+  #else
   typedef peano::heap::Heap<
       peano::heap::records::CharHeapData,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
       peano::heap::RLEBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
   >     MetadataHeap;
+  #endif
 
   /**
    * Defines an invalid metadata entry.
