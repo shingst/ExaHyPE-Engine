@@ -166,12 +166,22 @@ namespace exahype {
    * These meta data are not symmetric, i..e we can use the RLE heap but we
    * may not use any symmetric heap.
    */
+  #ifdef UsePeanosAggregationBoundaryExchanger
+  typedef peano::heap::Heap<
+      peano::heap::records::CharHeapData,
+      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
+      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
+      peano::heap::AggregationBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
+  >     MetadataHeap;
+  #else
+  // @todo Dominic: Stell mal auf Symmetric um statt RLE. Der Exchanger erwartet, dass aller Austausch strengst symmetrisch ist. Dann crashed aber ExaHyPE
   typedef peano::heap::Heap<
       peano::heap::records::CharHeapData,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
       peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
       peano::heap::RLEBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
   >     MetadataHeap;
+  #endif
 
   /**
    * Defines an invalid metadata entry.
