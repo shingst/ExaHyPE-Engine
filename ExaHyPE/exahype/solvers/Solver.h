@@ -167,19 +167,17 @@ namespace exahype {
    * may not use any symmetric heap.
    */
   #ifdef UsePeanosAggregationBoundaryExchanger
-  typedef peano::heap::Heap<
-      peano::heap::records::CharHeapData,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::AggregationBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
+  typedef peano::heap::CharHeap<
+      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+      peano::heap::AggregationBoundaryDataExchanger< char, true, peano::heap::SendReceiveTask<char> >
   >     MetadataHeap;
   #else
   // @todo Dominic: Stell mal auf Symmetric um statt RLE. Der Exchanger erwartet, dass aller Austausch strengst symmetrisch ist. Dann crashed aber ExaHyPE
-  typedef peano::heap::Heap<
-      peano::heap::records::CharHeapData,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::RLEBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::RLEBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
   >     MetadataHeap;
   #endif
 

@@ -409,7 +409,7 @@ void exahype::Cell::mergeWithMetadataFromMasterPerCell(
         const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
         if (solver->isMergingMetadata(section) &&
             element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+            receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
           MetadataHeap::HeapEntries metadataPortion(
               receivedMetadata.begin()+offset,
               receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
@@ -491,7 +491,7 @@ void exahype::Cell::mergeWithMasterDataPerCell(
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
       if (element!=exahype::solvers::Solver::NotFound &&
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+          receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
 
         exahype::MetadataHeap::HeapEntries metadataPortion(
             receivedMetadata.begin()+offset,
@@ -604,7 +604,7 @@ bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
         if (
             solver->isMergingMetadata(section) &&
             element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry
+            receivedMetadata[offset]!=exahype::InvalidMetadataEntry
         ) {
           MetadataHeap::HeapEntries metadataPortion(
               receivedMetadata.begin()+offset,
@@ -669,7 +669,7 @@ void exahype::Cell::mergeWithDataFromWorkerPerCell(
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
       if (
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry &&
+          receivedMetadata[offset]!=exahype::InvalidMetadataEntry &&
           element!=exahype::solvers::Solver::NotFound
       ) {
         exahype::MetadataHeap::HeapEntries metadataPortion(

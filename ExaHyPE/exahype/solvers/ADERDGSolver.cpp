@@ -3209,9 +3209,9 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterMetadata(
 
     #ifdef Asserts
     const CellDescription::Type receivedType =
-        static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType].getU());
+        static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType]);
     #endif
-    const bool masterHoldsData               = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData].getU()==1;
+    const bool masterHoldsData               = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
 
     assertion(receivedType==cellDescription.getType());
     if (cellDescription.getType()==CellDescription::Type::Ancestor) {
@@ -3273,12 +3273,12 @@ bool exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
 
   #ifdef Asserts
   const CellDescription::Type receivedType =
-      static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType].getU());
+      static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType]);
   #endif
   const int workerLimiterStatus            =
-      receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus].getU();
+      receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus];
   const bool workerHoldsData               =
-      receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData].getU()==1;
+      receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
   assertion(receivedType==cellDescription.getType());
 
   bool cellDescriptionRequiresVerticalCommunication = false;
@@ -3415,11 +3415,11 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const int faceIndex   = 2*direction+orientation;
 
     const int neighbourAugmentationStatus =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus].getU();
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus];
     const int neighbourHelperStatus       =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ].getU();
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ];
     const int neighbourLimiterStatus      =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ].getU();
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ];
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
@@ -3508,7 +3508,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   synchroniseTimeStepping(cellDescription);
 
   CellDescription::Type neighbourType =
-      static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
+      static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType]);
   if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
     assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
 

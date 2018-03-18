@@ -1258,7 +1258,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   synchroniseTimeStepping(cellDescription);
 
   CellDescription::Type neighbourType =
-      static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
+      static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType]);
 
   const int direction   = tarch::la::equalsReturnIndex(src, dest);
   const int orientation = (1 + src(direction) - dest(direction))/2;

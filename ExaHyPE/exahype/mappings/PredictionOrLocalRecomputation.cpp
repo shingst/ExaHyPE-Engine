@@ -492,7 +492,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
 
       if (
           element!=exahype::solvers::Solver::NotFound &&
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry
+          receivedMetadata[offset]!=exahype::InvalidMetadataEntry
       ) {
         logDebug("mergeWithNeighbourData(...)", "receive data for solver " << solverNumber << " from rank " <<
                       fromRank << " at vertex x=" << x << ", level=" << level <<

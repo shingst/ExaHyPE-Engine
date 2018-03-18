@@ -685,7 +685,7 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
                 const int element = solver->tryGetElement(
                     getCellDescriptionsIndex()[destScalar],solverNumber);
                 if (element!=exahype::solvers::Solver::NotFound) {
-                  if (receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+                  if (receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
                     MetadataHeap::HeapEntries metadataPortion(
                         receivedMetadata.begin()+offset,
                         receivedMetadata.begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
@@ -989,7 +989,7 @@ void exahype::Vertex::mergeWithNeighbourData(
   for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
     auto* solver = solvers::RegisteredSolvers[solverNumber];
     const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
-    if (receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+    if (receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
       const int element = solver->tryGetElement(destCellDescriptionIndex,solverNumber);
       assertion1(element>=0,element);
 
