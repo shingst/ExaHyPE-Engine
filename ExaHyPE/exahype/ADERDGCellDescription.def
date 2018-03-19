@@ -409,9 +409,9 @@ class exahype::records::ADERDGCellDescription {
   
   
   /**
-   * \see helperStatus
+   * \see communicationStatus
    */
-  parallelise persistent int facewiseHelperStatus[DIMENSIONS_TIMES_TWO];
+  parallelise persistent int facewiseCommunicationStatus[DIMENSIONS_TIMES_TWO];
   
   /**
    * Status of a helper cell description (Descendant,Ancestor)
@@ -426,10 +426,10 @@ class exahype::records::ADERDGCellDescription {
    * neighbours to a cell description of type Cell
    * allocate memory and the others don't.
    * 
-   * We write the maximum value of the facewiseHelperStatus flags
+   * We write the maximum value of the facewiseCommunicationStatus flags
    * to this field in each limiter status merging iteration.
    */
-  parallelise persistent int helperStatus;
+  parallelise persistent int communicationStatus;
   
   enum LimiterStatus {
     /**

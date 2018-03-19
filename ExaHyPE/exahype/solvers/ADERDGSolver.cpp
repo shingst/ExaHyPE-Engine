@@ -68,8 +68,8 @@ namespace {
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
 
 // helper status
-int exahype::solvers::ADERDGSolver::MaximumHelperStatus                          = 2;
-int exahype::solvers::ADERDGSolver::MinimumHelperStatusForAllocatingBoundaryData = 1;
+int exahype::solvers::ADERDGSolver::MaximumCommunicationStatus                          = 2;
+int exahype::solvers::ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication = 1;
 // augmentation status
 // On-the fly erasing seems to work with those values
 int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                   = 4;
@@ -114,11 +114,11 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
     newCellDescription.setPreviousAugmentationStatus(MaximumAugmentationStatus);
   }
   newCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-  newCellDescription.setHelperStatus(0);
-  newCellDescription.setFacewiseHelperStatus(0); // implicit conversion
+  newCellDescription.setCommunicationStatus(0);
+  newCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
   if (cellType==CellDescription::Type::Cell) {
-    newCellDescription.setHelperStatus(MaximumHelperStatus);
-    newCellDescription.setFacewiseHelperStatus(MaximumHelperStatus); // implicit conversion
+    newCellDescription.setCommunicationStatus(MaximumCommunicationStatus);
+    newCellDescription.setFacewiseCommunicationStatus(MaximumCommunicationStatus); // implicit conversion
     // TODO(Dominic): Make sure prolongation and restriction considers this.
   }
 
@@ -197,9 +197,9 @@ exahype::solvers::ADERDGSolver::CellDescription& exahype::solvers::ADERDGSolver:
  */
 bool exahype::solvers::ADERDGSolver::holdsFaceData(const CellDescription& cellDescription) {
   assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
-            cellDescription.getHelperStatus()==MaximumHelperStatus,cellDescription.toString());
+            cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,cellDescription.toString());
   return
-      cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData;
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication;
 }
 
 void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) {
@@ -258,7 +258,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDe
 
   if (
       (cellDescription.getType()==CellDescription::Erased ||
-      (cellDescription.getHelperStatus()<MinimumHelperStatusForAllocatingBoundaryData
+      (cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication
       #ifdef Parallel
       && !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
       #endif
@@ -267,7 +267,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDe
       DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
   ) {
     assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
-               cellDescription.getHelperStatus()==MaximumHelperStatus,
+               cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
                cellDescription.toString());
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 
@@ -366,11 +366,11 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
   }
 
   assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
-      cellDescription.getHelperStatus()==MaximumHelperStatus,
+      cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
       cellDescription.toString());
 
   if(
-      (cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData
+      (cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
       #ifdef Parallel
       || cellDescription.getHasToHoldDataForMasterWorkerCommunication()
       #endif
@@ -975,7 +975,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
         exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator));
     #endif
 
-    updateHelperStatus(fineGridCellDescription);
+    updateCommunicationStatus(fineGridCellDescription);
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
@@ -1305,8 +1305,8 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
 
       fineGridCellDescription.setType(CellDescription::Type::Cell);
       fineGridCellDescription.setRefinementEvent(CellDescription::Prolongating);
-      fineGridCellDescription.setHelperStatus(MaximumHelperStatus);
-      fineGridCellDescription.setFacewiseHelperStatus(MaximumHelperStatus); // implicit conversion
+      fineGridCellDescription.setCommunicationStatus(MaximumCommunicationStatus);
+      fineGridCellDescription.setFacewiseCommunicationStatus(MaximumCommunicationStatus); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
     }
     return true;
@@ -1510,8 +1510,8 @@ void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnt
       fineGridCellDescription.setType(CellDescription::Type::Ancestor);
       fineGridCellDescription.setAugmentationStatus(MaximumAugmentationStatus);
       fineGridCellDescription.setFacewiseAugmentationStatus(MaximumAugmentationStatus); // implicit conversion
-      fineGridCellDescription.setHelperStatus(0);
-      fineGridCellDescription.setFacewiseHelperStatus(0); // implicit conversion
+      fineGridCellDescription.setCommunicationStatus(0);
+      fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       fineGridCellDescription.setHasVirtualChildren(false); // since we might replace descendants with cells
       ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
       fineGridCellDescription.setRefinementEvent(CellDescription::None);
@@ -1520,8 +1520,8 @@ void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnt
       fineGridCellDescription.setType(CellDescription::Type::Cell);
       fineGridCellDescription.setAugmentationStatus(0);
       fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-      fineGridCellDescription.setHelperStatus(MaximumHelperStatus);
-      fineGridCellDescription.setFacewiseHelperStatus(MaximumHelperStatus); // implicit conversion
+      fineGridCellDescription.setCommunicationStatus(MaximumCommunicationStatus);
+      fineGridCellDescription.setFacewiseCommunicationStatus(MaximumCommunicationStatus); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       prepareVolumeDataRestriction(fineGridCellDescription);
       fineGridCellDescription.setRefinementEvent(CellDescription::ChangeChildrenToVirtualChildren);
@@ -1547,8 +1547,8 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
       fineGridCellDescription.setType(CellDescription::Type::Cell);
       fineGridCellDescription.setAugmentationStatus(0);
       fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-      fineGridCellDescription.setHelperStatus(MaximumHelperStatus);
-      fineGridCellDescription.setFacewiseHelperStatus(MaximumHelperStatus); // implicit conversion
+      fineGridCellDescription.setCommunicationStatus(MaximumCommunicationStatus);
+      fineGridCellDescription.setFacewiseCommunicationStatus(MaximumCommunicationStatus); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       prepareVolumeDataRestriction(fineGridCellDescription);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
@@ -1602,8 +1602,8 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
 
     // erase cell description // or change to descendant
     fineGridCellDescription.setType(CellDescription::Erased);
-    fineGridCellDescription.setHelperStatus(0);
-    fineGridCellDescription.setFacewiseHelperStatus(0); // implicit conversion
+    fineGridCellDescription.setCommunicationStatus(0);
+    fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
     getCellDescriptions(cellDescriptionsIndex).erase(
@@ -1626,8 +1626,8 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
 
     // erase cell description // or change to descendant
     fineGridCellDescription.setType(CellDescription::Type::Descendant);
-    fineGridCellDescription.setHelperStatus(0);
-    fineGridCellDescription.setFacewiseHelperStatus(0); // implicit conversion
+    fineGridCellDescription.setCommunicationStatus(0);
+    fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
   }
   else if ( deaugmentingChildren ) {
@@ -1635,8 +1635,8 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
           cellDescriptionsIndex,fineGridCellElement);
 
     fineGridCellDescription.setType(CellDescription::Erased);
-    fineGridCellDescription.setHelperStatus(0);
-    fineGridCellDescription.setFacewiseHelperStatus(0); // implicit conversion
+    fineGridCellDescription.setCommunicationStatus(0);
+    fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
     getCellDescriptions(cellDescriptionsIndex).erase(
@@ -2322,7 +2322,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
   assertion(cellDescription.getRefinementEvent()==CellDescription::None);
 
   // update helper status // TODO(Dominic): Check if we can work with the reduced values in the neighbour exchange
-  updateHelperStatus(cellDescription);
+  updateCommunicationStatus(cellDescription);
   // marking for augmentation
   updateAugmentationStatus(cellDescription);
 }
@@ -2461,13 +2461,13 @@ void exahype::solvers::ADERDGSolver::prolongateAndPrepareRestriction(
 
   if (
       cellDescription.getType()==CellDescription::Type::Ancestor &&
-      cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
   ) {
     prepareFaceDataOfAncestor(cellDescription);
   }
   else if (
       cellDescription.getType()==CellDescription::Type::Descendant &&
-      cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData &&
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
       isValidCellDescriptionIndex(cellDescription.getParentIndex())
   ) {
     exahype::solvers::Solver::SubcellPosition
@@ -2686,55 +2686,55 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursLimiterStatus(
 }
 
 void
-exahype::solvers::ADERDGSolver::updateHelperStatus(
+exahype::solvers::ADERDGSolver::updateCommunicationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  cellDescription.setHelperStatus(determineHelperStatus(cellDescription));
+  cellDescription.setCommunicationStatus(determineCommunicationStatus(cellDescription));
   assertion1(
       cellDescription.getType()!=CellDescription::Type::Cell ||
-      cellDescription.getHelperStatus()==MaximumHelperStatus,
+      cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
       cellDescription.toString());
 }
 
 int
-exahype::solvers::ADERDGSolver::determineHelperStatus(
+exahype::solvers::ADERDGSolver::determineCommunicationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
   for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
     if (
         !cellDescription.getNeighbourMergePerformed(i) ||
         !cellDescription.getIsInside(i)
     ) {
-      cellDescription.setFacewiseHelperStatus(i,0);
+      cellDescription.setFacewiseCommunicationStatus(i,0);
     }
   }
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    return MaximumHelperStatus;
+    return MaximumCommunicationStatus;
   }
   #ifdef Parallel
   else if (cellDescription.getHasToHoldDataForMasterWorkerCommunication()) {
-    return MinimumHelperStatusForAllocatingBoundaryData;
+    return MinimumCommunicationStatusForNeighbourCommunication;
   }
   #endif
   else {
     return std::max(
-        0, tarch::la::max(cellDescription.getFacewiseHelperStatus()) - 1
+        0, tarch::la::max(cellDescription.getFacewiseCommunicationStatus()) - 1
     );
   }
 }
 
-void exahype::solvers::ADERDGSolver::mergeWithHelperStatus(
+void exahype::solvers::ADERDGSolver::mergeWithCommunicationStatus(
     CellDescription& cellDescription,
     const int faceIndex,
-    const int otherHelperStatus) const {
-  assertion3(cellDescription.getHelperStatus()<=MaximumHelperStatus,
-             cellDescription.getHelperStatus(),otherHelperStatus,
-             cellDescription.getHelperStatus());
-  cellDescription.setFacewiseHelperStatus(
-      faceIndex, std::max( cellDescription.getHelperStatus(), otherHelperStatus )
+    const int otherCommunicationStatus) const {
+  assertion3(cellDescription.getCommunicationStatus()<=MaximumCommunicationStatus,
+             cellDescription.getCommunicationStatus(),otherCommunicationStatus,
+             cellDescription.getCommunicationStatus());
+  cellDescription.setFacewiseCommunicationStatus(
+      faceIndex, std::max( cellDescription.getCommunicationStatus(), otherCommunicationStatus )
   );
 }
 
-void exahype::solvers::ADERDGSolver::mergeNeighboursHelperStatus(
+void exahype::solvers::ADERDGSolver::mergeNeighboursCommunicationStatus(
     const int                                 cellDescriptionsIndex1,
     const int                                 element1,
     const int                                 cellDescriptionsIndex2,
@@ -2751,11 +2751,11 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursHelperStatus(
   const int faceIndex1 = 2*direction+orientation1;
   const int faceIndex2 = 2*direction+orientation2;
 
-  const int helperStatus1 = cellDescription1.getHelperStatus(); // TODO(Dominic): Add to docu: Is merged multiple times; no counters
-  const int helperStatus2 = cellDescription2.getHelperStatus();
+  const int communicationStatus1 = cellDescription1.getCommunicationStatus(); // TODO(Dominic): Add to docu: Is merged multiple times; no counters
+  const int communicationStatus2 = cellDescription2.getCommunicationStatus();
 
-  mergeWithHelperStatus(cellDescription1,faceIndex1,helperStatus2);
-  mergeWithHelperStatus(cellDescription2,faceIndex2,helperStatus1);
+  mergeWithCommunicationStatus(cellDescription1,faceIndex1,communicationStatus2);
+  mergeWithCommunicationStatus(cellDescription2,faceIndex2,communicationStatus1);
 }
 
 void
@@ -2832,7 +2832,7 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     const int                                 element2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  mergeNeighboursHelperStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursCommunicationStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
   mergeNeighboursAugmentationStatus(cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
   mergeNeighboursLimiterStatus     (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
 }
@@ -3187,7 +3187,7 @@ exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
         getCellDescription(cellDescriptionsIndex,element);
     metadata.push_back(static_cast<int>(cellDescription.getType()));
     metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
-    metadata.push_back(cellDescription.getHelperStatus());
+    metadata.push_back(cellDescription.getCommunicationStatus());
     metadata.push_back(cellDescription.getLimiterStatus());
     metadata.push_back(
         (cellDescription.getHasToHoldDataForMasterWorkerCommunication()) ? 1 : 0 );
@@ -3206,7 +3206,7 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
   if (cellDescription.getType()==CellDescription::Type::Descendant) {
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren() ||
-        cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData);
+        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     ensureNecessaryMemoryIsAllocated(cellDescription);
   }
@@ -3251,7 +3251,7 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
     if (subcellPosition.parentElement!=NotFound) {
       cellDescriptionRequiresVerticalCommunication = true;
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
-      cellDescription.setHelperStatus(MinimumHelperStatusForAllocatingBoundaryData);
+      cellDescription.setCommunicationStatus(MinimumCommunicationStatusForNeighbourCommunication);
 
       ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
       ensureNecessaryMemoryIsAllocated(cellDescription);
@@ -3409,7 +3409,7 @@ exahype::solvers::ADERDGSolver::appendNeighbourCommunicationMetadata(
 
     metadata.push_back(static_cast<int>(cellDescription.getType()));
     metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
-    metadata.push_back(cellDescription.getHelperStatus());
+    metadata.push_back(cellDescription.getCommunicationStatus());
     metadata.push_back(cellDescription.getLimiterStatus());
   } else {
     for (int i = 0; i < exahype::NeighbourCommunicationMetadataPerSolver; ++i) {
@@ -3431,15 +3431,15 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
 
     const int neighbourAugmentationStatus =
         neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus];
-    const int neighbourHelperStatus       =
-        neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ];
+    const int neighbourCommunicationStatus       =
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus      ];
     const int neighbourLimiterStatus      =
         neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ];
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
     mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
-    mergeWithHelperStatus      (cellDescription,faceIndex,neighbourHelperStatus);
+    mergeWithCommunicationStatus      (cellDescription,faceIndex,neighbourCommunicationStatus);
     mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
   }
 }
@@ -3459,7 +3459,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
   const int faceIndex    = 2*direction+orientation;
 
   CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-  if (holdsFaceData(cellDescription)) {
+  if ( holdsFaceData(cellDescription) ) {
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 

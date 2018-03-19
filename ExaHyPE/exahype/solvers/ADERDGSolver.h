@@ -51,12 +51,12 @@ public:
    * This value is assigned to cell descriptions
    * of type Cell.
    */
-  static int MaximumHelperStatus;
+  static int MaximumCommunicationStatus;
   /**
    * The minimum helper status a cell description
    * must have for it allocating boundary data.
    */
-  static int MinimumHelperStatusForAllocatingBoundaryData;
+  static int MinimumCommunicationStatusForNeighbourCommunication;
 
   /**
    * The maximum augmentation status.
@@ -822,12 +822,12 @@ public:
    */
   static void eraseCellDescriptions(const int cellDescriptionsIndex);
 
-  void updateHelperStatus(
+  void updateCommunicationStatus(
         exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
   /**
    * TODO(Dominic): Add docu.
    */
-  int determineHelperStatus(
+  int determineCommunicationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
 
   /**
@@ -1827,12 +1827,12 @@ public:
   // NEIGHBOUR
   ///////////////////////////////////
   // helper status
-  void mergeWithHelperStatus(
+  void mergeWithCommunicationStatus(
       CellDescription& cellDescription,
       const int direction,
-      const int otherHelperStatus) const;
+      const int otherCommunicationStatus) const;
 
-  void mergeNeighboursHelperStatus(
+  void mergeNeighboursCommunicationStatus(
       const int                                 cellDescriptionsIndex1,
       const int                                 element1,
       const int                                 cellDescriptionsIndex2,
@@ -1954,7 +1954,7 @@ public:
   /** \copydoc Solver::mergeWithNeighbourMetadata
    *
    * Appends cell type,limiterStatus,augmentationStatus,
-   * and helperStatus to \p metadata.
+   * and communicationStatus to \p metadata.
    */
   void appendNeighbourCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
@@ -1967,7 +1967,7 @@ public:
    *
    * Merges with a metadata message received from
    * a neighbour. The message contains the neighbours
-   * cell type,limiterStatus,augmentationStatus,helperStatus.
+   * cell type,limiterStatus,augmentationStatus,communicationStatus.
    *
    * <h2>LiimitingADERDGSolver</h2>
    * This routine also merges the cell's limiter status
