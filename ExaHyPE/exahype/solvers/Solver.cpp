@@ -801,7 +801,7 @@ void exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
    MetadataHeap::HeapEntries metadata(0);
   const unsigned int length =
       exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
-  #if defined(UsePeanosSymmetricBoundaryExchanger)
+  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
   metadata.reserve(length);
   metadata.assign(length, InvalidMetadataEntry);
   assertion(metadata.size()==length);

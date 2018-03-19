@@ -172,7 +172,7 @@ namespace exahype {
       peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
       peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char> >
   >     MetadataHeap;
-  #elif defined(UsePeanosSymmetricBoundaryExchanger)
+  #elif defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,

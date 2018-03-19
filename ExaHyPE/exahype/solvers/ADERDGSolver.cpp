@@ -3509,7 +3509,7 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
   // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
   // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
   // TODO(WORKAROUND)
-  #if defined(UsePeanosSymmetricBoundaryExchanger)
+  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
   const int dofPerFace  = getBndFluxSize();
   const int dataPerFace = getBndFaceSize();
   DataHeap::getInstance().sendData(
@@ -3523,7 +3523,7 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
     DataHeap::getInstance().sendData(
         exahype::EmptyDataHeapMessage, toRank, x, level,
         peano::heap::MessageType::NeighbourCommunication);
-  #endif
+//  #endif
 }
 
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
