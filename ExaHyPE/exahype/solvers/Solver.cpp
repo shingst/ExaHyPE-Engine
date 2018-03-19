@@ -797,7 +797,15 @@ void exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
     const int                                   toRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level) {
-  MetadataHeap::HeapEntries metadata(0);
+  // We currently do not send an empty metadata message
+   MetadataHeap::HeapEntries metadata(0);
+  const unsigned int length =
+      exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
+  #if defined(UsePeanosSymmetricBoundaryExchanger)
+  metadata.reserve(length);
+  metadata.assign(length, InvalidMetadataEntry);
+  assertion(metadata.size()==length);
+  #endif
 
   MetadataHeap::getInstance().sendData(
       metadata,toRank,x,level,
