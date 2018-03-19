@@ -117,6 +117,11 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
 {
   assertion(_solver->getNumberOfParameters() == 0);
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
+
+  // TODO(WORKAROUND)
+  const int numberOfObservables = _solver->getDMPObservables();
+  _invalidObservables.resize(numberOfObservables);
+  std::fill_n(_invalidObservables.data(),_invalidObservables.size(),-1);
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateNextMeshUpdateRequest(const bool& meshUpdateRequest)  {
@@ -1129,8 +1134,8 @@ void exahype::solvers::LimitingADERDGSolver::deallocateLimiterPatch(
   _limiter->ensureNoUnnecessaryMemoryIsAllocated(limiterPatch);
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
-  LimiterHeap::getInstance().getData(cellDescriptionsIndex).erase(
-      LimiterHeap::getInstance().getData(cellDescriptionsIndex).begin()+limiterElement);
+  FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex).erase(
+      FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex).begin()+limiterElement);
   lock.free();
 }
 
@@ -1719,10 +1724,16 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
           observablesMax, numberOfObservables, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
     } else {
-      for (int sends = 0; sends < 2; ++sends) {
+      for(int sends=0; sends<2; ++sends) {
+        #if defined(UsePeanosSymmetricBoundaryExchanger)
         DataHeap::getInstance().sendData(
-            EmptyDataHeapMessage, toRank, x, level,
+            _invalidObservables, toRank, x, level,
             peano::heap::MessageType::NeighbourCommunication);
+        #else
+        DataHeap::getInstance().sendData(
+            exahype::EmptyDataHeapMessage, toRank, x, level,
+            peano::heap::MessageType::NeighbourCommunication);
+        #endif
       }
     }
   }
@@ -1781,11 +1792,18 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
     const int                                     level) const {
   // send an empty minAndMax message
   const int numberOfObservables = _solver->getDMPObservables();
-  if (numberOfObservables) {
-    for(int sends=0; sends<2; ++sends)
+  if (numberOfObservables > 0) {
+    for(int sends=0; sends<2; ++sends) {
+      #if defined(UsePeanosSymmetricBoundaryExchanger)
+      DataHeap::getInstance().sendData(
+          _invalidObservables, toRank, x, level,
+          peano::heap::MessageType::NeighbourCommunication);
+      #else
       DataHeap::getInstance().sendData(
           exahype::EmptyDataHeapMessage, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
+      #endif
+    }
   }
 
   _solver->sendEmptyDataToNeighbour(toRank,x,level);

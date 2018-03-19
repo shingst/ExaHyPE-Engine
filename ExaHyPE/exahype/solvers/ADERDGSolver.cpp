@@ -486,6 +486,14 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   for (const char* tag : deepProfilingTags) {
     _profiler->registerTag(tag); //TODO JMG only if using deepProfiling
   }
+
+  // TODO(WORKAROUND)
+  const int dofPerFace  = getBndFluxSize();
+  const int dataPerFace = getBndFaceSize();
+  _invalidExtrapolatedPredictor.resize(dataPerFace);
+  _invalidFluctuations.resize(dofPerFace);
+  std::fill_n(_invalidExtrapolatedPredictor.data(),_invalidExtrapolatedPredictor.size(),-1);
+  std::fill_n(_invalidFluctuations.data(),_invalidFluctuations.size(),-1);
 }
 
 int exahype::solvers::ADERDGSolver::getUnknownsPerFace() const {
@@ -3498,10 +3506,24 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
     const int                                     toRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
+  // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
+  // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
+  // TODO(WORKAROUND)
+  #if defined(UsePeanosSymmetricBoundaryExchanger)
+  const int dofPerFace  = getBndFluxSize();
+  const int dataPerFace = getBndFaceSize();
+  DataHeap::getInstance().sendData(
+      _invalidExtrapolatedPredictor.data(), dataPerFace, toRank, x, level,
+      peano::heap::MessageType::NeighbourCommunication);
+  DataHeap::getInstance().sendData(
+      _invalidFluctuations.data(), dofPerFace, toRank, x, level,
+      peano::heap::MessageType::NeighbourCommunication);
+  #else
   for(int sends=0; sends<DataMessagesPerNeighbourCommunication; ++sends)
     DataHeap::getInstance().sendData(
         exahype::EmptyDataHeapMessage, toRank, x, level,
         peano::heap::MessageType::NeighbourCommunication);
+  #endif
 }
 
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.

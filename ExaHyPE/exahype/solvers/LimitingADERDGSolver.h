@@ -120,18 +120,20 @@ protected:
 
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
-  typedef peano::heap::RLEHeap<SolverPatch> SolverHeap;
 
   typedef exahype::records::FiniteVolumesCellDescription LimiterPatch;
-  typedef peano::heap::RLEHeap<LimiterPatch> LimiterHeap;
-
 
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
 
-  
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  DataHeap::HeapEntries _invalidObservables;
 
   /**
    * A flag indicating that the limiter domain has changed.
