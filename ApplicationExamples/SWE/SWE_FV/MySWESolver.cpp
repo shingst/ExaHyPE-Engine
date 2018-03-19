@@ -1,5 +1,5 @@
 #include "MySWESolver.h"
-#include "../InitialData.h"
+#include "InitialData.h"
 #include "MySWESolver_Variables.h"
 
 const double grav = 9.81;
@@ -16,31 +16,7 @@ void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const
     // Number of variables    = 4 + #parameters
 
     if (tarch::la::equals(t, 0.0)) {
-//        MySWESolver::Variables vars(Q);
-//
-//        if (x[0] <= 5){
-//            vars.h() = x[0];
-//        }
-//        else {
-//            vars.h() = 10 - x[0];
-//        }
-//        vars.hu() = 0.0;
-//        vars.hv() = 0.0;
-//        vars.b() = 0.0;
-
-        MySWESolver::Variables vars(Q);
-
-        if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
-            vars.h() = 4.0;
-            vars.hu()= 0.0;
-            vars.hv()= 0.0;
-            vars.b() = 0;
-        } else {
-            vars.h() = 3.0;
-            vars.hu()= 0.0;
-            vars.hv()= 0.0;
-            vars.b() = 0.0;
-        }
+        initialData(x, Q);
     }
 }
 
