@@ -22,7 +22,7 @@ exahype-project  SWE
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/SWE/SWE_FV
   architecture const      = noarch
-  log-file                = mylogfile.log
+  //log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 2
@@ -39,7 +39,7 @@ exahype-project  SWE
   shared-memory
       identifier = autotuning
       configure = {}
-      cores = 8
+      cores = 2
       properties-file = sharedmemory.properties
   end shared-memory
 
@@ -55,7 +55,7 @@ exahype-project  SWE
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
-      time            = 0.0
+      time            = 10.0
       repeat          = 0.1
       output          = ./conserved
     end plot
