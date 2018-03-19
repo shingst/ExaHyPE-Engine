@@ -3523,7 +3523,7 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
     DataHeap::getInstance().sendData(
         exahype::EmptyDataHeapMessage, toRank, x, level,
         peano::heap::MessageType::NeighbourCommunication);
-//  #endif
+  #endif
 }
 
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
