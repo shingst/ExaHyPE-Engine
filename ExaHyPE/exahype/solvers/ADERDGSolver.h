@@ -833,12 +833,6 @@ public:
   /**
    * TODO(Dominic): Add docu.
    */
-  void overwriteFacewiseHelperStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
   void updateAugmentationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
 
@@ -846,12 +840,6 @@ public:
    * TODO(Dominic): Add docu.
    */
   int determineAugmentationStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void overwriteFacewiseAugmentationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
 
   /**

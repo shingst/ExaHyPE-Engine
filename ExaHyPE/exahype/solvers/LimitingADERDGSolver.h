@@ -1022,7 +1022,7 @@ public:
    *
    * \note Thread-safe.
    */
-   void deallocateLimiterPatchOnHelperCell(
+   void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const int cellDescriptionsIndex,
        const int solverElement) const;
 
