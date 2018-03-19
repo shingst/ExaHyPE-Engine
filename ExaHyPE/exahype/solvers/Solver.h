@@ -170,7 +170,7 @@ namespace exahype {
   typedef peano::heap::CharHeap<
       peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
       peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-      peano::heap::AggregationBoundaryDataExchanger< char, true, peano::heap::SendReceiveTask<char> >
+      peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char> >
   >     MetadataHeap;
   #else
   // @todo Dominic: Stell mal auf Symmetric um statt RLE. Der Exchanger erwartet, dass aller Austausch strengst symmetrisch ist. Dann crashed aber ExaHyPE
