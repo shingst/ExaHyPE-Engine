@@ -28,7 +28,7 @@ namespace solvers {
 
 tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solvers::LimitingADERDGSolver");
 
-int exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell() {
+int exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell() {
   int result = 0;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if ( solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG ) {

@@ -528,7 +528,7 @@ public:
    *
    * The minimum possible return value is three.
    */
-  static int getMaxMinimumHelperStatusForTroubledCell();
+  static int getMaxMinimumLimiterStatusForTroubledCell();
 
   /*
    * Check if a solver requested limiter status spreading.

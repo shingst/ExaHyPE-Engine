@@ -723,7 +723,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
       std::max (
           exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 4,
               // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
-          exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell()+1);
+          exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell()+1);
   if (extraIterations>0) {
     logInfo("createGrid()", "more status spreading.");
   }
@@ -1099,7 +1099,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
     repository.switchToLimiterStatusSpreading();
     repository.iterate(
-        exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell(),false);
+        exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
 
     if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
       logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");
