@@ -76,7 +76,7 @@ exahype-project GPR
     dmp-difference-scaling         = 1e-4 
     steps-till-cured           = 5
     // helper-layers              = 2
-
+/*
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 17
       time      = 0.0
@@ -97,12 +97,20 @@ exahype-project GPR
       repeat    = 5e-3
       output    = ./vtk-output-lim/dg
     end plot
-
+*/
      plot user::defined ErrorWriter
        variables const = 17
        time            = 0.0
        repeat          = 5e-3
        output          = ./output/errors
      end plot
+
+     plot user::defined TecplotWriter
+       variables const = 17
+       time            = 0.0
+       repeat          = 0.05
+       output          = ./output/tecplot
+     end plot
+
   end solver
 end exahype-project

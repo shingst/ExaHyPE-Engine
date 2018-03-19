@@ -14,6 +14,8 @@ void pdevarname_(char* MyNameOUT, int* ind);
 void registerinitialdata_(const char* const id_name, int* id_name_len);
 void getnumericalsolution_(double* V,double* Q);
 void getexactsolution_(double* V,double* pos,double* timeStamp);
+
+void inittecplot_(const int* N_in,const int* M_in);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

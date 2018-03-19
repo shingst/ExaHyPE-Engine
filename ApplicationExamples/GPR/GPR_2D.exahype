@@ -76,7 +76,7 @@ exahype-project GPR
     dmp-difference-scaling         = 1e-4 
     steps-till-cured           = 5
     // helper-layers              = 2
-
+/*
     plot vtu::Cartesian::vertices::ascii ConservedWriter
       variables const = 17
       time      = 0.0
@@ -90,7 +90,7 @@ exahype-project GPR
       repeat    = 0.01
       output    = ./vtk-output/primitives
     end plot
-/*
+
     plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
       time = 0.0
@@ -105,11 +105,11 @@ exahype-project GPR
        output          = ./output/errors
      end plot
 
-    plot vtu::Cartesian::vertices::limited::ascii Plotter
-      variables const = 17
-      time      = 0.0
-      repeat    = 1e-2
-      output    = ./vtk-output-lim/dg
-    end plot
+     plot user::defined TecplotWriter
+       variables const = 17
+       time            = 0.0
+       repeat          = 0.05
+       output          = ./output/tecplot
+     end plot
   end solver
 end exahype-project

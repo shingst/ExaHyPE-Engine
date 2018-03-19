@@ -20,6 +20,7 @@
 #elif defined(Dim2)
     INTEGER, PARAMETER             	:: nDim = 2                   ! The number of space dimensions
 #endif
+	INTEGER, PARAMETER             	:: nAux = 0
     INTEGER, PARAMETER             	:: nVar = 17                           ! The number of variables of the PDE system 
 	REAL, PARAMETER 				:: rho0 = 1.0
 	REAL, PARAMETER 				:: cs = 5.0

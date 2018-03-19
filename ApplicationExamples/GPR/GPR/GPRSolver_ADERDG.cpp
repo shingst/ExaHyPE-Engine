@@ -6,6 +6,7 @@
 #include "PDE.h"
 #include "InitialData.h"
 #include "C2P-GPR.h"
+#include "TECPLOTinterface.h"
 
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
@@ -16,6 +17,8 @@ tarch::logging::Log GPR::GPRSolver_ADERDG::_log( "GPR::GPRSolver_ADERDG" );
 
 void GPR::GPRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
+    const int order = GPR::AbstractGPRSolver_ADERDG::Order;
+  inittecplot_(&order,&order);
 }
 
 void GPR::GPRSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
