@@ -1240,7 +1240,6 @@ void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
   // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
   // TODO(WORKAROUND)
   #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
-  const int dataPerFace = getBndFaceSize();
   DataHeap::getInstance().sendData(
       _invalidExtrapolatedSolution, toRank, x, level,
       peano::heap::MessageType::NeighbourCommunication);
