@@ -87,8 +87,6 @@ exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
   }
-
-  CompressedDataHeap::getInstance().setName("compressed-data");
 }
 
 int exahype::solvers::FiniteVolumesSolver::getDataPerPatch() const {

@@ -546,6 +546,8 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 void exahype::runners::Runner::initHeaps() {
   exahype::DataHeap::getInstance().setName("DataHeap");
   logInfo("initHeaps()","initialised DataHeap="<<exahype::DataHeap::getInstance().toString());
+  exahype::CompressedDataHeap::getInstance().setName("compressed-data");
+  logInfo("initHeaps()","initialised CompressedDataHeap::Heap="<<exahype::CompressedDataHeap::getInstance().toString());
   exahype::solvers::ADERDGSolver::Heap::getInstance().setName("ADERDGCellDescriptionHeap");
   logInfo("initHeaps()","initialised ADERDGSolver::Heap="<<exahype::solvers::ADERDGSolver::Heap::getInstance().toString());
   exahype::solvers::FiniteVolumesSolver::Heap::getInstance().setName("FiniteVolumesCellDescriptionHeap");

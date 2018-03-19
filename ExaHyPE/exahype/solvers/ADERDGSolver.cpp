@@ -82,9 +82,9 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSem
 
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
   const int cellDescriptionsIndex,
-  const int                                      solverNumber,
+  const int                                     solverNumber,
   const CellDescription::Type cellType,
-  const CellDescription::RefinementEvent refinementEvent,
+  const CellDescription::RefinementEvent        refinementEvent,
   const int                                     level,
   const int                                     parentIndex,
   const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
@@ -486,8 +486,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   for (const char* tag : deepProfilingTags) {
     _profiler->registerTag(tag); //TODO JMG only if using deepProfiling
   }
-
-  CompressedDataHeap::getInstance().setName("compressed-data");
 }
 
 int exahype::solvers::ADERDGSolver::getUnknownsPerFace() const {
