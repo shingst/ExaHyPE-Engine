@@ -32,50 +32,11 @@ tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG")
 Euler::EulerSolver_ADERDG::Reference Euler::EulerSolver_ADERDG::ReferenceChoice = Euler::EulerSolver_ADERDG::Reference::EntropyWave;
 
 void Euler::EulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  if (constants.isValueValidString("reference")) {
-    std::string reference = constants.getValueAsString("reference");
-    
-    if (reference.compare("entropywave")==0) {
-      ReferenceChoice = Reference::EntropyWave;
-    }
-    else if (reference.compare("rarefactionwave")==0) {
-      ReferenceChoice = Reference::RarefactionWave;
-    }
-    else if (reference.compare("sod")==0){
-      ReferenceChoice = Reference::SodShockTube;
-    }
-    else if (reference.compare("explosion")==0){
-      ReferenceChoice = Reference::SphericalExplosion;
-    }
-    else {
-      logError("init(...)","do not recognise value '"<<reference<<"' for constant 'reference'. Use either 'entropywave', "
-              "'rarefactionwave', 'sod', or 'explosion'.");
-      std::abort();
-    }
-    logInfo("init(...)","use initial condition '" << reference << "'.");
-  } else {
-    logInfo("init(...)","use initial condition 'entropyWave' (default value).");
-  }
+ 
 }
 
 void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** F) {
-  #ifdef SymbolicVariables
-  ReadOnlyVariables vars(Q);
-  Fluxes f(F);
-
-  tarch::la::Matrix<3,3,double> I;
-  I = 1, 0, 0,
-      0, 1, 0,
-      0, 0, 1;
-
-  const double gamma = 1.4;
-  const double irho = 1./vars.rho();
-  const double p = (gamma-1) * (vars.E() - 0.5 * irho * vars.j()*vars.j() );
-
-  f.rho ( vars.j()                                 );
-  f.j   ( irho * outerDot(vars.j(),vars.j()) + p*I );
-  f.E   ( irho * (vars.E() + p) * vars.j()         );
-  #else // SymbolicVariables
+  
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -107,27 +68,12 @@ void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** F) {
   F[2][3] = irho*Q[3]*Q[3] + p;
   F[2][4] = irho*(Q[4]+p)*Q[3];
   #endif
-  #endif
 }
 
 void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
     const int direction,
     double* lambda) {
-  #ifdef SymbolicVariables
-  ReadOnlyVariables vars(Q);
-  Variables eigs(lambda);
-
-  const double gamma = 1.4;
-  const double irho = 1./vars.rho();
-  const double p = (gamma-1) * (vars.E() - 0.5 * irho * vars.j()*vars.j() );
-
-  double u_n = Q[direction + 1] * irho;
-  double c   = std::sqrt(gamma * p * irho);
-
-  eigs.rho()=u_n - c;
-  eigs.E()  =u_n + c;
-  eigs.j(u_n,u_n,u_n);
-  #else // SymbolicVariables
+  
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -143,7 +89,7 @@ void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
   std::fill_n(lambda,5,u_n);
   lambda[0] -= c;
   lambda[4] += c;
-  #endif
+
 }
 
 void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, double* Q) {
@@ -311,20 +257,9 @@ void Euler::EulerSolver_ADERDG::rarefactionWave(const double* const x,double t, 
 }
 
 void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t, double* Q) {
-  switch (ReferenceChoice) {
-  case Reference::SodShockTube:
-    sodShockTube(x,t,Q);
-    break;
-  case Reference::EntropyWave:
+
     entropyWave(x,t,Q);
-    break;
-  case Reference::SphericalExplosion:
-    sphericalExplosion(x,t,Q);
-    break;
-  case Reference::RarefactionWave:
-    rarefactionWave(x,t,Q);
-    break;
-  }
+
 }
 
 void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -367,18 +302,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
     const int faceIndex,const int direction,
     const double* const fluxIn,const double* const stateIn,
     double* fluxOut, double* stateOut) {
-  switch (ReferenceChoice) {
-  case Reference::SphericalExplosion:
-  case Reference::RarefactionWave:
-  case Reference::SodShockTube: { // wall boundary conditions
-    std::copy_n(stateIn, NumberOfVariables, stateOut);
-    stateOut[1+direction] =  -stateOut[1+direction];
-    double _F[3][NumberOfVariables]={0.0};
-    double* F[3] = {_F[0], _F[1], _F[2]};
-    flux(stateOut,F);
-    std::copy_n(F[direction], NumberOfVariables, fluxOut);
-  } break;
-  case Reference::EntropyWave: {// Dirichlet conditions
+
     double Q[NumberOfVariables]     = {0.0};
     double _F[3][NumberOfVariables] = {0.0};
     double* F[3] = {_F[0],_F[1],_F[2]};
@@ -395,8 +319,7 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
         fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
       }
     }
-  } break;
-  }
+  
 }
 
 void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
