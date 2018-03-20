@@ -1239,7 +1239,7 @@ void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
   // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
   // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
   // TODO(WORKAROUND)
-  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+  #if defined(UsePeanosSymmetricBoundaryExchanger)
   DataHeap::getInstance().sendData(
       _invalidExtrapolatedSolution, toRank, x, level,
       peano::heap::MessageType::NeighbourCommunication);

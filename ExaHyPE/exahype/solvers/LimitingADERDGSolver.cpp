@@ -1725,7 +1725,7 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
           peano::heap::MessageType::NeighbourCommunication);
     } else {
       for(int sends=0; sends<2; ++sends) {
-        #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+        #if defined(UsePeanosSymmetricBoundaryExchanger)
         DataHeap::getInstance().sendData(
             _invalidObservables, toRank, x, level,
             peano::heap::MessageType::NeighbourCommunication);
@@ -1794,17 +1794,15 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables > 0) {
     for(int sends=0; sends<2; ++sends) {
-/*
       #if defined(UsePeanosSymmetricBoundaryExchanger)
       DataHeap::getInstance().sendData(
           _invalidObservables, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
       #else
-*/
       DataHeap::getInstance().sendData(
           exahype::EmptyDataHeapMessage, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
-//      #endif
+      #endif
     }
   }
 

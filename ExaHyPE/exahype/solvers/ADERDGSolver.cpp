@@ -3522,7 +3522,7 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
   // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
   // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
   // TODO(WORKAROUND)
-  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+  #if defined(UsePeanosSymmetricBoundaryExchanger)
   const int dofPerFace  = getBndFluxSize();
   const int dataPerFace = getBndFaceSize();
   DataHeap::getInstance().sendData(
