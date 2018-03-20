@@ -106,8 +106,12 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  fineGridCell.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  if (coarseGridCell.getCellDescriptionsIndex()==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex) {
+    fineGridCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+  } else {
+    fineGridCell.setCellDescriptionsIndex(
+        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  }
 }
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(

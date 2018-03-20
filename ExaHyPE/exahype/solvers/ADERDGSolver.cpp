@@ -1264,7 +1264,13 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
 
     CellDescription& fineGridCellDescription =
         getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
-    fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
+    fineGridCellDescription.setIsInside(
+        exahype::amr::determineInsideAndOutsideFacesOfChild(
+            fineGridCellDescription.getOffset(),fineGridCellDescription.getSize(),
+            coarseGridCellDescription.getOffset(),
+            fineGridCellDescription.getLevel()-coarseGridCellDescription.getLevel(),
+            coarseGridCellDescription.getIsInside())
+    );
   }
 }
 
@@ -1301,7 +1307,14 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       CellDescription& fineGridCellDescription =
           getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setRefinementEvent(CellDescription::Prolongating);
-      fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
+      fineGridCellDescription.setIsInside(
+          exahype::amr::determineInsideAndOutsideFacesOfChild(
+              fineGridCellDescription.getOffset(),fineGridCellDescription.getSize(),
+              coarseGridCellDescription.getOffset(),
+              fineGridCellDescription.getLevel()-coarseGridCellDescription.getLevel(),
+              coarseGridCellDescription.getIsInside())
+      );
+
     } else {
       CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
       assertion2(fineGridCellDescription.getType()==CellDescription::Type::Descendant,

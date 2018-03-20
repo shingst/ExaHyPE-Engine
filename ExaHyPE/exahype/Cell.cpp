@@ -155,12 +155,14 @@ std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(
     const exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {
   std::bitset<DIMENSIONS_TIMES_TWO> isInside;
+  isInside.reset();
 
   for (int direction=0; direction<DIMENSIONS; direction++) {
     for (int orientation=0; orientation<2; orientation++) {
       const int faceIndex = 2*direction+orientation;
       isInside[faceIndex]=false;
 
+      // Works for a single solver
       dfor2(v) // Loop over vertices.
       if (v(direction) == orientation) {
         isInside[faceIndex] =
@@ -191,7 +193,7 @@ bool exahype::Cell::isAtRemoteBoundary(
     exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {
   bool result = false;
-#ifdef Parallel
+  #ifdef Parallel
   tarch::la::Vector<DIMENSIONS,int> center(1);
   dfor2(v) // Loop over vertices.
     if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
@@ -203,7 +205,7 @@ bool exahype::Cell::isAtRemoteBoundary(
       enddforx //a
     }
   enddforx // v
-#endif
+  #endif
   return result;
 }
 

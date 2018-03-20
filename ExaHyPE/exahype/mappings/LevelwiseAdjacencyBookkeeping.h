@@ -124,7 +124,12 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
     );
 
     /**
-     * Initialises the fine grid cell's heap index as invalid index.
+     * Initialises the fine grid cell's heap index as invalid index if the
+     * parent does not have boundary indicator as index.
+     * If this is case, then the fine grid cell inherits this index.
+     *
+     * We try to circumvent this way that Peano introduces inside fine grid cells
+     * which do have a coarse grid parent which is outside.
      */
     void createCell(
       exahype::Cell&                 fineGridCell,
