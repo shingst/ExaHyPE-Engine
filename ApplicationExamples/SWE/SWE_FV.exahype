@@ -37,9 +37,9 @@ exahype-project  SWE
   end computational-domain
 
   shared-memory
-      identifier = autotuning
-      configure = {}
-      cores = 2
+      identifier = dummy
+      configure = {background-tasks:4}
+      cores = 4
       properties-file = sharedmemory.properties
   end shared-memory
 
@@ -55,7 +55,7 @@ exahype-project  SWE
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
-      time            = 10.0
+      time            = 0.0
       repeat          = 0.1
       output          = ./conserved
     end plot

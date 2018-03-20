@@ -49,7 +49,6 @@ void SWE::MySWESolver::boundaryValues(
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
-  stateOutside[3] = stateInside[3];
 
     //for WALL BCs
     stateOutside[d+1]=-stateInside[d+1];
