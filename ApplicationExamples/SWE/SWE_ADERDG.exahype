@@ -53,7 +53,6 @@ exahype-project  SWE
       time            = 0.0
       repeat          = 0.1
       output          = ./conserved
-      select          = x:0.0,y:0.0
     end plot
   end solver
 

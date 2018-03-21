@@ -54,7 +54,7 @@ void SWE::RareRareProblem(const double * const x, double* Q){
 void SWE::GaussFunctionProblem(const double* const x, double* Q){
   MySWESolver::Variables vars(Q);
 
-  vars.h() = exp(-pow(x[0] - 5, 2));
+  vars.h() = exp(-pow(x[0] - 5, 2)) + 1;
   vars.hu() = 0.0;
   vars.hv() = 0.0;
   vars.b() = 0.0;

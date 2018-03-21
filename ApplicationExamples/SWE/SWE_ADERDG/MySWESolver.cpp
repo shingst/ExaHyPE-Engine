@@ -42,12 +42,11 @@ void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const
     stateOut[0] = stateIn[0];
     stateOut[1] = stateIn[1];
     stateOut[2] = stateIn[2];
-    stateOut[3] = stateIn[3];
+
 
     fluxOut[0] = fluxIn[0];
     fluxOut[1] = fluxIn[1];
     fluxOut[2] = fluxIn[2];
-    fluxOut[3] = fluxIn[3];
 }
 
 exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
@@ -69,12 +68,12 @@ void SWE::MySWESolver::eigenvalues(const double* const Q,const int d,double* lam
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  const double c= std::sqrt(grav*vars.h());
+  const double c = std::sqrt(grav*vars.h());
   const double ih = 1./vars.h();
-  double u_n = Q[d + 1] *ih;
+  double u_n = Q[d + 1] * ih;
 
-  eigs.h() = u_n + c ;
-  eigs.hu()= u_n - c;
+  eigs.h() = u_n + c;
+  eigs.hu() = u_n - c;
   eigs.hv() = u_n;
 }
 
@@ -108,7 +107,6 @@ void  SWE::MySWESolver::nonConservativeProduct(const double* const Q,const doubl
     BgradQ[0] = 0.0;
     BgradQ[1] = grav*Q[0]*gradQ[idx_gradQ(0,3)];
     BgradQ[2] = grav*Q[0]*gradQ[idx_gradQ(1,3)];
-    BgradQ[3] = 0.0;
 }
 
 
