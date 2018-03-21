@@ -174,11 +174,11 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 
 
 
-void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& inverseDx) {
+void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {%- if enableProfiler %}
   _profiler->start("surfaceIntegral");
 {%- endif %}
-  {{optNamespace}}::surfaceIntegral( lduh, lFhbnd, inverseDx );
+  {{optNamespace}}::surfaceIntegral( lduh, lFhbnd, tarch::la::invertEntries(dx) );
 {%- if countFlops  %}
   flops += {{optNamespace}}::surfaceIntegral_flops;
 {%- endif %}
@@ -252,11 +252,11 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
 
 
 
-double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx) {
+double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {%- if enableProfiler %}
   _profiler->start("stableTimeStepSize");
 {%- endif %}
-  double d = {{optNamespace}}::stableTimeStepSize(*static_cast<{{solver}}*>(this), luh, inverseDx );
+  double d = {{optNamespace}}::stableTimeStepSize(*static_cast<{{solver}}*>(this), luh, tarch::la::invertEntries(dx) );
 {%- if countFlops  %}
   flops += {{optNamespace}}::stableTimeStepSize_flops + {{optNamespace}}::stableTimeStepSize_factor * eigenvaluesFlops;
 {%- endif %}

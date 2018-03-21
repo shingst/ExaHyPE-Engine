@@ -2074,13 +2074,7 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
     const double* luh = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
 
     validateCellDescriptionData(cellDescription,false,false,"computeTimeStepSizes(...)");
-    #ifdef OPT_KERNELS
-    double admissibleTimeStepSize =
-        stableTimeStepSize(luh,tarch::la::invertEntries(cellDescription.getSize()));
-    #else
-    double admissibleTimeStepSize =
-        stableTimeStepSize(luh,cellDescription.getSize());
-    #endif
+    double admissibleTimeStepSize = stableTimeStepSize(luh,cellDescription.getSize());
     assertion2(admissibleTimeStepSize>0,admissibleTimeStepSize,cellDescription.toString());
     assertion3(admissibleTimeStepSize<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),admissibleTimeStepSize,cellDescription.toString());
     assertion2(std::isfinite(admissibleTimeStepSize),admissibleTimeStepSize,cellDescription.toString());
@@ -2309,11 +2303,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(fluctuations[i]),cellDescription.toString(),"updateSolution",i);
     } 
     #endif
-    #ifdef OPT_KERNELS
     surfaceIntegral(update,fluctuations,tarch::la::invertEntries(cellDescription.getSize()));
-    #else
-    surfaceIntegral(update,fluctuations,cellDescription.getSize());
-    #endif
 
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
