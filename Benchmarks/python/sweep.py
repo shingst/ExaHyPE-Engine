@@ -760,8 +760,8 @@ typical workflow:
     elif subprogram == "parseAdapters":
         sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName)
     elif subprogram == "parseTotalTimes":
-        sweep_analysis.parseTotalTimes(resultsFolderPath,projectName)
+        sweep_analysis.parseSummedTimes(resultsFolderPath,projectName,False)
     elif subprogram == "parseTimeStepTimes":
-        sweep_analysis.parseTimeStepTimes(resultsFolderPath,projectName)
+        sweep_analysis.parseSummedTimes(resultsFolderPath,projectName,True)
     elif subprogram == "parseMetrics":
         sweep_analysis.parseMetrics(resultsFolderPath,projectName)

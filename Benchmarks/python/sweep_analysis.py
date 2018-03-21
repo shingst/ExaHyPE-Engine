@@ -16,6 +16,8 @@ import os
 import re
 import codecs
 
+import statistics
+
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
 
 metrics =  [
@@ -200,92 +202,8 @@ def linesAreIdenticalUpToIndex(line,previousLine,index):
     for column in range(0,index):
         result = result and line[column]==previousLine[column]
     return result
-    
-def parseTotalTimes(resultsFolderPath,projectName):
-    """
-    Read in the sorted adapter times table, sum up
-    all the total cpu and user time per run configuration,
-    and, per parameter tuple, extract the minimum over all runs 
-    into another table.
-    """
-    adaptersTablePath   = resultsFolderPath+"/"+projectName+'.csv'
-    totalTimesTablePath = resultsFolderPath+"/"+projectName+'-total-times.csv'
-    try:
-        print ("reading table "+adaptersTablePath+"")
-        adaptersTableFile  = open(adaptersTablePath, 'r')
-        header             = next(adaptersTableFile).strip().split(';')
-        csvreader          = csv.reader(adaptersTableFile,delimiter=";")
-        
-        runColumn      = header.index("run")
-        adapterColumn  = header.index("adapter")
-        cpuTimeColumn  = header.index("total_cputime")
-        userTimeColumn = header.index("total_usertime")
-        
-        if runColumn >= adapterColumn:
-            print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
-        
-        with open(totalTimesTablePath, 'w') as totalTimesTableFile:
-            csvwriter = csv.writer(totalTimesTableFile, delimiter=";")
-            # write header
-            row = header[0:runColumn]
-            row.append(header[cpuTimeColumn])
-            row.append(header[userTimeColumn])
-            csvwriter.writerow(row)
- 
-            # init
-            summedCPUTime     = 0.0
-            summedUserTime    = 0.0
-            minSummedCPUTime  = 10.0**20
-            minSummedUserTime = 10.0**20
-            previousLine      = None
-            
-            # write intermediate rows
-            for line in csvreader:
-                if previousLine==None:
-                    previousLine=line
-                  
-                if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
-                    summedCPUTime  += float(line[cpuTimeColumn])
-                    summedUserTime += float(line[userTimeColumn])
-                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
-                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-                    minSummedUserTime = min(minSummedUserTime, summedUserTime) 
-                    summedCPUTime     = 0.0
-                    summedUserTime    = 0.0
-                else:
-                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-                    minSummedUserTime = min(minSummedUserTime, summedUserTime) 
-                    summedCPUTime     = 0.0
-                    summedUserTime    = 0.0
-                    
-                    row = previousLine[0:runColumn]
-                    row.append(str(minSummedCPUTime))
-                    row.append(str(minSummedUserTime))
-                    csvwriter.writerow(row)
-                    
-                    minSummedCPUTime  = 10.0**20
-                    minSummedUserTime = 10.0**20
-                
-                previousLine  = line
-            
-            # write last row
-            minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-            minSummedUserTime = min(minSummedUserTime, summedUserTime) 
-            summedCPUTime     = 0.0
-            summedUserTime    = 0.0
-            
-            row = previousLine[0:runColumn]
-            row.append(str(minSummedCPUTime))
-            row.append(str(minSummedUserTime))
-            csvwriter.writerow(row)
-            
-            print("created table:")
-            print(totalTimesTablePath)
-    except IOError as err:
-        print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
 
-
-def parseTimeStepTimes(resultsFolderPath,projectName):
+def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
     """
     Read in the sorted adapter times table and 
     extract the time per time step for the fused
@@ -316,15 +234,21 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
             csvwriter = csv.writer(timeStepTimesTableFile, delimiter=";")
             # write header
             row = header[0:runColumn]
-            row.append(header[cpuTimeColumn])
-            row.append(header[userTimeColumn])
+            row.append("runs")
+            row.append("cputime_min")
+            row.append("cputime_max")
+            row.append("cputime_mean")
+            row.append("cputime_stdev")
+            row.append("usertime_min")
+            row.append("usertime_max")
+            row.append("usertime_mean")
+            row.append("usertime_stdev")
             csvwriter.writerow(row)
             
             # init
-            summedCPUTime     = 0.0
-            summedUserTime    = 0.0
-            minSummedCPUTime  = 10.0**20
-            minSummedUserTime = 10.0**20
+            summedCPUTimes  = [0.0]
+            summedUserTimes = [0.0] 
+            
             previousLine      = None
             fused             = True
             # write intermediate rows
@@ -337,40 +261,49 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
                     if adapter==firstNonfusedAdapter:
                        fused = False
                     
-                    if (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                        summedCPUTime  += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
-                        summedUserTime += float(line[userTimeColumn]) / float(line[iterationsColumn])
+                    if (not onlyTimeStepping) or (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                        summedCPUTimes[-1]  += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
+                        summedUserTimes[-1] += float(line[userTimeColumn]) / float(line[iterationsColumn])
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
-                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-                    minSummedUserTime = min(minSummedUserTime, summedUserTime)        
-                    summedCPUTime     = 0.0
-                    summedUserTime    = 0.0
+                    summedCPUTimes.append(0.0) 
+                    summedUserTimes.append(0.0) 
                 else:
-                    minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-                    minSummedUserTime = min(minSummedUserTime, summedUserTime)        
-                    summedCPUTime     = 0.0
-                    summedUserTime    = 0.0
-                    
                     row = previousLine[0:runColumn]
-                    row.append(str(minSummedCPUTime))
-                    row.append(str(minSummedUserTime))
-                    csvwriter.writerow(row)
+                    row.append(str(len(summedCPUTimes)))
                     
-                    minSummedCPUTime  = 10.0**20
-                    minSummedUserTime = 10.0**20
-                    fused             = True
+                    row.append(str(min(summedCPUTimes)))
+                    row.append(str(max(summedCPUTimes)))
+                    row.append(str(statistics.mean(summedCPUTimes)))
+                    row.append(str(statistics.stdev(summedCPUTimes)))
+                    
+                    row.append(str(min(summedUserTimes)))
+                    row.append(str(max(summedUserTimes)))
+                    row.append(str(statistics.mean(summedUserTimes)))
+                    row.append(str(statistics.stdev(summedUserTimes)))
+                    
+                    csvwriter.writerow(row)
+                   
+                    # reset 
+                    summedCPUTimes  = [0.0]
+                    summedUserTimes = [0.0] 
+                       
+                    fused = True
 
                 previousLine  = line
             
             # write last row
-            minSummedCPUTime  = min(minSummedCPUTime,  summedCPUTime)
-            minSummedUserTime = min(minSummedUserTime, summedUserTime)        
-            summedCPUTime     = 0.0
-            summedUserTime    = 0.0
-            
             row = previousLine[0:runColumn]
-            row.append(str(minSummedCPUTime))
-            row.append(str(minSummedUserTime))
+            row.append(str(len(summedCPUTimes)))
+                    
+            row.append(str(min(summedCPUTimes)))
+            row.append(str(max(summedCPUTimes)))
+            row.append(str(statistics.mean(summedCPUTimes)))
+            row.append(str(statistics.stdev(summedCPUTimes)))
+                    
+            row.append(str(min(summedUserTimes)))
+            row.append(str(max(summedUserTimes)))
+            row.append(str(statistics.mean(summedUserTimes)))
+            row.append(str(statistics.stdev(summedUserTimes)))
             csvwriter.writerow(row)
             
             print("created table:")
