@@ -659,7 +659,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","buildObjectsOnly","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
+    subprograms = ["build","buildMissing","buildLocally","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -748,9 +748,9 @@ typical workflow:
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":
-        build(buildOnlyMissing=True)
+        build(True)
     elif subprogram == "buildLocally":
-        build(skipMakeClean=True)
+        build(False,True)
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":

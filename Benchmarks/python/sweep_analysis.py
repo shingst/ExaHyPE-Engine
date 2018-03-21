@@ -99,12 +99,13 @@ def parseAdapterTimes(resultsFolderPath,projectName):
     """
     Loop over all ".out" files in the results section and create a table.
     """
-    tablePath         = resultsFolderPath+"/"+projectName+'.csv'
+    tablePath = resultsFolderPath+"/"+projectName+'.csv'
     try:
         with open(tablePath, 'w') as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=";")
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
 
+            unfinishedRuns = []
             print("processed files:")
             firstFile = True
             for fileName in files:
@@ -162,26 +163,34 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(adapters[adapter]["total_usertime"])
                         row.append(fileName)
                         csvwriter.writerow(row)
+                else:
+                    unfinishedRuns.append(resultsFolderPath+"/"+fileName)
+        if len(unfinishedRuns):
+            print("output files of unfinished runs:")
+            for job in unfinishedRuns:
+                print(job)
+
         success = not firstFile
         if success:
-          # reopen the file and sort it
-          tableFile   = open(tablePath, 'r')
-          header      = next(tableFile)
-          header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=";")
+            # reopen the file and sort it
+            tableFile   = open(tablePath, 'r')
+            header      = next(tableFile)
+            header      = header.strip()
+            reader      = csv.reader(tableFile,delimiter=";")
           
-          sortedData = sorted(reader,key=getAdapterTimesSortingKey)
-          tableFile.close()
+            sortedData = sorted(reader,key=getAdapterTimesSortingKey)
+            tableFile.close()
           
-          with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=";")
-              writer.writerow(header.split(';'))
-              writer.writerows(sortedData)
-          print("created table:")
-          print(tablePath) 
+            with open(tablePath, 'w') as sortedTableFile:
+                writer = csv.writer(sortedTableFile, delimiter=";")
+                writer.writerow(header.split(';'))
+                writer.writerows(sortedData)
+            print("created table:")
+            print(tablePath) 
 
     except IOError as err:
-        print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
+        print ("ERROR: could not write file "+tablePath+". Error message: " + str(err))
+
 
 def column(matrix, i):
     return [row[i] for row in matrix]
