@@ -15,7 +15,9 @@ namespace RNSID {
  * This class uses the pimpl mechanism and has a stub in the RNSID.cpp implementation
  * in order to allow a seamless compilation in any way.
  **/
-struct rnsid : public InitialDataCode {
+class rnsid : public InitialDataCode {
+	void get_conserved_quantities(const double* x, double* Q);
+public:
 	RNSID::rnsid *id;
 	bool hasBeenPrepared; ///< a guard to ensure the preparation took place
 	
