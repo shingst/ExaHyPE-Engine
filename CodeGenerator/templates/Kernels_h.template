@@ -111,13 +111,6 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
   );
 {% endif %}
 
-  void volumeIntegral( 
-    double* restrict lduh, 
-    const double* restrict const {{'lFhi' if isLinear else 'lFi'}},
-    const double* restrict const {{'lShi' if isLinear else 'lSi'}}, //nullptr if not used
-    const tarch::la::Vector<DIMENSIONS,double> &inverseDx
-  );
-
   void solutionUpdate( 
     double* restrict luh, 
     const double* restrict const lduh, 

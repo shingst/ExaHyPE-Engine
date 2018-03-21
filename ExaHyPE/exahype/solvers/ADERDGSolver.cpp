@@ -2303,7 +2303,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(fluctuations[i]),cellDescription.toString(),"updateSolution",i);
     } 
     #endif
-    surfaceIntegral(update,fluctuations,tarch::la::invertEntries(cellDescription.getSize()));
+    surfaceIntegral(update,fluctuations,cellDescription.getSize());
 
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
