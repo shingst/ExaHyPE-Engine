@@ -213,8 +213,10 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
     firstNonfusedAdapter = "BroadcastAndMergeNeighbours"
     nonfusedAdapters     = [firstNonfusedAdapter, "Prediction", "UpdateAndReduce"]
     
-    adaptersTablePath      = resultsFolderPath+"/"+projectName+'.csv'
-    timeStepTimesTablePath = resultsFolderPath+"/"+projectName+'-timestep-times.csv'
+    adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
+    outputTablePath   = resultsFolderPath+"/"+projectName+'-total-times.csv'
+    if onlyTimeStepping:
+        outputTablePath   = resultsFolderPath+"/"+projectName+'-timestep-times.csv'
     try:
         print ("reading table "+adaptersTablePath+"")
         adaptersTableFile  = open(adaptersTablePath, 'r')
@@ -230,7 +232,7 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
         if runColumn >= adapterColumn:
             print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
         
-        with open(timeStepTimesTablePath, 'w') as timeStepTimesTableFile:
+        with open(outputTablePath, 'w') as timeStepTimesTableFile:
             csvwriter = csv.writer(timeStepTimesTableFile, delimiter=";")
             # write header
             row = header[0:runColumn]
@@ -307,7 +309,7 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
             csvwriter.writerow(row)
             
             print("created table:")
-            print(timeStepTimesTablePath) 
+            print(outputTablePath) 
     except IOError as err:
         print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
 
