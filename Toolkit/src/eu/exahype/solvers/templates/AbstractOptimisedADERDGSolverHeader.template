@@ -11,6 +11,9 @@
 
 #include <ostream>
 #include <algorithm>
+{%- if countFlops %}
+#include <atomic>
+{% endif %}
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/UserSolverInterface.h"
@@ -74,9 +77,19 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr unsigned long eigenvaluesFlops = 0;
     static constexpr unsigned long boundaryValuesFlops = 0;
 
-    static unsigned long flops;
+    static std::atomic_ulong flops;
+    static std::atomic_ulong fusedSTPVI_flops;
+    static std::atomic_ulong fusedSTPVI_time;
 
-    virtual ~{{abstractSolver}}(){printf("\nFlops = %lu\n", flops);}
+    virtual ~{{abstractSolver}}(){
+      printf("\nFlops = %lu\n", flops.load());
+      const double time_s = ((double) fusedSTPVI_time.load()) / 1000000000.0; //ns to s
+      const double GFlops = ((double) fusedSTPVI_flops.load()) / ((double) fusedSTPVI_time.load());
+      
+      printf("\nfusedSTPVI flops = %lu s\n", fusedSTPVI_flops.load());
+      printf("\nfusedSTPVI time = %f s\n", time_s);
+      printf("\nfusedSTPVI GFlops/s = %f \n", GFlops);
+      }
 {%- endif %}
 
     /**
