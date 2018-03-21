@@ -14,9 +14,15 @@
 #include "{{solver}}.h" // Have to include a proper declaration. Cannot use forward declared classes in static_cast.
 
 #include <stdio.h>
+{%- if countFlops  %}
+#include <chrono>
+#include <ratio>
+{%- endif %}
 
 {%- if countFlops  %}
-unsigned long {{project}}::{{abstractSolver}}::flops = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::flops = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_time = 0.;
+std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_flops = 0.;
 {%- endif %}
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
@@ -48,6 +54,10 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) {
 {%- if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
+{%- endif %}
+
+{%- if countFlops && !isLinear %}
+  std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {%- endif %}
 
   constexpr int totalSize = {{optNamespace}}::getFusedSTPVISize();
@@ -136,7 +146,12 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- endif %}
 
 {%- if countFlops && !isLinear %}
-  flops += picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
+  double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
+  const unsigned long time_ul = (unsigned long) time;
+  const unsigned long f = picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
+  flops += f;
+  fusedSTPVI_flops += f;
+  fusedSTPVI_time += time_ul;
 {%- endif %}
 
   return picardIt;

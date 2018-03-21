@@ -116,22 +116,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if nDim == 3 %}
         F[2] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}}];
 {% endif %}
-{% if useDeepProfiler %}
-        profiler->stop("spaceTimePredictor");
-        profiler->start("spaceTimePredictor_PDEflux");
-{% endif %}
 #ifdef USE_IPO
         #pragma forceinline recursive
 #endif
         solver.{{solverName}}::flux(Q, F);
-{% if useDeepProfiler %}
-        profiler->stop("spaceTimePredictor_PDEflux");
-{% endif %}
-{% if useDeepProfiler %}
-        profiler->start("spaceTimePredictor_overhead");
-        profiler->stop("spaceTimePredictor_overhead"); 
-        profiler->start("spaceTimePredictor");
-{% endif %}
       }
 {% endif %} {# useFlux #}
 
@@ -308,11 +296,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
         const double updateSize = weights1[i] * weights3[jkl] * dt;
         const int shift = {{nVarPad}}*(jkl+{{nDof**nDim}}*i);
-        const int it = i+{{nDof}}*jkl;
-{% if useDeepProfiler %}
-        profiler->stop("spaceTimePredictor");
-        profiler->start("spaceTimePredictor_PDEfusedSource");
-{% endif %}           
+        const int it = i+{{nDof}}*jkl;        
         // Old code (for reference): solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], &gradQNoPad[0], &lSi[shift]);
 {% if useSource %}
 #ifdef USE_IPO
@@ -338,10 +322,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for(int n = 0; n<{{nVarPad}}; n++) {
           lSi[n+shift] -= ncp[n];
         }
-{% endif %}
-{% if useDeepProfiler %}
-        profiler->stop("spaceTimePredictor_PDEfusedSource");
-        profiler->start("spaceTimePredictor");
 {% endif %}
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
@@ -386,8 +366,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     }
 
     // 5. Exit condition
-    constexpr double tol = 1e-7;
-    if (sq_res < tol * tol) {
+    constexpr double tol2 = 1e-7 * 1e-7;
+    if (sq_res < tol2) {
       break;
     }
   }  // end iter
@@ -681,5 +661,5 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
 {% endif %} 
 
-  return iter; //return number of Picard iterations
+  return iter+1; //return number of Picard iterations
 }
