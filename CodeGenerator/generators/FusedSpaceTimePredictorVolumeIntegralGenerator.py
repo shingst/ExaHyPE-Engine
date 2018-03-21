@@ -71,9 +71,9 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
             self.m_context["gemm_rhs_y"] = gemmNamePad+"_rhs_y"
             self.m_context["gemm_rhs_z"] = gemmNamePad+"_rhs_z"
             self.m_context["gemm_lqi"]   = gemmName+"_lqi"
-            self.m_context["gemm_x"] = gemmName+"_lduh_x"
-            self.m_context["gemm_y"] = gemmName+"_lduh_y"
-            self.m_context["gemm_z"] = gemmName+"_lduh_z"             
+            self.m_context["gemm_x"] = gemmNamePad+"_lduh_x"
+            self.m_context["gemm_y"] = gemmNamePad+"_lduh_y"
+            self.m_context["gemm_z"] = gemmNamePad+"_lduh_z"             
             self.m_context["i_seq"] = range(0,self.m_context["nDof"])
             self.m_context["j_seq"] = range(0,self.m_context["nDof"]) if (self.m_context["nDim"] >= 3) else [0]
             
@@ -338,7 +338,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                     l_matmulList.append(l_matmul)
                 # (1) MATMUL( lFhi_x(:,:,j,k), TRANSPOSE(Kxi) )
                 l_matmul_x = MatmulConfig(  # M
-                                            self.m_context["nVar"],       \
+                                            self.m_context["nVarPad"],       \
                                             # N
                                             self.m_context["nDof"],       \
                                             # K
@@ -348,7 +348,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             # LDB
                                             self.m_context["nDofPad"],    \
                                             # LDC
-                                            self.m_context["nVar"],       \
+                                            self.m_context["nVarPad"],       \
                                             # alpha 
                                             1,                            \
                                             # beta
@@ -367,7 +367,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
 
                 # (2) MATMUL( lFhi_y(:,:,i,k), TRANSPOSE(Kxi) )
                 l_matmul_y = MatmulConfig(  # M
-                                            self.m_context["nVar"],                         \
+                                            self.m_context["nVarPad"],                         \
                                             # N
                                             self.m_context["nDof"],                         \
                                             # K
@@ -377,7 +377,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             # LDB
                                             self.m_context["nDofPad"],                      \
                                             # LDC
-                                            self.m_context["nVar"]*self.m_context["nDof"],  \
+                                            self.m_context["nVarPad"]*self.m_context["nDof"],  \
                                             # alpha 
                                             1,                                              \
                                             # beta
@@ -397,7 +397,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                 if(self.m_context["nDim"]>=3):
                     # (3) MATMUL( lFhi_z(:,:,i,j), TRANSPOSE(Kxi) )
                     l_matmul_z = MatmulConfig(  # M
-                                                self.m_context["nVar"],                             \
+                                                self.m_context["nVarPad"],                             \
                                                 # N
                                                 self.m_context["nDof"],                             \
                                                 # K
@@ -407,7 +407,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                                 # LDB
                                                 self.m_context["nDofPad"],                          \
                                                 # LDC
-                                                self.m_context["nVar"]*(self.m_context["nDof"]**2), \
+                                                self.m_context["nVarPad"]*(self.m_context["nDof"]**2), \
                                                 # alpha 
                                                 1,                                                  \
                                                 # beta

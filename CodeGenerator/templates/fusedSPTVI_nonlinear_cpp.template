@@ -574,7 +574,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   //*****************************
   
 
-  memset(lduh, 0, {{nVar*(nDof**nDim)}}*sizeof(double));
+  memset(lduh, 0, {{nVarPad*(nDof**nDim)}}*sizeof(double));
 
 #ifdef __INTEL_COMPILER
 {% if useFlux %}
@@ -598,28 +598,28 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for(int it=0; it<{{nDof*nDofPad}}; it++) 
         s_m[it] = weights2[i+j*{{nDof}}] * inverseDx[0] * Kxi_T[it];
 
-    {% if useLibxsmm %}
+{% if useLibxsmm %}
     #ifdef USE_IPO
       #pragma forceinline
     #endif
-      {{gemm_x}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVar*nDof}}]);
+      {{gemm_x}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}]);
     #ifdef USE_IPO
       #pragma forceinline
     #endif
-      {{gemm_y}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof*nDof}}+i)*{{nVar}}]);
+      {{gemm_y}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}]);
     {% if nDim == 3 %} 
     #ifdef USE_IPO
       #pragma forceinline
     #endif
-      {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVar}}]);
-    {% endif %} 
-    {% else %}
+      {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad}}]);
+{% endif %} 
+{% else %}
       //x 
       for(int l=0; l<{{nDof}}; l++) {
         for(int k=0; k<{{nDof}}; k++) {
           #pragma simd
           for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof}}+i)*{{nVar*nDof}}+l*{{nVar}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+            lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}+l*{{nVarPad}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
           }
         }
       }
@@ -629,7 +629,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for(int k=0; k<{{nDof}}; k++) {
           #pragma simd
           for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof*nDof}}+i)*{{nVar}}+l*{{nVar*nDof}}+n]+= lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+            lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}+l*{{nVarPad*nDof}}+n]+= lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
           }
         }
       }
@@ -640,7 +640,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for(int k=0; k<{{nDof}}; k++) {
           #pragma simd
           for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof}}+i)*{{nVar}}+l*{{nVar*nDof**2}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+            lduh[(j*{{nDof}}+i)*{{nVarPad}}+l*{{nVarPad*nDof**2}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
           }
         }
       }
@@ -655,8 +655,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     // Fortran: lduh(:,k,j,i) += w * lShi(:,k,j,i)
     #pragma simd
-    for (int n = 0; n < {{nVar}}; n++) {
-      lduh[xyz*{{nVar}}+n] += weights3[xyz] * lShi[xyz*{{nVarPad}}+n];
+    for (int n = 0; n < {{nVarPad}}; n++) {
+      lduh[xyz*{{nVarPad}}+n] += weights3[xyz] * lShi[xyz*{{nVarPad}}+n];
     }
   }
   

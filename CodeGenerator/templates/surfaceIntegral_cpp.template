@@ -37,8 +37,8 @@ void {{codeNamespace}}::surfaceIntegral(
     const double weight = weights2[yz] * inverseDx[0];
     for (int x = 0; x < {{nDof}}; x++) {
       #pragma simd
-      for (int n = 0; n < {{nVar}}; n++) {
-        lduh[n+{{nVar}}*(x+{{nDof}}*yz)] -= weight *
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lduh[n+{{nVarPad}}*(x+{{nDof}}*yz)] -= weight *
             (lFhbnd[n+{{nVarPad}}*yz+{{bndFaceSize*1}}] * FRCoeff[x] {{'+' if isLinear else '-'}} {# only diff between linear and nonlinear #}
              lFhbnd[n+{{nVarPad}}*yz+{{bndFaceSize*0}}] * FLCoeff[x]);
       }
@@ -49,14 +49,14 @@ void {{codeNamespace}}::surfaceIntegral(
   for (int xz = 0; xz < {{nDof*nDof3D}}; xz++) {
     const double weight = weights2[xz] * inverseDx[1];
 {% if nDim == 3 %} {# // xz in [0..nDof*nDof-1], need to extract x and z to compute the correct shift for luh #}
-    const int xzLuhIndex = ((xz/{{nDof}})*{{nDof*nDof}} + xz % {{nDof}}) *{{nVar}};
+    const int xzLuhIndex = ((xz/{{nDof}})*{{nDof*nDof}} + xz % {{nDof}}) *{{nVarPad}};
 {% else %}
-    const int xzLuhIndex = xz*{{nVar}};
+    const int xzLuhIndex = xz*{{nVarPad}};
 {% endif %}
     for (int y = 0; y < {{nDof}}; y++) {
       #pragma simd
-      for (int n = 0; n < {{nVar}}; n++) {
-        lduh[n+xzLuhIndex+y*{{nDof*nVar}}] -= weight *
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lduh[n+xzLuhIndex+y*{{nDof*nVarPad}}] -= weight *
             (lFhbnd[n+{{nVarPad}}*xz+{{bndFaceSize*3}}] * FRCoeff[y] {{'+' if isLinear else '-'}}
              lFhbnd[n+{{nVarPad}}*xz+{{bndFaceSize*2}}] * FLCoeff[y]);
         }
@@ -69,8 +69,8 @@ void {{codeNamespace}}::surfaceIntegral(
     const double weight = weights2[xy] * inverseDx[2];
     for (int z = 0; z < {{nDof}}; z++) {
       #pragma simd
-      for (int n = 0; n < {{nVar}}; n++) {
-        lduh[n+{{nVar}}*(xy+{{nDof*nDof}}*z)] -= weight *
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lduh[n+{{nVarPad}}*(xy+{{nDof*nDof}}*z)] -= weight *
             (lFhbnd[n+{{nVarPad}}*xy+{{bndFaceSize*5}}] * FRCoeff[z] {{'+' if isLinear else '-'}}
              lFhbnd[n+{{nVarPad}}*xy+{{bndFaceSize*4}}] * FLCoeff[z]);
       }

@@ -576,14 +576,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 #endif
   // for linear non-conservative PDE, the volume integral is trivial, since it
   // only involves the element mass matrix, which later will cancel
-  memset(lduh, 0, {{nVar*(nDof**nDim)}}*sizeof(double));
+  memset(lduh, 0, {{nVarPad*(nDof**nDim)}}*sizeof(double));
 
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
         #pragma simd
-        for (int n = 0; n < {{nVar}}; n++) {
-            lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVar}}+n] -= weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] *
+        for (int n = 0; n < {{nVarPad}}; n++) {
+            lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] -= weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] *
                 (
 {% if useFlux %}
                     lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x

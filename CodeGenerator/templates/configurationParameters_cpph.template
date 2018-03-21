@@ -96,6 +96,8 @@ namespace {{namespaceName}} {
   constexpr int getBndFaceTotalSize() {return {{BndFaceTotalSize}};} // == lQhbnd size
   constexpr int getBndFluxSize()      {return {{BndFluxSize}};} // == FR/FL size
   constexpr int getBndFluxTotalSize() {return {{BndFluxTotalSize}};} // == lFhbnd size
+  
+  constexpr int getUpdateSize() {return {{(nDof**nDim)*nVarPad}};} // == lduh size
 
   //Shifts for fusedSTPVI local memory
 {% set shift = 0 %}  
@@ -172,10 +174,9 @@ namespace {{namespaceName}} {
   constexpr unsigned long riemannSolver_flops = 0; //TODO JMG
 {% else %}
   // fusedSTPVI, multiply by factor and sum
-  //constexpr unsigned long fusedSTPVI_picard_flops = {{(nDof**(nDim+1))*(1+nVar)+useFluxFactor*nDim*((nDof**nDim)*(1+nDof*nDofPad+nDof*nDof*nVar*2))+useNCPFactor*nDim*((nDof**(nDim+2))*nVar*2)+useSourceOrNCPFactor*((nDof**(nDim+1))*(2+useNCPFactor*nVarPad+2*nVarPad))+(nDof**nDim)*(1+nDof*nDofPad+2*nDof*nDof*nVar+4*nVar*nDof)}}; // time picardIteration
   constexpr unsigned long fusedSTPVI_picard_flops = {{(nDof**(nDim+1))*(1+nVar)+useFluxFactor*nDim*((nDof**nDim)*(1+nDof*nDofPad+nDof*nDof*nVarPad*2))+useNCPFactor*nDim*((nDof**(nDim+2))*nVar*2)+useSourceOrNCPFactor*((nDof**(nDim+1))*(2+useNCPFactor*nVarPad+2*nVarPad))+(nDof**nDim)*(1+nDof*nDofPad+2*nDof*nDof*nVar+4*nVar*nDof)}}; // time picardIteration
   constexpr unsigned long fusedSTPVI_PDE_factor = {{nDof**(nDim+1)}}; // flops of used PDE * this factor * picardIteration
-  constexpr unsigned long fusedSTPVI_other_flops = {{1+useNCPFactor*nDof*nDofPad + (nDof**(nDim+1))*(nDataPad*2+useFluxFactor*nDim*nVarPad*2+useSourceOrNCPFactor*nVarPad*2) + nDim*(nDof**nDim)*(nDataPad*4+useFluxFactor*nVarPad*4) + useFluxFactor*((nDof**nDim)*(nDofPad*2+2*nDof*nVar*nDim))+useSourceOrNCPFactor*(nDof**nDim)*nVar*2}}; // other flops
+  constexpr unsigned long fusedSTPVI_other_flops = {{1+useNCPFactor*nDof*nDofPad + (nDof**(nDim+1))*(nDataPad*2+useFluxFactor*nDim*nVarPad*2+useSourceOrNCPFactor*nVarPad*2) + nDim*(nDof**nDim)*(nDataPad*4+useFluxFactor*nVarPad*4) + useFluxFactor*((nDof**nDim)*(nDofPad*2+2*nDof*nVarPad*nDim))+useSourceOrNCPFactor*(nDof**nDim)*nVarPad*2}}; // other flops
   
   // RiemannSolver, also 2 eigenvalues cost
   constexpr unsigned long riemannSolver_flops = {{nDof*nDof3D*(nDataPad*4+nVar+nVarPad*3)+useNCPFactor*(nDof*nDof3D*(nVar*3+nVarPad*4))}};

@@ -331,10 +331,10 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
     cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
-    cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
+    cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
 
     assertionEquals(DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).size(),static_cast<unsigned int>(dataPerCell));
-    assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(unknownsPerCell));
+    //assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(unknownsPerCell)); //TODO JMG adapt to padded lduh
 
     cellDescription.setUpdateCompressed(-1);
     cellDescription.setSolutionCompressed(-1);
@@ -1800,10 +1800,11 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
           cellDescription.toString(),toString(),methodTraceOfCaller,i);
     }
 
-    for (int i=0; i<unknownsPerCell; i++) {
-      assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lduh[i]),
-          cellDescription.toString(),toString(),methodTraceOfCaller,i);
-    }
+    //TODO JMG adapt to padding
+    //for (int i=0; i<unknownsPerCell; i++) {
+    //  assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lduh[i]),
+    //      cellDescription.toString(),toString(),methodTraceOfCaller,i);
+    //}
 
     for (int i=0; i<dataPerCellBoundary; i++) {
       assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lQhbnd[i]),
@@ -4787,7 +4788,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
       cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       cellDescription.setSolution( DataHeap::getInstance().createData(         dataPointsPerCell, dataPointsPerCell ) );
-      cellDescription.setUpdate( DataHeap::getInstance().createData(           unknownsPerCell,   unknownsPerCell ) );
+      cellDescription.setUpdate( DataHeap::getInstance().createData(           getUpdateSize(),   getUpdateSize() ) );
 
       cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
       cellDescription.setFluctuation( DataHeap::getInstance().createData(           unknownsPerCellBoundary, unknownsPerCellBoundary ) );
@@ -4808,7 +4809,7 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     if (cellDescription.getUpdate()==-1) {
       ensureAllBackgroundJobsHaveTerminated();
       lock.lock();
-        cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
+        cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedPredictor()==-1) {
