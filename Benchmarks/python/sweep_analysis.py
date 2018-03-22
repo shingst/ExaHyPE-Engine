@@ -276,12 +276,18 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
                     row.append(str(min(summedCPUTimes)))
                     row.append(str(max(summedCPUTimes)))
                     row.append(str(statistics.mean(summedCPUTimes)))
-                    row.append(str(statistics.stdev(summedCPUTimes)))
-                    
+                    if len(summedCPUTimes)>1:
+                        row.append(str(statistics.stdev(summedCPUTimes)))
+                    else:
+                        row.append("0.0")
+
                     row.append(str(min(summedUserTimes)))
                     row.append(str(max(summedUserTimes)))
                     row.append(str(statistics.mean(summedUserTimes)))
-                    row.append(str(statistics.stdev(summedUserTimes)))
+                    if len(summedUserTimes)>1:
+                        row.append(str(statistics.stdev(summedUserTimes)))
+                    else:
+                        row.append("0.0")
                     
                     csvwriter.writerow(row)
                    
@@ -300,12 +306,19 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
             row.append(str(min(summedCPUTimes)))
             row.append(str(max(summedCPUTimes)))
             row.append(str(statistics.mean(summedCPUTimes)))
-            row.append(str(statistics.stdev(summedCPUTimes)))
-                    
+            if len(summedCPUTimes)>1:
+                row.append(str(statistics.stdev(summedCPUTimes)))
+            else:
+                row.append("0.0")
+
             row.append(str(min(summedUserTimes)))
             row.append(str(max(summedUserTimes)))
             row.append(str(statistics.mean(summedUserTimes)))
-            row.append(str(statistics.stdev(summedUserTimes)))
+            if len(summedUserTimes)>1:
+                row.append(str(statistics.stdev(summedUserTimes)))
+            else:
+                row.append("0.0")
+
             csvwriter.writerow(row)
             
             print("created table:")
