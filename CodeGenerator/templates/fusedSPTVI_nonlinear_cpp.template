@@ -99,7 +99,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // we compute rhs on the fly, TODO JMG clean legacy
   
   // 3. Discrete Picard iterations
-  const int MaxIterations = {{2 * nDof}};
+  constexpr int MaxIterations = {{2 * nDof}};
   int iter = 0;
 
   for (iter; iter < MaxIterations; iter++) {
@@ -662,5 +662,5 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
 {% endif %} 
 
-  return iter+1; //return number of Picard iterations
+  return std::min(iter+1, MaxIterations); //return number of Picard iterations, min to avoid doing a +1 if the loop wasn't exited early
 }
