@@ -16,6 +16,7 @@ to the ExaHyPE project. This is, in particular:
 * DoubleCompressionAnalysis: Scripts and data for running a floating point compression benchmark
 * FlashHDF5-Utils: Utilities to manage output files in the FlashHDF5 file format
 * GRMHD-Con2Prim-Standalone: The GRMHD version of the SRMHD Con2Prim standalone test.
+* Jenkins: A collection of groovy scripts that are used by the Jenkins server.
 * JobScripts: A number of scripts to generate job scripts, by Dominic
 * KernelIndexTests: Standalone tests for the KernelUtils.h code
 * KernelsPerfMeasurementsTests
