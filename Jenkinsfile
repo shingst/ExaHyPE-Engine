@@ -84,6 +84,21 @@ fi
 '''
 }
 
+moduleCode = '''
+source /etc/profile.d/modules.sh
+
+module load git subversion java/1.8 scons >/dev/null 2>&1
+module unload pythonLib intel >/dev/null 2>&1
+module load intel/17.0 >/dev/null 2>&1
+module unload mpi.intel >/dev/null 2>&1
+module load mpi.intel/2017 >/dev/null 2>&1
+module unload gcc >/dev/null 2>&1
+module load gcc/7 >/dev/null 2>&1
+module unload tbb >/dev/null 2>&1
+module load tbb/2017 cmake binutils >/dev/null 2>&1
+module switch python/3.5_intel >/dev/null 2>&1
+module list
+'''
 
 def build(config, workspace) {
     node ('mac-intel') {
@@ -98,31 +113,18 @@ set -x
 IFS=$'\n\t'
 pwd
 
-module load git subversion java/1.8 scons >/dev/null 2>&1
-module unload pythonLib intel >/dev/null 2>&1
-module load intel/17.0 >/dev/null 2>&1
-module unload mpi.intel >/dev/null 2>&1
-module load mpi.intel/2017 >/dev/null 2>&1
-module unload gcc >/dev/null 2>&1
-module load gcc/7 >/dev/null 2>&1
-module unload tbb >/dev/null 2>&1
-module load tbb/2017 cmake binutils >/dev/null 2>&1
-module switch python/3.5_intel >/dev/null 2>&1
-module list
-
 # Fix linker flags
 export COMPILER_LFLAGS='-pthread'
 export PROJECT_LFLAGS="-lrt" 
 
+''' + moduleCode + """
 set -euo pipefail
-''' + """
 cp -r ${workspace}/. .
 path=${config.exahypeFile}
 """ + '''
 ls
 
 # Build toolkit
-Peano/checkout-update-peano.sh
 Toolkit/build.sh
 
 # Build example
@@ -154,11 +156,11 @@ def run(config, workspace) {
     node ('mac-intel') {
 	ws("${env.JOB_NAME}-${config.name}-run") {
 	    unstash "exahype-${config.name}"
-	    slurmBatch """
-""" + '''
+	    slurmBatch '''
 set -x
 IFS=$'\n\t'
 pwd
+''' + moduleCode + '''
 module load git subversion java/1.8 scons >/dev/null 2>&1
 module unload pythonLib intel >/dev/null 2>&1
 module load intel/17.0 >/dev/null 2>&1
@@ -207,9 +209,9 @@ pipeline {
 	    steps {
 		sh 'echo Running as $(id -un)@$(hostname -f)'
 		checkout scm
-		sh 'ls'
 		sh 'pwd'
-		sh '/lrz/sys/tools/git/latest/bin/git rev-parse --short HEAD'
+		sh 'ls'
+		sh moduleCode + 'Peano/checkout-update-peano.sh'
 
 		// script {
 		// config = load "scripts/Jenkins/Config.groovy"
