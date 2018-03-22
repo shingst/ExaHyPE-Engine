@@ -150,8 +150,8 @@ namespace {{namespaceName}} {
   
 //approx Flops (only mat operations)
   //amr (*leveldelta)
-  constexpr unsigned long faceUnknownsProlongation_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVar+nData)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVar+2*nData)+nDofPad))}}{% endif %}; // time leveldelta
-  constexpr unsigned long faceUnknownsRestriction_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVar+nData)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVar+2*nData)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long faceUnknownsProlongation_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long faceUnknownsRestriction_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
   constexpr unsigned long volumeUnknownsProlongation_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
   constexpr unsigned long volumeUnknownsRestriction_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
   
@@ -167,7 +167,7 @@ namespace {{namespaceName}} {
   constexpr unsigned long stableTimeStepSize_factor = {{(nDof**nDim)*nDim}}; //flops of eigenvalues * this factor
   constexpr unsigned long stableTimeStepSize_flops = {{(nDof**nDim)*nDim*2+(nDof**nDim)*2}};
   
-  constexpr unsigned long surfaceIntegral_flops = {{(nDof*nDof3D + (nDof**nDim)*nVar*5)*nDim}};
+  constexpr unsigned long surfaceIntegral_flops = {{(nDof*nDof3D + (nDof**nDim)*nVarPad*5)*nDim}};
   
 {% if isLinear %}   
   constexpr unsigned long fusedSTPVI_flops = 0; //TODO JMG
