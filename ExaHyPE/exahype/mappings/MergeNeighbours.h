@@ -66,21 +66,6 @@ private:
    */
   static tarch::logging::Log _log;
 
-  /**
-   * Indicates that the background tasks have terminated.
-   * No further checks are required in this case.
-   *
-   * Is initialised with false for the main thread
-   * and for the worker threads.
-   * As the worker threads; mappings are destroyed but
-   * the main thread's mapping continues to
-   * exist we reset this value in endIteration(State) to false.
-   *
-   * We process background jobs in touchVertexFirstTime(...)
-   * and set this flag here as well.
-   */
-  bool _backgroundJobsHaveTerminated = false;
-
 public:
 
   /**

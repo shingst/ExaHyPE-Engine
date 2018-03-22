@@ -370,7 +370,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
   /**
-   * Nop
+   * <h2>Background Jobs</h2>
+   * Ensures all background jobs are processed before we continue.
    */
   void endIteration(exahype::State& solverState);
 

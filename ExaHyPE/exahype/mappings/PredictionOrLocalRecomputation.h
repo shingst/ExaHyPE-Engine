@@ -230,6 +230,9 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    * Frees previously allocated temporary variables.
    *
    * In debug mode, prints the output of counters.
+   *
+   * <h2>Background Jobs</h2>
+   * Ensures all background jobs are processed before we continue.
    */
   void endIteration(exahype::State& solverState);
 
