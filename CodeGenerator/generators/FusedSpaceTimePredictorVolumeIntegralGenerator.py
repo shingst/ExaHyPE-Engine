@@ -56,9 +56,9 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
             self.m_context["tmpArraySize"] = max((self.m_context["nDof"]*self.m_context["nVarPad"] if self.m_context["useFlux"]          else 0), \
                                                  (self.m_context["nVar"]*self.m_context["nDim"]    if self.m_context["useMaterialParam"] else 0), \
                                                  (2*self.m_context["ncpOutputShift"]               if self.m_context["useNCP"]           else 0))
-            self.m_context["gemm_flux_x"] = gemmName+"_flux_x"
-            self.m_context["gemm_flux_y"] = gemmName+"_flux_y"
-            self.m_context["gemm_flux_z"] = gemmName+"_flux_z"
+            self.m_context["gemm_flux_x"] = gemmNamePad+"_flux_x"
+            self.m_context["gemm_flux_y"] = gemmNamePad+"_flux_y"
+            self.m_context["gemm_flux_z"] = gemmNamePad+"_flux_z"
             TemplatingUtils.renderAsFile("fusedSPTVI_linear_cpp.template", self.m_filename, self.m_context)
             if(self.m_context["usePointSources"]):
                 localContext = copy.copy(self.m_context)
@@ -88,7 +88,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
         if(self.m_context["isLinear"]):
             if(self.m_context["useFlux"]):
                 l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],    \
+                                            self.m_context["nVarPad"],    \
                                             # N
                                             self.m_context["nDof"],    \
                                             # K
@@ -115,7 +115,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "gemm")
                 l_matmulList.append(l_matmul)
                 l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],    \
+                                            self.m_context["nVarPad"],    \
                                             # N
                                             self.m_context["nDof"],    \
                                             # K
@@ -143,7 +143,7 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                 l_matmulList.append(l_matmul)
                 if(self.m_context["nDim"]>=3):
                     l_matmul = MatmulConfig(    # M
-                                                self.m_context["nVar"],    \
+                                                self.m_context["nVarPad"],    \
                                                 # N
                                                 self.m_context["nDof"],    \
                                                 # K

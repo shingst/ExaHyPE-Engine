@@ -226,8 +226,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% else %}
       std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) {
-        for (int n = 0; n < {{nVar}}; n++) {
-          for (int x = 0; x < {{nDof}}; x++) {
+        for (int x = 0; x < {{nDof}}; x++) {
+          #pragma simd
+          for (int n = 0; n < {{nVarPad}}; n++) {
             tmpArray[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudxT_by_dx[l*{{nDofPad}}+x];
           }
         }
@@ -244,8 +245,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% else %}
         std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
         for (int l = 0; l < {{nDof}}; l++) {
-          for (int n = 0; n < {{nVar}}; n++) {
-            for (int y = 0; y < {{nDof}}; y++) {
+          for (int y = 0; y < {{nDof}}; y++) {
+            #pragma simd
+            for (int n = 0; n < {{nVarPad}}; n++) {
               tmpArray[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+y];
 
             }
@@ -269,8 +271,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% else %}
       std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) {
-        for (int n = 0; n < {{nVar}}; n++) {
-          for (int z = 0; z < {{nDof}}; z++) {
+        for (int z = 0; z < {{nDof}}; z++) {
+          #pragma simd
+          for (int n = 0; n < {{nVarPad}}; n++) {
             tmpArray[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+z];
           }
         }
@@ -294,8 +297,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{gemm_gradQ_x}}(lQi+(i*{{nDof*nDof3D}}+yz)*{{nDof*nDataPad}}, dudxT_by_dx, gradQ+(i*{{nDof*nDof3D}}+yz)*{{nDof*nVarPad}});
 {% else %}
       for (int x = 0; x < {{nDof}}; x++) {
-        for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
-          for (int l = 0; l < {{nDof}}; l++) {
+        for (int l = 0; l < {{nDof}}; l++) {
+          #pragma simd
+          for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
             gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudxT_by_dx[x*{{nDofPad}}+l];
           }
         }
@@ -310,8 +314,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         {{gemm_gradQ_y}}(lQi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nDataPad}}, dudxT_by_dx, gradQ+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}});
 {% else %}
         for (int y = 0; y < {{nDof}}; y++) {
-          for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
-            for (int l = 0; l < {{nDof}}; l++) {
+          for (int l = 0; l < {{nDof}}; l++) {
+            #pragma simd
+            for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
               gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudxT_by_dx[y*{{nDofPad}}+l];
             }
           }
@@ -327,8 +332,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{gemm_gradQ_z}}(lQi+(i*{{nDof3D*nDof*nDof}}+xy)*{{nDataPad}}, dudxT_by_dx, gradQ+(i*{{nDof3D*nDof*nDof}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}});
 {% else %}
       for (int z = 0; z < {{nDof}}; z++) {
-        for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
-          for (int l = 0; l < {{nDof}}; l++) {
+        for (int l = 0; l < {{nDof}}; l++) {
+          #pragma simd
+          for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
             gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudxT_by_dx[z*{{nDofPad}}+l];
           }
         }
@@ -391,7 +397,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       #pragma simd
-      for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
+      for (int n = 0; n < {{nVarPad}}; n++) { // Skip parameters
         lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
         lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
 {% if nDim==3 %}
@@ -406,7 +412,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if nPar > 0 %}
     // Copy parameters
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      std::copy_n(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}}, {{nPar}}, lQi+((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}});
+      std::copy_n(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}}, {{nDataPad-nVar}}, lQi+((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}});
     }
 {% endif %}
 
@@ -425,6 +431,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int i = 1; i < {{nDof}}; i++) {
     // Fortran: lQhi(:,:,:,:) += dtavFac * lQi(:,i,:,:,:)
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+      #pragma simd
       for (int n = 0; n < {{nVar}}; n++) { // skip parameters
         lQhi[xyz*{{nDataPad}}+n] += dtavFac * lQi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+n];
       }
@@ -464,16 +471,22 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
   // Add point source to the right hand side
 {% if usePointSources %}
+  double sum_array[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    for (int n = 0; n < {{nVar}}; n++) {
-      double sum = 0.0;
-      for (int n0 = 1; n0 < {{nDof+1}}; n0++) {
-        sum += weights1[n0-1]*PSi[(n0*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
+    std::memset(sum_array, 0, {{nVarPad}}*sizeof(double));
+    for (int n0 = 1; n0 < {{nDof+1}}; n0++) {
+      const double coeff = weights1[n0-1] / {{nDim}};
+      #pragma simd
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        sum_array[n] += coeff*PSi[(n0*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
       }
-      lFhi[xyz*{{nVarPad}}+n] += sum/{{nDim}}; //x
-      lFhi[xyz*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] += sum/{{nDim}}; //y
+    }
+    #pragma simd
+    for (int n = 0; n < {{nVarPad}}; n++) {
+      lFhi[xyz*{{nVarPad}}+n] += sum_array[n]; //x
+      lFhi[xyz*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] += sum_array[n]; //y
 {% if nDim==3 %}
-      lFhi[xyz*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] += sum/{{nDim}}; //z
+      lFhi[xyz*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] += sum_array[n]; //z
 {% endif %}
     }
   }
@@ -497,8 +510,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         // right
         lQhbnd[yz*{{nDataPad}}+n+{{1*nDof*nDof3D*nDataPad}}] += lQhi[(yz*{{nDof}}+x)*{{nDataPad}}+n] * FRCoeff[x];
         }
-      }
-    for (int x = 0; x < {{nDof}}; x++) {
       #pragma simd
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
@@ -521,8 +532,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
           // right
           lQhbnd[(z*{{nDof3D}}+x)*{{nDataPad}}+n+{{3*nDof*nDof3D*nDataPad}}] += lQhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nDataPad}}+n] * FRCoeff[y];
         }
-      }
-      for (int y = 0; y < {{nDof}}; y++) {
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
           // left
@@ -545,8 +554,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         // right
         lQhbnd[xy*{{nDataPad}}+n+{{5*nDof*nDof3D*nDataPad}}] += lQhi[(z*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * FRCoeff[z];
       }
-    }
-    for (int z = 0; z < {{nDof}}; z++) {
       #pragma simd
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
@@ -578,26 +585,23 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   // only involves the element mass matrix, which later will cancel
   memset(lduh, 0, {{nVarPad*(nDof**nDim)}}*sizeof(double));
 
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        #pragma simd
-        for (int n = 0; n < {{nVarPad}}; n++) {
-            lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] -= weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] *
-                (
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+    #pragma simd
+    for (int n = 0; n < {{nVarPad}}; n++) {
+        lduh[xyz*{{nVarPad}}+n] -= weights3[xyz] *
+            (
 {% if useFlux %}
-                    lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x
-                  + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*nVarPad*nDof**nDim}}] //y
+                lFhi[xyz*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x
+              + lFhi[xyz*{{nVarPad}}+n+{{1*nVarPad*nDof**nDim}}] //y
 {% if nDim==3 %}
-                  + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*nVarPad*nDof**nDim}}] //z
+              + lFhi[xyz*{{nVarPad}}+n+{{2*nVarPad*nDof**nDim}}] //z
 {% endif %}
 {% endif %}
 {% if useSource %}
-                  {{'+' if useFlux}} lShi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] // source
+              {{'+' if useFlux}} lShi[xyz*{{nVarPad}}+n] // source
 {% endif %}
-                );
-        }
-      }
+            );
+
     }
   }
 

@@ -35,10 +35,10 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_z(const double* A, const d
 {% endif %}  
 {% if isLinear %}
 {% if useFlux %}
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_x(const double* A, const double* B, double* C);
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_y(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_flux_x(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_flux_y(const double* A, const double* B, double* C);
 {% if nDim == 3 %} 
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_z(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_flux_z(const double* A, const double* B, double* C);
 {% endif %}
 {% endif %} {# useFlux #}
 {% else %}
