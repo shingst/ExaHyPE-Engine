@@ -37,23 +37,7 @@ void Euler::EulerSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
 }
 
 void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
-  #ifdef SymbolicVariables
-  ReadOnlyVariables vars(Q);
-  Fluxes f(F);
-
-  tarch::la::Matrix<3,3,double> I;
-  I = 1, 0, 0,
-      0, 1, 0,
-      0, 0, 1;
-
-  const double gamma = 1.4;
-  const double irho = 1./vars.rho();
-  const double p = (gamma-1) * (vars.E() - 0.5 * irho * vars.j()*vars.j() );
-
-  f.rho ( vars.j()                                 );
-  f.j   ( irho * outerDot(vars.j(),vars.j()) + p*I );
-  f.E   ( irho * (vars.E() + p) * vars.j()         );
-  #else // SymbolicVariables
+  
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -85,27 +69,11 @@ void Euler::EulerSolver_FV::flux(const double* const Q, double** F) {
   F[2][3] = irho*Q[3]*Q[3] + p;
   F[2][4] = irho*(Q[4]+p)*Q[3];
   #endif
-  #endif
 }
 
 void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
     const int direction,
     double* lambda) {
-  #ifdef SymbolicVariables
-  ReadOnlyVariables vars(Q);
-  Variables eigs(lambda);
-
-  const double gamma = 1.4;
-  const double irho = 1./vars.rho();
-  const double p = (gamma-1) * (vars.E() - 0.5 * irho * vars.j()*vars.j() );
-
-  double u_n = Q[direction + 1] * irho;
-  double c   = std::sqrt(gamma * p * irho);
-
-  eigs.rho()=u_n - c;
-  eigs.E()  =u_n + c;
-  eigs.j(u_n,u_n,u_n);
-  #else // SymbolicVariables
   constexpr double gamma = 1.4;
   const double irho = 1./Q[0];
   #if DIMENSIONS==3
@@ -121,7 +89,6 @@ void Euler::EulerSolver_FV::eigenvalues(const double* const Q,
   std::fill_n(lambda,5,u_n);
   lambda[0] -= c;
   lambda[4] += c;
-  #endif
 }
 
 void Euler::EulerSolver_FV::entropyWave(const double* const x,double t, double* Q) {

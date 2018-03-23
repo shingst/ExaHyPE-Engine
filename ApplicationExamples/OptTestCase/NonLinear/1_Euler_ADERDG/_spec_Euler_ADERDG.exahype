@@ -35,8 +35,8 @@ exahype-project Euler
 
   shared-memory
     identifier               = dummy
-    configure                = {}
-    cores                    = 4
+    configure                = {background-tasks:28}
+    cores                    = 28
     properties-file          = sharedmemory.properties
   end shared-memory
 

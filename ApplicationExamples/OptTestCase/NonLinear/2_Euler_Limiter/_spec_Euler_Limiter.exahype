@@ -26,8 +26,8 @@ exahype-project Euler
   
   shared-memory
     identifier               = dummy
-    configure                = {}
-    cores                    = 4
+    configure                = {background-tasks:28}
+    cores                    = 28
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -43,8 +43,8 @@ exahype-project Euler
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
-    spawn-amr-background-threads = off
+    spawn-predictor-as-background-thread = on
+    spawn-amr-background-threads = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.8
     skip-reduction-in-batched-time-steps = on
@@ -54,9 +54,10 @@ exahype-project Euler
   end global-optimisation
  
   solver Limiting-ADER-DG EulerSolver
-    variables const            = rho:1,j:3,E:1
-    order const                = 3
+    variables const            = 5
+    order const                = 7
     maximum-mesh-size          = 0.038
+    maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
