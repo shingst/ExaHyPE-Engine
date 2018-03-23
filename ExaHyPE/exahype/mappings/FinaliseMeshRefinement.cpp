@@ -100,6 +100,7 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
+  _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
   initialiseLocalVariables();
 }
 
@@ -140,6 +141,11 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       OneSolverRequestedMeshUpdate &&
       fineGridCell.isInitialised()
   ) {
+    if ( !_backgroundJobsHaveTerminated ) {
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+      _backgroundJobsHaveTerminated = true;
+    }
+
     const int numberOfSolvers = static_cast<int>(exahype::solvers::RegisteredSolvers.size());
     for( int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -224,6 +230,8 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
       }
     }
   }
+
+  _backgroundJobsHaveTerminated = false;
 }
 
 #ifdef Parallel

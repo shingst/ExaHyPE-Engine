@@ -91,6 +91,21 @@ private:
    */
   void initialiseLocalVariables();
 
+  /**
+   * Indicates that the background tasks have terminated.
+   * No further checks are required in this case.
+   *
+   * Is initialised with false for the main thread
+   * and for the worker threads.
+   * As the worker threads; mappings are destroyed but
+   * the main thread's mapping continues to
+   * exist we reset this value in endIteration(State) to false.
+   *
+   * We process background jobs in touchVertexFirstTime(...)
+   * and set this flag here as well.
+   */
+  bool _backgroundJobsHaveTerminated = false;
+
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
@@ -210,15 +225,14 @@ private:
 
   /**
    * For all solvers, overwrite the current
-   * meshUpdateRequest value with the new value.
+   * gridUpdateRequested value with the next value.
    *
-   * Update the global solver state (next)limiterDomainChange
+   * Update the global solver states (next)limiterDomainHasChanged
    * with values from the temporary variables.
    *
    * Finish plotting if a plotter is active.
    *
-   * <h2>Background Jobs</h2>
-   * Ensures all background jobs are processed before we continue.
+   * Reset the _backgroundJobsHaveTerminated switch.
    */
   void endIteration(exahype::State& solverState);
 

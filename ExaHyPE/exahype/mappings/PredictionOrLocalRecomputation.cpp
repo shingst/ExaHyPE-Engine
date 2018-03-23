@@ -198,8 +198,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     #endif
   }
 
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
-
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 

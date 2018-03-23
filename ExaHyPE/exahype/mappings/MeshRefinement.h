@@ -218,9 +218,6 @@ public:
    * <h2>MPI</h2>
    * If this rank is the global master, update the
    * initial grid refinement strategy.
-   *
-   * <h2>Background Jobs</h2>
-   * Ensures all background jobs are processed before we continue.
    */
   void endIteration(exahype::State& solverState);
 

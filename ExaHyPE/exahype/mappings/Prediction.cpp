@@ -101,11 +101,7 @@ void exahype::mappings::Prediction::beginIteration(
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("endIteration(State)", state);
-
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
-
-  logTraceOutWith1Argument("endIteration(State)", state);
+  // do nothing
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(

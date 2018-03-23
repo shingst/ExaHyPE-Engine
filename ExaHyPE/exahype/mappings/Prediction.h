@@ -204,12 +204,6 @@ private:
   void beginIteration(exahype::State& solverState);
 
   /**
-   * <h2>Background Jobs</h2>
-   * Ensures all background jobs are processed before we continue.
-   */
-  void endIteration(exahype::State& solverState);
-
-  /**
    * \see performPredictionAndProlongateData
    */
   void enterCell(
@@ -471,6 +465,11 @@ private:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+
+  /**
+   * Nop
+   */
+  void endIteration(exahype::State& solverState);
 
   /**
    * Nop

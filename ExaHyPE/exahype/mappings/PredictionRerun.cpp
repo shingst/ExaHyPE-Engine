@@ -98,12 +98,12 @@ void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
 
 void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::enterCell(

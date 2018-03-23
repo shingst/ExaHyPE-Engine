@@ -148,7 +148,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
       exahype::State::isLastIterationOfBatchOrNoBatch(),
       true);
 
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  _backgroundJobsHaveTerminated = false;
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -156,6 +156,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FusedTimeStep::FusedTimeStep(
     const FusedTimeStep& masterThread) {
+  _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
   initialiseLocalVariables();
 }
 // Merge over threads
@@ -238,6 +239,11 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            fineGridX, fineGridH,
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
+
+  if ( !_backgroundJobsHaveTerminated ) {
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    _backgroundJobsHaveTerminated = true;
+  }
 
   fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
 

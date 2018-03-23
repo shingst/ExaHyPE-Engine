@@ -140,6 +140,9 @@ void exahype::mappings::MeshRefinement::beginIteration(
     //assertion2(!solver->getNextMeshUpdateRequest(),solver->toString(),tarch::parallel::Node::getInstance().getRank());
   }
 
+  // background threads
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
@@ -160,8 +163,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
 
   exahype::mappings::MeshRefinement::IsFirstIteration = false;
-
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
 }
 
 void exahype::mappings::MeshRefinement::refineSafely(
