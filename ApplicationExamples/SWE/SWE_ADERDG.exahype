@@ -32,15 +32,15 @@ exahype-project  SWE
   end computational-domain
 
   shared-memory
-        identifier = dummy
+        identifier = autotuning
         configure = {background-tasks:8}
         cores = 8
         properties-file = sharedmemory.properties
     end shared-memory
 
    solver ADER-DG MySWESolver
-    variables const   = h:1,hu:1,hv:1
-    parameters const  = b:1
+    variables const   = h:1,hu:1,hv:1,b:1
+    //parameters const  = b:1
     order const       = 3
     maximum-mesh-size = 0.15
     time-stepping     = global
