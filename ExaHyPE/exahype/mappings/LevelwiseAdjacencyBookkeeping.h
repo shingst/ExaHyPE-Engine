@@ -206,7 +206,8 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
     /**
      * If we are on a new worker, write
      * invalid adjacency indices into the vertex'
-     * adjacency map.
+     * adjacency map if the entries are greater than
+     * or equal to zero. Ignore entries < 0.
      */
     void mergeWithRemoteDataDueToForkOrJoin(
       exahype::Vertex&  localVertex,

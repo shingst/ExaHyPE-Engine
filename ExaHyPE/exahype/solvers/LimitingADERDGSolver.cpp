@@ -1210,8 +1210,6 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
       solverPatch,cellDescriptionsIndex,limiterElement);
   _limiter->ensureNecessaryMemoryIsAllocated(limiterPatch);
 
-  limiterPatch.setIsInside(solverPatch.getIsInside());
-
   return limiterElement;
 }
 

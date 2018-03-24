@@ -159,12 +159,10 @@ void exahype::Vertex::validateNeighbourhood(
                 (p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
                     p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
                     &&
-                    p1.getIsInside(faceIndex1)
-                    &&
                     cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
             ) {
               logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
-              // std::terminate();
+              std::terminate();
             }
           }
           // Cell 2
@@ -175,12 +173,10 @@ void exahype::Vertex::validateNeighbourhood(
                 (p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
                     p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
                     &&
-                    p2.getIsInside(faceIndex2)
-                    &&
                     cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
             ) {
               logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
-              // std::terminate();
+              std::terminate();
             }
           }
         } break;
@@ -192,12 +188,10 @@ void exahype::Vertex::validateNeighbourhood(
             if (
                 p1.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
                 &&
-                p1.getIsInside(faceIndex1)
-                &&
                 cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
             ) {
               logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
-              // std::terminate();
+              std::terminate();
             }
           }
           // Cell 2
@@ -207,12 +201,10 @@ void exahype::Vertex::validateNeighbourhood(
             if (
                 p2.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
                 &&
-                p2.getIsInside(faceIndex2)
-                &&
                 cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
             ) {
               logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
-              // std::terminate();
+              std::terminate();
             }
           }
         } break;
@@ -316,10 +308,10 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
 
   const bool validIndexNextToBoundaryIndex =
       (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1) &&
-      cellDescriptionsIndex2<0)
+      cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex)
       ||
       (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2) &&
-      cellDescriptionsIndex1<0);
+      cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
 
   if (
       validIndexNextToBoundaryIndex &&
@@ -339,11 +331,13 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch1;
       for (const auto& p1 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
-        mergeWithBoundaryData &= !p1.getIsInside(faceIndex1) && !p1.getNeighbourMergePerformed(faceIndex1);
+        mergeWithBoundaryData &=
+            !p1.getNeighbourMergePerformed(faceIndex1);
         baryCentreFromPatch1 = exahype::Cell::computeFaceBarycentre(p1.getOffset(),p1.getSize(),direction,orientation1);
       }
       for (const auto& p1 : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
-        mergeWithBoundaryData &= !p1.getIsInside(faceIndex1) && !p1.getNeighbourMergePerformed(faceIndex1);
+        mergeWithBoundaryData &=
+            !p1.getNeighbourMergePerformed(faceIndex1);
         baryCentreFromPatch1 = exahype::Cell::computeFaceBarycentre(p1.getOffset(),p1.getSize(),direction,orientation1);
       }
 
@@ -358,11 +352,13 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch2;
       for (const auto& p2 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
-        mergeWithBoundaryData &= !p2.getIsInside(faceIndex2) && !p2.getNeighbourMergePerformed(faceIndex2);
+        mergeWithBoundaryData &=
+            !p2.getNeighbourMergePerformed(faceIndex2);
         baryCentreFromPatch2 = exahype::Cell::computeFaceBarycentre(p2.getOffset(),p2.getSize(),direction,orientation2);
       }
       for (const auto& p2 : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
-        mergeWithBoundaryData &= !p2.getIsInside(faceIndex2) && !p2.getNeighbourMergePerformed(faceIndex2);
+        mergeWithBoundaryData &=
+            !p2.getNeighbourMergePerformed(faceIndex2);
         baryCentreFromPatch2 = exahype::Cell::computeFaceBarycentre(p2.getOffset(),p2.getSize(),direction,orientation2);
       }
 
@@ -758,23 +754,14 @@ bool exahype::Vertex::hasToSendDataToNeighbour(
 
   // ADER-DG
   for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(srcCellDescriptionsIndex)) {
-    if (
-        #if !defined(PeriodicBC)
-        !p.getIsInside(faceIndex) ||
-        #endif
-        p.getFaceDataExchangeCounter(faceIndex)!=0
-    ) {
+    if ( p.getFaceDataExchangeCounter(faceIndex)!=0 ) {
       return false;
     }
   }
 
   // FV // TODO(Dominic): Make template
   for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(srcCellDescriptionsIndex)) {
-    if (
-        #if !defined(PeriodicBC)
-        !p.getIsInside(faceIndex) ||
-        #endif
-        p.getFaceDataExchangeCounter(faceIndex)!=0) {
+    if ( p.getFaceDataExchangeCounter(faceIndex)!=0 ) {
       return false;
     }
   }
@@ -804,22 +791,14 @@ bool exahype::Vertex::hasToMergeWithNeighbourData(
 
   // ADER-DG
   for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) {
-    if (
-        #if !defined(PeriodicBC)
-        !p.getIsInside(faceIndex) ||
-        #endif
-        p.getFaceDataExchangeCounter(faceIndex)!=0) {
+    if ( p.getFaceDataExchangeCounter(faceIndex)!=0 ) {
       return false;
     }
   }
 
   // FV
   for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) {
-    if (
-        #if !defined(PeriodicBC)
-        !p.getIsInside(faceIndex) ||
-        #endif
-        p.getFaceDataExchangeCounter(faceIndex)!=0) {
+    if ( p.getFaceDataExchangeCounter(faceIndex)!=0 ) {
       return false;
     }
   }

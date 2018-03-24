@@ -327,14 +327,13 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
     // Allocate volume DoF for limiter
     const int dataPerNode     = getNumberOfVariables()+getNumberOfParameters();
-    const int unknownsPerCell = getUnknownsPerCell();
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
     cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
 
     assertionEquals(DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).size(),static_cast<unsigned int>(dataPerCell));
-    //assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(unknownsPerCell)); //TODO JMG adapt to padded lduh
+    //assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(getUnknownsPerCell())); //TODO JMG adapt to padded lduh
 
     cellDescription.setUpdateCompressed(-1);
     cellDescription.setSolutionCompressed(-1);
@@ -1207,9 +1206,6 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   CellDescription& fineGridCellDescription =
       getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
   ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-  fineGridCellDescription.setIsInside(
-      exahype::Cell::determineInsideAndOutsideFaces(
-            fineGridVertices,fineGridVerticesEnumerator));
 }
 
 void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
@@ -1261,16 +1257,6 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
         coarseGridCellDescriptionsIndex,
         fineGridVerticesEnumerator.getCellSize(),
         fineGridVerticesEnumerator.getVertexPosition());
-
-    CellDescription& fineGridCellDescription =
-        getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
-    fineGridCellDescription.setIsInside(
-        exahype::amr::determineInsideAndOutsideFacesOfChild(
-            fineGridCellDescription.getOffset(),fineGridCellDescription.getSize(),
-            coarseGridCellDescription.getOffset(),
-            fineGridCellDescription.getLevel()-coarseGridCellDescription.getLevel(),
-            coarseGridCellDescription.getIsInside())
-    );
   }
 }
 
@@ -1307,14 +1293,6 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       CellDescription& fineGridCellDescription =
           getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setRefinementEvent(CellDescription::Prolongating);
-      fineGridCellDescription.setIsInside(
-          exahype::amr::determineInsideAndOutsideFacesOfChild(
-              fineGridCellDescription.getOffset(),fineGridCellDescription.getSize(),
-              coarseGridCellDescription.getOffset(),
-              fineGridCellDescription.getLevel()-coarseGridCellDescription.getLevel(),
-              coarseGridCellDescription.getIsInside())
-      );
-
     } else {
       CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
       assertion2(fineGridCellDescription.getType()==CellDescription::Type::Descendant,
@@ -1784,7 +1762,7 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
     assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()),cellDescription.toString());
 
     double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data(); // TODO JMG adapt to padding
 
     double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
     double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
@@ -2658,17 +2636,13 @@ void exahype::solvers::ADERDGSolver::mergeWithLimiterStatus(
 int
 exahype::solvers::ADERDGSolver::determineLimiterStatus(
     CellDescription& cellDescription) {
+  int max = 0;
   for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if (
-        !cellDescription.getNeighbourMergePerformed(i) ||
-        !cellDescription.getIsInside(i)
-    ) {
-      cellDescription.setFacewiseLimiterStatus(i,0);
+    if ( cellDescription.getNeighbourMergePerformed(i) ) {
+      max = std::max( max, cellDescription.getFacewiseLimiterStatus(i) );
     }
   }
-  return std::max(
-      0, tarch::la::max(cellDescription.getFacewiseLimiterStatus()) - 1
-  );
+  return max;
 }
 
 void exahype::solvers::ADERDGSolver::mergeNeighboursLimiterStatus(
@@ -2708,15 +2682,6 @@ exahype::solvers::ADERDGSolver::updateCommunicationStatus(
 int
 exahype::solvers::ADERDGSolver::determineCommunicationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if (
-        !cellDescription.getNeighbourMergePerformed(i) ||
-        !cellDescription.getIsInside(i)
-    ) {
-      cellDescription.setFacewiseCommunicationStatus(i,0);
-    }
-  }
-
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     return MaximumCommunicationStatus;
   }
@@ -2726,9 +2691,13 @@ exahype::solvers::ADERDGSolver::determineCommunicationStatus(
   }
   #endif
   else {
-    return std::max(
-        0, tarch::la::max(cellDescription.getFacewiseCommunicationStatus()) - 1
-    );
+    int max = 0;
+    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
+      if ( cellDescription.getNeighbourMergePerformed(i) ) {
+        max = std::max( max, cellDescription.getFacewiseCommunicationStatus(i) );
+      }
+    }
+    return max;
   }
 }
 
@@ -2781,20 +2750,17 @@ exahype::solvers::ADERDGSolver::updateAugmentationStatus(
 int
 exahype::solvers::ADERDGSolver::determineAugmentationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if (
-        !cellDescription.getNeighbourMergePerformed(i) ||
-        !cellDescription.getIsInside(i)
-    ) {
-      cellDescription.setFacewiseAugmentationStatus(i,0);
+  if (cellDescription.getType()==CellDescription::Type::Ancestor) {
+    return MaximumAugmentationStatus;
+  } else {
+    int max = 0;
+    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
+      if ( cellDescription.getNeighbourMergePerformed(i) ) {
+        max = std::max( max, cellDescription.getFacewiseAugmentationStatus(i) );
+      }
     }
+    return max;
   }
-  return
-      (cellDescription.getType()==CellDescription::Type::Ancestor) ?
-      MaximumAugmentationStatus :
-      std::max(
-          0, tarch::la::max(cellDescription.getFacewiseAugmentationStatus()) - 1
-      );
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
@@ -2992,10 +2958,15 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
     const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
 
     uncompress(cellDescription);
 
-    applyBoundaryConditions(cellDescription,2*direction+orientation);
+    applyBoundaryConditions(cellDescription,faceIndex);
+
+    mergeWithAugmentationStatus(cellDescription,faceIndex,BoundaryStatus);
+    mergeWithCommunicationStatus(cellDescription,faceIndex,BoundaryStatus);
+    mergeWithLimiterStatus(cellDescription,faceIndex,BoundaryStatus);
   }
 }
 

@@ -210,8 +210,14 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
   int                                       level
 ) {
   if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
-    exahype::VertexOperations::writeCellDescriptionsIndex(
-              localVertex,multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex());
+    dfor2(c)
+      if ( localVertex.getCellDescriptionsIndex()[cScalar] >= 0 ) {
+        exahype::VertexOperations::writeCellDescriptionsIndex(
+            localVertex,
+            cScalar,
+            multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      }
+    enddforx
   }
 }
 

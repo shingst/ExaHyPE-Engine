@@ -46,6 +46,9 @@ namespace exahype {
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
+
+  static constexpr int BoundaryStatus = -1;
+
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
