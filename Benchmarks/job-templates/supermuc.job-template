@@ -1,0 +1,43 @@
+#!/bin/bash
+# Mandatory parameters are:
+# time, nodes, tasks,
+# job_name, output_file, error_file, 
+# job_file, spec_file, app, 
+# environment, parameters
+# 
+# Optional parameters are:
+# ranks, cores, mail
+#@ job_type = parallel
+#@ class = {{class}}
+#@ node = {{nodes}}
+#@ tasks_per_node = {{tasks}}
+#@ island_count = {{islands}}
+#@ network.MPI = sn_all,not_shared,us 
+#@ energy_policy_tag = ExaHyPE_Euler_energy_tag
+#@ minimize_time_to_solution = yes
+#@ wall_clock_limit = {{time}}
+#@ job_name = {{job_name}}
+#@ notification=complete
+#@ notify_user={{mail}}
+#@ error =  {{error_file}}
+#@ queue
+. /etc/profile
+. /etc/profile.d/modules.sh
+module load gcc/4.9
+module load tbb
+
+# pipe some information into output file
+echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`"
+echo ""
+module list
+echo ""
+printenv
+echo ""
+cat {{job_file}}
+echo ""
+echo "sweep/environment={{environment}}"
+echo "sweep/parameters={{parameters}}"
+cat {{spec_file}}
+
+# multiple ranks
+mpiexec -np {{ranks}} {{app}} {{spec_file}} 
