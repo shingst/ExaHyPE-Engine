@@ -17,9 +17,10 @@
 #@ minimize_time_to_solution = yes
 #@ wall_clock_limit = {{time}}
 #@ job_name = {{job_name}}
+#@ error  =  {{error_file}}
+#@ output =  {{output_file}}
 #@ notification=complete
 #@ notify_user={{mail}}
-#@ error =  {{error_file}}
 #@ queue
 . /etc/profile
 . /etc/profile.d/modules.sh
