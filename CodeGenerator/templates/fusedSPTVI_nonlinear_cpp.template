@@ -70,6 +70,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   // 0. Allocate local variable
   double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1_T
+{% if useLibxsmm %}
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing s_m away
+{% endif %}
+  
 {% if useNCP %}
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
@@ -182,10 +186,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
                     lQi[n+{{nDataPad}}*(i+{{nDof}}*(m+{{nDof}}*(k+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
               }
             }
-          } 
+          }
 {% endif %}
 {% endif %}
-          ijk_++;       
+          ijk_++;
+{% if useLibxsmm %}
+          doNotOptimizeAway = s_m[k];
+{% endif %}
         }
       }
 
@@ -236,6 +243,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
           ijk_++;
+{% if useLibxsmm %}
+          doNotOptimizeAway = s_m[k];
+{% endif %}
         }
       }
        
@@ -287,6 +297,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
           ijk_++;
+{% if useLibxsmm %}
+          doNotOptimizeAway = s_m[k];
+{% endif %}
         }
       }
 {% endif %}
@@ -346,6 +359,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       #pragma forceinline
 #endif
       {{gemm_lqi}}(&rhs[{{nVarPad}}*ijk], &s_m[0], &new_lQi_slice[0]); //Note: the gemm performs C = A*B, no need to initialize C to 0
+      doNotOptimizeAway = s_m[1];
 {% else %}
       std::memset(new_lQi_slice, 0, {{nDof*nVarPad}} * sizeof(double));
       for(int l=0;l<{{nDof}};l++) { 
@@ -607,12 +621,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       #pragma forceinline
     #endif
       {{gemm_y}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}]);
-    {% if nDim == 3 %} 
+{% if nDim == 3 %} 
     #ifdef USE_IPO
       #pragma forceinline
     #endif
       {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad}}]);
-{% endif %} 
+{% endif %}
+      doNotOptimizeAway = s_m[i];
 {% else %}
       //x 
       for(int l=0; l<{{nDof}}; l++) {
