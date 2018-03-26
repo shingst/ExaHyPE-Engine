@@ -1383,6 +1383,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
+
     return
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
@@ -2639,7 +2640,7 @@ exahype::solvers::ADERDGSolver::determineLimiterStatus(
   int max = 0;
   for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
     if ( cellDescription.getNeighbourMergePerformed(i) ) {
-      max = std::max( max, cellDescription.getFacewiseLimiterStatus(i) );
+      max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
     }
   }
   return max;
@@ -2694,7 +2695,7 @@ exahype::solvers::ADERDGSolver::determineCommunicationStatus(
     int max = 0;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( cellDescription.getNeighbourMergePerformed(i) ) {
-        max = std::max( max, cellDescription.getFacewiseCommunicationStatus(i) );
+        max = std::max( max, cellDescription.getFacewiseCommunicationStatus(i)-1 );
       }
     }
     return max;
@@ -2756,7 +2757,7 @@ exahype::solvers::ADERDGSolver::determineAugmentationStatus(
     int max = 0;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( cellDescription.getNeighbourMergePerformed(i) ) {
-        max = std::max( max, cellDescription.getFacewiseAugmentationStatus(i) );
+        max = std::max( max, cellDescription.getFacewiseAugmentationStatus(i)-1 );
       }
     }
     return max;

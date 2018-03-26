@@ -651,36 +651,36 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", max-level=" << repository.getState().getMaxLevel() <<
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
   #elif defined(Asserts)
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
   #elif defined(TrackGridStatistics)
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", max-level=" << repository.getState().getMaxLevel() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
   #else
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
-  #endif
-
-  #ifdef Asserts
-  logInfo("createGrid()",
-           "grid setup iteration #" << meshSetupIterations <<
-           ", run one more iteration=" <<  repository.getState().continueToConstructGrid() ||
-                                            exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
-   );
   #endif
 
   #if !defined(Parallel)
