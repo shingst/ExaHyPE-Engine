@@ -85,6 +85,8 @@ def parseResultFile(filePath):
                 adapters[adapter]['total_usertime'] = segments[usertimeIndex].strip()
     except IOError as err:
         print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
+    except json.decoder.JSONDecodeError as err:
+        print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
     return environmentDict,parameterDict,adapters
 
 def getAdapterTimesSortingKey(row):
