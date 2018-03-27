@@ -14,7 +14,7 @@
 {%- if countFlops %}
 #include <atomic>
 #include <iostream>
-{% endif %}
+{%- endif %}
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/UserSolverInterface.h"
