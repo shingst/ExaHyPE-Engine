@@ -205,7 +205,7 @@ def linesAreIdenticalUpToIndex(line,previousLine,index):
         result = result and line[column]==previousLine[column]
     return result
 
-def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
+def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     """
     Read in the sorted adapter times table and 
     extract the time per time step for the fused
@@ -217,7 +217,7 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
     
     adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
     outputTablePath   = resultsFolderPath+"/"+projectName+'-total-times.csv'
-    if onlyTimeStepping:
+    if timePerTimeStep:
         outputTablePath   = resultsFolderPath+"/"+projectName+'-timestep-times.csv'
     try:
         print ("reading table "+adaptersTablePath+"")
@@ -265,9 +265,12 @@ def parseSummedTimes(resultsFolderPath,projectName,onlyTimeStepping=False):
                     if adapter==firstNonfusedAdapter:
                        fused = False
                     
-                    if (not onlyTimeStepping) or (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                    if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
                         summedCPUTimes[-1]  += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
                         summedUserTimes[-1] += float(line[userTimeColumn]) / float(line[iterationsColumn])
+                    elif not timePerTimeStep:
+                        summedCPUTimes[-1]  += float(line[cpuTimeColumn])
+                        summedUserTimes[-1] += float(line[userTimeColumn])
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
                     summedCPUTimes.append(0.0) 
                     summedUserTimes.append(0.0) 
