@@ -196,130 +196,6 @@ def parseAdapterTimes(resultsFolderPath,projectName):
         print ("ERROR: could not write file "+tablePath+". Error message: " + str(err))
 
 
-def parseTotalTime(filePath):
-    '''
-    Reads a single sweep job output file and parses the time the Peano states a 
-    succesful completion of the run.
-    
-    Args:
-       filePath (str):
-          Path to the sweep job output file.
-
-    Returns:
-       The parsed time as a string.
-    '''
-    totalTime = -1.0
-    try:
-        fileHandle=codecs.open(filePath,'r','UTF_8')
-        for line in fileHandle:
-            if line.startswith("sweep/environment"):
-                value = line.split('=')[-1]
-                environmentDict=json.loads(value)
-            if line.startswith("sweep/parameters"):
-                value = line.split('=')[-1]
-                parameterDict=json.loads(value)
-            anchor = 'Peano terminates successfully'
-            if anchor in line and header not in line:
-                segments = line.split("info")
-                totalTime = float(segments[0].strip());
-    except IOError as err:
-        print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
-    except json.decoder.JSONDecodeError as err:
-        print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
-    return totalTime
-
-def parseTotalTimes(resultsFolderPath,projectName):
-    """
-    Loop over all ".out" files in the results section and create a table.
-    """
-    tablePath = resultsFolderPath+"/"+projectName+'.csv'
-    try:
-        with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=";")
-            files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
-            
-            unfinishedRuns = []
-            print("processed files:")
-            firstFile = True
-            for fileName in files:
-                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
-                prefix              = match.group(1)
-                parameterDictHash   = match.group(2)
-                environmentDictHash = match.group(3)
-                nodes               = match.group(4)
-                tasks               = match.group(5)
-                cores               = match.group(6)
-                run                 = match.group(7)
-                
-                totalTime = parseTotalTime(resultsFolderPath + "/" + fileName)
-                if totalTime >= 0.0:
-                    # write header
-                    if firstFile:
-                        header = []
-                        header += sorted(environmentDict)
-                        for parameter in knownParameters:
-                            header.append(parameter)
-                        for parameter in sorted(parameterDict):
-                            if parameter not in knownParameters:
-                                header.append(parameter)
-                        header.append("nodes")
-                        header.append("tasks")
-                        header.append("cores")
-                        header.append("run")
-                        header.append("adapter")
-                        header.append("total_time")
-                        header.append("file")
-                        csvwriter.writerow(header)
-                        firstFile=False
-                    print(resultsFolderPath+"/"+fileName)
-                    
-                    # write rows
-                    for adapter in adapters:
-                        row=[]
-                        for key in sorted(environmentDict):
-                            row.append(environmentDict[key])
-                        for key in knownParameters:
-                            row.append(parameterDict[key])
-                        for key in sorted(parameterDict):
-                            if key not in knownParameters:
-                                row.append(parameterDict[key])
-                        row.append(nodes)
-                        row.append(tasks)
-                        row.append(cores)
-                        row.append(run)
-                        row.append(adapter)
-                        row.append(totalTime)
-                        row.append(fileName)
-                        csvwriter.writerow(row)
-                else:
-                    unfinishedRuns.append(resultsFolderPath+"/"+fileName)
-        if len(unfinishedRuns):
-            print("output files of unfinished runs:")
-            for job in unfinishedRuns:
-                print(job)
-
-        success = not firstFile
-        if success:
-            # reopen the file and sort it
-            tableFile   = open(tablePath, 'r')
-            header      = next(tableFile)
-            header      = header.strip()
-            reader      = csv.reader(tableFile,delimiter=";")
-          
-            sortedData = sorted(reader,key=getAdapterTimesSortingKey)
-            tableFile.close()
-          
-            with open(tablePath, 'w') as sortedTableFile:
-                writer = csv.writer(sortedTableFile, delimiter=";")
-                writer.writerow(header.split(';'))
-                writer.writerows(sortedData)
-            print("created table:")
-            print(tablePath) 
-
-    except IOError as err:
-        print ("ERROR: could not write file "+tablePath+". Error message: " + str(err))
-
 def column(matrix, i):
     return [row[i] for row in matrix]
 
@@ -329,7 +205,7 @@ def linesAreIdenticalUpToIndex(line,previousLine,index):
         result = result and line[column]==previousLine[column]
     return result
 
-def parseTimeStepTimes(resultsFolderPath,projectName):
+def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     """
     Read in the sorted adapter times table and 
     extract the time per time step for the fused
@@ -341,7 +217,7 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
     
     adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
     outputTablePath   = resultsFolderPath+"/"+projectName+'-total-times.csv'
-    if onlyTimeStepping:
+    if timePerTimeStep:
         outputTablePath   = resultsFolderPath+"/"+projectName+'-timestep-times.csv'
     try:
         print ("reading table "+adaptersTablePath+"")
@@ -389,9 +265,12 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
                     if adapter==firstNonfusedAdapter:
                        fused = False
                     
-                    if (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                        summedCPUTimes[-1]  += float(line[cpuTimeColumn])  / float(line[iterationsColumn])
+                    if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                        summedCPUTimes[-1]  += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
                         summedUserTimes[-1] += float(line[userTimeColumn]) / float(line[iterationsColumn])
+                    elif not timePerTimeStep:
+                        summedCPUTimes[-1]  += float(line[cpuTimeColumn])
+                        summedUserTimes[-1] += float(line[userTimeColumn])
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
                     summedCPUTimes.append(0.0) 
                     summedUserTimes.append(0.0) 
@@ -451,6 +330,7 @@ def parseTimeStepTimes(resultsFolderPath,projectName):
             print(outputTablePath) 
     except IOError as err:
         print ("ERROR: could not read file "+adaptersTablePath+". Error message: "<<str(err))
+
 
 def parseLikwidMetrics(filePath,singlecore=False):
     """
