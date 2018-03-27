@@ -76,7 +76,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
   double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad), materialParam (nVar*nDim) and ncp (2x nVar*nDim)
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing temp array away
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
   #pragma simd
@@ -364,8 +363,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     }
 {% endif %} {# useNCP #}
 
-    doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-
 {% if useMaterialParam %}
     //materialParam
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth using tmpArray, change to same paradigm as flux
@@ -604,7 +601,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
     }
   }
-
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+#endif
+{% endif %}
   return -1; //no picard iteration in linear case
 
 }

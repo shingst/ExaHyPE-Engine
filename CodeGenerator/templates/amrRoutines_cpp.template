@@ -37,7 +37,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
 {% if nDim == 3 and useLibxsmm %} 
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerQhbnd1 = 0;
@@ -114,8 +113,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       #pragma forceinline
 #endif
           {{gemm_face_F}}(&lFhbndCoarse[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %}
@@ -181,8 +178,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
           #pragma forceinline
 #endif
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %}      
@@ -242,6 +237,11 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       pointerFhbnd1 = lFhbndFineTemp;
     }
   }
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }
 
 
@@ -263,7 +263,6 @@ void {{codeNamespace}}::faceUnknownsRestriction(
   
 {% if nDim == 3 and useLibxsmm %} 
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerQhbnd1 = 0;
@@ -328,8 +327,6 @@ void {{codeNamespace}}::faceUnknownsRestriction(
       #pragma forceinline
 #endif
           {{gemm_face_F}}(&lFhbndFine[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %}
@@ -395,8 +392,6 @@ void {{codeNamespace}}::faceUnknownsRestriction(
           #pragma forceinline
 #endif
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %} 
@@ -460,6 +455,11 @@ void {{codeNamespace}}::faceUnknownsRestriction(
   for (int it = 0; it < {{nDof*nDof3D*nVarPad }}; it++) {
     lFhbndCoarse[it] += pointerFhbnd2[it];
   }
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }
 
 
@@ -476,7 +476,6 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
   
 {% if useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerUh1 = 0;
@@ -546,8 +545,6 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
               #pragma forceinline
 #endif
               {{gemm_volume}}(&luhCoarse[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -594,8 +591,6 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
               #pragma forceinline
 #endif
               {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -641,6 +636,11 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
       pointerUh1 = luhFineTemp;
     }
   }
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }
 
 
@@ -658,7 +658,6 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   
 {% if useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerUh1 = 0;
@@ -716,8 +715,6 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
               #pragma forceinline
 #endif
               {{gemm_volume}}(&luhFine[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -764,8 +761,6 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
               #pragma forceinline
 #endif
               {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -811,4 +806,9 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   for (int it = 0; it < {{nDof*nDof*nDof3D*nData}}; it++) {
     luhCoarse[it] += pointerUh2[it];
   }
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }

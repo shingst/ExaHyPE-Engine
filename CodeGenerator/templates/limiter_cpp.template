@@ -32,7 +32,6 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
   //tensor operation
 {% if useLibxsmm %}
   double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
   
   //Compact projection without ghostlayer
   for (int z = 0; z < {{nDofLim3D}}; z++) {
@@ -51,8 +50,6 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
           #pragma forceinline
 #endif
           {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}});
-        
-          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
         }
       }
     }
@@ -86,6 +83,11 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
     }
   }
 {% endif %} {# useLibxsmm #}  
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }
 
 //Fortran (Limiter.f90): PutSubcellData
@@ -95,7 +97,6 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
   //tensor operation
 {% if useLibxsmm %}
   double coeff[{{nDof*nDofLimPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
   
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int iz = 0; iz < {{nDofLim3D}}; iz++) {
@@ -113,8 +114,6 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
           #pragma forceinline
 #endif
           {{gemm_fv2dg}}(lim+((iz+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth3D}}+iy+{{ghostLayerWidth}})*{{(nDofLim+2*ghostLayerWidth)*nVar}}+{{ghostLayerWidth*nVar}}, coeff, luh+(z*{{nDof3D}}+y)*{{nDof*nData}}); //ignore ghostlayer
-        
-          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
         }
       }
     }
@@ -141,7 +140,11 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
     }
   }
 {% endif %}{# useLibxsmm #}
-  
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }
 
 
@@ -270,7 +273,6 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
 {% if useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   double lobValues[{{nVar*nDof}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
   
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
@@ -289,8 +291,6 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
           #pragma forceinline
 #endif
           {{gemm_uh2lob}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lobValues);
-        
-          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
         }
       }
       
@@ -335,7 +335,11 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     }
   }
 {% endif %}{# useLibxsmm #}
-
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }
 
 /**
@@ -355,7 +359,6 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
 {% if useLibxsmm %}
   double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   double limValues[{{nVar*nDofLim}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
   
   for (int z = 0; z < {{nDofLim3D}}; z++) {
     for (int y = 0; y < {{nDofLim}}; y++) {
@@ -374,8 +377,6 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
           #pragma forceinline
 #endif
           {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, limValues);
-        
-          doNotOptimizeAway = coeff[y]; // used to prevent the compiler from optimizing coeff away
         }
       }
       
@@ -422,5 +423,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     }
   }
 {% endif %}{# useLibxsmm #}
-
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
+#endif
+{% endif %}
 }

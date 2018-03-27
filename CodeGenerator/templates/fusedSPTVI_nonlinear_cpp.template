@@ -70,9 +70,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   // 0. Allocate local variable
   double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1_T
-{% if useLibxsmm %}
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing s_m away
-{% endif %}
   
 {% if useNCP %}
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -190,9 +187,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
           ijk_++;
-{% if useLibxsmm %}
-          doNotOptimizeAway = s_m[k];
-{% endif %}
         }
       }
 
@@ -243,9 +237,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
           ijk_++;
-{% if useLibxsmm %}
-          doNotOptimizeAway = s_m[k];
-{% endif %}
         }
       }
        
@@ -297,9 +288,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
           ijk_++;
-{% if useLibxsmm %}
-          doNotOptimizeAway = s_m[k];
-{% endif %}
         }
       }
 {% endif %}
@@ -359,7 +347,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       #pragma forceinline
 #endif
       {{gemm_lqi}}(&rhs[{{nVarPad}}*ijk], &s_m[0], &new_lQi_slice[0]); //Note: the gemm performs C = A*B, no need to initialize C to 0
-      doNotOptimizeAway = s_m[1];
 {% else %}
       std::memset(new_lQi_slice, 0, {{nDof*nVarPad}} * sizeof(double));
       for(int l=0;l<{{nDof}};l++) { 
@@ -627,7 +614,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     #endif
       {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad}}]);
 {% endif %}
-      doNotOptimizeAway = s_m[i];
 {% else %}
       //x 
       for(int l=0; l<{{nDof}}; l++) {
@@ -676,6 +662,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   }
   
 {% endif %} 
+{% if useLibxsmm %}
+#ifdef USE_IPO
+  double doNotOptimizeAway = s_m[0]; //used to prevent the compiler from optimizing temp array away
+#endif
+{% endif %}
 
   return std::min(iter+1, MaxIterations); //return number of Picard iterations, min to avoid doing a +1 if the loop wasn't exited early
 }
