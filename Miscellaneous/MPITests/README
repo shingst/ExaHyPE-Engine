@@ -11,7 +11,7 @@ the receivers allocate a buffer and receive the message.
 
 
 Compile via (replace mpicc by desired MPI compiler wrapper):
-mpicc <options> DynamicReceiveBroadcast.cpp -o DynamicReceiveBroadcast
+mpicc <options> -std=c++11 DynamicReceiveBroadcast.cpp -o DynamicReceiveBroadcast
 
 Compiler options:
  -DBlockingSend     - use a MPI_Send instead of a MPI_Isend and a subsequent MPI_Test calling while loop
