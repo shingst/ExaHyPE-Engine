@@ -98,9 +98,9 @@ class DGMatrixGenerator:
         #fineGridProjector1d_T_weighted
         for i in range(self.m_context["nDof"]):
             for j in range(self.m_context["nDof"]):
-                fineGridProjector1d_0[i][j] *= self.m_wGPN[i]/self.m_wGPN[j]/3.0
-                fineGridProjector1d_1[i][j] *= self.m_wGPN[i]/self.m_wGPN[j]/3.0
-                fineGridProjector1d_2[i][j] *= self.m_wGPN[i]/self.m_wGPN[j]/3.0
+                fineGridProjector1d_0[i][j] *= self.m_wGPN[j]/self.m_wGPN[i]/3.0
+                fineGridProjector1d_1[i][j] *= self.m_wGPN[j]/self.m_wGPN[i]/3.0
+                fineGridProjector1d_2[i][j] *= self.m_wGPN[j]/self.m_wGPN[i]/3.0
         self.m_context["fineGridProjector1d_T_weighted_0"] = MathsUtils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_0,l_padSize)
         self.m_context["fineGridProjector1d_T_weighted_1"] = MathsUtils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_1,l_padSize)
         self.m_context["fineGridProjector1d_T_weighted_2"] = MathsUtils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_2,l_padSize)

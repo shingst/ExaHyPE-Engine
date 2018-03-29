@@ -395,7 +395,7 @@ void exahype::mappings::MeshRefinement::enterCell(
       if (
           exahype::mappings::MeshRefinement::IsFirstIteration ||
           newComputeCell
-       ) {
+      ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
 
@@ -406,6 +406,7 @@ void exahype::mappings::MeshRefinement::enterCell(
       }
     }
   }
+
 
   if (fineGridCell.isInitialised()) {
     exahype::Cell::resetNeighbourMergeFlags(

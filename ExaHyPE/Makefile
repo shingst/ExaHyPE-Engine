@@ -17,12 +17,25 @@
 # SHAREDMEM           None              OMP, TBB, CPP14            Shared-memory parallelisation
 # DISTRIBUTEDMEM      None              MPI                        Distributed-memory parallelisation
 # BOUNDARYCONDITIONS  None              Periodic                   Type of boundary conditions
-# USE_IPO             Off               On                         IPO during compilation (intel only)
+# USE_IPO             Off               On, Unsafe                 IPO during compilation (intel only)
 # *********************************************************************************************
 
 SHELL = bash
 tolower = $(shell echo $(1) | tr '[:upper:]' '[:lower:]')
-ifeq ($(call tolower,$(USE_IPO)),on)
+
+#USE_IPO unsafe => on with unsafe flag enabled
+USE_IPO_INTERN=$(call tolower,$(USE_IPO))
+ifeq ($(USE_IPO),)
+	USE_IPO_INTERN=off
+else ifeq ($(call tolower,$(USE_IPO)),unsafe)
+	USE_IPO_INTERN=on
+	IPO_UNSAFE_FLAG=-DUNSAFE_IPO
+else
+	IPO_UNSAFE_FLAG=
+endif
+
+
+ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 	SOLVERKERNELS_IPO_OBJ=$(PROJECT_PATH)/solver_ipo.o
 else
 	SOLVERKERNELS_IPO_OBJ=
@@ -50,9 +63,6 @@ endif
 ifeq ($(BOUNDARYCONDITIONS),)
 	BOUNDARYCONDITIONS=None
 endif
-ifeq ($(USE_IPO),)
-	USE_IPO=Off
-endif
 
 ifeq ($(call tolower,$(GPROF)),on)
 	COMPILER_CFLAGS += -pg 
@@ -61,7 +71,7 @@ endif
 
 # ************************************************
 
-ifeq ($(call tolower,$(USE_IPO)),on)
+ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 	ifneq ($(call tolower,$(COMPILER)),intel)
 $(error USE_IPO=on only works with COMPILER=Intel)
 	endif
@@ -443,7 +453,7 @@ cfiles.mk:
 ifneq (,$(findstring Yes, $(MIXEDLANG) ))  
 	find -H $(EXAHYPE_PATH)'/kernels/aderdg/generic/fortran' -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
 endif
-ifneq ($(call tolower,$(USE_IPO)),on)
+ifneq ($(call tolower,$(USE_IPO_INTERN)),on)
 	find -H $(EXAHYPE_PATH)'/exahype/solvers' -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
 	find -L $(PROJECT_PATH) -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
 endif
@@ -453,7 +463,7 @@ endif
 cipofiles.mk:
 	touch cipofiles.mk
 	echo -n CIPOSOURCES= > cipofiles.mk
-ifeq ($(call tolower,$(USE_IPO)),on)
+ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 	find -H $(EXAHYPE_PATH)'/exahype/solvers' -name '*.cpp' | tr '\n' ' ' >> cipofiles.mk
 	find -L $(PROJECT_PATH) -name '*.cpp' | tr '\n' ' ' >> cipofiles.mk
 endif
@@ -477,8 +487,8 @@ ifneq (,$(findstring Yes, $(MIXEDLANG) ))
 endif
 
 mergeipoobjects:  $(CIPOOBJECTS)
-ifeq ($(call tolower,$(USE_IPO)),on)
-	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(SYSTEM_CFLAGS) -wd10015 -DUSE_IPO -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/.. -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/.. -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/.. -I$(PEANO_KERNEL_PEANO_PATH)/.. -I$(PEANO_KERNEL_TARCH_PATH)/.. -I$(EXAHYPE_PATH) -I$(PROJECT_PATH) -ipo-c $(CIPOOBJECTS) -o $(SOLVERKERNELS_IPO_OBJ)
+ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
+	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(SYSTEM_CFLAGS) -wd10015 -DUSE_IPO $(IPO_UNSAFE_FLAG) -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/.. -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/.. -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/.. -I$(PEANO_KERNEL_PEANO_PATH)/.. -I$(PEANO_KERNEL_TARCH_PATH)/.. -I$(EXAHYPE_PATH) -I$(PROJECT_PATH) -ipo-c $(CIPOOBJECTS) -o $(SOLVERKERNELS_IPO_OBJ)
 #	-wd10015: disable the specific warning from ipo-c: icpc: warning #10015: multi-file optimization .o file produced; no link
 #	combine all the ipo objects into one object (with ipo between the merged objects)
 endif
@@ -549,7 +559,7 @@ clean:
 	rm -f ffiles.mk
 	rm -f $(COBJECTS)
 	rm -f cfiles.mk
-ifeq ($(call tolower,$(USE_IPO)),on)	
+ifeq ($(call tolower,$(USE_IPO_INTERN)),on)	
 	rm -f $(CIPOOBJECTS)
 	rm -f $(SOLVERKERNELS_IPO_OBJ)
 endif
@@ -561,7 +571,7 @@ $(COBJECTS): %.o : %.cpp
 	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(NO_IPO_FLAG) $(SYSTEM_CFLAGS) -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/.. -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/.. -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/.. -I$(PEANO_KERNEL_PEANO_PATH)/.. -I$(PEANO_KERNEL_TARCH_PATH)/.. -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(CIPOOBJECTS): %.o : %.cpp
-	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(IPO_FLAG) -DUSE_IPO $(SYSTEM_CFLAGS) -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/.. -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/.. -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/.. -I$(PEANO_KERNEL_PEANO_PATH)/.. -I$(PEANO_KERNEL_TARCH_PATH)/.. -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
+	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(IPO_FLAG) -DUSE_IPO $(IPO_UNSAFE_FLAG) $(SYSTEM_CFLAGS) -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/.. -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/.. -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/.. -I$(PEANO_KERNEL_PEANO_PATH)/.. -I$(PEANO_KERNEL_TARCH_PATH)/.. -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(FOBJECTS): %.o : %.f90
 	$(FC) $(PROJECT_CFLAGS) $(FCOMPILER_CFLAGS) -I$(PROJECT_PATH) -c $< -o $@

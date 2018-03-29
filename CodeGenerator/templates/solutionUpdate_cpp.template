@@ -31,7 +31,7 @@ void {{codeNamespace}}::solutionUpdate(
     const double coeff = dt/weights3[xyz];
     #pragma simd
     for (int n = 0; n < {{nVar}}; n++) { //update only the variables, lduh contains no parameters
-      luh[xyz*{{nData}}+n] += coeff*lduh[xyz*{{nVar}}+n]; //simd+fma
+      luh[xyz*{{nData}}+n] += coeff*lduh[xyz*{{nVarPad}}+n]; //simd+fma
     }
   }
  

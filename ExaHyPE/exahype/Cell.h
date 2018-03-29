@@ -167,6 +167,10 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * A face is considered inside if at least
    * one of its vertices is inside.
    *
+   * <h2> Issues with hanging vertices </h2>
+   * Hanging vertices are initialised as Outside.
+   * This might lead to problems.
+   *
    * <h2>Issues with AMR</h2>
    * Use this function only for cells
    * on the coarsest mesh level per solver.
@@ -178,6 +182,13 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    *
    * For newly introduced fine mesh cells, then prolongate the coarse grid
    * information down.
+   *
+   * <h2> Issues with multi-solvers</h2>
+   * I expect problems when we have multiple solvers with
+   * different maximum mesh size in the grid.
+   * Different resolutions might lead to different decisions
+   * by Peano which cell is inside or outside. This
+   * will make it hard to couple solvers when using anisotropic domains.
    */
   static std::bitset<DIMENSIONS_TIMES_TWO> determineInsideAndOutsideFaces(
         const exahype::Vertex* const verticesAroundCell,

@@ -117,7 +117,7 @@ public class SolverFactory {
         case GenericADERDG: 
           return new eu.exahype.solvers.GenericLimiter(_projectName, solverName, ADERDGsolver, FVsolver);
         case OptimisedADERDG:
-          return new eu.exahype.solvers.OptimisedLimiter(_projectName, solverName, ADERDGsolver, FVsolver);
+          return new eu.exahype.solvers.OptimisedLimiter(_projectName, solverName, ADERDGsolver, FVsolver, aderdgKernel.useFlopsDebug());
       }
       System.err.println("ERROR: solver configuration is not supported: "+aderdgKernel.toString()+FVKernel.toString());
       return null;

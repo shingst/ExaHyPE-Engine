@@ -71,7 +71,7 @@ exahype-project GRGPR
     limiter-type const         = godunov
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables                = 5
+    dmp-observables const          = 5
     dmp-relaxation-parameter       = 1e-3 
     dmp-difference-scaling         = 1e-4 
     steps-till-cured           = 5

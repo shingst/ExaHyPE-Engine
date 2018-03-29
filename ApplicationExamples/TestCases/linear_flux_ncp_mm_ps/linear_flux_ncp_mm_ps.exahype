@@ -23,7 +23,7 @@ exahype-project  Elastic
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/TestCases/linear_flux_ncp_mm_ps
-  architecture const      = hsw
+  architecture const      = noarch
   log-file                = mylogfile.log
 
   computational-domain
@@ -35,8 +35,8 @@ exahype-project  Elastic
 
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:8}
-    cores                    = 8
+    configure                = {background-tasks:28,manual-pinning}
+    cores                    = 28
     properties-file          = sharedmemory.properties
   end shared-memory
  
@@ -58,7 +58,7 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1
     order const        = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 1.5
+    maximum-mesh-size  = 4.5
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre

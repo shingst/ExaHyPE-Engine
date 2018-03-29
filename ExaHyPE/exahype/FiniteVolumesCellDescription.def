@@ -104,21 +104,6 @@ class exahype::records::FiniteVolumesCellDescription {
    * performed.
    */
   parallelise persistent bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
-  
-  /**
-   * These flags indicate which face of a cell is inside the domain.
-   * If a face is not inside of the domain, it might be part
-   * of the domain boundary or outside of the domain.
-   * 
-   * In both cases, we apply boundary conditions.
-   *
-   * !!! HangingVertexBookkeeper !!!
-   * We need this field since the HangingVertexBookkeeper overwrites
-   * DomainAdjacencyIndices by RemoteAdjacencyIndices if the rank's
-   * and a remote rank's domain's overlap contains the parts of the boundary
-   * or a sub-manifold that is located outside of the domain.   
-   */
-  parallelise persistent bool isInside[DIMENSIONS_TIMES_TWO];
   ///@}
   
   #ifdef Parallel  

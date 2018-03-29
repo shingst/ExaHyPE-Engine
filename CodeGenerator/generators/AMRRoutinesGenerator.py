@@ -38,8 +38,8 @@ class AMRRoutinesGenerator:
 
 
     def generateCode(self):
-        self.m_context["gemm_face_Q"] = "gemm_"+str(self.m_context["nData"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_face_Q"
-        self.m_context["gemm_face_F"] = "gemm_"+str(self.m_context["nVar"]) +"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_face_F"
+        self.m_context["gemm_face_Q"] = "gemm_"+str(self.m_context["nDataPad"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_face_Q"
+        self.m_context["gemm_face_F"] = "gemm_"+str(self.m_context["nVarPad"]) +"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_face_F"
         self.m_context["gemm_volume"] = "gemm_"+str(self.m_context["nData"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_volume"
         
         TemplatingUtils.renderAsFile("amrRoutines_cpp.template", self.m_filename, self.m_context)
@@ -55,7 +55,7 @@ class AMRRoutinesGenerator:
         # implementation file
         #-----------------------------        
         l_face_Q = MatmulConfig(  # M
-                                    self.m_context["nData"],      \
+                                    self.m_context["nDataPad"],      \
                                     # N
                                     self.m_context["nDof"],       \
                                     # K
@@ -82,7 +82,7 @@ class AMRRoutinesGenerator:
                                     "gemm")
         l_matmulList.append(l_face_Q)
         l_face_F = MatmulConfig(  # M
-                                    self.m_context["nVar"],       \
+                                    self.m_context["nVarPad"],       \
                                     # N
                                     self.m_context["nDof"],       \
                                     # K

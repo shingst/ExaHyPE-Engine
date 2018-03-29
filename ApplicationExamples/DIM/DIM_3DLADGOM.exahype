@@ -72,7 +72,7 @@ exahype-project DIM
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables                = 1
+    dmp-observables  const         = 1
     dmp-relaxation-parameter       = 1e+3 
     dmp-difference-scaling         = 1e+4 
     steps-till-cured           = 5

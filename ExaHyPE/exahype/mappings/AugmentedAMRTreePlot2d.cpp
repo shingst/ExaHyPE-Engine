@@ -98,7 +98,7 @@ exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d()
       _refinementRequestWriter(nullptr),
       _cellDataWriter(nullptr),
       _augmentationStatusWriter(nullptr),
-      _helperStatusWriter(nullptr),
+      _communicationStatusWriter(nullptr),
       _limiterStatusWriter(nullptr),
       _previousLimiterStatusWriter(nullptr),
       _hasVirtualChildrenWriter(nullptr),
@@ -119,7 +119,7 @@ exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d(
       _refinementRequestWriter(masterThread._refinementRequestWriter),
       _cellDataWriter(masterThread._cellDataWriter),
       _augmentationStatusWriter(masterThread._augmentationStatusWriter),
-      _helperStatusWriter(masterThread._helperStatusWriter),
+      _communicationStatusWriter(masterThread._communicationStatusWriter),
       _limiterStatusWriter(masterThread._limiterStatusWriter),
       _previousLimiterStatusWriter(masterThread._previousLimiterStatusWriter),
       _hasVirtualChildrenWriter(masterThread._hasVirtualChildrenWriter),
@@ -384,7 +384,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
           _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolution() > -1) +
                                                                   static_cast<int>(pFine.getExtrapolatedPredictor() > -1));
           _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
-          _helperStatusWriter->plotCell(          cellIndex, pFine.getHelperStatus());
+          _communicationStatusWriter->plotCell(          cellIndex, pFine.getCommunicationStatus());
           _limiterStatusWriter->plotCell(         cellIndex, pFine.getLimiterStatus());
           _previousLimiterStatusWriter->plotCell( cellIndex, pFine.getPreviousLimiterStatus());
           _hasVirtualChildrenWriter->plotCell(    cellIndex, pFine.getHasVirtualChildren() ? 1 : 0);
@@ -398,7 +398,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
         _refinementRequestWriter->plotCell(    cellIndex, -1);
         _cellDataWriter->plotCell(             cellIndex,  0);
         _augmentationStatusWriter->plotCell(   cellIndex, -1);
-        _helperStatusWriter->plotCell(         cellIndex, -1);
+        _communicationStatusWriter->plotCell(         cellIndex, -1);
         _limiterStatusWriter->plotCell(        cellIndex, -1);
         _previousLimiterStatusWriter->plotCell(cellIndex, -1);
         _hasVirtualChildrenWriter->plotCell(   cellIndex,  0);
@@ -410,7 +410,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
       _refinementRequestWriter->plotCell(    cellIndex, -1);
       _cellDataWriter->plotCell(             cellIndex,  0);
       _augmentationStatusWriter->plotCell(   cellIndex, -1);
-      _helperStatusWriter->plotCell(         cellIndex, -1);
+      _communicationStatusWriter->plotCell(         cellIndex, -1);
       _limiterStatusWriter->plotCell(        cellIndex, -1);
       _previousLimiterStatusWriter->plotCell(cellIndex, -1);
       _hasVirtualChildrenWriter->plotCell(   cellIndex,  0);
@@ -456,8 +456,8 @@ void exahype::mappings::AugmentedAMRTreePlot2d::beginIteration(
       "Data-on-Patch(None=0,OnlyFaceData=1,VolumeAndFaceData=3)", 1);
   _augmentationStatusWriter = _vtkWriter->createCellDataWriter(
       "AugmentationsStatus", 1);
-  _helperStatusWriter = _vtkWriter->createCellDataWriter(
-        "HelperStatus", 1);
+  _communicationStatusWriter = _vtkWriter->createCellDataWriter(
+        "CommunicationStatus", 1);
   _limiterStatusWriter = _vtkWriter->createCellDataWriter(
       "Limiter-Status(Ok=0,DGNeighbourOfTroubled=1..2,NeighbourOfTroubled=1..2,Troubled=5)", 1);
   _previousLimiterStatusWriter = _vtkWriter->createCellDataWriter(
@@ -476,7 +476,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   _refinementRequestWriter->close();
   _cellDataWriter->close();
   _augmentationStatusWriter->close();
-  _helperStatusWriter->close();
+  _communicationStatusWriter->close();
   _limiterStatusWriter->close();
   _previousLimiterStatusWriter->close();
   _hasVirtualChildrenWriter->close();
@@ -492,7 +492,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   delete _cellNumberWriter;
   delete _cellDataWriter;
   delete _augmentationStatusWriter;
-  delete _helperStatusWriter;
+  delete _communicationStatusWriter;
   delete _limiterStatusWriter;
   delete _previousLimiterStatusWriter;
   delete _hasVirtualChildrenWriter;
@@ -507,7 +507,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   _refinementRequestWriter     = nullptr;
   _cellDataWriter              = nullptr;
   _augmentationStatusWriter    = nullptr;
-  _helperStatusWriter          = nullptr;
+  _communicationStatusWriter          = nullptr;
   _limiterStatusWriter         = nullptr;
   _previousLimiterStatusWriter = nullptr;
   _hasVirtualChildrenWriter    = nullptr;

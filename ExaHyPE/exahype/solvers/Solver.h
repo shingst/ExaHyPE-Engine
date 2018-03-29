@@ -87,18 +87,42 @@ namespace exahype {
   typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
-  #ifdef ALIGNMENT
+  #if defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
     std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif defined(ALIGNMENT) and !defined(UsePeanosSymmetricBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    std::vector< double, AlignedAllocator >
+  >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SymmetricBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
+  >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
   >     CompressedDataHeap;
   #else
   typedef peano::heap::DoubleHeap<
@@ -147,13 +171,31 @@ namespace exahype {
    *
    * It is assumed by the metadata send routines of the solvers that
    * all data exchangers of the MetadataHeap create copies of the data to send.
+   *
+   * <h2> Implementation </h2>
+   *
+   * These meta data are not symmetric, i..e we can use the RLE heap but we
+   * may not use any symmetric heap.
    */
-  typedef peano::heap::Heap<
-      peano::heap::records::CharHeapData,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::RLEBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
+  #if defined(UsePeanosAggregationBoundaryExchanger)
+  typedef peano::heap::CharHeap<
+      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+      peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char> >
   >     MetadataHeap;
+  #elif defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
+  >     MetadataHeap;
+  #else
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::RLEBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
+  >     MetadataHeap;
+  #endif
 
   /**
    * Defines an invalid metadata entry.
@@ -173,14 +215,14 @@ namespace exahype {
 
   static constexpr int NeighbourCommunicationMetadataCellType           = 0;
   static constexpr int NeighbourCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int NeighbourCommunicationMetadataHelperStatus       = 2;
+  static constexpr int NeighbourCommunicationMetadataCommunicationStatus       = 2;
   static constexpr int NeighbourCommunicationMetadataLimiterStatus      = 3;
 
   static constexpr int MasterWorkerCommunicationMetadataPerSolver       = 5;
 
   static constexpr int MasterWorkerCommunicationMetadataCellType           = 0;
   static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int MasterWorkerCommunicationMetadataHelperStatus       = 2;
+  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus       = 2;
   static constexpr int MasterWorkerCommunicationMetadataLimiterStatus      = 3;
   static constexpr int MasterWorkerCommunicationMetadataSendReceiveData    = 4;
 

@@ -28,7 +28,7 @@ namespace solvers {
 
 tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solvers::LimitingADERDGSolver");
 
-int exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell() {
+int exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell() {
   int result = 0;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if ( solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG ) {
@@ -117,6 +117,11 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
 {
   assertion(_solver->getNumberOfParameters() == 0);
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
+
+  // TODO(WORKAROUND)
+  const int numberOfObservables = _solver->getDMPObservables();
+  _invalidObservables.resize(numberOfObservables);
+  std::fill_n(_invalidObservables.data(),_invalidObservables.size(),-1);
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateNextMeshUpdateRequest(const bool& meshUpdateRequest)  {
@@ -328,8 +333,7 @@ void exahype::solvers::LimitingADERDGSolver::updateLimiterStatusDuringLimiterSta
     solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell());
     solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
   }
-  solverPatch.setFacewiseLimiterStatus(0);
-  deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,solverElement);
+  ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,solverElement);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
@@ -462,7 +466,7 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
       LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
       adjustLimiterSolution(solverPatch,limiterPatch);
     }
-    deallocateLimiterPatchOnHelperCell(
+    ensureNoLimiterPatchIsAllocatedOnHelperCell(
         cellDescriptionsIndex,solverElement);
     ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
         cellDescriptionsIndex,solverElement);
@@ -706,7 +710,7 @@ void exahype::solvers::LimitingADERDGSolver::ensureLimiterPatchTimeStepDataIsCon
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
   if (limiterElement!=Solver::NotFound) {
-    assertion(solverPatch.getPreviousLimiterStatus()>0 || solverPatch.getLimiterStatus()>0);
+    assertion1(solverPatch.getPreviousLimiterStatus()>0 || solverPatch.getLimiterStatus()>0,solverPatch.toString());
     copyTimeStepDataFromSolverPatch(solverPatch,cellDescriptionsIndex,limiterElement);
   }
 }
@@ -856,7 +860,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   // 0. Erase old cells; now it's safe (TODO(Dominic): Add to docu)
-  deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,element);
+  ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,element);
   ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,element);
 
   // 1. Write back the limiter status to the previous limiter status field
@@ -916,6 +920,8 @@ exahype::solvers::LimitingADERDGSolver::updateLimiterStatusAndMinAndMaxAfterSolu
     limiterDomainChange =
         determineLimiterStatusAfterSolutionUpdate(solverPatch,!solutionIsValid);
 
+    ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,solverElement);
+
     bool limiterPatchAllocated =
         ensureRequiredLimiterPatchIsAllocated(
             cellDescriptionsIndex,solverPatch.getSolverNumber(),solverPatch.getLimiterStatus());
@@ -928,10 +934,8 @@ exahype::solvers::LimitingADERDGSolver::updateLimiterStatusAndMinAndMaxAfterSolu
     }
   } else {
     solverPatch.setLimiterStatus(ADERDGSolver::determineLimiterStatus(solverPatch));
-    deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,solverElement);
+    ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,solverElement);
   }
-  solverPatch.setFacewiseLimiterStatus(0);
-
   return limiterDomainChange;
 }
 
@@ -1130,12 +1134,12 @@ void exahype::solvers::LimitingADERDGSolver::deallocateLimiterPatch(
   _limiter->ensureNoUnnecessaryMemoryIsAllocated(limiterPatch);
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
-  LimiterHeap::getInstance().getData(cellDescriptionsIndex).erase(
-      LimiterHeap::getInstance().getData(cellDescriptionsIndex).begin()+limiterElement);
+  FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex).erase(
+      FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex).begin()+limiterElement);
   lock.free();
 }
 
-void exahype::solvers::LimitingADERDGSolver::deallocateLimiterPatchOnHelperCell(
+void exahype::solvers::LimitingADERDGSolver::ensureNoLimiterPatchIsAllocatedOnHelperCell(
     const int cellDescriptionsIndex,
     const int solverElement) const {
   assertion(solverElement!=Solver::NotFound);
@@ -1205,8 +1209,6 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
   LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(
       solverPatch,cellDescriptionsIndex,limiterElement);
   _limiter->ensureNecessaryMemoryIsAllocated(limiterPatch);
-
-  limiterPatch.setIsInside(solverPatch.getIsInside());
 
   return limiterElement;
 }
@@ -1322,7 +1324,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
   }
 
   // 3. Only after the reinitialisation, it is safe to deallocate the limiter patch
-  deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,solverElement);
+  ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,solverElement);
   ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,solverElement);
 }
 
@@ -1366,13 +1368,15 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
         projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
       }
     }
-  } else { // limiterStatus=0 or not on finest level
-      #if defined(Asserts)
-      const int limiterElement =
-          tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
-      #endif
-      assertion(limiterElement==Solver::NotFound);
   }
+  // limiterStatus==0 or cell is not on finest level
+  #if defined(Asserts)
+  const int limiterElement =
+      tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  assertion1(
+      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() || limiterElement==Solver::NotFound,
+      solverPatch.toString());
+  #endif
 }
 
 void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
@@ -1718,10 +1722,16 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
           observablesMax, numberOfObservables, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
     } else {
-      for (int sends = 0; sends < 2; ++sends) {
+      for(int sends=0; sends<2; ++sends) {
+        #if defined(UsePeanosSymmetricBoundaryExchanger)
         DataHeap::getInstance().sendData(
-            EmptyDataHeapMessage, toRank, x, level,
+            _invalidObservables, toRank, x, level,
             peano::heap::MessageType::NeighbourCommunication);
+        #else
+        DataHeap::getInstance().sendData(
+            exahype::EmptyDataHeapMessage, toRank, x, level,
+            peano::heap::MessageType::NeighbourCommunication);
+        #endif
       }
     }
   }
@@ -1780,11 +1790,18 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
     const int                                     level) const {
   // send an empty minAndMax message
   const int numberOfObservables = _solver->getDMPObservables();
-  if (numberOfObservables) {
-    for(int sends=0; sends<2; ++sends)
+  if (numberOfObservables > 0) {
+    for(int sends=0; sends<2; ++sends) {
+      #if defined(UsePeanosSymmetricBoundaryExchanger)
+      DataHeap::getInstance().sendData(
+          _invalidObservables, toRank, x, level,
+          peano::heap::MessageType::NeighbourCommunication);
+      #else
       DataHeap::getInstance().sendData(
           exahype::EmptyDataHeapMessage, toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
+      #endif
+    }
   }
 
   _solver->sendEmptyDataToNeighbour(toRank,x,level);

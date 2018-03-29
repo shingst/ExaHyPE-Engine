@@ -18,6 +18,7 @@ def parseList(string):
     into a list of strings:
     [ 'val1,val2' ,'val3', 'val4,val5' ]
     """
+    string = string.replace("\r","").replace("\n","").replace("\t","")
     for line in csv.reader([string],delimiter=","):
       values = line
       for i,value in enumerate(values):
@@ -89,6 +90,13 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     environmentSpace = parseEnvironment(configParser)
     parameterSpace   = parseParameters(configParser)
 
+    jobClass   = "unknown"
+    islands    = "unknown" 
+    if configParser.has_option("jobs","class"):
+        jobClass = jobs["class"].strip();
+    if configParser.has_option("jobs","islands"):
+        islands = jobs["islands"].strip();
+    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
@@ -100,6 +108,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "buildFolder "
             "buildFolderPath scriptsFolderPath "
             "resultsFolderPath historyFolderPath "
+            "jobClass islands "
             "nodeCounts taskCounts coreCounts runNumbers"))
     
     options = Options(
@@ -119,6 +128,8 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
       resultsFolderPath = resultsFolderPath,\
       historyFolderPath = historyFolderPath,\
       \
+      jobClass   = jobClass,\
+      islands    = islands,\
       nodeCounts = nodeCounts,\
       taskCounts = taskCounts,\
       coreCounts = coreCounts,\

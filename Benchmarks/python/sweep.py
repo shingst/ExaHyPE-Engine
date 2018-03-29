@@ -245,10 +245,8 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     
     context = {}
     # mandatory
-    context["nodes"] = nodes
-    context["tasks"] = tasks
-    context["cores"] = cores
-    context["job_name"]    = jobName
+    context["nodes"]   = nodes
+    context["tasks"]   = tasks
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
     
@@ -256,6 +254,7 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     context["parameters"]  = json.dumps(parameterDict).replace("\"","\\\"")
     
     context["job_file"]  = jobFilePath
+    context["job_name"]  = jobName
     context["app"]       = appName
     context["spec_file"] = specFilePath
     
@@ -268,9 +267,12 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
             print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
     
     # put optional sweep options in context
-    context["mail"]  = jobs["mail"]
-    context["time"]  = jobs["time"]
-    context["ranks"] = str(int(nodes)*int(tasks))
+    context["mail"]    = jobs["mail"]
+    context["time"]    = jobs["time"]
+    context["ranks"]   = str(int(nodes)*int(tasks))
+    context["class"]   = jobClass
+    context["islands"] = islands
+    context["cores"]   = cores
     
     # now verify template parameters are defined in options file
     for key in keysInTemplate:
@@ -659,7 +661,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","buildObjectsOnly","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
+    subprograms = ["build","buildMissing","buildLocally","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -727,6 +729,8 @@ typical workflow:
     resultsFolderPath = options.resultsFolderPath
     historyFolderPath = options.historyFolderPath
     
+    jobClass   = options.jobClass
+    islands    = options.islands
     nodeCounts = options.nodeCounts
     taskCounts = options.taskCounts
     coreCounts = options.coreCounts
@@ -748,9 +752,9 @@ typical workflow:
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":
-        build(buildOnlyMissing=True)
+        build(True)
     elif subprogram == "buildLocally":
-        build(skipMakeClean=True)
+        build(False,True)
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
@@ -760,8 +764,8 @@ typical workflow:
     elif subprogram == "parseAdapters":
         sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName)
     elif subprogram == "parseTotalTimes":
-        sweep_analysis.parseTotalTimes(resultsFolderPath,projectName)
+        sweep_analysis.parseSummedTimes(resultsFolderPath,projectName)
     elif subprogram == "parseTimeStepTimes":
-        sweep_analysis.parseTimeStepTimes(resultsFolderPath,projectName)
+        sweep_analysis.parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=True)
     elif subprogram == "parseMetrics":
         sweep_analysis.parseMetrics(resultsFolderPath,projectName)

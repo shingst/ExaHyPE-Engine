@@ -199,10 +199,16 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * same and the dynamic update here is not really required. However, it may
      * happen that you fork the grid dynamically. Then, this routine updates
      * the entries dynamically, too.
+     *
+     * \param periodicBoundaryConditions If set to true, we treat the domain boundary as
+     *                                   remote boundary shared with the global master rank.
+     *                                   We thus set the RemoteAdjancyIndex at the respective position.
+     *                                   Otherwise, the DomainBoundaryAdjacencyIndex is set.
      */
     static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
       const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
-      const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries
+      const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries,
+      const bool                                 periodicBoundaryConditions = false
     );
 
     void beginIteration();

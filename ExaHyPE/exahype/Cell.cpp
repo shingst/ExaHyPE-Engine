@@ -155,12 +155,14 @@ std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(
     const exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {
   std::bitset<DIMENSIONS_TIMES_TWO> isInside;
+  isInside.reset();
 
   for (int direction=0; direction<DIMENSIONS; direction++) {
     for (int orientation=0; orientation<2; orientation++) {
       const int faceIndex = 2*direction+orientation;
       isInside[faceIndex]=false;
 
+      // Works for a single solver
       dfor2(v) // Loop over vertices.
       if (v(direction) == orientation) {
         isInside[faceIndex] =
@@ -191,7 +193,7 @@ bool exahype::Cell::isAtRemoteBoundary(
     exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {
   bool result = false;
-#ifdef Parallel
+  #ifdef Parallel
   tarch::la::Vector<DIMENSIONS,int> center(1);
   dfor2(v) // Loop over vertices.
     if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
@@ -203,14 +205,13 @@ bool exahype::Cell::isAtRemoteBoundary(
       enddforx //a
     }
   enddforx // v
-#endif
+  #endif
   return result;
 }
 
 void exahype::Cell::setupMetaData() {
   assertion1(!exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),toString());
 
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
     const int cellDescriptionIndex = exahype::solvers::ADERDGSolver::Heap::getInstance().createData(0, 0);
     assertion2(!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionIndex),cellDescriptionIndex,toString());
@@ -409,7 +410,7 @@ void exahype::Cell::mergeWithMetadataFromMasterPerCell(
         const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
         if (solver->isMergingMetadata(section) &&
             element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+            receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
           MetadataHeap::HeapEntries metadataPortion(
               receivedMetadata.begin()+offset,
               receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
@@ -491,7 +492,7 @@ void exahype::Cell::mergeWithMasterDataPerCell(
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
       if (element!=exahype::solvers::Solver::NotFound &&
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+          receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
 
         exahype::MetadataHeap::HeapEntries metadataPortion(
             receivedMetadata.begin()+offset,
@@ -604,7 +605,7 @@ bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
         if (
             solver->isMergingMetadata(section) &&
             element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry
+            receivedMetadata[offset]!=exahype::InvalidMetadataEntry
         ) {
           MetadataHeap::HeapEntries metadataPortion(
               receivedMetadata.begin()+offset,
@@ -669,7 +670,7 @@ void exahype::Cell::mergeWithDataFromWorkerPerCell(
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
       if (
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry &&
+          receivedMetadata[offset]!=exahype::InvalidMetadataEntry &&
           element!=exahype::solvers::Solver::NotFound
       ) {
         exahype::MetadataHeap::HeapEntries metadataPortion(

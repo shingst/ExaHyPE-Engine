@@ -53,6 +53,13 @@ public:
 
 private:
   /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  DataHeap::HeapEntries _invalidExtrapolatedSolution;
+
+  /**
    * Log device.
    */
   static tarch::logging::Log _log;

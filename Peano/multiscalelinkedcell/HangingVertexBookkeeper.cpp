@@ -380,11 +380,21 @@ tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper
 
 tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
   const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
-  const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries
+  const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries,
+  const bool                                 periodicBoundaryConditions
 ) {
   tarch::la::Vector<TWO_POWER_D,int> result;
   for (int i=0; i<TWO_POWER_D; i++) {
-    if (adjacentRanks(i)!=tarch::parallel::Node::getInstance().getRank()) {
+    if (
+        !periodicBoundaryConditions
+        &&
+        adjacentRanks(i)==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+    ) {
+      result(i) = DomainBoundaryAdjacencyIndex;
+    }
+    else if (
+        adjacentRanks(i)!=tarch::parallel::Node::getInstance().getRank()
+    ) {
       result(i) = RemoteAdjacencyIndex;
     }
     else {

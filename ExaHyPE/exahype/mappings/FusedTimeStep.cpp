@@ -185,12 +185,6 @@ void exahype::mappings::FusedTimeStep::enterCell(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVerticesEnumerator);
 
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
-
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -221,6 +215,13 @@ void exahype::mappings::FusedTimeStep::enterCell(
         _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
       }
     }
+
+    // Must be performed for all cell descriptions
+    exahype::Cell::resetNeighbourMergeFlags(
+        fineGridCell.getCellDescriptionsIndex());
+    exahype::Cell::resetFaceDataExchangeCounters(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

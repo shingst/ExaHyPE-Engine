@@ -546,6 +546,8 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 void exahype::runners::Runner::initHeaps() {
   exahype::DataHeap::getInstance().setName("DataHeap");
   logInfo("initHeaps()","initialised DataHeap="<<exahype::DataHeap::getInstance().toString());
+  exahype::CompressedDataHeap::getInstance().setName("compressed-data");
+  logInfo("initHeaps()","initialised CompressedDataHeap::Heap="<<exahype::CompressedDataHeap::getInstance().toString());
   exahype::solvers::ADERDGSolver::Heap::getInstance().setName("ADERDGCellDescriptionHeap");
   logInfo("initHeaps()","initialised ADERDGSolver::Heap="<<exahype::solvers::ADERDGSolver::Heap::getInstance().toString());
   exahype::solvers::FiniteVolumesSolver::Heap::getInstance().setName("FiniteVolumesCellDescriptionHeap");
@@ -649,36 +651,36 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", max-level=" << repository.getState().getMaxLevel() <<
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
   #elif defined(Asserts)
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
   #elif defined(TrackGridStatistics)
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", max-level=" << repository.getState().getMaxLevel() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
   #else
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
-      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
+      ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
+      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
   );
-  #endif
-
-  #ifdef Asserts
-  logInfo("createGrid()",
-           "grid setup iteration #" << meshSetupIterations <<
-           ", run one more iteration=" <<  repository.getState().continueToConstructGrid() ||
-                                            exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
-   );
   #endif
 
   #if !defined(Parallel)
@@ -723,7 +725,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
       std::max (
           exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 4,
               // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
-          exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell()+1);
+          exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell()+1);
   if (extraIterations>0) {
     logInfo("createGrid()", "more status spreading.");
   }
@@ -1099,7 +1101,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
     repository.switchToLimiterStatusSpreading();
     repository.iterate(
-        exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell(),false);
+        exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
 
     if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
       logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");

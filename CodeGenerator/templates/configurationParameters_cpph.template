@@ -96,6 +96,8 @@ namespace {{namespaceName}} {
   constexpr int getBndFaceTotalSize() {return {{BndFaceTotalSize}};} // == lQhbnd size
   constexpr int getBndFluxSize()      {return {{BndFluxSize}};} // == FR/FL size
   constexpr int getBndFluxTotalSize() {return {{BndFluxTotalSize}};} // == lFhbnd size
+  
+  constexpr int getUpdateSize() {return {{(nDof**nDim)*nVarPad}};} // == lduh size
 
   //Shifts for fusedSTPVI local memory
 {% set shift = 0 %}  
@@ -144,6 +146,50 @@ namespace {{namespaceName}} {
 {% set shift2 = shift2+BndFluxSize %}  
   
   constexpr int getBoundaryConditionsSize() {return {{shift2}};}
+  
+  
+//approx Flops (only mat operations)
+  //amr (*leveldelta)
+  constexpr unsigned long faceUnknownsProlongation_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long faceUnknownsRestriction_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long volumeUnknownsProlongation_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
+  constexpr unsigned long volumeUnknownsRestriction_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
+  
+  constexpr unsigned long boundaryConditions_factor = {{nDof*nDof3D}}; //flops of boundaryValue * this factor
+  constexpr unsigned long boundaryConditions_flops = {{nDof*nDof3D*3+nDof3D*3*(nDim-2)}}; //other flops
+  
+  constexpr unsigned long getPointSources_flops = {{4*nDim*nPointSources}};
+  
+  constexpr unsigned long solutionAdjustment_flops = {{(nDof**nDim)*3+nDof**(nDim-1)*3+(nDof**(nDim-2))*3*(nDim-2)}};
+  
+  constexpr unsigned long solutionUpdate_flops = {{(nDof**nDim)*(1+nVar*2)}};
+  
+  constexpr unsigned long stableTimeStepSize_factor = {{(nDof**nDim)*nDim}}; //flops of eigenvalues * this factor
+  constexpr unsigned long stableTimeStepSize_flops = {{(nDof**nDim)*nDim*2+(nDof**nDim)*2}};
+  
+  constexpr unsigned long surfaceIntegral_flops = {{(nDof*nDof3D + (nDof**nDim)*nVarPad*5)*nDim}};
+  
+{% if isLinear %}   
+  constexpr unsigned long fusedSTPVI_flops = 0; //TODO JMG
+  constexpr unsigned long riemannSolver_flops = 0; //TODO JMG
+{% else %}
+  // fusedSTPVI, multiply by factor and sum
+  constexpr unsigned long fusedSTPVI_picard_flops = {{(nDof**(nDim+1))*(1+nVar)+useFluxFactor*nDim*((nDof**nDim)*(1+nDof*nDofPad+nDof*nDof*nVarPad*2))+useNCPFactor*nDim*((nDof**(nDim+2))*nVar*2)+useSourceOrNCPFactor*((nDof**(nDim+1))*(2+useNCPFactor*nVarPad+2*nVarPad))+(nDof**nDim)*(1+nDof*nDofPad+2*nDof*nDof*nVar+4*nVar*nDof)}}; // time picardIteration
+  constexpr unsigned long fusedSTPVI_PDE_factor = {{nDof**(nDim+1)}}; // flops of used PDE * this factor * picardIteration
+  constexpr unsigned long fusedSTPVI_other_flops = {{1+useNCPFactor*nDof*nDofPad + (nDof**(nDim+1))*(nDataPad*2+useFluxFactor*nDim*nVarPad*2+useSourceOrNCPFactor*nVarPad*2) + nDim*(nDof**nDim)*(nDataPad*4+useFluxFactor*nVarPad*4) + useFluxFactor*((nDof**nDim)*(nDofPad*2+2*nDof*nVarPad*nDim))+useSourceOrNCPFactor*(nDof**nDim)*nVarPad*2}}; // other flops
+  
+  // RiemannSolver, also 2 eigenvalues cost
+  constexpr unsigned long riemannSolver_flops = {{nDof*nDof3D*(nDataPad*4+nVar+nVarPad*3)+useNCPFactor*(nDof*nDof3D*(nVar*3+nVarPad*4))}};
+  constexpr unsigned long riemannSolver_factor = {{nDof*nDof3D*useNCPFactor}}; // flops of NCP * this factor
+{% endif %}
+
+{% if useLimiter %}
+  constexpr unsigned long  projectOnFVLimiterSpace_flops = {{nDofLim*nDofLim3D*nDof*nDofLim*(nDofLim*nDofPad*(nDim-1)+2*nVar*nDofLim*nDof)}};
+  constexpr unsigned long  projectOnDGSpace_flops = {{nDofLim*nDofLim3D*nDof*nDofLim*(nDofLimPad*nDof*(nDim-1)+2*nVar*nDofLim*nDof)}};
+  constexpr unsigned long  discreteMaximumPrincipleAndMinAndMaxSearch_flops = {{4*nObs+nDof*nDof*nDof3D*nDof3D*(nDofPad*nDof*(nDim-1)+nVar*nDof*nDof)+nDof*nDof3D*nDofLim*nDofLim3D*(nDofLim*nDofPad*(nDim-1)+nVar*nDof*nDofLim)}};
+  constexpr unsigned long  findCellLocalMinAndMax_flops = {{nDof*nDof*nDof3D*nDof3D*(nDofPad*nDof*(nDim-1)+nVar*nDof*nDof)+nDof*nDof3D*nDofLim*nDofLim3D*(nDofLim*nDofPad*(nDim-1)+nVar*nDof*nDofLim)}};
+  constexpr unsigned long  findCellLocalLimiterMinAndMax_flops = 0; //only min and max
+{% endif %}
 
 {% for namespaceName in codeNamespaceList %}
 }

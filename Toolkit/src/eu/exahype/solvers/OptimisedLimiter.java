@@ -22,7 +22,7 @@ public class OptimisedLimiter implements Solver {
   private Context        context;
   private TemplateEngine templateEngine;
   
-  public OptimisedLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver) 
+  public OptimisedLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver, boolean countFlops) 
       throws IOException, IllegalArgumentException {    
     
     this.solverName                 = solverName;
@@ -46,6 +46,9 @@ public class OptimisedLimiter implements Solver {
     context.put("FVAbstractSolver"    , FVSolver.getAbstractSolverName());
     context.put("optKernelPath"       , optKernelPath);
     context.put("optNamespace"        , optNamespace);
+    
+    //boolean
+    context.put("countFlops"          , countFlops);
   }
     
   @Override
@@ -65,7 +68,7 @@ public class OptimisedLimiter implements Solver {
   
   @Override
   public void writeAbstractHeader(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {      
-    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractGenericLimiterSolverHeader.template"); //use the same as Generic
+    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractOptimisedLimiterSolverHeader.template");
     writer.write(templateEngine.render(template, context));
   }
   

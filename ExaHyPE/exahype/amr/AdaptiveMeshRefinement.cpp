@@ -14,18 +14,18 @@
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
 tarch::la::Vector<DIMENSIONS,int> exahype::amr::computeSubcellIndex(
-      const tarch::la::Vector<DIMENSIONS,double>& childOffset,
-      const tarch::la::Vector<DIMENSIONS,double>& childSize,
-      const tarch::la::Vector<DIMENSIONS,double>& parentOffset) {
-    tarch::la::Vector<DIMENSIONS,int> subcellIndex;
-    for (int xi = 0; xi < DIMENSIONS; ++xi) {
-      assertion((childOffset(xi) - parentOffset(xi)) >= 0);
-      subcellIndex[xi] = tarch::la::round(
-          (childOffset(xi) - parentOffset(xi))/childSize(xi));
-    }
-
-    return subcellIndex;
+    const tarch::la::Vector<DIMENSIONS,double>& childOffset,
+    const tarch::la::Vector<DIMENSIONS,double>& childSize,
+    const tarch::la::Vector<DIMENSIONS,double>& parentOffset) {
+  tarch::la::Vector<DIMENSIONS,int> subcellIndex;
+  for (int xi = 0; xi < DIMENSIONS; ++xi) {
+    assertion((childOffset(xi) - parentOffset(xi)) >= 0);
+    subcellIndex[xi] = tarch::la::round(
+        (childOffset(xi) - parentOffset(xi))/childSize(xi));
   }
+
+  return subcellIndex;
+}
 
 tarch::la::Vector<DIMENSIONS-1,int> exahype::amr::getSubfaceIndex(
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
@@ -41,6 +41,24 @@ tarch::la::Vector<DIMENSIONS-1,int> exahype::amr::getSubfaceIndex(
   }
 
   return subfaceIndex;
+}
+
+std::bitset<DIMENSIONS_TIMES_TWO> exahype::amr::determineInsideAndOutsideFacesOfChild(
+    const tarch::la::Vector<DIMENSIONS,double>& childOffset,
+    const tarch::la::Vector<DIMENSIONS,double>& childSize,
+    const tarch::la::Vector<DIMENSIONS,double>& parentOffset,
+    const int                                   levelDelta,
+    const std::bitset<DIMENSIONS_TIMES_TWO>&    parentIsInside) {
+  std::bitset<DIMENSIONS_TIMES_TWO> isInside;
+  tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+      computeSubcellIndex(childOffset,childSize,parentOffset);
+
+  for (int d=0; d<DIMENSIONS; d++) {
+    isInside[2*d+0] = parentIsInside[2*d+0] || (subcellIndex[d] != 0);
+    isInside[2*d+1] = parentIsInside[2*d+1] || (subcellIndex[d] != tarch::la::aPowI(levelDelta,3)-1);
+  }
+
+  return isInside;
 }
 
 bool exahype::amr::onBoundaryOfParent(

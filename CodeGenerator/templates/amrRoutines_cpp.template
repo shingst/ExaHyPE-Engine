@@ -37,7 +37,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
 {% if nDim == 3 and useLibxsmm %} 
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerQhbnd1 = 0;
@@ -107,6 +106,9 @@ void {{codeNamespace}}::faceUnknownsProlongation(
             coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff_0 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_face_Q}}(&lQhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
@@ -114,8 +116,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       #pragma forceinline
 #endif
           {{gemm_face_F}}(&lFhbndCoarse[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %}
@@ -174,6 +174,9 @@ void {{codeNamespace}}::faceUnknownsProlongation(
             coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff_1 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_face_Q}}(&pointerQhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
@@ -181,8 +184,6 @@ void {{codeNamespace}}::faceUnknownsProlongation(
           #pragma forceinline
 #endif
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %}      
@@ -242,6 +243,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       pointerFhbnd1 = lFhbndFineTemp;
     }
   }
+
 }
 
 
@@ -263,7 +265,6 @@ void {{codeNamespace}}::faceUnknownsRestriction(
   
 {% if nDim == 3 and useLibxsmm %} 
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerQhbnd1 = 0;
@@ -321,6 +322,9 @@ void {{codeNamespace}}::faceUnknownsRestriction(
             coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff_0 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_face_Q}}(&lQhbndFine[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
@@ -328,8 +332,6 @@ void {{codeNamespace}}::faceUnknownsRestriction(
       #pragma forceinline
 #endif
           {{gemm_face_F}}(&lFhbndFine[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %}
@@ -388,6 +390,9 @@ void {{codeNamespace}}::faceUnknownsRestriction(
             coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff_1 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_face_Q}}(&pointerQhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
@@ -395,8 +400,6 @@ void {{codeNamespace}}::faceUnknownsRestriction(
           #pragma forceinline
 #endif
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
-        
-          doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
         }
       }
 {% endif %} 
@@ -460,6 +463,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
   for (int it = 0; it < {{nDof*nDof3D*nVarPad }}; it++) {
     lFhbndCoarse[it] += pointerFhbnd2[it];
   }
+
 }
 
 
@@ -476,7 +480,6 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
   
 {% if useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerUh1 = 0;
@@ -543,11 +546,12 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
                           * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+              volatile double doNotOptimizeAway_coeff_0 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
               #pragma forceinline
 #endif
               {{gemm_volume}}(&luhCoarse[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -591,11 +595,12 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
                           * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+              volatile double doNotOptimizeAway_coeff_1 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
               #pragma forceinline
 #endif
               {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -641,6 +646,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
       pointerUh1 = luhFineTemp;
     }
   }
+
 }
 
 
@@ -658,7 +664,6 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   
 {% if useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerUh1 = 0;
@@ -713,11 +718,12 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
                           * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+              volatile double doNotOptimizeAway_coeff_0 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
               #pragma forceinline
 #endif
               {{gemm_volume}}(&luhFine[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -761,11 +767,12 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
                           * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+              volatile double doNotOptimizeAway_coeff_1 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
               #pragma forceinline
 #endif
               {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
-            
-              doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
             }
           }
         }
@@ -811,4 +818,5 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   for (int it = 0; it < {{nDof*nDof*nDof3D*nData}}; it++) {
     luhCoarse[it] += pointerUh2[it];
   }
+
 }

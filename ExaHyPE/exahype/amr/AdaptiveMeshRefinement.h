@@ -60,6 +60,23 @@ namespace amr {
       const int levelDelta);
 
   /**
+   * This method deemed to be necessary since I could
+   * not trust the Boundary markers.
+   *
+   * Per coordinate direction xi, check if the cell
+   * is at the boundary of the parent cell, i.e. if
+   * subcellIndex[xi] is either 0 or 3^levelDelta - 1,
+   * and if the parent face is a boundary face.
+   * If so, the face of the child is on the boundary as well.
+   */
+  std::bitset<DIMENSIONS_TIMES_TWO> determineInsideAndOutsideFacesOfChild(
+      const tarch::la::Vector<DIMENSIONS,double>& childOffset,
+      const tarch::la::Vector<DIMENSIONS,double>& childSize,
+      const tarch::la::Vector<DIMENSIONS,double>& parentOffset,
+      const int                                   levelDelta,
+      const std::bitset<DIMENSIONS_TIMES_TWO>&    parentIsInside);
+
+  /**
    * Determine the position of a Cell or Ancestor with respect
    * to a parent of type Ancestor.
    * The return values subcellPosition.parentCellDescriptionsIndex

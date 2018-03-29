@@ -120,18 +120,20 @@ protected:
 
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
-  typedef peano::heap::RLEHeap<SolverPatch> SolverHeap;
 
   typedef exahype::records::FiniteVolumesCellDescription LimiterPatch;
-  typedef peano::heap::RLEHeap<LimiterPatch> LimiterHeap;
-
 
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
 
-  
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  DataHeap::HeapEntries _invalidObservables;
 
   /**
    * A flag indicating that the limiter domain has changed.
@@ -528,7 +530,7 @@ public:
    *
    * The minimum possible return value is three.
    */
-  static int getMaxMinimumHelperStatusForTroubledCell();
+  static int getMaxMinimumLimiterStatusForTroubledCell();
 
   /*
    * Check if a solver requested limiter status spreading.
@@ -1022,7 +1024,7 @@ public:
    *
    * \note Thread-safe.
    */
-   void deallocateLimiterPatchOnHelperCell(
+   void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const int cellDescriptionsIndex,
        const int solverElement) const;
 
