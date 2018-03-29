@@ -47,6 +47,9 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
                       * dg2fv[y*{{nDofPad}}+iy];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}});
@@ -83,11 +86,7 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
     }
   }
 {% endif %} {# useLibxsmm #}  
-{% if useLibxsmm %}
-#ifdef USE_IPO
-  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
-#endif
-{% endif %}
+
 }
 
 //Fortran (Limiter.f90): PutSubcellData
@@ -111,6 +110,9 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
                       * fv2dg[y*{{nDofLimPad}}+iy];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_fv2dg}}(lim+((iz+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth3D}}+iy+{{ghostLayerWidth}})*{{(nDofLim+2*ghostLayerWidth)*nVar}}+{{ghostLayerWidth*nVar}}, coeff, luh+(z*{{nDof3D}}+y)*{{nDof*nData}}); //ignore ghostlayer
@@ -140,11 +142,7 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
     }
   }
 {% endif %}{# useLibxsmm #}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
-#endif
-{% endif %}
+
 }
 
 
@@ -288,6 +286,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
                       * uh2lob[y*{{nDofPad}}+iy];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_uh2lob}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lobValues);
@@ -335,11 +336,7 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     }
   }
 {% endif %}{# useLibxsmm #}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
-#endif
-{% endif %}
+
 }
 
 /**
@@ -374,6 +371,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
                       * dg2fv[y*{{nDofPad}}+iy];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, limValues);
@@ -423,9 +423,5 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     }
   }
 {% endif %}{# useLibxsmm #}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-  double doNotOptimizeAway = coeff[0]; // used to prevent the compiler from optimizing coeff away
-#endif
-{% endif %}
+
 }

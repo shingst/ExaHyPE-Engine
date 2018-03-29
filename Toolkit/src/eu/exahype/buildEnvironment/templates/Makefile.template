@@ -12,7 +12,7 @@
 # SHAREDMEM           None              OMP, TBB                     Shared-memory parallelisation
 # DISTRIBUTEDMEM      None              MPI                          Distributed-memory parallelisation
 # BOUNDARYCONDITIONS  None              Periodic                     Type of boundary conditions
-# USE_IPO             Off               On                           IPO during compilation (intel only)
+# USE_IPO             Off               On, Unsafe                   IPO during compilation (intel only)
 # ******************************************************************************************************
 
 PEANO_KERNEL_PEANO_PATH={{peanoToolboxPath}}/peano

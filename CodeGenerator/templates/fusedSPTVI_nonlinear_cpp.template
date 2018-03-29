@@ -77,7 +77,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
-  
 {% if useNCP %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
@@ -85,7 +84,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   #pragma simd
   for(int it=0;it<{{nDof*nDofPad}};it++) {
     dudxT_by_dx[it] = inverseDx[0] * dudx_T[it];
-  }    
+  }
+{% if useLibxsmm %}
+#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
+  volatile double doNotOptimizeAway_dudx_by_dt = dudxT_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif   
+{% endif %}
 {% endif %}
 
   // 1. Trivial initial guess
@@ -152,6 +156,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
             s_m[it] = -updateSize * Kxi[it];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_rhs_x = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_rhs_x}}(&lFi[{{nVarPad*nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i))], &s_m[0], &rhs[{{nVarPad*nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i))]);
@@ -202,6 +209,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
             s_m[it] = -updateSize * Kxi[it];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_rhs_y = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_rhs_y}}(&lFi[{{1*(nDof**nDim)*nDof*nVarPad}}+{{nVarPad}}*(k+{{nDof*nDof}}*(j+{{nDof3D}}*i))], &s_m[0], &rhs[{{nVarPad}}*(k+{{nDof*nDof}}*(j+{{nDof3D}}*i))]);
@@ -253,6 +263,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
             s_m[it] = -updateSize * Kxi[it];
           }
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_rhs_z = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
           #pragma forceinline
 #endif
           {{gemm_rhs_z}}(&lFi[{{2*(nDof**nDim)*nDof*nVarPad}}+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof*nDof}}*i))], &s_m[0], &rhs[{{nVarPad}}*(k+{{nDof}}*(j+{{nDof*nDof}}*i))]);
@@ -344,6 +357,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
 {% if useLibxsmm %}
 #ifdef USE_IPO
+#ifndef UNSAFE_IPO
+      volatile double doNotOptimizeAway_lqi = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
       #pragma forceinline
 #endif
       {{gemm_lqi}}(&rhs[{{nVarPad}}*ijk], &s_m[0], &new_lQi_slice[0]); //Note: the gemm performs C = A*B, no need to initialize C to 0
@@ -596,22 +612,25 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     for (int i=0; i<{{nDof}}; i++) {
   
       #pragma vector aligned
-      for(int it=0; it<{{nDof*nDofPad}}; it++) 
+      for(int it=0; it<{{nDof*nDofPad}}; it++) {
         s_m[it] = weights2[i+j*{{nDof}}] * inverseDx[0] * Kxi_T[it];
-
+      }
 {% if useLibxsmm %}
-    #ifdef USE_IPO
+#ifdef USE_IPO
+#ifndef UNSAFE_IPO
+      volatile double doNotOptimizeAway_volume = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
       #pragma forceinline
-    #endif
+#endif
       {{gemm_x}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}]);
-    #ifdef USE_IPO
+#ifdef USE_IPO
       #pragma forceinline
-    #endif
+#endif
       {{gemm_y}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}]);
-{% if nDim == 3 %} 
-    #ifdef USE_IPO
+{% if nDim == 3 %}
+#ifdef USE_IPO
       #pragma forceinline
-    #endif
+#endif
       {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad}}]);
 {% endif %}
 {% else %}
@@ -662,11 +681,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   }
   
 {% endif %} 
-{% if useLibxsmm %}
-#ifdef USE_IPO
-  double doNotOptimizeAway = s_m[0]; //used to prevent the compiler from optimizing temp array away
-#endif
-{% endif %}
 
   return std::min(iter+1, MaxIterations); //return number of Picard iterations, min to avoid doing a +1 if the loop wasn't exited early
 }
