@@ -1,18 +1,90 @@
 How to install:
 ===============
 
-- Build the toolkit (if not done before):
--- Change into Toolkit directory
--- Type 
+1.1. Build the toolkit (if not done before):
+- Change into Toolkit directory
+- Type 
    ./build.sh
 
-- Generate all gluecode
--- Change into the ExaHyPE root directory
--- Type in
+1.2. Generate all gluecode
+- Change into the ExaHyPE root directory
+- Type in
    java -jar Toolkit/dist/ExaHyPE.jar Demonstrators/EulerADERDG-without-limiter/EulerADERDG-without-limiter.exahype
 
-- Change into Demonstrators/EulerADERDG
--- If you prefer the GNU compiler, change the default compiler
-   export COMPILER=gnu
--- Type in 
-    make
+
+A first build/test
+==================
+
+2.1. Change into Demonstrators/EulerADERDG
+- Set minimalist environment variables
+  export SHAREDMEM=none
+  export DISTRIBUTEDMEM=none
+  
+2.2. Open the EulerADERDG-without-limiter.exahype file (it is a text file) and ensure that
+
+    plot vtu::Cartesian::vertices::ascii EulerWriter
+      variables const = 5
+      time            = 0.0
+      repeat          = 0.001
+      output          = ./variables
+    end plot
+
+
+  is set. 
+  
+2.3. Type in 
+  make
+
+  If you prefer the GNU compiler, type in 
+
+  export COMPILER=gnu
+  
+  You can set all compiler variables through the command environment variables 
+  dumped if you type in make. 
+  
+2.4. Run the code with 
+  ./ExaHyPE-EulerADERDG EulerADERDG-without-limiter.exahype
+  
+2.5. Study the resulting files with Paraview, e.g.
+ 
+
+AMR
+===
+
+To enable dynamic AMR, open the config file and alter the line 
+
+    maximum-mesh-depth         = 0
+
+Set any integer greater 0 you want. I recommend to start with 1.
+
+
+Benchmarking
+============
+
+3.1. Preparation: for benchmarking, it pays off to disable all file dumps/IO. 
+  To do so, it is sufficent to set the time value within the plotter to a very
+  high number. The value in there says when the first snapshot is due. If the 
+  simulation never hits this time stamp, then nothing is plotted at all.
+  
+3.2. To enable shared memory, set the environment variable
+
+  export SHAREDMEM tbb
+  
+  and recompile. To alter the number of cores, you have to alter the value 
+  of cores in the config file's section  shared-memory.
+  
+3.3. To enable distributed memory, set the environment variable
+
+  export DISTRIBUTEDMEM mpi
+  
+  and recompile.
+
+3.4. To enable the optimised kernels (compute kernels annotated with pragmas, 
+  padding, alignment, ...) you have to contact TUM's Michael Bader.
+  
+
+Create distribution (typically not required)
+============================================
+
+tar -czhvf Demonstrator-EulerADERDG-without-limiter.tar.gz --exclude=.svn --exclude=*.o --exclude=*.class Peano ExaHyPE Toolkit Demonstrators/EulerADERDG-without-limiter LICENSE.txt
+
