@@ -109,8 +109,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   const unsigned long tover_ul = (unsigned long) tover;
   overhead_t +=tover_ul;
   overhead_c +=1;
-{%- endif %}
-{%- if countFlops && !isLinear %}
+  
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {%- endif %}
 
@@ -200,10 +199,14 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
 
-{%- if countFlops && !isLinear %}
+{%- if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
+{%- if isLinear %}
+  const unsigned long f = 0; //TODO JMG
+{%- else %}
   const unsigned long f = picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
+{%- endif %}
   total_flops += f;
   total_time += time_ul;
   fusedSTPVI_f += f;

@@ -49,7 +49,7 @@ exahype-project CCZ4
 
   solver ADER-DG CCZ4Solver_ADERDG
     variables const    = G:6,K:6,theta:1,Z:3,lapse:1,shift:3,b:3,dLapse:3,dxShift:3,dyShift:3,dzShift:3,dxG:6,dyG:6,dzG:6,traceK:1,phi:1,P:3,K0:1
-    order const        = 3
+    order const        = 6
     
     maximum-mesh-size  = 0.33339
     maximum-mesh-depth = 0
