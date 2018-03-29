@@ -3,6 +3,7 @@
 #include "time.h"
 
 #include <iostream>
+#include <chrono>
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
@@ -22,6 +23,8 @@ int main(int argc, char** argv) {
 
     int numberOfProcessors = 0;
     MPI_Comm_size( MPI_COMM_WORLD, &numberOfProcessors );
+
+    auto t1 = std::chrono::high_resolution_clock::now();
     #if defined(BlockingSend)
     for ( int workerRank = 1; workerRank < numberOfProcessors; workerRank++ ) {
       MPI_Send(numbers, numberCount, MPI_INTEGER, workerRank, 0, MPI_COMM_WORLD);
@@ -39,14 +42,16 @@ int main(int argc, char** argv) {
       allMessagesSent = true;
       for ( int workerRank = 1; workerRank < numberOfProcessors; workerRank++ ) {
         MPI_Test(&sendRequests[workerRank-1],&flag,MPI_STATUS_IGNORE);
-        if (flag) {
-          std::cout << "0 sent " << numberCount << " numbers to " << workerRank << std::endl;
-        }
         allMessagesSent &= flag;
       }
     }
     delete[] sendRequests;
     #endif
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+
+    std::cout << rank << " sent " << numberCount << " numbers to all " << numberOfProcessors <<" receivers in " << duration << " microseconds " <<  std::endl;
   }
   // workers
   else if (rank > 0) {
