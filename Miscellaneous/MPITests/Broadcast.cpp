@@ -15,24 +15,31 @@ int main(int argc, char** argv) {
   int rank = -1;
   MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
-  int flag = 0;
-  int numberCount = 0;
-  // master
-  if (rank == 0) {
-    // Pick a random amount of integers to send to process one
-    // const int MAX_NUMBERS = 100;
-    // srand(time(NULL));
-    // numberCount = (rand() / (float)RAND_MAX) * MAX_NUMBERS;
-    numberCount = MessageSize;
-    int numbers[numberCount];
+  const int numberCount = MessageSize;
+  int numbers[numberCount];
 
+  int flag = 0;
+  #if defined(Collectives)
+  int numberOfProcessors = 0;
+  MPI_Comm_size( MPI_COMM_WORLD, &numberOfProcessors );
+
+  auto t1 = std::chrono::high_resolution_clock::now();
+  MPI_Bcast(numbers, numberCount, MPI_INTEGER, 0, MPI_COMM_WORLD);
+  auto t2 = std::chrono::high_resolution_clock::now();
+
+  if (rank == 0) {
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+    std::cout << rank << " broadcasted " << numberCount << " numbers to all " << numberOfProcessors <<" receivers in " << duration << " microseconds " <<  std::endl;
+  }
+  #else
+  if (rank == 0) { // master
     int numberOfProcessors = 0;
     MPI_Comm_size( MPI_COMM_WORLD, &numberOfProcessors );
 
     auto t1 = std::chrono::high_resolution_clock::now();
     #if defined(BlockingSend)
     for ( int workerRank = 1; workerRank < numberOfProcessors; workerRank++ ) {
-      MPI_Send(numbers, numberCount, MPI_INTEGER, workerRank, 0, MPI_COMM_WORLD);
+      MPI_Send(numbers, MAX_NUMBERS, MPI_INTEGER, workerRank, 0, MPI_COMM_WORLD);
     }
     #else
     // post all sends
@@ -40,9 +47,11 @@ int main(int argc, char** argv) {
     for ( int workerRank = 1; workerRank < numberOfProcessors; workerRank++ ) {
       MPI_Isend(numbers, numberCount, MPI_INTEGER, workerRank, 0, MPI_COMM_WORLD, &sendRequests[workerRank-1]);
     }
-
     // wait till all sends are finished; use MPI_Test loop in order to allow timeout check
     bool allMessagesSent = false;
+    #if defined(WaitOnSends)
+    MPI_Waitall(numberOfProcessors-1,sendRequests,MPI_STATUSES_IGNORE);
+    #else
     while (!allMessagesSent) {
       allMessagesSent = true;
       for ( int workerRank = 1; workerRank < numberOfProcessors; workerRank++ ) {
@@ -52,32 +61,17 @@ int main(int argc, char** argv) {
     }
     delete[] sendRequests;
     #endif
+    #endif
 
     auto t2 = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
 
-    std::cout << rank << " sent " << numberCount << " numbers to all " << numberOfProcessors <<" receivers in " << duration << " microseconds " <<  std::endl;
+    std::cout << rank << " broadcasted " << numberCount << " numbers to all " << numberOfProcessors <<" receivers in " << duration << " microseconds " <<  std::endl;
   }
   // workers
   else if (rank > 0) {
-    // Probe for an incoming message from process zero
-
-    MPI_Status status;
-    #if defined(BlockingProbe)
-    MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
-    #else
-    flag = 0;
-    while (!flag) {
-      MPI_Iprobe(0, 0, MPI_COMM_WORLD, &flag, &status);
-    }
-    #endif
-
-    // When probe returns, the status object has the size and other
-    // attributes of the incoming message. Get the message size
-    MPI_Get_count(&status, MPI_INT, &numberCount);
-
     // Allocate a buffer to hold the incoming numbers
-    int* numberBuffer = new int[numberCount];
+    int numberBuffer[numberCount];
 
     #if defined(BlockingReceive)
     MPI_Recv(numberBuffer, numberCount, MPI_INT, 0 /*fromRank*/, 0/*tag*/, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -87,14 +81,16 @@ int main(int argc, char** argv) {
     MPI_Request receiveRequest;
     MPI_Irecv(numberBuffer, numberCount, MPI_INT, 0, 0, MPI_COMM_WORLD, &receiveRequest);
     // Now wait
+    #if defined(WaitOnReceive)
+    MPI_Wait(&receiveRequest,MPI_STATUS_IGNORE);
+    #else
     while (!flag) {
       MPI_Test(&receiveRequest,&flag,MPI_STATUS_IGNORE);
     }
     #endif
-
-    std::cout << rank << " received " << numberCount << " numbers from " << 0 << std::endl;
-    delete[] numberBuffer;
+    #endif
   }
+  #endif
 
   MPI_Finalize();
 }
