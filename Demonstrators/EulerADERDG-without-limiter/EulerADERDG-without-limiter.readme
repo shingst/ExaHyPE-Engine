@@ -49,7 +49,7 @@ A first build/test
   dumped if you type in make. Some linkers fail with ExaHyPE. In this case, you
   have to set
   
-  export EXAHYPE_CC="g++ -lpthread"
+  export COMPILER_CFLAGS="-lpthread"
   
   or similar. 
   
@@ -91,6 +91,18 @@ Benchmarking
   export DISTRIBUTEDMEM=mpi
   
   and recompile.
+  
+  Optimising MPI is tedious and complicated. We got the best performance by 
+  adding the following further compile options:
+  
+  export COMPILER_CFLAGS=" -DnoMPIHeapUsesItsOwnThread -DnoMPIUsesItsOwnThread -DnoMPIProgressionReliesOnMPITest "
+  
+  and by setting
+  
+  export I_MPI_ASYNC_PROGRESS=1
+  
+  in the job script.
+  
 
 3.4. To enable the optimised kernels (compute kernels annotated with pragmas, 
   padding, alignment, ...) you have to contact TUM's Michael Bader.
