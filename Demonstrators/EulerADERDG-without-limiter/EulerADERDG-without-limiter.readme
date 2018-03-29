@@ -1,13 +1,19 @@
 How to install:
 ===============
 
+All data required for this demonstrator can be found within one single file. 
+To translate it, you need at least a Java installation and a C++ compiler. 
+Optimisations then need Intel's TBB, MPI or even Python (depends on the 
+variant).  
+
+
 1.1. Build the toolkit (if not done before):
 - Change into Toolkit directory
 - Type 
    ./build.sh
 
 1.2. Generate all gluecode
-- Change into the ExaHyPE root directory
+- Change into the ExaHyPE root directory (the one hosting Toolkit)
 - Type in
    java -jar Toolkit/dist/ExaHyPE.jar Demonstrators/EulerADERDG-without-limiter/EulerADERDG-without-limiter.exahype
 
@@ -29,8 +35,8 @@ A first build/test
       output          = ./variables
     end plot
 
-
-  is set. 
+  is set. These settings should be the default but as the project is under
+  active development, you never know.  
   
 2.3. Type in 
   make
@@ -40,7 +46,14 @@ A first build/test
   export COMPILER=gnu
   
   You can set all compiler variables through the command environment variables 
-  dumped if you type in make. 
+  dumped if you type in make. Some linkers fail with ExaHyPE. In this case, you
+  have to set
+  
+  export EXAHYPE_CC="g++ -lpthread"
+  
+  or similar. 
+  
+  Remark: Note, if you 
   
 2.4. Run the code with 
   ./ExaHyPE-EulerADERDG EulerADERDG-without-limiter.exahype
@@ -68,14 +81,14 @@ Benchmarking
   
 3.2. To enable shared memory, set the environment variable
 
-  export SHAREDMEM tbb
+  export SHAREDMEM=tbb
   
   and recompile. To alter the number of cores, you have to alter the value 
   of cores in the config file's section  shared-memory.
   
 3.3. To enable distributed memory, set the environment variable
 
-  export DISTRIBUTEDMEM mpi
+  export DISTRIBUTEDMEM=mpi
   
   and recompile.
 
