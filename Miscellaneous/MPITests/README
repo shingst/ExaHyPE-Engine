@@ -1,0 +1,20 @@
+DynamicReceivesBroadcast
+========================
+Simple example of a broadcast where rank 0 sends
+a message of arbitrary length
+to all other ranks. 
+As the receivers do not know the length of the message,
+they need to determine it first. They do that via calling an 
+MPI_Probe variant and subsequently MPI_Get_count.
+After the message length is known on the receiver side,
+the receivers allocate a buffer and receive the message.
+
+
+Compile via (replace mpicc by desired MPI compiler wrapper):
+mpicc <options> DynamicReceiveBroadcast.cpp -o DynamicReceiveBroadcast
+
+Compiler options:
+ -DBlockingSend     - use a MPI_Send instead of a MPI_Isend and a subsequent MPI_Test calling while loop
+ -DBlockingProbe    - use a blocking MPI_Probe instead of a MPI_IProbe calling while loop
+ -DBlockingReceive  - use a MPI_Send instead of a MPI_Irecv and a subsequent MPI_Test calling while loop
+
