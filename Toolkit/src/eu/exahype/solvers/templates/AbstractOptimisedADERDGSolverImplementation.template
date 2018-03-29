@@ -203,9 +203,9 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
 {%- if isLinear %}
-  const unsigned long f = picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
-{%- else %}
   const unsigned long f = 0; //TODO JMG
+{%- else %}
+  const unsigned long f = picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
 {%- endif %}
   total_flops += f;
   total_time += time_ul;
