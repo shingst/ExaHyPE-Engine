@@ -40,4 +40,8 @@ Compiler options:
  -DBlockingSend         - use a MPI_Send instead of a MPI_Isend and a subsequent MPI_Test calling while loop
  -DBlockingProbe        - use a blocking MPI_Probe instead of a MPI_IProbe calling while loop
  -DBlockingReceive      - use a MPI_Send instead of a MPI_Irecv and a subsequent MPI_Test calling while loop
+ -DTobiasReceives       - use Tobas's receive strategy which bascially consists of a while loop around a non-blocking MPI_IProbe.
+                          If the IProbe finds a message with the right tag, it issues a non-blocking MPI_Irecv. The non-blocking 
+                          receive is then tested and if the test successful, it means we have received the message. 
+                          Otherwise, we return to the start of the loop.
 

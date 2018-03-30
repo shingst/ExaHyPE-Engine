@@ -62,11 +62,42 @@ int main(int argc, char** argv) {
   else if (rank > 0) {
     // Probe for an incoming message from process zero
 
+    flag = 0;
     MPI_Status status;
+    #if defined(TobiasReceives)
+    while (!flag) {
+      MPI_Iprobe(0, 0, MPI_COMM_WORLD, &flag, &status);
+
+      if (flag) {
+        // When probe returns, the status object has the size and other
+        // attributes of the incoming message. Get the message size
+        MPI_Get_count(&status, MPI_INT, &numberCount);
+
+        // Allocate a buffer to hold the incoming numbers
+        int* numberBuffer = new int[numberCount];
+
+        bool receiveComplete = false;
+        int attempts = 0;
+        while (!receiveComplete) {
+          // post receive
+          MPI_Request receiveRequest;
+          MPI_Irecv(numberBuffer, numberCount, MPI_INT, 0, 0, MPI_COMM_WORLD, &receiveRequest);
+          attempts++;
+
+          // test receive
+          int flag2 = 0;
+          MPI_Test(&receiveRequest,&flag2,MPI_STATUS_IGNORE);
+          receiveComplete = flag2;
+        }
+
+        delete[] numberBuffer;
+        std::cout << rank << " received " << numberCount << " numbers from " << 0 << " in " << attempts << " attempts "<< std::endl;
+      }
+    }
+    #else
     #if defined(BlockingProbe)
     MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
     #else
-    flag = 0;
     while (!flag) {
       MPI_Iprobe(0, 0, MPI_COMM_WORLD, &flag, &status);
     }
@@ -91,9 +122,9 @@ int main(int argc, char** argv) {
       MPI_Test(&receiveRequest,&flag,MPI_STATUS_IGNORE);
     }
     #endif
-
-    std::cout << rank << " received " << numberCount << " numbers from " << 0 << std::endl;
     delete[] numberBuffer;
+    #endif
+    std::cout << rank << " received " << numberCount << " numbers from " << 0 << std::endl;
   }
 
   MPI_Finalize();
