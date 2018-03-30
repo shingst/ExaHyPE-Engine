@@ -923,9 +923,9 @@ void exahype::Vertex::sendToNeighbour(
       if ( hasToSendMetadata(toRank,src,dest) ) {
         tryDecrementFaceDataExchangeCountersOfSource(src,dest);
 
-        #ifdef Asserts
-        logInfo("prepareSendToNeighbour(...)","to rank "<<toRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
-        #endif
+        //#ifdef Asserts
+        //logInfo("prepareSendToNeighbour(...)","to rank "<<toRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
+        //#endif
         if ( hasToSendDataToNeighbour(src,dest) ) {
           sendSolverDataToNeighbour(
               toRank,src,dest,
@@ -1019,9 +1019,9 @@ void exahype::Vertex::receiveNeighbourData(
         int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
         if (hasToReceiveMetadata(fromRank,src,dest)) {
-          #ifdef Asserts
-          logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
-          #endif
+          //#ifdef Asserts
+          //logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
+          //#endif
 
           const int receivedMetadataIndex =
           exahype::receiveNeighbourCommunicationMetadata(
