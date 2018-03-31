@@ -273,200 +273,227 @@ exahype::records::RepositoryStatePacked exahype::records::RepositoryState::conve
       
    }
    
-   void exahype::records::RepositoryState::send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
-      _senderDestinationRank = destination;
-      
-      if (communicateSleep<0) {
-      
-         const int result = MPI_Send(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, destination, tag, tarch::parallel::Node::getInstance().getCommunicator());
-         if  (result!=MPI_SUCCESS) {
-            std::ostringstream msg;
-            msg << "was not able to send message exahype::records::RepositoryState "
-            << toString()
-            << " to node " << destination
-            << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "send(int)",msg.str() );
-         }
-         
-      }
-      else {
-      
-         MPI_Request* sendRequestHandle = new MPI_Request();
-         int          flag = 0;
-         int          result;
-         
-         clock_t      timeOutWarning   = -1;
-         clock_t      timeOutShutdown  = -1;
-         bool         triggeredTimeoutWarning = false;
-         
-         if (exchangeOnlyAttributesMarkedWithParallelise) {
-            result = MPI_Isend(
-               this, 1, Datatype, destination,
-               tag, tarch::parallel::Node::getInstance().getCommunicator(),
-               sendRequestHandle
-            );
-            
-         }
-         else {
-            result = MPI_Isend(
-               this, 1, FullDatatype, destination,
-               tag, tarch::parallel::Node::getInstance().getCommunicator(),
-               sendRequestHandle
-            );
-            
-         }
-         if  (result!=MPI_SUCCESS) {
-            std::ostringstream msg;
-            msg << "was not able to send message exahype::records::RepositoryState "
-            << toString()
-            << " to node " << destination
-            << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "send(int)",msg.str() );
-         }
-         result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
-         while (!flag) {
-            if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
-            if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-            result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
-            if (result!=MPI_SUCCESS) {
-               std::ostringstream msg;
-               msg << "testing for finished send task for exahype::records::RepositoryState "
-               << toString()
-               << " sent to node " << destination
-               << " failed: " << tarch::parallel::MPIReturnValueToString(result);
-               _log.error("send(int)", msg.str() );
-            }
-            
-            // deadlock aspect
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() &&
-               (clock()>timeOutWarning) &&
-               (!triggeredTimeoutWarning)
-            ) {
-               tarch::parallel::Node::getInstance().writeTimeOutWarning(
-               "exahype::records::RepositoryState",
-               "send(int)", destination,tag,1
-               );
-               triggeredTimeoutWarning = true;
-            }
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() &&
-               (clock()>timeOutShutdown)
-            ) {
-               tarch::parallel::Node::getInstance().triggerDeadlockTimeOut(
-               "exahype::records::RepositoryState",
-               "send(int)", destination,tag,1
-               );
-            }
-            
-         tarch::parallel::Node::getInstance().receiveDanglingMessages();
-         usleep(communicateSleep);
-         }
-         
-         delete sendRequestHandle;
-         #ifdef Debug
-         _log.debug("send(int,int)", "sent " + toString() );
-         #endif
-         
-      }
+   void exahype::records::RepositoryState::send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode) {
+      // ============================= 
+// start injected snippet/aspect 
+// ============================= 
+switch (mode) { 
+  case ExchangeMode::Blocking: 
+    {
+      const int result = MPI_Send(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, destination, tag, tarch::parallel::Node::getInstance().getCommunicator()); 
+       if  (result!=MPI_SUCCESS) { 
+         std::ostringstream msg; 
+         msg << "was not able to send message exahype::records::RepositoryState " 
+             << toString() 
+             << " to node " << destination 
+             << ": " << tarch::parallel::MPIReturnValueToString(result); 
+         _log.error( "send(int)",msg.str() ); 
+       } 
+    } 
+    break; 
+   case ExchangeMode::NonblockingWithPollingLoopOverTests: 
+    {
+      MPI_Request* sendRequestHandle = new MPI_Request(); 
+      int          flag = 0; 
+       int          result; 
+       clock_t      timeOutWarning   = -1; 
+       clock_t      timeOutShutdown  = -1; 
+       bool         triggeredTimeoutWarning = false;  
+       result = MPI_Isend(  
+         this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, destination,  
+         tag, tarch::parallel::Node::getInstance().getCommunicator(), 
+         sendRequestHandle  
+       ); 
+       if  (result!=MPI_SUCCESS) {  
+         std::ostringstream msg;  
+         msg << "was not able to send message exahype::records::RepositoryState "  
+             << toString() 
+             << " to node " << destination 
+             << ": " << tarch::parallel::MPIReturnValueToString(result);  
+         _log.error( "send(int)",msg.str() );  
+       }  
+       result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE ); 
+       while (!flag) { 
+         if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp(); 
+         if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp(); 
+         result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE ); 
+         if (result!=MPI_SUCCESS) { 
+           std::ostringstream msg; 
+           msg << "testing for finished send task for exahype::records::RepositoryState " 
+               << toString() 
+               << " sent to node " << destination 
+               << " failed: " << tarch::parallel::MPIReturnValueToString(result); 
+           _log.error("send(int)", msg.str() ); 
+         } 
+         if ( 
+           tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() && 
+           (clock()>timeOutWarning) && 
+           (!triggeredTimeoutWarning) 
+         ) { 
+           tarch::parallel::Node::getInstance().writeTimeOutWarning( 
+             "exahype::records::RepositoryState", 
+             "send(int)", destination,tag,1 
+           ); 
+           triggeredTimeoutWarning = true; 
+         } 
+         if ( 
+           tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() && 
+           (clock()>timeOutShutdown) 
+         ) { 
+           tarch::parallel::Node::getInstance().triggerDeadlockTimeOut( 
+             "exahype::records::RepositoryState", 
+             "send(int)", destination,tag,1 
+           ); 
+         } 
+ 	       tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+       } 
+       delete sendRequestHandle; 
+     }  
+     break; 
+   case ExchangeMode::LoopOverProbeWithBlockingReceive: 
+    assertionMsg(false,"should not be called"); 
+    break; 
+} 
+ // ============================= 
+// end injected snippet/aspect 
+// ============================= 
+
       
    }
    
    
    
-   void exahype::records::RepositoryState::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
-      if (communicateSleep<0) {
+   void exahype::records::RepositoryState::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode) {
+      // ============================= 
+// start injected snippet/aspect 
+// ============================= 
+MPI_Status status; 
+switch (mode) { 
+  case ExchangeMode::Blocking: 
+    { 
+      const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+      if ( result != MPI_SUCCESS ) { 
+        std::ostringstream msg; 
+        msg << "failed to start to receive exahype::records::RepositoryState from node " 
+            << source << ": " << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error( "receive(int)", msg.str() ); 
+      } 
+    } 
+    break; 
+  case ExchangeMode::NonblockingWithPollingLoopOverTests: 
+    { 
+      int          flag = 0; 
+      int          result; 
+      clock_t      timeOutWarning   = -1; 
+      clock_t      timeOutShutdown  = -1; 
+      bool         triggeredTimeoutWarning = false; 
+      MPI_Request* sendRequestHandle = new MPI_Request(); 
+       result = MPI_Irecv( 
+        this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, 
+        tarch::parallel::Node::getInstance().getCommunicator(), sendRequestHandle 
+      ); 
+      if ( result != MPI_SUCCESS ) { 
+        std::ostringstream msg; 
+        msg << "failed to start to receive exahype::records::RepositoryState from node " 
+             << source << ": " << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error( "receive(int)", msg.str() ); 
+      } 
+      result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+      while (!flag) { 
+        if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp(); 
+        if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp(); 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() && 
+          (clock()>timeOutWarning) && 
+          (!triggeredTimeoutWarning) 
+        ) { 
+          tarch::parallel::Node::getInstance().writeTimeOutWarning( 
+            "exahype::records::RepositoryState", 
+            "receive(int)", source,tag,1 
+          ); 
+          triggeredTimeoutWarning = true; 
+        } 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() && 
+          (clock()>timeOutShutdown) 
+        ) { 
+          tarch::parallel::Node::getInstance().triggerDeadlockTimeOut( 
+            "exahype::records::RepositoryState", 
+            "receive(int)", source,tag,1 
+          ); 
+        } 
+        tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+        result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+        if (result!=MPI_SUCCESS) { 
+          std::ostringstream msg; 
+          msg << "testing for finished receive task for exahype::records::RepositoryState failed: " 
+              << tarch::parallel::MPIReturnValueToString(result); 
+          _log.error("receive(int)", msg.str() ); 
+        } 
+      } 
+      delete sendRequestHandle; 
+    }    break; 
+  case ExchangeMode::LoopOverProbeWithBlockingReceive: 
+    {
+      int flag; 
+      clock_t      timeOutWarning   = -1; 
+      clock_t      timeOutShutdown  = -1; 
+      bool         triggeredTimeoutWarning = false; 
+      int result = MPI_Iprobe(source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &flag, MPI_STATUS_IGNORE ); 
+       if (result!=MPI_SUCCESS) { 
+        std::ostringstream msg; 
+        msg << "testing for finished receive task for exahype::records::RepositoryState failed: " 
+            << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error("receive(int)", msg.str() ); 
+      } 
+      while (!flag) { 
+        if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp(); 
+        if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp(); 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() && 
+          (clock()>timeOutWarning) && 
+          (!triggeredTimeoutWarning) 
+        ) { 
+          tarch::parallel::Node::getInstance().writeTimeOutWarning( 
+            "exahype::records::RepositoryState", 
+            "receive(int)", source,tag,1 
+          ); 
+          triggeredTimeoutWarning = true; 
+        } 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() && 
+          (clock()>timeOutShutdown) 
+        ) { 
+          tarch::parallel::Node::getInstance().triggerDeadlockTimeOut( 
+            "exahype::records::RepositoryState", 
+            "receive(int)", source,tag,1 
+          ); 
+        } 
+        tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+        result = MPI_Iprobe(source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &flag, MPI_STATUS_IGNORE ); 
+         if (result!=MPI_SUCCESS) { 
+          std::ostringstream msg; 
+          msg << "testing for finished receive task for exahype::records::RepositoryState failed: " 
+              << tarch::parallel::MPIReturnValueToString(result); 
+          _log.error("receive(int)", msg.str() ); 
+        } 
+      } 
+      result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+      if ( result != MPI_SUCCESS ) { 
+        std::ostringstream msg; 
+        msg << "failed to start to receive exahype::records::RepositoryState from node " 
+            << source << ": " << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error( "receive(int)", msg.str() ); 
+      } 
+    }
+    break; 
+  } 
+// =========================== 
+// end injected snippet/aspect 
+// =========================== 
+
       
-         MPI_Status  status;
-         const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE );
-         _senderDestinationRank = source==MPI_ANY_SOURCE ? status.MPI_SOURCE : source;
-         if ( result != MPI_SUCCESS ) {
-            std::ostringstream msg;
-            msg << "failed to start to receive exahype::records::RepositoryState from node "
-            << source << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "receive(int)", msg.str() );
-         }
-         
-      }
-      else {
-      
-         MPI_Request* sendRequestHandle = new MPI_Request();
-         MPI_Status   status;
-         int          flag = 0;
-         int          result;
-         
-         clock_t      timeOutWarning   = -1;
-         clock_t      timeOutShutdown  = -1;
-         bool         triggeredTimeoutWarning = false;
-         
-         if (exchangeOnlyAttributesMarkedWithParallelise) {
-            result = MPI_Irecv(
-               this, 1, Datatype, source, tag,
-               tarch::parallel::Node::getInstance().getCommunicator(), sendRequestHandle
-            );
-            
-         }
-         else {
-            result = MPI_Irecv(
-               this, 1, FullDatatype, source, tag,
-               tarch::parallel::Node::getInstance().getCommunicator(), sendRequestHandle
-            );
-            
-         }
-         if ( result != MPI_SUCCESS ) {
-            std::ostringstream msg;
-            msg << "failed to start to receive exahype::records::RepositoryState from node "
-            << source << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "receive(int)", msg.str() );
-         }
-         
-         result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE );
-         while (!flag) {
-            if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
-            if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-            result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE );
-            if (result!=MPI_SUCCESS) {
-               std::ostringstream msg;
-               msg << "testing for finished receive task for exahype::records::RepositoryState failed: "
-               << tarch::parallel::MPIReturnValueToString(result);
-               _log.error("receive(int)", msg.str() );
-            }
-            
-            // deadlock aspect
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() &&
-               (clock()>timeOutWarning) &&
-               (!triggeredTimeoutWarning)
-            ) {
-               tarch::parallel::Node::getInstance().writeTimeOutWarning(
-               "exahype::records::RepositoryState",
-               "receive(int)", source,tag,1
-               );
-               triggeredTimeoutWarning = true;
-            }
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() &&
-               (clock()>timeOutShutdown)
-            ) {
-               tarch::parallel::Node::getInstance().triggerDeadlockTimeOut(
-               "exahype::records::RepositoryState",
-               "receive(int)", source,tag,1
-               );
-            }
-            tarch::parallel::Node::getInstance().receiveDanglingMessages();
-            usleep(communicateSleep);
-            
-         }
-         
-         delete sendRequestHandle;
-         
-         _senderDestinationRank = source==MPI_ANY_SOURCE ? status.MPI_SOURCE : source;
-         #ifdef Debug
-         _log.debug("receive(int,int)", "received " + toString() ); 
-         #endif
-         
-      }
-      
+     _senderDestinationRank = source==MPI_ANY_SOURCE ? status.MPI_SOURCE : source;
    }
    
    
@@ -754,200 +781,227 @@ exahype::records::RepositoryState exahype::records::RepositoryStatePacked::conve
       
    }
    
-   void exahype::records::RepositoryStatePacked::send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
-      _senderDestinationRank = destination;
-      
-      if (communicateSleep<0) {
-      
-         const int result = MPI_Send(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, destination, tag, tarch::parallel::Node::getInstance().getCommunicator());
-         if  (result!=MPI_SUCCESS) {
-            std::ostringstream msg;
-            msg << "was not able to send message exahype::records::RepositoryStatePacked "
-            << toString()
-            << " to node " << destination
-            << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "send(int)",msg.str() );
-         }
-         
-      }
-      else {
-      
-         MPI_Request* sendRequestHandle = new MPI_Request();
-         int          flag = 0;
-         int          result;
-         
-         clock_t      timeOutWarning   = -1;
-         clock_t      timeOutShutdown  = -1;
-         bool         triggeredTimeoutWarning = false;
-         
-         if (exchangeOnlyAttributesMarkedWithParallelise) {
-            result = MPI_Isend(
-               this, 1, Datatype, destination,
-               tag, tarch::parallel::Node::getInstance().getCommunicator(),
-               sendRequestHandle
-            );
-            
-         }
-         else {
-            result = MPI_Isend(
-               this, 1, FullDatatype, destination,
-               tag, tarch::parallel::Node::getInstance().getCommunicator(),
-               sendRequestHandle
-            );
-            
-         }
-         if  (result!=MPI_SUCCESS) {
-            std::ostringstream msg;
-            msg << "was not able to send message exahype::records::RepositoryStatePacked "
-            << toString()
-            << " to node " << destination
-            << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "send(int)",msg.str() );
-         }
-         result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
-         while (!flag) {
-            if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
-            if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-            result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE );
-            if (result!=MPI_SUCCESS) {
-               std::ostringstream msg;
-               msg << "testing for finished send task for exahype::records::RepositoryStatePacked "
-               << toString()
-               << " sent to node " << destination
-               << " failed: " << tarch::parallel::MPIReturnValueToString(result);
-               _log.error("send(int)", msg.str() );
-            }
-            
-            // deadlock aspect
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() &&
-               (clock()>timeOutWarning) &&
-               (!triggeredTimeoutWarning)
-            ) {
-               tarch::parallel::Node::getInstance().writeTimeOutWarning(
-               "exahype::records::RepositoryStatePacked",
-               "send(int)", destination,tag,1
-               );
-               triggeredTimeoutWarning = true;
-            }
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() &&
-               (clock()>timeOutShutdown)
-            ) {
-               tarch::parallel::Node::getInstance().triggerDeadlockTimeOut(
-               "exahype::records::RepositoryStatePacked",
-               "send(int)", destination,tag,1
-               );
-            }
-            
-         tarch::parallel::Node::getInstance().receiveDanglingMessages();
-         usleep(communicateSleep);
-         }
-         
-         delete sendRequestHandle;
-         #ifdef Debug
-         _log.debug("send(int,int)", "sent " + toString() );
-         #endif
-         
-      }
+   void exahype::records::RepositoryStatePacked::send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode) {
+      // ============================= 
+// start injected snippet/aspect 
+// ============================= 
+switch (mode) { 
+  case ExchangeMode::Blocking: 
+    {
+      const int result = MPI_Send(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, destination, tag, tarch::parallel::Node::getInstance().getCommunicator()); 
+       if  (result!=MPI_SUCCESS) { 
+         std::ostringstream msg; 
+         msg << "was not able to send message exahype::records::RepositoryStatePacked " 
+             << toString() 
+             << " to node " << destination 
+             << ": " << tarch::parallel::MPIReturnValueToString(result); 
+         _log.error( "send(int)",msg.str() ); 
+       } 
+    } 
+    break; 
+   case ExchangeMode::NonblockingWithPollingLoopOverTests: 
+    {
+      MPI_Request* sendRequestHandle = new MPI_Request(); 
+      int          flag = 0; 
+       int          result; 
+       clock_t      timeOutWarning   = -1; 
+       clock_t      timeOutShutdown  = -1; 
+       bool         triggeredTimeoutWarning = false;  
+       result = MPI_Isend(  
+         this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, destination,  
+         tag, tarch::parallel::Node::getInstance().getCommunicator(), 
+         sendRequestHandle  
+       ); 
+       if  (result!=MPI_SUCCESS) {  
+         std::ostringstream msg;  
+         msg << "was not able to send message exahype::records::RepositoryStatePacked "  
+             << toString() 
+             << " to node " << destination 
+             << ": " << tarch::parallel::MPIReturnValueToString(result);  
+         _log.error( "send(int)",msg.str() );  
+       }  
+       result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE ); 
+       while (!flag) { 
+         if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp(); 
+         if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp(); 
+         result = MPI_Test( sendRequestHandle, &flag, MPI_STATUS_IGNORE ); 
+         if (result!=MPI_SUCCESS) { 
+           std::ostringstream msg; 
+           msg << "testing for finished send task for exahype::records::RepositoryStatePacked " 
+               << toString() 
+               << " sent to node " << destination 
+               << " failed: " << tarch::parallel::MPIReturnValueToString(result); 
+           _log.error("send(int)", msg.str() ); 
+         } 
+         if ( 
+           tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() && 
+           (clock()>timeOutWarning) && 
+           (!triggeredTimeoutWarning) 
+         ) { 
+           tarch::parallel::Node::getInstance().writeTimeOutWarning( 
+             "exahype::records::RepositoryStatePacked", 
+             "send(int)", destination,tag,1 
+           ); 
+           triggeredTimeoutWarning = true; 
+         } 
+         if ( 
+           tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() && 
+           (clock()>timeOutShutdown) 
+         ) { 
+           tarch::parallel::Node::getInstance().triggerDeadlockTimeOut( 
+             "exahype::records::RepositoryStatePacked", 
+             "send(int)", destination,tag,1 
+           ); 
+         } 
+ 	       tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+       } 
+       delete sendRequestHandle; 
+     }  
+     break; 
+   case ExchangeMode::LoopOverProbeWithBlockingReceive: 
+    assertionMsg(false,"should not be called"); 
+    break; 
+} 
+ // ============================= 
+// end injected snippet/aspect 
+// ============================= 
+
       
    }
    
    
    
-   void exahype::records::RepositoryStatePacked::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep) {
-      if (communicateSleep<0) {
+   void exahype::records::RepositoryStatePacked::receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode) {
+      // ============================= 
+// start injected snippet/aspect 
+// ============================= 
+MPI_Status status; 
+switch (mode) { 
+  case ExchangeMode::Blocking: 
+    { 
+      const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+      if ( result != MPI_SUCCESS ) { 
+        std::ostringstream msg; 
+        msg << "failed to start to receive exahype::records::RepositoryStatePacked from node " 
+            << source << ": " << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error( "receive(int)", msg.str() ); 
+      } 
+    } 
+    break; 
+  case ExchangeMode::NonblockingWithPollingLoopOverTests: 
+    { 
+      int          flag = 0; 
+      int          result; 
+      clock_t      timeOutWarning   = -1; 
+      clock_t      timeOutShutdown  = -1; 
+      bool         triggeredTimeoutWarning = false; 
+      MPI_Request* sendRequestHandle = new MPI_Request(); 
+       result = MPI_Irecv( 
+        this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, 
+        tarch::parallel::Node::getInstance().getCommunicator(), sendRequestHandle 
+      ); 
+      if ( result != MPI_SUCCESS ) { 
+        std::ostringstream msg; 
+        msg << "failed to start to receive exahype::records::RepositoryStatePacked from node " 
+             << source << ": " << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error( "receive(int)", msg.str() ); 
+      } 
+      result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+      while (!flag) { 
+        if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp(); 
+        if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp(); 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() && 
+          (clock()>timeOutWarning) && 
+          (!triggeredTimeoutWarning) 
+        ) { 
+          tarch::parallel::Node::getInstance().writeTimeOutWarning( 
+            "exahype::records::RepositoryStatePacked", 
+            "receive(int)", source,tag,1 
+          ); 
+          triggeredTimeoutWarning = true; 
+        } 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() && 
+          (clock()>timeOutShutdown) 
+        ) { 
+          tarch::parallel::Node::getInstance().triggerDeadlockTimeOut( 
+            "exahype::records::RepositoryStatePacked", 
+            "receive(int)", source,tag,1 
+          ); 
+        } 
+        tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+        result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+        if (result!=MPI_SUCCESS) { 
+          std::ostringstream msg; 
+          msg << "testing for finished receive task for exahype::records::RepositoryStatePacked failed: " 
+              << tarch::parallel::MPIReturnValueToString(result); 
+          _log.error("receive(int)", msg.str() ); 
+        } 
+      } 
+      delete sendRequestHandle; 
+    }    break; 
+  case ExchangeMode::LoopOverProbeWithBlockingReceive: 
+    {
+      int flag; 
+      clock_t      timeOutWarning   = -1; 
+      clock_t      timeOutShutdown  = -1; 
+      bool         triggeredTimeoutWarning = false; 
+      int result = MPI_Iprobe(source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &flag, MPI_STATUS_IGNORE ); 
+       if (result!=MPI_SUCCESS) { 
+        std::ostringstream msg; 
+        msg << "testing for finished receive task for exahype::records::RepositoryStatePacked failed: " 
+            << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error("receive(int)", msg.str() ); 
+      } 
+      while (!flag) { 
+        if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp(); 
+        if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp(); 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() && 
+          (clock()>timeOutWarning) && 
+          (!triggeredTimeoutWarning) 
+        ) { 
+          tarch::parallel::Node::getInstance().writeTimeOutWarning( 
+            "exahype::records::RepositoryStatePacked", 
+            "receive(int)", source,tag,1 
+          ); 
+          triggeredTimeoutWarning = true; 
+        } 
+        if ( 
+          tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() && 
+          (clock()>timeOutShutdown) 
+        ) { 
+          tarch::parallel::Node::getInstance().triggerDeadlockTimeOut( 
+            "exahype::records::RepositoryStatePacked", 
+            "receive(int)", source,tag,1 
+          ); 
+        } 
+        tarch::parallel::Node::getInstance().receiveDanglingMessages(); 
+        result = MPI_Iprobe(source, tag, tarch::parallel::Node::getInstance().getCommunicator(), &flag, MPI_STATUS_IGNORE ); 
+         if (result!=MPI_SUCCESS) { 
+          std::ostringstream msg; 
+          msg << "testing for finished receive task for exahype::records::RepositoryStatePacked failed: " 
+              << tarch::parallel::MPIReturnValueToString(result); 
+          _log.error("receive(int)", msg.str() ); 
+        } 
+      } 
+      result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE ); 
+      if ( result != MPI_SUCCESS ) { 
+        std::ostringstream msg; 
+        msg << "failed to start to receive exahype::records::RepositoryStatePacked from node " 
+            << source << ": " << tarch::parallel::MPIReturnValueToString(result); 
+        _log.error( "receive(int)", msg.str() ); 
+      } 
+    }
+    break; 
+  } 
+// =========================== 
+// end injected snippet/aspect 
+// =========================== 
+
       
-         MPI_Status  status;
-         const int   result = MPI_Recv(this, 1, exchangeOnlyAttributesMarkedWithParallelise ? Datatype : FullDatatype, source, tag, tarch::parallel::Node::getInstance().getCommunicator(), source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE );
-         _senderDestinationRank = source==MPI_ANY_SOURCE ? status.MPI_SOURCE : source;
-         if ( result != MPI_SUCCESS ) {
-            std::ostringstream msg;
-            msg << "failed to start to receive exahype::records::RepositoryStatePacked from node "
-            << source << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "receive(int)", msg.str() );
-         }
-         
-      }
-      else {
-      
-         MPI_Request* sendRequestHandle = new MPI_Request();
-         MPI_Status   status;
-         int          flag = 0;
-         int          result;
-         
-         clock_t      timeOutWarning   = -1;
-         clock_t      timeOutShutdown  = -1;
-         bool         triggeredTimeoutWarning = false;
-         
-         if (exchangeOnlyAttributesMarkedWithParallelise) {
-            result = MPI_Irecv(
-               this, 1, Datatype, source, tag,
-               tarch::parallel::Node::getInstance().getCommunicator(), sendRequestHandle
-            );
-            
-         }
-         else {
-            result = MPI_Irecv(
-               this, 1, FullDatatype, source, tag,
-               tarch::parallel::Node::getInstance().getCommunicator(), sendRequestHandle
-            );
-            
-         }
-         if ( result != MPI_SUCCESS ) {
-            std::ostringstream msg;
-            msg << "failed to start to receive exahype::records::RepositoryStatePacked from node "
-            << source << ": " << tarch::parallel::MPIReturnValueToString(result);
-            _log.error( "receive(int)", msg.str() );
-         }
-         
-         result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE );
-         while (!flag) {
-            if (timeOutWarning==-1)   timeOutWarning   = tarch::parallel::Node::getInstance().getDeadlockWarningTimeStamp();
-            if (timeOutShutdown==-1)  timeOutShutdown  = tarch::parallel::Node::getInstance().getDeadlockTimeOutTimeStamp();
-            result = MPI_Test( sendRequestHandle, &flag, source==MPI_ANY_SOURCE ? &status : MPI_STATUS_IGNORE );
-            if (result!=MPI_SUCCESS) {
-               std::ostringstream msg;
-               msg << "testing for finished receive task for exahype::records::RepositoryStatePacked failed: "
-               << tarch::parallel::MPIReturnValueToString(result);
-               _log.error("receive(int)", msg.str() );
-            }
-            
-            // deadlock aspect
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutWarningEnabled() &&
-               (clock()>timeOutWarning) &&
-               (!triggeredTimeoutWarning)
-            ) {
-               tarch::parallel::Node::getInstance().writeTimeOutWarning(
-               "exahype::records::RepositoryStatePacked",
-               "receive(int)", source,tag,1
-               );
-               triggeredTimeoutWarning = true;
-            }
-            if (
-               tarch::parallel::Node::getInstance().isTimeOutDeadlockEnabled() &&
-               (clock()>timeOutShutdown)
-            ) {
-               tarch::parallel::Node::getInstance().triggerDeadlockTimeOut(
-               "exahype::records::RepositoryStatePacked",
-               "receive(int)", source,tag,1
-               );
-            }
-            tarch::parallel::Node::getInstance().receiveDanglingMessages();
-            usleep(communicateSleep);
-            
-         }
-         
-         delete sendRequestHandle;
-         
-         _senderDestinationRank = source==MPI_ANY_SOURCE ? status.MPI_SOURCE : source;
-         #ifdef Debug
-         _log.debug("receive(int,int)", "received " + toString() ); 
-         #endif
-         
-      }
-      
+     _senderDestinationRank = source==MPI_ANY_SOURCE ? status.MPI_SOURCE : source;
    }
    
    

@@ -1,5 +1,6 @@
 #include "exahype/repositories/RepositoryFactory.h"
 
+#include "exahype/repositories/RepositoryArrayStack.h"
 #include "exahype/repositories/RepositorySTDStack.h"
 
 #include "exahype/records/RepositoryState.h"
@@ -51,6 +52,25 @@ exahype::repositories::RepositoryFactory& exahype::repositories::RepositoryFacto
 }
 
     
+exahype::repositories::Repository* 
+exahype::repositories::RepositoryFactory::createWithArrayStackImplementation(
+  peano::geometry::Geometry&                   geometry,
+  const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
+  const tarch::la::Vector<DIMENSIONS,double>&  computationalDomainOffset,
+  int                                          maxCellStackSize,    
+  int                                          maxVertexStackSize,    
+  int                                          maxTemporaryVertexStackSize    
+) {
+  #ifdef Parallel
+  if (!tarch::parallel::Node::getInstance().isGlobalMaster()) {
+    return new exahype::repositories::RepositoryArrayStack(geometry, domainSize, computationalDomainOffset,maxCellStackSize,maxVertexStackSize,maxTemporaryVertexStackSize);
+  }
+  else
+  #endif
+  return new exahype::repositories::RepositoryArrayStack(geometry, domainSize, computationalDomainOffset,maxCellStackSize,maxVertexStackSize,maxTemporaryVertexStackSize);
+}    
+
+
 exahype::repositories::Repository* 
 exahype::repositories::RepositoryFactory::createWithSTDStackImplementation(
   peano::geometry::Geometry&                   geometry,

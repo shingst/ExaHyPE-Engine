@@ -55,9 +55,15 @@ void EulerADERDG::MyEulerSolver::eigenvalues(const double* const Q,const int d,d
 }
 
 double EulerADERDG::MyEulerSolver::getInitialProfile(const double* const x) {
+#ifdef Dim2
   tarch::la::Vector<DIMENSIONS,double> myX( x[0] - 0.06, 1.0-x[1] - 0.25 ); // translate
   myX *= static_cast<double>(LogoExaHyPE.width);
   tarch::la::Vector<DIMENSIONS,int>    myIntX( 1.2*myX(0) , 1.2*myX(1) );  // scale
+#else
+  tarch::la::Vector<DIMENSIONS,double> myX( x[0] - 0.06, 1.0-x[1] - 0.25, 1.0-x[2] - 0.25 ); // translate
+  myX *= static_cast<double>(LogoExaHyPE.width);
+  tarch::la::Vector<DIMENSIONS,int>    myIntX( 1.2*myX(0) , 1.2*myX(1) , 1.2*myX(2) );  // scale
+#endif
 
   if (
     myIntX(0) > 0 && myIntX(0) < static_cast<int>(LogoExaHyPE.width)

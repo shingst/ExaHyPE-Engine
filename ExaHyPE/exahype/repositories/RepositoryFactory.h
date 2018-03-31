@@ -39,6 +39,21 @@ class exahype::repositories::RepositoryFactory {
      *
      * @return New Repository.
      */
+    Repository* createWithArrayStackImplementation(
+      peano::geometry::Geometry&                   geometry,
+      const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
+      const tarch::la::Vector<DIMENSIONS,double>&  computationalDomainOffset,
+      int                                          maxCellStackSize,    
+      int                                          maxVertexStackSize,    
+      int                                          maxTemporaryVertexStackSize    
+    );    
+    
+    /**
+     * Create instance of repository. You are responsible to delete the instance 
+     * in the end.
+     *
+     * @return New Repository.
+     */
     Repository* createWithSTDStackImplementation(
       peano::geometry::Geometry&                   geometry,
       const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
