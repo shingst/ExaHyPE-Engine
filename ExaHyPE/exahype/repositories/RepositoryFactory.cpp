@@ -52,20 +52,6 @@ exahype::repositories::RepositoryFactory& exahype::repositories::RepositoryFacto
 
     
 exahype::repositories::Repository* 
-exahype::repositories::RepositoryFactory::createWithArrayStackImplementation(
-  peano::geometry::Geometry&                   geometry,
-  const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
-  const tarch::la::Vector<DIMENSIONS,double>&  computationalDomainOffset,
-  int                                          maxCellStackSize,    
-  int                                          maxVertexStackSize,    
-  int                                          maxTemporaryVertexStackSize    
-) {
-  assertionMsg( false, "not supported; manually removed ");
-  return nullptr;
-}    
-
-
-exahype::repositories::Repository* 
 exahype::repositories::RepositoryFactory::createWithSTDStackImplementation(
   peano::geometry::Geometry&                   geometry,
   const tarch::la::Vector<DIMENSIONS,double>&  domainSize,
