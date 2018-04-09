@@ -1,10 +1,12 @@
-RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
+RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh_in,lx0,ldx,limiter)
 	USE TECPLOTPLOTTERmod
 	USE Parameters, only : nVar, nDim
 	implicit none
-	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
+	REAL, INTENT(IN) :: wh_in(nVar,nDOFm),lx0(nDim),ldx(nDim)
+	real :: wh(nVar,nDOFm)
 	real :: lx0_3(3),ldx_3(3)
 	integer :: limiter
+	wh=wh_in
 	lx0_3(1:nDim)=lx0
 	ldx_3(1:nDim)=ldx
 	CALL ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)

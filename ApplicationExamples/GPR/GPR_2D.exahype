@@ -98,6 +98,7 @@ exahype-project GPR
       output = ./global-integrals
     end plot
 */
+/*
      plot user::defined ErrorWriter
        variables const = 17
        time            = 0.0
@@ -111,5 +112,6 @@ exahype-project GPR
        repeat          = 0.05
        output          = ./output/tecplot
      end plot
+*/
   end solver
 end exahype-project
