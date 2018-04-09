@@ -38,7 +38,7 @@ namespace exahype {
  * maps of each vertex. This is done completely levelwisely.
  *
  * \note Hanging nodes are completely ignored and the indices initialised
- * with invalid indices everytime a hanging node is created.
+ * with invalid indices every time a hanging node is created.
  * Consistency checks must thus not consider cells which
  * have an adjacent hanging node.
  *
@@ -46,8 +46,16 @@ namespace exahype {
  * hanging nodes appear on the boundary of the domain.
  * Refinement must be employed such that this is prevented.
  *
+ * \note If you have domains with an aspect-ratio other than exactly 1 (up to machine precision), you need to rescale
+ * your computational domain such that the coarsest grid is exactly (up to machine precision) an integral
+ * multiple of the bounding box's mesh size.
+ *   Otherwise, you will run in situations where a parent may have multiple children which
+ * are outside of the computational domain. This is not only inappropriate for AMR prolongation and restriction but
+ * also for the adjacency book keeping.
+ *
  * CellDescriptionsIndex   Name of the index used for the cell indices within the vertex and 
  *          the cell
+ *
  *
  * @author Tobias Weinzierl, Dominic Etienne Charrier
  * @version $Revision: 1.1 $
@@ -206,8 +214,8 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
     /**
      * If we are on a new worker, write
      * invalid adjacency indices into the vertex'
-     * adjacency map if the entries are greater than
-     * or equal to zero. Ignore entries < 0.
+     * adjacency map if the entries are not equal
+     * to multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex.
      */
     void mergeWithRemoteDataDueToForkOrJoin(
       exahype::Vertex&  localVertex,

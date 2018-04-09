@@ -200,15 +200,16 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * happen that you fork the grid dynamically. Then, this routine updates
      * the entries dynamically, too.
      *
-     * \param periodicBoundaryConditions If set to true, we treat the domain boundary as
-     *                                   remote boundary shared with the global master rank.
-     *                                   We thus set the RemoteAdjancyIndex at the respective position.
-     *                                   Otherwise, the DomainBoundaryAdjacencyIndex is set.
+     * \param isBoundary indicates if a vertex or cell is at the domain boundary or outside of the domain, respectively.
+     *                   This is important to know as a rank might only have cells outside of the domain but
+     *                   share a vertex with a rank which has cells within the domain. In this case,
+     *                   we still want to treat the vertex as boundary vertex, i.e. we want to
+     *                   set a DomainBoundaryAdjacencyIndex.
      */
     static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
       const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
       const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries,
-      const bool                                 periodicBoundaryConditions = false
+      const bool                                 isBoundary
     );
 
     void beginIteration();

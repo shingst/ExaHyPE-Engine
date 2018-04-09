@@ -140,7 +140,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithNeighbour(
     vertex,
     multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
       vertex.getAdjacentRanks(),
-      VertexOperations::readCellDescriptionsIndex(vertex)
+      VertexOperations::readCellDescriptionsIndex(vertex),
+      vertex.isBoundary()
     )
   );
 }
@@ -165,7 +166,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithMaster(
       fineGridVertices[ fineGridVerticesEnumerator(k) ],
       multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
         fineGridVertices[ fineGridVerticesEnumerator(k) ].getAdjacentRanks(),
-        VertexOperations::readCellDescriptionsIndex(fineGridVertices[ fineGridVerticesEnumerator(k) ])
+        VertexOperations::readCellDescriptionsIndex(fineGridVertices[ fineGridVerticesEnumerator(k) ]),
+        workerGridCell.isOutside()
       )
     );
   enddforx
@@ -182,7 +184,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
     localVertex,
     multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
       localVertex.getAdjacentRanks(),
-      VertexOperations::readCellDescriptionsIndex(localVertex)
+      VertexOperations::readCellDescriptionsIndex(localVertex),
+      localVertex.isBoundary()
     )
   );
 }
@@ -211,7 +214,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
 ) {
   if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
     dfor2(c)
-      if ( localVertex.getCellDescriptionsIndex()[cScalar] >= 0 ) {
+      if ( localVertex.getCellDescriptionsIndex()[cScalar] != multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex ) {
         exahype::VertexOperations::writeCellDescriptionsIndex(
             localVertex,
             cScalar,
