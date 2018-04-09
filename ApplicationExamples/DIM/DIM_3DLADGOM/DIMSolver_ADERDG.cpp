@@ -6,6 +6,7 @@
 #include "PDE.h"
 #include "InitialData.h"
 #include "C2P-DIM.h"
+#include "TECPLOTinterface.h"
 // Used for the rieman-solver part
 #include "peano/utils/Loop.h"
 #include <cstring> // memset
@@ -19,6 +20,8 @@ void DIM::DIMSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,con
   // @todo Please implement/augment if required
   //  std::cout << " ==================================================================================" << std::endl;
   //	readcgfile_(&_domainOffset[0],&_domainSize[0]);
+  const int order = DIM::AbstractDIMSolver_ADERDG::Order;
+  inittecplot_(&order,&order);
 }
 
 void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -27,9 +30,9 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
     initialdata_(x, &t, Q);
-	//Q[14]=0.0;
+	//Q[13]=1.0;
   }
-  //Q[14]=0.0;
+  Q[13]=1.0;
 }
 
 void DIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,

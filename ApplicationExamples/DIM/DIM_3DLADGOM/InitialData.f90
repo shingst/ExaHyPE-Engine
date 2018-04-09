@@ -292,7 +292,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
         ! Connect the input parameters 
         maxx=center(1)+leng(1,1)
         minx=center(1)-leng(1,2)
-        maxy=center(2)+leng(2,2)
+        maxy=center(2)+leng(2,1)
         miny=center(2)-leng(2,2)
         
         nx_cg_new=n_new_in(1);
@@ -352,6 +352,8 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		print *, 'Min-Max of x=',minval(x_cg), maxval(x_cg)
 		print *, 'Min-Max of y=',minval(y_cg), maxval(y_cg)
 		print *, 'Min-Max of z=',minval(z_cg), maxval(z_cg)
+		!print *, maxy,miny
+		!stop
 	end if
 end subroutine ReadCGFile
 
