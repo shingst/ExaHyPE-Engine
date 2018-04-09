@@ -1,6 +1,5 @@
 #include "exahype/repositories/RepositoryFactory.h"
 
-#include "exahype/repositories/RepositoryArrayStack.h"
 #include "exahype/repositories/RepositorySTDStack.h"
 
 #include "exahype/records/RepositoryState.h"
@@ -61,13 +60,8 @@ exahype::repositories::RepositoryFactory::createWithArrayStackImplementation(
   int                                          maxVertexStackSize,    
   int                                          maxTemporaryVertexStackSize    
 ) {
-  #ifdef Parallel
-  if (!tarch::parallel::Node::getInstance().isGlobalMaster()) {
-    return new exahype::repositories::RepositoryArrayStack(geometry, domainSize, computationalDomainOffset,maxCellStackSize,maxVertexStackSize,maxTemporaryVertexStackSize);
-  }
-  else
-  #endif
-  return new exahype::repositories::RepositoryArrayStack(geometry, domainSize, computationalDomainOffset,maxCellStackSize,maxVertexStackSize,maxTemporaryVertexStackSize);
+  assertionMsg( false, "not supported; manually removed ");
+  return nullptr;
 }    
 
 
