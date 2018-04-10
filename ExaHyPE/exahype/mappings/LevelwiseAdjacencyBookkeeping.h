@@ -152,6 +152,12 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
     /**
      * Updates the adjacency maps of all surrounding fine grid
      * vertices with the fine grid cells cell description.
+     *
+     * Furthermore, writes boundary index at neighbour cell's position in adjacent vertices' adjacency map.
+     * This is a simple procedure for diagonals and edges but for faces, we have to check that all
+     * adjacent vertices of a face are at the boundary.
+     * Otherwise, the face might have only one or two points on the boundary and the remaining
+     * points in the interior. Such a face clearly belongs to the interior.
      */
     void enterCell(
       exahype::Cell&                 fineGridCell,

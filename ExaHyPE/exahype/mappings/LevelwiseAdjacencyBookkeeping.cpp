@@ -119,12 +119,60 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
+  // Write cell's index into adjacent vertices
   dfor2(k)
     if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
       VertexOperations::writeCellDescriptionsIndex(
           fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
     }
   enddforx
+
+  // Write boundary index at neighbour cell's position in adjacent vertices' adjacency map (edges + diagonals)
+  tarch::la::Vector<DIMENSIONS,int> center(1);
+  dfor2(v)
+    if ( fineGridVertices[ fineGridVerticesEnumerator(v) ].isBoundary() ) {
+      dfor2(c)
+        if ( tarch::la::countEqualEntries( v+c, center ) < DIMENSIONS-1 ) {
+          VertexOperations::writeCellDescriptionsIndex(
+              fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
+              multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+        }
+      enddforx
+    }
+  enddforx
+
+  // Write boundary index at neighbour cell's position in adjacent vertices' adjacency map (face)
+  //
+  // Here we have to check that all adjacent vertices of a face are at the boundary.
+  // Otherwise, the face might have only one or two points on the boundary and the remaining
+  // points in the interior. Such a face belongs to the interior.
+  for (int direction = 0; direction < DIMENSIONS; ++direction) {
+    for (int orientation = 0; orientation < 2; ++orientation) {
+      bool isBoundaryFace = true;
+      dfor2(v)
+        isBoundaryFace &=
+            v(direction)!=orientation ||
+            fineGridVertices[ fineGridVerticesEnumerator(v) ].isBoundary();
+      enddforx
+
+      if ( isBoundaryFace ) {
+        dfor2(v)
+          dfor2(c)
+            if (
+              v(direction)==orientation &&
+              c(direction)==orientation
+            ) {
+              assertion( !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() );
+
+              VertexOperations::writeCellDescriptionsIndex(
+                  fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
+                  multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+            }
+          enddforx
+        enddforx
+      }
+    }
+  }
 }
 
 #ifdef Parallel
@@ -140,8 +188,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithNeighbour(
     vertex,
     multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
       vertex.getAdjacentRanks(),
-      VertexOperations::readCellDescriptionsIndex(vertex),
-      vertex.isBoundary()
+      VertexOperations::readCellDescriptionsIndex(vertex)
     )
   );
 }
@@ -166,8 +213,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithMaster(
       fineGridVertices[ fineGridVerticesEnumerator(k) ],
       multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
         fineGridVertices[ fineGridVerticesEnumerator(k) ].getAdjacentRanks(),
-        VertexOperations::readCellDescriptionsIndex(fineGridVertices[ fineGridVerticesEnumerator(k) ]),
-        workerGridCell.isOutside()
+        VertexOperations::readCellDescriptionsIndex(fineGridVertices[ fineGridVerticesEnumerator(k) ])
       )
     );
   enddforx
@@ -184,8 +230,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
     localVertex,
     multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
       localVertex.getAdjacentRanks(),
-      VertexOperations::readCellDescriptionsIndex(localVertex),
-      localVertex.isBoundary()
+      VertexOperations::readCellDescriptionsIndex(localVertex)
     )
   );
 }

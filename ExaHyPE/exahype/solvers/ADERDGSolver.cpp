@@ -3420,9 +3420,9 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-    mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
-    mergeWithCommunicationStatus      (cellDescription,faceIndex,neighbourCommunicationStatus);
-    mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
+    mergeWithAugmentationStatus (cellDescription,faceIndex,neighbourAugmentationStatus);
+    mergeWithCommunicationStatus(cellDescription,faceIndex,neighbourCommunicationStatus);
+    mergeWithLimiterStatus      (cellDescription,faceIndex,neighbourLimiterStatus);
   }
 }
 
