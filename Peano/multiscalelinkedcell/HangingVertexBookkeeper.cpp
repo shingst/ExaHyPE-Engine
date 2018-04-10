@@ -385,6 +385,11 @@ tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper
   tarch::la::Vector<TWO_POWER_D,int> result;
   for (int i=0; i<TWO_POWER_D; i++) {
     if (
+        adjacentRanks(i)!=tarch::parallel::Node::getInstance().getGlobalMasterRank()
+    ) {
+      result(i) = DomainBoundaryAdjacencyIndex;
+    }
+    else if (
         adjacentRanks(i)!=tarch::parallel::Node::getInstance().getRank()
     ) {
       result(i) = RemoteAdjacencyIndex;

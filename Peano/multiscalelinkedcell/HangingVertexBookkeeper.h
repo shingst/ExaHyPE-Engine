@@ -199,6 +199,9 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * same and the dynamic update here is not really required. However, it may
      * happen that you fork the grid dynamically. Then, this routine updates
      * the entries dynamically, too.
+     *
+     * \note In case, the neighbour is the globla master rank, we simply
+     * prescribe a DomainBoundaryAdjacency index.
      */
     static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
       const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,

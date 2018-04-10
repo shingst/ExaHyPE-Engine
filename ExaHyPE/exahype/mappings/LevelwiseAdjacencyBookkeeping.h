@@ -153,11 +153,19 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
      * Updates the adjacency maps of all surrounding fine grid
      * vertices with the fine grid cells cell description.
      *
-     * Furthermore, writes boundary index at neighbour cell's position in adjacent vertices' adjacency map.
-     * This is a simple procedure for diagonals and edges but for faces, we have to check that all
-     * adjacent vertices of a face are at the boundary.
+     * Furthermore, writes boundary indices at a neighbour cell's position in the adjacent vertices' adjacency map.
+     * for every face of the cell which belongs to the boundary.
+     * We have to check that all adjacent vertices of a face are at the boundary.
      * Otherwise, the face might have only one or two points on the boundary and the remaining
      * points in the interior. Such a face clearly belongs to the interior.
+     *
+     * \note We do not treat diagonals and edges belonging to the boundary as we assume that the neighbouring
+     * cells set the domain boundary indices here correctly. This does not hold for
+     * diagonals and edges shared with the global master rank (see the next note).
+     *
+     * \note This function interplays with function multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(...)
+     * which ensures that the adjacency indices corresponding to the global master ranks'
+     * domain are always set to the value of a domain boundary adjacency index.
      */
     void enterCell(
       exahype::Cell&                 fineGridCell,

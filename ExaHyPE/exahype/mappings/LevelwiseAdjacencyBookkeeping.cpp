@@ -127,25 +127,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
     }
   enddforx
 
-  // Write boundary index at neighbour cell's position in adjacent vertices' adjacency map (edges + diagonals)
-  tarch::la::Vector<DIMENSIONS,int> center(1);
-  dfor2(v)
-    if ( fineGridVertices[ fineGridVerticesEnumerator(v) ].isBoundary() ) {
-      dfor2(c)
-        if ( tarch::la::countEqualEntries( v+c, center ) < DIMENSIONS-1 ) {
-          VertexOperations::writeCellDescriptionsIndex(
-              fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
-              multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
-        }
-      enddforx
-    }
-  enddforx
-
-  // Write boundary index at neighbour cell's position in adjacent vertices' adjacency map (face)
-  //
-  // Here we have to check that all adjacent vertices of a face are at the boundary.
-  // Otherwise, the face might have only one or two points on the boundary and the remaining
-  // points in the interior. Such a face belongs to the interior.
+  // Write boundary index at neighbour cell's position in adjacent vertices' adjacency map per face
   for (int direction = 0; direction < DIMENSIONS; ++direction) {
     for (int orientation = 0; orientation < 2; ++orientation) {
       bool isBoundaryFace = true;
