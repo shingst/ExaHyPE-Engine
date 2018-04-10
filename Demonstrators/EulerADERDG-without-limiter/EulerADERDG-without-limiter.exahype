@@ -1,18 +1,18 @@
 /**
- * 
+ *
  * Euler Flow
- * 
- * This setup corresponds to the Finite Volume demonstrator code as discussed in 
- * Section 2 of the guidebook, but it replaces the Finite Volume stuff with an 
- * ADER-DG scheme. To keep stuff here extremely simple, the spec file 
+ *
+ * This setup corresponds to the Finite Volume demonstrator code as discussed in
+ * Section 2 of the guidebook, but it replaces the Finite Volume stuff with an
+ * ADER-DG scheme. To keep stuff here extremely simple, the spec file
  * does not contain any global-optimisations or any parallelisation. How to add parallel
  * features is solely described in the guidebook.
- * 
+ *
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
  *
- * The project has received funding from the European Union's Horizon 
+ * The project has received funding from the European Union's Horizon
  * 2020 research and innovation programme under grant agreement
  * No 671698. For copyrights and licensing, please consult the webpage.
  *
@@ -28,29 +28,49 @@ exahype-project EulerADERDG
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 1.0
+    time-steps              = 100
   end computational-domain
-  
-  
+ 
+ 
   shared-memory
     identifier               = dummy
-    configure                = {}
-    cores                    = 8
+    configure                = {manual-pinning}
+    cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory
-  
-  
+
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks_per_node:6}
+    buffer-size              = 64
+    timeout                  = 160
+  end distributed-memory
+ 
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    spawn-amr-background-threads         = off
+    timestep-batch-factor           = 0.0
+    skip-reduction-in-batched-time-steps = off
+    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    double-compression = 0.0
+    // try on here as well -> there is a deadlock here - at least with MPI
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
   solver ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
-    order const                = 5
-    maximum-mesh-size          = 5e-2    
-    maximum-mesh-depth         = 2
+    order const                = 3
+    maximum-mesh-size          = 0.01
+    maximum-mesh-depth         = 0
     time-stepping              = global
     type const                 = nonlinear, Legendre
     terms const                = flux
     optimisation const         = generic
     language const             = C
-    
+   
     plot vtu::Cartesian::vertices::ascii EulerWriter
       variables const = 5
       time            = 0.0
@@ -59,3 +79,4 @@ exahype-project EulerADERDG
     end plot
   end solver
 end exahype-project
+

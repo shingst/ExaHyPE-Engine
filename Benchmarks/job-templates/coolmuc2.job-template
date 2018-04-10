@@ -1,0 +1,46 @@
+#!/bin/bash
+# Mandatory parameters are:
+# time, nodes, tasks,
+# job_name, output_file, error_file, 
+# job_file, spec_file, app, 
+# environment, parameters
+# 
+# Optional parameters are:
+# ranks, cores, mail
+
+#SBATCH --job-name={{job_name}}
+#SBATCH -o {{output_file}}
+#SBATCH -e {{error_file}}
+#SBATCH -t {{time}}
+#SBATCH --exclusive
+#SBATCH --cluster=mpp2
+#SBATCH --nodes={{nodes}}
+#SBATCH --ntasks-per-node={{tasks}}
+#SBATCH --cpus-per-task={{cores}}
+#SBATCH --mail-user={{mail}}
+#SBATCH --mail-type=END
+
+source /etc/profile.d/modules.sh
+
+module load tbb/2017
+
+I_MPI_FABRICS="dapl"
+
+# pipe some information into output file
+echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`"
+echo ""
+module list
+echo ""
+printenv
+echo ""
+cat {{job_file}}
+echo ""
+echo "sweep/environment={{environment}}"
+echo "sweep/parameters={{parameters}}"
+cat {{spec_file}}
+
+# multiple ranks
+mpiexec -np {{ranks}} {{app}} {{spec_file}} 
+
+# single-node
+# {{app}} {{spec_file}}

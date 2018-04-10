@@ -34,13 +34,13 @@ exahype-project DIM
   shared-memory
     identifier               = dummy
     configure                = {whatever,stuff}
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:10}
+    configure                = {hotspot,fair,ranks-per-node:10}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
@@ -48,6 +48,8 @@ exahype-project DIM
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
@@ -69,7 +71,7 @@ exahype-project DIM
     limiter-type const         = godunov
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables                = 1
+    dmp-observables const          = 1
     dmp-relaxation-parameter       = 1e-3 
     dmp-difference-scaling         = 1e-4 
     steps-till-cured           = 5
@@ -78,7 +80,7 @@ exahype-project DIM
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 14
       time      = 0.0
-      repeat    = 1e-2
+      repeat    = 1e-1
       output    = ./vtk-output/primitives
     end plot
   end solver

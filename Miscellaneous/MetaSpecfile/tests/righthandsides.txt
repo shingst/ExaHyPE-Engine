@@ -1,0 +1,44 @@
+# Test the various datatypes
+
+ints/zero = 0				# and a comment
+ints/pos_int = +9			# and a comment
+ints/neg_int = -8			# and a comment
+
+floats/zero = 0.0			# and a comment
+floats/scientific = +2.148e+213		# and a comment
+
+bool/logic1/yes = Yes			# and a comment
+bool/logic1/true = True			# and a comment
+bool/logic1/on = On			# and a comment
+bool/logic0/no = no			# and a comment
+bool/logic0/false = false		# and a comment
+bool/logic0/off = off			# and a comment
+
+string/double = "foo"			# and a comment
+string/single = 'foo'			# and a comment
+string/escape/double = "foo'bar'foo"	# and a comment
+string/escape/single = 'foo"bar"foo'	# and a comment
+string/inclcomment = "foo#bar"		# and a comment
+
+# these tests actually also test the equivalence/resolving feature,
+# but also shall test comments and RHS evaluation.
+
+symbol/refer_leaf = string/double  # and comment
+symbol/refer_tree = bool/logic1  # and comment
+symbol/include_tree <= bool/logic0  # and comment
+symbol/include_tree/foo = "bar"  # does not change bool/logic0
+
+# spawning lists/vectors:
+lists/symbols += ints/zero ints/pos_int
+
+lists/multiline_text += "Hello" # and comments
+lists/multiline_text += "World" # and comments
+lists/multiline_text += "How are you?" # and comments
+
+# this is the favoured syntax
+lists/vector/round = (1,2)
+lists/vector/square = [0,1,2,3,4,5]
+
+# but it is equivalent to this one:
+lists/vector/append += (1,2)
+lists/vector/append += (3,4)

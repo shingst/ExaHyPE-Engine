@@ -1,0 +1,64 @@
+##mexa  # This is an ExaHyPE meta specification v1 file.
+#
+# Base meta specification file for all GRMHD_cpp applications.
+#
+# This parameter file is incomplete. It requires you to:
+#
+# 1) choose an individual solver:
+#   Solver = DGSolver
+# 2) choose a particular simulation:
+#   Simulation = Shocktubes/RP1
+
+<< "GRMHD_cpp.mexa"
+
+####
+#### AlfenWave Initial Data
+####
+
+name = "alfenwave"
+boundaries < BC/allexact
+end_time = 1000.0
+
+grid < unitsquare
+grid/dg/order = 3
+grid/fv/patchsize = 7
+grid/maximum_mesh_size = 0.333339
+grid < unigrid
+
+#Simulation/grid = grid
+Simulation += name
+Simulation += Boundaries
+
+# register and run.
+exahype/solvers += solver/DG
+
+
+# request only a subset of combinations:
+
+#register/solvers += solver/DGSolver
+#register/dimensions += dim2
+
+## das koennte auch alles sein:
+#
+#register/solvers += solver/DG
+#register/solvers += solver/FV
+#register/solvers += solver/Limiting
+#register/dimensions += dim2
+#register/dimensions += dim3##
+#
+### aus diesen *DATEN* macht ein *ALGORITHMUS* dann was rauskommt!
+#
+#register/template = "GRMHD_cpp_@(simulation)_@(solvers)_@(DIMENSIONS).exahype"
+#
+#
+#specfiles/sim_dg_2d/exahype < exahype
+#specfiles/sim_dg_2d/exahype/solver < solver/DGsolver
+#specfiles/sim_dg_2d/exahype/grid < grid
+#specfiles/sim_dg_2d/exahype/grid/dimension = 2
+#specfiles/sim_dg_2d/filename = "GRMHD_cpp_@(Name)_DG_2D.exahype"
+#
+## das gleiche fuer die Kombinationen:
+#
+## dg => {dg,fv,limiting}
+## dimension = {2,3}
+

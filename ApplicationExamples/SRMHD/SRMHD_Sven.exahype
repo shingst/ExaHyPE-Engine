@@ -31,7 +31,7 @@ exahype-project  MHDSolver
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:4}
+    configure                = {hotspot,fair,ranks-per-node:4}
     buffer-size              = 64
     timeout                  = 120
   end distributed-memory
@@ -39,6 +39,8 @@ exahype-project  MHDSolver
   global-optimisation
     fuse-algorithmic-steps        = on
     fuse-algorithmic-steps-factor = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off

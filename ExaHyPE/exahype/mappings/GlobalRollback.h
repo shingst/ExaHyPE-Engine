@@ -125,6 +125,40 @@ class exahype::mappings::GlobalRollback {
                             const tarch::la::Vector<DIMENSIONS, double>& h,
                             int level);
 
+    /**
+     * Send the limiter domain change state down to the worker.
+     *
+     * \note Currently, we perform a full broadcast for all solver, we send up to
+     * nine doubles to the worker. This is not necessary, we only
+     * need the limiter domain change state.
+     */
+    bool prepareSendToWorker(
+        exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+        exahype::Vertex* const coarseGridVertices,
+        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+        exahype::Cell& coarseGridCell,
+        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+        int worker);
+
+    /**
+     * Receive limiter domain change state from the master.
+     *
+     * \note Currently, we perform a full broadcast for all solvers, we send up to
+     * nine doubles to the worker. This is not necessary, we only
+     * need the limiter domain change state.
+     */
+    void receiveDataFromMaster(
+        exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+        const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+        exahype::Vertex* const receivedCoarseGridVertices,
+        const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+        exahype::Cell& receivedCoarseGridCell,
+        exahype::Vertex* const workersCoarseGridVertices,
+        const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+        exahype::Cell& workersCoarseGridCell,
+        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
 
     //
     // Below all methods are nop.
@@ -175,18 +209,6 @@ class exahype::mappings::GlobalRollback {
     /**
      * Nop.
      */
-    bool prepareSendToWorker(
-        exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-        int worker);
-
-    /**
-     * Nop.
-     */
     void mergeWithMaster(
         const exahype::Cell& workerGridCell,
         exahype::Vertex* const workerGridVertices,
@@ -209,20 +231,6 @@ class exahype::mappings::GlobalRollback {
         const exahype::Vertex* const coarseGridVertices,
         const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
         const exahype::Cell& coarseGridCell,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-    /**
-     * Nop.
-     */
-    void receiveDataFromMaster(
-        exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-        const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-        exahype::Vertex* const receivedCoarseGridVertices,
-        const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-        exahype::Cell& receivedCoarseGridCell,
-        exahype::Vertex* const workersCoarseGridVertices,
-        const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-        exahype::Cell& workersCoarseGridCell,
         const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
     /**

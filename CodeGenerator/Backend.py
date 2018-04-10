@@ -30,22 +30,7 @@ import subprocess
 import errno
 import time
 
-import KernelsHeaderGenerator
-import SpaceTimePredictorGenerator
-import VolumeIntegralGenerator
-import SurfaceIntegralGenerator
-import RiemannGenerator
-import SolutionUpdateGenerator
-import AdjustSolutionGenerator
-import StableTimeStepSizeGenerator
-import QuadratureGenerator
-import DGMatrixGenerator
-import ConfigurationParametersGenerator
-import BoundaryConditionsGenerator
-import ConverterGenerator
-import GemmsCPPGenerator
-import AMRRoutinesGenerator
-import DeltaDistributionGenerator
+from generators import *
 
 
 g_runtimes               = {}
@@ -102,6 +87,10 @@ def generateContext(i_config):
     context["solverHeader"]      = context["solverName"].split("::")[1] + ".h"
     context["codeNamespaceList"] = context["codeNamespace"].split("::")
     context["guardNamespace"]    = "_".join(context["codeNamespaceList"]).upper()
+    context["nDofLim"] = 2*context["nDof"]-1 #for limiter
+    context["nDofLimPad"] = getSizeWithPadding(context["nDofLim"])
+    context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
+    context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
     return context
 
     
@@ -111,13 +100,9 @@ def generateComputeKernels():
     kernelsHeaderGenerator.generateCode()
     g_runtimes["kernelsHeaderGenerator"] = time.perf_counter() - start
     start = time.perf_counter()
-    spaceTimePredictorGenerator = SpaceTimePredictorGenerator.SpaceTimePredictorGenerator(generateContext(g_config))
-    spaceTimePredictorGenerator.generateCode()
-    g_runtimes["spaceTimePredictorGenerator"] = time.perf_counter() - start
-    start = time.perf_counter()
-    volumeIntegralGenerator = VolumeIntegralGenerator.VolumeIntegralGenerator(generateContext(g_config))
-    volumeIntegralGenerator.generateCode()
-    g_runtimes["volumeIntegralGenerator"] = time.perf_counter() - start
+    fusedSpaceTimePredictorVolumeIntegralGenerator = FusedSpaceTimePredictorVolumeIntegralGenerator.FusedSpaceTimePredictorVolumeIntegralGenerator(generateContext(g_config))
+    fusedSpaceTimePredictorVolumeIntegralGenerator.generateCode()
+    g_runtimes["fusedSpaceTimePredictorVolumeIntegralGenerator"] = time.perf_counter() - start
     start = time.perf_counter()
     surfaceIntegralGenerator = SurfaceIntegralGenerator.SurfaceIntegralGenerator(generateContext(g_config))
     surfaceIntegralGenerator.generateCode()
@@ -170,6 +155,10 @@ def generateComputeKernels():
     deltaDistributionGenerator = DeltaDistributionGenerator.DeltaDistributionGenerator(generateContext(g_config))
     deltaDistributionGenerator.generateCode()
     g_runtimes["deltaDistributionGenerator"] = time.perf_counter() - start
+    start = time.perf_counter()
+    limiterGenerator = LimiterGenerator.LimiterGenerator(generateContext(g_config))
+    limiterGenerator.generateCode()
+    g_runtimes["LimiterGenerator"] = time.perf_counter() - start
 
 
 def executeLibxsmmGenerator(i_commandLineParameters):

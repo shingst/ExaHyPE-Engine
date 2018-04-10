@@ -57,15 +57,39 @@ private:
   static tarch::logging::Log _log;
 
   /**
+   * A state indicating if the mesh refinement has attained a stable state
+   * for each solver.
+   *
+   * TODO(Dominic): The corresponding MPI send must (probably) not be performed
+   * per solver. _attainedStableState is a global state which is
+   * only read when deciding if we need to run more mesh setup iterations.
+   * It is not used to select certain solvers in contrast to the meshUpdateRequests.
+   */
+  std::vector<bool> _attainedStableState;
+
+  /**
+   * A state indicating if vertical (master-worker) exchange
+   * of face data is required during the time stepping iterations
+   * for any of the registered solvers.
+   */
+  bool _verticalExchangeOfSolverDataRequired = false;
+
+  /**
+   * Prepare all local variables.
+   */
+  void initialiseLocalVariables();
+
+  /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
    */
   State _localState;
 
   /**
-   * A semaphore that is locked if a thread calls while solver->updateStateInEnterCell
-   * or solver->updateStateInLeaveCell
+   * We use this semaphore for refining along the
+   * boundary of the computational domain in order
+   * to avoid hanging nodes.
    */
-  static tarch::multicore::BooleanSemaphore _semaphore;
+  static tarch::multicore::BooleanSemaphore BoundarySemaphore;
 
   /**
    * TODO(Tobias): Add docu.
@@ -78,62 +102,77 @@ private:
 
 
   /**
-   * Enforce that all uniform grids populated
-   * by at least one solver and all the levels above have no hanging nodes.
+   * Ensure that we have no hanging nodes at the domain boundary,
    *
-   * TODO(Dominic): Evaluate impact of this method.
-   * TODO(Dominic): We might need boundary refinement to
-   * get rid of hanging nodes on the boundary. However
-   * this should not be a problem in ExaHyPE since
-   * we always refine cellwisely when we perform adaptive
-   * refinement.
+   * In case any inside vertex is refined, refine any boundary vertex as well.
+   * In case all inside vertices are unrefined, erase any boundary vertex.
+   *
+   * \note Thread-safe as reads and writes to the boundary vertices are locked.
    */
-  void ensureRegularityOnCoarserGrids(
+  void ensureRegularityAlongBoundary(
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
 
   /**
-   * Erase fine grid vertices as long as it does not
-   * harm the regularity at the boundary.
+   * Call erase on an inside fine grid vertex as long as it does not
+   * harm the regularity at the remote boundary.
    *
-   * This means to enforce that all uniform grids populated
-   * by at least one solver and all the levels above have no hanging nodes.
+   * \note Only erasing inside vertices ensures that we do not compete
+   * with routine eraseButPreserveRegularityAlongRemoteBoundary(...).
    */
-  void eraseVerticesButPreserveRegularityOnCoarserGrids(
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
+  void eraseIfInsideAndNotRemote(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const;
 
 public:
 
+  /**
+   * Indicates that we perform the initial
+   * mesh refinement.
+   *
+   * \note Must be initialised with true!
+   */
   static bool IsInitialMeshRefinement;
 
   /**
+   * We use this state to call adjust solution at the beginning
+   * of a batch of mesh refinement iterations.
+   *
+   * In parallel builds, we further use it to determine if
+   * we need to drop MPI messages from neighbours or not.
+   * In the first iteration, we don't
+   * expect any messages from neighbours.
+   *
    * This variable is unset in MeshRefinement::beginIteration(...) in the first iteration
    * of MeshRefinement and then reset in
    * FinaliseMeshRefinement::beginIteration(...).
+   *
+   * \note Must be initialised with true!
    */
   static bool IsFirstIteration;
+
   /**
-   * Switched off in serial mode where everything is done in the creational
-   * routines. Switched on in parallel mode.
+   * Main plug-in point for triggering refinement ans grid erasing events.
    */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
 
   /**
-   * We merge the limite status between neighbouring cells.
+   * We merge the limiter status between neighbouring cells.
    * We thus avoid fine grid races.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
   /**
-   * Traverse the cells in serial. Might
-   * be relaxed when all semaphores are in place.
+   * Avoid fine grid races.  Run through the whole tree.
+   * Might be relaxed if vertex semaphores are in place.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 
   /**
-   * Traverse the cells in serial. Might
-   * be relaxed when all semaphores are in place.
+   * Avoid fine grid races.  Run through the whole tree.
+   * Might be relaxed if vertex semaphores are in place.
+   *
+   * Alters the state as we perform a reduction.
    */
   peano::MappingSpecification leaveCellSpecification(int level) const;
 
@@ -148,9 +187,40 @@ public:
 #if defined(SharedMemoryParallelisation)
   /**
    * We copy over the veto flag from the master thread
+   * Initialise the worker's local variables.
    */
   MeshRefinement(const MeshRefinement& masterThread);
+
+  /**
+   * Merge with the workers local variables.
+   */
+  void mergeWithWorkerThread(const MeshRefinement& workerThread);
 #endif
+
+  /**
+   * Initialise all heaps.
+   *
+   * For each solver, reset the grid update requested flag
+   * to false.
+   *
+   * Further zero the time step sizes of the solver.
+   *
+   * <h2>MPI</h2>
+   * Finish the previous synchronous sends and
+   * start synchronous sending again.
+   */
+  void beginIteration(exahype::State& solverState);
+
+  /**
+   * For each solver, set the grid update requested flag
+   * for the next iteration.
+   *
+   * <h2>MPI</h2>
+   * If this rank is the global master, update the
+   * initial grid refinement strategy.
+   */
+  void endIteration(exahype::State& solverState);
+
   /**
    * TODO(Tobias): Add docu.
    */
@@ -200,25 +270,13 @@ public:
    *
    * TODO(Dominic): Update the docu
    *
-   * We distinguish among three different refinement modes:
-   *
-   * RefinementMode | Action
-   * ---------------|------------------------------
-   * Initial        | In this refinement mode, we evaluate the user's refinement criterion
-   *                | as well as the limiter's physical admissibility detection (PAD) criterion
-   *                | if a LimitingADERDGSolver is employed.
-   *                | [LimitingADERDGSolver] We aggressively refine all cells that do not satisfy the PAD down
-   *                | to the finest level specified by the user for a solver.
-   *                | The user's refinement criterion is used
-   *                | to resolve other features of the solution more accurately.
-   * APriori        | Refine the mesh according to the user's refinement criterion
-   *                | after a solution update has been performed.
-   * APosteriori    | [LimitingADERDGSolver] Ensure that cells which have been newly marked as Troubled
-   *                | and their next two neighbours always reside on the finest level of the grid.
-   *
-   * Open Issues:
-   * * TODO(Dominic): The refinement criteria have to consider the maximum depth of the adaptive mesh (supplied by the user)
-   * * TODO(Dominic): We have to merge the LimiterStatusSpreading with the mesh refinement
+   * In this refinement mode, we evaluate the user's refinement criterion
+   * as well as the limiter's physical admissibility detection (PAD) criterion
+   * if a LimitingADERDGSolver is employed.
+   * LimitingADERDGSolver We aggressively refine all cells that do not satisfy the PAD down
+   * to the finest level specified by the user for a solver.
+   * The user's refinement criterion is used
+   * to resolve other features of the solution more accurately.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -248,6 +306,32 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
+   * After a fork, Peano erases the master's cells.
+   * We plugin into these erases and deallocate heap data
+   * before the cells are erased.
+   */
+  void destroyCell(
+      const exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+  /**
+   * For all solvers, merge the metadata of neighbouring patches.
+   */
+  void touchVertexFirstTime(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+
+  /**
    * TODO(Tobias): Add docu.
    *
    * TODO(Dominic): Update docu.
@@ -261,33 +345,11 @@ public:
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
-  /**
-   * Initialise all heaps.
-   *
-   * For each solver, reset the grid update requested flag
-   * to false.
-   *
-   * Further zero the time step sizes of the solver.
-   *
-   * <h2>MPI</h2>
-   * Finish the previous synchronous sends and
-   * start synchronous sending again.
-   */
-  void beginIteration(exahype::State& solverState);
-
-  /**
-   * For each solver, set the grid update requested flag
-   * for the next iteration.
-   *
-   * <h2>MPI</h2>
-   * If this rank is the global master, update the
-   * initial grid refinement strategy.
-   */
-  void endIteration(exahype::State& solverState);
-
 
 #ifdef Parallel
-
+  /**
+   * TODO(Dominic): Add docu.
+   */
   void mergeWithNeighbour(exahype::Vertex& vertex,
       const exahype::Vertex& neighbour, int fromRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -319,6 +381,49 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
+   * TODO(Dominic): Add docu.
+   */
+  void receiveDataFromMaster(
+      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      exahype::Vertex* const receivedCoarseGridVertices,
+      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+      exahype::Cell& receivedCoarseGridCell,
+      exahype::Vertex* const workersCoarseGridVertices,
+      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+      exahype::Cell& workersCoarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  void mergeWithMaster(
+      const exahype::Cell& workerGridCell,
+      exahype::Vertex* const workerGridVertices,
+      const peano::grid::VertexEnumerator& workerEnumerator,
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker, const exahype::State& workerState,
+      exahype::State& masterState);
+
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  bool prepareSendToWorker(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker);
+
+  /**
    * Merge the master's grid update requested flag with the one of the workers.
    */
   void mergeWithWorker(exahype::Cell& localCell,
@@ -326,6 +431,30 @@ public:
                        const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
                        int level);
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  void prepareCopyToRemoteNode(
+      exahype::Cell& localCell, int toRank,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  void mergeWithRemoteDataDueToForkOrJoin(
+      exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
+      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h, int level);
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  void mergeWithRemoteDataDueToForkOrJoin(
+      exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
+      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
 
   //
   // All methods below are nop,
@@ -343,66 +472,6 @@ public:
   /**
    * Nop.
    */
-  void prepareCopyToRemoteNode(
-      exahype::Cell& localCell, int toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-  /**
-   * Nop.
-   */
-  void mergeWithRemoteDataDueToForkOrJoin(
-      exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
-      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h, int level);
-  /**
-   * Nop.
-   */
-  void mergeWithRemoteDataDueToForkOrJoin(
-      exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
-      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-  /**
-   * Nop.
-   */
-  bool prepareSendToWorker(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker);
-  /**
-   * Nop.
-   */
-  void mergeWithMaster(
-      const exahype::Cell& workerGridCell,
-      exahype::Vertex* const workerGridVertices,
-      const peano::grid::VertexEnumerator& workerEnumerator,
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker, const exahype::State& workerState,
-      exahype::State& masterState);
-  /**
-   * Nop.
-   */
-  void receiveDataFromMaster(
-      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-      exahype::Vertex* const receivedCoarseGridVertices,
-      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-      exahype::Cell& receivedCoarseGridCell,
-      exahype::Vertex* const workersCoarseGridVertices,
-      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-      exahype::Cell& workersCoarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-  /**
-   * Nop.
-   */
   void mergeWithWorker(exahype::Vertex& localVertex,
       const exahype::Vertex& receivedMasterVertex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -417,12 +486,6 @@ public:
    * Nop
    */
   virtual ~MeshRefinement();
-#if defined(SharedMemoryParallelisation)
-  /**
-   * Nop.
-   */
-  void mergeWithWorkerThread(const MeshRefinement& workerThread);
-#endif
 /**
  * Nop.
  */
@@ -450,28 +513,6 @@ public:
   */
  void destroyVertex(
      const exahype::Vertex& fineGridVertex,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
- /**
-  * Nop.
-  */
- void destroyCell(
-     const exahype::Cell& fineGridCell,
-     exahype::Vertex* const fineGridVertices,
-     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
- /**
-  * Nop.
-  */
- void touchVertexFirstTime(
-     exahype::Vertex& fineGridVertex,
      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
      exahype::Vertex* const coarseGridVertices,

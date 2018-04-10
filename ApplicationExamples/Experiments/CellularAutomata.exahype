@@ -41,7 +41,7 @@ exahype-project  CA
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:4}
+    configure                = {hotspot,fair,ranks-per-node:4}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
@@ -49,6 +49,8 @@ exahype-project  CA
   global-optimisation
     fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on

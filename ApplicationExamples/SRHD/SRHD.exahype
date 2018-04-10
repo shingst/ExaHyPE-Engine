@@ -38,6 +38,8 @@ exahype-project  SRHD
   global-optimisation
     fuse-algorithmic-steps        = on
     fuse-algorithmic-steps-factor = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off

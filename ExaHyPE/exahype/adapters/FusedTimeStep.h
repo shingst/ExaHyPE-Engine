@@ -18,9 +18,7 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/Merging.h"
- #include "exahype/mappings/SolutionUpdate.h"
- #include "exahype/mappings/Sending.h"
+ #include "exahype/mappings/FusedTimeStep.h"
 
 
 
@@ -40,13 +38,9 @@ namespace exahype {
  */
 class exahype::adapters::FusedTimeStep {
   private:
-    typedef mappings::Merging Mapping0;
-    typedef mappings::SolutionUpdate Mapping1;
-    typedef mappings::Sending Mapping2;
+    typedef mappings::FusedTimeStep Mapping0;
 
-     Mapping0  _map2Merging;
-     Mapping1  _map2SolutionUpdate;
-     Mapping2  _map2Sending;
+     Mapping0  _map2FusedTimeStep;
 
 
   public:

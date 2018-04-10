@@ -9,7 +9,7 @@ double f(const double* const x, const double t) {
   return 1.0 + 0.4 * std::sin(x[0] - 0.2*t);
 }
 
-void Trivial::AdvectionSolver::init(std::vector<std::string>& cmdlineargs) {
+void Trivial::AdvectionSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

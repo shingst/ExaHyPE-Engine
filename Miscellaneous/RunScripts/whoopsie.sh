@@ -22,9 +22,10 @@
 ## Written by SvenK at 2017-11-06.
 #
 
-dumplog="dump.log"
-# wipe the file
-echo -n > $dumplog
+runlog="run.log"    # where (only) the executable output goes
+dumplog="dump.log"  # where also the whoopsie analysis stuff goes
+# wipe the files
+for f in $runlog $dumplog; do echo -n > $f; done;
 
 # self documenting: if no parameter given
 if [ $# -eq 0 ]; then grep -E '^##' "$0"; exit; fi
@@ -39,8 +40,8 @@ exa="${buildscripts}/exa.sh"
 # system does not have the command "stdbuf"
 if have stdbuf; then unbuf="stdbuf -i0 -o0 -e0"; else unbuf=""; fi
 
-# Use like "something | $teelog": Dumps both into log and stdout.
-teelog="$unbuf tee -a $dumplog"
+# Use like "something | $teelog": Dumps both into all logfiles and stdout.
+teelog="$unbuf tee -a $dumplog $runlog"
 
 # output
 hiddenexec() { $@ >> $dumplog 2>&1; } # execute something and put all output into dumplog
@@ -91,8 +92,18 @@ spacing
 heading "Post mortem command inspection"
 spacing
 
+# collect information about the run:
+is_mpi="false"
+specfile_path="unknown"
+
 for part in $@; do
-	if [[ -e $part ]]; then
+	if [[ $part == *"mpi"* ]] && have which && which $part &>/dev/null; then
+		logitem "$part is something like mpirun or mpiexec. When I also find the specfile, I can run the Peano domaincomposition on the output."
+		spacing
+		log "This is where $part resolves to:"
+		verbose which $part
+		is_mpi="true"
+	elif [[ -e $part ]]; then
 		if [[ -x "$part" ]] && ./$part --help 2>&1 | grep -qi exahype; then
 			logitem "$part is an ExaHyPE executable. This is how it was compiled:"
 			spacing
@@ -101,8 +112,12 @@ for part in $@; do
 			if file $part | grep -qi ascii; then
 				logitem "$part is a text file. Here are it's contents:"
 				log_file $part
+				if grep "exahype-project" $part && grep "computational-domain"; then
+					logitem "$part is also very likely an exahype specfile. I will remember it for later use."
+					specfile_path="$part"
+				fi
 			else
-				logitem "$part is a file but I don't know what's inside. This is what I can learn about it:"
+				log "$part is a file but I don't know what's inside. This is what I can learn about it:"
 				verbose file $part
 			fi
 		else
@@ -110,7 +125,7 @@ for part in $@; do
 		fi
 	elif have which; then
 		# only check parts which don't go like "-foo" or "--foo" because which interpretes this as parameters
-		if ! [[ $part == -* ]] && which $part; then
+		if ! [[ $part == -* ]] && which $part &>/dev/null; then
 			logitem "$part is on the PATH. It resolves to:"
 			verbose which $part
 		else
@@ -120,6 +135,25 @@ for part in $@; do
 		logitem "'$part' is not a file and I have no tools (no 'which') to find out what it is."
 	fi
 done
+
+spacing
+heading "MPI post mortem performance analysis"
+if [[ $is_mpi == "true" ]]; then
+	log "I detected an MPI call in this run.";
+	if ! [[ $specfile_path == "unknown" ]] && [[ -e $specfile_path ]]; then
+		log "And I found the specfile at $specfile_path"
+		dimension=$(grep -m1 -A3 'computational-domain' $specfile_path | grep 'dimension' | cut -d'=' -f2 )
+		domainsize=$(grep -m1 -A3 'computational-domain' $specfile_path | grep 'width' | cut -d'=' -f2 | tr -d ',')
+		domainoffset=$(grep -m1 -A3 'computational-domain' $specfile_path | grep 'offset' | cut -d'=' -f2 | tr -d ',')
+		$exa peano-analysis -dimension $dimension -domainoffset $domainoffset -domainsize $domainsize $runlog
+		# TODO: collect output to files.
+		highlight "I run the peano-analysis -> collecting output -> todo"
+	else
+		highlight "However, I could not find the specfile (it is: $specfile_path)."
+	fi
+else
+	log "Did not detect an MPI call in this run."
+fi
 
 spacing
 spacing

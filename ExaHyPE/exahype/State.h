@@ -69,6 +69,54 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 
  public:
   /**
+   * This enum is used to select certain solvers
+   * in mappings like PredictionRerun, MeshRefinement etc.
+   */
+  enum class AlgorithmSection {
+    /*
+     * The runner is currently
+     * performing a normal ADER-DG / FV / ... time step.
+     */
+    TimeStepping,
+
+
+    /*
+     * Currently performing mesh refinement. Only
+     * relevant for merging metadata.
+     */
+    MeshRefinement,
+
+    /*
+     * Currently performing limiter status spreading. Only
+     * relevant for merging metadata.
+     */
+    LimiterStatusSpreading,
+
+    /**
+     * In this section, the runner overlaps the
+     * operations that must be performed after the
+     * mesh refinement with operations that
+     * must be performed for a local or global
+     * recomputation.
+     *
+     * This marks the end point of the side branch.
+     * Triggers a send for all registered solvers.
+     */
+    PredictionOrLocalRecomputationAllSend,
+
+    /**
+     * In this section, all solver have to drop
+     * their messages. Then, the ADER-DG solvers which
+     * have violated the CFL condition with their
+     * estimated time step size are required
+     * to reurn the prediction.
+     * Finally, all solvers send out again their
+     * face data.
+     */
+    PredictionRerunAllSend
+  };
+
+  /**
    * A flag indicating we fuse the algorithmic
    * phases of all ADERDGSolver and
    * LimitingADERDGSolver instances.
@@ -96,6 +144,12 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static double WeightForPredictionRerun;
 
   /**
+   * Flag indicating that the predictor should
+   * be run as background task whenever this is possible.
+   */
+  static bool SpawnPredictorAsBackgroundThread;
+
+  /**
    * A flag indicating that the bounding box
    * has been virtually expanded (or not).
    *
@@ -112,16 +166,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static bool VirtuallyExpandBoundingBox;
 
   /**
-   * States used to disable or enable master-worker
-   * and neighbour communication.
-   * This makes sense for debugging only.
-   *
-   * TODO(Dominic): Remove this eventually - also from the grammar file!
-   */
-  static bool EnableMasterWorkerCommunication;
-  static bool EnableNeighbourCommunication;
-
-  /**
    * Indicates that the fused time stepping
    * scheme is used in the runner
    * instead of the standard time stepping.
@@ -129,6 +173,12 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static bool fuseADERDGPhases();
 
   static double getTimeStepSizeWeightForPredictionRerun();
+
+  /**
+   * Indicates that the predictor should be spawned
+   * as background thread whenever this is possible.
+   */
+  static bool spawnPredictorAsBackgroundThread();
 
   /**
    * \return true if the current batch state is
@@ -176,82 +226,23 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @todo Clarify which stuff has to be merged
    */
   void merge(const State& anotherState);
-  ///@}
-
-  void setAlgorithmSection(const records::State::AlgorithmSection& section);
 
   /**
-   * Return the algorithm section the runner is currently in.
-   */
-  records::State::AlgorithmSection getAlgorithmSection() const;
-
-  /**
-   * Return the merge mode that is currently active.
-   */
-  records::State::MergeMode getMergeMode() const;
-
-  /**
-   * Return the send mode that is currently active.
-   */
-  records::State::SendMode getSendMode() const;
-
-  /**
-   * Merging and Sending contexts.
-   * See both mappings for more details.
-   */
-  void switchToInitialConditionAndTimeStepSizeComputationContext();
-
-  void switchToPredictionAndFusedTimeSteppingInitialisationContext();
-
-  void switchToFusedTimeStepContext();
-
-  /**
-   * In a serial version, running the predictor is the same for optimistic time
-   * stepping and the non-fused algorithm. In the MPI case however a rerun in
-   * optimistic time stepping has to remove all old MPI messages from the queues
-   * and re-send the updated boundary values, so it is slightly different
-   */
-  void switchToPredictionRerunContext();
-
-  void switchToNeighbourDataMergingContext();
-
-  void switchToPredictionContext();
-
-  void switchToTimeStepSizeComputationContext();
-
-  void switchToUpdateMeshContext();
-
-  void switchToPostAMRContext();
-
-  /**
-   * Merge and synchronise the time step sizes over different
-   * ranks.
+   * Set to true if we need to exchange local solver
+   * data between master and worker at least for one cell at
+   * a master-worker boundary.
    *
-   * TODO Time step size merging might not be necessary.
+   * These local solver data are usually restricted or prolongated degrees of freedom.
+   * They must not be confused with global solver data such as, e.g.
+   * admissible time step sizes.
+   *
+   * \see exahype::mappings::MeshRefinement
    */
-  void switchToLimiterStatusSpreadingContext();
-
+  void setVerticalExchangeOfSolverDataRequired(bool state);
   /**
-   * Additionally drop face data.
-   *
-   * Merge and synchronise the time step sizes over different
-   * ranks.
-   *
-   * TODO Time step size merging might not be necessary.
+   * \see setVerticalExchangeOfSolverDataRequired
    */
-  void switchToLimiterStatusSpreadingFusedTimeSteppingContext();
-
-  void switchToReinitialisationContext();
-
-  void switchToRecomputeSolutionAndTimeStepSizeComputationContext();
-
-  void switchToLocalRecomputationAndTimeStepSizeComputationContext();
-
-  void switchToNeighbourDataDroppingContext();
-
-  void setReinitTimeStepData(bool state);
-
-  bool reinitTimeStepData() const;
+  bool getVerticalExchangeOfSolverDataRequired() const;
 
   /**
    * Has to be called after the iteration!

@@ -11,7 +11,7 @@
 #include "exahype/solvers/ADERDGSolver.h"
 
 
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 namespace MHDSolver{
   class MHDSolver;
@@ -28,7 +28,7 @@ class MHDSolver::MHDSolver: public exahype::solvers::ADERDGSolver {
     static constexpr int order   = 3;
     static constexpr int basisSize   = order+1;
   
-    MHDSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants);
+    MHDSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
 
     void spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,double* tempStateSizedVectors,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt) override; 
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
@@ -45,7 +45,7 @@ class MHDSolver::MHDSolver: public exahype::solvers::ADERDGSolver {
     void volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
     void volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
 
-    void init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants);
+    void init(std::vector<std::string>& cmdlineargs, exahype::parser::ParserView constants) final override;
     void eigenvalues(const double* const Q,const int normalNonZeroIndex,double* lambda);
     void flux(const double* const Q,double** F);
     void source(const double* const Q,double* S);

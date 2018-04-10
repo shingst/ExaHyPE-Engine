@@ -18,11 +18,9 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
  #include "exahype/mappings/MeshRefinement.h"
  #include "exahype/mappings/LoadBalancing.h"
- #include "exahype/mappings/PostProcessing.h"
- #include "exahype/adapters/MeshRefinement2MultiscaleLinkedCell_4.h"
+ #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 
@@ -42,17 +40,13 @@ namespace exahype {
  */
 class exahype::adapters::MeshRefinement {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::MeshRefinement Mapping1;
-    typedef mappings::LoadBalancing Mapping2;
-    typedef mappings::PostProcessing Mapping3;
-    typedef adapters::MeshRefinement2MultiscaleLinkedCell_4 Mapping4;
+    typedef mappings::MeshRefinement Mapping0;
+    typedef mappings::LoadBalancing Mapping1;
+    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping2;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2MeshRefinement;
-     Mapping2  _map2LoadBalancing;
-     Mapping3  _map2PostProcessing;
-     Mapping4  _map2MeshRefinement2MultiscaleLinkedCell_4;
+     Mapping0  _map2MeshRefinement;
+     Mapping1  _map2LoadBalancing;
+     Mapping2  _map2LevelwiseAdjacencyBookkeeping;
 
 
   public:

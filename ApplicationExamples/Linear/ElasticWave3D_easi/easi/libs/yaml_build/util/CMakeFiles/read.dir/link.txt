@@ -1,0 +1,1 @@
+/lrz/sys/intel/studio2017_u4/compilers_and_libraries_2017.4.196/linux/bin/intel64/icpc   --std=c++11 -O2   CMakeFiles/read.dir/read.cpp.o  -o read -rdynamic ../libyaml-cpp.a 

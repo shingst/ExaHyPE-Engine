@@ -34,13 +34,13 @@ exahype-project GRMHD
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:1}
+    configure                = {hotspot,fair,ranks-per-node:1}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
@@ -48,6 +48,8 @@ exahype-project GRMHD
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
@@ -59,7 +61,7 @@ exahype-project GRMHD
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
     order const                    = 3
     maximum-mesh-size              = 6.6666669
-    maximum-mesh-depth             = 1
+    maximum-mesh-depth             = 2
     time-stepping                  = global
     type const = nonlinear
     terms const = flux,ncp,source
@@ -75,95 +77,15 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
 
-    // Constants are currently working for FV solvers, but not for ADERDG solvers, therefore removing everywhere
-    //constants                      = dummy:dummy
-    /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
-
-
-    // BEGIN of comparing plotters
-
-    plot vtk::Cartesian::vertices::limited::ascii ConservedWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.00001
-      output    = ./vtk-output/vtk-conserved-limited
-    end plot
-
-    plot vtk::Cartesian::vertices::ascii ConservedWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.00001
-      output    = ./vtk-output/vtk-conserved
-    end plot
-
-    plot Peano::Legendre::vertices::ascii ConservedWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.00001
-      output    = ./vtk-output/peano-ascii-conserved
-    end plot
-
-    plot Peano::Legendre::vertices::hdf5 ConservedWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.00001
-      output    = ./vtk-output/peano-hdf5-conserved
-    end plot
-
-    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
-      variables const = 23
-      time = 0.0
-      repeat = 0.00001
-      output = ./hdf5/carpet-hdf5-conserved
-    end plot
-
-    // END of comparing plotters
-
-    plot vtk::Legendre::vertices::binary DifferenceWithIDWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.000666667
-      output    = ./vtk-output/diff-with-id
-    end plot
-
-    plot vtk::Legendre::vertices::binary PrimitiveWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.000666667
-      output    = ./vtk-output/primitive-legendre
-    end plot
-    
-    plot vtk::Cartesian::vertices::binary PrimitiveWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.000666667
-      output    = ./vtk-output/primitive-cartesian
-    end plot
-    
-    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
-      variables const = 23
-      time = 0.0
-      repeat = 1000.000001
-      output = ./hdf5/conserved
-      select = x:0,y:0
-    end plot
-    
-    plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
-      variables const = 23
-      time = 0.0
-      repeat = 1000.000001
-      output = ./hdf5/primitive
-      select = x:0,y:0
-    end plot
-
-    plot vtk::Cartesian::cells::binary IntegralsWriter
-      variables const = 0
-      time = 0.0
-      repeat = 0.000001
-      output = ./output/global-integrals
-    end plot
+    constants  = mexa:stuff,
+       initialdata/name:rnsid,
+       boundaries/left:exact,
+       boundaries/right:exact,
+       boundaries/top:exact,
+       boundaries/bottom:exact,
+       boundaries/front:exact,
+       boundaries/back:exact
+    // plotters go here
 
   end solver
-
-
 end exahype-project

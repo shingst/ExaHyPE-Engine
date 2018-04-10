@@ -24,38 +24,44 @@ public class ADERDGKernel {
   /**
    * Configuration parameter: id of the options
    */
-  public static final String GENERIC_OPTION_ID           = "generic";
-  public static final String OPTIMISED_OPTION_ID         = "optimised";
+  public static final String GENERIC_OPTION_ID            = "generic";
+  public static final String OPTIMISED_OPTION_ID          = "optimised";
 
-  public static final String LINEAR_OPTION_ID            = "linear";
-  public static final String NONLINEAR_OPTION_ID         = "nonlinear";
-  public static final String USER_DEFINED_OPTION_ID      = "user";
-  public static final String LEGENDRE_OPTION_ID          = "gausslegendre";
-  public static final String LOBATTO_OPTION_ID           = "gausslobatto";
+  public static final String LINEAR_OPTION_ID             = "linear";
+  public static final String NONLINEAR_OPTION_ID          = "nonlinear";
+  public static final String USER_DEFINED_OPTION_ID       = "user";
+  public static final String LEGENDRE_OPTION_ID           = "gausslegendre";
+  public static final String LOBATTO_OPTION_ID            = "gausslobatto";
     
-  public static final String FLUX_OPTION_ID              = "flux";
-  public static final String SOURCE_OPTION_ID            = "source";
-  public static final String NCP_OPTION_ID               = "ncp";
-  public static final String POINTSOURCES_OPTION_ID      = "pointsources";
-  public static final String MATERIALPARAMETER_OPTION_ID = "materialparameters";
+  public static final String FLUX_OPTION_ID               = "flux";
+  public static final String SOURCE_OPTION_ID             = "source";
+  public static final String NCP_OPTION_ID                = "ncp";
+  public static final String POINTSOURCES_OPTION_ID       = "pointsources";
+  public static final String MATERIALPARAMETER_OPTION_ID  = "materialparameters";
 
-  public static final String NO_TIME_AVG_OPTION_ID       = "notimeavg";
-  public static final String PATCHWISE_ADJUST_OPTION_ID  = "patchwiseadjust";
-  public static final String CONVERTER_OPTION_ID         = "converter"; //for debug only, not in guidebook
+  public static final String NO_TIME_AVG_OPTION_ID        = "notimeavg";
+  public static final String PATCHWISE_ADJUST_OPTION_ID   = "patchwiseadjust";
+  public static final String TEMP_VARS_ON_STACK_OPTION_ID = "usestack";
+  public static final String MAX_PICARD_ITER_ID           = "maxpicarditer";
+  public static final String CONVERTER_OPTION_ID          = "converter"; //for debug only, not in guidebook
+  public static final String FLOPS_OPTION_ID              = "flops"; //for debug only, not in guidebook
   
   private Set<String> type;
   private Map<String, Integer> terms;
-  private Set<String> optimisation;
+  private Map<String, Integer> optimisation;
+  
+  private int ghostLayerWidth = -1;
+  private int numberOfObservables = -1;
   
   public ADERDGKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AAderdgSolver) {
       type = parseIds(((AAderdgSolver) solver).getKernelType());
       terms = parseIdsToMap(((AAderdgSolver) solver).getKernelTerms());
-      optimisation = parseIds(((AAderdgSolver) solver).getKernelOpt());
+      optimisation =  parseIdsToMap(((AAderdgSolver) solver).getKernelOpt());
     } else if(solver instanceof ALimitingAderdgSolver) {
       type = parseIds(((ALimitingAderdgSolver) solver).getKernelType());
       terms = parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelTerms());
-      optimisation = parseIds(((ALimitingAderdgSolver) solver).getKernelOpt());
+      optimisation =  parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelOpt());
     } else {
       throw new IllegalArgumentException("No kernel definition found");
     }
@@ -104,12 +110,12 @@ public class ADERDGKernel {
   }
 
   public KernelType getKernelType() {
-    if (optimisation.contains(OPTIMISED_OPTION_ID)) {
+    if (optimisation.containsKey(OPTIMISED_OPTION_ID)) {
      return KernelType.OptimisedADERDG;
    }
       
    // default kernel - must be last   
-   if(optimisation.contains(GENERIC_OPTION_ID)) {
+   if(optimisation.containsKey(GENERIC_OPTION_ID)) {
       return KernelType.GenericADERDG;
   }
   
@@ -117,8 +123,8 @@ public class ADERDGKernel {
   }
 
   public boolean usesOptimisedKernels() {
-    // assert: !optimisation.contains(GENERIC_OPTION_ID)
-    return optimisation.contains(OPTIMISED_OPTION_ID);
+    // assert: !optimisation.containsKey(GENERIC_OPTION_ID)
+    return optimisation.containsKey(OPTIMISED_OPTION_ID);
   }
 
   public boolean useFlux() {
@@ -142,25 +148,67 @@ public class ADERDGKernel {
   }
   
   public boolean noTimeAveraging() {
-    return optimisation.contains(NO_TIME_AVG_OPTION_ID);
+    return optimisation.containsKey(NO_TIME_AVG_OPTION_ID);
   }
   
   public boolean patchwiseAdjust() {
-    return optimisation.contains(PATCHWISE_ADJUST_OPTION_ID);
+    return optimisation.containsKey(PATCHWISE_ADJUST_OPTION_ID);
+  }
+  
+  public boolean tempVarsOnStack() {
+    return optimisation.containsKey(TEMP_VARS_ON_STACK_OPTION_ID);
+  }
+  
+  public int maxPicardIterations() {
+    if(useMaxPicardIterations()) {
+      return optimisation.get(MAX_PICARD_ITER_ID);
+    }
+    return -1;
+  }
+  
+  public boolean useMaxPicardIterations() {
+    return optimisation.containsKey(MAX_PICARD_ITER_ID) &&
+           optimisation.get(MAX_PICARD_ITER_ID)!=-1;
   }
   
   public boolean useConverterDebug() {
-    return optimisation.contains(CONVERTER_OPTION_ID);
+    return optimisation.containsKey(CONVERTER_OPTION_ID);
+  }
+  
+  public boolean useFlopsDebug() {
+    return optimisation.containsKey(FLOPS_OPTION_ID);
   }
   
   public int getNumberOfPointSources() {
     if(usePointSources()) {
       return terms.get(POINTSOURCES_OPTION_ID);
     }
-    
     return -1;
   }
   
+  //Used set the GhostLayerWidth for LimitingSolver
+  public void setGhostLayerWidth(int glw) {
+    this.ghostLayerWidth = glw;
+  }
+  
+  public int getGhostLayerWidth() {
+    return ghostLayerWidth; // -1 by default
+  }
+  
+  //Used set the numberOfObservable for LimitingSolver
+  public void setNumberOfObservables(int obs) {
+    this.numberOfObservables = obs;
+  }
+  
+  public int getNumberOfObservables() {
+    return numberOfObservables; // -1 by default
+  }
+  
+  // useLimiter only if the two limiter parameter have been set
+  public boolean useLimiter() {
+    return ghostLayerWidth > -1 && numberOfObservables > -1;
+  }
+
   //(type: [...], terms: [...], opt: [...])
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -177,7 +225,7 @@ public class ADERDGKernel {
     }
     sb.deleteCharAt(sb.length()-2);
     sb.append("], opt: [");
-    for(String s : optimisation) {
+    for(String s : optimisation.keySet()) {
       sb.append(s);
       sb.append(", ");
     }

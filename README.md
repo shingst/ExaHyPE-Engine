@@ -1,5 +1,16 @@
 # This is the ExaHyPE project #
 
+This is the maing repository of the ExaHyPE project. It contains the following directories:
+
+* ApplicationExamples: A number of exemplaric application such as Euler, MHD, Seismic, etc.
+* Benchmarks: An ExaHyPE Benchmark suite for TBB and MPI (maintained by Durham)
+* CodeGenerator: The optimized kernels generators (maintained by TUM)
+* Demonstrators: Lightweight applications for demonstration purpose (maintained by Durham)
+* Miscellaneous: Various codes and tools
+* Peano: Mounting point for the Peano installation
+* Toolkit: The ExaHyPE development toolkit
+* UserCodes: Prototypes of ExaHyPE written in Matlab and Fortran and contributed by Trento
+
 ## Mini installation guide ##
 
 Copy and paste these commands to start with a working ExaHyPE application and compile the demo application _EulerFlow_:
@@ -38,7 +49,11 @@ Additionally the CodeGenerator requires:
 * Jinja2 (https://github.com/pallets/jinja.git) a python3 template engine to generate the optimised kernel
 * MarkupSafe (https://github.com/pallets/markupsafe.git), a dependency from Jinja2.
 
-A script is provided to import all the dependencies locally
+A script is provided to import all the dependencies locally.
+In contrast to the CodeGenerator, the build of libxsmm 
+requires Python 2. It fails with Python 3.
+So, make sure that "python" does refer
+to a Python 2 binary.
 
 Quick installation:
 
@@ -76,32 +91,42 @@ java -jar ~/workspace/peano/pdt/pdt.jar --generate-gluecode exahype/exahype.spec
 
 I assume that the ExaHyPE release repository is checked out to ~/git/ExaHyPE-Release.
 
-A.1. Update the guidebook
+
+
+X. Preparation (usually not required)
+  git config --global user.email "tobias.weinzierl@durham.ac.uk"
+  git config --global user.name "Tobias Weinzierl"
+
+A Prepare ExaHyPE repository
+  - Switch to branch release within ExaHyPE
+  - Select git rebase master
+
+B.1. Update the guidebook
     - Change into the directory holding your guidebook and build with `make release`.
       The release target builds the PDF without annotations.
-    - Copy the PDF over: `cp guidebook.pdf ~/git/ExaHyPE-Release`
+    - Copy the PDF over: `cp guidebook.pdf ~/git/ExaHyPE-Engine`
 
-A.2. Build the toolkit
+B.2. Build the toolkit
     - Change into Toolkit
-      `./build.sh && cp dist/* ~/git/ExaHyPE-Release`
+      `./build.sh && cp dist/* ~/git/ExaHyPE-Engine`
 
-B.1. Move it over to the release branch 
+C.1 Clean up
+    - Remove all directories that are not under version control in the release branch (Miscellaneous, e.g.)
+    - Clean up Java
+     `find . -name "*.o" -delete`
+     `find . -name "*.class" -delete`
 
-B.2. Clean-up release branch
-  `find . -name "*.o" -delete`
-  `find . -name "*.class" -delete`
+C.2 Create snapshots
   tar -czhvf ExaHyPE.tar.gz --exclude=.svn --exclude=*.o Peano ExaHyPE LICENSE.txt
   tar -czvf ExaHyPE-without-Peano.tar.gz --exclude=.svn --exclude=*.o --exclude Peano/peano --exclude Peano/tarch Peano ExaHyPE LICENSE.txt
 
-B.3. Push
+C.3 Commit and push
 
-C. Make release snapshot from release branch
+D. Make release snapshot from release branch (new directory)
 
   git clone -b release --single-branch https://gitlab.lrz.de/exahype/ExaHyPE-Engine.git
-
+  cd ExaHyPE-Engine
   git push --mirror https://github.com/exahype/exahype.git
-
-
 
 
 

@@ -1,0 +1,5 @@
+# A test for includes
+# First of all, lets try to include a file in this directory.
+
+includes/test1 << "tests/animals.txt"
+#includes/test2 << "animals.txt"

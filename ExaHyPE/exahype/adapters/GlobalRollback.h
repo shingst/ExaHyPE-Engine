@@ -18,9 +18,7 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
  #include "exahype/mappings/GlobalRollback.h"
- #include "exahype/mappings/PostProcessing.h"
 
 
 
@@ -40,13 +38,9 @@ namespace exahype {
  */
 class exahype::adapters::GlobalRollback {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::GlobalRollback Mapping1;
-    typedef mappings::PostProcessing Mapping2;
+    typedef mappings::GlobalRollback Mapping0;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2GlobalRollback;
-     Mapping2  _map2PostProcessing;
+     Mapping0  _map2GlobalRollback;
 
 
   public:

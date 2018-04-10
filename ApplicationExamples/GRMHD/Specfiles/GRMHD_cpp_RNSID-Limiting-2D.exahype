@@ -1,0 +1,106 @@
+exahype-project GRMHD
+
+  peano-kernel-path const  = ./Peano
+  exahype-path const       = ./ExaHyPE
+  output-directory const   = GMRHD_cpp
+  architecture const       = noarch
+  log-file                 = whatever.log
+  computational-domain
+    dimension const  = 2
+    width            = 20.0, 20.0, 20.0
+    offset           = 0.0, 0.0, 0.0
+    end-time         = 20.0
+  end computational-domain
+
+  shared-memory
+    identifier       = dummy
+    configure        = {}
+    cores            = 1
+    properties-file  = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks-per-node:1}
+    buffer-size      = 64
+    timeout          = 60
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
+    timestep-batch-factor           = 1.0
+    skip-reduction-in-batched-time-steps = off
+    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
+  solver Limiting-ADER-DG GRMHDSolver
+    variables const    = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
+    order const        = 3
+    
+    maximum-mesh-size  = 5.0
+    maximum-mesh-depth = 0
+    time-stepping      = global 
+    type const         = nonlinear
+    terms const        = flux,ncp,source
+    optimisation const = generic
+    language const     = C
+    limiter-type const             = godunov
+    limiter-optimisation const     = generic
+    limiter-language const         = C
+    dmp-observables                = 2
+    dmp-relaxation-parameter       = 0.01
+    dmp-difference-scaling         = 0.001
+    steps-till-cured               = 0
+    
+
+    constants          = mexa/ref:/exahype/solvers/solver/constants,
+                         mexa/style:adapted,
+                         mexa/encoding:quotedprintable,
+                         boundaries/left:wall,
+                         boundaries/right:outflow,
+                         boundaries/front:wall,
+                         boundaries/back:outflow,
+                         boundaries/bottom:illegal,
+                         boundaries/top:illegal,
+                         initialdata/eos_gamma:2.0,
+                         initialdata/eos_k:100,
+                         initialdata/rho_center:0.00128,
+                         initialdata/axes_ratio:1.0,
+                         initialdata/log_enth_center:-1,
+                         initialdata/rho_cut:1e-10,
+                         initialdata/rho_min:1e-10,
+                         initialdata/accuracy:1e-07,
+                         initialdata/perturbation:off,
+                         initialdata/rotation_type:uniform,
+                         initialdata/a_diff:1.0,
+                         initialdata/zero_shift:off,
+                         initialdata/name:rnsid
+    
+    plot vtk::Cartesian::vertices::limited::ascii ConservedWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.001
+      output    = ./vtk-output/conserved
+    end plot
+    
+    plot vtk::Cartesian::vertices::limited::ascii PrimitiveWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.001
+      output    = ./vtk-output/primitive
+    end plot
+    
+    plot vtk::Cartesian::vertices::binary IntegralsWriter
+      variables const = 0
+      time      = 0.0
+      repeat    = 0.001
+      output    = ./output/global-integrals
+    end plot
+    
+  end solver
+end exahype-project

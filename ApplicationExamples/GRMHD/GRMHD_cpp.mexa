@@ -1,0 +1,179 @@
+##mexa  # This is an ExaHyPE meta specification v1 file.
+#
+# Base meta specification file for all GRMHD_cpp applications.
+#
+# This parameter file is incomplete. It requires you to:
+#
+# 1) choose an individual solver:
+#   Solver = DGSolver
+# 2) choose a particular simulation:
+#   Simulation = Shocktubes/RP1
+
+#### << "@mexa/exahype-single-base.xpar"
+
+# multi base
+
+ExaHyPE::project_name = project::name
+ExaHyPE::peano_kernel_path = "./Peano"
+ExaHyPE::exahype_path = "./ExaHyPE"
+ExaHyPE::output_directory = project::directory
+ExaHyPE::architecture = "noarch"
+ExaHyPE::log_file = "whatever.log"
+
+ExaHyPE::solvers += Solver
+
+Solver::plotters = Plotters
+Solver::constants = Simulation
+
+
+ExaHyPE::computational_domain = Simulation/grid
+ExaHyPE::computational_domain::end_time = Simulation/end_time
+
+ExaHyPE::shared_memory::identifier = "dummy"
+ExaHyPE::shared_memory::cores = 1
+ExaHyPE::shared_memory::properties_file = "sharedmemory.properties"
+
+ExaHyPE::distributed_memory::identifier = "static_load_balancing"
+ExaHyPE::distributed_memory::configure = "{hotspot,fair,ranks_per_node:1}"
+ExaHyPE::distributed_memory::buffer_size = 64
+ExaHyPE::distributed_memory::timeout = 60
+
+ExaHyPE::optimisation::fuse_algorithmic_steps = True # token_on_off = 'on' | 'off' = BOOL
+ExaHyPE::optimisation::fuse_algorithmic_steps_factor = 0.99
+ExaHyPE::optimisation::batch_timesteps = 0.0
+ExaHyPE::optimisation::skip_reduction = True
+ExaHyPE::optimisation::disable_amr_if_grid_has_been_stationary_in_previous_iteration = False
+ExaHyPE::optimisation::double_compression = 0.0
+ExaHyPE::optimisation::spawn_double_compression = False
+
+
+
+
+####
+
+Project::Name = "GRMHD"
+Project::directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
+
+BaseSolver::name = "GRMHDSolver"
+BaseSolver::variables = "rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1"
+BaseSolver::time_stepping = "global"
+BaseSolver::maximum_mesh_size = Simulation/grid/maximum_mesh_size
+BaseSolver::maximum_mesh_depth = Simulation/grid/maximum_mesh_depth
+
+BaseKernel::terms = "flux,ncp,source"
+BaseKernel::opt = "generic"
+BaseKernel::language = "C"
+
+####
+#### Solvers
+####
+
+# The ADER-DG solver
+DGSolver <= BaseSolver
+DGSolver::type = "ADER-DG"
+DGSolver::order = Simulation/grid/dg/order
+DGSolver::kernel <= BaseKernel
+DGSolver::kernel::type = "nonlinear"
+DGSolver::plotter_type = "vtk::Legendre::vertices::binary"
+
+# The Finite volume solver
+FVSolver <= BaseSolver
+FVSolver::type = "Finite-Volumes"
+FVSolver::patch_size = Simulation/grid/fv/patchsize
+FVSolver::kernel <= BaseKernel
+FVSolver::kernel::type = "godunov"
+FVSolver::plotter_type = "vtk::Cartesian::vertices::binary"
+
+
+# A limiting solver
+LimitingSolver <= BaseSolver
+LimitingSolver::type = "Limiting-ADER-DG"
+LimitingSolver::order = DGSolver::order
+LimitingSolver::kernel = DGSolver::kernel
+LimitingSolver::limiter::kernel = FVSolver::kernel
+LimitingSolver::limiter::observables = 2
+LimitingSolver::limiter::relaxation_parameter = 0.01
+LimitingSolver::limiter::difference_scaling = 0.001
+LimitingSolver::limiter::steps_till_cured = 0
+LimitingSolver::plotter_type = "vtk::Cartesian::vertices::limited::ascii"
+
+# The plotters registration
+Plotters::integrals <= writer/integrals
+Plotters::conserved <= writer/conserved
+Plotters::primitive <= writer/primitive
+Plotters::conserved::type = Solver::plotter_type
+Plotters::primitive::type = Solver::plotter_type
+
+
+####
+#### Plotters
+####
+
+RepeatedPlotter/time = 0.0
+RepeatedPlotter/repeat = 0.001
+
+AllQuantitiesPlotter <= RepeatedPlotter
+AllQuantitiesPlotter/variables = "@{BaseSolver/variables}"
+
+writer/integrals <= RepeatedPlotter
+writer/integrals/type = FVSolver::plotter_type # the basis does not really change anything
+writer/integrals/variables = 0
+writer/integrals/output = "./output/global-integrals"
+
+writer/conserved <= AllQuantitiesPlotter
+writer/primitive <= AllQuantitiesPlotter
+writer/diff      <= AllQuantitiesPlotter
+writer/conserved/output = "./vtk-output/conserved"
+writer/diff/output      = "./vtk-output/diff-with-id"
+writer/primitive/output = "./vtk-output/primitive"
+
+####
+#### Boundary Condition combinations
+####
+
+BC/allexact/left   = "exact"
+BC/allexact/right  = "exact"
+BC/allexact/top    = "exact"
+BC/allexact/bottom = "exact"
+BC/allexact/front  = "exact"
+BC/allexact/back   = "exact"
+
+# explaining the Peano idiom:
+# 0-left, 1-right, 2-front, 3-back, 4-bottom, 5-top
+# 0 x=xmin 1 x=xmax, 2 y=ymin 3 y=ymax 4 z=zmin 5 z=zmax
+
+BC/peano/xmin   = left
+BC/peano/xmax   = right
+BC/peano/zmax   = top
+BC/peano/zmin   = bottom
+BC/peano/ymin   = front
+BC/peano/ymax   = back
+
+####
+#### Typical grid setups
+####
+
+no_offset/offset_x = 0.0
+no_offset/offset_y = 0.0
+no_offset/offset_z = 0.0
+
+unitsquare < no_offset
+unitsquare/width_x = 1.0
+unitsquare/width_y = 1.0
+unitsquare/width_z = 1.0
+
+# this is what unigrid is:
+unigrid/maximum_mesh_depth = 0
+
+####
+#### Dimensionalities:
+####
+
+dim2 < Simulation/grid
+dim2/dimensions = 2
+
+dim3 < Simulation/grid
+dim3/dimensions = 3
+
+
+

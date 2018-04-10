@@ -10,6 +10,56 @@ const double grav=9.81;
 ///// 2D /////
 
 #ifdef Dim2
+/*
+* Constant water height with both sides smashing together
+*/
+void SWE::ShockShockProblem(const double * const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  if(x[0] < 5) {
+      vars.h() = 4.0;
+      vars.hu()= 2.0;
+      vars.hv()= 0.0;
+      vars.b() = 0;
+  } else {
+      vars.h() = 4.0;
+      vars.hu()= -2.0;
+      vars.hv()= 0.0;
+      vars.b() = 0.0;
+  }
+}
+
+/*
+* Constant water height with both sides moving away from each other
+*/
+void SWE::RareRareProblem(const double * const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  if(x[0] < 5) {
+      vars.h() = 4.0;
+      vars.hu()= -2.0;
+      vars.hv()= 0.0;
+      vars.b() = 0;
+  } else {
+      vars.h() = 4.0;
+      vars.hu()= 2.0;
+      vars.hv()= 0.0;
+      vars.b() = 0.0;
+  }
+}
+
+/*
+* Gaussfunktion
+*/
+void SWE::GaussFunctionProblem(const double* const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  vars.h() = exp(-pow(x[0] - 5, 2)) + 1;
+  vars.hu() = 0.0;
+  vars.hv() = 0.0;
+  vars.b() = 0.0;
+}
+
 
 /*
  * Constant water height with "exponential" hump in bathymetry.  
@@ -178,11 +228,14 @@ void SWE::RunUpShelf(const double* const x, double* Q) {
 #endif
 
 void SWE::initialData(const double* const x,double* Q) {
- //DamBreakProblem(x,Q);
- //ExpBreakProblem(x,Q);
- //SteadyRunUpLinear(x,Q);
- //RunUpLinear(x,Q);
- //SteadyRunUpShelf(x,Q);
+  //ShockShockProblem(x, Q);
+  //RareRareProblem(x, Q);
+  GaussFunctionProblem(x, Q);
+  //ExpBreakProblem(x,Q);
   //DamBreakProblem(x,Q);
-  SeaAtRestProblem(x,Q);
+  //SeaAtRestProblem(x,Q);
+  //SteadyRunUpLinear(x,Q);
+  //RunUpLinear(x,Q);
+  //SteadyRunUpShelf(x,Q);
+  //RunUpShelf(x, Q);
 }

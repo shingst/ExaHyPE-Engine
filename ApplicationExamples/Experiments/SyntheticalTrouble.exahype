@@ -40,7 +40,7 @@ exahype-project Synthetical
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:1}
+    configure                = {hotspot,fair,ranks-per-node:1}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
@@ -48,6 +48,8 @@ exahype-project Synthetical
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off

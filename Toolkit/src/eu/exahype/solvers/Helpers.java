@@ -40,12 +40,12 @@ public class Helpers {
     if (hasConstants) {
       writer.write("    " + solverName + "(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping"+
     (enableProfiler ? ", std::unique_ptr<exahype::profilers::Profiler> profiler" : "")+
-    ", std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants);\n\n");
+    ");\n\n");
     }
     else {
       writer.write("    " + solverName + "(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping"+
     (enableProfiler ? ", std::unique_ptr<exahype::profilers::Profiler> profiler" : "")+
-    ", std::vector<std::string>& cmdlineargs);\n\n");
+    ");\n\n");
     }
 
     writer.write(
@@ -86,7 +86,7 @@ public class Helpers {
     writer.write(
         "class " + projectName + "::" + solverName + ": public exahype::solvers::FiniteVolumesSolver {\n");
     writer.write("  public:\n");
-    writer.write("    " + solverName + "(int cellsPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::vector<std::string>& cmdlineargs, std::unique_ptr<exahype::profilers::Profiler> profiler);\n\n");
+    writer.write("    " + solverName + "(int cellsPerCoordinateAxis, double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler);\n\n");
 
     writer.write("    double stableTimeStepSize( double* luh[THREE_POWER_D], const tarch::la::Vector<DIMENSIONS, double>& dx) override; \n\n" );
     writer.write("    void   solutionAdjustment( double* luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, double t, double dt) override; \n\n");
@@ -117,7 +117,7 @@ public class Helpers {
       java.io.BufferedWriter writer, String solverName, String projectName) throws IOException {
     writer.write("\n\n");
     writer.write("#include <memory>\n\n");
-    writer.write("#include \"exahype/Parser.h\"\n");
+    writer.write("#include \"exahype/parser/ParserView.h\"\n");
     writer.write("#include \"exahype/profilers/Profiler.h\"\n");
     writer.write("#include \"exahype/solvers/ADERDGSolver.h\"\n");
     writer.write("#include \"exahype/solvers/FiniteVolumesSolver.h\"\n");
@@ -136,7 +136,7 @@ public class Helpers {
 
     // init
     writer.write("void " + projectName + "::" + solverName +
-      "::init(std::vector<std::string>& cmdlineargs"+(hasConstants?", exahype::Parser::ParserView& constants":"")+") {\n");
+      "::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {\n");
     writer.write("  // This function is called by the constructor.\n");
     writer.write("  // You can access spec file parameters as well as command line arguments (argv as std::vector).\n");
     writer.write("  // @todo Please implement/augment if required.\n");
@@ -156,15 +156,5 @@ public class Helpers {
     writer.write("  // @todo Please implement/augment if required.\n");
     writer.write("}\n\n");
   }
-
-  //Should use CodeGeneratorHelper
-  @Deprecated
-  static public String invokeCodeGenerator(String solverFullName, int numberOfUnknowns, int numberOfParameters, int order,
-      boolean isLinear, int dimensions, String microarchitecture, String pathToLibxsmm, boolean enableDeepProfiler, boolean useFlux, boolean useSource, boolean useNCP, boolean noTimeAveraging)
-      throws IOException {
-
-    return ""; 
-  } // invokeCodeGenerator
-
   
 }

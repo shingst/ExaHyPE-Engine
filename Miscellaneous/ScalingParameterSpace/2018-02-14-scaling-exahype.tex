@@ -1,0 +1,147 @@
+\documentclass{article}
+\usepackage{amsmath,hyperref}
+
+\begin{document}
+
+\title {Testing basic ExaHyPE scaling} 
+
+\maketitle
+
+\begin{abstract}
+Mini benchmark to understand when scaling fails. With a synthetic
+PDE. Developed by Anne, Luke, Sven.
+\end{abstract}
+
+
+\section{The most basic PDE}
+
+We decide for the \emph{fully nonconservative} PDE
+\begin{equation}\label{pde}
+\partial_t Q + B(Q)\nabla Q = S(Q)
+\end{equation}
+%
+with the Nonconservative product NCP $B\nabla Q$ and the
+algebraic source term~$S$. We don't want to implement any
+sensible physics equation but instead solve a kind of
+\emph{dummy} problems when computing the PDE contributions.
+
+Therefore, the physical content of the initial data is not
+relevant. $\vec Q=0$ is a good choice. For the boundary
+conditions, the same is true, zero boundary conditions,
+outflow or exact boundary conditions are applicable.
+
+\section{Parameter space}
+
+The parameter space spawned by these five independent
+quantities shall be explored:
+
+\begin{align}
+n& \in \{ 1,5,7,9,20, 60 \} \quad\text{unknowns}
+\\
+C_S &\in \{ 1, 10^2, 10^3, 10^4 \} \quad\text{FLOPS}
+\\
+C_{NCP} &\in \{ 1, 10^2, 10^3, 10^4 \} \quad\text{FLOPS}
+\\
+\text{grid} &\in  \{ \text{unigrid}, \text{spherical limiting} \}
+\\
+\text{scaling} &\in  \{ \text{Single core}, \text{Single node TBB}, \text{Hybrid TBB/MPI} \}
+\end{align}
+%
+\subsection{Meaning of parameters}
+\begin{itemize}
+\item $n$ unknowns means that $\dim(Q)=n$. It is a direct measure
+for the memory requirements of the simulation and serves as a
+stress-test for the ADER scheme and MPI communication.
+
+\item $C_S$ and $C_{NCP}$ indicates the costs of the synthetic
+implementation of the $S(Q)$ and $NCP(Q,\nabla Q)$ functions,
+respectively.
+
+\item Unigrid means uniform grid. spherical limiting means the
+physical admissiblity criterion at
+\url{http://dev.exahype.eu/astrophysics-userguide/html/Benchmarks/ns.html#limiter-geometry},
+a simple idealized limiting criterion.
+
+\item Scaling means \emph{strong scaling}. First question to answer
+is whether the simulation runs at all, then to measure the single
+core performance (physical time over simulation time per degree
+of freedom) and then to compare this quantity to exploiting a
+full node (say Iboga, 20 cores). Hybrid scaling by means of one
+rank per node. We run up to nodes
+$\in \{ 1+3 = 4, 1+3^2 = 10, 1+3^3 = 28 \}$.
+\end{itemize}
+
+\subsection{Fixed parameters}
+\begin{itemize}
+\item  We use a base grid of $3^3$ cells per axis, giving us in total 19683 cells (at unigrid).
+\item  LimitingADERSolver with 2nd order FV solver (MUSCL) and DMP observables = 0.
+\item  Always Dim3.
+\item  Always polynomial order $n=3$
+\item  No plotting at all.
+\item  Always compile with TBB and MPI enabled.
+\item  Always compile with NCP and algebraicSource enabled
+(implement empty functions when $C_S=0$ or $C_{NCP}=0$). That is,
+the scheme shall always implement eq \eqref{pde}.
+\item  Run up to $T = 10 ~\text{iteration}$.
+\end{itemize}
+
+\section{Implementation}
+We chose to implement an Ackermann function to artificially consume
+FLOPs, and it is also a function that the compiler shouldn't be able to
+optimise away. A table of values is here 
+\begin{center}
+\begin{tabular}{c|c|c}
+input & itr  & $\sim$ itrs\\ 
+\hline
+F(1,1)& 3 & $1$\\
+F(2,2)& 54 & $10$\\
+F(2,3)& 110 & $10^{2}$\\
+F(3,2)& 3903 & $10^{3}$\\
+F(3,3) & 34386 & $10^{4}$
+\end{tabular}
+\end{center}
+
+\section{Results}
+The results in this section were run on iboga which has 20 cores per
+node. This means that for 28 MPI ranks, there has to be internode
+communication. Perhaps testing this on supermuc would be interesting.
+
+\subsection{Unigrid}
+
+The domain of the grid size is $1000\times1000\times1000$ with 
+\texttt{maximum-mesh-size} $=40$.
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+params & $n=60$ & $C_{S} = 1$ & $C_{NCP} = 1$\\
+\hline
+ranks & 1 & 20 & 28\\
+\hline
+walltime (s) & 98.99 & 49.37 & 12.01
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+params & $n=60$ & $C_{S} = 10^{2}$ & $C_{NCP} = 10^{2}$\\
+\hline
+ranks & 1 & 20 & 28\\
+\hline
+walltime (s) & 388.17 & 193.25 & 47.67
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+params & $n=60$ & $C_{S} = 10^{3}$ & $C_{NCP} = 10^{3}$\\
+\hline
+ranks & 1 & 20 & 28\\
+\hline
+walltime (s) & - & 1480.41 & 371.37
+\end{tabular}
+\end{center}
+
+For these cases, there is always a speedup of roughly 8.
+
+
+\end{document}

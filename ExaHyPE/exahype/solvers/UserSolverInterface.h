@@ -73,7 +73,7 @@ public:
    * 
    * @TODO: Document me, please.
    **/
-  virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) = 0;
+   virtual void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) = 0;
 
   /**
    * Compute the Algebraic Sourceterms.

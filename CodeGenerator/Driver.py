@@ -28,7 +28,7 @@ import argparse
 import os
 import sys
 
-import CodeGenArgumentParser
+from utils import CodeGenArgumentParser
 import Backend
 
 
@@ -36,8 +36,8 @@ import Backend
 # Configuration parameters
 # --------------------------------------------------------
 
-pathFromHereToExaHyPERoot = "../"                     #path to the root of ExaHyPe from this file
-pathToLibxsmmGemmGenerator = "libxsmm_gemm_generator" #path to the gemm generator from this file
+pathFromHereToExaHyPERoot = "../" #path to the root of ExaHyPe from this file
+pathToLibxsmmGemmGenerator = os.path.join("dependencies", "libxsmm", "bin", "libxsmm_gemm_generator") #path to the gemm generator from this file
 
 # --------------------------------------------------------
 # Require python3
@@ -92,6 +92,9 @@ l_parser.add_argument("--useNCP",
 l_parser.add_argument("--useSource",
                       action="store_true",
                       help="enable source terms")
+l_parser.add_argument("--useMaterialParam",
+                      action="store_true",
+                      help="enable material parameters")
 l_parser.add_argument("--usePointSources",
                       type=int,
                       default=-1,
@@ -100,7 +103,16 @@ l_parser.add_argument("--usePointSources",
 l_parser.add_argument("--noTimeAveraging",
                       action="store_true",
                       help="disable time averaging in the spacetimepredictor (less memory usage, more computation)")
-
+l_parser.add_argument("--useLimiter",
+                      type=int,
+                      default=-1,
+                      metavar='useLimiter',
+                      help="enable limiter with the given number of observable")
+l_parser.add_argument("--ghostLayerWidth",
+                      type=int,
+                      default=0,
+                      metavar='ghostLayerWidth',
+                      help="use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0")
 l_commandLineArguments = l_parser.parse_args()
 
 config = { 
@@ -119,11 +131,14 @@ config = {
            "useSourceOrNCP"        : (l_commandLineArguments.useSource or l_commandLineArguments.useNCP),
            "nPointSources"         : l_commandLineArguments.usePointSources,
            "usePointSources"       : l_commandLineArguments.usePointSources >= 0,
-           "useMaterialParam"      : False, #TODO JM
+           "useMaterialParam"      : l_commandLineArguments.useMaterialParam,
            "noTimeAveraging"       : l_commandLineArguments.noTimeAveraging,
            "codeNamespace"         : l_commandLineArguments.namespace,
            "pathToOutputDirectory" : os.path.join(os.path.dirname(__file__),pathFromHereToExaHyPERoot,l_commandLineArguments.pathToApplication,l_commandLineArguments.pathToOptKernel),
            "architecture"          : l_commandLineArguments.architecture,
+           "useLimiter"            : l_commandLineArguments.useLimiter >= 0,
+           "nObs"                  : l_commandLineArguments.useLimiter,
+           "ghostLayerWidth"       : l_commandLineArguments.ghostLayerWidth,
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
            "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
            "useLibxsmm"            : True,

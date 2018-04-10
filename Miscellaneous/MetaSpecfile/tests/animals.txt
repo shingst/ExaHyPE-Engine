@@ -1,0 +1,16 @@
+# Just some test data
+
+basis/tier/is_tier = True
+basis/tier/kann_sich_fortbewegen = Yes
+
+hund < basis/tier
+hund/geschwindigkeit = 10.0  # in km/h
+
+katze < basis/tier
+katze/fiesheit = 7
+
+haustiere += hund
+haustiere += katze
+
+saeugetiere/menschenfreunde = haustiere
+saeugetiere/haeusliche = haustiere

@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 #include "exahype/profilers/Profiler.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
@@ -23,7 +23,7 @@ namespace MHDSolver{
 
 class MHDSolver::MHDSolver: public exahype::solvers::ADERDGSolver {
   public:
-    MHDSolver(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler, exahype::Parser::ParserView constants);
+    MHDSolver(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::unique_ptr<exahype::profilers::Profiler> profiler, exahype::parser::ParserView constants);
 
     void spaceTimePredictor(double* lQhbnd,double* lFhbnd, double** tempSpaceTimeUnknowns, double** tempSpaceTimeFluxUnknowns, double*  tempUnknowns, double*  tempFluxUnknowns, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx, const double dt) override; 
     void solutionUpdate(double* luh, const double* const lduh, const double dt) override;

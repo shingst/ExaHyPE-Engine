@@ -18,7 +18,8 @@
 #include <vector>
 #include <cstdlib>
 
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
+
 #include "peano/utils/Globals.h"
 
 #include "tarch/la/Vector.h"
@@ -30,6 +31,14 @@ namespace exahype {
 
     extern std::vector<Plotter*> RegisteredPlotters;
 
+    extern tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
+
+    /*! Plots a patch if a plotter is active for the corresponding solver.
+     */
+    void plotPatchIfAPlotterIsActive(const int solverNumber,const int cellDescriptionsIndex,const int element);
+
+
+    bool checkWhetherPlotterBecomesActive(double currentTimeStamp);
     bool startPlottingIfAPlotterIsActive(double currentTimeStamp);
     void finishedPlotting();
     double getTimeOfNextPlot();
@@ -154,9 +163,9 @@ class exahype::plotters::Plotter {
         const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
         const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
         const tarch::la::Vector<DIMENSIONS, double>& x,
-	const tarch::la::Vector<DIMENSIONS, int>&    pos,
+        const tarch::la::Vector<DIMENSIONS, int>&    pos,
         double* Q,
-	double* gradQ,
+        double* gradQ,
         double* outputQuantities,
         double timeStamp) { abort(); /* catch missing API implementations */ }
 
@@ -242,7 +251,13 @@ class exahype::plotters::Plotter {
   Device*                _device;
 
  public:
-  Plotter(const int solverConfig,const int plotterConfig,const exahype::Parser& parser,Device* device);
+  /**
+   * This semaphore is used for locking the plotters'
+   * plotPatch function which is usually not thread-safe.
+   */
+  static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
+
+  Plotter(const int solverConfig,const int plotterConfig,const exahype::parser::Parser& parser,Device* device);
 
   /**
    * @param solverConfig Number of the underlying solver. This number is important to
@@ -252,7 +267,7 @@ class exahype::plotters::Plotter {
    *                      the file is to be read in.
    */
   Plotter(const int solverConfig,const int plotterConfig,
-          const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing);
+          const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing);
 
   /**
    * Plotter constructor for scenarios where we want to use a plotter configuration
@@ -270,7 +285,7 @@ class exahype::plotters::Plotter {
    *               plotter configuration for multiple solvers.
    */
   Plotter(const int solverConfig,const int plotterConfig,
-          const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
+          const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
           const int solverDataSource);
   ~Plotter();
 

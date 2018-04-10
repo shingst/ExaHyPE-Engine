@@ -23,7 +23,7 @@ public class GenericFiniteVolumesInC implements Solver {
 
   public GenericFiniteVolumesInC(
       String type, String projectName, String solverName, int dimensions, int numberOfVariables, int numberOfParameters, Set<String> namingSchemeNames, int patchSize,
-      int ghostLayerWidth, boolean enableProfiler, boolean hasConstants,
+      boolean enableProfiler, boolean hasConstants,
       FiniteVolumesKernel kernel) {
         
     _solverName         = solverName;
@@ -32,6 +32,8 @@ public class GenericFiniteVolumesInC implements Solver {
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSources    = kernel.usePointSources();
+    final boolean tempVarsOnStack    = kernel.tempVarsOnStack();
+    final int     ghostLayerWidth    = kernel.getGhostLayerWidth();
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -51,11 +53,12 @@ public class GenericFiniteVolumesInC implements Solver {
     
     //boolean
     context.put("enableProfiler"    , enableProfiler);
-    context.put("hasConstants"      , hasConstants);
+    //context.put("hasConstants"      , hasConstants);
     context.put("useFlux"           , useFlux);
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
     context.put("usePointSources"   , usePointSources);
+    context.put("tempVarsOnStack"   , tempVarsOnStack);
     
     //Set<String>
     context.put("namingSchemes"     , namingSchemeNames.stream().map(s -> s.substring(0, 1).toUpperCase()+s.substring(1)).collect(Collectors.toSet())); //capitalize
@@ -69,10 +72,6 @@ public class GenericFiniteVolumesInC implements Solver {
   @Override
   public String getSolverName() {
     return _solverName;
-  }
-  
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
   }
 
   public void writeHeader(java.io.BufferedWriter writer) throws IOException, IllegalArgumentException {
@@ -100,7 +99,7 @@ public class GenericFiniteVolumesInC implements Solver {
   public void writeUserPDE(java.io.BufferedWriter writer)
       throws java.io.IOException {
     // @todo Implement
-    System.err.println("C-style kernels do not have a PDF.f90.\n");
+    System.err.println("C-style kernels do not have a PDE.f90.\n");
   }
 
 

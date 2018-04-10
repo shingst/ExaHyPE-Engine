@@ -28,30 +28,30 @@ exahype-project  Elastic
 
   computational-domain
     dimension const          = 3
-    width                    = 1.0, 1.0, 1.0
-    offset                   = 0.0, 0.0, 0.0
+    width                    = 90.0, 10.0, 90.0
+    offset                   = 4360.0, 0.0, 2500.0
     end-time                 = 4.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
-    configure                = {}
-    cores                    = 4
+    configure                = {background-tasks:28}
+    cores                    = 28
     properties-file          = sharedmemory.properties
   end shared-memory
  
-
-//   distributed-memory
-//     identifier               = static_load_balancing
-//     configure                = {greedy-naive,FCFS}
-// //    configure                = {hotspot,fair,ranks_per_node:4}
-//     buffer-size              = 64
-//     timeout                  = 60
-//   end distributed-memory
+   distributed-memory	
+     identifier               = static_load_balancing
+     configure                = {hotspot,fair,ranks-per-node:4}
+     buffer-size              = 1600
+     timeout                  = 6000
+   end distributed-memory
 
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
@@ -65,7 +65,7 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1,jacobian:1,metric_derivative:9,curve_grid:3
     order const        = 4
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 0.15
+    maximum-mesh-size  = 3.0
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
@@ -76,7 +76,7 @@ exahype-project  Elastic
     plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 25
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1e-10
       output          = ./conserved
     end plot
 

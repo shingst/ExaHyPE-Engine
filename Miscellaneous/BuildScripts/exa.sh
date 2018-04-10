@@ -86,8 +86,9 @@ case $CMD in
 		# of course there is not much purpose in sourcing this as exa.sh is currently
 		# not be intended to be sourced. What we could do here is to echo the ENV
 		# so it can be used like "source <(exa config)" or similar.
-		echo source $BuildScripts/load-clusterconfig.sh $@
-		# Currently, users can at least "eval $(exa config)"
+		source $BuildScripts/load-clusterconfig.sh $@
+		# Currently, users can at least "eval $(exa config something)"
+		# or just call "$(exa config something)" from their command line
 		;;
 	"toolkit") # Run the toolkit for an application, without compiling
 		cdroot; getappname
@@ -183,6 +184,17 @@ case $CMD in
 		cdapp
 		make clean || fail "Cannot clean since toolkit did not run."
 		;;
+	"clean-at") # Clean all object files below some given path
+		for f in $@; do
+			if ! [[ -d $f ]] && [[ -e $f ]] && [[ -d $(dirname "$f") ]]; then
+				echo "Cleaning at $(dirname $f)"
+				subreq clean-at $(dirname "$f")
+			else
+				echo "Cleaning at $f"
+				find $f -type f -iname \*.o -delete -print
+			fi
+		done;
+		;;
 	"cheat") # show the environment variables available for driving the build
 		cdroot; cd $SCRIPTDIR;
 		cat cheat-sheet.txt
@@ -234,21 +246,7 @@ case $CMD in
 		;;
 	"peano-analysis") # Quickly start Peanos Domaincomposition analysis script.
 		set -e
-		exec python $GITROOT/Peano/peano/performanceanalysis/domaindecompositionanalysis.py $@
-		# copy stuff to the stage
-		stageroot="$HOME/public_html/exahype/domaindecompositionanalysis/"
-		stagesub="$(date +%Y-%m-%dT%H-%M-%S)"
-		if [[ -e "$stageroot" ]]; then
-			stagedir="$stageroot/$stagesub"
-			echo "Copying output to $stagedir"
-			mkdir $stagedir
-			cp *pdf *png *html *log ExaHyPE-* $stagedir/
-			./ExaHyPE-* --version > $stagedir/ExaHyPE-VERSION.txt
-			# try to obtain the parameter file
-			cp ../$(basename $(pwd)).exahype $stagedir/
-		else
-			echo "Stageroot $stageroot not available"
-		fi
+		exec python $GITROOT/Peano/peano/performanceanalysis/performanceanalysis.py $@
 		;;
 	"run") # quickly start an application inside it's directory. Cleans VTK files before.
 		cdapp
@@ -262,6 +260,12 @@ case $CMD in
 		# Would prefer relative directories here.
 		reducedbuf="stdbuf -oL -eL" # for quicker output, no 4k buffering
 		$reducedbuf $ROOT/$BINARY $ROOT/$SPECFILE 2>&1 | $reducedbuf tee -a run.log
+		;;
+	"make-output-folders") # Create output folders for a given specfile
+		cdapp
+		ABS_SPECFILE=$GITROOT/$(subreq find specfile $APPNAME)
+		echo "Creating folders in $(pwd)"
+		exec $BuildScripts/../RunScripts/createOutputFoldersForSpecfile.sh $ABS_SPECFILE
 		;;
 	"sim") # lightweight simulation managament
 		exec $BuildScripts/../RunScripts/sim.sh $@
@@ -281,6 +285,9 @@ case $CMD in
 		# @TODO: Improve display of available formats
 		cat $0 | grep -E '\)\s+#' | tr ')' ':' | tr -d '#' | column -c 2 
 		echo -e
+		;;
+	"help-shortlist") # A list of commands, for shell completion
+		cat $0 | grep -oE '^\s+"(.+)"\)' | tr -d '")|'"\n" | sed -e 's/[[:space:]]*/ /'
 		;;
 	"is") # prints out fortunes
 		echo "cool"

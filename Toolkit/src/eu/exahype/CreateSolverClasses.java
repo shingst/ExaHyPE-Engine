@@ -14,6 +14,8 @@ import eu.exahype.node.ALimitingAderdgSolver;
 import eu.exahype.node.AProfiling;
 import eu.exahype.node.AProject;
 import eu.exahype.node.PSolver;
+import eu.exahype.node.AArchitecture;
+import eu.exahype.node.PArchitecture;
 import eu.exahype.solvers.Solver;
 import eu.exahype.solvers.SolverFactory;
 import eu.exahype.variables.Variables;
@@ -56,7 +58,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     }
 
     if (node.getArchitecture()!=null) {
-      _microarchitecture = node.getArchitecture().getText().toLowerCase();
+      _microarchitecture = ( (eu.exahype.node.AArchitecture)( node.getArchitecture() )).getIdentifier().getText().toLowerCase();
     }
     else {
       _microarchitecture = "noarch";
@@ -191,54 +193,61 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   
   @Override
   public void inALimitingAderdgSolver(ALimitingAderdgSolver node) {
-    String solverName    = node.getName().getText();
-    String  language     = node.getLanguage().getText();
-    int     order        = Integer.parseInt(node.getOrder().getText());
-    boolean hasConstants = node.getConstants()!=null;
+    String solverName        = node.getName().getText();
+    String  language         = node.getLanguage().getText();
+    int     order            = Integer.parseInt(node.getOrder().getText());
+    int     DmpObservables   = Integer.parseInt(node.getDmpObservables().getText());
+    boolean hasConstants     = node.getConstants()!=null;
     
-    boolean isFortran    = language.equals("Fortran");
+    boolean isFortran        = language.equals("Fortran");
     
-    int     patchSize       = 2*order+1;
-    String  limiterLanguage = node.getLanguageLimiter().getText();
+    int     patchSize        = 2*order+1;
+    String  limiterLanguage  = node.getLanguageLimiter().getText();
     
-    String solverNameADERDG = solverName+"_ADERDG";
-    String solverNameFV     = solverName+"_FV";
+    String solverNameADERDG  = solverName+"_ADERDG";
+    String solverNameFV      = solverName+"_FV";
+    String solverNameLimiter = solverName+"_Limiter";
     
     Variables variablesSolver  = new Variables(solverNameADERDG, node);
     Variables variablesLimiter = new Variables(solverNameFV, node);
     try {
-      ADERDGKernel         kernel        = new ADERDGKernel(node);
-      FiniteVolumesKernel  limiterKernel = new FiniteVolumesKernel(node);
+      ADERDGKernel         aderdgKernel  = new ADERDGKernel(node);
+      FiniteVolumesKernel  FVKernel      = new FiniteVolumesKernel(node);
+      aderdgKernel.setGhostLayerWidth(FVKernel.getGhostLayerWidth());
+      aderdgKernel.setNumberOfObservables(DmpObservables);
       
       SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _enableDeepProfiler, _microarchitecture);
-      Solver solver  = solverFactory.createADERDGSolver(
-          solverNameADERDG, kernel,isFortran,variablesSolver.getNumberOfVariables(),variablesSolver.getNumberOfParameters(),variablesSolver.getNamingSchemeNames(),order,hasConstants);
-      Solver limiter = solverFactory.createFiniteVolumesSolver(
-          solverNameFV, limiterKernel,isFortran,variablesLimiter.getNumberOfVariables(),variablesLimiter.getNumberOfParameters(),variablesLimiter.getNamingSchemeNames(),patchSize,hasConstants);
+      Solver solverAderdg  = solverFactory.createADERDGSolver(
+          solverNameADERDG, aderdgKernel,isFortran,variablesSolver.getNumberOfVariables(),variablesSolver.getNumberOfParameters(),variablesSolver.getNamingSchemeNames(),order,hasConstants);
+      Solver solverFV = solverFactory.createFiniteVolumesSolver(
+          solverNameFV, FVKernel,isFortran,variablesLimiter.getNumberOfVariables(),variablesLimiter.getNumberOfParameters(),variablesLimiter.getNamingSchemeNames(),patchSize,hasConstants);
+      Solver solverLimiter = solverFactory.createLimiterSolver(solverNameLimiter, aderdgKernel, FVKernel, solverAderdg, solverFV);
 
-      valid  = validate(variablesSolver,order,kernel.toString(),language,solverName,solver);
-      valid &= validate(variablesLimiter,patchSize,limiterKernel.toString(),limiterLanguage,solverName,limiter);
+      valid  = validate(variablesSolver,order,aderdgKernel.toString(),language,solverName,solverAderdg);
+      valid &= validate(variablesLimiter,patchSize,FVKernel.toString(),limiterLanguage,solverName,solverFV);
       
       if (valid) {        
         _definedSolvers.add(solverName);
 
         // write the files
-        tryWriteSolverHeader(solver);
-        tryWriteSolverHeader(limiter);
+        tryWriteSolverHeader(solverAderdg);
+        tryWriteSolverHeader(solverFV);
 
-        tryWriteSolverUserImplementation(solver);
-        tryWriteSolverUserImplementation(limiter);
+        tryWriteSolverUserImplementation(solverAderdg);
+        tryWriteSolverUserImplementation(solverFV);
         
-        tryWriteAbstractSolverHeader(solver);
-        tryWriteAbstractSolverHeader(limiter);
-        tryWriteAbstractSolverImplementation(solver);
-        tryWriteAbstractSolverImplementation(limiter);
+        tryWriteAbstractSolverHeader(solverAderdg);
+        tryWriteAbstractSolverHeader(solverFV);
+        tryWriteAbstractSolverHeader(solverLimiter);
+        
+        tryWriteAbstractSolverImplementation(solverAderdg);
+        tryWriteAbstractSolverImplementation(solverFV);
+        tryWriteAbstractSolverImplementation(solverLimiter);
 
-        if (solver.supportsVariables()) {
+        if (solverAderdg.supportsVariables()) {
           tryWriteVariablesHeader(variablesSolver);
         }
-        
-        if (limiter.supportsVariables()) {
+        if (solverFV.supportsVariables()) {
           tryWriteVariablesHeader(variablesLimiter);
         }
       }  

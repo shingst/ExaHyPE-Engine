@@ -3,9 +3,7 @@
 
 peano::CommunicationSpecification   exahype::adapters::GlobalRollback::communicationSpecification() const {
   return peano::CommunicationSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.communicationSpecification()
     &  _map2GlobalRollback.communicationSpecification()
-    &  _map2PostProcessing.communicationSpecification()
 
   ;
 }
@@ -13,9 +11,7 @@ peano::CommunicationSpecification   exahype::adapters::GlobalRollback::communica
 
 peano::MappingSpecification   exahype::adapters::GlobalRollback::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.touchVertexLastTimeSpecification(level)
     &  _map2GlobalRollback.touchVertexLastTimeSpecification(level)
-    &  _map2PostProcessing.touchVertexLastTimeSpecification(level)
 
   ;
 }
@@ -23,9 +19,7 @@ peano::MappingSpecification   exahype::adapters::GlobalRollback::touchVertexLast
 
 peano::MappingSpecification   exahype::adapters::GlobalRollback::touchVertexFirstTimeSpecification(int level) const { 
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.touchVertexFirstTimeSpecification(level)
     &  _map2GlobalRollback.touchVertexFirstTimeSpecification(level)
-    &  _map2PostProcessing.touchVertexFirstTimeSpecification(level)
 
   ;
 }
@@ -33,9 +27,7 @@ peano::MappingSpecification   exahype::adapters::GlobalRollback::touchVertexFirs
 
 peano::MappingSpecification   exahype::adapters::GlobalRollback::enterCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.enterCellSpecification(level)
     &  _map2GlobalRollback.enterCellSpecification(level)
-    &  _map2PostProcessing.enterCellSpecification(level)
 
   ;
 }
@@ -43,9 +35,7 @@ peano::MappingSpecification   exahype::adapters::GlobalRollback::enterCellSpecif
 
 peano::MappingSpecification   exahype::adapters::GlobalRollback::leaveCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.leaveCellSpecification(level)
     &  _map2GlobalRollback.leaveCellSpecification(level)
-    &  _map2PostProcessing.leaveCellSpecification(level)
 
   ;
 }
@@ -53,9 +43,7 @@ peano::MappingSpecification   exahype::adapters::GlobalRollback::leaveCellSpecif
 
 peano::MappingSpecification   exahype::adapters::GlobalRollback::ascendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.ascendSpecification(level)
     &  _map2GlobalRollback.ascendSpecification(level)
-    &  _map2PostProcessing.ascendSpecification(level)
 
   ;
 }
@@ -63,9 +51,7 @@ peano::MappingSpecification   exahype::adapters::GlobalRollback::ascendSpecifica
 
 peano::MappingSpecification   exahype::adapters::GlobalRollback::descendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2PreProcessing.descendSpecification(level)
     &  _map2GlobalRollback.descendSpecification(level)
-    &  _map2PostProcessing.descendSpecification(level)
 
   ;
 }
@@ -81,18 +67,14 @@ exahype::adapters::GlobalRollback::~GlobalRollback() {
 
 #if defined(SharedMemoryParallelisation)
 exahype::adapters::GlobalRollback::GlobalRollback(const GlobalRollback&  masterThread):
-  _map2PreProcessing(masterThread._map2PreProcessing) , 
-  _map2GlobalRollback(masterThread._map2GlobalRollback) , 
-  _map2PostProcessing(masterThread._map2PostProcessing) 
+  _map2GlobalRollback(masterThread._map2GlobalRollback) 
 
 {
 }
 
 
 void exahype::adapters::GlobalRollback::mergeWithWorkerThread(const GlobalRollback& workerThread) {
-  _map2PreProcessing.mergeWithWorkerThread(workerThread._map2PreProcessing);
   _map2GlobalRollback.mergeWithWorkerThread(workerThread._map2GlobalRollback);
-  _map2PostProcessing.mergeWithWorkerThread(workerThread._map2PostProcessing);
 
 }
 #endif
@@ -107,9 +89,7 @@ void exahype::adapters::GlobalRollback::createHangingVertex(
       exahype::Cell&       coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                   fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 
 }
@@ -124,9 +104,7 @@ void exahype::adapters::GlobalRollback::destroyHangingVertex(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -140,9 +118,7 @@ void exahype::adapters::GlobalRollback::createInnerVertex(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -156,9 +132,7 @@ void exahype::adapters::GlobalRollback::createBoundaryVertex(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -172,9 +146,7 @@ void exahype::adapters::GlobalRollback::destroyVertex(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -188,9 +160,7 @@ void exahype::adapters::GlobalRollback::createCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _map2PreProcessing.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2GlobalRollback.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2PostProcessing.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -204,9 +174,7 @@ void exahype::adapters::GlobalRollback::destroyCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _map2PreProcessing.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2GlobalRollback.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2PostProcessing.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -220,9 +188,7 @@ void exahype::adapters::GlobalRollback::mergeWithNeighbour(
   const tarch::la::Vector<DIMENSIONS,double>&   fineGridH,
   int                                           level
 ) {
-   _map2PreProcessing.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
    _map2GlobalRollback.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
-   _map2PostProcessing.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
 }
 
@@ -234,9 +200,7 @@ void exahype::adapters::GlobalRollback::prepareSendToNeighbour(
   const tarch::la::Vector<DIMENSIONS,double>&   h,
   int                                           level
 ) {
-   _map2PreProcessing.prepareSendToNeighbour( vertex, toRank, x, h, level );
    _map2GlobalRollback.prepareSendToNeighbour( vertex, toRank, x, h, level );
-   _map2PostProcessing.prepareSendToNeighbour( vertex, toRank, x, h, level );
 
 }
 
@@ -248,9 +212,7 @@ void exahype::adapters::GlobalRollback::prepareCopyToRemoteNode(
   const tarch::la::Vector<DIMENSIONS,double>&   h,
   int                                           level
 ) {
-   _map2PreProcessing.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
    _map2GlobalRollback.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
-   _map2PostProcessing.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
 
 }
 
@@ -262,9 +224,7 @@ void exahype::adapters::GlobalRollback::prepareCopyToRemoteNode(
       const tarch::la::Vector<DIMENSIONS,double>&   h,
       int                                           level
 ) {
-   _map2PreProcessing.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
    _map2GlobalRollback.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
-   _map2PostProcessing.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
 
 }
 
@@ -277,9 +237,7 @@ void exahype::adapters::GlobalRollback::mergeWithRemoteDataDueToForkOrJoin(
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-   _map2PreProcessing.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
    _map2GlobalRollback.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
-   _map2PostProcessing.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
 
 }
 
@@ -292,9 +250,7 @@ void exahype::adapters::GlobalRollback::mergeWithRemoteDataDueToForkOrJoin(
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-   _map2PreProcessing.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
    _map2GlobalRollback.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
-   _map2PostProcessing.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
 
 }
 
@@ -310,9 +266,7 @@ bool exahype::adapters::GlobalRollback::prepareSendToWorker(
   int                                                                  worker
 ) {
   bool result = false;
-   result |= _map2PreProcessing.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
    result |= _map2GlobalRollback.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
-   result |= _map2PostProcessing.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
 
   return result;
 }
@@ -327,9 +281,7 @@ void exahype::adapters::GlobalRollback::prepareSendToMaster(
   const exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
 ) {
-   _map2PreProcessing.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
    _map2GlobalRollback.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-   _map2PostProcessing.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -349,9 +301,7 @@ void exahype::adapters::GlobalRollback::mergeWithMaster(
     const exahype::State&          workerState,
   exahype::State&                masterState
 ) {
-   _map2PreProcessing.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
    _map2GlobalRollback.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
-   _map2PostProcessing.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
 
 }
 
@@ -368,9 +318,7 @@ void exahype::adapters::GlobalRollback::receiveDataFromMaster(
       exahype::Cell&                        workersCoarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&    fineGridPositionOfCell
 ) {
-   _map2PreProcessing.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
    _map2GlobalRollback.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
-   _map2PostProcessing.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -382,9 +330,7 @@ void exahype::adapters::GlobalRollback::mergeWithWorker(
   const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
   int                                          level
 ) {
-   _map2PreProcessing.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
    _map2GlobalRollback.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
-   _map2PostProcessing.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
 
 }
 
@@ -396,9 +342,7 @@ void exahype::adapters::GlobalRollback::mergeWithWorker(
   const tarch::la::Vector<DIMENSIONS,double>&   h,
   int                                           level
 ) {
-   _map2PreProcessing.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
    _map2GlobalRollback.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
-   _map2PostProcessing.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
 
 }
 #endif
@@ -413,9 +357,7 @@ void exahype::adapters::GlobalRollback::touchVertexFirstTime(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -429,9 +371,7 @@ void exahype::adapters::GlobalRollback::touchVertexLastTime(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
 ) {
-  _map2PreProcessing.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2GlobalRollback.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2PostProcessing.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -445,9 +385,7 @@ void exahype::adapters::GlobalRollback::enterCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _map2PreProcessing.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2GlobalRollback.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2PostProcessing.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -461,9 +399,7 @@ void exahype::adapters::GlobalRollback::leaveCell(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfCell
 ) {
-  _map2PreProcessing.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2GlobalRollback.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2PostProcessing.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -471,9 +407,7 @@ void exahype::adapters::GlobalRollback::leaveCell(
 void exahype::adapters::GlobalRollback::beginIteration(
   exahype::State&  solverState
 ) {
-  _map2PreProcessing.beginIteration( solverState );
   _map2GlobalRollback.beginIteration( solverState );
-  _map2PostProcessing.beginIteration( solverState );
 
 }
 
@@ -481,9 +415,7 @@ void exahype::adapters::GlobalRollback::beginIteration(
 void exahype::adapters::GlobalRollback::endIteration(
   exahype::State&  solverState
 ) {
-  _map2PreProcessing.endIteration( solverState );
   _map2GlobalRollback.endIteration( solverState );
-  _map2PostProcessing.endIteration( solverState );
 
 }
 
@@ -498,9 +430,7 @@ void exahype::adapters::GlobalRollback::descend(
   const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
   exahype::Cell&                 coarseGridCell
 ) {
-  _map2PreProcessing.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2GlobalRollback.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
-  _map2PostProcessing.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }
 
@@ -513,8 +443,6 @@ void exahype::adapters::GlobalRollback::ascend(
   const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
   exahype::Cell&           coarseGridCell
 ) {
-  _map2PreProcessing.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2GlobalRollback.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
-  _map2PostProcessing.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }

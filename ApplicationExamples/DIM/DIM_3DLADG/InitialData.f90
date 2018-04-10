@@ -34,12 +34,21 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx)
 	!	limiter_value=0
 	!end if
 	!
-	rr = RadiusFromCG(xx(1),xx(2),xx(3))
+	
+	! Exclude the boundaries
+	if(abs(xx(1))>2000 .or. abs(xx(2))>2000) then
+		limiter_value=0
+		return
+	end if
+	!rr = RadiusFromCG(xx(1),xx(2),xx(3))
+	rr = DistanceFromSurfaceCG(xx(1),xx(2),xx(3))
+	!rr=xx(3)-2000
 	if(abs(rr)<500) then
 		limiter_value=1
 	else
 		limiter_value=0
 	end if	
+	limiter_value=0
 END SUBROUTINE PDElimitervalue
 
 RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
@@ -79,11 +88,12 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
         up(12) =0.5*(2700.0 +2600.0 )+0.5*(2700.0 -2600.0 )*erf(-r/ICsig)
         up(14)  = 1.0-1e-7   ! No Fracture everywhere
         r = x(3)
-        r = RadiusFromCG(x(1),x(2),x(3))
-        ICsig=200.0
+        !r = RadiusFromCG(x(1),x(2),x(3))
+		r = DistanceFromSurfaceCG(x(1),x(2),x(3))
+        ICsig=400.0
 
-        up(13)=SmoothInterface(r,ICsig,1.e-4,0)                 ! Get the smooth value of alpha for that value of r
-
+        up(13)=SmoothInterface(r,ICsig,1.e-4,1)                 ! Get the smooth value of alpha for that value of r
+		!up(13)=1.0
         ICx0=[0.0, 0.0, 0.0]
         r = SQRT((x(1)-ICx0(1))**2 + (x(2)-ICx0(2))**2+(x(3)-ICx0(3))**2 ) 
         nv(1) = 0.0
@@ -167,8 +177,21 @@ END SUBROUTINE GaussianBubble
 		USE	:: SpecificVarEqn99
 		USE, INTRINSIC :: ISO_C_BINDING
         implicit none
-        integer     :: jcg
-        open(8, file='./CG.dat', action='read')
+        CHARACTER(LEN=100)         :: CGEOMFile
+        integer     :: jcg,nx_cg_new,ny_cg_new,i,j, ix(2)
+        real        :: leng(2),center(2)
+        integer     :: n_new_in(2)
+        real, allocatable   :: x_cg_new(:),y_cg_new(:),z_cg_new(:,:)
+        real            :: h, phi(4), xi,gamma
+        real            :: minx,maxx,miny,maxy
+		! Input parameters
+		leng=(/15000.0, 15000.0/)	! Dimension of the area (in the x- and y- direction)
+		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
+		n_new_in=(/50, 50/)			! Numer of elements for the min sub tri function
+		CGEOMFile="CG.dat"			! DTM file
+		
+		
+        open(8, file=trim(CGEOMFile), action='read')
             read(8,*) nx_cg
             read(8,*) ny_cg
             allocate(x_cg(nx_cg),y_cg(ny_cg),z_cg(nx_cg,ny_cg))
@@ -178,6 +201,53 @@ END SUBROUTINE GaussianBubble
                 read(8,*) z_cg(1:nx_cg,jcg)       
             end do
         close(8)
+        
+        y_cg(1:nx_cg)=y_cg(nx_cg:1:-1)
+        z_cg(nx_cg,1:ny_cg)=z_cg(nx_cg,ny_cg:1:-1)
+        
+        ! Connect the input parameters 
+        maxx=center(1)+leng(1)
+        minx=center(1)-leng(1)
+        maxy=center(2)+leng(2)
+        miny=center(2)-leng(2)
+        
+        nx_cg_new=n_new_in(1);
+        ny_cg_new=n_new_in(2);
+        allocate(x_cg_new(nx_cg_new),y_cg_new(ny_cg_new),z_cg_new(nx_cg_new,ny_cg_new))
+        h=(maxx-minx)/(nx_cg_new-1)
+        x_cg_new(1)=minx
+        do i=2,nx_cg_new
+            x_cg_new(i)=x_cg_new(i-1)+h   
+        end do
+        h=(maxy-miny)/(ny_cg_new-1)
+        y_cg_new(1)=miny
+        do i=2,ny_cg_new
+            y_cg_new(i)=y_cg_new(i-1)+h   
+        end do
+        do i=1,nx_cg_new
+            do j=1,ny_cg_new
+                ix=lookatindex_cg(x_cg_new(i),y_cg_new(j))
+                phi(1)=z_cg(ix(1),ix(2))
+                phi(2)=z_cg(ix(1)+1,ix(2))
+                phi(3)=z_cg(ix(1),ix(2)+1)
+                phi(4)=z_cg(ix(1)+1,ix(2)+1)
+                xi=(x_cg_new(i)-x_cg(ix(1)))/(x_cg(ix(1)+1)-x_cg(ix(1)))
+                gamma=(y_cg_new(j)-y_cg(ix(2)))/(y_cg(ix(2)+1)-y_cg(ix(2)))
+                z_cg_new(i,j)=(1-xi)*(1-gamma)*phi(1)+xi*(1-gamma)*phi(2)+gamma*(1-xi)*phi(3)+xi*gamma*phi(4)   
+                !z_cg_new(i,j)=0.2*y_cg_new(j)
+            end do
+        end do
+        x_cg_new=x_cg_new-center(1) ! The center for the DTM is (0,0) in the fortran code
+        y_cg_new=y_cg_new-center(2) ! The center for the DTM is (0,0) in the fortran code
+        
+        deallocate(x_cg,y_cg,z_cg)
+        nx_cg=nx_cg_new;
+        ny_cg=ny_cg_new;        
+        allocate(x_cg(nx_cg),y_cg(ny_cg),z_cg(nx_cg,ny_cg))
+        x_cg=x_cg_new
+        y_cg=y_cg_new
+        z_cg=z_cg_new
+		deallocate(x_cg_new,y_cg_new,z_cg_new)
 		print *, 'Min-Max of x=',minval(x_cg), maxval(x_cg)
 		print *, 'Min-Max of y=',minval(y_cg), maxval(y_cg)
 		print *, 'Min-Max of z=',minval(z_cg), maxval(z_cg)

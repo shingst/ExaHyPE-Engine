@@ -9,7 +9,7 @@ import eu.exahype.kernel.FiniteVolumesKernel;
 public class GenericFiniteVolumesGodunovInC extends GenericFiniteVolumesInC {
     public GenericFiniteVolumesGodunovInC(
             String projectName, String solverName, int dimensions, int numberOfVariables, int numberOfParameters, Set<String> namingSchemeNames, int patchSize, boolean enableProfiler, boolean hasConstants, FiniteVolumesKernel kernel) {
-        super("godunov", projectName, solverName, dimensions,numberOfVariables,numberOfParameters,namingSchemeNames,patchSize,1/*ghostLayerWidth*/,enableProfiler,hasConstants,kernel);
+        super("godunov", projectName, solverName, dimensions,numberOfVariables,numberOfParameters,namingSchemeNames,patchSize,enableProfiler,hasConstants,kernel);
     }
 }
 

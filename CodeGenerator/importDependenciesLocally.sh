@@ -102,13 +102,14 @@ make realclean
 make generator
 cd "$scriptDir"
 
-# make sym links
-echo "Make symbolic links"
+# make sym links if needed
 if [ "$JINJA2_ALREADY_AVAILABLE" = false ] ; then
-  ln -s "$MARKUPSAFE_LOCAL_DIR"/markupsafe
-  ln -s "$JINJA_LOCAL_DIR"/jinja2
+  echo "Make symbolic links for python import"
+  cd utils
+  ln -s ../"$MARKUPSAFE_LOCAL_DIR"/markupsafe
+  ln -s ../"$JINJA_LOCAL_DIR"/jinja2
+  cd ..
 fi
-ln -s "$LIBXSMM_LOCAL_DIR"/bin/libxsmm_gemm_generator
 
 # move back to where the script was called
 cd "$currentLocation"

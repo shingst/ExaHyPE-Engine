@@ -62,7 +62,7 @@ public class OptimisedFluxesNonlinearADER_DGinC implements Solver {
     writer.write(
         "    static void adjustSolution(const double* const x,const double w,const double t,const double dt,double* Q);\n");
 		
-    writer.write("    void init(std::vector<std::string>& cmdlineargs"+(_hasConstants ? ", exahype::Parser::ParserView& constants" : "")+");\n");
+    writer.write("    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants);\n");
     writer.write("    void source(const double* const Q, double* S);\n");
     writer.write("    void boundaryValues(const double* const x,const double t, const double dt, const int faceIndex, const int normalNonZero, const double * const fluxIn, const double* const stateIn, double *fluxOut, double* stateOut);\n");
     writer.write(
@@ -88,10 +88,10 @@ public class OptimisedFluxesNonlinearADER_DGinC implements Solver {
 	
 	// constructor
     if (_hasConstants) {
-      writer.write(projectName + "::" + solverName + "::" + solverName + "(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants):\n");
+      writer.write(projectName + "::" + solverName + "::" + solverName + "(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, exahype::parser::ParserView constants):\n");
     }
     else {
-      writer.write(projectName + "::" + solverName + "::" + solverName + "(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping, std::vector<std::string>& cmdlineargs):\n");
+      writer.write(projectName + "::" + solverName + "::" + solverName + "(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeStepping):\n");
     }
 
 
@@ -99,12 +99,13 @@ public class OptimisedFluxesNonlinearADER_DGinC implements Solver {
         + "\""+solverName+"\", nVar /* numberOfUnknowns */, "
         + "nParams /* numberOfParameters */, order + 1 "
         + " /* nodesPerCoordinateAxis */, maximumMeshSize, timeStepping) {\n");
-    if(_hasConstants) {
-       writer.write("  init(cmdlineargs, constants);\n");
-    } else {
-       writer.write("  init(cmdlineargs);\n");
-       writer.write("  // PS: If you miss access to user constants here, enable them in the toolkit\n");
-    }
+    writer.write("  init(cmdlineargs, constants);\n");
+    //if(_hasConstants) {
+    //   
+    //} else {
+    //   writer.write("  init(cmdlineargs);\n");
+    //   writer.write("  // PS: If you miss access to user constants here, enable them in the toolkit\n");
+    //}
     writer.write("}\n");
     writer.write("\n\n\n");
 	
