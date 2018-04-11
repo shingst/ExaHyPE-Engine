@@ -154,8 +154,8 @@ int main(int argc, char** argv) {
   int l = 0;
   int messageSize = std::round( std::pow( 2, l) );
   while ( messageSize <= maximumMessageSize ) { // loop over message sizes
-    int* sendBuffer    = new int[messageSize];
-    int* receiveBuffer = new int[messageSize];
+    double* sendBuffer    = new double[messageSize];
+    double* receiveBuffer = new double[messageSize];
 
     for (int p = 0; p < l+1; ++p) {            // loop over packet sizes
       int packetSize       = std::round( std::pow( 2, p) );
@@ -194,8 +194,8 @@ int main(int argc, char** argv) {
                 MPI_Request* receiveRequest = new MPI_Request();
 
                 // TODO(Dominic): Post sends and receives at the same time vs. post sends first and then receives
-                MPI_Isend(sendBuffer,    packetSize, MPI_INTEGER, destinationNeighbour, 0, cartesianComm, sendRequest);
-                MPI_Irecv(receiveBuffer, packetSize, MPI_INTEGER, destinationNeighbour, 0, cartesianComm, receiveRequest);
+                MPI_Isend(sendBuffer,    packetSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, sendRequest);
+                MPI_Irecv(receiveBuffer, packetSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, receiveRequest);
 
                 sendRequests[destinationNeighbour].push_back(sendRequest);
                 receiveRequests[destinationNeighbour].push_back(receiveRequest);
