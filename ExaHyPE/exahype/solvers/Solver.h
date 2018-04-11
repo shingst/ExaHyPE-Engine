@@ -155,16 +155,13 @@ namespace exahype {
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
-    peano::heap::AggregationBoundaryDataExchanger< double, peano::heap::SendReceiveTask<double> >
+    peano::heap::AggregationBoundaryDataExchanger< double, peano::heap::SendReceiveTask<double>, std::vector<double> >
   >     DataHeap;
   typedef peano::heap::CharHeap<
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
     peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-    peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char> >
+    peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
   >     CompressedDataHeap;
-
-
-
   #else
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
@@ -222,7 +219,7 @@ namespace exahype {
   typedef peano::heap::CharHeap<
       peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
       peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
-      peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char> >
+      peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
   >     MetadataHeap;
   #elif defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
   typedef peano::heap::CharHeap<
