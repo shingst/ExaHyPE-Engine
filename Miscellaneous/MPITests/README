@@ -54,14 +54,18 @@ We investigate here the tradeoff between message size and number of messages wit
 respect to the total time spent posting sends and receives, waiting for their completion,
 and clearing all involved buffers afterwards.
 
-We consider different message sizes starting with sizes 2^0, 2^1, 2^2, ... going up to 
-a user-prescribed maximum message size. We further consider splits of each message into smaller
-message parts (packets). The splits are performed using
+The user prescribes the size of the messages she wants to send to 
+the neighbouring ranks.
+The benchmark then considers splits of the user's original message into smaller
+message chunks. The splits are performed using
 a sequence of divisors 2^0, 2^1, 2^2, ... .
-We divide the original length until the packet size equals 1 (incl.).
+We divide the original message size until the chunks's size equals 1 (incl.). 
+
+For each message chunk size, we then send as many messages as are required to 
+send the original unsplit message.
 
 Compile via (replace mpicc by desired MPI compiler wrapper):
-mpicc <options> -DUseVector -std=c++11 CartesianExchange.cpp -o CartesianExchange
+mpicc <options> -std=c++11 CartesianExchange.cpp -o CartesianExchange
 
 Compiler options:
  -DUseVector - Use a vector instead of a list for storing the send/receive requests.

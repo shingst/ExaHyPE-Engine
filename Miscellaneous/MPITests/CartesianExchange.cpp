@@ -16,7 +16,19 @@
 #include <chrono>
 #include <iomanip>
 
-void parseArguments(int argc, char** argv, int* dimensions, int* maximumMessageSize, int* numberOfTests) {
+// kindly copied from: https://stackoverflow.com/a/365068
+inline void pow2RoundUp (int& x)
+{
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x +=1;
+}
+
+void parseArguments(int argc, char** argv, int& dimensions, int& maximumMessageSize, int& numberOfTests) {
 
   if (argc < 4) { // program name is first argument
     std::cerr << "Error: Please call the program the following way: ./CartesianExchange <dimensions> <maximumMessageSize> <numberOfTests>" <<
@@ -25,56 +37,50 @@ void parseArguments(int argc, char** argv, int* dimensions, int* maximumMessageS
   }
 
   std::istringstream ss1(argv[1]);
-  if (!(ss1 >> *dimensions) || *dimensions<=0 ) {
+  if (!(ss1 >> dimensions) || dimensions<=0 ) {
     std::cerr << "Error: First argument 'dimensions' must be positive integer but is: '" << argv[1] << '\n';
     std::terminate();
   }
 
   std::istringstream ss2(argv[2]);
-  if (!(ss2 >> *maximumMessageSize) || *maximumMessageSize<=0 ) {
+  if (!(ss2 >> maximumMessageSize) || maximumMessageSize<=0 ) {
     std::cerr << "Error: Second argument 'maximumMessageSize' must be positive integer but is: '" << argv[2] << '\n';
     std::terminate();
   }
+  pow2RoundUp(maximumMessageSize);
 
   std::istringstream ss3(argv[3]);
-  if (!(ss3 >> *numberOfTests) || *numberOfTests<=0 ) {
-    std::cerr << "Error: Thrid argument 'numberOfTest' must be positive integer but is: '" << argv[3] << '\n';
+  if (!(ss3 >> numberOfTests) || numberOfTests<=0 ) {
+    std::cerr << "Error: Third argument 'numberOfTest' must be positive integer but is: '" << argv[3] << '\n';
     std::terminate();
   }
 }
 
-typedef std::tuple<int,int,double,double,double> record; // packetSize,numberOfPackets,avg,min,max
+typedef std::tuple<int,int,double,double,double> record; // messageSize,numberOfMessages,avg,min,max
 
 void printRecords(std::vector<record>& records,std::string name) {
   std::cout << std::endl;
   std::cout << name << ":" << std::endl;
   std::cout << std::endl;
-  std::cout << "| packet size | #packets    | avg time/us | min time/us | max time/us |" << std::endl;
-  std::cout << "|-------------|-------------|-------------|-------------|-------------|" << std::endl;
-  record& rPrevious = records.front();
+  std::cout << "| message size | #messages    | avg time/us  | min time/us  | max time/us  |" << std::endl;
+  std::cout << "|--------------|--------------|--------------|--------------|--------------|" << std::endl;
   for (record r :  records) {
-    if ( (std::get<0>(r) * std::get<1>(r)) !=  (std::get<0>(rPrevious) * std::get<1>(rPrevious)) ) {
-      std::cout << "|-------------|-------------|-------------|-------------|-------------|" << std::endl;
-    }
-
-    std::cout <<  "| " << std::setw(11) << std::get<0>(r) << " ";
-    std::cout <<  "| " << std::setw(11) << std::get<1>(r) << " ";
+    std::cout <<  "| " << std::setw(12) << std::get<0>(r) << " ";
+    std::cout <<  "| " << std::setw(12) << std::get<1>(r) << " ";
 
     std::stringstream t;
-    t << std::fixed << std::setprecision(2) << std::get<2>(r);
-    std::cout << "| " << std::setw(11) << t.str() << " ";
+    t << std::fixed << std::setprecision(1) << std::get<2>(r);
+    std::cout << "| " << std::setw(12) << t.str() << " ";
 
     t.str("");
-    t << std::fixed << std::setprecision(2) << std::get<3>(r);
-    std::cout << "| " << std::setw(11) << t.str() << " ";
+    t << std::fixed << std::setprecision(0) << std::get<3>(r);
+    std::cout << "| " << std::setw(12) << t.str() << " ";
 
     t.str("");
-    t << std::fixed << std::setprecision(2) << std::get<4>(r);
-    std::cout << "| " << std::setw(11) << t.str() << " ";
+    t << std::fixed << std::setprecision(0) << std::get<4>(r);
+    std::cout << "| " << std::setw(12) << t.str() << " ";
 
     std::cout << "|" << std::endl;
-
-    rPrevious = r;
   }
 }
 
@@ -91,7 +97,8 @@ int main(int argc, char** argv) {
   int dimensions          = -1;
   int maximumMessageSize  = -1;
   int numberOfTests       = -1;
-  parseArguments(argc,argv,&dimensions,&maximumMessageSize,&numberOfTests);
+  parseArguments(argc,argv,dimensions,maximumMessageSize,numberOfTests);
+
 
   // compute the dimensions
   int numberOfRanks;
@@ -128,7 +135,7 @@ int main(int argc, char** argv) {
     std::cout << "Start experiment with parameters: "    << std::endl
         << std::endl
         << "dimensions         = " << dimensions         << std::endl
-        << "maximumMessageSize = " << maximumMessageSize << std::endl
+        << "maximumMessageSize = " << maximumMessageSize << " (rounded to next power of 2)" << std::endl
         << "dimensions         = " << numberOfTests      << std::endl;
   }
 
@@ -154,114 +161,110 @@ int main(int argc, char** argv) {
   tWait.reserve(100);
 
   int l = 0;
-  int messageSize = std::round( std::pow( 2, l) );
+  int messageSize      = std::round( std::pow( 2, l) );
+  int numberOfMessages = maximumMessageSize/messageSize;
   while ( messageSize <= maximumMessageSize ) { // loop over message sizes
     double* sendBuffer    = new double[messageSize];
     double* receiveBuffer = new double[messageSize];
 
-    for (int p = 0; p < l+1; ++p) {            // loop over packet sizes
-      int packetSize       = std::round( std::pow( 2, p) );
-      int numberOfPackets = messageSize/packetSize;
+    tPosting.push_back( std::make_tuple(messageSize,numberOfMessages,0.0,99999999.0,0.0) );
+    tClear.push_back( std::make_tuple(messageSize,numberOfMessages,0.0,99999999.0,0.0) );
+    tWait.push_back( std::make_tuple(messageSize,numberOfMessages,0.0,99999999.0,0.0) );
+    for (int test = 0; test < numberOfTests; ++test) {
 
-      tPosting.push_back( std::make_tuple(packetSize,numberOfPackets,0.0,99999999.0,0.0) );
-      tClear.push_back( std::make_tuple(packetSize,numberOfPackets,0.0,99999999.0,0.0) );
-      tWait.push_back( std::make_tuple(packetSize,numberOfPackets,0.0,99999999.0,0.0) );
-      for (int test = 0; test < numberOfTests; ++test) {
+      // send out the packets
+      auto tPostingBegin = std::chrono::high_resolution_clock::now();
+      for (int direction=0; direction<dimensions; direction++) {
+        for (int orientation=0; orientation<2; orientation++) {
+          const int displacement = -1 + 2*orientation;
 
-        // send out the packets
-        auto tPostingBegin = std::chrono::high_resolution_clock::now();
-        for (int direction=0; direction<dimensions; direction++) {
-          for (int orientation=0; orientation<2; orientation++) {
-            const int displacement = -1 + 2*orientation;
+          int sourceNeighbour      = -1; // this one wants to send to me       (blocking comm.)
+          int destinationNeighbour = -1; // this one receives messages from me (blocking comm.)
+          MPI_Cart_shift(cartesianComm, direction ,displacement,&sourceNeighbour,&destinationNeighbour);
 
-            int sourceNeighbour      = -1; // this one wants to send to me       (blocking comm.)
-            int destinationNeighbour = -1; // this one receives messages from me (blocking comm.)
-            MPI_Cart_shift(cartesianComm, direction ,displacement,&sourceNeighbour,&destinationNeighbour);
+          // We do nonblocking communication, so we do not care about the sourceNeighbour
+          // We further always send/receive from/to the same buffer location.
+          if ( destinationNeighbour!=MPI_PROC_NULL) {
+            #ifdef UseVector
+            sendRequests.insert( std::pair<int,std::vector<MPI_Request*>>( destinationNeighbour, std::vector<MPI_Request*>(0) ) );
+            receiveRequests.insert( std::pair<int,std::vector<MPI_Request*>>( destinationNeighbour, std::vector<MPI_Request*>(0) ) );
+            sendRequests[destinationNeighbour].reserve(numberOfMessages);
+            receiveRequests[destinationNeighbour].reserve(numberOfMessages);
+            #else
+            sendRequests.insert( std::pair<int,std::list<MPI_Request*>>( destinationNeighbour, std::list<MPI_Request*>(0) ) );
+            receiveRequests.insert( std::pair<int,std::list<MPI_Request*>>( destinationNeighbour, std::list<MPI_Request*>(0) ) );
+            #endif
 
-            // We do nonblocking communication, so we do not care about the sourceNeighbour
-            // We further always send/receive from/to the same buffer location.
-            if ( destinationNeighbour!=MPI_PROC_NULL) {
-              #ifdef UseVector
-              sendRequests.insert( std::pair<int,std::vector<MPI_Request*>>( destinationNeighbour, std::vector<MPI_Request*>(0) ) );
-              receiveRequests.insert( std::pair<int,std::vector<MPI_Request*>>( destinationNeighbour, std::vector<MPI_Request*>(0) ) );
-              sendRequests[destinationNeighbour].reserve(numberOfPackets);
-              receiveRequests[destinationNeighbour].reserve(numberOfPackets);
-              #else
-              sendRequests.insert( std::pair<int,std::list<MPI_Request*>>( destinationNeighbour, std::list<MPI_Request*>(0) ) );
-              receiveRequests.insert( std::pair<int,std::list<MPI_Request*>>( destinationNeighbour, std::list<MPI_Request*>(0) ) );
-              #endif
+            for (int m = 0; m < numberOfMessages; ++m) {
+              MPI_Request* sendRequest    = new MPI_Request();
+              MPI_Request* receiveRequest = new MPI_Request();
 
-              for (int m = 0; m < numberOfPackets; ++m) {
-                MPI_Request* sendRequest    = new MPI_Request();
-                MPI_Request* receiveRequest = new MPI_Request();
+              // TODO(Dominic): Post sends and receives at the same time vs. post sends first and then receives
+              MPI_Isend(sendBuffer,    messageSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, sendRequest);
+              MPI_Irecv(receiveBuffer, messageSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, receiveRequest);
 
-                // TODO(Dominic): Post sends and receives at the same time vs. post sends first and then receives
-                MPI_Isend(sendBuffer,    packetSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, sendRequest);
-                MPI_Irecv(receiveBuffer, packetSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, receiveRequest);
-
-                sendRequests[destinationNeighbour].push_back(sendRequest);
-                receiveRequests[destinationNeighbour].push_back(receiveRequest);
-              }
+              sendRequests[destinationNeighbour].push_back(sendRequest);
+              receiveRequests[destinationNeighbour].push_back(receiveRequest);
             }
           }
         }
-        auto tPostingEnd      = std::chrono::high_resolution_clock::now();
-        double tPostingOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tPostingEnd - tPostingBegin ).count() );
-        std::get<2>(tPosting.back()) += tPostingOfTest;
-        std::get<3>(tPosting.back())  = std::min<double>( std::get<3>(tPosting.back()), tPostingOfTest );
-        std::get<4>(tPosting.back())  = std::max<double>( std::get<4>(tPosting.back()), tPostingOfTest );
+      }
+      auto tPostingEnd      = std::chrono::high_resolution_clock::now();
+      double tPostingOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tPostingEnd - tPostingBegin ).count() );
+      std::get<2>(tPosting.back()) += tPostingOfTest;
+      std::get<3>(tPosting.back())  = std::min<double>( std::get<3>(tPosting.back()), tPostingOfTest );
+      std::get<4>(tPosting.back())  = std::max<double>( std::get<4>(tPosting.back()), tPostingOfTest );
 
-        // wait for completion
-        auto tWaitBegin = std::chrono::high_resolution_clock::now();
-        bool complete = false;
-        int flag      = 0;
-        while (!complete) {
-          complete = true;
-          for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
-            for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
-              MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
-              complete &= flag;
-            }
-            for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
-              MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
-              complete &= flag;
-            }
-          }
-        }
-        auto tWaitEnd = std::chrono::high_resolution_clock::now();
-        double tWaitOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tWaitEnd - tWaitBegin ).count() );
-        std::get<2>(tWait.back()) += tWaitOfTest;
-        std::get<3>(tWait.back())  = std::min<double>( std::get<3>(tWait.back()), tWaitOfTest );
-        std::get<4>(tWait.back())  = std::max<double>( std::get<4>(tWait.back()), tWaitOfTest );
-
-        // free requests and clear the containers
-        auto tClearBegin = std::chrono::high_resolution_clock::now();
-
+      // wait for completion
+      auto tWaitBegin = std::chrono::high_resolution_clock::now();
+      bool complete = false;
+      int flag      = 0;
+      while (!complete) {
+        complete = true;
         for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
-            delete *requestIt;
+            MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
+            complete &= flag;
           }
-          sendRequests[rankIt->first].clear();
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
-            delete *requestIt;
+            MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
+            complete &= flag;
           }
-          receiveRequests[rankIt->first].clear();
         }
-        sendRequests.clear();
-        receiveRequests.clear();
-
-        auto tClearEnd = std::chrono::high_resolution_clock::now();
-        double tClearOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tClearEnd - tClearBegin ).count() );
-        std::get<2>(tClear.back()) += tClearOfTest;
-        std::get<3>(tClear.back())  = std::min<double>( std::get<3>(tClear.back()), tClearOfTest );
-        std::get<4>(tClear.back())  = std::max<double>( std::get<4>(tClear.back()), tClearOfTest );
       }
+      auto tWaitEnd = std::chrono::high_resolution_clock::now();
+      double tWaitOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tWaitEnd - tWaitBegin ).count() );
+      std::get<2>(tWait.back()) += tWaitOfTest;
+      std::get<3>(tWait.back())  = std::min<double>( std::get<3>(tWait.back()), tWaitOfTest );
+      std::get<4>(tWait.back())  = std::max<double>( std::get<4>(tWait.back()), tWaitOfTest );
 
-      // compute the averages
-      std::get<2>(tPosting.back()) /= numberOfTests;
-      std::get<2>(tWait.back())     /= numberOfTests;
-      std::get<2>(tClear.back())    /= numberOfTests;
+      // free requests and clear the containers
+      auto tClearBegin = std::chrono::high_resolution_clock::now();
+
+      for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
+        for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
+          delete *requestIt;
+        }
+        sendRequests[rankIt->first].clear();
+        for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
+          delete *requestIt;
+        }
+        receiveRequests[rankIt->first].clear();
+      }
+      sendRequests.clear();
+      receiveRequests.clear();
+
+      auto tClearEnd = std::chrono::high_resolution_clock::now();
+      double tClearOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tClearEnd - tClearBegin ).count() );
+      std::get<2>(tClear.back()) += tClearOfTest;
+      std::get<3>(tClear.back())  = std::min<double>( std::get<3>(tClear.back()), tClearOfTest );
+      std::get<4>(tClear.back())  = std::max<double>( std::get<4>(tClear.back()), tClearOfTest );
     }
+
+    // compute the averages
+    std::get<2>(tPosting.back()) /= numberOfTests;
+    std::get<2>(tWait.back())     /= numberOfTests;
+    std::get<2>(tClear.back())    /= numberOfTests;
 
     // clean up
     delete[] sendBuffer;
@@ -269,7 +272,8 @@ int main(int argc, char** argv) {
 
     // go into next iteration
     l++;
-    messageSize = std::round( std::pow( 2, l) );
+    messageSize      = std::round( std::pow( 2, l) );
+    numberOfMessages = maximumMessageSize/messageSize;
   }
 
   bool isCloseToCenter = true;
