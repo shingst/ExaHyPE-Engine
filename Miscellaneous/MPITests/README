@@ -44,4 +44,31 @@ Compiler options:
                           If the IProbe finds a message with the right tag, it issues a non-blocking MPI_Irecv. The non-blocking 
                           receive is then tested and if the test successful, it means we have received the message. 
                           Otherwise, we return to the start of the loop.
+                          
+CartesianExchange
+========================
+This test models neighbour exchange patterns as they appear in Discontinuous Galerkin and
+Godunov Finite Volumes codes. We consider a Cartesian topology for the involved MPI ranks.
 
+We investigate here the tradeoff between message size and number of messages with
+respect to the total time spent posting sends and receives, waiting for their completion,
+and clearing all involved buffers afterwards.
+
+We consider different message sizes starting with sizes 2^0, 2^1, 2^2, ... going up to 
+a user-prescribed maximum message size. We further consider splits of each message into smaller
+message parts (packets). The splits are performed using
+a sequence of divisors 2^0, 2^1, 2^2, ... .
+We divide the original length until the packet size equals 1 (incl.).
+
+Compile via (replace mpicc by desired MPI compiler wrapper):
+mpicc <options> -DUseVector -std=c++11 CartesianExchange.cpp -o CartesianExchange
+
+Compiler options:
+ -DUseVector - Use a vector instead of a list for storing the send/receive requests.
+
+Please run the program the following way: 
+  
+mpirun -np <numberOfRanks> ./CartesianExchange <dimensions> <maximumMessageSize> <numberOfTests>
+  
+Here, the required command line arguments 'dimensions', 'maximumMessageSize', and 'numberOfTests'
+are all positive integers.
