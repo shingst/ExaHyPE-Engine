@@ -111,7 +111,9 @@ int main(int argc, char** argv) {
 
   // create the Cartesian topology
   MPI_Comm cartesianComm;
-  int periodicBoundaries[dimensions] = {0};
+  int periodicBoundaries[dimensions];
+  std::fill_n(periodicBoundaries, dimensions, 0);  
+
   MPI_Cart_create(
       MPI_COMM_WORLD, dimensions, ranksPerDimension, periodicBoundaries,
       1 /* reorder, i.e. redistribute the ranks */,
@@ -271,7 +273,7 @@ int main(int argc, char** argv) {
   }
 
   bool isCloseToCenter = true;
-  int coordinates[dimensions] = {0};
+  int coordinates[dimensions];
   MPI_Cart_coords(cartesianComm,myRank,dimensions,coordinates);
   for (int d = 0; d < dimensions; ++d) {
     isCloseToCenter &= (coordinates[d] == ranksPerDimension[0]/2);
