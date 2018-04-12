@@ -171,6 +171,7 @@ int main(int argc, char** argv) {
     tClear.push_back( std::make_tuple(messageSize,numberOfMessages,0.0,99999999.0,0.0) );
     tWait.push_back( std::make_tuple(messageSize,numberOfMessages,0.0,99999999.0,0.0) );
     for (int test = 0; test < numberOfTests; ++test) {
+      MPI_Barrier(cartesianComm);
 
       // send out the packets
       auto tPostingBegin = std::chrono::high_resolution_clock::now();

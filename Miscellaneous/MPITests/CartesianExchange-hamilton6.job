@@ -1,0 +1,55 @@
+#!/usr/bin/bash
+#SBATCH --job-name=CartesianExchange
+#SBATCH -o CartesianExchange.out
+#SBATCH -e CartesianExchange.err
+#SBATCH -t 04:00:00
+#SBATCH --exclusive
+#SBATCH -p par6.q
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=8
+#SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
+#SBATCH --mail-type=END
+module purge
+module load python/3.6.3
+module load java
+module load slurm
+module load intel/xe_2017.2
+module load intelmpi/intel/2017.2
+module load gcc/4.9.1
+
+export I_MPI_FABRICS="shm:dapl"
+
+# pipe some information into output file
+echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`"
+echo ""
+module list
+echo ""
+printenv
+echo ""
+cat hamilton6.job
+
+# create executables
+mpiicpc -std=c++11 CartesianExchange.cpp -o CartesianExchangeList
+mpiicpc -std=c++11 -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+
+# run experiments
+export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
+
+for executable in CartesianExchangeList CartesianExchangeVector
+do
+  unset I_MPI_EAGER_THRESHOLD
+  export I_MPI_ASYNC_PROGRESS=0
+  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-eager-no-imp-27-8-3-8192.txt 
+
+  export I_MPI_EAGER_THRESHOLD=0
+  export I_MPI_ASYNC_PROGRESS=0
+  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-rendezvous-no-imp-27-8-3-8192.txt 
+  
+  unset I_MPI_EAGER_THRESHOLD
+  export I_MPI_ASYNC_PROGRESS=1
+  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-eager-imp-27-8-3-8192.txt 
+  
+  export I_MPI_EAGER_THRESHOLD=0
+  export I_MPI_ASYNC_PROGRESS=1
+  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-rendezvous-imp-27-8-3-8192.txt 
+done 
