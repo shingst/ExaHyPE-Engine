@@ -51,24 +51,31 @@ def parseParameters(config):
     groupedParameterSpace  = {}
     if "parameters" in config and len(config["parameters"].keys()):
         for key, value in config["parameters"].items():
-            ungroupedParameterSpace[key] = parseList(value)
             if key in ungroupedParameterSpace:
                print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
                multipleListings = True
+            ungroupedParameterSpace[key] = parseList(value)
         
         if config.has_section("parameters_grouped"):
             for key, value in config["parameters_grouped"].items():
-                groupedParameterSpace[key] = parseList(value)
                 if key in groupedParameterSpace:
                    print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
                    multipleListings = True
                 if key in ungroupedParameterSpace:
                    print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
                    multipleListings = True
-        
+                groupedParameterSpace[key] = parseList(value) 
         if multipleListings:
             print("ERROR: Some parameters have been found multiple times. Program aborted.",file=sys.stderr)
             sys.exit()
+
+        parameterSpace = {}
+        parameterSpace.update(ungroupedParameterSpace)
+        parameterSpace.update(groupedParameterSpace)
+        
+        # always put None in order to have at least one element
+        groupedParameterSpace[None] = [None]    
+
         if "order" not in parameterSpace:
             print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
             sys.exit()
@@ -81,19 +88,11 @@ def parseParameters(config):
         elif "architecture" not in parameterSpace:
             print("ERROR: 'architecture' missing in section 'parameters'.",file=sys.stderr)
             sys.exit()
-        
-        # if there are no grouped parameters specified put a None key into the dictionary
-        if len(groupedParameterSpace)==0:
-            groupedParameterSpace[None] = []
-            
-        parameterSpace = {}
-        parameterSpace.update(groupedParameterSpace)
-        parameterSpace.update(groupedParameterSpace)
     else:
         print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
         sys.exit()
     
-    return ungroupedParameterSpace,groupedParameters,parameterSpace
+    return ungroupedParameterSpace,groupedParameterSpace,parameterSpace
 
 def parseOptionsFile(optionsFile,ignoreMetadata=False):
     configParser = configparser.ConfigParser()
