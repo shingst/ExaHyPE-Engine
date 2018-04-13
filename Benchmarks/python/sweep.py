@@ -459,11 +459,19 @@ def generateScripts():
                                 runCommand = runCommand.replace("{{nodes}}",nodes);
                                 runCommand = runCommand.replace("{{tasks}}",tasks);
                                 runCommand = runCommand.replace("{{cores}}",cores);
-                                if "./" in runCommand:
+                                if "./"==runCommand.strip():
                                     runCommand = runCommand.strip()
                                 else
                                     runCommand += " "
-                                jobScriptBody += runCommand = runCommand+executable+" "+specFilePath+" > "+outputFileName+"\n" # no whitespace after runCommand
+                                jobScriptBody += runCommand+executable+" "+specFilePath+" > "+outputFileName+"\n" # no whitespace after runCommand
+                                
+                                if "likwid" in general:
+                                    groups = sweep_options.parseList(general["likwid"])
+                                    for group in groups:
+                                        if "./"==runCommand:
+                                            jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" > "+outputFileName+".likwid\n" 
+                                        else:
+                                            jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" > "+outputFileName+".likwid\n" 
                             
                             # write job file
                             renderedJobScript = renderJobScript(\

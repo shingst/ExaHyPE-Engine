@@ -112,7 +112,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
     historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
     
-    jobs             = dict(configParser["jobs"])
+    jobs                                                           = dict(configParser["jobs"])
     environmentSpace                                               = parseEnvironment(configParser)
     ungroupedParameterSpace, groupedParameterSpace, parameterSpace = parseParameters(configParser)
 
@@ -129,7 +129,8 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     runNumbers = [x.strip() for x in jobs["run"].split(",")]
     
     Options = collections.namedtuple("options", \
-           ("general jobs environmentSpace "
+           ("general jobs "
+            "environmentSpace "
             "ungroupedParameterSpace groupedParameterSpace parameterSpace "
             "exahypeRoot outputPath projectPath projectName "
             "buildFolder "
