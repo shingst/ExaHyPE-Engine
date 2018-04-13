@@ -421,8 +421,8 @@ def generateScripts():
                             jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
                                 "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePath = scriptsFolderPath + "/" + jobName + ".job"
-                            jobOutputFilePath = resultsFolderPath + "/" + jobName + ".out"
-                            jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".err"
+                            jobOutputFilePath = resultsFolderPath + "/" + jobName + ".job_out"
+                            jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".job_err"
                             
                             # aggregate the job script body
                             jobScriptBody = ""
