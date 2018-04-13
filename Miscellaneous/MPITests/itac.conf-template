@@ -1,0 +1,10 @@
+# Log file 
+LOGFILE-NAME traces/{{name}}.stf 
+LOGFILE-FORMAT STF 
+
+PROCESS 0:N ON
+
+# disable all MPI activity 
+ACTIVITY MPI ON 
+# enable all activities in the Application class 
+ACTIVITY Application ON

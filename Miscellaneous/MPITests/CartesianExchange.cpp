@@ -132,11 +132,20 @@ int main(int argc, char** argv) {
   if ( myRank==0 ) {
     std::cout << std::endl;
 
-    std::cout << "Start experiment with parameters: "    << std::endl
+    std::cout << "Start experiment with parameters: "       << std::endl
         << std::endl
-        << "dimensions         = " << dimensions         << std::endl
-        << "maximumMessageSize = " << maximumMessageSize << " (rounded to next power of 2)" << std::endl
-        << "dimensions         = " << numberOfTests      << std::endl;
+        << "dimensions         = " << dimensions            << std::endl
+        << "maximumMessageSize = " << maximumMessageSize    << " (rounded to next power of 2)" << std::endl
+        << "numberOfTests      = " << numberOfTests         << std::endl; 
+       
+    #if defined(UseVector)
+    std::cout 
+        << "UseVector          = yes" << std::endl;
+    #endif
+    #if defined(BlockPerRank)
+    std::cout 
+        << "BlockPerRank       = yes" << std::endl;
+    #endif
   }
 
   // create a container for neighbouring ranks
@@ -218,8 +227,24 @@ int main(int argc, char** argv) {
 
       // wait for completion
       auto tWaitBegin = std::chrono::high_resolution_clock::now();
-      bool complete = false;
       int flag      = 0;
+      #if defined(BlockPerRank)
+      for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
+        bool complete = false;
+        while (!complete) {
+          complete = true;
+          for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
+            MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
+            complete &= flag;
+          }
+          for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
+            MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
+            complete &= flag;
+          }
+        }
+      }
+      #else
+      bool complete = false;
       while (!complete) {
         complete = true;
         for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
@@ -233,6 +258,7 @@ int main(int argc, char** argv) {
           }
         }
       }
+      #endif
       auto tWaitEnd = std::chrono::high_resolution_clock::now();
       double tWaitOfTest = static_cast<double>( std::chrono::duration_cast<std::chrono::microseconds>( tWaitEnd - tWaitBegin ).count() );
       std::get<2>(tWait.back()) += tWaitOfTest;
