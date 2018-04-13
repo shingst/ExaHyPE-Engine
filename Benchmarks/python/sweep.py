@@ -450,20 +450,20 @@ def generateScripts():
                                 
                                 # pipe some information into output file
                                 jobScriptBody += "echo \"Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`\" > "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" > "+outputFilePath+"\n" 
-                                jobScriptBody += "module list > "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" > "+outputFilePath+"\n" 
-                                jobScriptBody += "printenv > "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" > "+outputFilePath+"\n" 
-                                jobScriptBody += "echo \""+jobScriptFilePath+":\" > "+outputFilePath+"\n" 
-                                jobScriptBody += "cat \""+jobScriptFilePath+"\" > "+outputFilePath+"\n"  
-                                jobScriptBody += "echo \"\" > "+outputFilePath+"\n" 
-                                jobScriptBody += "echo \""+specFilePath+":\" > "+outputFilePath+"\n" 
-                                jobScriptBody += "cat \""+specFilePath+"\" > "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" > "+outputFilePath+"\n" 
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "module list >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "printenv >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "echo \""+jobScriptFilePath+":\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "cat \""+jobScriptFilePath+"\" >> "+outputFilePath+"\n"  
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "echo \""+specFilePath+":\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "cat \""+specFilePath+"\" >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
                                 # pipe environment and parameter dicts into output file
-                                jobScriptBody += "echo \"sweep/environment="+json.dumps(environmentDict).replace("\"","\\\"")+"\" > "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" > "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"sweep/environment="+json.dumps(environmentDict).replace("\"","\\\"")+"\" >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
                                 # pipe the commands into the output file
                                 runCommand = general["run_command"].replace("\"","")
                                 runCommand = runCommand.replace("{{ranks}}",str(int(nodes)*int(tasks)));
@@ -474,15 +474,15 @@ def generateScripts():
                                     runCommand = runCommand.strip()
                                 else:
                                     runCommand += " "
-                                jobScriptBody += runCommand+executable+" "+specFilePath+" > "+outputFilePath+"\n" # no whitespace after runCommand
+                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+"\n" # no whitespace after runCommand
                                 
                                 if "likwid" in general:
                                     groups = sweep_options.parseList(general["likwid"])
                                     for group in groups:
                                         if "./"==runCommand:
-                                            jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" > "+outputFilePath+".likwid\n" 
+                                            jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n" 
                                         else:
-                                            jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" > "+outputFilePath+".likwid\n"
+                                            jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n"
                                 jobScriptBody += "\n" 
                             
                             # write job file
