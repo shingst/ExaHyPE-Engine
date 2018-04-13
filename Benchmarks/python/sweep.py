@@ -425,7 +425,7 @@ def generateScripts():
                             
                             jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
                                 "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
-                            jobScriptFilePath       = scriptsFolderPath + "/" + jobName + ".job"
+                            jobScriptFilePath = scriptsFolderPath + "/" + jobName + ".job"
                             jobOutputFilePath = resultsFolderPath + "/" + jobName + ".out"
                             jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".err"
                             
@@ -452,8 +452,23 @@ def generateScripts():
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                                  "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                                 
+                                # pipe some information into output file
+                                jobScriptBody += "echo \"Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`\" > "+outputFileName+"\n"
+                                jobScriptBody += "echo \"\" > "+outputFileName+"\n" 
+                                jobScriptBody += "module list > "+outputFileName+"\n"
+                                jobScriptBody += "echo \"\" > "+outputFileName+"\n" 
+                                jobScriptBody += "printenv > "+outputFileName+"\n"
+                                jobScriptBody += "echo \"\" > "+outputFileName+"\n" 
+                                jobScriptBody += "echo \""+jobScriptFilePath+":\" > "+outputFileName+"\n" 
+                                jobScriptBody += "cat \""+jobScriptFilePath+"\" > "+outputFileName+"\n"  
+                                jobScriptBody += "echo \"\" > "+outputFileName+"\n" 
+                                jobScriptBody += "echo \""+specFilePath+":\" > "+outputFileName+"\n" 
+                                jobScriptBody += "cat \""+specFilePath+"\" > "+outputFileName+"\n"
+                                jobScriptBody += "echo \"\" > "+outputFileName+"\n" 
+                                # pipe environment and parameter dicts into output file
                                 jobScriptBody += "echo \"sweep/environment="+json.dumps(environmentDict).replace("\"","\\\"")+"\" > "+outputFileName+"\n"
-                                jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")+"\" > "+outputFileName+"\n"
+                                jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" > "+outputFileName+"\n"
+                                # pipe the commands into the output file
                                 runCommand = general["run_command"].replace("\"","")
                                 runCommand = runCommand.replace("{{ranks}}",str(int(nodes)*int(tasks)));
                                 runCommand = runCommand.replace("{{nodes}}",nodes);
