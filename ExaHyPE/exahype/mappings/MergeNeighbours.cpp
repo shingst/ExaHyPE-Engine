@@ -137,12 +137,6 @@ void exahype::mappings::MergeNeighbours::enterCell(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVerticesEnumerator);
 
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
-
     if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
