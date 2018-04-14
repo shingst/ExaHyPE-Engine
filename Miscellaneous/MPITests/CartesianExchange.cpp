@@ -93,21 +93,23 @@ void printIntro(const int dimensions, const int maximumMessageSize, const int nu
       << "maximumMessageSize = " << maximumMessageSize    << " (rounded to next power of 2)" << std::endl
       << "numberOfTests      = " << numberOfTests         << std::endl;
 
+  
+  std::cout << std::endl << "Compiler options: " << std::endl << std::endl;
   #if defined(UseVector)
   std::cout
-      << "UseVector          = yes" << std::endl;
+      << "UseVector               = yes" << std::endl;
   #endif
   #if defined(BlockPerRank)
   std::cout
-      << "BlockPerRank       = yes" << std::endl;
+      << "BlockPerRank            = yes" << std::endl;
   #endif
   #if defined(ReceiveDanglingMessages)
   std::cout
-      << "ReceiveDanglingMessages    = yes" << std::endl;
+      << "ReceiveDanglingMessages = yes" << std::endl;
   #endif
   #if defined(DynamicReceives)
   std::cout
-      << "DynamicReceives            = yes" << std::endl;
+      << "DynamicReceives         = yes" << std::endl;
   #endif
 }
 
@@ -265,7 +267,7 @@ int main(int argc, char** argv) {
       for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
         bool complete = false;
         while (!complete) {
-          complete = receiveRequests.size() == sendRequests.size();
+          complete = receiveRequests[rankIt->first].size() == sendRequests[rankIt->first].size();
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
@@ -300,7 +302,7 @@ int main(int argc, char** argv) {
       while (!complete) {
         complete = true;
         for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
-          complete &= receiveRequests.size() == sendRequests.size();
+          complete &= receiveRequests[rankIt->first].size() == sendRequests[rankIt->first].size();
 
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);

@@ -2,7 +2,7 @@
 #SBATCH --job-name=CartesianExchange
 #SBATCH -o CartesianExchange.out
 #SBATCH -e CartesianExchange.err
-#SBATCH -t 08:00:00
+#SBATCH -t 48:00:00
 #SBATCH --exclusive
 #SBATCH -p par6.q
 #SBATCH --nodes=4
@@ -17,7 +17,7 @@ module load intel/xe_2017.2
 module load intelmpi/intel/2017.2
 module load gcc/4.9.1
 
-useTracing=1
+useTracing=0
 
 export I_MPI_FABRICS="shm:dapl"
 
@@ -34,43 +34,49 @@ cat hamilton6.job
 if (( useTracing==1 )); then
   # tracing
   export VT_CONFIG=itac.conf
-  mpiicpc -std=c++11 -g -trace CartesianExchange.cpp -o CartesianExchangeList
-  mpiicpc -std=c++11 -g -trace -DBlockPerRank CartesianExchange.cpp -o CartesianExchangeListBlockPerRank
-  mpiicpc -std=c++11 -g -trace -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+  mpiicpc -std=c++11 -g -trace                                                  CartesianExchange.cpp -o CartesianExchangeList
+  mpiicpc -std=c++11 -g -trace                 -DDynamicReceives                CartesianExchange.cpp -o CartesianExchangeListDynamicReceives
+  mpiicpc -std=c++11 -g -trace                 -DReceiveDanglingMessages        CartesianExchange.cpp -o CartesianExchangeListReceiveDanglingMessages 
+  mpiicpc -std=c++11 -g -trace  -BlockPerRank                                   CartesianExchange.cpp -o CartesianExchangeListBlockPerRank
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DDynamicReceives                CartesianExchange.cpp -o CartesianExchangeListBlockPerRankDynamicReceives
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DReceiveDanglingMessages        CartesianExchange.cpp -o CartesianExchangeListBlockPerRankReceiveDanglingMessages
 else 
   # no tracing
-  mpiicpc -std=c++11     CartesianExchange.cpp -o CartesianExchangeList
-  mpiicpc -std=c++11 -g -DBlockPerRank CartesianExchange.cpp -o CartesianExchangeListBlockPerRank
-  mpiicpc -std=c++11    -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+  mpiicpc -std=c++11                                                 CartesianExchange.cpp -o CartesianExchangeList
+  mpiicpc -std=c++11                -DDynamicReceives                CartesianExchange.cpp -o CartesianExchangeListDynamicReceives
+  mpiicpc -std=c++11                -DReceiveDanglingMessages        CartesianExchange.cpp -o CartesianExchangeListReceiveDanglingMessages 
+  mpiicpc -std=c++11 -BlockPerRank                                   CartesianExchange.cpp -o CartesianExchangeListBlockPerRank
+  mpiicpc -std=c++11 -DBlockPerRank -DDynamicReceives                CartesianExchange.cpp -o CartesianExchangeListBlockPerRankDynamicReceives
+  mpiicpc -std=c++11 -DBlockPerRank -DReceiveDanglingMessages        CartesianExchange.cpp -o CartesianExchangeListBlockPerRankReceiveDanglingMessages
 fi
 
 # run experiments
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
 #for executable in CartesianExchangeList CartesianExchangeVector
-for executable in CartesianExchangeList CartesianExchangeListBlockPerRank
+for executable in CartesianExchangeList CartesianExchangeListDynamicReceives CartesianExchangeListReceiveDanglingMessages CartesianExchangeListBlockPerRank CartesianExchangeListBlockPerRankDynamicReceives CartesianExchangeListBlockPerRankReceiveDanglingMessages
 do 
   unset I_MPI_EAGER_THRESHOLD
   export I_MPI_ASYNC_PROGRESS=0
-  name=$executable-eager-no-imp-27-8-3-512
+  name=$executable-eager-no-imp-27-8-3-2048
   sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
+  mpiexec -np 27 -ppn 8 ./$executable 3 2048 10 > $name".txt"
 
   export I_MPI_EAGER_THRESHOLD=0
   export I_MPI_ASYNC_PROGRESS=0
-  name=$executable-rendezvous-no-imp-27-8-3-512
+  name=$executable-rendezvous-no-imp-27-8-3-2048
   sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
+  mpiexec -np 27 -ppn 8 ./$executable 3 2048 10 > $name".txt"
   
-#  unset I_MPI_EAGER_THRESHOLD
-#  export I_MPI_ASYNC_PROGRESS=1
-#  name=$executable-eager-imp-27-8-3-512
-#  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-#  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
+  unset I_MPiI_EAGER_THRESHOLD
+  export I_MPI_ASYNC_PROGRESS=1
+  name=$executable-eager-imp-27-8-3-2048
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 ./$executable 3 2048 10 > $name".txt"
   
-#  export I_MPI_EAGER_THRESHOLD=0
-#  export I_MPI_ASYNC_PROGRESS=1
-#  name=$executable-rendezvous-imp-27-8-3-512
-#  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-#  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
+  export I_MPI_EAGER_THRESHOLD=0
+  export I_MPI_ASYNC_PROGRESS=1
+  name=$executable-rendezvous-imp-27-8-3-2048
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 ./$executable 3 2048 10 > $name".txt"
 done 
