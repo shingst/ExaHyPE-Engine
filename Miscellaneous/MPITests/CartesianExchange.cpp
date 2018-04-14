@@ -148,7 +148,15 @@ void receiveDanglingMessages(MPI_Comm& cartesianComm, const int myRank, double* 
 }
 
 #if defined(DynamicReceives) and  defined(ReceiveDanglingMessages)
-#error DynamicReceives and ReceiveDanglingMessages not be defined together!
+#error DynamicReceives and ReceiveDanglingMessages must not be defined together!
+#endif
+
+#if defined(TestSendAndReceiveTogether) and defined(DynamicReceives)
+#error TestSendAndReceiveTogether and DynamicReceives must not be defined together!
+#endif
+
+#if defined(TestSendAndReceiveTogether) and defined(ReceiveDanglingMessages) 
+#error TestSendAndReceiveTogether and ReceiveDanglingMessages must not be defined together!
 #endif
 
 // Arguments:        dimensions, maximumMessageSize, numberOfTests
@@ -280,9 +288,17 @@ int main(int argc, char** argv) {
         bool complete = false;
         while (!complete) {
           complete = receiveRequests[rankIt->first].size() == sendRequests[rankIt->first].size();
+          int index = 0;
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
+            #if defined(TestSendAndReceiveTogether)
+            MPI_Request* receiveRequest = receiveRequests[rankIt->first][index];
+            MPI_Test(receiveRequest,&flag,MPI_STATUS_IGNORE);
+            complete &= flag;
+            index++;
+            #else
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
+            #endif
 
             #if defined(DynamicReceives)
             MPI_Status status;
@@ -301,7 +317,7 @@ int main(int argc, char** argv) {
           receiveDanglingMessages(cartesianComm,myRank,receiveBuffer,receiveRequests);
           #endif
 
-          #if !defined(DynamicReceives) and !defined(ReceiveDanglingMessagesBlocking)
+          #if !defined(DynamicReceives) and !defined(ReceiveDanglingMessagesBlocking) and !defined(TestSendAndReceiveTogether)
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
@@ -316,9 +332,18 @@ int main(int argc, char** argv) {
         for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
           complete &= receiveRequests[rankIt->first].size() == sendRequests[rankIt->first].size();
 
+          int index = 0;
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
+            #if defined(TestSendAndReceiveTogether)
+            MPI_Request* receiveRequest = receiveRequests[rankIt->first][index];
+            MPI_Test(receiveRequest,&flag,MPI_STATUS_IGNORE);
+            complete &= flag;
+            index++;
+            #else
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
+            #endif
+            
             #if defined(DynamicReceives)
             MPI_Status status;
             MPI_Iprobe(rankIt->first,0,cartesianComm,&flag,&status);
@@ -336,7 +361,7 @@ int main(int argc, char** argv) {
           receiveDanglingMessages(cartesianComm,myRank,receiveBuffer,receiveRequests);
           #endif
 
-          #if !defined(DynamicReceives) and !defined(ReceiveDanglingMessagesBlocking)
+          #if !defined(DynamicReceives) and !defined(ReceiveDanglingMessagesBlocking) and !defined(TestSendAndReceiveTogether)
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
