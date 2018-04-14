@@ -74,20 +74,7 @@ def parseParameters(config):
         parameterSpace.update(groupedParameterSpace)
         
         # always put None in order to have at least one element
-        groupedParameterSpace[None] = [None]    
-
-        if "order" not in parameterSpace:
-            print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "dimension" not in parameterSpace:
-            print("ERROR: 'dimension' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "optimisation" not in parameterSpace:
-            print("ERROR: 'optimisation' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "architecture" not in parameterSpace:
-            print("ERROR: 'architecture' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
+        groupedParameterSpace[None] = [None] 
     else:
         print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
         sys.exit()
