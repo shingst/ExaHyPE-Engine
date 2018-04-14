@@ -84,6 +84,58 @@ void printRecords(std::vector<record>& records,std::string name) {
   }
 }
 
+void printIntro(const int dimensions, const int maximumMessageSize, const int numberOfTests) {
+  std::cout << std::endl;
+
+  std::cout << "Start experiment with parameters: "       << std::endl
+      << std::endl
+      << "dimensions         = " << dimensions            << std::endl
+      << "maximumMessageSize = " << maximumMessageSize    << " (rounded to next power of 2)" << std::endl
+      << "numberOfTests      = " << numberOfTests         << std::endl;
+
+  #if defined(UseVector)
+  std::cout
+      << "UseVector          = yes" << std::endl;
+  #endif
+  #if defined(BlockPerRank)
+  std::cout
+      << "BlockPerRank       = yes" << std::endl;
+  #endif
+  #if defined(ReceiveDanglingMessages)
+  std::cout
+      << "ReceiveDanglingMessages    = yes" << std::endl;
+  #endif
+  #if defined(DynamicReceives)
+  std::cout
+      << "DynamicReceives            = yes" << std::endl;
+  #endif
+}
+
+#if defined(UseVector)
+typedef std::vector<MPI_Request*> RequestContainer;
+#else
+typedef std::list<MPI_Request*> RequestContainer;
+#endif
+
+void receiveDanglingMessages(MPI_Comm& cartesianComm, const int myRank, double* receiveBuffer, std::map<int,RequestContainer>& receiveRequests) {
+  // assumption: keys of receiveRequests hold the neighbour ranks
+  int flag = 0;
+  for (auto rankIt = receiveRequests.begin(); rankIt != receiveRequests.end(); rankIt++) {
+    MPI_Status status;
+    MPI_Iprobe(rankIt->first,0,cartesianComm,&flag,&status);
+    if (flag) {
+       int messageSize;
+       MPI_Get_count(&status,MPI_DOUBLE,&messageSize);
+       MPI_Request* receiveRequest = new MPI_Request();
+       MPI_Irecv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm, receiveRequest);
+       receiveRequests[rankIt->first].push_back(receiveRequest);
+    }
+  }
+}
+
+#if defined(DynamicReceives) and  defined(ReceiveDanglingMessages)
+#error DynamicReceives and ReceiveDanglingMessages not be defined together!
+#endif
 
 // Arguments:        dimensions, maximumMessageSize, numberOfTests
 // Compiler Options: -DUseVector
@@ -98,7 +150,6 @@ int main(int argc, char** argv) {
   int maximumMessageSize  = -1;
   int numberOfTests       = -1;
   parseArguments(argc,argv,dimensions,maximumMessageSize,numberOfTests);
-
 
   // compute the dimensions
   int numberOfRanks;
@@ -130,31 +181,16 @@ int main(int argc, char** argv) {
   int myRank = -1;
   MPI_Comm_rank(cartesianComm, &myRank);
   if ( myRank==0 ) {
-    std::cout << std::endl;
-
-    std::cout << "Start experiment with parameters: "       << std::endl
-        << std::endl
-        << "dimensions         = " << dimensions            << std::endl
-        << "maximumMessageSize = " << maximumMessageSize    << " (rounded to next power of 2)" << std::endl
-        << "numberOfTests      = " << numberOfTests         << std::endl; 
-       
-    #if defined(UseVector)
-    std::cout 
-        << "UseVector          = yes" << std::endl;
-    #endif
-    #if defined(BlockPerRank)
-    std::cout 
-        << "BlockPerRank       = yes" << std::endl;
-    #endif
+    printIntro(dimensions,maximumMessageSize,numberOfTests);
   }
 
   // create a container for neighbouring ranks
   #ifdef UseVector
-  std::map<int,std::vector<MPI_Request*>> sendRequests;
-  std::map<int,std::vector<MPI_Request*>> receiveRequests;
+  std::map<int,RequestContainer> sendRequests;
+  std::map<int,RequestContainer> receiveRequests;
   #else
-  std::map<int,std::list<MPI_Request*>> sendRequests;
-  std::map<int,std::list<MPI_Request*>> receiveRequests;
+  std::map<int,RequestContainer> sendRequests;
+  std::map<int,RequestContainer> receiveRequests;
   #endif
 
   /////////////////////////
@@ -195,26 +231,23 @@ int main(int argc, char** argv) {
           // We do nonblocking communication, so we do not care about the sourceNeighbour
           // We further always send/receive from/to the same buffer location.
           if ( destinationNeighbour!=MPI_PROC_NULL) {
-            #ifdef UseVector
-            sendRequests.insert( std::pair<int,std::vector<MPI_Request*>>( destinationNeighbour, std::vector<MPI_Request*>(0) ) );
-            receiveRequests.insert( std::pair<int,std::vector<MPI_Request*>>( destinationNeighbour, std::vector<MPI_Request*>(0) ) );
+            sendRequests.insert( std::pair<int,RequestContainer>( destinationNeighbour, RequestContainer(0) ) );
+            receiveRequests.insert( std::pair<int,RequestContainer>( destinationNeighbour, RequestContainer(0) ) );
+            #if defined(UseVector)
             sendRequests[destinationNeighbour].reserve(numberOfMessages);
             receiveRequests[destinationNeighbour].reserve(numberOfMessages);
-            #else
-            sendRequests.insert( std::pair<int,std::list<MPI_Request*>>( destinationNeighbour, std::list<MPI_Request*>(0) ) );
-            receiveRequests.insert( std::pair<int,std::list<MPI_Request*>>( destinationNeighbour, std::list<MPI_Request*>(0) ) );
             #endif
 
             for (int m = 0; m < numberOfMessages; ++m) {
-              MPI_Request* sendRequest    = new MPI_Request();
+              #if !defined(ReceiveDanglingMessages) && !defined(DynamicReceives)
               MPI_Request* receiveRequest = new MPI_Request();
-
-              // TODO(Dominic): Post sends and receives at the same time vs. post sends first and then receives
-              MPI_Isend(sendBuffer,    messageSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, sendRequest);
               MPI_Irecv(receiveBuffer, messageSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, receiveRequest);
-
-              sendRequests[destinationNeighbour].push_back(sendRequest);
               receiveRequests[destinationNeighbour].push_back(receiveRequest);
+              #endif
+
+              MPI_Request* sendRequest = new MPI_Request();
+              MPI_Isend(sendBuffer, messageSize, MPI_DOUBLE, destinationNeighbour, 0, cartesianComm, sendRequest);
+              sendRequests[destinationNeighbour].push_back(sendRequest);
             }
           }
         }
@@ -232,15 +265,34 @@ int main(int argc, char** argv) {
       for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
         bool complete = false;
         while (!complete) {
-          complete = true;
+          complete = receiveRequests.size() == sendRequests.size();
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
+
+            #if defined(DynamicReceives)
+            MPI_Status status;
+            MPI_Iprobe(rankIt->first,0,cartesianComm,&flag,&status);
+            if (flag) {
+               int messageSize;
+               MPI_Get_count(&status,MPI_DOUBLE,&messageSize);
+               MPI_Recv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm,MPI_STATUS_IGNORE);
+               MPI_Request* receiveRequest = new MPI_Request(); // not necessary in theory but we want to fill the receiveRequests list
+               receiveRequests[rankIt->first].push_back(receiveRequest);
+            }
+            #endif
           }
+
+          #if defined(ReceiveDanglingMessages)
+          receiveDanglingMessages(cartesianComm,myRank,receiveBuffer,receiveRequests);
+          #endif
+
+          #if !defined(DynamicReceives)
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
           }
+          #endif
         }
       }
       #else
@@ -248,14 +300,34 @@ int main(int argc, char** argv) {
       while (!complete) {
         complete = true;
         for (auto rankIt = sendRequests.begin(); rankIt != sendRequests.end(); rankIt++) {
+          complete &= receiveRequests.size() == sendRequests.size();
+
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
+            #if defined(DynamicReceives)
+            MPI_Status status;
+            MPI_Iprobe(rankIt->first,0,cartesianComm,&flag,&status);
+            if (flag) {
+               int messageSize;
+               MPI_Get_count(&status,MPI_DOUBLE,&messageSize);
+               MPI_Recv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm,MPI_STATUS_IGNORE);
+               MPI_Request* receiveRequest = new MPI_Request(); // not necessary in theory but we want to fill the receiveRequests list
+               receiveRequests[rankIt->first].push_back(receiveRequest);
+            }
+            #endif
           }
+
+          #if defined(ReceiveDanglingMessages)
+          receiveDanglingMessages(cartesianComm,myRank,receiveBuffer,receiveRequests);
+          #endif
+
+          #if !defined(DynamicReceives)
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
           }
+          #endif
         }
       }
       #endif
@@ -303,6 +375,7 @@ int main(int argc, char** argv) {
     numberOfMessages = maximumMessageSize/messageSize;
   }
 
+  // outro
   bool isCloseToCenter = true;
   int coordinates[dimensions];
   MPI_Cart_coords(cartesianComm,myRank,dimensions,coordinates);
