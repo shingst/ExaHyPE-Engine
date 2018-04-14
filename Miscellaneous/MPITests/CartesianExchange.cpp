@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
           int index = 0;
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
             #if defined(TestSendAndReceiveTogether)
-            MPI_Request* receiveRequest = receiveRequests[rankIt->first][index];
+            MPI_Request* receiveRequest = *std::next( std::begin(receiveRequests[rankIt->first]), index );
             MPI_Test(receiveRequest,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
             index++;
@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
           int index = 0;
           for (auto requestIt = sendRequests[rankIt->first].begin(); requestIt != sendRequests[rankIt->first].end(); requestIt++) {
             #if defined(TestSendAndReceiveTogether)
-            MPI_Request* receiveRequest = receiveRequests[rankIt->first][index];
+            MPI_Request* receiveRequest = *std::next( std::begin(receiveRequests[rankIt->first]), index );
             MPI_Test(receiveRequest,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
             index++;
