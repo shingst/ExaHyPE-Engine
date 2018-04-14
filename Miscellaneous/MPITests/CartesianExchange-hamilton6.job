@@ -35,6 +35,8 @@ cat hamilton6.job
 outputDir=results
 if (( useTracing==1 )); then
   # tracing
+  maximumMessageSize=512
+
   outputDir=traces
   mkdir $outputDir
 
@@ -49,6 +51,8 @@ if (( useTracing==1 )); then
   mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DReceiveDanglingMessagesBlocking  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankReceiveDanglingMessagesBlocking
 else 
   # no tracing
+  maximumMessageSize=2048
+  
   outputDir=results
   mkdir $outputDir
   
@@ -69,25 +73,25 @@ for executable in CartesianExchangeList CartesianExchangeListDynamicReceives Car
 do 
   unset I_MPI_EAGER_THRESHOLD
   export I_MPI_ASYNC_PROGRESS=0
-  name=$executable-eager-no-imp-27-8-3-512
+  name=$executable-eager-no-imp-27-8-3-$maximumMessageSize
   sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 512 10 > $outputDir"/"$name".txt"
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
 
   export I_MPI_EAGER_THRESHOLD=0
   export I_MPI_ASYNC_PROGRESS=0
-  name=$executable-rendezvous-no-imp-27-8-3-512
+  name=$executable-rendezvous-no-imp-27-8-3-$maximumMessageSize
   sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 512 10 > $outputDir"/"$name".txt"
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
   
   unset I_MPiI_EAGER_THRESHOLD
   export I_MPI_ASYNC_PROGRESS=1
-  name=$executable-eager-imp-27-8-3-512
+  name=$executable-eager-imp-27-8-3-$maximumMessageSize
   sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 512 10 > $outputDir"/"$name".txt"
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
   
   export I_MPI_EAGER_THRESHOLD=0
   export I_MPI_ASYNC_PROGRESS=1
-  name=$executable-rendezvous-imp-27-8-3-512
+  name=$executable-rendezvous-imp-27-8-3-$maximumMessageSize
   sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
-  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 512 10 > $outputDir"/"$name".txt"
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
 done 
