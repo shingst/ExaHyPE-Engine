@@ -16,6 +16,10 @@
 #include <chrono>
 #include <iomanip>
 
+#if defined(ReceiveDanglingMessagesBlocking) and !defined(ReceiveDanglingMessages)
+#define ReceiveDanglingMessages
+#endif
+
 // kindly copied from: https://stackoverflow.com/a/365068
 inline void pow2RoundUp (int& x)
 {
@@ -97,19 +101,23 @@ void printIntro(const int dimensions, const int maximumMessageSize, const int nu
   std::cout << std::endl << "Compiler options: " << std::endl << std::endl;
   #if defined(UseVector)
   std::cout
-      << "UseVector               = yes" << std::endl;
+      << "UseVector                       = yes" << std::endl;
   #endif
   #if defined(BlockPerRank)
   std::cout
-      << "BlockPerRank            = yes" << std::endl;
+      << "BlockPerRank                    = yes" << std::endl;
   #endif
   #if defined(ReceiveDanglingMessages)
   std::cout
-      << "ReceiveDanglingMessages = yes" << std::endl;
+      << "ReceiveDanglingMessages         = yes" << std::endl;
+  #endif
+  #if defined(ReceiveDanglingMessagesBlocking)
+  std::cout
+      << "ReceiveDanglingMessagesBlocking = yes" << std::endl;
   #endif
   #if defined(DynamicReceives)
   std::cout
-      << "DynamicReceives         = yes" << std::endl;
+      << "DynamicReceives                 = yes" << std::endl;
   #endif
 }
 
@@ -129,8 +137,12 @@ void receiveDanglingMessages(MPI_Comm& cartesianComm, const int myRank, double* 
        int messageSize;
        MPI_Get_count(&status,MPI_DOUBLE,&messageSize);
        MPI_Request* receiveRequest = new MPI_Request();
+       #if defined(ReceiveDanglingMessagesBlocking)
+       MPI_Recv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm,MPI_STATUS_IGNORE);
+       #else
        MPI_Irecv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm, receiveRequest);
-       receiveRequests[rankIt->first].push_back(receiveRequest);
+       #endif
+       receiveRequests[rankIt->first].push_back(receiveRequest); // receive request not necessary when blocking but we want to fill the receiveRequests list
     }
   }
 }
@@ -279,7 +291,7 @@ int main(int argc, char** argv) {
                int messageSize;
                MPI_Get_count(&status,MPI_DOUBLE,&messageSize);
                MPI_Recv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm,MPI_STATUS_IGNORE);
-               MPI_Request* receiveRequest = new MPI_Request(); // not necessary in theory but we want to fill the receiveRequests list
+               MPI_Request* receiveRequest = new MPI_Request(); // receive request not necessary when blocking but we want to fill the receiveRequests list
                receiveRequests[rankIt->first].push_back(receiveRequest);
             }
             #endif
@@ -289,7 +301,7 @@ int main(int argc, char** argv) {
           receiveDanglingMessages(cartesianComm,myRank,receiveBuffer,receiveRequests);
           #endif
 
-          #if !defined(DynamicReceives)
+          #if !defined(DynamicReceives) and !defined(ReceiveDanglingMessagesBlocking)
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
@@ -314,7 +326,7 @@ int main(int argc, char** argv) {
                int messageSize;
                MPI_Get_count(&status,MPI_DOUBLE,&messageSize);
                MPI_Recv(receiveBuffer, messageSize, MPI_DOUBLE, rankIt->first, 0, cartesianComm,MPI_STATUS_IGNORE);
-               MPI_Request* receiveRequest = new MPI_Request(); // not necessary in theory but we want to fill the receiveRequests list
+               MPI_Request* receiveRequest = new MPI_Request(); // receive request not necessary when blocking but we want to fill the receiveRequests list
                receiveRequests[rankIt->first].push_back(receiveRequest);
             }
             #endif
@@ -324,7 +336,7 @@ int main(int argc, char** argv) {
           receiveDanglingMessages(cartesianComm,myRank,receiveBuffer,receiveRequests);
           #endif
 
-          #if !defined(DynamicReceives)
+          #if !defined(DynamicReceives) and !defined(ReceiveDanglingMessagesBlocking)
           for (auto requestIt = receiveRequests[rankIt->first].begin(); requestIt != receiveRequests[rankIt->first].end(); requestIt++) {
             MPI_Test(*requestIt,&flag,MPI_STATUS_IGNORE);
             complete &= flag;
