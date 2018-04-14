@@ -2,7 +2,10 @@
 LOGFILE-NAME traces/{{name}}.stf 
 LOGFILE-FORMAT STF 
 
-PROCESS 0:N ON
+#PROCESS 0:N ON
+PROCESS 0:N OFF
+# rank 13 has neighbour [4,22,10,16,12,14]
+PROCESS 13:13:13,4:22:18,10:16:2 ON
 
 # disable all MPI activity 
 ACTIVITY MPI ON 
