@@ -2,7 +2,7 @@
 #SBATCH --job-name=CartesianExchange
 #SBATCH -o CartesianExchange.out
 #SBATCH -e CartesianExchange.err
-#SBATCH -t 04:00:00
+#SBATCH -t 08:00:00
 #SBATCH --exclusive
 #SBATCH -p par6.q
 #SBATCH --nodes=4
@@ -17,6 +17,8 @@ module load intel/xe_2017.2
 module load intelmpi/intel/2017.2
 module load gcc/4.9.1
 
+useTracing=1
+
 export I_MPI_FABRICS="shm:dapl"
 
 # pipe some information into output file
@@ -29,27 +31,46 @@ echo ""
 cat hamilton6.job
 
 # create executables
-mpiicpc -std=c++11 CartesianExchange.cpp -o CartesianExchangeList
-mpiicpc -std=c++11 -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+if (( useTracing==1 )); then
+  # tracing
+  export VT_CONFIG=itac.conf
+  mpiicpc -std=c++11 -g -trace CartesianExchange.cpp -o CartesianExchangeList
+  mpiicpc -std=c++11 -g -trace -DBlockPerRank CartesianExchange.cpp -o CartesianExchangeListBlockPerRank
+  mpiicpc -std=c++11 -g -trace -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+else 
+  # no tracing
+  mpiicpc -std=c++11     CartesianExchange.cpp -o CartesianExchangeList
+  mpiicpc -std=c++11 -g -DBlockPerRank CartesianExchange.cpp -o CartesianExchangeListBlockPerRank
+  mpiicpc -std=c++11    -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+fi
 
 # run experiments
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
-for executable in CartesianExchangeList CartesianExchangeVector
-do
+#for executable in CartesianExchangeList CartesianExchangeVector
+for executable in CartesianExchangeList CartesianExchangeListBlockPerRank
+do 
   unset I_MPI_EAGER_THRESHOLD
   export I_MPI_ASYNC_PROGRESS=0
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-eager-no-imp-27-8-3-8192.txt 
+  name=$executable-eager-no-imp-27-8-3-512
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
 
   export I_MPI_EAGER_THRESHOLD=0
   export I_MPI_ASYNC_PROGRESS=0
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-rendezvous-no-imp-27-8-3-8192.txt 
+  name=$executable-rendezvous-no-imp-27-8-3-512
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
   
-  unset I_MPI_EAGER_THRESHOLD
-  export I_MPI_ASYNC_PROGRESS=1
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-eager-imp-27-8-3-8192.txt 
+#  unset I_MPI_EAGER_THRESHOLD
+#  export I_MPI_ASYNC_PROGRESS=1
+#  name=$executable-eager-imp-27-8-3-512
+#  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+#  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
   
-  export I_MPI_EAGER_THRESHOLD=0
-  export I_MPI_ASYNC_PROGRESS=1
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-rendezvous-imp-27-8-3-8192.txt 
+#  export I_MPI_EAGER_THRESHOLD=0
+#  export I_MPI_ASYNC_PROGRESS=1
+#  name=$executable-rendezvous-imp-27-8-3-512
+#  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+#  mpiexec -np 27 -ppn 8 ./$executable 3 512 10 > $name".txt"
 done 

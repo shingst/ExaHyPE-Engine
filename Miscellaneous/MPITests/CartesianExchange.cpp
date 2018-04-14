@@ -318,8 +318,35 @@ int main(int argc, char** argv) {
 
     std::cout <<
         std::endl <<
-        "Info: Measurements obtained for rank "<< myRank <<
-        " located at x_i="<<ranksPerDimension[0]/2<<", i=0,..,"<<dimensions-1<< "." << std::endl;
+        "info: measurements obtained for rank "<< myRank <<
+        " located at x=(";
+    for (int direction=0; direction<dimensions; direction++) { 
+       std::cout <<ranksPerDimension[0]/2;
+       if (direction<dimensions-1) {
+         std::cout << ",";
+       } else {
+         std::cout << ")" << " in domain=[0,"<<ranksPerDimension[0]-1<<"]^"<<dimensions<<""<< std::endl;
+       }
+    }
+ 
+    std::cout <<
+        "info: rank "<<myRank<<" is neighbour of the ranks [";
+    for (int direction=0; direction<dimensions; direction++) {
+      for (int orientation=0; orientation<2; orientation++) {
+        const int displacement = -1 + 2*orientation;
+
+        int sourceNeighbour      = -1; // this one wants to send to me       (blocking comm.)
+        int destinationNeighbour = -1; // this one receives messages from me (blocking comm.)
+        MPI_Cart_shift(cartesianComm, direction ,displacement,&sourceNeighbour,&destinationNeighbour);
+        
+        const int faceIndex = 2*direction+orientation;
+        if (faceIndex < 2*dimensions-1) {
+           std::cout << destinationNeighbour << ",";
+        } else {
+           std::cout << destinationNeighbour << "] (-1: no neighbour)" << std::endl;
+        }
+      }
+    }
   }
 
   MPI_Finalize();
