@@ -74,13 +74,16 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     consistent = True
     # verify mandatory options file parameters can be found in template file
     keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
-    for key in parameterDict:
+    for key in context:
         if key not in keysInTemplate:
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
     # optional parameters
     context["tasks"] = tasks
     context["cores"] = cores
+    for key in context:
+        if key not in keysInTemplate:
+            print("WARNING: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
     # verify template parameters are defined in options file
     for key in keysInTemplate:
         if key not in context:
