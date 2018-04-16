@@ -518,6 +518,12 @@ class exahype::solvers::Solver {
   static bool SpawnAMRBackgroundJobs;
 
   /**
+   * If this is set, we can skip sending metadata around during
+   * batching iterations.
+   */
+  static bool AllSolversPerformStaticOrNoLimiting;
+
+  /**
    * The type of a solver.
    */
   enum class Type { ADERDG, FiniteVolumes, LimitingADERDG };
@@ -1793,7 +1799,6 @@ class exahype::solvers::Solver {
    */
   virtual void mergeWithNeighbourData(
       const int                                    fromRank,
-      const MetadataHeap::HeapEntries&             neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,

@@ -89,6 +89,8 @@ bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
 
 bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
+bool exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting = false;
+
 int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
 
 void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {

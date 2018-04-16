@@ -586,6 +586,9 @@ int exahype::runners::Runner::run() {
     exahype::solvers::Solver::SpawnAMRBackgroundJobs =
         _parser.getSpawnAMRBackgroundThreads();
 
+    // TODO(Dominic): Wire through to spec file
+    exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting = false;
+
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;

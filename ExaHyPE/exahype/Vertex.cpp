@@ -874,6 +874,7 @@ void exahype::Vertex::setFaceDataExchangeCountersOfDestination(
 
 void exahype::Vertex::sendEmptySolverDataToNeighbour(
     const int                                     toRank,
+    const bool                                    sendMetadata,
     const tarch::la::Vector<DIMENSIONS, int>&     src,
     const tarch::la::Vector<DIMENSIONS, int>&     dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
@@ -882,12 +883,15 @@ void exahype::Vertex::sendEmptySolverDataToNeighbour(
     solver->sendEmptyDataToNeighbour(toRank,x,level);
   }
 
-  exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
-      toRank,x,level);
+  if ( sendMetadata ) {
+    exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
+        toRank,x,level);
+  }
 }
 
 void exahype::Vertex::sendSolverDataToNeighbour(
     const int                                    toRank,
+    const bool                                   sendMetadata,
     const tarch::la::Vector<DIMENSIONS,int>&     src,
     const tarch::la::Vector<DIMENSIONS,int>&     dest,
     const int                                    srcCellDescriptionIndex,
@@ -907,13 +911,16 @@ void exahype::Vertex::sendSolverDataToNeighbour(
     }
   }
 
-  exahype::sendNeighbourCommunicationMetadata(
-      toRank,srcCellDescriptionIndex,src,dest,x,level);
+  if ( sendMetadata ){
+    exahype::sendNeighbourCommunicationMetadata(
+        toRank,srcCellDescriptionIndex,src,dest,x,level);
+  }
 }
 
 
 void exahype::Vertex::sendToNeighbour(
     int toRank,
+    bool isLastIterationOfBatchOrNoBatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int level) const {
@@ -926,14 +933,18 @@ void exahype::Vertex::sendToNeighbour(
         //#ifdef Asserts
         //logInfo("prepareSendToNeighbour(...)","to rank "<<toRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
         //#endif
+
+        bool sendMetadata = isLastIterationOfBatchOrNoBatch ||
+            !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting;
         if ( hasToSendDataToNeighbour(src,dest) ) {
           sendSolverDataToNeighbour(
-              toRank,src,dest,
+              toRank,sendMetadata,src,dest,
               getCellDescriptionsIndex()[srcScalar],
               getCellDescriptionsIndex()[destScalar],
               x,level);
         } else {
-          sendEmptySolverDataToNeighbour(toRank,src,dest,x,level);
+          sendEmptySolverDataToNeighbour(
+              toRank,sendMetadata,src,dest,x,level);
         }
       }
       enddforx
@@ -943,7 +954,6 @@ void exahype::Vertex::sendToNeighbour(
 
 void exahype::Vertex::dropNeighbourData(
     const int fromRank,
-    const exahype::MetadataHeap::HeapEntries& receivedMetadata,
     const int srcCellDescriptionIndex,
     const int destCellDescriptionIndex,
     const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -958,7 +968,7 @@ void exahype::Vertex::dropNeighbourData(
 
 void exahype::Vertex::mergeWithNeighbourData(
         const int fromRank,
-        const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+        const exahype::MetadataHeap::HeapEntries* receivedMetadata,
         const int srcCellDescriptionIndex,
         const int destCellDescriptionIndex,
         const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -973,8 +983,8 @@ void exahype::Vertex::mergeWithNeighbourData(
       assertion1(element>=0,element);
 
       exahype::MetadataHeap::HeapEntries metadataPortion(
-          receivedMetadata.begin()+offset,
-          receivedMetadata.begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
+          (*receivedMetadata).begin()+offset,
+          (*receivedMetadata).begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
 
       logDebug(
           "mergeWithNeighbour(...)", "receive data for solver " << solverNumber << " from " <<
@@ -983,14 +993,15 @@ void exahype::Vertex::mergeWithNeighbourData(
 
       solver->mergeWithNeighbourData(
           fromRank,
-          metadataPortion,
           destCellDescriptionIndex,element,src,dest,
           x,level);
 
-      solver->mergeWithNeighbourMetadata(
-            metadataPortion,
-            src, dest,
-            destCellDescriptionIndex,element);
+      if ( receivedMetadata!=nullptr ) {
+        solver->mergeWithNeighbourMetadata(
+              metadataPortion,
+              src, dest,
+              destCellDescriptionIndex,element);
+      }
     } else {
       logDebug(
           "mergeWithNeighbour(...)", "drop data for solver " << solverNumber << " from " <<
@@ -1006,6 +1017,7 @@ void exahype::Vertex::mergeWithNeighbourData(
 void exahype::Vertex::receiveNeighbourData(
     int fromRank,
     bool mergeWithReceivedData,
+    bool isFirstIterationOfBatchOrNoBatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     int level) const {
@@ -1018,17 +1030,22 @@ void exahype::Vertex::receiveNeighbourData(
         int destScalar = TWO_POWER_D - myDestScalar - 1; // "invert" point indices
         int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
-        if (hasToReceiveMetadata(fromRank,src,dest)) {
+        if ( hasToReceiveMetadata(fromRank,src,dest) ) {
+
           //#ifdef Asserts
           //logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           //#endif
 
-          const int receivedMetadataIndex =
-          exahype::receiveNeighbourCommunicationMetadata(
-              fromRank, x, level);
-          exahype::MetadataHeap::HeapEntries& receivedMetadata =
-              MetadataHeap::getInstance().getData(receivedMetadataIndex);
-          assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+          int receivedMetadataIndex = -1;
+          exahype::MetadataHeap::HeapEntries* receivedMetadata = nullptr;
+          if (
+              !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting ||
+              isFirstIterationOfBatchOrNoBatch
+          ) {
+            receivedMetadataIndex = exahype::receiveNeighbourCommunicationMetadata(fromRank, x, level);
+            receivedMetadata      = &MetadataHeap::getInstance().getData(receivedMetadataIndex);
+            assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+          }
 
           if( hasToMergeWithNeighbourData(src,dest) ) {
             if ( mergeWithReceivedData ) {
@@ -1042,7 +1059,6 @@ void exahype::Vertex::receiveNeighbourData(
             } else {
               dropNeighbourData(
                   fromRank,
-                  receivedMetadata,
                   getCellDescriptionsIndex()[srcScalar],
                   getCellDescriptionsIndex()[destScalar],
                   src,dest,
@@ -1054,14 +1070,15 @@ void exahype::Vertex::receiveNeighbourData(
           } else {
             dropNeighbourData(
                 fromRank,
-                receivedMetadata,
                 getCellDescriptionsIndex()[srcScalar],
                 getCellDescriptionsIndex()[destScalar],
                 src,dest,
                 x,level);
           }
           // Clean up
-          MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
+          if ( receivedMetadata!=nullptr ) {
+            MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
+          }
         }
       enddforx
     enddforx

@@ -2810,9 +2810,9 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     const int                                 element2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  mergeNeighboursCommunicationStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
-  mergeNeighboursAugmentationStatus(cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
-  mergeNeighboursLimiterStatus     (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursCommunicationStatus(cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursAugmentationStatus (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursLimiterStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
 }
 
 // merge compute data
@@ -3442,7 +3442,9 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
   const int faceIndex    = 2*direction+orientation;
 
   CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-  if ( holdsFaceData(cellDescription) ) {
+  if (
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+  ) {
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 
@@ -3508,7 +3510,6 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int                                    fromRank,
-    const MetadataHeap::HeapEntries&             neighbourMetadata,
     const int                                    cellDescriptionsIndex,
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -3521,14 +3522,17 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 
   synchroniseTimeStepping(cellDescription);
 
-  CellDescription::Type neighbourType =
-      static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType]);
-  if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
+  const int direction    = tarch::la::equalsReturnIndex(src, dest);
+  const int orientation  = (1 + src(direction) - dest(direction))/2;
+  const int faceIndex    = 2*direction+orientation;
+  if(
+      (cellDescription.getCommunicationStatus()                ==MaximumCommunicationStatus &&
+      cellDescription.getFacewiseCommunicationStatus(faceIndex)>=MinimumCommunicationStatusForNeighbourCommunication)
+      ||
+      (cellDescription.getFacewiseCommunicationStatus(faceIndex)==MaximumCommunicationStatus &&
+      cellDescription.getCommunicationStatus()                  >=MinimumCommunicationStatusForNeighbourCommunication)
+  ){
     assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
-
-    const int direction    = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation  = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex    = 2*direction+orientation;
 
     assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
         faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());

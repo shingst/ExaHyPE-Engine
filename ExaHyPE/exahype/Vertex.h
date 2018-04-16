@@ -94,6 +94,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void sendEmptySolverDataToNeighbour(
       const int                                     toRank,
+      const bool                                    sendMetadata,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
@@ -115,6 +116,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void sendSolverDataToNeighbour(
       const int                                    toRank,
+      const bool                                   isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS,int>&     src,
       const tarch::la::Vector<DIMENSIONS,int>&     dest,
       const int                                    srcCellDescriptionIndex,
@@ -131,7 +133,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void dropNeighbourData(
       const int fromRank,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -152,7 +153,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void mergeWithNeighbourData(
       const int fromRank,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+      const exahype::MetadataHeap::HeapEntries* receivedMetadata,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -626,12 +627,18 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * Look up facewise neighbours. If we find a remote boundary,
    * send face data of every registered solver to the remote rank.
    *
+   * <h2> Batching </h2>
+   * If we are not in the last iteration of a batch or we do not run a batch at all and
+   * all solvers perform static or no limiting at all,
+   * we can switch off the metadata sends.
+   *
    * \param[in] x     position of the vertex.
    * \param[in] h     extents of adjacent cells.
    * \param[in] level level this vertex is residing.
   */
   void sendToNeighbour(
       int toRank,
+      const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
@@ -643,6 +650,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   void receiveNeighbourData(
       int fromRank,
       bool mergeWithReceivedData,
+      bool isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;

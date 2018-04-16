@@ -1196,37 +1196,33 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  if (holdsFaceData(cellDescription.getType())) {
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
-    const int numberOfFaceDof = getDataPerPatchFace();
-    double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()
-        + (faceIndex * numberOfFaceDof);
-    const double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    boundaryLayerExtraction(luhbnd,luh,dest-src);
+  const int numberOfFaceDof = getDataPerPatchFace();
+  double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()
+              + (faceIndex * numberOfFaceDof);
+  const double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  boundaryLayerExtraction(luhbnd,luh,dest-src);
 
-    logDebug(
-        "sendDataToNeighbour(...)",
-        "send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank " <<
-        toRank << " for cell="<<cellDescription.getOffset()
-//        << "and face=" << faceIndex
-        << " from vertex x=" << x << ", level=" << level <<
-        ", src type=" << multiscalelinkedcell::indexToString(cellDescriptionsIndex) <<
-        ", src=" << src << ", dest=" << dest <<
-        ", size="<<DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).size()
-//        << ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-    );
+  logDebug(
+      "sendDataToNeighbour(...)",
+      "send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank " <<
+      toRank << " for cell="<<cellDescription.getOffset()
+      //        << "and face=" << faceIndex
+      << " from vertex x=" << x << ", level=" << level <<
+      ", src type=" << multiscalelinkedcell::indexToString(cellDescriptionsIndex) <<
+      ", src=" << src << ", dest=" << dest <<
+      ", size="<<DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).size()
+      //        << ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
+  );
 
-    // Send order: minMax,lQhbnd,lFhbnd
-    // Receive order: lFhbnd,lQhbnd,minMax
-    DataHeap::getInstance().sendData(
-        luhbnd, numberOfFaceDof, toRank, x, level,
-        peano::heap::MessageType::NeighbourCommunication);
-    // TODO(Dominic): If anarchic time stepping send the time step over too.
-  } else {
-    sendEmptyDataToNeighbour(toRank,x,level);
-  }
+  // Send order: minMax,lQhbnd,lFhbnd
+  // Receive order: lFhbnd,lQhbnd,minMax
+  DataHeap::getInstance().sendData(
+      luhbnd, numberOfFaceDof, toRank, x, level,
+      peano::heap::MessageType::NeighbourCommunication);
+  // TODO(Dominic): If anarchic time stepping send the time step over too.
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
@@ -1250,7 +1246,6 @@ void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     const int                                    fromRank,
-    const MetadataHeap::HeapEntries&             neighbourMetadata,
     const int                                    cellDescriptionsIndex,
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -1270,71 +1265,55 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   const int orientation = (1 + src(direction) - dest(direction))/2;
   const int faceIndex   = 2*direction+orientation;
 
-  // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
-  // Solving Riemann problems at a Ancestor Ancestor boundary might lead to problems
-  // if one Ancestor is just used for restriction.
-  if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
-    assertion1(holdsFaceData(neighbourType),neighbourType);
-    assertion1(holdsFaceData(cellDescription.getType()),cellDescription.toString());
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,neighbourType);
 
-    assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
-        faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+  assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
+      faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
+  assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
-    logDebug(
-        "mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank " <<
-        fromRank << " for vertex x=" << x << ", level=" << level <<
-        ", src type=" << cellDescription.getType() <<
-        ", src=" << src << ", dest=" << dest <<
-        ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-    );
+  logDebug(
+      "mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank " <<
+      fromRank << " for vertex x=" << x << ", level=" << level <<
+      ", src type=" << cellDescription.getType() <<
+      ", src=" << src << ", dest=" << dest <<
+      ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
+  );
 
-    // TODO(Dominic): If anarchic time stepping, receive the time step too.
-    //
-    // Copy the received boundary layer into a ghost layer of the solution.
-    // TODO(Dominic): Pipe it directly through the Riemann solver if
-    // we only use the Godunov method and not higher-order FVM methods.
-    // For methods that are higher order in time, e.g., MUSCL-Hancock, we usually need
-    // corner neighbours. This is why we currently adapt a GATHER-UPDATE algorithm
-    // instead of a SOLVE RIEMANN PROBLEM AT BOUNDARY-UPDATE INTERIOR scheme.
-    const int numberOfFaceDof      = getDataPerPatchFace();
-    //    const int receivedBoundaryLayerIndex = DataHeap::getInstance().createData(0, numberOfFaceDof);
-    double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()
-                  + (faceIndex * numberOfFaceDof);
-    //    double* luhbnd = DataHeap::getInstance().getData(receivedBoundaryLayerIndex).data();
-    //    assertion(DataHeap::getInstance().getData(receivedBoundaryLayerIndex).empty());
+  // TODO(Dominic): If anarchic time stepping, receive the time step too.
+  //
+  // Copy the received boundary layer into a ghost layer of the solution.
+  // TODO(Dominic): Pipe it directly through the Riemann solver if
+  // we only use the Godunov method and not higher-order FVM methods.
+  // For methods that are higher order in time, e.g., MUSCL-Hancock, we usually need
+  // corner neighbours. This is why we currently adapt a GATHER-UPDATE algorithm
+  // instead of a SOLVE RIEMANN PROBLEM AT BOUNDARY-UPDATE INTERIOR scheme.
+  const int numberOfFaceDof      = getDataPerPatchFace();
+  //    const int receivedBoundaryLayerIndex = DataHeap::getInstance().createData(0, numberOfFaceDof);
+  double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()
+                      + (faceIndex * numberOfFaceDof);
+  //    double* luhbnd = DataHeap::getInstance().getData(receivedBoundaryLayerIndex).data();
+  //    assertion(DataHeap::getInstance().getData(receivedBoundaryLayerIndex).empty());
 
 
-    // Send order: minMax,lQhbnd,lFhbnd
-    // Receive order: lFhbnd,lQhbnd,minMax
-    DataHeap::getInstance().receiveData(luhbnd, numberOfFaceDof, fromRank, x, level,
-        peano::heap::MessageType::NeighbourCommunication);
+  // Send order: minMax,lQhbnd,lFhbnd
+  // Receive order: lFhbnd,lQhbnd,minMax
+  DataHeap::getInstance().receiveData(luhbnd, numberOfFaceDof, fromRank, x, level,
+      peano::heap::MessageType::NeighbourCommunication);
 
-    logDebug(
-        "mergeWithNeighbourData(...)", "[pre] solve Riemann problem with received data." <<
-        " cellDescription=" << cellDescription.toString() <<
-        ",faceIndexForCell=" << faceIndex <<
-        ",normalOfExchangedFac=" << direction <<
-        ",x=" << x.toString() << ", level=" << level <<
-        ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-    );
+  logDebug(
+      "mergeWithNeighbourData(...)", "[pre] solve Riemann problem with received data." <<
+      " cellDescription=" << cellDescription.toString() <<
+      ",faceIndexForCell=" << faceIndex <<
+      ",normalOfExchangedFac=" << direction <<
+      ",x=" << x.toString() << ", level=" << level <<
+      ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
+  );
 
-    double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
+  double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+  ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
 
-    //    DataHeap::getInstance().deleteData(receivedBoundaryLayerIndex,true);
-  } else  {
-    logDebug(
-        "mergeWithNeighbourData(...)", "drop one array from rank " <<
-        fromRank << " for vertex x=" << x << ", level=" << level <<
-        ", src type=" << multiscalelinkedcell::indexToString(cellDescriptionsIndex) <<
-        ", src=" << src << ", dest=" << dest
-        << ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
-    );
-
-    dropNeighbourData(fromRank,src,dest,x,level);
-  }
+  //    DataHeap::getInstance().deleteData(receivedBoundaryLayerIndex,true);
 }
 
 void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(

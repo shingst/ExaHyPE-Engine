@@ -1374,7 +1374,6 @@ public:
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const exahype::MetadataHeap::HeapEntries&    neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -1402,7 +1401,6 @@ public:
    */
   void mergeWithNeighbourDataBasedOnLimiterStatus(
       const int                                    fromRank,
-      const exahype::MetadataHeap::HeapEntries&    neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,

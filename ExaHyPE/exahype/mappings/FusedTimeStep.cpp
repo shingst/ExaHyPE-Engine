@@ -206,9 +206,9 @@ void exahype::mappings::FusedTimeStep::enterCell(
         // this operates only on helper cells
         solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
 
-        _meshUpdateRequests  [solverNumber]  =
-            _meshUpdateRequests  [solverNumber] || result._refinementRequested;
-        _limiterDomainChanges[solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
+        _meshUpdateRequests    [solverNumber]  =
+            _meshUpdateRequests[solverNumber] || result._refinementRequested;
+        _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
         assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
             _meshUpdateRequests[solverNumber]);
         _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
@@ -275,7 +275,8 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
   vertex.receiveNeighbourData(
-        fromRank,true,
+        fromRank,
+        true/*merge*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );

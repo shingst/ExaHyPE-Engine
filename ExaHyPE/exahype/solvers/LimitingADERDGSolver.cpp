@@ -1471,17 +1471,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   assertion1(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),tarch::la::countEqualEntries(pos1,pos2));
 
-
-//  tarch::la::Vector<DIMENSIONS,double> poi(0.666667,0.687243);
-//  SolverPatch& solverPatch1 = _solver->getCellDescription(cellDescriptionsIndex1,element1);
-//  SolverPatch& solverPatch2 = _solver->getCellDescription(cellDescriptionsIndex2,element2);
-//  if (tarch::la::equals(solverPatch1.getOffset(),poi,1e-6)) {
-//    std::cout << "[mergeNeighbours] bad cell="<<solverPatch1.toString() << std::endl;
-//  }
-//  if (tarch::la::equals(solverPatch2.getOffset(),poi,1e-6)) {
-//    std::cout << "[mergeNeighbours] bad cell="<<solverPatch2.toString() << std::endl;
-//  }
-
   // 1. Solve the riemann problems
   mergeNeighboursBasedOnLimiterStatus(
       cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,
@@ -1846,7 +1835,6 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourData(
     const int                                    fromRank,
-    const exahype::MetadataHeap::HeapEntries&    neighbourMetadata,
     const int                                    cellDescriptionsIndex,
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -1858,7 +1846,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourData(
           ", source=" << src << ", destination=" << dest);
 
   mergeWithNeighbourDataBasedOnLimiterStatus(
-      fromRank,neighbourMetadata,cellDescriptionsIndex,element,src,dest,
+      fromRank,cellDescriptionsIndex,element,src,dest,
       false,/*isRecomputation*/x,level);
 
   mergeWithNeighbourMinAndMax(fromRank,cellDescriptionsIndex,element,src,dest,x,level);
@@ -1869,7 +1857,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourData(
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimiterStatus(
     const int                                    fromRank,
-    const exahype::MetadataHeap::HeapEntries&    neighbourMetadata,
     const int                                    cellDescriptionsIndex,
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -1891,7 +1878,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
       if (!isRecomputation) {
         _solver->mergeWithNeighbourData(
-            fromRank,neighbourMetadata,cellDescriptionsIndex,element,
+            fromRank,cellDescriptionsIndex,element,
             src,dest,x,level);
       } else {
         _solver->dropNeighbourData(fromRank,src,dest,x,level);
@@ -1900,7 +1887,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       const int limiterElement = tryGetLimiterElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
       assertion(limiterElement!=Solver::NotFound);
       _limiter->mergeWithNeighbourData(
-          fromRank,neighbourMetadata,cellDescriptionsIndex,limiterElement,
+          fromRank,cellDescriptionsIndex,limiterElement,
           src,dest,x,level);
       _solver->dropNeighbourData(fromRank,src,dest,x,level);
     }
@@ -1913,7 +1900,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
 
     if (!isRecomputation) {
       _solver->mergeWithNeighbourData(
-          fromRank,neighbourMetadata,cellDescriptionsIndex,element,
+          fromRank,cellDescriptionsIndex,element,
           src,dest,x,level);
     } else {
       _solver->dropNeighbourData(fromRank,src,dest,x,level);
