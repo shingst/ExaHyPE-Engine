@@ -1,6 +1,7 @@
 #include "mpibalancing/FairNodePoolStrategy.h"
 #include "tarch/parallel/Node.h"
 #include "tarch/compiler/CompilerSpecificSettings.h"
+#include "peano/utils/PeanoOptimisations.h"
 
 
 #include <cstdlib>

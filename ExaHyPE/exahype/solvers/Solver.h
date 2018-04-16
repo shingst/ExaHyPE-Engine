@@ -23,6 +23,7 @@
 #include <deque>
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
+#include "peano/utils/PeanoOptimisations.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/la/Vector.h"
 #include "tarch/multicore/BooleanSemaphore.h"
