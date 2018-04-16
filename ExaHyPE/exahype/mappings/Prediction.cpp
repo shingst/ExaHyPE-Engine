@@ -265,7 +265,7 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  vertex.sendToNeighbour(toRank,x,h,level);
+   vertex.sendToNeighbour(toRank,true,x,h,level); 
 }
 
 //

@@ -169,8 +169,8 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  vertex.receiveNeighbourData(
-        fromRank,true,
+   vertex.receiveNeighbourData(
+        fromRank,true /*merge*/,true/*no batch*/,
         fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );

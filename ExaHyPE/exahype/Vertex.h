@@ -153,7 +153,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void mergeWithNeighbourData(
       const int fromRank,
-      const exahype::MetadataHeap::HeapEntries* receivedMetadata,
+      const int receivedMetadataIndex,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
