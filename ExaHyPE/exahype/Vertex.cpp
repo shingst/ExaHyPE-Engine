@@ -934,8 +934,9 @@ void exahype::Vertex::sendToNeighbour(
         //logInfo("prepareSendToNeighbour(...)","to rank "<<toRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
         //#endif
 
-        bool sendMetadata = isLastIterationOfBatchOrNoBatch ||
-            !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting;
+        bool sendMetadata =
+            !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting ||
+            isLastIterationOfBatchOrNoBatch;
         if ( hasToSendDataToNeighbour(src,dest) ) {
           sendSolverDataToNeighbour(
               toRank,sendMetadata,src,dest,
@@ -978,31 +979,33 @@ void exahype::Vertex::mergeWithNeighbourData(
   for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
     auto* solver = solvers::RegisteredSolvers[solverNumber];
     const int element = solver->tryGetElement(destCellDescriptionIndex,solverNumber);
-    assertion1(element>=0,element);
+    if ( element!=exahype::solvers::Solver::NotFound ) {
+      logDebug(
+        "mergeWithNeighbour(...)", "receive data for solver " << solverNumber << " from " <<
+        fromRank << " at vertex x=" << x << ", level=" << level <<
+        ", src=" << src << ", dest=" << dest);
 
-    logDebug(
-      "mergeWithNeighbour(...)", "receive data for solver " << solverNumber << " from " <<
-      fromRank << " at vertex x=" << x << ", level=" << level <<
-      ", src=" << src << ", dest=" << dest);
+      solver->mergeWithNeighbourData(
+        fromRank,
+        destCellDescriptionIndex,element,src,dest,
+        x,level);
 
-    solver->mergeWithNeighbourData(
-      fromRank,
-      destCellDescriptionIndex,element,src,dest,
-      x,level);
+      if ( receivedMetadataIndex != InvalidMetadataIndex ) {
+          exahype::MetadataHeap::HeapEntries& receivedMetadata =
+              MetadataHeap::getInstance().getData(receivedMetadataIndex);
 
-    if ( receivedMetadataIndex != 1 ) {
-        exahype::MetadataHeap::HeapEntries& receivedMetadata = 
-            MetadataHeap::getInstance().getData(receivedMetadataIndex);
-        
-        const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
-        exahype::MetadataHeap::HeapEntries metadataPortion(
-          receivedMetadata.begin()+offset,
-          receivedMetadata.begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
+          const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
+          exahype::MetadataHeap::HeapEntries metadataPortion(
+              receivedMetadata.begin()+offset,
+              receivedMetadata.begin()+offset+exahype::NeighbourCommunicationMetadataPerSolver);
 
-        solver->mergeWithNeighbourMetadata(
-              metadataPortion,
-              src, dest,
-              destCellDescriptionIndex,element);
+          solver->mergeWithNeighbourMetadata(
+                metadataPortion,
+                src, dest,
+                destCellDescriptionIndex,element);
+      }
+    } else {
+      solver->dropNeighbourData(fromRank,src,dest,x,level);
     }
   }
 }
@@ -1029,7 +1032,7 @@ void exahype::Vertex::receiveNeighbourData(
           //logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           //#endif
 
-          int receivedMetadataIndex = -1;
+          int receivedMetadataIndex = InvalidMetadataIndex;
           if (
               !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting ||
               isFirstIterationOfBatchOrNoBatch
@@ -1067,7 +1070,7 @@ void exahype::Vertex::receiveNeighbourData(
                 x,level);
           }
           // Clean up
-          if ( receivedMetadataIndex!=-1 ) {
+          if ( receivedMetadataIndex != InvalidMetadataIndex ) {
             MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
           }
         }

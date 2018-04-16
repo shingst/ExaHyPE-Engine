@@ -84,6 +84,8 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 
   #ifdef Parallel
 
+  static constexpr int InvalidMetadataIndex = -1;
+
   /*! Helper routine for sendToNeighbour
    *
    * Loop over all the solvers and check

@@ -276,7 +276,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
 
   vertex.receiveNeighbourData(
         fromRank,
-        true/*merge*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
+        true/*merge*/,exahype::State::isFirstIterationOfBatchOrNoBatch()/*receive metadata*/,
         fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );
@@ -303,6 +303,7 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
@@ -316,6 +317,8 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
         fineGridVerticesEnumerator.getCellSize(),
         fineGridVerticesEnumerator.getLevel());
   }
+
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
   return exahype::State::isFirstIterationOfBatchOrNoBatch() ||
          exahype::State::isLastIterationOfBatchOrNoBatch();
@@ -331,6 +334,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceIn( "receiveDataFromMaster(...)" );
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
@@ -345,15 +349,20 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
         receivedVerticesEnumerator.getLevel());
   }
 
+  logTraceOut( "receiveDataFromMaster(...)" );
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithWorker(
     exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
+  logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
+
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     localCell.mergeWithMasterDataPerCell( cellSize );
   }
+
+  logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
 }
 
 // WORKER->MASTER
@@ -365,6 +374,8 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
+
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::Cell::reduceGlobalDataToMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -377,6 +388,8 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
         verticesEnumerator.getCellSize(),
         verticesEnumerator.getLevel());
   }
+
+  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithMaster(
@@ -391,6 +404,8 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
+  logTraceIn( "mergeWithMaster(...)" );
+
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromWorker(
         worker,
@@ -403,6 +418,8 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
         fineGridVerticesEnumerator.getCellSize(),
         fineGridVerticesEnumerator.getLevel());
   }
+
+  logTraceOut( "mergeWithMaster(...)" );
 }
 
 
