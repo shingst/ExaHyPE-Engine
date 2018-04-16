@@ -369,7 +369,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
     int masterNode = tarch::parallel::Node::getInstance().getGlobalMasterRank();
     assertion( masterNode != -1 );
 
-    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, ReceiveIterationControlMessagesBlocking );
+    _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, records::RepositoryState::ExchangeMode::NonblockingWithPollingLoopOverTests);
 
     result = Continue;
     if (_repositoryState.getAction()==exahype::records::RepositoryState::Terminate) {

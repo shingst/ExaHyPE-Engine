@@ -251,6 +251,7 @@ module SpecificVarEqn99
 		!print *, 'DyL_cg=',y_in-yL_cg,x_in-xL_cg,lookatindex_cg_fast
         if(minval(lookatindex_cg_fast(1:2))<0) then
             print *, 'LookIndex error for x_in=',x_in, ' and y_in=',y_in, '! Please choose a larger CG domain'
+			print *, 'x_L=',xL_cg,'y_L=',yL_cg,'dx=',dx_cg,'dy=',dy_cg
             stop
         end if
     end function lookatindex_cg_fast

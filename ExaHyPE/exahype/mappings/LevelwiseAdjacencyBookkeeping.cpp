@@ -119,12 +119,42 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
+  // Write cell's index into adjacent vertices
   dfor2(k)
     if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
       VertexOperations::writeCellDescriptionsIndex(
           fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
     }
   enddforx
+
+  // Write boundary index at neighbour cell's position in adjacent vertices' adjacency map per face
+  for (int direction = 0; direction < DIMENSIONS; ++direction) {
+    for (int orientation = 0; orientation < 2; ++orientation) {
+      bool isBoundaryFace = true;
+      dfor2(v)
+        isBoundaryFace &=
+            v(direction)!=orientation ||
+            fineGridVertices[ fineGridVerticesEnumerator(v) ].isBoundary();
+      enddforx
+
+      if ( isBoundaryFace ) {
+        dfor2(v)
+          dfor2(c)
+            if (
+              v(direction)==orientation &&
+              c(direction)==orientation
+            ) {
+              assertion( !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() );
+
+              VertexOperations::writeCellDescriptionsIndex(
+                  fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
+                  multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+            }
+          enddforx
+        enddforx
+      }
+    }
+  }
 }
 
 #ifdef Parallel
@@ -211,7 +241,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
 ) {
   if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
     dfor2(c)
-      if ( localVertex.getCellDescriptionsIndex()[cScalar] >= 0 ) {
+      if ( localVertex.getCellDescriptionsIndex()[cScalar] != multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex ) {
         exahype::VertexOperations::writeCellDescriptionsIndex(
             localVertex,
             cScalar,

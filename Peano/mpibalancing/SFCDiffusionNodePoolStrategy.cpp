@@ -47,7 +47,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
       // get the messages out of the system
       while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
         tarch::parallel::messages::WorkerRequestMessage message;
-        message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+        message.receive(MPI_ANY_SOURCE,_tag, true, tarch::parallel::messages::WorkerRequestMessage::ExchangeMode::Blocking);
         queue.push_back( message );
       }
       #endif
@@ -62,7 +62,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
       while ( continueToWait ) {
         while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
           tarch::parallel::messages::WorkerRequestMessage message;
-          message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+          message.receive(MPI_ANY_SOURCE,_tag, true, tarch::parallel::messages::WorkerRequestMessage::ExchangeMode::Blocking );
           queue.push_back( message );
           waitTimeoutTimeStamp = clock() + static_cast<std::clock_t>(std::floor(_waitTimeOut * CLOCKS_PER_SEC));
         }
@@ -102,7 +102,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
       if (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
         while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
           tarch::parallel::messages::WorkerRequestMessage message;
-          message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+          message.receive(MPI_ANY_SOURCE,_tag, true, tarch::parallel::messages::WorkerRequestMessage::ExchangeMode::Blocking);
           queue.push_back( message );
         }
       }

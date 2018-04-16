@@ -3420,9 +3420,9 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-    mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
-    mergeWithCommunicationStatus      (cellDescription,faceIndex,neighbourCommunicationStatus);
-    mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
+    mergeWithAugmentationStatus (cellDescription,faceIndex,neighbourAugmentationStatus);
+    mergeWithCommunicationStatus(cellDescription,faceIndex,neighbourCommunicationStatus);
+    mergeWithLimiterStatus      (cellDescription,faceIndex,neighbourLimiterStatus);
   }
 }
 
@@ -3455,6 +3455,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
         cellDescription.getFluctuation()).data() +
         (faceIndex * dofPerFace);
 
+/*
     #ifdef Asserts
     tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
             exahype::Cell::computeFaceBarycentre(
@@ -3462,6 +3463,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     logInfo("sendDataToNeighbour(...)", "send "<<DataMessagesPerNeighbourCommunication<<" msgs to rank " <<
             toRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
     #endif
+*/
 
     // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
     // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
@@ -3529,6 +3531,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 
     assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
         faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+/*
     #ifdef Asserts
     tarch::la::Vector<DIMENSIONS,double> faceBarycentre =
         exahype::Cell::computeFaceBarycentre(
@@ -3536,6 +3539,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     logInfo("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" msgs from rank " <<
         fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
     #endif
+*/
 
     const int dataPerFace = getBndFaceSize();
     const int dofPerFace  = getBndFluxSize();

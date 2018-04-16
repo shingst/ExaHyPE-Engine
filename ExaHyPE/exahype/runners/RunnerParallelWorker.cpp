@@ -44,7 +44,7 @@ int exahype::runners::Runner::runAsWorker(
       forkMessage.receive(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
           tarch::parallel::NodePool::getInstance().getTagForForkMessages(),
-          true, ReceiveIterationControlMessagesBlocking);
+          true, peano::parallel::messages::ForkMessage::ExchangeMode::NonblockingWithPollingLoopOverTests);
 
       repository.restart(
           forkMessage.getH(), forkMessage.getDomainOffset(),

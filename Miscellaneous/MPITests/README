@@ -1,0 +1,78 @@
+Broadcast
+=========
+Simple example of a broadcast where rank 0 sends
+a message of fixed length to all other ranks. The receivers are aware
+of the length of the expected message.
+(Normally, it would suffice to know the maximum 
+length of all expected messages as we only specify a
+buffer on the receiver side and not the actual message length.)
+
+Compile via (replace mpicc by desired MPI compiler wrapper):
+mpicc <options> -std=c++11 Broadcast.cpp -o Broadcast
+
+Compiler options:
+ -DMessageSize=<value>  - specify the size of the broadcasted message (default: 100). The message size is known
+                          on the sender and receiver side.
+ -DCollectives          - use a collective operation for performing the broadcast on both sides, sender and receiver side
+                          The other options below are ignored if this flag is set.
+ -DBlockingSend         - use a MPI_Send instead of a MPI_Isend and a subsequent MPI_Test calling while loop
+ -DWaitOnSends          - use a MPI_Waitall on the sender side instead of the MPI_Test calling while loop
+ -DBlockingReceive      - use a MPI_Send instead of a MPI_Irecv and a subsequent MPI_Test calling while loop
+ -DWaitOnSends          - use a MPI_Wait on the receiver side instead of the MPI_Test calling while loop
+
+DynamicReceivesBroadcast
+========================
+Simple example of a broadcast where rank 0 sends
+a message of arbitrary length
+to all other ranks. 
+As the receivers do not know the length of the message,
+they need to determine it first. They do that via calling an 
+MPI_Probe variant and subsequently MPI_Get_count.
+After the message length is known on the receiver side,
+the receivers allocate a buffer and receive the message.
+
+Compile via (replace mpicc by desired MPI compiler wrapper):
+mpicc <options> -std=c++11 DynamicReceiveBroadcast.cpp -o DynamicReceiveBroadcast
+
+Compiler options:
+ -DMessageSize <value>  - specify the size of the broadcasted message (default: 100). The message size is only known
+                          on the sender side, not on the receiver side.
+ -DBlockingSend         - use a MPI_Send instead of a MPI_Isend and a subsequent MPI_Test calling while loop
+ -DBlockingProbe        - use a blocking MPI_Probe instead of a MPI_IProbe calling while loop
+ -DBlockingReceive      - use a MPI_Send instead of a MPI_Irecv and a subsequent MPI_Test calling while loop
+ -DTobiasReceives       - use Tobas's receive strategy which bascially consists of a while loop around a non-blocking MPI_IProbe.
+                          If the IProbe finds a message with the right tag, it issues a non-blocking MPI_Irecv. The non-blocking 
+                          receive is then tested and if the test successful, it means we have received the message. 
+                          Otherwise, we return to the start of the loop.
+                          
+CartesianExchange
+========================
+This test models neighbour exchange patterns as they appear in Discontinuous Galerkin and
+Godunov Finite Volumes codes. We consider a Cartesian topology for the involved MPI ranks.
+
+We investigate here the tradeoff between message size and number of messages with
+respect to the total time spent posting sends and receives, waiting for their completion,
+and clearing all involved buffers afterwards.
+
+The user prescribes the size of the messages she wants to send to 
+the neighbouring ranks.
+The benchmark then considers splits of the user's original message into smaller
+message chunks. The splits are performed using
+a sequence of divisors 2^0, 2^1, 2^2, ... .
+We divide the original message size until the chunks's size equals 1 (incl.). 
+
+For each message chunk size, we then send as many messages as are required to 
+send the original unsplit message.
+
+Compile via (replace mpicc by desired MPI compiler wrapper):
+mpicc <options> -std=c++11 CartesianExchange.cpp -o CartesianExchange
+
+Compiler options:
+ -DUseVector - Use a vector instead of a list for storing the send/receive requests.
+
+Please run the program the following way: 
+  
+mpirun -np <numberOfRanks> ./CartesianExchange <dimensions> <maximumMessageSize> <numberOfTests>
+  
+Here, the required command line arguments 'dimensions', 'maximumMessageSize', and 'numberOfTests'
+are all positive integers.

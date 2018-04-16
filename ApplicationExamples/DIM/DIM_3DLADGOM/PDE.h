@@ -24,6 +24,7 @@ void pdeeigenvectors_(double* L, double* R, double* iR, const double* const Q, c
 void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);
 void testriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);
 
+void inittecplot_(const int* N_in,const int* M_in);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

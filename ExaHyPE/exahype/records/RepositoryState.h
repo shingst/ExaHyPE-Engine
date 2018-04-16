@@ -31,7 +31,7 @@ namespace exahype {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   15/03/2018 13:26
+ * @date   31/03/2018 21:14
  */
 class exahype::records::RepositoryState { 
    
@@ -255,14 +255,11 @@ class exahype::records::RepositoryState {
             
             static void shutdownDatatype();
             
-            /**
-             * @param communicateSleep -1 Data exchange through blocking mpi
-             * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-             * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-             */
-            void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+            enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
             
-            void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+            void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+            
+            void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
             
             static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
             
@@ -289,7 +286,7 @@ class exahype::records::RepositoryState {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   15/03/2018 13:26
+ * @date   31/03/2018 21:14
  */
 class exahype::records::RepositoryStatePacked { 
    
@@ -509,14 +506,11 @@ class exahype::records::RepositoryStatePacked {
             
             static void shutdownDatatype();
             
-            /**
-             * @param communicateSleep -1 Data exchange through blocking mpi
-             * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-             * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-             */
-            void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+            enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
             
-            void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+            void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+            
+            void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
             
             static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
             

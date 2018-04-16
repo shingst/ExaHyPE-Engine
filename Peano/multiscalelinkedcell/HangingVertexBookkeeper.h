@@ -130,7 +130,7 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * please all the creational routines first.
      *
      * We have to relax the assertion: there can be hanging nodes on level 1 that 
-     * are not created before (though it is kind of strange and I hvae to check 
+     * are not created before (though it is kind of strange and I have to check
      * this once more).
      *
      * Besides the search for the right hanging node, this operation also places
@@ -200,15 +200,12 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * happen that you fork the grid dynamically. Then, this routine updates
      * the entries dynamically, too.
      *
-     * \param periodicBoundaryConditions If set to true, we treat the domain boundary as
-     *                                   remote boundary shared with the global master rank.
-     *                                   We thus set the RemoteAdjancyIndex at the respective position.
-     *                                   Otherwise, the DomainBoundaryAdjacencyIndex is set.
+     * \note In case, the neighbour is the globla master rank, we simply
+     * prescribe a DomainBoundaryAdjacency index.
      */
     static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
       const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
-      const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries,
-      const bool                                 periodicBoundaryConditions = false
+      const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries
     );
 
     void beginIteration();

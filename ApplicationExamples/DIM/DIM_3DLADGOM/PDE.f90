@@ -763,4 +763,11 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
         ENDDO	
 END SUBROUTINE TESTRiemannSolver
 
+RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
+	USE TECPLOTPLOTTERmod
+	implicit none
+	INTEGER :: N_in,M_in
+	CALL SetMainParameters(N_in,M_in)
+END SUBROUTINE InitTECPLOT
+
 

@@ -65,14 +65,14 @@ int exahype::pingPongTest() {
       sendVertex[2].setAdjacentRank( 2, 32 );
       sendVertex[2].setAdjacentRank( 3, 33 );
 
-      sendVertex[0].send(1,100,false,-1);
-      sendVertex[0].send(1,100,true,-1);
+      sendVertex[0].send(1,100,false,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
+      sendVertex[0].send(1,100,true,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
       MPI_Send( sendVertex, 3, exahype::Vertex::MPIDatatypeContainer::Datatype, 1, 100, tarch::parallel::Node::getInstance().getCommunicator() );
     }
     if (tarch::parallel::Node::getInstance().getRank()==1) {
       exahype::Vertex receivedVertex;
 
-      receivedVertex.receive(0,100,false,-1);
+      receivedVertex.receive(0,100,false,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
       assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
@@ -83,7 +83,7 @@ int exahype::pingPongTest() {
       #endif
 
 
-      receivedVertex.receive(0,100,true,-1);
+      receivedVertex.receive(0,100,true,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
       assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );

@@ -46,28 +46,40 @@ def parseParameters(config):
     """
     Parse the parameters section.
     """
-    parameterSpace = {}
+    multipleListings = False
+    ungroupedParameterSpace = {}
+    groupedParameterSpace  = {}
     if "parameters" in config and len(config["parameters"].keys()):
         for key, value in config["parameters"].items():
-            parameterSpace[key] = parseList(value)
-            
-        if "order" not in parameterSpace:
-            print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
+            if key in ungroupedParameterSpace:
+               print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
+               multipleListings = True
+            ungroupedParameterSpace[key] = parseList(value)
+        
+        if config.has_section("parameters_grouped"):
+            for key, value in config["parameters_grouped"].items():
+                if key in groupedParameterSpace:
+                   print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
+                   multipleListings = True
+                if key in ungroupedParameterSpace:
+                   print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
+                   multipleListings = True
+                groupedParameterSpace[key] = parseList(value) 
+        if multipleListings:
+            print("ERROR: Some parameters have been found multiple times. Program aborted.",file=sys.stderr)
             sys.exit()
-        elif "dimension" not in parameterSpace:
-            print("ERROR: 'dimension' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "optimisation" not in parameterSpace:
-            print("ERROR: 'optimisation' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
-        elif "architecture" not in parameterSpace:
-            print("ERROR: 'architecture' missing in section 'parameters'.",file=sys.stderr)
-            sys.exit()
+
+        parameterSpace = {}
+        parameterSpace.update(ungroupedParameterSpace)
+        parameterSpace.update(groupedParameterSpace)
+        
+        # always put None in order to have at least one element
+        groupedParameterSpace[None] = [None] 
     else:
         print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
         sys.exit()
     
-    return parameterSpace
+    return ungroupedParameterSpace,groupedParameterSpace,parameterSpace
 
 def parseOptionsFile(optionsFile,ignoreMetadata=False):
     configParser = configparser.ConfigParser()
@@ -86,9 +98,9 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
     historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
     
-    jobs             = dict(configParser["jobs"])
-    environmentSpace = parseEnvironment(configParser)
-    parameterSpace   = parseParameters(configParser)
+    jobs                                                           = dict(configParser["jobs"])
+    environmentSpace                                               = parseEnvironment(configParser)
+    ungroupedParameterSpace, groupedParameterSpace, parameterSpace = parseParameters(configParser)
 
     jobClass   = "unknown"
     islands    = "unknown" 
@@ -103,7 +115,9 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     runNumbers = [x.strip() for x in jobs["run"].split(",")]
     
     Options = collections.namedtuple("options", \
-           ("general jobs environmentSpace parameterSpace "
+           ("general jobs "
+            "environmentSpace "
+            "ungroupedParameterSpace groupedParameterSpace parameterSpace "
             "exahypeRoot outputPath projectPath projectName "
             "buildFolder "
             "buildFolderPath scriptsFolderPath "
@@ -112,10 +126,12 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "nodeCounts taskCounts coreCounts runNumbers"))
     
     options = Options(
-      general          = general,
-      jobs             = jobs,\
-      environmentSpace = environmentSpace,\
-      parameterSpace   = parameterSpace,\
+      general                 = general,
+      jobs                    = jobs,\
+      environmentSpace        = environmentSpace,\
+      ungroupedParameterSpace = ungroupedParameterSpace,\
+      groupedParameterSpace   = groupedParameterSpace,\
+      parameterSpace          = parameterSpace,\
       \
       exahypeRoot      = exahypeRoot,\
       outputPath       = outputPath,\

@@ -1,5 +1,5 @@
 module purge
-module load python
+module load python/3.6.3
 module load java
 module load slurm
 module load intel/xe_2017.2

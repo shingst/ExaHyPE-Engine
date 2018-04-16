@@ -91,12 +91,6 @@ exahype-project DIM
       output    = ./vtk-output/conserved
     end plot
 */
-    plot vtu::Cartesian::vertices::limited::ascii Plotter
-      variables const = 14
-      time      = 0.0
-      repeat    = 1e-1
-      output    = ./vtk-output-lim/dg
-    end plot
 
      plot user::defined ErrorWriter
        variables const = 14
@@ -104,6 +98,14 @@ exahype-project DIM
        repeat          = 1e-1
        output          = ./output/errors
      end plot
+
+     plot user::defined TecplotWriter
+       variables const = 14
+       time            = 0.0
+       repeat          = 0.05
+       output          = ./output/tecplot
+     end plot
+
 
     // Seismograms
 /*
