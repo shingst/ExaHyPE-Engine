@@ -891,8 +891,16 @@ public:
    *
    * \note The ADERDGSolver needs to know about the limiter status during mesh initialisation and
    * refinement operations.
+   *
+   * <h2>FusedTimeStep Background Jobs</h2>
+   * We assume that the limiter status might change locally during batching but
+   * not the adaptive mesh. When we perform Fused Time Stepping, we thus
+   * have to copy the neighbourMergePerformed array as it is potentially
+   * overwritten before the background job has been executed.
    */
-  static int determineLimiterStatus(CellDescription& cellDescription);
+  static int determineLimiterStatus(
+      const CellDescription& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * TODO(Dominic): Can later be replaced

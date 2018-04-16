@@ -2636,10 +2636,11 @@ void exahype::solvers::ADERDGSolver::mergeWithLimiterStatus(
  */
 int
 exahype::solvers::ADERDGSolver::determineLimiterStatus(
-    CellDescription& cellDescription) {
+    const CellDescription& cellDescription,
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
   int max = 0;
   for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if ( cellDescription.getNeighbourMergePerformed(i) ) {
+    if ( neighbourMergePerformed[i] ) {
       max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
     }
   }
@@ -3582,8 +3583,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int indexOfFValues) {
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
-
-  cellDescription.setNeighbourMergePerformed(faceIndex, true);
 
   const int dataPerFace = getBndFaceSize();
   const int dofPerFace  = getBndFluxSize();
