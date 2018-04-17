@@ -2,11 +2,11 @@
 # Mandatory parameters are:
 # time, nodes, tasks,
 # job_name, output_file, error_file, 
-# body
+# job_file, spec_file, app, 
+# environment, parameters
 # 
 # Optional parameters are:
 # ranks, cores, mail
-
 #@ job_type = parallel
 #@ class = {{class}}
 #@ node = {{nodes}}
@@ -24,7 +24,11 @@
 #@ queue
 . /etc/profile
 . /etc/profile.d/modules.sh
-module load gcc/4.9
-module load tbb
+module switch intel/18.0
+module switch tbb/2018
+module switch gcc/5
+
+export OMP_NUM_THREADS={{cores}}
+export MP_TASK_AFFINITY=core:{{cores}}
 
 {{body}}
