@@ -1208,7 +1208,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   // memory consumption on rank 0 would not make any sense
   logInfo("startNewTimeStep(...)",
       "\tmemoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
-  #ifdef TrackGridStatistics
+
   if (exahype::solvers::ADERDGSolver::CompressionAccuracy>0.0) {
     DataHeap::getInstance().plotStatistics();
     peano::heap::PlainCharHeap::getInstance().plotStatistics();
@@ -1236,8 +1236,6 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     "startNewTimeStep(...)",
     "\tmax level=" << repository.getState().getMaxLevel()
     );
-  #endif
-
   #endif
 
   if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
