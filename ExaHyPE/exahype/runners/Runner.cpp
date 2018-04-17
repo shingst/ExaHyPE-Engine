@@ -1223,18 +1223,16 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   #endif
 
   #if defined(TrackGridStatistics)
-  if (repository.getState().getNumberOfInnerCells()>0) {
+  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
     logInfo(
       "startNewTimeStep(...)",
       "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
       << "/" << repository.getState().getNumberOfInnerLeafCells() );
-  }
-  logInfo(
-    "startNewTimeStep(...)",
-    "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
-    << "/" << repository.getState().getMinimumMeshWidth()
-    );
-  if (repository.getState().getMaxLevel()>0) {
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
+      << "/" << repository.getState().getMinimumMeshWidth()
+      );
     logInfo(
       "startNewTimeStep(...)",
       "\tmax level=" << repository.getState().getMaxLevel()
