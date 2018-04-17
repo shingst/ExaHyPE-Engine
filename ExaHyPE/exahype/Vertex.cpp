@@ -993,6 +993,7 @@ void exahype::Vertex::mergeWithNeighbourData(
       if ( receivedMetadataIndex != InvalidMetadataIndex ) {
           exahype::MetadataHeap::HeapEntries& receivedMetadata =
               MetadataHeap::getInstance().getData(receivedMetadataIndex);
+          assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
           const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
           exahype::MetadataHeap::HeapEntries metadataPortion(
@@ -1038,7 +1039,6 @@ void exahype::Vertex::receiveNeighbourData(
               isFirstIterationOfBatchOrNoBatch
           ) {
             receivedMetadataIndex = exahype::receiveNeighbourCommunicationMetadata(fromRank, x, level);
-            assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
           }
 
           if( hasToMergeWithNeighbourData(src,dest) ) {
