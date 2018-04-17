@@ -49,18 +49,18 @@ pipeline {
 
     }
 
-	post {
-	    always {
-		cleanWs()
-	    }
-	    // success {
-	    //     updateGitlabCommitStatus(name: 'jenkins', state: 'success')
-	    // }
-	    // failure {
-	    //     updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
-	    // }
+    post {
+	always {
+	    cleanWs()
 	}
-	//options {
-	//gitLabConnection('GitLab-Api-Here!')
-	//}
+	success {
+	    updateGitlabCommitStatus(name: 'jenkins', state: 'success')
+	}
+	failure {
+	    updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
+	}
+    }
+    options {
+	gitLabConnection('Exahype-Gitlab')
+    }
 }
