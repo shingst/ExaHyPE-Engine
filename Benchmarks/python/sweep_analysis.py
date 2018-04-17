@@ -212,7 +212,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     and nonfused scheme.
     """
     fusedAdapters        = ["FusedTimeStep"]
-    firstNonfusedAdapter = "BroadcastAndMergeNeighbours"
+    firstNonfusedAdapter = "MergeNeighbours"
     nonfusedAdapters     = [firstNonfusedAdapter, "Prediction", "UpdateAndReduce"]
 
     adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
