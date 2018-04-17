@@ -1234,10 +1234,12 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
     << "/" << repository.getState().getMinimumMeshWidth()
     );
-  logInfo(
-    "startNewTimeStep(...)",
-    "\tmax level=" << repository.getState().getMaxLevel()
-    );
+  if (repository.getState().getMaxLevel()>0) {
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tmax level=" << repository.getState().getMaxLevel()
+      );
+  }
   #endif
 
   if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {
