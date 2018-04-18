@@ -69,7 +69,7 @@ exahype-project  Elastic
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
-    terms const        = flux,ncp,materialparameters,pointsources:4
+    terms const        = flux,ncp,materialparameters,pointsources:1
     optimisation const = generic,patchwiseadjust
     language const     = C
 
