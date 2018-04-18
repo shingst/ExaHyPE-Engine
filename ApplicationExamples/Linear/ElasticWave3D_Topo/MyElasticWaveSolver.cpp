@@ -294,7 +294,12 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
 }
 
 void  Elastic::MyElasticWaveSolver::initPointSourceLocations() {
-  constexpr double a_x = 0.0;
+
+  //Zugspitze
+  pointSourceLocation[0][0]=4385.0;
+  pointSourceLocation[0][1]=10.0;
+  pointSourceLocation[0][2]=2691.0; 
+  /*constexpr double a_x = 0.0;
   constexpr double a_y = 0.0;
   constexpr double a_z = 0.0;
   
@@ -351,7 +356,7 @@ void  Elastic::MyElasticWaveSolver::initPointSourceLocations() {
   
   pointSourceLocation[3][0] = fault_ref_x;
   pointSourceLocation[3][1] = fault_ref_y;
-  pointSourceLocation[3][2] = fault_ref_z;
+  pointSourceLocation[3][2] = fault_ref_z;*/
 }
 
 
