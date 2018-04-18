@@ -3,6 +3,12 @@
 
 #include "../../../ExaHyPE/kernels/KernelUtils.h"
 
+#ifdef OPT_KERNELS
+#include "kernels/MyElasticWaveSolver/converter.h"
+using namespace Elastic::MyElasticWaveSolver_kernels::aderdg;
+#endif
+
+
 tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveSolver" );
 
 void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
@@ -21,7 +27,10 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
   // Dimensions                        = 3
   // Number of variables + parameters  = 9 + 16
   // @todo Please implement/augment if required
-  if (tarch::la::equals(t,0.0)) {
+
+   int level=std::round(log(_domainSize[0]/dx[0])/log(3.)) + 1;
+
+   if (tarch::la::equals(t,0.0)) {
     constexpr int basisSize = MyElasticWaveSolver::Order+1;
     int numberOfData=MyElasticWaveSolver::NumberOfParameters+MyElasticWaveSolver::NumberOfVariables;
 
@@ -65,7 +74,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 
 
 	  // velocity
-	  luh[id_xyzf(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	  luh[id_xyzf(k,j,i,0)]  = 0;
 	  luh[id_xyzf(k,j,i,1)]  = 0;
 	  luh[id_xyzf(k,j,i,2)]  = 0;
 	
@@ -83,6 +92,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,10)] = 6.0; //cp
 	  luh[id_xyzf(k,j,i,11)] = 3.343; //cs
 
+	  if( level <= getCoarsestMeshLevel()){
 	  // Jacobian
 	  luh[id_xyzf(k,j,i,12)] = jacobian[id_xyz(k,j,i)];
 
@@ -105,6 +115,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,22)] = gl_vals_x[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,23)] = gl_vals_y[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,24)] = gl_vals_z[id_xyz(k,j,i)];
+	  }
 	  //	  std::cout << std::endl;
 	  //	  std::cout << luh[id_xyzf(k,j,i,22)] << std::endl;
 	  //	  std::cout << luh[id_xyzf(k,j,i,23)] << std::endl;
@@ -134,7 +145,43 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
 }
 
 exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+
   // @todo Please implement/augment if required
+  if(!tarch::la::equals(t,0.0)){
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+ 
+  double left_vertex[3];
+  double right_vertex[3];
+
+  for(int i = 0 ; i<DIMENSIONS; i++){
+    left_vertex[i]  = center[i] - dx[i]*0.5;
+    right_vertex[i] = center[i] + dx[i]*0.5;
+  }
+
+  bool elementOnSurface=left_vertex[1] < 1;
+  if(elementOnSurface && (level == getCoarsestMeshLevel())){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+
+  bool pointSourceInElement= true;
+  for(int i = 0 ; i<DIMENSIONS; i++){
+    pointSourceInElement &= ((left_vertex [i] <= pointSourceLocation[0][i]) &&
+                             (right_vertex[i] >= pointSourceLocation[0][i]));
+  }
+  
+  if(pointSourceInElement){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+
+  /*  for(int k ; k< (Order+1); k++){
+    for(int j ; j< (Order+1); j++){
+      for(int i ; i< (Order+1); i++){
+	double abs_velocity=sqrt(luh[]);
+      }
+    }
+  }*/
+  
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
@@ -294,64 +341,15 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
 }
 
 void  Elastic::MyElasticWaveSolver::initPointSourceLocations() {
-  constexpr double a_x = 0.0;
-  constexpr double a_y = 0.0;
-  constexpr double a_z = 0.0;
-  
-  constexpr double b_x = 10.0;
-  constexpr double b_y = 10.0;
-  constexpr double b_z = 10.0;
 
-  constexpr double blockWidth_y = (b_y-a_y);
-  constexpr double blockWidth_x = (b_x-a_x);
-  constexpr double blockWidth_z = (b_z-a_z);
+  pointSourceLocation[0][0]=15.0;
+  pointSourceLocation[0][1]= 6.0;
+  pointSourceLocation[0][2]=15.0;
+  //Zugspitze
+  //  pointSourceLocation[0][0]=4385.0;
+  //  pointSourceLocation[0][1]=10.0;
+  //  pointSourceLocation[0][2]=2691.0;
 
-  double x1,y1,z1;
-  double fault_ref_x,fault_ref_y,fault_ref_z;
-    
-  x1 = 5.0;
-  y1 = 5.0;
-  z1 = 5.0;
-  fault_ref_x = (x1-a_x)/(blockWidth_x);
-  fault_ref_y = (y1-a_y)/(blockWidth_y);
-  fault_ref_z = (z1-a_z)/(blockWidth_z);
-  
-  pointSourceLocation[0][0]=fault_ref_x;
-  pointSourceLocation[0][1]=fault_ref_y;
-  pointSourceLocation[0][2]=fault_ref_z;
-
-  x1 = 7.5;
-  y1 = 5.0;
-  z1 = 5.0;
-  fault_ref_x = (x1-a_x)/(blockWidth_x);
-  fault_ref_y = (y1-a_y)/(blockWidth_y);
-  fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-  pointSourceLocation[1][0] = fault_ref_x;
-  pointSourceLocation[1][1] = fault_ref_y;
-  pointSourceLocation[1][2] = fault_ref_z;
-
-  x1 = 5.0;
-  y1 = 2.5;
-  z1 = 5.0;
-  fault_ref_x = (x1-a_x)/(blockWidth_x);
-  fault_ref_y = (y1-a_y)/(blockWidth_y);
-  fault_ref_z = (z1-a_z)/(blockWidth_z);
-
-  pointSourceLocation[2][0] = fault_ref_x;
-  pointSourceLocation[2][1] = fault_ref_y;
-  pointSourceLocation[2][2] = fault_ref_z;
-
-  x1 = 5.0;
-  y1 = 7.5;
-  z1 = 5.0;
-  fault_ref_x = (x1-a_x)/(blockWidth_x);
-  fault_ref_y = (y1-a_y)/(blockWidth_y);
-  fault_ref_z = (z1-a_z)/(blockWidth_z);
-  
-  pointSourceLocation[3][0] = fault_ref_x;
-  pointSourceLocation[3][1] = fault_ref_y;
-  pointSourceLocation[3][2] = fault_ref_z;
 }
 
 
@@ -362,10 +360,9 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
   double sigma = 0.1149;
   double t0 = 0.7;
   double f = 0.0;
-  double M0 = 1000.0;
+  double M0 = 1000.0/Q[12];
 
   if(n == 0){
-    
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
     forceVector[0] = 0.0;
@@ -378,46 +375,6 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
     forceVector[7] = 0.0;
     forceVector[8] = 0.0;
   
-  }else if(n == 1){
-    
-    f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    forceVector[0] = 0.0;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.*f;
-    forceVector[4] = 0.*f;
-    forceVector[5] = 0.*f;
-    forceVector[6] = 0.0;
-    forceVector[7] = 0.0;
-    forceVector[8] = 0.0;
-    
-  }else if(n == 2){
-    
-    f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-  
-    forceVector[0] = 0.0;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.*f;
-    forceVector[4] = 0.*f;
-    forceVector[5] = 0.*f;
-    forceVector[6] = 0.0;
-    forceVector[7] = 0.0;
-    forceVector[8] = 0.0;
-  }else if(n == 3){
-    
-    f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    forceVector[0] = 0.0;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.*f;
-    forceVector[4] = 0.*f;
-    forceVector[5] = 0.*f;
-    forceVector[6] = 0.0;
-    forceVector[7] = 0.0;
-    forceVector[8] = 0.0;
   }
 }
 
@@ -492,7 +449,25 @@ void Elastic::MyElasticWaveSolver::extractTransformation(const double* const Q,
   s_z     =Q[21];
 }
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+
+#ifdef OPT_KERNELS
+  double FL[converter::getFFaceGenArraySize()];
+  double FR[converter::getFFaceGenArraySize()];
+  double QL[converter::getQFaceGenArraySize()];
+  double QR[converter::getQFaceGenArraySize()];
+
+  converter::FFace_optimised2generic(FL_,FL);
+  converter::FFace_optimised2generic(FR_,FR);
+  converter::QFace_optimised2generic(QL_,QL);
+  converter::QFace_optimised2generic(QR_,QR);
+#else
+  double* FL=FL_;
+  double* FR=FR_;
+  const double* QL=QL_;
+  const double* QR=QR_;
+#endif
+
   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
   constexpr int numberOfParameters = MyElasticWaveSolver::NumberOfParameters;
@@ -575,7 +550,7 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
       double vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m;    
 
       if (isBoundaryFace) {
-	double r= faceIndex==1 ? 1 : 0;
+	double r= faceIndex==2 ? 1 : 0;
 	riemannSolver_boundary(faceIndex,r,vn_m,vm_m,vl_m,Tn_m,Tm_m,Tl_m,zp_m,zs_m,vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m);
 	riemannSolver_boundary(faceIndex,r,vn_p,vm_p,vl_p,Tn_p,Tm_p,Tl_p,zp_p,zs_p,vn_hat_p,vm_hat_p,vl_hat_p,Tn_hat_p,Tm_hat_p,Tl_hat_p);      
       }else {
@@ -647,6 +622,12 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
       FR[idx_FLR(i,j, 8)] = -norm_p_qr*mu_p*(n_p[2]*FR_y + n_p[1]*FR_z);
     }    
   }
+
+#ifdef OPT_KERNELS
+  converter::FFace_generic2optimised(FL,FL_);
+  converter::FFace_generic2optimised(FR,FR_);
+#endif
+
 }
 
 
