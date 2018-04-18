@@ -73,7 +73,7 @@ exahype-project  Elastic
     optimisation const = generic,patchwiseadjust
     language const     = C
 
-    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
+    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 25
       time            = 0.0
       repeat          = 1e-10
