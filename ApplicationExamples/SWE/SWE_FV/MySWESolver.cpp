@@ -2,8 +2,11 @@
 #include "InitialData.h"
 #include "MySWESolver_Variables.h"
 
-const double grav = 9.81;
+#include "kernels/KernelUtils.h"
 
+using namespace kernels;
+
+const double grav = 9.81;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
@@ -12,12 +15,12 @@ void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const ex
 }
 
 void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
-    // Dimensions             = 2
-    // Number of variables    = 4 + #parameters
+  // Dimensions             = 2
+  // Number of variables    = 4 + #parameters
 
-    if (tarch::la::equals(t, 0.0)) {
-        initialData(x, Q);
-    }
+  if (tarch::la::equals(t,0.0)) {
+    initialData(x, Q);
+  }
 }
 
 void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
@@ -27,13 +30,14 @@ void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, doub
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  const double c= std::sqrt(grav*vars.h());
+  const double c = std::sqrt(grav*vars.h());
   const double ih = 1./vars.h();
-  double u_n = Q[dIndex + 1] *ih;
+  double u_n = Q[dIndex + 1] * ih;
 
-  eigs.h() = u_n + c ;
-  eigs.hu()= u_n -c;
-  eigs.hv()= u_n ;
+  eigs.h() = u_n + c;
+  eigs.hu() = u_n - c;
+  eigs.hv() = u_n;
+  eigs.b() = 0.0;
 }
 
 void SWE::MySWESolver::boundaryValues(
@@ -46,12 +50,16 @@ void SWE::MySWESolver::boundaryValues(
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
+  //Outflow
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
+  stateOutside[3] = stateInside[3];
 
-    //for WALL BCs
-    stateOutside[d+1]=-stateInside[d+1];
+  //Wall
+  stateOutside[d+1]=-stateInside[d+1];
+
+
 }
 
 //***********************************************************
@@ -63,7 +71,7 @@ void SWE::MySWESolver::boundaryValues(
 
 void SWE::MySWESolver::flux(const double* const Q,double** F) {
   // Dimensions                        = 2
-  // Number of variables + parameters  = 3 + 1
+  // Number of variables + parameters  = 4 + 0
 
   ReadOnlyVariables vars(Q);
 
@@ -75,12 +83,23 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
   f[0] = vars.hu();
   f[1] = vars.hu()*vars.hu()*ih + 0.5*grav*vars.h()*vars.h();
   f[2] = vars.hu()*vars.hv()*ih;
+  f[3] = 0.0;
 
   g[0] = vars.hv();
   g[1] = vars.hu()*vars.hv()*ih;
   g[2] = vars.hv()*vars.hv()*ih + 0.5*grav*vars.h()*vars.h();
+  g[3] = 0.0;
+  
 }
 
 
 
+void  SWE::MySWESolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+  idx2 idx_gradQ(DIMENSIONS,NumberOfVariables);
+
+  BgradQ[0] = 0.0;
+  BgradQ[1] = grav*Q[0]*gradQ[idx_gradQ(0,3)];
+  BgradQ[2] = grav*Q[0]*gradQ[idx_gradQ(1,3)];
+  BgradQ[3] = 0.0;
+}
 
