@@ -400,7 +400,6 @@ void  Elastic::MyElasticWaveSolver::initPointSourceLocations() {
   pointSourceLocation[3][0] = fault_ref_x;
   pointSourceLocation[3][1] = fault_ref_y;
   pointSourceLocation[3][2] = fault_ref_z;*/
->>>>>>> 45e9de5ddcf8f590b9f4bbf8eda14267cb86de0f
 }
 
 
