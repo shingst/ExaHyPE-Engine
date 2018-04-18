@@ -90,7 +90,7 @@ endif
 ifeq ($(call tolower,$(MODE)),release)
 	# Settings for the Release mode
 	# ----------------------------------------------
-	#COMPILER_CFLAGS +=
+	COMPILER_CFLAGS +=  -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
 
 else ifeq ($(call tolower,$(MODE)),debug)
