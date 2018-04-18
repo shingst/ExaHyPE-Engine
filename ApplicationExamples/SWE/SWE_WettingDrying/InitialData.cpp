@@ -244,9 +244,9 @@ void SWE::WettingDryingProblem(const double* const x, double* Q){
 void SWE::initialData(const double* const x,double* Q) {
   //ShockShockProblem(x, Q);
   //RareRareProblem(x, Q);
-  //GaussFunctionProblem(x, Q);
+  GaussFunctionProblem(x, Q);
   //ExpBreakProblem(x,Q);
-  DamBreakProblem(x,Q);
+  //DamBreakProblem(x,Q);
   //SeaAtRestProblem(x,Q);
   //SteadyRunUpLinear(x,Q);
   //RunUpLinear(x,Q);

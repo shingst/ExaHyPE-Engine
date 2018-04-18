@@ -8,7 +8,7 @@ using namespace kernels;
 
 const double grav = 9.81;
 
-const double epsilon = 1e-12;
+const double epsilon = 1e-3;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
@@ -100,13 +100,13 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
       const double ih = 1. / vars.h();
 
       f[0] = vars.hu();
-      f[1] = vars.hu() * vars.hu() * ih + 0.5 * grav * vars.h() * vars.h();
+      f[1] = vars.hu() * vars.hu() * ih; // 0.5 * grav * vars.h() * vars.h();
       f[2] = vars.hu() * vars.hv() * ih;
       f[3] = 0.0;
 
       g[0] = vars.hv();
       g[1] = vars.hu() * vars.hv() * ih;
-      g[2] = vars.hv() * vars.hv() * ih + 0.5 * grav * vars.h() * vars.h();
+      g[2] = vars.hv() * vars.hv() * ih; // 0.5 * grav * vars.h() * vars.h();
       g[3] = 0.0;
   }
   
@@ -158,5 +158,7 @@ double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL,
         fL[i] = flux[i] + djump[i];
         fR[i] = flux[i] - djump[i];
     }
+
+    return smax;
 }
 
