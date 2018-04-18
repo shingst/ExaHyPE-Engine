@@ -342,14 +342,65 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
 
 void  Elastic::MyElasticWaveSolver::initPointSourceLocations() {
 
-  pointSourceLocation[0][0]=15.0;
-  pointSourceLocation[0][1]= 6.0;
-  pointSourceLocation[0][2]=15.0;
   //Zugspitze
-  //  pointSourceLocation[0][0]=4385.0;
-  //  pointSourceLocation[0][1]=10.0;
-  //  pointSourceLocation[0][2]=2691.0;
+  pointSourceLocation[0][0]=4385.0;
+  pointSourceLocation[0][1]=10.0;
+  pointSourceLocation[0][2]=2691.0; 
+  /*constexpr double a_x = 0.0;
+  constexpr double a_y = 0.0;
+  constexpr double a_z = 0.0;
+  
+  constexpr double b_x = 10.0;
+  constexpr double b_y = 10.0;
+  constexpr double b_z = 10.0;
 
+  double x1,y1,z1;
+  double fault_ref_x,fault_ref_y,fault_ref_z;
+    
+  x1 = 5.0;
+  y1 = 5.0;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[0][0]=fault_ref_x;
+  pointSourceLocation[0][1]=fault_ref_y;
+  pointSourceLocation[0][2]=fault_ref_z;
+
+  x1 = 7.5;
+  y1 = 5.0;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+    
+  pointSourceLocation[1][0] = fault_ref_x;
+  pointSourceLocation[1][1] = fault_ref_y;
+  pointSourceLocation[1][2] = fault_ref_z;
+
+  x1 = 5.0;
+  y1 = 2.5;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+
+  pointSourceLocation[2][0] = fault_ref_x;
+  pointSourceLocation[2][1] = fault_ref_y;
+  pointSourceLocation[2][2] = fault_ref_z;
+
+  x1 = 5.0;
+  y1 = 7.5;
+  z1 = 5.0;
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[3][0] = fault_ref_x;
+  pointSourceLocation[3][1] = fault_ref_y;
+  pointSourceLocation[3][2] = fault_ref_z;*/
+>>>>>>> 45e9de5ddcf8f590b9f4bbf8eda14267cb86de0f
 }
 
 

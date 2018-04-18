@@ -73,13 +73,12 @@ exahype-project  Elastic
     optimisation const = generic,patchwiseadjust
     language const     = C
 
-/*    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
-//      variables const = 25
-//      time            = 0.0
-//      repeat          = 0.1
-//      output          = ./ExaHyPE-output/was3_conserved
-//      output          = ./ExaHyPE-output/conserved
-    end plot*/
+    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
+      variables const = 25
+      time            = 0.0
+      repeat          = 1e-10
+      output          = ./conserved
+    end plot
 
     /* Do not need the time series for a point in the moment */
     plot probe::ascii ProbeWriter_1
