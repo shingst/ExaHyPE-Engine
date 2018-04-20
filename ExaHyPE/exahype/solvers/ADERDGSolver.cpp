@@ -3205,13 +3205,11 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterMetadata(
     CellDescription& cellDescription =
         getCellDescription(cellDescriptionsIndex,element);
 
-    #ifdef Asserts
     const CellDescription::Type receivedType =
         static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType]);
-    #endif
-    const bool masterHoldsData               = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
+    const bool masterHoldsData = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
 
-    assertion(receivedType==cellDescription.getType());
+    assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
     if (cellDescription.getType()==CellDescription::Type::Ancestor) {
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(masterHoldsData);
       ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
@@ -3277,7 +3275,7 @@ bool exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus];
   const bool workerHoldsData               =
       receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
-  assertion(receivedType==cellDescription.getType());
+  assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
 
   bool cellDescriptionRequiresVerticalCommunication = false;
   if (cellDescription.getType()==CellDescription::Type::Descendant) {
