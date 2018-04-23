@@ -192,7 +192,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	ifeq ($(call tolower,$(ARCHITECTURE)),phi)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
-	ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
 		COMPILER_CFLAGS += -xCORE-AVX512 -fma
 		COMPILER_LFLAGS += -xCORE-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
