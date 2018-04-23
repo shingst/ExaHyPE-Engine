@@ -3190,6 +3190,8 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren() ||
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
+    vetoErasingRequestsIfNecessary()
+
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     ensureNecessaryMemoryIsAllocated(cellDescription);
   }
@@ -3254,6 +3256,32 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
     }
   } // do nothing for descendants; wait for info from worker
     // see mergeWithWorkerMetadata
+
+  // Unset all erasing requests
+  const int coarseGridElement = tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
+    tarch::multicore::Lock lock(CoarseGridSemaphore);
+    switch (coarseGridCellDescription.getRefinementEvent()) {
+    case CellDescription::ErasingVirtualChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
+          coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
+          coarseGridCellDescription.toString());
+
+      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+    }  break;
+    case CellDescription::ErasingChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
+          coarseGridCellDescription.toString());
+
+      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+    } break;
+    default:
+      break;
+    }
+    lock.free();
+  }
 
 
   return cellDescriptionRequiresVerticalCommunication;
