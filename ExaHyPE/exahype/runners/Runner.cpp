@@ -586,6 +586,9 @@ int exahype::runners::Runner::run() {
     exahype::solvers::Solver::SpawnAMRBackgroundJobs =
         _parser.getSpawnAMRBackgroundThreads();
 
+    // TODO(Dominic): Wire through to spec file
+    exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting = false;
+
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
@@ -1205,7 +1208,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   // memory consumption on rank 0 would not make any sense
   logInfo("startNewTimeStep(...)",
       "\tmemoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
-  #ifdef TrackGridStatistics
+
   if (exahype::solvers::ADERDGSolver::CompressionAccuracy>0.0) {
     DataHeap::getInstance().plotStatistics();
     peano::heap::PlainCharHeap::getInstance().plotStatistics();
@@ -1220,21 +1223,21 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   #endif
 
   #if defined(TrackGridStatistics)
-  logInfo(
-    "startNewTimeStep(...)",
-    "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
-    << "/" << repository.getState().getNumberOfInnerLeafCells() );
-  logInfo(
-    "startNewTimeStep(...)",
-    "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
-    << "/" << repository.getState().getMinimumMeshWidth()
-    );
-  logInfo(
-    "startNewTimeStep(...)",
-    "\tmax level=" << repository.getState().getMaxLevel()
-    );
-  #endif
-
+  if (repository.getState().getNumberOfInnerCells()>0 and repository.getState().getMaxLevel()>0) {
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tinner cells/inner unrefined cells=" << repository.getState().getNumberOfInnerCells()
+      << "/" << repository.getState().getNumberOfInnerLeafCells() );
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tinner max/min mesh width=" << repository.getState().getMaximumMeshWidth()
+      << "/" << repository.getState().getMinimumMeshWidth()
+      );
+    logInfo(
+      "startNewTimeStep(...)",
+      "\tmax level=" << repository.getState().getMaxLevel()
+      );
+  }
   #endif
 
   if (solvers::Solver::getMinTimeStampOfAllSolvers()>std::numeric_limits<double>::max()/100.0) {

@@ -86,7 +86,16 @@ class SWE::MySWESolver : public SWE::AbstractMySWESolver {
 
     /* algebraicSource() function not included, as requested by the specification file */
 
-    /* nonConservativeProduct() function is not included, as requested in the specification file */
+    /**
+     * Compute the nonconservative product at a given position.
+     *
+     * \param[in]   Q       the conserved variables associated with a quadrature node
+     *                      as C array (already allocated).
+     * \param[in]   gradQ   The linearized gradient matrix of derivatives of Q (see guidebook for details).
+     * \param[out]  BgradQ  The nonconservative product (already allocated, same shape as Q).
+     *
+     **/
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
     
     /* pointSource() function not included, as requested in the specification file */
 };

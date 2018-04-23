@@ -72,7 +72,7 @@ CurvilinearTransformation::CurvilinearTransformation(const int num_nodes, const 
     unif_mesh[i]=i*1.0/(num_nodes-1);
   }
 
-  //precompute denominator for lagrange interpolation on uniform mesh for all vertexs
+  //precompute denominator for lagrange interpolation on uniform mesh for all verteces
   denominator_lagrange= new double[num_nodes];
   for(int i=0; i< num_nodes ; i++){
     double temp = 1.0;
@@ -93,7 +93,7 @@ CurvilinearTransformation::CurvilinearTransformation(const int num_nodes, const 
     for (int j = 0 ; j< num_nodes ; j ++){
 #if defined(_GLL)
       lagrange_basis_at_nodes[id_xy(j,i)]
-	=lagrangeBasis_uniform(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-j],i);
+	=lagrangeBasis_uniform(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-j-1],i);
 #else
       lagrange_basis_at_nodes[id_xy(j,i)]
 	=lagrangeBasis_uniform(kernels::gaussLegendreNodes[num_nodes-1][j],i);

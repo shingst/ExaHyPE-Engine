@@ -74,13 +74,16 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     consistent = True
     # verify mandatory options file parameters can be found in template file
     keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
-    for key in parameterDict:
+    for key in context:
         if key not in keysInTemplate:
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
     # optional parameters
     context["tasks"] = tasks
     context["cores"] = cores
+    for key in context:
+        if key not in keysInTemplate:
+            print("WARNING: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
     # verify template parameters are defined in options file
     for key in keysInTemplate:
         if key not in context:
@@ -94,6 +97,33 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
     
     return renderedFile
+
+
+def verifyAllRequiredParametersAreGiven(specFileTemplate):
+    if "order" not in parameterSpace:
+        print("ERROR: 'order' not found in section 'parameters' or 'parameters_grouped'.",file=sys.stderr)
+        sys.exit()
+    elif "dimension" not in parameterSpace:
+        print("ERROR: 'dimension' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
+        sys.exit()
+    elif "optimisation" not in parameterSpace:
+        print("ERROR: 'optimisation' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
+        sys.exit()
+    elif "architecture" not in parameterSpace:
+        print("ERROR: 'architecture' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
+        sys.exit()
+
+    foundLimitingADERDG = "limiter-type" in specFileTemplate
+    if foundLimitingADERDG:
+        if "limiterType" not in parameterSpace:
+            print("ERROR: 'limiterType' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
+            sys.exit()
+        elif "limiterOptimisation" not in parameterSpace:
+            print("ERROR: 'limiterOptimisation' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
+            sys.exit()
+
+    return foundLimitingADERDG
+    
 
 def build(buildOnlyMissing=False, skipMakeClean=False):
     """
@@ -116,24 +146,21 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
             print(variable+"="+os.environ[variable])
     print("")
     
-    templateFileName = general["spec_template"]
-    
-    templateBody = None
-    try:
-        with open(exahypeRoot+"/"+templateFileName, "r") as templateFile:
-            templateBody=templateFile.read()
-    except IOError:
-        print("ERROR: couldn\'t open template file: "+templateFileName,file=sys.stderr)
-        sys.exit()
-    
     if not os.path.exists(buildFolderPath):
         print("create directory "+buildFolderPath)
         os.makedirs(buildFolderPath)
-        
+    
     architectures = parameterSpace["architecture"]
     optimisations = parameterSpace["optimisation"]
     dimensions    = parameterSpace["dimension"]
     orders        = parameterSpace["order"]
+
+    limiterTypes         = [None] 
+    limiterOptimisations = [None]
+    if foundLimitingADERDG:
+        limiterTypes         = parameterSpace["limiterType"]
+        limiterOptimisations = parameterSpace["limiterOptimisation"]
+
     buildParameterDict = list(dictProduct(parameterSpace))[0]
         
     firstIteration = True
@@ -144,123 +171,125 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
         environmentDictHash = hashDictionary(environmentDict)   
         
         for architecture in architectures:
-            for optimisation in optimisations:
-                for dimension in dimensions:
-                    if not firstIteration and not skipMakeClean:
-                        command = "make clean"
-                        print(command)
-                        process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                        (output, err) = process.communicate()
-                        process.wait()
+            for dimension in dimensions:
+                if not firstIteration and not skipMakeClean:
+                    command = "make clean"
+                    print(command)
+                    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                    (output, err) = process.communicate()
+                    process.wait()
+                for optimisation in optimisations:
                     for order in orders:
-                        oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
-                        executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
-                                     architecture+"-"+optimisation+"-d" + dimension + "-p" + order
-                            
-                        if not os.path.exists(executable) or not buildOnlyMissing:
-                            buildParameterDict["optimisation"]=optimisation
-                            buildParameterDict["architecture"]=architecture
-                            buildParameterDict["dimension"]   =dimension
-                            buildParameterDict["order"]       =order
+                        for limiterType in limiterTypes:
+                            for limiterOptimisation in limiterOptimisations:
+                                oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
+                                suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
+                                if foundLimitingADERDG:
+                                    suffix += "-"+limiterType+"-"+limiterOptimisation
                                 
-                            buildSpecFileBody = renderSpecFile(templateBody,buildParameterDict,"1","1")
+                                executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
                                 
-                            buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+architecture+"-"+optimisation+"-d"+dimension+"-p"+order+".exahype"
-                                
-                            with open(exahypeRoot + "/" + buildSpecFilePath, "w") as buildSpecificationFile:
-                                buildSpecificationFile.write(buildSpecFileBody)
-                                
-                            print("building executable with: \n" + \
-                                  "- environment="+str(environmentDict) + ",\n"\
-                                  "- architecture='"+architecture + "',\n"\
-                                  "- optimisation='"+optimisation + "',\n"\
-                                  "- dimension="+dimension + ",\n"\
-                                  "- order="+order)
-                            
-                            # clean application folder only
-                            command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
-                            print(command)
-                            process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                            process.communicate()
-                            process.wait()
-                            
-                            # run toolkit
-                            toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFilePath+")"
-                            print(toolkitCommand,end="",flush=True)
-                            process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                            (output, toolkitErr) = process.communicate()
-                            process.wait()
-                            if "setup build environment ... ok" in str(output):
-                                print(" [OK]")
-                            else:
-                                print(" [FAILED]")
-                                print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
-                                print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
-                                sys.exit()
-                            
-                            if firstIteration:
-                                command = "make clean"
-                                print(command)
-                                process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                                (output, err) = process.communicate()
-                                process.wait()
-                                firstIteration = False
+                                if not os.path.exists(executable) or not buildOnlyMissing:
+                                    buildParameterDict["optimisation"]=optimisation
+                                    buildParameterDict["architecture"]=architecture
+                                    buildParameterDict["dimension"]   =dimension
+                                    buildParameterDict["order"]       =order
+                                        
+                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1")
+                                        
+                                    buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+suffix+".exahype"
+                                        
+                                    with open(exahypeRoot + "/" + buildSpecFilePath, "w") as buildspecFile:
+                                        buildspecFile.write(buildSpecFileBody)
+                                        
+                                    print("building executable with: \n" + \
+                                          "- environment="+str(environmentDict) + "\n"\
+                                          "- architecture='"+architecture + "'\n"\
+                                          "- dimension="+dimension + "\n"\
+                                          "- optimisation='"+optimisation + "'\n"\
+                                          "- order="+order + "\n"\
+                                          "- limiterType='"+str(limiterType) + "'\n"\
+                                          "- limiterOptimisation='"+str(limiterOptimisation)+"'")
+                                    
+                                    # clean application folder only
+                                    command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
+                                    print(command)
+                                    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                    process.communicate()
+                                    process.wait()
+                                    
+                                    # run toolkit
+                                    toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFilePath+")"
+                                    print(toolkitCommand,end="",flush=True)
+                                    process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                    (output, toolkitErr) = process.communicate()
+                                    process.wait()
+                                    if "setup build environment ... ok" in str(output):
+                                        print(" [OK]")
+                                    else:
+                                        print(" [FAILED]")
+                                        print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
+                                        print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
+                                        sys.exit()
+                                    
+                                    if firstIteration:
+                                        command = "make clean"
+                                        print(command)
+                                        process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                        (output, err) = process.communicate()
+                                        process.wait()
+                                        firstIteration = False
 
-                            # call make
-                            make_threads=general["make_threads"]
-                            makeCommand="make -j"+make_threads
-                            print(makeCommand,end="",flush=True)
-                            process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                            (output, makeErr) = process.communicate()
-                            process.wait()
-                            if "build of ExaHyPE successful" in str(output):
-                                print(" [OK]")
-                            else:
-                                print(" [FAILED]")
-                                print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
-                                sys.exit()
+                                    # call make
+                                    make_threads=general["make_threads"]
+                                    makeCommand="make -j"+make_threads
+                                    print(makeCommand,end="",flush=True)
+                                    process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                    (output, makeErr) = process.communicate()
+                                    process.wait()
+                                    if "build of ExaHyPE successful" in str(output):
+                                        print(" [OK]")
+                                    else:
+                                        print(" [FAILED]")
+                                        print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
+                                        sys.exit()
 
-                            moveCommand   = "mv "+oldExecutable+" "+executable
-                            print(moveCommand)
-                            subprocess.call(moveCommand,shell=True)
-                            print("SUCCESS!")
-                            print("--------------------------------------------------------------------------------")
-                            print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
-                            print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
-                            print("--------------------------------------------------------------------------------")
-                            executables+=1
-                        else:
-                            print("skipped building of '"+executable+"' as it already exists.")
+                                    moveCommand   = "mv "+oldExecutable+" "+executable
+                                    print(moveCommand)
+                                    subprocess.call(moveCommand,shell=True)
+                                    print("SUCCESS!")
+                                    print("--------------------------------------------------------------------------------")
+                                    print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
+                                    print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
+                                    print("--------------------------------------------------------------------------------")
+                                    executables+=1
+                                else:
+                                    print("skipped building of '"+executable+"' as it already exists.")
 
     print("built executables: "+str(executables))
 
 
-def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
-                    jobName,jobFilePath,outputFileName,errorFileName,appName,specFilePath,
-                    nodes,tasks,cores,run):
+def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
+                    jobName,jobScriptFilePath,outputFileName,errorFileName,
+                    nodes,tasks,cores): # cores still necessary?
     """
     Render a job script.
     """
-    renderedFile = templateBody
+    renderedFile = jobScriptTemplate
     
     context = {}
     # mandatory
-    context["nodes"]   = nodes
-    context["tasks"]   = tasks
+    context["nodes"]       = nodes
+    context["tasks"]       = tasks
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
+    context["job_name"]    = jobName 
     
-    context["environment"] = json.dumps(environmentDict).replace("\"","\\\"")
-    context["parameters"]  = json.dumps(parameterDict).replace("\"","\\\"")
-    
-    context["job_file"]  = jobFilePath
-    context["job_name"]  = jobName
-    context["app"]       = appName
-    context["spec_file"] = specFilePath
-    
+    context["body"]        = jobScriptBody   
+ 
     consistent = True
     # verify all mandatory(!) sweep options are defined in template
-    keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
+    keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",jobScriptTemplate)]
     for key in context:
         if key not in keysInTemplate:
             consistent = False
@@ -291,11 +320,17 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
 def verifyAllExecutablesExist(justWarn=False):
     """
     Verify that all executables exist.
-    """
+    """    
     architectures = parameterSpace["architecture"]
     optimisations = parameterSpace["optimisation"]
     dimensions    = parameterSpace["dimension"]
     orders        = parameterSpace["order"]
+    
+    limiterTypes         = [None] 
+    limiterOptimisations = [None]
+    if foundLimitingADERDG:
+        limiterTypes         = parameterSpace["limiterType"]
+        limiterOptimisations = parameterSpace["limiterOptimisation"]
     
     messageType = "ERROR"
     if justWarn:
@@ -309,19 +344,24 @@ def verifyAllExecutablesExist(justWarn=False):
     for environmentDict in dictProduct(environmentSpace):
         environmentDictHash = hashDictionary(environmentDict)
         for architecture in architectures:
-            for optimisation in optimisations:
-                for dimension in dimensions:
+            for dimension in dimensions:
+                for optimisation in optimisations:
                     for order in orders:
-                        executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
-                                     architecture+"-"+optimisation+"-d" + dimension + "-p" + order
+                        for limiterType in limiterTypes:
+                            for limiterOptimisation in limiterOptimisations:
+                                suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
+                                if foundLimitingADERDG:
+                                    suffix += "-"+limiterType+"-"+limiterOptimisation
+                                
+                                executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
                 
-                        if not os.path.exists(executable):
-                            allExecutablesExist = False
-                            print(messageType+ ": application for " + \
-                                  "environment="+str(environmentDict) + \
-                                  ", dimension="+dimension + \
-                                  ", order="+order + \
-                                  " does not exist! ('"+executable+"')",file=sys.stderr)
+                                if not os.path.exists(executable):
+                                    allExecutablesExist = False
+                                    print(messageType+ ": application for " + \
+                                          "environment="+str(environmentDict) + \
+                                          ", dimension="+dimension + \
+                                          ", order="+order + \
+                                          " does not exist! ('"+executable+"')",file=sys.stderr)
             
     if not justWarn and not allExecutablesExist:
         print("ERROR: subprogram failed as not all executables exist. Please adopt your options file according to the error messages.\n" + \
@@ -361,25 +401,6 @@ def generateScripts():
     Generate spec files and job scripts.
     """
     cpus       = jobs["num_cpus"]
-    
-    specFileTemplatePath  = exahypeRoot+"/"+general["spec_template"]
-    jobScriptTemplatePath = exahypeRoot+"/"+general["job_template"]
-    
-    specFileTemplate  = None
-    try:
-        with open(specFileTemplatePath, "r") as templateFile:
-            specFileTemplate=templateFile.read()
-    except IOError: 
-        print("ERROR: couldn\'t open template file: "+specFileTemplatePath,file=sys.stderr)
-        sys.exit()
-        
-    jobScriptTemplate = None
-    try:
-        with open(jobScriptTemplatePath, "r") as templateFile:
-            jobScriptTemplate=templateFile.read()
-    except IOError:
-        print("ERROR: couldn\'t open template file: "+jobScriptTemplatePath,file=sys.stderr)
-        sys.exit()
         
     if not os.path.exists(scriptsFolderPath):
         print("create directory "+scriptsFolderPath)
@@ -419,32 +440,88 @@ def generateScripts():
                         cores=str(int(int(cpus) / int(tasks)))
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
-                        
-                        for parameterDict in dictProduct(parameterSpace):
-                            parameterDictHash = hashDictionary(parameterDict)
+                        for ungroupedParameterDict in dictProduct(ungroupedParameterSpace):
+                            ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
-                            architecture = parameterDict["architecture"]
-                            optimisation = parameterDict["optimisation"]
-                            dimension    = parameterDict["dimension"]
-                            order        = parameterDict["order"]
+                            jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
+                                "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                            jobScriptFilePath = scriptsFolderPath + "/" + jobName + ".job"
+                            jobOutputFilePath = resultsFolderPath + "/" + jobName + ".job_out"
+                            jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".job_err"
                             
-                            executable   = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
-                                           architecture +"-"+ optimisation +"-d" + dimension + "-p" + order
-                            specFilePath = scriptsFolderPath + "/" + projectName + "-" + \
-                                           parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                            # aggregate the job script body
+                            jobScriptBody = ""
+                            for groupedParameterDict in dictProduct(groupedParameterSpace):
+                                parameterDict     = {}
+                                parameterDict.update(ungroupedParameterDict)
+                                parameterDict.update(groupedParameterDict)
+                                parameterDict.pop(None) # ensure we do not hash a dummy None key
+                                parameterDictHash = hashDictionary(parameterDict)
+                                
+                                architecture = parameterDict["architecture"]
+                                optimisation = parameterDict["optimisation"]
+                                dimension    = parameterDict["dimension"]
+                                order        = parameterDict["order"]
+                                
+                                suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
+                                if foundLimitingADERDG:
+                                    limiterType         = parameterDict["limiterType"]
+                                    limiterOptimisation = parameterDict["limiterOptimisation"]
+                                    suffix += "-"+limiterType+"-"+limiterOptimisation
+                                
+                                executable     = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
+                                
+                                specFilePath   = scriptsFolderPath + "/" + projectName + "-" + \
+                                                 parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                                                 
+                                outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                                                 "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run+".out"
+                                outputFilePath = resultsFolderPath + "/" + outputFileName 
+                                
+                                # pipe some information into output file
+                                jobScriptBody += "echo \"Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`\" > "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "module list >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "printenv >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "echo \""+jobScriptFilePath+":\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "cat \""+jobScriptFilePath+"\" >> "+outputFilePath+"\n"  
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "echo \""+specFilePath+":\" >> "+outputFilePath+"\n" 
+                                jobScriptBody += "cat \""+specFilePath+"\" >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                # pipe environment and parameter dicts into output file
+                                jobScriptBody += "echo \"sweep/environment="+json.dumps(environmentDict).replace("\"","\\\"")+"\" >> "+outputFilePath+"\n"
+                                jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
+                                # pipe the commands into the output file
+                                runCommand = general["run_command"].replace("\"","")
+                                runCommand = runCommand.replace("{{ranks}}",str(int(nodes)*int(tasks)));
+                                runCommand = runCommand.replace("{{nodes}}",nodes);
+                                runCommand = runCommand.replace("{{tasks}}",tasks);
+                                runCommand = runCommand.replace("{{cores}}",cores);
+                                if "./"==runCommand.strip():
+                                    runCommand = runCommand.strip()
+                                else:
+                                    runCommand += " "
+                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+"\n" # no whitespace after runCommand
+                                
+                                if "likwid" in general:
+                                    groups = sweep_options.parseList(general["likwid"])
+                                    for group in groups:
+                                        if "./"==runCommand:
+                                            jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n" 
+                                        else:
+                                            jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n"
+                                jobScriptBody += "\n" 
                             
-                            jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
-                            jobFilePrefix  = scriptsFolderPath + "/" + jobName
-                            jobFilePath    = jobFilePrefix + ".job"
-                            outputFileName = resultsFolderPath + "/" + jobName + ".out"
-                            errorFileName  = resultsFolderPath + "/" + jobName + ".err"
-                            
-                            jobScriptBody = renderJobScript(jobScriptTemplate,environmentDict,parameterDict,jobs,
-                                                            jobName,jobFilePath,outputFileName,errorFileName,executable,specFilePath,
-                                                            nodes,tasks,cores,run)
-                            with open(jobFilePath, "w") as jobFile:
-                                jobFile.write(jobScriptBody)
+                            # write job file
+                            renderedJobScript = renderJobScript(\
+                                                    jobScriptTemplate,jobScriptBody,jobs,
+                                                    jobName,jobScriptFilePath,jobOutputFilePath,jobErrorFilePath,
+                                                    nodes,tasks,cores)
+                            with open(jobScriptFilePath, "w") as jobScriptFile:
+                                jobScriptFile.write(renderedJobScript)
                             
                             jobScripts+=1
 
@@ -471,27 +548,22 @@ def verifyAllJobScriptsExist():
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
-                        for parameterDict in dictProduct(parameterSpace):
-                            parameterDictHash = hashDictionary(parameterDict)
+                        for ungroupedParameterDict in dictProduct(ungroupedParameterSpace):
+                            ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
-                            dimension = parameterDict["dimension"]
-                            order     = parameterDict["order"]
-                            
-                            jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                            jobName      = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
                                              "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
-                            jobFilePrefix  = scriptsFolderPath + "/" + jobName
-                            jobFilePath    = jobFilePrefix + ".job"
-                            
-                            if not os.path.exists(jobFilePath):
+                            jobScriptFilePath  = scriptsFolderPath + "/" + jobName + ".job"
+                            if not os.path.exists(jobScriptFilePath):
                                 allJobScriptsExist = False
                                 print("ERROR: job script for " + \
                                       "environment="+str(environmentDict)+ \
-                                      ", parameters="+str(parameterDict) + \
+                                      ", (ungrouped)parameters="+str(ungroupedParameterDict) + \
                                       ", nodes="+nodes + \
                                       ", tasks="+tasks + \
                                       ", cores="+cores + \
                                       ", run="+run + \
-                                      " does not exist! ('"+jobFilePath+"')",file=sys.stderr)
+                                      " does not exist! ('"+jobScriptFilePath+"')",file=sys.stderr)
     if not allJobScriptsExist:
         print("ERROR: subprogram failed! Please adopt your sweep options file according to the error messages.\n" + \
               "       Then rerun the 'scripts' subprogram.")
@@ -590,18 +662,15 @@ def submitJobs():
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
-                        for parameterDict in dictProduct(parameterSpace):
-                            parameterDictHash = hashDictionary(parameterDict)
+                        for ungroupedParameterDict in dictProduct(ungroupedParameterSpace):
+                            ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
-                            dimension = parameterDict["dimension"]
-                            order     = parameterDict["order"]
+                            jobName              = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
+                                                   "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                            jobScriptFilePrefix  = scriptsFolderPath + "/" + jobName
+                            jobScriptFilePath    = jobScriptFilePrefix + ".job"
                             
-                            jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
-                            jobFilePrefix  = scriptsFolderPath + "/" + jobName
-                            jobFilePath    = jobFilePrefix + ".job"
-                            
-                            command=jobSubmissionTool + " " + jobFilePath
+                            command=jobSubmissionTool + " " + jobScriptFilePath
                             print(command)
                             process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                             (output, err) = process.communicate()
@@ -661,7 +730,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","buildLocally","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
+    subprograms = ["build","buildMissing","buildLocally","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -713,11 +782,13 @@ typical workflow:
     
     options = sweep_options.parseOptionsFile(optionsFile)
     
-    general          = options.general
-    jobs             = options.jobs
-    environmentSpace = options.environmentSpace
-    parameterSpace   = options.parameterSpace
-     
+    general                 = options.general
+    jobs                    = options.jobs
+    environmentSpace        = options.environmentSpace
+    parameterSpace          = options.parameterSpace
+    ungroupedParameterSpace = options.ungroupedParameterSpace
+    groupedParameterSpace   = options.groupedParameterSpace    
+ 
     exahypeRoot      = options.exahypeRoot
     outputPath       = options.outputPath
     projectPath      = options.projectPath
@@ -738,6 +809,26 @@ typical workflow:
     
     verifySweepAgreesWithHistoricalExperiments()
     
+    specFileTemplatePath = general["spec_template"]
+    specFileTemplate     = None
+    try:
+        with open(exahypeRoot+"/"+specFileTemplatePath, "r") as specFileTemplateFile:
+            specFileTemplate=specFileTemplateFile.read()
+    except IOError:
+        print("ERROR: couldn\'t open specification file template file: "+templateFileName,file=sys.stderr)
+        sys.exit()
+        
+    jobScriptTemplatePath = exahypeRoot+"/"+general["job_template"]    
+    jobScriptTemplate = None
+    try:
+        with open(jobScriptTemplatePath, "r") as jobScriptTemplateFile:
+            jobScriptTemplate=jobScriptTemplateFile.read()
+    except IOError:
+        print("ERROR: couldn\'t open job script template file: "+jobScriptTemplatePath,file=sys.stderr)
+        sys.exit()
+        
+    foundLimitingADERDG = verifyAllRequiredParametersAreGiven(specFileTemplate)
+ 
     # select subprogram
     if subprogram == "cleanAll":
         clean()

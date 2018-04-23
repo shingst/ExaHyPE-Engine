@@ -149,7 +149,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   vertex.receiveNeighbourData(
-      fromRank,false /*no merge - just drop */,
+      fromRank,false /*no merge*/,true /*no batch*/,
       fineGridX,fineGridH,level);
 }
 
@@ -157,7 +157,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  vertex.sendToNeighbour(toRank,x,h,level);
+  vertex.sendToNeighbour(toRank,true,x,h,level);
 }
 
 bool exahype::mappings::PredictionRerun::prepareSendToWorker(

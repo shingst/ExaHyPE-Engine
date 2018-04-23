@@ -505,7 +505,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->mergeWithNeighbourDataBasedOnLimiterStatus(
             fromRank,
-            metadataPortion,
             destCellDescriptionIndex,element,src,dest,
             true, /* isRecomputation */
             x,level);
@@ -528,7 +527,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
   logTraceInWith3Arguments( "prepareSendToNeighbour(...)", vertex, toRank, level );
 
   if ( exahype::State::fuseADERDGPhases() ) {
-    vertex.sendToNeighbour(toRank,x,h,level);
+   vertex.sendToNeighbour(toRank,true,x,h,level); 
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );

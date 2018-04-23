@@ -137,12 +137,6 @@ void exahype::mappings::MergeNeighbours::enterCell(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVerticesEnumerator);
 
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
-
     if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -175,8 +169,8 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  vertex.receiveNeighbourData(
-        fromRank,true,
+   vertex.receiveNeighbourData(
+        fromRank,true /*merge*/,true/*no batch*/,
         fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );

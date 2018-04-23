@@ -69,10 +69,10 @@ def parseResultFile(filePath):
         fileHandle=codecs.open(filePath,'r','UTF_8')
         for line in fileHandle:
             if line.startswith("sweep/environment"):
-                value = line.split('=')[-1]
+                value = line.replace("sweep/environment=","")
                 environmentDict=json.loads(value)
             if line.startswith("sweep/parameters"):
-                value = line.split('=')[-1]
+                value = line.replace("sweep/parameters=","")
                 parameterDict=json.loads(value)
             anchor = '|'
             header = '||'

@@ -17,6 +17,9 @@ module load intel/xe_2017.2
 module load intelmpi/intel/2017.2
 module load gcc/4.9.1
 
+# select what to do (set to 0 or 1)
+useTracing=1
+
 export I_MPI_FABRICS="shm:dapl"
 
 # pipe some information into output file
@@ -29,27 +32,70 @@ echo ""
 cat hamilton6.job
 
 # create executables
-mpiicpc -std=c++11 CartesianExchange.cpp -o CartesianExchangeList
-mpiicpc -std=c++11 -DUseVector CartesianExchange.cpp -o CartesianExchangeVector
+outputDir=results
+if (( useTracing==1 )); then
+  # tracing
+  maximumMessageSize=512
+
+  outputDir=traces
+  mkdir $outputDir
+
+  export VT_CONFIG=itac.conf
+  mpiicpc -std=c++11 -g -trace                                                    CartesianExchange.cpp -o $outputDir"/"CartesianExchangeList
+  mpiicpc -std=c++11 -g -trace                 -DTestSendAndReceiveTogether       CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListTestSendAndReceiveTogether
+  mpiicpc -std=c++11 -g -trace                 -DDynamicReceives                  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListDynamicReceives
+  mpiicpc -std=c++11 -g -trace                 -DReceiveDanglingMessages          CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListReceiveDanglingMessages 
+  mpiicpc -std=c++11 -g -trace                 -DReceiveDanglingMessagesBlocking  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListReceiveDanglingMessagesBlocking 
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank                                    CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRank
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DTestSendAndReceiveTogether       CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankTestSendAndReceiveTogether
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DDynamicReceives                  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankDynamicReceives
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DReceiveDanglingMessages          CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankReceiveDanglingMessages
+  mpiicpc -std=c++11 -g -trace  -DBlockPerRank -DReceiveDanglingMessagesBlocking  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankReceiveDanglingMessagesBlocking
+else 
+  # no tracing
+  maximumMessageSize=4096
+  
+  outputDir=results
+  mkdir $outputDir
+  
+  mpiicpc -std=c++11                                                   CartesianExchange.cpp -o $outputDir"/"CartesianExchangeList
+  mpiicpc -std=c++11                -DTestSendAndReceiveTogether       CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListTestSendAndReceiveTogether
+  mpiicpc -std=c++11                -DDynamicReceives                  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListDynamicReceives
+  mpiicpc -std=c++11                -DReceiveDanglingMessages          CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListReceiveDanglingMessages 
+  mpiicpc -std=c++11                -DReceiveDanglingMessagesBlocking  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListReceiveDanglingMessagesBlocking 
+  mpiicpc -std=c++11 -DBlockPerRank                                    CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRank
+  mpiicpc -std=c++11 -DBlockPerRank -DTestSendAndReceiveTogether       CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankTestSendAndReceiveTogether
+  mpiicpc -std=c++11 -DBlockPerRank -DDynamicReceives                  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankDynamicReceives
+  mpiicpc -std=c++11 -DBlockPerRank -DReceiveDanglingMessages          CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankReceiveDanglingMessages
+  mpiicpc -std=c++11 -DBlockPerRank -DReceiveDanglingMessagesBlocking  CartesianExchange.cpp -o $outputDir"/"CartesianExchangeListBlockPerRankReceiveDanglingMessagesBlocking
+fi
 
 # run experiments
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
-for executable in CartesianExchangeList CartesianExchangeVector
-do
+for executable in CartesianExchangeList CartesianExchangeListTestSendAndReceiveTogether CartesianExchangeListDynamicReceives CartesianExchangeListReceiveDanglingMessages CartesianExchangeListReceiveDanglingMessagesBlocking CartesianExchangeListBlockPerRank CartesianExchangeListBlockPerRankTestSendAndReceiveTogether CartesianExchangeListBlockPerRankDynamicReceives CartesianExchangeListBlockPerRankReceiveDanglingMessages CartesianExchangeListBlockPerRankReceiveDanglingMessagesBlocking
+do 
   unset I_MPI_EAGER_THRESHOLD
   export I_MPI_ASYNC_PROGRESS=0
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-eager-no-imp-27-8-3-8192.txt 
+  name=$executable-eager-no-imp-27-8-3-$maximumMessageSize
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
 
   export I_MPI_EAGER_THRESHOLD=0
   export I_MPI_ASYNC_PROGRESS=0
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-rendezvous-no-imp-27-8-3-8192.txt 
+  name=$executable-rendezvous-no-imp-27-8-3-$maximumMessageSize
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
   
-  unset I_MPI_EAGER_THRESHOLD
+  unset I_MPiI_EAGER_THRESHOLD
   export I_MPI_ASYNC_PROGRESS=1
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-eager-imp-27-8-3-8192.txt 
+  name=$executable-eager-imp-27-8-3-$maximumMessageSize
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
   
   export I_MPI_EAGER_THRESHOLD=0
   export I_MPI_ASYNC_PROGRESS=1
-  mpiexec -np 27 -ppn 8 ./$executable 3 8192 10 > $executable-rendezvous-imp-27-8-3-8192.txt 
+  name=$executable-rendezvous-imp-27-8-3-$maximumMessageSize
+  sed -e "s,{{name}},$name,g" itac.conf-template > itac.conf
+  mpiexec -np 27 -ppn 8 $outputDir"/"$executable 3 $maximumMessageSize 10 > $outputDir"/"$name".txt"
 done 

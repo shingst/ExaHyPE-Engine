@@ -317,7 +317,8 @@ private:
    * methods returns false.
    */
   LimiterDomainChange determineLimiterStatusAfterSolutionUpdate(
-      SolverPatch& solverPatch,const bool isTroubled) const;
+      SolverPatch& solverPatch,const bool isTroubled,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -404,7 +405,18 @@ private:
       const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
-   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   * Body of LimitingADERDGSolver::fusedTimeStep(...).
+   */
+  UpdateResult fusedTimeStepBody(
+      const int   cellDescriptionsIndex,
+      const int   element,
+      const bool  isFirstIterationOfBatch,
+      const bool  isLastIterationOfBatch,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+      const bool  vetoSpawnPredictionJob);
+
+  /**
+   * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
       const int  cellDescriptionsIndex,
@@ -476,19 +488,25 @@ private:
    * do not plan to reduce the admissible time step size, refinement requests,
    * or limiter requests within a consequent reduction step.
    *
+   * \note We have to copy the neighbourMergePerformed flags of a cell description
+   * as they are requrired when determining a new limiter status.
+   * We exclude here faces where no merge has been performed, boundary faces e.g.
+   *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
    */
   class FusedTimeStepJob {
   private:
-    LimitingADERDGSolver& _solver;
-    const int             _cellDescriptionsIndex;
-    const int             _element;
+    LimitingADERDGSolver&             _solver;
+    const int                         _cellDescriptionsIndex;
+    const int                         _element;
+    std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
   public:
     FusedTimeStepJob(
-        LimitingADERDGSolver& solver,
-        const int             cellDescriptionsIndex,
-        const int             element);
+        LimitingADERDGSolver&                    solver,
+        const int                                cellDescriptionsIndex,
+        const int                                element,
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
     bool operator()();
   };
@@ -1000,7 +1018,8 @@ public:
   exahype::solvers::LimiterDomainChange
   updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
       const int cellDescriptionsIndex,
-      const int element);
+      const int element,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Similar to ::determineLimiterStatusAfterSolutionUpdate(const int,const int)
@@ -1355,7 +1374,6 @@ public:
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const exahype::MetadataHeap::HeapEntries&    neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -1383,7 +1401,6 @@ public:
    */
   void mergeWithNeighbourDataBasedOnLimiterStatus(
       const int                                    fromRank,
-      const exahype::MetadataHeap::HeapEntries&    neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,

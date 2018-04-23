@@ -7,6 +7,8 @@ using SVEC::GRMHD::Prim2Cons;
 #include "PDE/tensish.cpph"
 using namespace tensish;
 
+constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
+
 #ifndef RNSID_AVAILABLE
 
 #include <stdlib.h>
@@ -31,6 +33,7 @@ extern "C" void rnsid_2d_cartesian2cylindrical_(double* Cartesian, const double*
 
 rnsid::rnsid() {
 	id = new RNSID::rnsid();
+	hasBeenPrepared = false;
 	
 	// A TOV star
 	// id->axes_ratio = 1.0;
@@ -100,37 +103,13 @@ void rnsid::readParameters(const mexa::mexafile& para) {
 
 void rnsid::prepare() {
  	id->Run();
+	hasBeenPrepared = true;
 }
 
-void rnsid::Interpolate(const double* pos, double t, double* Q) {
-	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
+void rnsid::get_conserved_quantities(const double* pos, double* Q) {
 	double V[nVar] = {0.0}; // primitive variables, as returned by rnsid
-	
-	if(DIMENSIONS == 2) {
-		// in 2D, we interpret the coordinates (x,y) as (r,z)
-		// Transfrom from cylindrical coordinates to cartesian ones:
-		const double r=pos[0], z=pos[1], phi = 0.25*M_PI;
 
-		double pos_cylindrical[3] = { r, z, phi };
-		double pos_cartesian[3]   = { r*std::cos(phi), r*std::sin(phi), z  };
-		
-		if(r==0) {
-			throw std::domain_error("RNSID cannot be evaluated in 2D at the axis (radius=0) because coordinates are singular.");
-		}
-		
-		double  V_Cartesian[nVar] = {0.0};  // intermediate step from rnsid
-		double *V_Cylindrical = V; // cylindrical output
-		
-		id->Interpolate(pos_cartesian, V_Cartesian);
-
-		// Transform the metric from Cartesian back to cylindrical coordinates.
-		// ALERT: This is suitable for the GRMHD part but does not cover the curvature
-		//        part (CCZ4). It is ignored here anyway.
-
-		rnsid_2d_cartesian2cylindrical_(V_Cylindrical, V_Cartesian, pos_cylindrical);
-	} else {
-		id->Interpolate(pos, V);
-	}
+	id->Interpolate(pos, V);
 	
 	// treatment of the atmostphere PROBABLY not done by RNSID
 	const double atmo_rho = SVEC::GRMHD::Parameters::atmo_rho;
@@ -148,6 +127,43 @@ void rnsid::Interpolate(const double* pos, double t, double* Q) {
 	Prim2Cons p2c(Q, V);
 	//NVARS(i) printf("Q[%d]=%e\n", i, Q[i]);
 	p2c.copyFullStateVector();
+}
+
+void rnsid::Interpolate(const double* pos, double t, double* Q) {
+	if(!hasBeenPrepared) {
+		throw std::runtime_error("Calling initial data interplation without preparation.");
+	}
+	
+	if(DIMENSIONS == 2) {
+		// in 2D, we interpret the coordinates (x,y) as (rho,z)
+		// Transfrom from cylindrical coordinates to cartesian ones:
+		const double rho=pos[0], z=pos[1], phi = 0.25*M_PI;
+
+		// The source and target coordinate systems. Mind that they have to be right-oriented
+		// coordinate systems for the cross product of Bmag and Scon.
+		double pos_cylindrical[3] = { rho, phi, z };
+		double pos_cartesian[3]   = { rho*std::cos(phi), rho*std::sin(phi), z };
+		
+		if(rho==0) {
+			throw std::domain_error("RNSID cannot be evaluated in 2D at the axis (radius=0) because coordinates are singular.");
+		}
+		
+		double  Q_Cartesian[nVar] = {0.0};  // intermediate step from rnsid
+		double *Q_Cylindrical = Q; // cylindrical output
+		
+		get_conserved_quantities(pos_cartesian, Q_Cartesian);
+		
+		// Since I don't believe this translation stuff, let me setup something on my own
+		// here.
+		//V_Cartesian[0] = std::sqrt( pos_cartesian[0]*pos_cartesian[0] + pos_cartesian[1]*pos_cartesian[1] + pos_cartesian[2]*pos_cartesian[2] );
+		//V_Cartesian[1] = 
+		
+
+		// Transform the metric from Cartesian back to cylindrical coordinates.
+		rnsid_2d_cartesian2cylindrical_(Q_Cylindrical, Q_Cartesian, pos_cylindrical);
+	} else {
+		id->Interpolate(pos, Q);
+	}
 }
 
 #endif /* RNSID_AVAILABLE */

@@ -24,21 +24,11 @@
 #@ queue
 . /etc/profile
 . /etc/profile.d/modules.sh
-module load gcc/4.9
-module load tbb
+module switch intel/18.0
+module switch tbb/2018
+module switch gcc/5
 
-# pipe some information into output file
-echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`"
-echo ""
-module list
-echo ""
-printenv
-echo ""
-cat {{job_file}}
-echo ""
-echo "sweep/environment={{environment}}"
-echo "sweep/parameters={{parameters}}"
-cat {{spec_file}}
+export OMP_NUM_THREADS={{cores}}
+export MP_TASK_AFFINITY=core:{{cores}}
 
-# multiple ranks
-mpiexec -np {{ranks}} {{app}} {{spec_file}} 
+{{body}}

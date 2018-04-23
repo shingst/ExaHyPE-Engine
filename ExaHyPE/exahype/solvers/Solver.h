@@ -23,6 +23,7 @@
 #include <deque>
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
+#include "peano/utils/PeanoOptimisations.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/la/Vector.h"
 #include "tarch/multicore/BooleanSemaphore.h"
@@ -515,6 +516,12 @@ class exahype::solvers::Solver {
    * should run background jobs whenever possible.
    */
   static bool SpawnAMRBackgroundJobs;
+
+  /**
+   * If this is set, we can skip sending metadata around during
+   * batching iterations.
+   */
+  static bool AllSolversPerformStaticOrNoLimiting;
 
   /**
    * The type of a solver.
@@ -1792,7 +1799,6 @@ class exahype::solvers::Solver {
    */
   virtual void mergeWithNeighbourData(
       const int                                    fromRank,
-      const MetadataHeap::HeapEntries&             neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
