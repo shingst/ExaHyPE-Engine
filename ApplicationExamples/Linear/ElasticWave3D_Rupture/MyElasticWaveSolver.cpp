@@ -14,6 +14,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
   // Dimensions                        = 3
   // Number of variables + parameters  = 9 + 16
   // @todo Please implement/augment if required
+  int level=std::round(log(_domainSize[0]/dx[0])/log(3.)) + 1;
   if (tarch::la::equals(t,0.0)) {
     
     constexpr int basisSize = MyElasticWaveSolver::Order+1;
@@ -166,6 +167,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     // 					     top_bnd_x,  top_bnd_y,  top_bnd_z,
     // 					     front_bnd_x,  front_bnd_y,  front_bnd_z,
     // 					     back_bnd_x,  back_bnd_y,  back_bnd_z);
+    if( level <= getCoarsestMeshLevel()){
 
     getBoundaryCurves3D_cutOffTopography_withFault( num_nodes,
 						    nx,ny,nz,n,fault_position,
@@ -184,7 +186,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     kernels::idx2 id_xz(nz,nx); // botton top
     kernels::idx2 id_yz(nz,ny); //left right
 
-
+    }
     double* curvilinear_x = new double[num_nodes*num_nodes*num_nodes];
     double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
     double* curvilinear_z = new double[num_nodes*num_nodes*num_nodes];  
@@ -193,6 +195,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     int i_p = i_m + num_nodes;
     int j_p = j_m + num_nodes;
     int k_p = k_m + num_nodes;   
+    if( level <= getCoarsestMeshLevel()){
 
   
     transFiniteInterpolation3D( nx,  ny,  nz,
@@ -258,6 +261,9 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     delete back_bnd_x;
     delete back_bnd_y;
     delete back_bnd_z;
+    }
+
+  
   
     double* gl_vals_x = new double[num_nodes*num_nodes*num_nodes];
     double* gl_vals_y = new double[num_nodes*num_nodes*num_nodes];
@@ -276,6 +282,8 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     double* s_x = new double[num_nodes*num_nodes*num_nodes];
     double* s_y = new double[num_nodes*num_nodes*num_nodes];
     double* s_z = new double[num_nodes*num_nodes*num_nodes];  
+
+    if( level <= getCoarsestMeshLevel()){
   
     metricDerivativesAndJacobian3D(num_nodes,
 				   curvilinear_x,  curvilinear_y,  curvilinear_z,
@@ -286,7 +294,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 				   jacobian,
 				   width_x,  width_y,  width_z
 				   );
-
+    }
 
     for (int k=0; k< num_nodes; k++){
       for (int j=0; j< num_nodes; j++){
@@ -318,6 +326,8 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,11)] = 6.0; //cp
 	  luh[id_xyzf(k,j,i,12)] = 3.343; //cs
 
+	  if( level <= getCoarsestMeshLevel()){
+
 	  // Jacobian
 	  luh[id_xyzf(k,j,i,13)]  = jacobian[id_xyz(k,j,i)];	  
 
@@ -340,9 +350,11 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,23)] = gl_vals_x[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,24)] = gl_vals_y[id_xyz(k,j,i)];
 	  luh[id_xyzf(k,j,i,25)] = gl_vals_z[id_xyz(k,j,i)];	  
+	  }
 	}
       }
     }
+    
     delete gl_vals_x;
     delete gl_vals_y;
     delete gl_vals_z;
@@ -356,6 +368,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     delete s_x;
     delete s_y;
     delete s_z;
+    
   }
 }
 
@@ -380,6 +393,35 @@ void Elastic::MyElasticWaveSolver::boundaryValues(const double* const x,const do
 
 exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
+  constexpr int basisSize=Order+1;
+  int numberOfData=MyElasticWaveSolver::NumberOfParameters+MyElasticWaveSolver::NumberOfVariables;
+
+  if (!tarch::la::equals(t,0.0)) {
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
+
+  kernels::idx4 idx_Q(basisSize,basisSize,basisSize,numberOfData);
+
+
+
+  //check if element is near to fault
+
+  bool is_fault=false;
+
+  for (int i = 0; i < basisSize; i++) {
+    for (int j = 0; j < basisSize; j++) {
+      for (int k = 0; k < basisSize; k++) {
+      // TODO: Change position to static parameter
+	double jacobian=luh[idx_Q(i,j,k,23)];
+	is_fault = is_fault || std::abs(luh[idx_Q(i,j,k,23)] - 5) < dx[0]*1.0/(Order) + 1.0e-5;
+      }
+    }
+  }
+
+  if(is_fault){
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+  
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
@@ -548,15 +590,7 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
   BgradQ[idx_BgradQ(2,9)] =0;
 }
 
-void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
-
-  static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
-  double pi = 3.14159265359;
-  double sigma = 0.1149;
-  double t0 = 0.7;
-  //double t0 = 0.1;
-  double f = 0.0;
-  double M0 = 0.0; // Zeroed out !
+void Elastic::MyElasticWaveSolver::initPointSources() {
 
   double a_x = 0.0;
   double a_y = 0.0;
@@ -569,23 +603,72 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
   double blockWidth_y = (b_y-a_y);
   double blockWidth_x = (b_x-a_x);
   double blockWidth_z = (b_z-a_z);
+
+  double x1 = 5.0;
+  double y1 = 5.0;
+  double z1 = 5.0;
+  
+  double fault_ref_x = (x1-a_x)/(blockWidth_x);
+  double fault_ref_y = (y1-a_y)/(blockWidth_y);
+  double fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[0][0] = fault_ref_x;
+  pointSourceLocation[0][1] = fault_ref_y;
+  pointSourceLocation[0][2] =  fault_ref_z;
+
+  x1 = 7.5;
+  y1 = 5.0;
+  z1 = 5.0;
+  
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[1][0] = fault_ref_x;
+  pointSourceLocation[1][1] = fault_ref_y;
+  pointSourceLocation[1][2] = fault_ref_z;
+
+  x1 = 5.0;
+  y1 = 2.5;
+  z1 = 5.0;
+  
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[2][0] = fault_ref_x;
+  pointSourceLocation[2][1] = fault_ref_y;
+  pointSourceLocation[2][2] = fault_ref_z;
+  
+  x1 = 5.0;
+  y1 = 7.5;
+  z1 = 5.0;
+  
+  fault_ref_x = (x1-a_x)/(blockWidth_x);
+  fault_ref_y = (y1-a_y)/(blockWidth_y);
+  fault_ref_z = (z1-a_z)/(blockWidth_z);
+  
+  pointSourceLocation[3][0] = fault_ref_x;
+  pointSourceLocation[3][1] = fault_ref_y;
+  pointSourceLocation[3][2] = fault_ref_z;
+}
+
+
+void Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
+
+  static tarch::logging::Log _log("MyLinearWaveSolver::pointSource");
+  double pi = 3.14159265359;
+  double sigma = 0.1149;
+  double t0 = 0.7;
+  //double t0 = 0.1;
+  double f = 0.0;
+  double M0 = 0.0; // Zeroed out !
+
  
   if(n == 0){
     
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 5.0;
-    double y1 = 5.0;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
+   
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
@@ -601,17 +684,6 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
     
     f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
-    double x1 = 7.5;
-    double y1 = 5.0;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
 
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
@@ -628,18 +700,7 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
     
     f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
-    double x1 = 5.0;
-    double y1 = 2.5;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
-    
+   
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
@@ -654,18 +715,6 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
   }else if(n == 3){
     
     f = 0*M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-    double x1 = 5.0;
-    double y1 = 7.5;
-    double z1 = 5.0;
-
-    double fault_ref_x = (x1-a_x)/(blockWidth_x);
-    double fault_ref_y = (y1-a_y)/(blockWidth_y);
-    double fault_ref_z = (z1-a_z)/(blockWidth_z);
-    
-    x0[0] = fault_ref_x;
-    x0[1] = fault_ref_y;
-    x0[2] = fault_ref_z;
 
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
