@@ -3190,7 +3190,6 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren() ||
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
-    vetoErasingRequestsIfNecessary()
 
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     ensureNecessaryMemoryIsAllocated(cellDescription);
