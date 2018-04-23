@@ -1,11 +1,14 @@
 package eu.exahype.kernel;
 
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.exahype.node.PIds;
 import eu.exahype.node.AIds;
 import eu.exahype.node.AIdentifierId;
+import eu.exahype.node.AIdentifierWithMultId;
 
 import eu.exahype.node.AFiniteVolumesSolver;
 import eu.exahype.node.ALimitingAderdgSolver;
@@ -18,38 +21,53 @@ import eu.exahype.node.PSolver;
  */
 public class FiniteVolumesKernel {
   
-   
   /**
    * Configuration parameter: id of the options
    */
-  public static final String GENERIC_OPTION_ID      = "generic";
-  public static final String OPTIMISED_OPTION_ID    = "optimised";
+  private static final Map<String, String> TYPE_OPTION_ID = new HashMap<String, String>();
+  static {
+    TYPE_OPTION_ID.put("GODUNOV_OPTION_ID",      "godunov");
+    TYPE_OPTION_ID.put("MUSCL_OPTION_ID",        "musclhancock");
+    //TYPE_OPTION_ID.put("USER_DEFINED_OPTION_ID", "user");
+    TYPE_OPTION_ID.put("LEGENDRE_OPTION_ID",     "Legendre");
+    TYPE_OPTION_ID.put("LOBATTO_OPTION_ID",      "Lobatto");
+  }
   
-  public static final String GODUNOV_OPTION_ID      = "godunov";
-  public static final String MUSCL_OPTION_ID        = "musclhancock";
-  public static final String USER_DEFINED_OPTION_ID = "user";
+  private static final Map<String, String> TERMS_OPTION_ID = new HashMap<String, String>();
+  static {
+    TERMS_OPTION_ID.put("FLUX_OPTION_ID",              "flux");
+    TERMS_OPTION_ID.put("SOURCE_OPTION_ID",            "source");
+    TERMS_OPTION_ID.put("NCP_OPTION_ID",               "ncp");
+    TERMS_OPTION_ID.put("POINTSOURCES_OPTION_ID",      "pointsources");
+    //TERMS_OPTION_ID.put("MATERIALPARAMETER_OPTION_ID", "materialparameters"); //TODO
+  }
   
-  public static final String FLUX_OPTION_ID         = "flux";
-  public static final String SOURCE_OPTION_ID       = "source";
-  public static final String NCP_OPTION_ID          = "ncp";
-  public static final String POINTSOURCES_OPTION_ID = "pointsources";
+  private static final Map<String, String> OPTIMIZATION_OPTION_ID = new HashMap<String, String>();
+  static {
+    OPTIMIZATION_OPTION_ID.put("GENERIC_OPTION_ID",            "generic");
+    OPTIMIZATION_OPTION_ID.put("OPTIMIZED_OPTION_ID",          "optimised");
+    //OPTIMIZATION_OPTION_ID.put("PATCHWISE_ADJUST_OPTION_ID",   "patchwiseadjust"); //TODO
+    OPTIMIZATION_OPTION_ID.put("TEMP_VARS_ON_STACK_OPTION_ID", "usestack");
+  }
   
-  public static final String TEMP_VARS_ON_STACK_OPTION_ID = "usestack";
-  
-  private Set<String> type;
-  private Set<String> terms;
-  private Set<String> optimisation;
+  /** 
+   * Maps of parsed option
+   * associated int is -1 when not present in the spec file 
+   */
+  private Map<String, Integer> type;
+  private Map<String, Integer> terms;
+  private Map<String, Integer> optimization;
   
   public FiniteVolumesKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AFiniteVolumesSolver) {
-      type = parseIds(((AFiniteVolumesSolver) solver).getKernelType());
-      terms = parseIds(((AFiniteVolumesSolver) solver).getKernelTerms());
-      optimisation = parseIds(((AFiniteVolumesSolver) solver).getKernelOpt());
+      type = parseIdsToMap(((AFiniteVolumesSolver) solver).getKernelType());
+      terms = parseIdsToMap(((AFiniteVolumesSolver) solver).getKernelTerms());
+      optimization = parseIdsToMap(((AFiniteVolumesSolver) solver).getKernelOpt());
     } else if(solver instanceof ALimitingAderdgSolver) {
-      type = parseIds(((ALimitingAderdgSolver) solver).getKernelLimiterType()); 
+      type = parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelLimiterType()); 
       // Does not differ between ADER-DG solver and FV limiter 
-      terms = parseIds(((ALimitingAderdgSolver) solver).getKernelTerms());
-      optimisation = parseIds(((ALimitingAderdgSolver) solver).getKernelLimiterOpt());
+      terms = parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelTerms());
+      optimization = parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelLimiterOpt());
     } else {
       throw new IllegalArgumentException("No kernel definition found");
     }
@@ -66,11 +84,30 @@ public class FiniteVolumesKernel {
     }
   }
   
-  private static Set<String> parseIds(PIds idsRaw) {
-    return ((AIds)idsRaw).getId().stream().map(e -> ((AIdentifierId)e).getValue().getText()).collect(Collectors.toSet());
+  private static Map<String, Integer> parseIdsToMap(PIds idsRaw) {
+    return ((AIds)idsRaw).getId().stream().collect(Collectors.toMap(
+      (e -> (e instanceof AIdentifierId) ? ((AIdentifierId)e).getValue().getText() : ((AIdentifierWithMultId)e).getValue().getText()),
+      (e -> (e instanceof AIdentifierId) ? Integer.valueOf(-1) : Integer.valueOf(((AIdentifierWithMultId)e).getMultiplicity().getText()))
+    ));
   }
   
   private void validate() throws IllegalArgumentException {
+     //check if all parsed arguments are recognized
+    for(String parsedId : type.keySet()) {
+      if(!TYPE_OPTION_ID.containsValue(parsedId)) {
+        throw new IllegalArgumentException("Type key \""+parsedId+"\" not recognized");
+      }
+    }
+    for(String parsedId : terms.keySet()) {
+      if(!TERMS_OPTION_ID.containsValue(parsedId)) {
+        throw new IllegalArgumentException("Terms key \""+parsedId+"\" not recognized");
+      }
+    }
+    for(String parsedId : optimization.keySet()) {
+      if(!OPTIMIZATION_OPTION_ID.containsValue(parsedId)) {
+        throw new IllegalArgumentException("Optimisation key \""+parsedId+"\" not recognized");
+      }
+    }
   }
   
   public enum KernelType {
@@ -81,24 +118,16 @@ public class FiniteVolumesKernel {
   }
   
   public KernelType getKernelType() {
-    if ( type.contains(MUSCL_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
-        return  KernelType.Unknown;
+    if (type.containsKey(TYPE_OPTION_ID.get("MUSCL_OPTION_ID")) && optimization.containsKey(OPTIMIZATION_OPTION_ID.get("OPTIMIZED_OPTION_ID"))) {
+      return  KernelType.Unknown;
     }
-    if ( 
-        type.contains(MUSCL_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
-        || 
-        type.contains(MUSCL_OPTION_ID)
-      ) {
+    if (type.containsKey(TYPE_OPTION_ID.get("MUSCL_OPTION_ID")) && optimization.containsKey(OPTIMIZATION_OPTION_ID.get("GENERIC_OPTION_ID"))) {
       return  KernelType.GenericMUSCLHancock;
     }
-    if ( type.contains(GODUNOV_OPTION_ID) && optimisation.contains(OPTIMISED_OPTION_ID) ) {
-        return  KernelType.Unknown;
+    if (type.containsKey(TYPE_OPTION_ID.get("GODUNOV_OPTION_ID")) &&  optimization.containsKey(OPTIMIZATION_OPTION_ID.get("OPTIMIZED_OPTION_ID"))) {
+      return  KernelType.Unknown;
     }
-    if ( 
-        type.contains(GODUNOV_OPTION_ID) && optimisation.contains(GENERIC_OPTION_ID)
-        || 
-        type.contains(GODUNOV_OPTION_ID)
-      ) {
+    if (type.containsKey(TYPE_OPTION_ID.get("GODUNOV_OPTION_ID")) && optimization.containsKey(OPTIMIZATION_OPTION_ID.get("GENERIC_OPTION_ID"))) {
       return  KernelType.GenericGodunov;
     }
     //if ( type.contains(USER_DEFINED_OPTION_ID) ) {
@@ -120,47 +149,50 @@ public class FiniteVolumesKernel {
   }
 
   public boolean usesOptimisedKernels() {
-	return false;
+    return false;
   }
   
-  public boolean useFlux() {
-    return terms.contains(FLUX_OPTION_ID);
+   public boolean useFlux() {
+    return terms.containsKey(TERMS_OPTION_ID.get("FLUX_OPTION_ID"));
   }
-  
   
   public boolean useSource() {
-    return terms.contains(SOURCE_OPTION_ID);
+    return terms.containsKey(TERMS_OPTION_ID.get("SOURCE_OPTION_ID"));
   }
   
   public boolean useNCP() {
-    return terms.contains(NCP_OPTION_ID);
+    return terms.containsKey(TERMS_OPTION_ID.get("NCP_OPTION_ID"));
   }
   
   public boolean usePointSources() {
-    return terms.contains(POINTSOURCES_OPTION_ID);
+    return terms.containsKey(TERMS_OPTION_ID.get("POINTSOURCES_OPTION_ID"));
+  }
+  
+  public boolean useMaterialParameterMatrix() {
+    return terms.containsKey(TERMS_OPTION_ID.get("MATERIALPARAMETER_OPTION_ID"));
   }
   
   public boolean tempVarsOnStack() {
-    return optimisation.contains(TEMP_VARS_ON_STACK_OPTION_ID);
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("TEMP_VARS_ON_STACK_OPTION_ID"));
   }
     
   //(type: [...], terms: [...], opt: [...])
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("(type: [");
-    for(String s : type) {
+    for(String s : type.keySet()) {
       sb.append(s);
       sb.append(", ");
     }
     sb.deleteCharAt(sb.length()-2);
     sb.append("], terms: [");
-    for(String s : terms) {
+    for(String s : terms.keySet()) {
       sb.append(s);
       sb.append(", ");
     }
     sb.deleteCharAt(sb.length()-2);
     sb.append("], opt: [");
-    for(String s : optimisation) {
+    for(String s : optimization.keySet()) {
       sb.append(s);
       sb.append(", ");
     }
