@@ -132,7 +132,9 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * 
      * @TODO: Document me, please.
     **/
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+
+    void initPointSources();
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n);
 
     /**
      * @TODO LR : document
