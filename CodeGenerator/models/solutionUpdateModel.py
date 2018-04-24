@@ -21,19 +21,10 @@
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class SolutionUpdateGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "solutionUpdate.cpp"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-
+class SolutionUpdateModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("solutionUpdate_cpp.template", self.m_filename, self.m_context)
+        self.render("solutionUpdate_cpp.template", "solutionUpdate.cpp")

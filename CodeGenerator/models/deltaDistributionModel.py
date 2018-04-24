@@ -14,28 +14,20 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
 # @section DESCRIPTION
 #
-# Generates the kernel to apply the boundary condition at the border of the domain
+# Generate the deltaDistribution kernel
 #
-# Call the user function boundaryValues
+# Call user function pointSource
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class BoundaryConditionsGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "boundaryConditions.cpp"
-
-    
-    def __init__(self, i_config):
-        self.m_context = i_config
-
+class DeltaDistributionModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("boundaryConditions_cpp.template", self.m_filename, self.m_context)
-
+        if(self.context['usePointSources']):
+            self.render("deltaDistribution_cpp.template", "deltaDistribution.cpp")
