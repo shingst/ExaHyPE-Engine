@@ -526,19 +526,18 @@ bool exahype::parser::Parser::getFuseAlgorithmicSteps() const {
   std::string token = getTokenAfter("global-optimisation", "fuse-algorithmic-steps");
   logDebug("getFuseAlgorithmicSteps()", "found fuse-algorithmic-steps"
                                             << token);
-
-  bool result = token.compare("on") == 0;
-
-  if (token.compare(_noTokenFound) == 0) {
-    result = false;  // default value
-  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
     logError("getFuseAlgorithmicSteps()",
-             "fuse-algorithmic-steps is required in the "
-             "global-optimisation segment and has to be either on or off: "
+             "fuse-algorithmic-steps in the "
+             "global-optimisation segment has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return result;
+  return token.compare("on")==0;
 }
 
 
@@ -564,79 +563,98 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
 
       return result;
   }
-  else return false;
+  else return 0.0;
 }
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   std::string token = getTokenAfter("global-optimisation", "spawn-predictor-as-background-thread");
   logDebug("getSpawnPredictorAsBackgroundTask()", "found spawn-predictor-as-background-thread"
                                             << token);
-
-  bool result = token.compare("on") == 0;
-
-  if (token.compare(_noTokenFound) == 0) {
-    result = false;  // default value
-  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
     logError("getSpawnPredictorAsBackgroundTask()",
              "spawn-predictor-as-background-thread is required in the "
              "global-optimisation segment and has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return result;
+  return token.compare("on")==0;
 }
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
   std::string token = getTokenAfter("global-optimisation", "spawn-amr-background-threads");
   logDebug("getSpawnAMRBackgroundThreads()", "found spawn-amr-background-threads"
                                             << token);
-
-  bool result = token.compare("on") == 0;
-
-  if (token.compare(_noTokenFound) == 0) {
-    result = false;  // default value
-  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
     logError("getSpawnAMRBackgroundThreads()",
              "spawn-amr-background-threads is required in the "
              "global-optimisation segment and has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return result;
+  return token.compare("on")==0;
 }
 
-bool exahype::parser::Parser::getExchangeBoundaryDataInBatchedTimeSteps() const {
-  std::string token = getTokenAfter(
-      "global-optimisation",
-      "disable-amr-if-grid-has-been-stationary-in-previous-iteration");
-  if (token.compare("on") != 0 && token.compare("off") != 0) {
-    logError("getExchangeBoundaryDataInBatchedTimeSteps()",
-             "disable-amr-if-grid-has-been-stationary-in-previous-iteration is "
-             "required in the "
-             "global-optimisation segment and has to be either on or off: "
+bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
+  std::string token = getTokenAfter("global-optimisation", "disable-metadata-exchange-in-batched-time-steps");
+  logDebug("getDisableMetaDataExchangeInBatchedTimeSteps()", "found metadata-exchange-in-batched-time-steps"
+                                            << token);
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
+    logError("getDisableMetaDataExchangeInBatchedTimeSteps()",
+             "metadata-exchange-in-batched-time-steps in the "
+             "global-optimisation segment has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return token.compare("off") == 0;
+  return token.compare("on")==0;
+}
+
+bool exahype::parser::Parser::getDisablePeanoNeighbourExchangeInTimeSteps() const {
+  std::string token = getTokenAfter(
+      "global-optimisation",
+      "disable-amr-in-time-steps");
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
+    logError("getDisablePeanoNeighbourExchangeInTimeSteps()",
+        "disable-amr-in-time-steps in the "
+        "global-optimisation segment has to be either on or off: "
+        << token);
+    _interpretationErrorOccured = true;
+  }
+  return token.compare("on")==0;
 }
 
 double exahype::parser::Parser::getTimestepBatchFactor() const {
-  std::string token = getTokenAfter("global-optimisation", "timestep-batch-factor");
-  char* pEnd;
-  double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
-  logDebug("getFuseAlgorithmicStepsFactor()", "found timestep-batch-factor "
-                                                  << token);
+  if(hasOptimisationSegment()) {
+    std::string token = getTokenAfter("global-optimisation", "time-step-batch-factor");
+    char* pEnd;
+    double result = std::strtod(token.c_str(), &pEnd);
+    logDebug("getFuseAlgorithmicStepsFactor()", "found time-step-batch-factor " << token);
 
-  if (result < 0.0 || result > 1.0 || pEnd == token.c_str()) {
-    logError("getFuseAlgorithmicStepsFactor()",
-             "'timestep-batch-factor': Value is required in global-optimisation "
-             "section and must be greater than zero and smaller than one: "
-                 << result);
-    result = 0.0;
-    _interpretationErrorOccured = true;
-  }
-
-  return result;
+    if (result < 0.0 || result > 1.0 || pEnd == token.c_str()) {
+      logError("getFuseAlgorithmicStepsFactor()",
+               "'time-step-batch-factor': Value is required in global-optimisation "
+               "section and must be greater than zero and smaller than one: "
+                   << result);
+      result = 0.0;
+      _interpretationErrorOccured = true;
+    }
+    return result;
+  } else return 0.0;
 }
 
 
@@ -648,19 +666,7 @@ bool exahype::parser::Parser::hasOptimisationSegment() const {
 
 bool exahype::parser::Parser::getSkipReductionInBatchedTimeSteps() const {
   if (hasOptimisationSegment()) {
-    std::string token =
-      getTokenAfter("global-optimisation", "skip-reduction-in-batched-time-steps");
-    logDebug("getSkipReductionInBatchedTimeSteps()",
-           "found skip-reduction-in-batched-time-steps " << token);
-    if (token.compare("on") != 0 && token.compare("off") != 0) {
-      logError("getSkipReductionInBatchedTimeSteps()",
-             "skip-reduction-in-batched-time-steps is required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-      _interpretationErrorOccured = true;
-    }
-
-    return token.compare("on") == 0;
+    return tarch::la::greater(getTimestepBatchFactor(),0.0);
   }
   else return false;
 }
@@ -695,22 +701,18 @@ bool   exahype::parser::Parser::getSpawnDoubleCompressionAsBackgroundTask() cons
   std::string token =
       getTokenAfter("global-optimisation", "spawn-double-compression-as-background-thread");
 
-  if (token.compare(_noTokenFound) == 0) {
-    return false;  // default value
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
+    logError("getSpawnDoubleCompressionAsBackgroundTask()",
+        "spawn-double-compression-as-background-thread in the "
+        "global-optimisation segment has to be either on or off: "
+        << token);
+    _interpretationErrorOccured = true;
   }
-  else {
-    logDebug("getSpawnDoubleCompressionAsBackgroundTask()",
-           "found spawn-double-compression-as-background-thread " << token);
-    if (token.compare("on") != 0 && token.compare("off") != 0) {
-      logError("getSpawnDoubleCompressionAsBackgroundTask()",
-             "spawn-double-compression-as-background-thread is required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-      _interpretationErrorOccured = true;
-    }
-
-    return token.compare("on") == 0;
-  }
+  return token.compare("on") == 0;
 }
 
 

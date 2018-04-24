@@ -79,17 +79,17 @@ exahype::solvers::LimiterDomainChange exahype::solvers::convertToLimiterDomainCh
   return static_cast<LimiterDomainChange>((int) std::round(value));
 }
 
+bool exahype::solvers::Solver::FuseADERDGPhases           = false;
+double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 
+bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
+bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
+bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
-
-bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
-
-bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
-
-bool exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting = false;
 
 int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
 
@@ -571,7 +571,7 @@ void exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(
   if (aderdgSolver!=nullptr) {
     const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
 
-    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
     aderdgSolver->updateMinNextPredictorTimeStepSize(
         timeStepSizeWeight * stableTimeStepSize);
     aderdgSolver->setMinPredictorTimeStepSize(
@@ -606,7 +606,7 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
     bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
     aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
 
-    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
     if (usedTimeStepSizeWasInstable) {
       aderdgSolver->updateMinNextPredictorTimeStepSize(
           timeStepSizeWeight * stableTimeStepSize);

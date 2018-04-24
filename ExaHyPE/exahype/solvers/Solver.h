@@ -494,6 +494,44 @@ class exahype::solvers::Solver {
 
 
   /**
+   * A flag indicating we fuse the algorithmic
+   * phases of all ADERDGSolver and
+   * LimitingADERDGSolver instances.
+   *
+   * TODO(Dominic): Make private and hide in init function
+   */
+  static bool FuseADERDGPhases;
+
+  /**
+   * The weight which is used to scale
+   * the stable time step size the fused
+   * ADERDG time stepping scheme is
+   * reset to after a rerun has become necessary.
+   *
+   * TODO(Dominic): Further consider to introduce
+   * a second weight for the averaging:
+   *
+   * t_est = 0.5 (t_est_old + beta t_stable), beta<1.
+   *
+   * fuse-algorithmic-steps-reset-factor
+   * fuse-algorithmic-steps-averaging-factor
+   *
+   * TODO(Dominic): Make private and hide in init function
+   */
+  static double WeightForPredictionRerun;
+
+  /**
+   * If this is set, we can skip sending metadata around during
+   * batching iterations.
+   */
+  static bool DisableMetaDataExchangeInBatchedTimeSteps;
+
+  /**
+   * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
+   */
+  static bool DisablePeanoNeighbourExchangeInTimeSteps;
+
+  /**
    * Set to 0 if no floating point compression is used. Is usually done in the
    * runner once at startup and from hereon is a read-only variable. The
    * subsequent field SpawnCompressionAsBackgroundThread has no semantics if
@@ -516,12 +554,6 @@ class exahype::solvers::Solver {
    * should run background jobs whenever possible.
    */
   static bool SpawnAMRBackgroundJobs;
-
-  /**
-   * If this is set, we can skip sending metadata around during
-   * batching iterations.
-   */
-  static bool AllSolversPerformStaticOrNoLimiting;
 
   /**
    * The type of a solver.

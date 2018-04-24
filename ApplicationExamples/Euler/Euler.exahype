@@ -18,7 +18,7 @@ exahype-project Euler
   log-file                         = mylogfile.log
 
   computational-domain
-    dimension const         = 3
+    dimension const         = 2
     width                   = 1.0, 1.0, 1.0
     offset                  = 0.0, 0.0, 0.0
     end-time                = 0.1
@@ -44,9 +44,9 @@ exahype-project Euler
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    timestep-batch-factor           = 0.8
-    skip-reduction-in-batched-time-steps = on
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    disable-amr-in-time-steps = off
+    time-step-batch-factor           = 0.8
+    disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
   end global-optimisation
@@ -54,8 +54,9 @@ exahype-project Euler
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 3
-    maximum-mesh-size          = 0.038
-    time-stepping              = global
+    maximum-mesh-size          = 0.0404
+    maximum-mesh-depth         = 2
+    time-stepping              = globalfixed
     type const                 = nonlinear
     terms const                = flux
     optimisation const         = generic
@@ -67,7 +68,7 @@ exahype-project Euler
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                = reference:entropywave
+    constants                  = reference:explosion
     
     // works only properly for single-node runs
     /*
@@ -79,19 +80,12 @@ exahype-project Euler
     end plot
     */
     
-    plot vtk::Cartesian::vertices::limited::ascii ErrorPlotter
+    plot vtu::Cartesian::vertices::limited::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
       repeat          = 1e-2
       output          = ./errors
-    end plot
-    
-    plot vtk::Cartesian::subcells::limited::ascii SubcellsPlotter
-      variables const = 5
-      time      = 0.0
-      repeat    = 1e-2
-      output    = ./fv
     end plot
 
   end solver

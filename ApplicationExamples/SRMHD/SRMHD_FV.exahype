@@ -42,9 +42,9 @@ exahype-project  MHDSolver
     fuse-algorithmic-steps-factor = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
-    timestep-batch-factor           = 0.0
-    skip-reduction-in-batched-time-steps = on
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    disable-amr-in-time-steps = off
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
   end global-optimisation

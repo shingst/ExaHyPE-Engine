@@ -121,13 +121,13 @@ void exahype::mappings::LocalRollback::endIteration(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
           performLocalRecomputation(solver) &&
-          exahype::State::fuseADERDGPhases()==true
+          exahype::solvers::Solver::FuseADERDGPhases==true
       ) {
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->rollbackToPreviousTimeStepFused();
       } else if (
           performLocalRecomputation(solver) &&
-          exahype::State::fuseADERDGPhases()==false
+          exahype::solvers::Solver::FuseADERDGPhases==false
       ) {
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->rollbackToPreviousTimeStep();
@@ -160,7 +160,7 @@ void exahype::mappings::LocalRollback::enterCell(
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-          if (exahype::State::fuseADERDGPhases()) {
+          if (exahype::solvers::Solver::FuseADERDGPhases) {
             limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
           } else {
             limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);

@@ -78,7 +78,7 @@ exahype-project {{ project.project_name }}
     fuse-algorithmic-steps          = {{ project.optimisation.fuse_algorithmic_steps }}
     fuse-algorithmic-steps-factor   = {{ project.optimisation.fuse_algorithmic_steps_factor }}
     spawn-predictor-as-background-thread = {{ project.optimisation.spawn_predictor_as_background_thread }}
-    timestep-batch-factor           = {{ project.optimisation.timestep_batch_factor }}
+    time-step-batch-factor           = {{ project.optimisation.timestep_batch_factor }}
     skip-reduction-in-batched-time-steps = {{ project.optimisation.skip_reduction_in_batched_time_steps }}
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = {{
 	project.optimisation.disable_amr_if_grid_has_been_stationary_in_previous_iteration }}
