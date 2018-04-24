@@ -123,10 +123,10 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                         print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to value > 1: "+cores,file=sys.stderr)
                         environmentIsCorrect = False
                         
-      if not justWarn and not environmentIsCorrect:
-          print("ERROR: subprogram failed as environment variables are not chosen setup correctly. Please adopt your options file according to the error messages.\n" + \
-                "       Then rerun the subprogram.",file=sys.stderr)
-          sys.exit()
+    if not justWarn and not environmentIsCorrect:
+        print("ERROR: subprogram failed as environment variables are not chosen setup correctly. Please adopt your options file according to the error messages.\n" + \
+              "       Then rerun the subprogram.",file=sys.stderr)
+        sys.exit()
 
 def verifyAllRequiredParametersAreGiven(specFileTemplate):
     if "order" not in parameterSpace:

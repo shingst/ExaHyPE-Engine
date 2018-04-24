@@ -62,13 +62,14 @@ def parseResultFile(filePath):
     parameterDict   = {}
     
     stats = {}
-    stats["inner_cells_min"] = 10.0**20
-    stats["inner_cells_max"] = 0.0
+    stats["inner_cells_min"] = 10**20
+    stats["inner_cells_max"] = 0
     stats["inner_cells_avg"] = 0.0
-    stats["unrefined_inner_cells_min"] = 10.0**20
-    stats["unrefined_inner_cells_max"] = 0.0
+    stats["unrefined_inner_cells_min"] = 10**20
+    stats["unrefined_inner_cells_max"] = 0
     stats["unrefined_inner_cells_avg"] = 0.0
-    
+    occurrences = 0   
+ 
     adapters      = {}
     cputimeIndex  = 3
     usertimeIndex = 5
@@ -84,15 +85,16 @@ def parseResultFile(filePath):
                 parameterDict=json.loads(value)
             # inner cells/inner unrefined cells=2.13686e+06/1.81296e+06
             if "inner cells" in line:
+                occurrences += 1
                 m = re.search("inner cells\/inner unrefined cells=(([0-9]|\.|\+|e|E)+)\/(([0-9]|\.|\+|e|E)+)",line)
                 innerCells          = float(m.group(1))
                 unrefinedInnerCells = float(m.group(3))
-                stats["inner_cells_min"]  = min( ["inner_cells_min"], innerCells )
-                stats["inner_cells_max"]  = min( ["inner_cells_max"], innerCells )
+                stats["inner_cells_min"]  = min( stats["inner_cells_min"], innerCells )
+                stats["inner_cells_max"]  = max( stats["inner_cells_max"], innerCells )
                 stats["inner_cells_avg"] += innerCells
-                stats["unrefined_inner_cells_min"]  = min( ["unrefined_inner_cells_min"], innerCells )
-                stats["unrefined_inner_cells_max"]  = min( ["unrefined_inner_cells_max"], innerCells )
-                stats["unrefined_inner_cells_avg"] += innerCells
+                stats["unrefined_inner_cells_min"]  = min( stats["unrefined_inner_cells_min"], unrefinedInnerCells )
+                stats["unrefined_inner_cells_max"]  = max( stats["unrefined_inner_cells_max"], unrefinedInnerCells )
+                stats["unrefined_inner_cells_avg"] += unrefinedInnerCells
                 
             anchor = '|'
             header = '||'
@@ -107,7 +109,12 @@ def parseResultFile(filePath):
         print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
     except json.decoder.JSONDecodeError as err:
         print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
-    return environmentDict,parameterDict,adapters,statistics
+
+    if occurrences>0:
+        stats["inner_cells_avg"]           = stats["inner_cells_avg"] / occurrences
+        stats["unrefined_inner_cells_avg"] = stats["unrefined_inner_cells_avg"] / occurrences
+
+    return environmentDict,parameterDict,adapters,stats
 
 def getAdapterTimesSortingKey(row):
     keyTuple = ()
@@ -197,15 +204,14 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(adapters[adapter]["total_cputime"])
                         row.append(adapters[adapter]["total_usertime"])
                         
-                        normalisationPerCells =  float(adapters[adapter]["iterations"]) *( float(parameterDict["order"]) + 1 )**int(parameterDict["dimension"]) *\
-                                                 stats["unrefined_inner_cells_avg"]
+                        normalisationPerCells =  ( float(parameterDict["order"]) + 1 )**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_avg"])
                         row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))
                         row.append(str( float(adapters[adapter]["total_usertime"]) / normalisationPerCells ))
-                        row.append(str( stats["unrefined_inner_cells_min"] ))
-                        row.append(str( stats["unrefined_inner_cells_max"] ))
+                        row.append(str( int(stats["unrefined_inner_cells_min"]) ))
+                        row.append(str( int(stats["unrefined_inner_cells_max"]) ))
                         row.append(str( stats["unrefined_inner_cells_avg"] ))
-                        row.append(str( stats["inner_cells_min"] ))
-                        row.append(str( stats["inner_cells_max"] ))
+                        row.append(str( int(stats["inner_cells_min"]) ))
+                        row.append(str( int(stats["inner_cells_max"]) ))
                         row.append(str( stats["inner_cells_avg"] ))
                         row.append(fileName)
                         csvwriter.writerow(row)

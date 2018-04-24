@@ -109,7 +109,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     if configParser.has_option("jobs","islands"):
         islands = jobs["islands"].strip();
     rankCounts = [x.strip() for x in jobs["ranks"].split(",")]
-    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
+    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runNumbers = [x.strip() for x in jobs["run"].split(",")]
     
