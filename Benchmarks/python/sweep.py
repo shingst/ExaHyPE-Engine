@@ -98,6 +98,35 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
+def verifyEnvironmentIsCorrect(justWarn=False):
+    environmentIsCorrect = True
+    
+    messageType = "ERROR"
+    if justWarn:
+      messageType = "WARNING"
+    
+    for environmentDict in dictProduct(environmentSpace):
+        for key,value in environmentDict.items():
+          os.environ[key]=value
+          
+        for ranks in rankCounts:
+            if (os.environ["DISTRIBUTEDMEM"].strip() not in ["MPI"]) and int(ranks)>1:
+                print("WARNING: SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to value > 1: "+cores,file=sys.stderr)
+                environmentIsCorrect = False
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                for parsedCores in coreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
+                    if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(cores)>1:
+                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to value > 1: "+cores,file=sys.stderr)
+                        environmentIsCorrect = False
+                        
+    if not justWarn and not environmentIsCorrect:
+        print("ERROR: subprogram failed as environment variables are not chosen setup correctly. Please adopt your options file according to the error messages.\n" + \
+              "       Then rerun the subprogram.",file=sys.stderr)
+        sys.exit()
 
 def verifyAllRequiredParametersAreGiven(specFileTemplate):
     if "order" not in parameterSpace:
@@ -123,7 +152,6 @@ def verifyAllRequiredParametersAreGiven(specFileTemplate):
             sys.exit()
 
     return foundLimitingADERDG
-    
 
 def build(buildOnlyMissing=False, skipMakeClean=False):
     """
@@ -149,6 +177,9 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
     if not os.path.exists(buildFolderPath):
         print("create directory "+buildFolderPath)
         os.makedirs(buildFolderPath)
+        
+        
+    verifyEnvironmentIsCorrect(justWarn=True)
     
     architectures = parameterSpace["architecture"]
     optimisations = parameterSpace["optimisation"]
@@ -168,7 +199,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
             os.environ[key]=value
-        environmentDictHash = hashDictionary(environmentDict)   
+        environmentDictHash = hashDictionary(environmentDict)
         
         for architecture in architectures:
             for dimension in dimensions:
@@ -411,29 +442,33 @@ def generateScripts():
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashDictionary(parameterDict)
         
-        for tasks in taskCounts:
-            for parsedCores in coreCounts:
-              cores = parsedCores
-              if parsedCores=="auto":
-                 cores=str(int(int(cpus) / int(tasks)))
-              specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
-              
-              specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
-              
-              with open(specFilePath, "w") as specFile:
-                  specFile.write(specFileBody)
-              specFiles+=1
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                for parsedCores in coreCounts:
+                  cores = parsedCores
+                  if parsedCores=="auto":
+                       cores=str(int(int(cpus) / int(tasks)))
+                  specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
+                  
+                  specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                  
+                  with open(specFilePath, "w") as specFile:
+                      specFile.write(specFileBody)
+                  specFiles+=1
     
     print("generated specification files: "+str(specFiles))
     
     # check if required executables exist
-    verifyAllExecutablesExist(True)
+    verifyAllExecutablesExist(justWarn=True)
+    verifyEnvironmentIsCorrect(justWarn=True)
     
     # generate job scrips
     jobScripts = 0
     for run in runNumbers:
-        for nodes in nodeCounts:
-            for tasks in taskCounts:
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -444,7 +479,7 @@ def generateScripts():
                             ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
                             jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                                "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                      "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePath = scriptsFolderPath + "/" + jobName + ".job"
                             jobOutputFilePath = resultsFolderPath + "/" + jobName + ".job_out"
                             jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".job_err"
@@ -475,7 +510,7 @@ def generateScripts():
                                                  parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                                                  
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                                 "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run+".out"
+                                                 "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                                 outputFilePath = resultsFolderPath + "/" + outputFileName 
                                 
                                 # pipe some information into output file
@@ -539,8 +574,9 @@ def verifyAllJobScriptsExist():
     
     allJobScriptsExist = True
     for run in runNumbers:
-        for nodes in nodeCounts:
-            for tasks in taskCounts:
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -552,7 +588,7 @@ def verifyAllJobScriptsExist():
                             ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
                             jobName      = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                           "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePath  = scriptsFolderPath + "/" + jobName + ".job"
                             if not os.path.exists(jobScriptFilePath):
                                 allJobScriptsExist = False
@@ -583,13 +619,15 @@ def verifyAllSpecFilesExist():
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashDictionary(parameterDict)
         
-        for tasks in taskCounts:
-            for parsedCores in coreCounts:
-                cores = parsedCores
-                if parsedCores=="auto":
-                    cores=str(int(int(cpus) / int(tasks)))
-                
-                specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                for parsedCores in coreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
+                     
+                    specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
                 if not os.path.exists(specFilePath):
                      allSpecFilesExist = False
@@ -642,6 +680,7 @@ def submitJobs():
     cpus = jobs["num_cpus"]
     
     # verify everything is fine
+    verifyEnvironmentIsCorrect()
     verifyAllExecutablesExist()
     verifyAllJobScriptsExist()
     verifyAllSpecFilesExist()
@@ -653,8 +692,9 @@ def submitJobs():
     # loop over job scrips
     jobIds = []
     for run in runNumbers:
-        for nodes in nodeCounts:
-            for tasks in taskCounts:
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -666,7 +706,7 @@ def submitJobs():
                             ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
                             jobName              = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                                                   "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                                   "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobScriptFilePath    = jobScriptFilePrefix + ".job"
                             
@@ -726,6 +766,7 @@ if __name__ == "__main__":
     import hashlib
     import json
     import re
+    import math
     
     import sweep_analysis
     import sweep_options
@@ -802,8 +843,8 @@ typical workflow:
     
     jobClass   = options.jobClass
     islands    = options.islands
+    rankCounts = options.rankCounts
     nodeCounts = options.nodeCounts
-    taskCounts = options.taskCounts
     coreCounts = options.coreCounts
     runNumbers = options.runNumbers
     
