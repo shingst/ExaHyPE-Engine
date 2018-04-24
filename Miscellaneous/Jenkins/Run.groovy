@@ -7,6 +7,7 @@ def run(config, workspace) {
 	    unstash "exahype-${config.name}"
 	    util.slurmBatch '''
 set -x
+ulimit -s unlimited
 IFS=$'\n\t'
 pwd
 ''' + util.getModuleCode() + '''
