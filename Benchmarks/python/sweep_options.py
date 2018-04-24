@@ -108,8 +108,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
         jobClass = jobs["class"].strip();
     if configParser.has_option("jobs","islands"):
         islands = jobs["islands"].strip();
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
+    rankCounts = [x.strip() for x in jobs["ranks"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runNumbers = [x.strip() for x in jobs["run"].split(",")]
@@ -123,7 +122,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "buildFolderPath scriptsFolderPath "
             "resultsFolderPath historyFolderPath "
             "jobClass islands "
-            "nodeCounts taskCounts coreCounts runNumbers"))
+            "rankCounts nodeCounts coreCounts runNumbers"))
     
     options = Options(
       general                 = general,
@@ -146,8 +145,8 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
       \
       jobClass   = jobClass,\
       islands    = islands,\
+      rankCounts = rankCounts,\
       nodeCounts = nodeCounts,\
-      taskCounts = taskCounts,\
       coreCounts = coreCounts,\
       runNumbers = runNumbers\
     )

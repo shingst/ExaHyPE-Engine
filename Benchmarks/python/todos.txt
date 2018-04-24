@@ -4,16 +4,16 @@ sweep/sweep_options:
    tasks per node are computed on the fly and the max value is passed to
    the user script
    Can be picked up by job template if needed
-   Q: Does SLURM equally distribute the ranks? (That's what we want!)
+   Q: Does SLURM equally distribute the ranks? (That's what we want!) [x]
 
-- provide job grouping for environment as well
+- provide job grouping for environment as well [no]
 
-- if cores>1 and SHAREDMEMORY=None, print out warning
+- if cores>1 and SHAREDMEMORY=None, print out warning [x]
 
 sweep_analysis:
 
 - parse the number of unrefined cells from the
-  peano output
+  peano output [x]
 
 - write out comma separated files using quotation marks for quoting
-  text
+  text [x]
