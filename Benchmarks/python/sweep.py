@@ -98,29 +98,46 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
+def verifyLogFilterExists(justWarn=False):
+    foundLogFilter = False
+    for file in os.listdir(exahypeRoot + "/" + projectPath):i
+        foundLogFilter = foundLogFilter or file.endswith(".log-filter")
+
+    messageType = "ERROR"
+    if justWarn:
+        messageTypeV = "WARNING"
+    if not foundLogFilter:
+        print(messageType+": no 'exahype.log-filter' file could be found in the project folder",file=sys.stderr)
+        if not justWarn:
+            sys.exit()
+
 def verifyEnvironmentIsCorrect(justWarn=False):
     environmentIsCorrect = True
     
     messageType = "ERROR"
     if justWarn:
-      messageType = "WARNING"
+        messageType = "WARNING"
     
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
-          os.environ[key]=value
+            os.environ[key]=value
           
         for ranks in rankCounts:
             if (os.environ["DISTRIBUTEDMEM"].strip() not in ["MPI"]) and int(ranks)>1:
-                print("WARNING: SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to value > 1: "+cores,file=sys.stderr)
+                print(messageType+": DISTRIBUTEDMEM environment variable set to "+environmentDict["DISTRIBUTEDMEM"]+" and ranks is set to "+ranks+" > 1",file=sys.stderr)
                 environmentIsCorrect = False
             for nodes in nodeCounts:
+                print(messageType+": specified ranks (+"ranks"+) must always be greater than or equals to specified nodes ("+nodes+")",file=sys.stderr)
+                if int(nodes) > int(ranks):
+                    environmentIsCorrect = False
+                
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
                     if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(cores)>1:
-                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to value > 1: "+cores,file=sys.stderr)
+                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to "+cores+" > 1",file=sys.stderr)
                         environmentIsCorrect = False
                         
     if not justWarn and not environmentIsCorrect:
@@ -177,8 +194,8 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
     if not os.path.exists(buildFolderPath):
         print("create directory "+buildFolderPath)
         os.makedirs(buildFolderPath)
-        
-        
+    
+    verifyLogFilterExists(justWarn=True)        
     verifyEnvironmentIsCorrect(justWarn=True)
     
     architectures = parameterSpace["architecture"]
@@ -460,8 +477,9 @@ def generateScripts():
     print("generated specification files: "+str(specFiles))
     
     # check if required executables exist
-    verifyAllExecutablesExist(justWarn=True)
     verifyEnvironmentIsCorrect(justWarn=True)
+    verifyLogFilterExists(justWarn=True)        
+    verifyAllExecutablesExist(justWarn=True)
     
     # generate job scrips
     jobScripts = 0
@@ -681,6 +699,7 @@ def submitJobs():
     
     # verify everything is fine
     verifyEnvironmentIsCorrect()
+    verifyLogFilterExists(justWarn=True)        
     verifyAllExecutablesExist()
     verifyAllJobScriptsExist()
     verifyAllSpecFilesExist()
