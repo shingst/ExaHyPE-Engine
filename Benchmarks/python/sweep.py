@@ -114,7 +114,7 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                 print("WARNING: SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to value > 1: "+cores,file=sys.stderr)
                 environmentIsCorrect = False
             for nodes in nodeCounts:
-                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -302,7 +302,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
 
 def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
                     jobName,jobScriptFilePath,outputFileName,errorFileName,
-                    nodes,tasks,cores): # cores still necessary?
+                    ranks,nodes,tasks,cores): # cores still necessary?
     """
     Render a job script.
     """
@@ -310,8 +310,8 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     context = {}
     # mandatory
+    context["ranks"]   = ranks
     context["nodes"]       = nodes
-    context["tasks"]       = tasks
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
     context["job_name"]    = jobName 
@@ -328,8 +328,8 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     # put optional sweep options in context
     context["mail"]    = jobs["mail"]
+    context["tasks"]   = tasks
     context["time"]    = jobs["time"]
-    context["ranks"]   = str(int(nodes)*int(tasks))
     context["class"]   = jobClass
     context["islands"] = islands
     context["cores"]   = cores
@@ -444,7 +444,7 @@ def generateScripts():
         
         for ranks in rankCounts:
             for nodes in nodeCounts:
-                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                   cores = parsedCores
                   if parsedCores=="auto":
@@ -468,7 +468,7 @@ def generateScripts():
     for run in runNumbers:
         for ranks in rankCounts:
             for nodes in nodeCounts:
-                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -554,7 +554,7 @@ def generateScripts():
                             renderedJobScript = renderJobScript(\
                                                     jobScriptTemplate,jobScriptBody,jobs,
                                                     jobName,jobScriptFilePath,jobOutputFilePath,jobErrorFilePath,
-                                                    nodes,tasks,cores)
+                                                    ranks,nodes,tasks,cores)
                             with open(jobScriptFilePath, "w") as jobScriptFile:
                                 jobScriptFile.write(renderedJobScript)
                             
@@ -576,7 +576,7 @@ def verifyAllJobScriptsExist():
     for run in runNumbers:
         for ranks in rankCounts:
             for nodes in nodeCounts:
-                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -621,7 +621,7 @@ def verifyAllSpecFilesExist():
         
         for ranks in rankCounts:
             for nodes in nodeCounts:
-                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -694,7 +694,7 @@ def submitJobs():
     for run in runNumbers:
         for ranks in rankCounts:
             for nodes in nodeCounts:
-                tasks = str( math.ceil(float(rank)/float(nodeCounts)) )
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
