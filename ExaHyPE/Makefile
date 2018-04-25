@@ -120,6 +120,9 @@ else ifeq ($(call tolower,$(MODE)),peanoprofile)
 else ifeq ($(call tolower,$(MODE)),itac)
 	# Settings for the ITAC mode
 	# --------------------------------------------
+	ifneq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
+$(error DISTRIBUTEDMEM must equal MPI for MODE=ITAC)
+	endif
 	COMPILER_CFLAGS += -DUSE_ITAC -trace -I$(VT_ROOT)/include
 	COMPILER_LFLAGS += -DUSE_ITAC -trace
 
