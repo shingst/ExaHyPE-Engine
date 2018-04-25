@@ -13,12 +13,12 @@
 
 # multi base
 
-ExaHyPE::project_name = project::name
+ExaHyPE::project_name = "GRMHD"
 ExaHyPE::peano_kernel_path = "./Peano"
 ExaHyPE::exahype_path = "./ExaHyPE"
-ExaHyPE::output_directory = project::directory
+ExaHyPE::output_directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
 ExaHyPE::architecture = "noarch"
-ExaHyPE::log_file = "whatever.log"
+ExaHyPE::log_file = "logs/whatever.log"
 
 ExaHyPE::solvers += Solver
 
@@ -49,10 +49,7 @@ ExaHyPE::optimisation::spawn_double_compression = False
 
 
 
-####
-
-Project::Name = "GRMHD"
-Project::directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
+#### 
 
 BaseSolver::name = "GRMHDSolver"
 BaseSolver::variables = "rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1"
