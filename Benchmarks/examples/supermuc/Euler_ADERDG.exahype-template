@@ -51,7 +51,7 @@ exahype-project Euler
     fuse-algorithmic-steps-factor        = 0.99
     spawn-predictor-as-background-thread = {{predictorAMRBackground}}
     spawn-amr-background-threads         = {{predictorAMRBackground}}
-    disable-amr-in-time-steps = off
+    disable-vertex-exchange-in-time-steps = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     time-step-batch-factor                = {{batchFactor}}
     disable-metadata-exchange-in-batched-time-steps = off

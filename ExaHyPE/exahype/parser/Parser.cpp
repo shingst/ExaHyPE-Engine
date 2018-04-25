@@ -623,14 +623,14 @@ bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() con
 bool exahype::parser::Parser::getDisablePeanoNeighbourExchangeInTimeSteps() const {
   std::string token = getTokenAfter(
       "global-optimisation",
-      "disable-amr-in-time-steps");
+      "disable-vertex-exchange-in-time-steps");
   if (
       token.compare("on") != 0 &&
       token.compare("off") != 0 &&
       token.compare(_noTokenFound) != 0
   ) {
     logError("getDisablePeanoNeighbourExchangeInTimeSteps()",
-        "disable-amr-in-time-steps in the "
+        "disable-vertex-exchange-in-time-steps in the "
         "global-optimisation segment has to be either on or off: "
         << token);
     _interpretationErrorOccured = true;

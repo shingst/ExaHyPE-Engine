@@ -52,7 +52,7 @@ exahype-project  Euler
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    disable-amr-in-time-steps = on
+    disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.0
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0

@@ -55,7 +55,7 @@ exahype-project  Elastic
     spawn-predictor-as-background-thread = on
     spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    disable-amr-in-time-steps = off
+    disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.0
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0

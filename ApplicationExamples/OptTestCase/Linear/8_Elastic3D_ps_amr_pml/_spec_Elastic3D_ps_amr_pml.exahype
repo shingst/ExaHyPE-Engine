@@ -54,7 +54,7 @@ exahype-project  ElasticWaveEquation3D
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    disable-amr-in-time-steps = off
+    disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.8
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
