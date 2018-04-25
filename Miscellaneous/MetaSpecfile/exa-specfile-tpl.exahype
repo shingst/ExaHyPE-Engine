@@ -112,7 +112,7 @@ exahype-project {{ project.project_name }}
     limiter-type const             = {{ solver.limiter.kernel.type }}
     limiter-optimisation const     = {{ solver.limiter.kernel.optimisation }}
     limiter-language const         = {{ solver.limiter.kernel.language }}
-    dmp-observables                = {{ solver.limiter.dmp_observables }}
+    dmp-observables const          = {{ solver.limiter.dmp_observables }}
     dmp-relaxation-parameter       = {{ solver.limiter.dmp_relaxation_parameter }}
     dmp-difference-scaling         = {{ solver.limiter.dmp_difference_scaling }}
     steps-till-cured               = {{ solver.limiter.steps_till_cured }}
