@@ -23,82 +23,77 @@
 #
 
 
+from .abstractModelBaseClass import AbstractModelBaseClass
+
 import copy
 
-import Backend
-from utils import TemplatingUtils
+import controller
 from utils.MatmulConfig import MatmulConfig
 
 
-class FusedSpaceTimePredictorVolumeIntegralGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename       = "fusedSpaceTimePredictorVolumeIntegral.cpp"
-    m_filename_noPS  = "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp"
+class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):  
     
-    m_filename_asm   = "asm_fstpvi" 
-
-    
-    def __init__(self, i_config):
-        self.m_context = i_config
-
-
-    def generateCode(self):         
-        gemmName = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])
-        gemmNamePad = "gemm_"+str(self.m_context["nVarPad"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])
-        self.m_context["gemm_gradQ_x"] = gemmName+"_gradQ_x"
-        self.m_context["gemm_gradQ_y"] = gemmName+"_gradQ_y"
-        self.m_context["gemm_gradQ_z"] = gemmName+"_gradQ_z"
-        if(self.m_context["isLinear"]):
-            self.m_context["ncpOutputShift"] = Backend.getSizeWithPadding(self.m_context["nVar"]*self.m_context["nDim"]) #shift used to split the tmpArray into input and output for NCP
+    def generateCode(self):
+        gemmName = "gemm_"+str(self.context["nVar"])+"_"+str(self.context["nDof"])+"_"+str(self.context["nDof"])
+        gemmNamePad = "gemm_"+str(self.context["nVarPad"])+"_"+str(self.context["nDof"])+"_"+str(self.context["nDof"])
+        self.context["gemm_gradQ_x"] = gemmName+"_gradQ_x"
+        self.context["gemm_gradQ_y"] = gemmName+"_gradQ_y"
+        self.context["gemm_gradQ_z"] = gemmName+"_gradQ_z"
+        
+        if(self.context["isLinear"]):
+            self.context["ncpOutputShift"] = self.controller.getSizeWithPadding(self.context["nVar"]*self.context["nDim"]) #shift used to split the tmpArray into input and output for NCP
             # size of the tmpArray
-            self.m_context["tmpArraySize"] = max((self.m_context["nDof"]*self.m_context["nVarPad"] if self.m_context["useFlux"]          else 0), \
-                                                 (self.m_context["nVar"]*self.m_context["nDim"]    if self.m_context["useMaterialParam"] else 0), \
-                                                 (2*self.m_context["ncpOutputShift"]               if self.m_context["useNCP"]           else 0))
-            self.m_context["gemm_flux_x"] = gemmNamePad+"_flux_x"
-            self.m_context["gemm_flux_y"] = gemmNamePad+"_flux_y"
-            self.m_context["gemm_flux_z"] = gemmNamePad+"_flux_z"
-            TemplatingUtils.renderAsFile("fusedSPTVI_linear_cpp.template", self.m_filename, self.m_context)
-            if(self.m_context["usePointSources"]):
-                localContext = copy.copy(self.m_context)
+            self.context["tmpArraySize"] = max((self.context["nDof"]*self.context["nVarPad"] if self.context["useFlux"]          else 0), \
+                                                 (self.context["nVar"]*self.context["nDim"]    if self.context["useMaterialParam"] else 0), \
+                                                 (2*self.context["ncpOutputShift"]               if self.context["useNCP"]           else 0))
+            self.context["gemm_flux_x"] = gemmNamePad+"_flux_x"
+            self.context["gemm_flux_y"] = gemmNamePad+"_flux_y"
+            self.context["gemm_flux_z"] = gemmNamePad+"_flux_z"
+     
+            self.render("fusedSPTVI_linear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+            
+            if(self.context["usePointSources"]):
+                localContext = copy.copy(self.context)
                 localContext["usePointSources"] = False
                 localContext["nameSuffix"] = "_WithoutPS"
-                TemplatingUtils.renderAsFile("fusedSPTVI_linear_cpp.template", self.m_filename_noPS, localContext)
+                
+                self.render("fusedSPTVI_linear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
+                
         else:
-            self.m_context["nDof_seq"] = range(0,self.m_context["nDof"])
-            self.m_context["gemm_rhs_x"] = gemmNamePad+"_rhs_x"
-            self.m_context["gemm_rhs_y"] = gemmNamePad+"_rhs_y"
-            self.m_context["gemm_rhs_z"] = gemmNamePad+"_rhs_z"
-            self.m_context["gemm_lqi"]   = gemmName+"_lqi"
-            self.m_context["gemm_x"] = gemmNamePad+"_lduh_x"
-            self.m_context["gemm_y"] = gemmNamePad+"_lduh_y"
-            self.m_context["gemm_z"] = gemmNamePad+"_lduh_z"             
-            self.m_context["i_seq"] = range(0,self.m_context["nDof"])
-            self.m_context["j_seq"] = range(0,self.m_context["nDof"]) if (self.m_context["nDim"] >= 3) else [0]
+            self.context["nDof_seq"] = range(0,self.context["nDof"])
+            self.context["gemm_rhs_x"] = gemmNamePad+"_rhs_x"
+            self.context["gemm_rhs_y"] = gemmNamePad+"_rhs_y"
+            self.context["gemm_rhs_z"] = gemmNamePad+"_rhs_z"
+            self.context["gemm_lqi"]   = gemmName+"_lqi"
+            self.context["gemm_x"] = gemmNamePad+"_lduh_x"
+            self.context["gemm_y"] = gemmNamePad+"_lduh_y"
+            self.context["gemm_z"] = gemmNamePad+"_lduh_z"             
+            self.context["i_seq"] = range(0,self.context["nDof"])
+            self.context["j_seq"] = range(0,self.context["nDof"]) if (self.context["nDim"] >= 3) else [0]
             
-            TemplatingUtils.renderAsFile("fusedSPTVI_nonlinear_cpp.template", self.m_filename, self.m_context)
-            
+            self.render("fusedSPTVI_nonlinear_cpp.template", "fusedSpaceTimePredictorVolumeIntegral.cpp")
+       
         # generates gemms
-        if(self.m_context["useLibxsmm"]):
-            self.generateGemms()
-
-    def generateGemms(self):
-        l_matmulList = []
-        if(self.m_context["isLinear"]):
-            if(self.m_context["useFlux"]):
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVarPad"],    \
+        if(self.context["useLibxsmm"]):
+            self.controller.generateGemms("asm_fstpvi.c", self.buildGemmsConfig())
+    
+    
+    def buildGemmsConfig(self):
+        matmulList = []
+        if(self.context["isLinear"]):
+            if(self.context["useFlux"]):
+                matmul = MatmulConfig(    # M
+                                            self.context["nVarPad"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nVarPad"], \
+                                            self.context["nVarPad"], \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"], \
+                                            self.context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta, 0 => overwrite C
@@ -113,19 +108,19 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVarPad"],    \
+                matmulList.append(matmul)
+                matmul = MatmulConfig(    # M
+                                            self.context["nVarPad"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nVarPad"] * self.m_context["nDof"], \
+                                            self.context["nVarPad"] * self.context["nDof"], \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"], \
+                                            self.context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta, 0 => overwrite C
@@ -140,20 +135,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                if(self.m_context["nDim"]>=3):
-                    l_matmul = MatmulConfig(    # M
-                                                self.m_context["nVarPad"],    \
+                matmulList.append(matmul)
+                if(self.context["nDim"]>=3):
+                    matmul = MatmulConfig(    # M
+                                                self.context["nVarPad"],    \
                                                 # N
-                                                self.m_context["nDof"],    \
+                                                self.context["nDof"],    \
                                                 # K
-                                                self.m_context["nDof"],    \
+                                                self.context["nDof"],    \
                                                 # LDA
-                                                self.m_context["nVarPad"] * (self.m_context["nDof"]**2), \
+                                                self.context["nVarPad"] * (self.context["nDof"]**2), \
                                                 # LDB
-                                                self.m_context["nDofPad"], \
+                                                self.context["nDofPad"], \
                                                 # LDC
-                                                self.m_context["nVarPad"], \
+                                                self.context["nVarPad"], \
                                                 # alpha
                                                 1,                         \
                                                 # beta, 0 => overwrite C
@@ -168,20 +163,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
-                    l_matmulList.append(l_matmul)
-            if(self.m_context["useNCP"]):
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],    \
+                    matmulList.append(matmul)
+            if(self.context["useNCP"]):
+                matmul = MatmulConfig(    # M
+                                            self.context["nVar"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nDataPad"], \
+                                            self.context["nDataPad"], \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"], \
+                                            self.context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -196,19 +191,19 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],    \
+                matmulList.append(matmul)
+                matmul = MatmulConfig(    # M
+                                            self.context["nVar"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nDataPad"] * self.m_context["nDof"], \
+                                            self.context["nDataPad"] * self.context["nDof"], \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"] * self.m_context["nDof"], \
+                                            self.context["nVarPad"] * self.context["nDof"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -223,20 +218,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                if(self.m_context["nDim"]>=3):
-                    l_matmul = MatmulConfig(    # M
-                                                self.m_context["nVar"],    \
+                matmulList.append(matmul)
+                if(self.context["nDim"]>=3):
+                    matmul = MatmulConfig(    # M
+                                                self.context["nVar"],    \
                                                 # N
-                                                self.m_context["nDof"],    \
+                                                self.context["nDof"],    \
                                                 # K
-                                                self.m_context["nDof"],    \
+                                                self.context["nDof"],    \
                                                 # LDA
-                                                self.m_context["nDataPad"] * (self.m_context["nDof"] ** 2), \
+                                                self.context["nDataPad"] * (self.context["nDof"] ** 2), \
                                                 # LDB
-                                                self.m_context["nDofPad"], \
+                                                self.context["nDofPad"], \
                                                 # LDC
-                                                self.m_context["nVarPad"] * (self.m_context["nDof"] ** 2), \
+                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
                                                 # alpha
                                                 1,                         \
                                                 # beta
@@ -251,21 +246,21 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
-                    l_matmulList.append(l_matmul)
+                    matmulList.append(matmul)
         else: #NonLinear
-            if(self.m_context["useFlux"]):
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVarPad"],    \
+            if(self.context["useFlux"]):
+                matmul = MatmulConfig(    # M
+                                            self.context["nVarPad"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nVarPad"], \
+                                            self.context["nVarPad"], \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"], \
+                                            self.context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -280,19 +275,19 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVarPad"],                             \
+                matmulList.append(matmul)
+                matmul = MatmulConfig(    # M
+                                            self.context["nVarPad"],                             \
                                             # N
-                                            self.m_context["nDof"],                             \
+                                            self.context["nDof"],                             \
                                             # K
-                                            self.m_context["nDof"],                             \
+                                            self.context["nDof"],                             \
                                             # LDA
-                                            self.m_context["nVarPad"]* self.m_context["nDof"],     \
+                                            self.context["nVarPad"]* self.context["nDof"],     \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"] * self.m_context["nDof"],     \
+                                            self.context["nVarPad"] * self.context["nDof"],     \
                                             # alpha
                                             1,                                                 \
                                             # beta
@@ -307,20 +302,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                                            \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                if(self.m_context["nDim"]>=3):
-                    l_matmul = MatmulConfig(    # M
-                                                self.m_context["nVarPad"],                             \
+                matmulList.append(matmul)
+                if(self.context["nDim"]>=3):
+                    matmul = MatmulConfig(    # M
+                                                self.context["nVarPad"],                             \
                                                 # N
-                                                self.m_context["nDof"],                             \
+                                                self.context["nDof"],                             \
                                                 # K
-                                                self.m_context["nDof"],                             \
+                                                self.context["nDof"],                             \
                                                 # LDA
-                                                self.m_context["nVarPad"] * (self.m_context["nDof"]**2),     \
+                                                self.context["nVarPad"] * (self.context["nDof"]**2),     \
                                                 # LDB
-                                                self.m_context["nDofPad"],                          \
+                                                self.context["nDofPad"],                          \
                                                 # LDC
-                                                self.m_context["nVarPad"] * (self.m_context["nDof"]**2),  \
+                                                self.context["nVarPad"] * (self.context["nDof"]**2),  \
                                                 # alpha
                                                 1,                                                 \
                                                 # beta
@@ -335,20 +330,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                                 "nopf",                                            \
                                                 # type
                                                 "gemm")
-                    l_matmulList.append(l_matmul)
+                    matmulList.append(matmul)
                 # (1) MATMUL( lFhi_x(:,:,j,k), TRANSPOSE(Kxi) )
-                l_matmul_x = MatmulConfig(  # M
-                                            self.m_context["nVarPad"],       \
+                matmul_x = MatmulConfig(  # M
+                                            self.context["nVarPad"],       \
                                             # N
-                                            self.m_context["nDof"],       \
+                                            self.context["nDof"],       \
                                             # K
-                                            self.m_context["nDof"],       \
+                                            self.context["nDof"],       \
                                             # LDA
-                                            self.m_context["nVarPad"],    \
+                                            self.context["nVarPad"],    \
                                             # LDB
-                                            self.m_context["nDofPad"],    \
+                                            self.context["nDofPad"],    \
                                             # LDC
-                                            self.m_context["nVarPad"],       \
+                                            self.context["nVarPad"],       \
                                             # alpha 
                                             1,                            \
                                             # beta
@@ -363,21 +358,21 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                       \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul_x)
+                matmulList.append(matmul_x)
 
                 # (2) MATMUL( lFhi_y(:,:,i,k), TRANSPOSE(Kxi) )
-                l_matmul_y = MatmulConfig(  # M
-                                            self.m_context["nVarPad"],                         \
+                matmul_y = MatmulConfig(  # M
+                                            self.context["nVarPad"],                         \
                                             # N
-                                            self.m_context["nDof"],                         \
+                                            self.context["nDof"],                         \
                                             # K
-                                            self.m_context["nDof"],                         \
+                                            self.context["nDof"],                         \
                                             # LDA
-                                            self.m_context["nVarPad"],                      \
+                                            self.context["nVarPad"],                      \
                                             # LDB
-                                            self.m_context["nDofPad"],                      \
+                                            self.context["nDofPad"],                      \
                                             # LDC
-                                            self.m_context["nVarPad"]*self.m_context["nDof"],  \
+                                            self.context["nVarPad"]*self.context["nDof"],  \
                                             # alpha 
                                             1,                                              \
                                             # beta
@@ -392,22 +387,22 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                                         \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul_y)
+                matmulList.append(matmul_y)
 
-                if(self.m_context["nDim"]>=3):
+                if(self.context["nDim"]>=3):
                     # (3) MATMUL( lFhi_z(:,:,i,j), TRANSPOSE(Kxi) )
-                    l_matmul_z = MatmulConfig(  # M
-                                                self.m_context["nVarPad"],                             \
+                    matmul_z = MatmulConfig(  # M
+                                                self.context["nVarPad"],                             \
                                                 # N
-                                                self.m_context["nDof"],                             \
+                                                self.context["nDof"],                             \
                                                 # K
-                                                self.m_context["nDof"],                             \
+                                                self.context["nDof"],                             \
                                                 # LDA
-                                                self.m_context["nVarPad"],                          \
+                                                self.context["nVarPad"],                          \
                                                 # LDB
-                                                self.m_context["nDofPad"],                          \
+                                                self.context["nDofPad"],                          \
                                                 # LDC
-                                                self.m_context["nVarPad"]*(self.m_context["nDof"]**2), \
+                                                self.context["nVarPad"]*(self.context["nDof"]**2), \
                                                 # alpha 
                                                 1,                                                  \
                                                 # beta
@@ -422,20 +417,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                                 "nopf",                                             \
                                                 # type
                                                 "gemm")
-                    l_matmulList.append(l_matmul_z)
-            if(self.m_context["useNCP"]):
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],    \
+                    matmulList.append(matmul_z)
+            if(self.context["useNCP"]):
+                matmul = MatmulConfig(    # M
+                                            self.context["nVar"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nDataPad"] * self.m_context["nDof"], \
+                                            self.context["nDataPad"] * self.context["nDof"], \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"] * self.m_context["nDim"] * self.m_context["nDof"], \
+                                            self.context["nVarPad"] * self.context["nDim"] * self.context["nDof"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -450,19 +445,19 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],    \
+                matmulList.append(matmul)
+                matmul = MatmulConfig(    # M
+                                            self.context["nVar"],    \
                                             # N
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # K
-                                            self.m_context["nDof"],    \
+                                            self.context["nDof"],    \
                                             # LDA
-                                            self.m_context["nDataPad"] * (self.m_context["nDof"] ** 2), \
+                                            self.context["nDataPad"] * (self.context["nDof"] ** 2), \
                                             # LDB
-                                            self.m_context["nDofPad"], \
+                                            self.context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"] * self.m_context["nDim"] * (self.m_context["nDof"] ** 2), \
+                                            self.context["nVarPad"] * self.context["nDim"] * (self.context["nDof"] ** 2), \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -477,20 +472,20 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                l_matmulList.append(l_matmul)
-                if(self.m_context["nDim"]>=3):
-                    l_matmul = MatmulConfig(    # M
-                                                self.m_context["nVar"],    \
+                matmulList.append(matmul)
+                if(self.context["nDim"]>=3):
+                    matmul = MatmulConfig(    # M
+                                                self.context["nVar"],    \
                                                 # N
-                                                self.m_context["nDof"],    \
+                                                self.context["nDof"],    \
                                                 # K
-                                                self.m_context["nDof"],    \
+                                                self.context["nDof"],    \
                                                 # LDA
-                                                self.m_context["nDataPad"] * (self.m_context["nDof"] ** 3), \
+                                                self.context["nDataPad"] * (self.context["nDof"] ** 3), \
                                                 # LDB
-                                                self.m_context["nDofPad"], \
+                                                self.context["nDofPad"], \
                                                 # LDC
-                                                self.m_context["nVarPad"] * self.m_context["nDim"] * (self.m_context["nDof"] ** 3), \
+                                                self.context["nVarPad"] * self.context["nDim"] * (self.context["nDof"] ** 3), \
                                                 # alpha
                                                 1,                         \
                                                 # beta
@@ -505,19 +500,19 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
-                    l_matmulList.append(l_matmul)
-            l_matmul = MatmulConfig(    # M
-                                        self.m_context["nVar"],                             \
+                    matmulList.append(matmul)
+            matmul = MatmulConfig(    # M
+                                        self.context["nVar"],                             \
                                         # N
-                                        self.m_context["nDof"],                             \
+                                        self.context["nDof"],                             \
                                         # K
-                                        self.m_context["nDof"],                             \
+                                        self.context["nDof"],                             \
                                         # LDA
-                                        self.m_context["nVarPad"]*(self.m_context["nDof"]**self.m_context["nDim"]), \
+                                        self.context["nVarPad"]*(self.context["nDof"]**self.context["nDim"]), \
                                         # LDB
-                                        self.m_context["nDofPad"], \
+                                        self.context["nDofPad"], \
                                         # LDC
-                                        self.m_context["nVarPad"], \
+                                        self.context["nVarPad"], \
                                         # alpha
                                         1,                                                 \
                                         # beta
@@ -532,6 +527,6 @@ class FusedSpaceTimePredictorVolumeIntegralGenerator:
                                         "nopf",                                            \
                                         # type
                                         "gemm")
-            l_matmulList.append(l_matmul)
-            
-        Backend.generateAssemblerCode(self.m_filename_asm, l_matmulList)
+            matmulList.append(matmul)
+
+        return matmulList

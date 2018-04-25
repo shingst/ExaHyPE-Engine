@@ -7,7 +7,7 @@
 # Copyright (c) 2016  http://exahype.eu
 # All rights reserved.
 #
-# The project has received funding from the European Union's Horizon 
+# The project has received funding from the European Union's Horizon
 # 2020 research and innovation programme under grant agreement
 # No 671698. For copyrights and licensing, please consult the webpage.
 #
@@ -24,21 +24,10 @@
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-#TODO JMG patchwise adjust
-
-class AdjustSolutionGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename_point = "solutionAdjustment.cpp"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-
+class AdjustSolutionModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("solutionAdjustment_cpp.template", self.m_filename_point, self.m_context)
+        self.render("solutionAdjustment_cpp.template", "solutionAdjustment.cpp")

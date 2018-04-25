@@ -17,26 +17,15 @@
 #
 # @section DESCRIPTION
 #
-# Generate the deltaDistribution kernel
-#
-# Call user function pointSource
+# Generates the SurfaceIntegral kernel
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class DeltaDistributionGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "deltaDistribution.cpp"
-
-    
-    def __init__(self, i_config):
-        self.m_context = i_config
-
+class SurfaceIntegralModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        if(self.m_context['usePointSources']):
-            TemplatingUtils.renderAsFile("deltaDistribution_cpp.template", self.m_filename, self.m_context)
+        self.context["bndFaceSize"] = self.context["nVarPad"] * self.context["nDof"] * self.context["nDof3D"]  
+        self.render("surfaceIntegral_cpp.template", "surfaceIntegral.cpp")
