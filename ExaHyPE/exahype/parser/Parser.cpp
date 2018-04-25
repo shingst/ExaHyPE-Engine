@@ -173,9 +173,9 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
    }
   catch (const std::regex_error& e) {
     logError("readFile(istream)", "catched exception " << e.what() <<
-        ". This usually indicates that you are linking against a C++ standard library implementation which does not"
-        "provide a proper implementation of the std::regex functionality. In particular, "
-        "if you use GCC or your compiler relies on GCC, please make sure that you use a GCC version >=4.9.0." );
+        ". This usually indicates that you are linking against a C++ standard library implementation which does not" <<
+        " provide a proper implementation of the std::regex functionality. In particular," <<
+        " if you use GCC or your compiler relies on GCC, please make sure that you use a GCC version >= 4.9.0." );
     _interpretationErrorOccured = true;
   }
 
