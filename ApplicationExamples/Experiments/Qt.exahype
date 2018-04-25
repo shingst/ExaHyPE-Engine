@@ -14,8 +14,7 @@
  
 /**
 
- A project for testing the scaling. 
-
+ A project for testing the scaling.  
  */
 exahype-project  Qt
 
@@ -35,7 +34,7 @@ exahype-project  Qt
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 1
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
 
@@ -60,7 +59,7 @@ exahype-project  Qt
 
 solver Limiting-ADER-DG Demonstrator
     variables const    = 60
-    order const        = 5
+    order const        = 3
     //step size should be 40 to give 27x27x27 grid
     maximum-mesh-size  = 40.0 
 //    maximum-mesh-depth = 3
