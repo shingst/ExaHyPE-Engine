@@ -225,12 +225,47 @@ void SWE::RunUpShelf(const double* const x, double* Q) {
    //vars.hu() = -vars.h()* sqrt(grav*vars.h());
 }
 
+// width = 10.0,10.0
+// offset = 0.0, 0.0
+void SWE::WettingDryingProblem(const double* const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  if(x[0] < -5) {
+      vars.h() = 2.0;
+  } else {
+      vars.h() = 0.0;
+  }
+  vars.hu() = 0.0;
+  vars.hv() = 0.0;
+  vars.b() = -0.1*x[0] + exp((-x[0]*x[0])/(0.1*0.1));
+}
+
+// width = 10.0,10.0
+// offset = 0.0, 0.0
+void SWE::RunUpTest(const double* const x, double* Q){
+    MySWESolver::Variables vars(Q);
+
+    if(x[0] < 7){
+        vars.h() = 0.5*exp(-pow(x[0] - 3.5, 2)) + 0.5;
+        vars.hu() = 2.0;
+        vars.b() = 0.0;
+    }
+    else {
+        vars.h() = 0.0;
+        vars.hu() = 0.0;
+        vars.b() = (x[0] - 7) * 1;
+    }
+    vars.hv() = 0.0;
+}
+
+
+
 #endif
 
 void SWE::initialData(const double* const x,double* Q) {
   //ShockShockProblem(x, Q);
   //RareRareProblem(x, Q);
-  GaussFunctionProblem(x, Q);
+  //GaussFunctionProblem(x, Q);
   //ExpBreakProblem(x,Q);
   //DamBreakProblem(x,Q);
   //SeaAtRestProblem(x,Q);
@@ -238,4 +273,6 @@ void SWE::initialData(const double* const x,double* Q) {
   //RunUpLinear(x,Q);
   //SteadyRunUpShelf(x,Q);
   //RunUpShelf(x, Q);
+  //WettingDryingProblem(x, Q);
+  RunUpTest(x, Q);
 }
