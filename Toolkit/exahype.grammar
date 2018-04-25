@@ -691,6 +691,7 @@ Abstract Syntax Tree
       {int}        [name]:identifier [value]:int_number
     | {float}      [name]:identifier [value]:float_number
     | {file}       [name]:identifier [value]:filename
+    | {boolean}    [name]:identifier [value]:token_on_off
     | {type}       [name]:identifier [value]:typename
     | {identifier} [name]:identifier [value]:identifier
     ;
