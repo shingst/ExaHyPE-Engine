@@ -116,6 +116,12 @@ else ifeq ($(call tolower,$(MODE)),peanoprofile)
 	# --------------------------------------------
 	COMPILER_CFLAGS += -DPerformanceAnalysis -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
+	
+else ifeq ($(call tolower,$(MODE)),itac)
+	# Settings for the ITAC mode
+	# --------------------------------------------
+	COMPILER_CFLAGS += -DUSE_ITAC -trace -I$(VT_ROOT)/include
+	COMPILER_LFLAGS += -DUSE_ITAC -trace
 
 else
 	# Option not recognized
