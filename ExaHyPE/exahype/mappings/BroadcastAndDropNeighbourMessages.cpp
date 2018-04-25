@@ -113,10 +113,10 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  if ( exahype::State::fuseADERDGPhases() ) {
-    vertex.receiveNeighbourData(
-        fromRank,false /*no merge - just drop */,
-        fineGridX,fineGridH,level);
+  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
+  vertex.receiveNeighbourData(
+      fromRank,false /*no merge*/,true /*no batch*/,
+      fineGridX,fineGridH,level);
   }
 }
 

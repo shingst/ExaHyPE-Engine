@@ -2636,10 +2636,11 @@ void exahype::solvers::ADERDGSolver::mergeWithLimiterStatus(
  */
 int
 exahype::solvers::ADERDGSolver::determineLimiterStatus(
-    CellDescription& cellDescription) {
+    const CellDescription& cellDescription,
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
   int max = 0;
   for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if ( cellDescription.getNeighbourMergePerformed(i) ) {
+    if ( neighbourMergePerformed[i] ) {
       max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
     }
   }
@@ -2809,9 +2810,9 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     const int                                 element2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  mergeNeighboursCommunicationStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
-  mergeNeighboursAugmentationStatus(cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
-  mergeNeighboursLimiterStatus     (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursCommunicationStatus(cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursAugmentationStatus (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeNeighboursLimiterStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
 }
 
 // merge compute data
@@ -3189,6 +3190,7 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren() ||
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
+
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     ensureNecessaryMemoryIsAllocated(cellDescription);
   }
@@ -3204,13 +3206,11 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterMetadata(
     CellDescription& cellDescription =
         getCellDescription(cellDescriptionsIndex,element);
 
-    #ifdef Asserts
     const CellDescription::Type receivedType =
         static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType]);
-    #endif
-    const bool masterHoldsData               = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
+    const bool masterHoldsData = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
 
-    assertion(receivedType==cellDescription.getType());
+    assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
     if (cellDescription.getType()==CellDescription::Type::Ancestor) {
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(masterHoldsData);
       ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
@@ -3256,6 +3256,32 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
   } // do nothing for descendants; wait for info from worker
     // see mergeWithWorkerMetadata
 
+  // Unset all erasing requests
+  const int coarseGridElement = tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
+    tarch::multicore::Lock lock(CoarseGridSemaphore);
+    switch (coarseGridCellDescription.getRefinementEvent()) {
+    case CellDescription::ErasingVirtualChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
+          coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
+          coarseGridCellDescription.toString());
+
+      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+    }  break;
+    case CellDescription::ErasingChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
+          coarseGridCellDescription.toString());
+
+      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+    } break;
+    default:
+      break;
+    }
+    lock.free();
+  }
+
 
   return cellDescriptionRequiresVerticalCommunication;
 }
@@ -3276,7 +3302,7 @@ bool exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus];
   const bool workerHoldsData               =
       receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
-  assertion(receivedType==cellDescription.getType());
+  assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
 
   bool cellDescriptionRequiresVerticalCommunication = false;
   if (cellDescription.getType()==CellDescription::Type::Descendant) {
@@ -3441,7 +3467,9 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
   const int faceIndex    = 2*direction+orientation;
 
   CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-  if ( holdsFaceData(cellDescription) ) {
+  if (
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+  ) {
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 
@@ -3507,7 +3535,6 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToNeighbour(
 // TODO(Dominic): Add to docu: We only perform a Riemann solve if a Cell is involved.
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int                                    fromRank,
-    const MetadataHeap::HeapEntries&             neighbourMetadata,
     const int                                    cellDescriptionsIndex,
     const int                                    element,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
@@ -3520,14 +3547,17 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 
   synchroniseTimeStepping(cellDescription);
 
-  CellDescription::Type neighbourType =
-      static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType]);
-  if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
+  const int direction    = tarch::la::equalsReturnIndex(src, dest);
+  const int orientation  = (1 + src(direction) - dest(direction))/2;
+  const int faceIndex    = 2*direction+orientation;
+  if(
+      (cellDescription.getCommunicationStatus()                ==MaximumCommunicationStatus &&
+      cellDescription.getFacewiseCommunicationStatus(faceIndex)>=MinimumCommunicationStatusForNeighbourCommunication)
+      ||
+      (cellDescription.getFacewiseCommunicationStatus(faceIndex)==MaximumCommunicationStatus &&
+      cellDescription.getCommunicationStatus()                  >=MinimumCommunicationStatusForNeighbourCommunication)
+  ){
     assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
-
-    const int direction    = tarch::la::equalsReturnIndex(src, dest);
-    const int orientation  = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex    = 2*direction+orientation;
 
     assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
         faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
@@ -3582,8 +3612,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int indexOfFValues) {
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
-
-  cellDescription.setNeighbourMergePerformed(faceIndex, true);
 
   const int dataPerFace = getBndFaceSize();
   const int dofPerFace  = getBndFluxSize();

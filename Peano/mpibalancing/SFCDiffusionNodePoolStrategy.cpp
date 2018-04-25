@@ -3,6 +3,7 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "tarch/parallel/NodePool.h"
+#include "peano/utils/PeanoOptimisations.h"
 
 #include "peano/utils/Globals.h"
 

@@ -114,9 +114,9 @@ Tokens
   token_fuse_algorithm_steps_factor = 'fuse-algorithmic-steps-factor';
   token_spawn_predictor             = 'spawn-predictor-as-background-thread';
   token_spawn_amr                   = 'spawn-amr-background-threads'; 
-  token_batch_timesteps             = 'timestep-batch-factor';
-  token_skip_reduction              = 'skip-reduction-in-batched-time-steps';
-  token_disable_amr                 = 'disable-amr-if-grid-has-been-stationary-in-previous-iteration';
+  token_disable_vertex                 = 'disable-vertex-exchange-in-time-steps';
+  token_batch_timesteps             = 'time-step-batch-factor';
+  token_disable_metadata            = 'disable-metadata-exchange-in-batched-time-steps';
   token_double_compression          = 'double-compression';
   token_spawn_double_compression    = 'spawn-double-compression-as-background-thread';
 
@@ -324,13 +324,13 @@ Productions
        token_fuse_algorithm_steps_factor [token_fuse_algorithm_steps_factor_equals]:token_equals [fuse_algorithm_steps_factor]:float_number
        token_spawn_predictor             [token_spawn_predictor_equals]:token_equals             [spawn_predictor]:token_on_off
        token_spawn_amr                   [token_spawn_amr_equals]:token_equals                   [spawn_amr]:token_on_off
+       token_disable_vertex              [token_disable_vertex_equals]:token_equals              [disable_vertex]:token_on_off
        token_batch_timesteps             [token_batch_timesteps_equals]:token_equals             [batch_timesteps]:float_number 
-       token_skip_reduction              [token_skip_reduction_equals]:token_equals              [skip_reduction]:token_on_off
-       token_disable_amr                 [token_disable_amr_equals]:token_equals                 [disable_amr]:token_on_off
+       token_disable_metadata            [token_disable_metadata_equals]:token_equals            [disable_metadata]:token_on_off
        token_double_compression          [token_double_compression_equals]:token_equals          [double_compression]:float_number
        token_spawn_double_compression    [token_spawn_double_compression_equals]:token_equals    [spawn_double_compression]:token_on_off 
      token_end [end_token]:token_optimisation
-       { -> New optimisation(fuse_algorithm_steps, fuse_algorithm_steps_factor, spawn_predictor, spawn_amr, batch_timesteps,skip_reduction,disable_amr,double_compression,spawn_double_compression) }
+       { -> New optimisation(fuse_algorithm_steps, fuse_algorithm_steps_factor, spawn_predictor, spawn_amr, disable_vertex, batch_timesteps, disable_metadata, double_compression, spawn_double_compression) }
      ;
 
   profiling_deep_profiling {->token_on_off} =
@@ -641,9 +641,9 @@ Abstract Syntax Tree
     [fuse_algorithm_steps_factor]:float_number
     [spawn_predictor]:token_on_off
     [spawn_amr]:token_on_off
+    [disable_vertex]:token_on_off
     [batch_timesteps]:float_number 
-    [skip_reduction]:token_on_off
-    [disable_amr]:token_on_off
+    [disable_metadata]:token_on_off
     [double_compression]:float_number
     [spawn_double_compression]:token_on_off
     ;

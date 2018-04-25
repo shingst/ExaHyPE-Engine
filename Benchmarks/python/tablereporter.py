@@ -35,7 +35,8 @@ def createPlots():
     
     pyplot.rc('text', usetex=True)
     pyplot.rc('font', family='serif')
-    
+
+    plotCounter = 0;    
     for plotDict in dictProduct(plotsSpace):
         for yScale in yScales:
             # create new plot
@@ -75,6 +76,7 @@ def createPlots():
                     print("WARNING: Found no rows for key=("+filterKeyAsString+")!",file=sys.stderr)
             
             if len(positions):
+                plotCounter+=1
                 # plot
                 container = axes.bar(positions,dataPoints,width=0.8,color="0.8",edgecolor="0.8",align='center',log=(yScale=="log"),label=labels)
                 axes.grid(True, which="both")
@@ -113,6 +115,7 @@ def createPlots():
                     label  = labels[i]
                     axes.text(xTrans,0.05,"%s" % label,ha='center', va='bottom',fontweight="bold",fontsize=fontsizeBars,rotation=90,transform=axes.transAxes)
                 
+                print("try create directory "+plotFolderPath)
                 if not os.path.exists(plotFolderPath):
                     print("create directory "+plotFolderPath)
                     os.makedirs(plotFolderPath)
@@ -127,7 +130,10 @@ def createPlots():
                     figure.savefig('%s-%s.%s' % (plotFileName,yScale,format), bbox_inches="tight", dpi=300)
                     pyplot.close(figure)
                     print("created plot: %s-%s.%s" % (plotFileName,yScale,format))
-
+    if plotCounter==0:
+        print("ERROR: Aborted report generation as no plots have been created.",file=sys.stderr)
+        sys.exit()
+    
 def renderPDF():
     """
     Render a LaTeX document.
@@ -182,7 +188,7 @@ r"""
                 caption  = "\\textbf{"+", ".join("%s: %s" %  pair for pair in plotDict.items())
                 caption += " (y-scale: "+yScale+"):} "
                 caption += "The bars show measurements for different values of the tuples "
-                caption += "-".join(r"\textit{%s}" % item for item in perPlotSpace.keys()) 
+                caption += "-".join(r"\textit{%s}" % item.replace("_","\\_") for item in perPlotSpace.keys()) 
                 caption += "."
                 renderedFigure = renderedFigure.replace("{{caption}}",caption)
                 
@@ -213,8 +219,9 @@ def getDataColumnIndex():
     if dataColumnName in columnNames:
         columnIndex = columnNames.index(dataColumnName)
     else:
-      print("ERROR: program aborted since data column to plot "+dataColumnName+" is not a column name of the table.",file=sys.stderr)
-      print("ERROR: found table column names: "+",".join(columnNames),file=sys.stderr)
+      print("ERROR: program aborted since data column to plot '"+dataColumnName+"' is not a column name of the table.",file=sys.stderr)
+      print("ERROR: found table column names: '"+"','".join(columnNames)+"'",file=sys.stderr)
+      print(columnNames)
       sys.exit()
     
     return columnIndex
@@ -263,7 +270,9 @@ def parseList(string):
     into a list of strings:
     [ 'val1,val2' ,'val3', 'val4,val5' ]
     """
-    for line in csv.reader([string],delimiter=","):
+    strippedString = string.replace("\n","").replace("\r","")
+
+    for line in csv.reader([strippedString],delimiter=","):
       values = line
       return values
 

@@ -95,7 +95,7 @@ endif
 ifeq ($(call tolower,$(MODE)),release)
 	# Settings for the Release mode
 	# ----------------------------------------------
-	#COMPILER_CFLAGS +=
+	COMPILER_CFLAGS +=  -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
 
 else ifeq ($(call tolower,$(MODE)),debug)
@@ -197,6 +197,9 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	ifeq ($(call tolower,$(ARCHITECTURE)),phi)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
+	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+		COMPILER_CFLAGS += -xCORE-AVX512 -fma
+		COMPILER_LFLAGS += -xCORE-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS += -xMIC-AVX512 -fma
 		#FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
@@ -274,6 +277,9 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS  += -march=knl
 		COMPILER_LFLAGS  += -march=knl
+	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+		COMPILER_CFLAGS  += -march=skylake-avx512
+		COMPILER_LFLAGS  += -march=skylake-avx512
     else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
 		COMPILER_CFLAGS  += -march=sandybridge
 		COMPILER_LFLAGS  += -march=sandybridge

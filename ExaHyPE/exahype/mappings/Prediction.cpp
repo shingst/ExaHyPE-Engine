@@ -204,10 +204,14 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+
   exahype::Cell::broadcastGlobalDataToWorker(
       worker,
       fineGridVerticesEnumerator.getCellCenter(),
       fineGridVerticesEnumerator.getLevel());
+
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
   return true;
 }
@@ -222,10 +226,14 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceIn( "receiveDataFromMaster(...)" );
+
   exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
         receivedVerticesEnumerator.getLevel());
+
+  logTraceOut( "receiveDataFromMaster(...)" );
 }
 
 void exahype::mappings::Prediction::prepareSendToMaster(
@@ -235,11 +243,15 @@ void exahype::mappings::Prediction::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
+
   localCell.reduceDataToMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       verticesEnumerator.getCellCenter(),
       verticesEnumerator.getCellSize(),
       verticesEnumerator.getLevel());
+
+  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::Prediction::mergeWithMaster(
@@ -254,18 +266,26 @@ void exahype::mappings::Prediction::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
+  logTraceIn( "mergeWithMaster(...)" );
+
   fineGridCell.mergeWithDataFromWorkerPerCell(
       worker,
       fineGridVerticesEnumerator.getCellCenter(),
       fineGridVerticesEnumerator.getCellSize(),
       fineGridVerticesEnumerator.getLevel());
+
+  logTraceOut( "mergeWithMaster(...)" );
 }
 
 void exahype::mappings::Prediction::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  vertex.sendToNeighbour(toRank,x,h,level);
+  logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
+
+  vertex.sendToNeighbour(toRank,true,x,h,level);
+
+  logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
 //
