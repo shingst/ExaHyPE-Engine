@@ -40,7 +40,7 @@ SUBROUTINE RNSID_2d_Cartesian2Cylindrical(Q, V, xGP_loc)
 	
 	! Compose the transformation matrix
         CALL RNSID_Cart2CylMatrix_cov(A,xGP_loc)
-        CALL MatrixInverse3x3(A,iA,detA)
+        CALL RNSID_MatrixInverse3x3(A,iA,detA)
 
         ! Note, if you get a crash because A_coord is singular,
         ! xGP_loc(1) == radius will be zero. At r=0, the coordinate
@@ -97,7 +97,7 @@ SUBROUTINE RNSID_Cart2CylMatrix_cov(A,x)
 	A(3,3) = 1
 END SUBROUTINE RNSID_Cart2CylMatrix_cov
 
- SUBROUTINE MatrixInverse3x3(M,iM,det) 
+ SUBROUTINE RNSID_MatrixInverse3x3(M,iM,det) 
     !---------------
     ! compute the determinant det of the NxN-matrix M
     !---------------
@@ -147,4 +147,4 @@ END SUBROUTINE RNSID_Cart2CylMatrix_cov
     !
     CONTINUE
     !
-END SUBROUTINE MatrixInverse3x3
+END SUBROUTINE RNSID_MatrixInverse3x3
