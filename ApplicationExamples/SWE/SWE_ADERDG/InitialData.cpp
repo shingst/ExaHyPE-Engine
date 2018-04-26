@@ -1,6 +1,6 @@
 #include "InitialData.h"
-#include "SWE_ADERDG/MySWESolver_Variables.h"
-#include "SWE_ADERDG/MySWESolver.h"
+#include "MySWESolver_Variables.h"
+#include "MySWESolver.h"
 
 #include <cmath>
 
