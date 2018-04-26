@@ -1851,28 +1851,38 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
   // WORKER<=>MASTER
   ///////////////////////////////////
-  /**
-   * Prepares a solver's cell descriptions at a
-   * master-worker boundary for exchanging data
-   * (with the master or worker, respectively).
-   *
-   * \note Thread-safe
-   *
-   * \note ADERDGSolver, e.g., calls a method here which locks a semaphore.
-   * This routine can thus not have a const modifier.
-   *
-   * \note TODO ADERDGSolver: We currently assume there is no cell at a master worker boundary
-   * that needs to restrict data up to an Ancestor on the
-   * master rank. However, this can definitively happen. For example,
-   * in situations where a refined cell is augmented as well, i.e.
-   * has virtual children (Descendants). (Still applicable??)
-   *
-   * \return if we need to perform vertical communication of solver face data for the
-   * considered cell description during the time stepping.
-   */
-  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
+//  /**
+//   * Prepares a solver's cell descriptions at a
+//   * master-worker boundary for exchanging data
+//   * (with the master or worker, respectively).
+//   *
+//   * \note Thread-safe
+//   *
+//   * \note ADERDGSolver, e.g., calls a method here which locks a semaphore.
+//   * This routine can thus not have a const modifier.
+//   *
+//   * \note TODO ADERDGSolver: We currently assume there is no cell at a master worker boundary
+//   * that needs to restrict data up to an Ancestor on the
+//   * master rank. However, this can definitively happen. For example,
+//   * in situations where a refined cell is augmented as well, i.e.
+//   * has virtual children (Descendants). (Still applicable??)
+//   *
+//   * \return if we need to perform vertical communication of solver face data for the
+//   * considered cell description during the time stepping.
+//   */
+//  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
+//      const int cellDescriptionsIndex,
+//      const int element) = 0;
+
+  virtual bool progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) = 0;
 
   /**
    * Prepare a worker cell description at the master worker boundary.
@@ -1925,10 +1935,11 @@ class exahype::solvers::Solver {
    *                    the array with address \p cellDescriptionsIndex.
    *                    This is not the solver number.
    */
-  virtual void sendDataToWorkerOrMasterDueToForkOrJoin(
+  virtual void sendSolutionToWorkerOrMaster(
       const int                                    toRank,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
+      const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const = 0;
 
@@ -1938,6 +1949,7 @@ class exahype::solvers::Solver {
    */
   virtual void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
       const int                                    toRank,
+      const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const = 0;
 
@@ -1957,6 +1969,7 @@ class exahype::solvers::Solver {
       const int                                    fromRank,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
+      const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const = 0;
 
@@ -1966,6 +1979,7 @@ class exahype::solvers::Solver {
    */
   virtual void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                    fromRank,
+      const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const = 0;
 
