@@ -28,6 +28,11 @@
 
 #include "peano/utils/UserInterface.h"
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
+
 peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -96,7 +101,9 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+#ifdef USE_ITAC
+  VT_traceon();
+#endif
 }
 
 void exahype::mappings::Prediction::endIteration(
