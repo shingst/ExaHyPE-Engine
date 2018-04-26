@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   31/03/2018 21:14
+    * @date   26/04/2018 15:28
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -50,7 +50,7 @@ namespace exahype {
          };
          
          enum RefinementEvent {
-            None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11
+            None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
          };
          
          enum RefinementRequest {
@@ -3063,7 +3063,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   31/03/2018 21:14
+    * @date   26/04/2018 15:28
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -3442,7 +3442,7 @@ namespace exahype {
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 5));
    int tmp = static_cast<int>(_packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 5));
-   assertion(( tmp >= 0 &&  tmp <= 11));
+   assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
             }
             
@@ -3453,7 +3453,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               assertion((refinementEvent >= 0 && refinementEvent <= 11));
+               assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 5));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
@@ -4922,7 +4922,7 @@ namespace exahype {
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 5));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 5));
-   assertion(( tmp >= 0 &&  tmp <= 11));
+   assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
             }
             
@@ -4933,7 +4933,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-               assertion((refinementEvent >= 0 && refinementEvent <= 11));
+               assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 5));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
@@ -6256,7 +6256,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/03/2018 21:14
+       * @date   26/04/2018 15:28
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -6273,7 +6273,7 @@ namespace exahype {
             };
             
             enum RefinementEvent {
-               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11
+               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
             };
             
             enum RefinementRequest {
@@ -9057,7 +9057,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   31/03/2018 21:14
+       * @date   26/04/2018 15:28
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -9332,7 +9332,7 @@ namespace exahype {
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
-   assertion(( tmp >= 0 &&  tmp <= 11));
+   assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
                }
                
@@ -9343,7 +9343,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 11));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
@@ -10685,7 +10685,7 @@ namespace exahype {
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
-   assertion(( tmp >= 0 &&  tmp <= 11));
+   assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
                }
                
@@ -10696,7 +10696,7 @@ namespace exahype {
  __attribute__((always_inline))
  #endif 
  {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 11));
+                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
