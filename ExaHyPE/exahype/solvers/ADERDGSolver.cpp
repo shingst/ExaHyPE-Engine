@@ -3263,7 +3263,8 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
         getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
     tarch::multicore::Lock lock(CoarseGridSemaphore);
     switch (coarseGridCellDescription.getRefinementEvent()) {
-    case CellDescription::ErasingVirtualChildrenRequested: {
+    case CellDescription::ErasingVirtualChildrenRequested:
+    case CellDescription::ChangeChildrenToVirtualChildrenRequested: {
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
           coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
           coarseGridCellDescription.toString());
