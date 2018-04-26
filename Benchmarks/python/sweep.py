@@ -662,9 +662,9 @@ def verifyAllSpecFilesExist():
 
 def hashSweep():
     chain = ""
-    for value in nodeCounts:
+    for value in rankCounts:
         chain += value+";"
-    for value in taskCounts:
+    for value in nodeCounts:
         chain += value+";"
     for value in coreCounts:
         chain += value+";"
