@@ -100,7 +100,7 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
 
 def verifyLogFilterExists(justWarn=False):
     foundLogFilter = False
-    for file in os.listdir(exahypeRoot + "/" + projectPath):i
+    for file in os.listdir(exahypeRoot + "/" + projectPath):
         foundLogFilter = foundLogFilter or file.endswith(".log-filter")
 
     messageType = "ERROR"
@@ -127,8 +127,8 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                 print(messageType+": DISTRIBUTEDMEM environment variable set to "+environmentDict["DISTRIBUTEDMEM"]+" and ranks is set to "+ranks+" > 1",file=sys.stderr)
                 environmentIsCorrect = False
             for nodes in nodeCounts:
-                print(messageType+": specified ranks (+"ranks"+) must always be greater than or equals to specified nodes ("+nodes+")",file=sys.stderr)
                 if int(nodes) > int(ranks):
+                    print(messageType+": specified ranks ("+ranks+") must always be greater than or equals to specified nodes ("+nodes+")",file=sys.stderr)
                     environmentIsCorrect = False
                 
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
