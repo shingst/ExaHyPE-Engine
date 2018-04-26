@@ -528,7 +528,7 @@ def generateScripts():
                                                  parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                                                  
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                                 "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                                 "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run+".out"
                                 outputFilePath = resultsFolderPath + "/" + outputFileName 
                                 
                                 # pipe some information into output file
