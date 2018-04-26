@@ -27,7 +27,7 @@ exahype-project Euler
   log-file                = mylogfile.log
 
   computational-domain
-    dimension const          = 2
+    dimension const          = 3
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
     end-time                 = 0.021
