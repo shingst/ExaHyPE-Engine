@@ -3270,7 +3270,8 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
 
       coarseGridCellDescription.setRefinementEvent(CellDescription::None);
     }  break;
-    case CellDescription::ErasingChildrenRequested: {
+    case CellDescription::ErasingChildrenRequested:
+    case CellDescription::ChangeChildrenToVirtualChildrenRequested: {
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
           coarseGridCellDescription.toString());
 

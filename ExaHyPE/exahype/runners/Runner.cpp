@@ -508,27 +508,30 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
   const double coarsestMeshSize     = determineCoarsestMeshSize(_boundingBoxSize);
   tarch::la::Vector<DIMENSIONS,double> scaledDomainSize =
       determineScaledDomainSize(_domainSize,coarsestMeshSize);
-  if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
-    logInfo("createRepository(...)",
-        "scale domain size artificially to " << scaledDomainSize << " from "
-        << _domainSize << " since non-cubic domain was specified");
-  }
-  logInfo("createRepository(...)",
-      "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
-      coarsestUserMeshSize << " and domain size " << scaledDomainSize);
-  if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
-    logInfo("createRepository(...)",
-        "We will need to refine the grid " << boundingBoxMeshLevel-coarsestUserMeshLevel << " more time(s) than expected "
-            " in order to satisfy user's maximum mesh size criterion while scaling the bounding box");
-  }
 
-  logInfo(
-      "createRepository(...)",
-      "summary: create computational domain at " << _domainOffset <<
-      " of width/size " << scaledDomainSize <<
-      ". bounding box has offset " << boundingBoxOffset <<
-      " and size " << _boundingBoxSize <<
-      ". grid regular up to level " << boundingBoxMeshLevel << " (1 means a single cell)");
+  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+    if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
+      logInfo("createRepository(...)",
+          "scale domain size artificially to " << scaledDomainSize << " from "
+          << _domainSize << " since non-cubic domain was specified");
+    }
+    logInfo("createRepository(...)",
+        "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
+        coarsestUserMeshSize << " and domain size " << scaledDomainSize);
+    if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
+      logInfo("createRepository(...)",
+          "We will need to refine the grid " << boundingBoxMeshLevel-coarsestUserMeshLevel << " more time(s) than expected "
+          " in order to satisfy user's maximum mesh size criterion while scaling the bounding box");
+    }
+
+    logInfo(
+        "createRepository(...)",
+        "summary: create computational domain at " << _domainOffset <<
+        " of width/size " << scaledDomainSize <<
+        ". bounding box has offset " << boundingBoxOffset <<
+        " and size " << _boundingBoxSize <<
+        ". grid regular up to level " << boundingBoxMeshLevel << " (1 means a single cell)");
+  }
 
   _domainSize = scaledDomainSize;
 
@@ -545,16 +548,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 
 void exahype::runners::Runner::initHeaps() {
   exahype::DataHeap::getInstance().setName("DataHeap");
-  logInfo("initHeaps()","initialised DataHeap="<<exahype::DataHeap::getInstance().toString());
   exahype::CompressedDataHeap::getInstance().setName("compressed-data");
-  logInfo("initHeaps()","initialised CompressedDataHeap::Heap="<<exahype::CompressedDataHeap::getInstance().toString());
   exahype::solvers::ADERDGSolver::Heap::getInstance().setName("ADERDGCellDescriptionHeap");
-  logInfo("initHeaps()","initialised ADERDGSolver::Heap="<<exahype::solvers::ADERDGSolver::Heap::getInstance().toString());
   exahype::solvers::FiniteVolumesSolver::Heap::getInstance().setName("FiniteVolumesCellDescriptionHeap");
-  logInfo("initHeaps()","initialised FiniteVolumesSolver::Heap="<<exahype::solvers::FiniteVolumesSolver::Heap::getInstance().toString());
+  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+    logInfo("initHeaps()","initialised DataHeap="<<exahype::DataHeap::getInstance().toString());
+    logInfo("initHeaps()","initialised CompressedDataHeap::Heap="<<exahype::CompressedDataHeap::getInstance().toString());
+    logInfo("initHeaps()","initialised ADERDGSolver::Heap="<<exahype::solvers::ADERDGSolver::Heap::getInstance().toString());
+    logInfo("initHeaps()","initialised FiniteVolumesSolver::Heap="<<exahype::solvers::FiniteVolumesSolver::Heap::getInstance().toString());
+  }
   #ifdef Parallel
   exahype::MetadataHeap::getInstance().setName("MetadataHeap");
-  logInfo("initHeaps()","initialised MetadataHeap="<<exahype::MetadataHeap::getInstance().toString());
+  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+    logInfo("initHeaps()","initialised MetadataHeap="<<exahype::MetadataHeap::getInstance().toString());
+  }
   #endif
 }
 
@@ -586,9 +593,7 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps =
       _parser.getDisableMetadataExchangeInBatchedTimeSteps();
 
-  if (
-      tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
-  ) {
+  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
       logInfo("parseOptimisations()","\tfuse-algorithmic-steps="        << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
       logInfo("parseOptimisations()","\tfuse-algorithmic-steps-factor=" << exahype::solvers::Solver::WeightForPredictionRerun);
