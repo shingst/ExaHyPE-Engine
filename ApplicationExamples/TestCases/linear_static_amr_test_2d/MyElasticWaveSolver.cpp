@@ -53,9 +53,9 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 
     for (int j=0; j< num_nodes; j++){
       for (int i=0; i< num_nodes; i++){
-
 	double x  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
 	double y  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
+
 
 	// velocity
 	luh[id_xyzf(j,i,0)]  = 0;
@@ -70,7 +70,7 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	    // material parameters for loh.1
 	    luh[id_xyzf(j,i,5)]  = x*x+2; //rho
 	    luh[id_xyzf(j,i,6)] = y*y+2; //cp
-	    luh[id_xyzf(j,i,7)] = 1; //cp
+	    luh[id_xyzf(j,i,7)] = 1; //cs
 	  }
 	}
       }
@@ -116,8 +116,8 @@ void Elastic::MyElasticWaveSolver::eigenvalues(const double* const Q,const int d
   // Dimensions                        = 3
   // Number of variables + parameters  = 9 + 3
   
-  double cp = Q[10];
-  double cs = Q[11];
+  double cp = Q[6];
+  double cs = Q[7];
    
 
   lambda[0] = cp;
@@ -196,7 +196,6 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
     forceVector[5] = 0.0;
     forceVector[6] = 0.0;
     forceVector[7] = f;
-    forceVector[8] = 0.0;
   }
 }
 

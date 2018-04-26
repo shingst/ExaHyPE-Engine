@@ -69,11 +69,11 @@ exahype-project  Elastic
     time-stepping      = global
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,pointsources:0
-    optimisation const = optimised,patchwiseadjust
+    optimisation const = generic,patchwiseadjust
     language const     = C
 
     plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
-      variables const = 12
+      variables const = 8
       time            = 0.0
       repeat          = 0.05
       output          = ./conserved
