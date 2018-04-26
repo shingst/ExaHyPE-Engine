@@ -3263,15 +3263,15 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
         getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
     tarch::multicore::Lock lock(CoarseGridSemaphore);
     switch (coarseGridCellDescription.getRefinementEvent()) {
-    case CellDescription::ErasingVirtualChildrenRequested:
-    case CellDescription::ChangeChildrenToVirtualChildrenRequested: {
+    case CellDescription::ErasingVirtualChildrenRequested: {
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
           coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
           coarseGridCellDescription.toString());
 
       coarseGridCellDescription.setRefinementEvent(CellDescription::None);
     }  break;
-    case CellDescription::ErasingChildrenRequested: {
+    case CellDescription::ErasingChildrenRequested:
+    case CellDescription::ChangeChildrenToVirtualChildrenRequested: {
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
           coarseGridCellDescription.toString());
 
