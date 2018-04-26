@@ -350,7 +350,9 @@ int exahype::Cell::countListingsOfRemoteRankAtInsideFace(
   std::stringstream message;
   message << std::endl;
   dfor2(v)
-  message << "v="<<v.toString()<<": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
+    message << "v="<<v.toString()<<", location=" <<
+      exahype::Vertex::Records::toString(verticesAroundCell[ verticesEnumerator(v) ].getRecords().getInsideOutsideDomain()) <<
+      ": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
   enddforx
 #endif
   assertion5(result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/4||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,
