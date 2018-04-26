@@ -54,24 +54,28 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 
     double s_x[num_nodes*num_nodes*num_nodes];
     double s_y[num_nodes*num_nodes*num_nodes];
-    double s_z[num_nodes*num_nodes*num_nodes];  
+    double s_z[num_nodes*num_nodes*num_nodes]; 
 
-    transformation->genCoordinates(center,
-				   dx,    
-				   gl_vals_x,gl_vals_y,gl_vals_z,
-				   jacobian,
-				   q_x,q_y,q_z,
-				   r_x,r_y,r_z,
-				   s_x,s_y,s_z);
+    if( level <= getCoarsestMeshLevel()){ 
+      transformation->genCoordinates(center,
+				     dx,    
+				     gl_vals_x,gl_vals_y,gl_vals_z,
+				     jacobian,
+				     q_x,q_y,q_z,
+				     r_x,r_y,r_z,
+				     s_x,s_y,s_z);
+      
+    }
 
     for (int k=0; k< num_nodes; k++){
       for (int j=0; j< num_nodes; j++){
 	for (int i=0; i< num_nodes; i++){
-	
-	  double x= gl_vals_x[id_xyz(k,j,i)];
-	  double y= gl_vals_y[id_xyz(k,j,i)];
-	  double z= gl_vals_z[id_xyz(k,j,i)];
 
+	  if( level <= getCoarsestMeshLevel()){ 
+	    double x= gl_vals_x[id_xyz(k,j,i)];
+	    double y= gl_vals_y[id_xyz(k,j,i)];
+	    double z= gl_vals_z[id_xyz(k,j,i)];
+	  }
 
 	  // velocity
 	  luh[id_xyzf(k,j,i,0)]  = 0;
@@ -93,28 +97,28 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,11)] = 3.343; //cs
 
 	  if( level <= getCoarsestMeshLevel()){
-	  // Jacobian
-	  luh[id_xyzf(k,j,i,12)] = jacobian[id_xyz(k,j,i)];
-
-	  // q_x, q_y, q_z
-	  luh[id_xyzf(k,j,i,13)]  = q_x[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,14)]  = q_y[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,15)]  = q_z[id_xyz(k,j,i)];
-
-	  // r_x, r_y, r_z
-	  luh[id_xyzf(k,j,i,16)] = r_x[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,17)] = r_y[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,18)] = r_z[id_xyz(k,j,i)];
-
-	  // s_x, s_y, s_z
-	  luh[id_xyzf(k,j,i,19)] = s_x[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,20)] = s_y[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,21)] = s_z[id_xyz(k,j,i)];
-
-	  // x,y,z
-	  luh[id_xyzf(k,j,i,22)] = gl_vals_x[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,23)] = gl_vals_y[id_xyz(k,j,i)];
-	  luh[id_xyzf(k,j,i,24)] = gl_vals_z[id_xyz(k,j,i)];
+	    // Jacobian
+	    luh[id_xyzf(k,j,i,12)] = jacobian[id_xyz(k,j,i)];
+	    
+	    // q_x, q_y, q_z
+	    luh[id_xyzf(k,j,i,13)]  = q_x[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,14)]  = q_y[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,15)]  = q_z[id_xyz(k,j,i)];
+	    
+	    // r_x, r_y, r_z
+	    luh[id_xyzf(k,j,i,16)] = r_x[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,17)] = r_y[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,18)] = r_z[id_xyz(k,j,i)];
+	    
+	    // s_x, s_y, s_z
+	    luh[id_xyzf(k,j,i,19)] = s_x[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,20)] = s_y[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,21)] = s_z[id_xyz(k,j,i)];
+	    
+	    // x,y,z
+	    luh[id_xyzf(k,j,i,22)] = gl_vals_x[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,23)] = gl_vals_y[id_xyz(k,j,i)];
+	    luh[id_xyzf(k,j,i,24)] = gl_vals_z[id_xyz(k,j,i)];
 	  }
 	  //	  std::cout << std::endl;
 	  //	  std::cout << luh[id_xyzf(k,j,i,22)] << std::endl;
