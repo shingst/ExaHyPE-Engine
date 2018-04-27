@@ -3378,6 +3378,25 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInReceiveDataFromMast
   }
 }
 
+void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
+	const int receivedCellDescriptionsIndex,
+  const int receivedElement,
+  const int cellDescriptionsIndex,
+  const int element){
+  assertion(Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
+  
+  Heap::HeapEntries& receivedCellDescriptions = Heap::getInstance().getData(receivedCellDescriptionsIndex);
+  if ( receivedCellDescriptions.size()>0 ) {
+    if ( !localCell.isInitialised() ) {
+      localCell.setupMetaData();
+    }
+    
+    
+    
+    for 
+  }
+}
+
 bool exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
