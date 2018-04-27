@@ -586,11 +586,35 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
   receivedCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 
-  receivedCell.receiveMetadataFromMasterPerCell(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
+      
+  if ( receivedCell.hasToCommunicate(fineGridVerticesEnumerator.getCellSize()) ) {
+    exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
+      tarch::parallel::Node::getInstance().getMasterRank(),
+      receivedCell,
+      peano::heap::MessageType::MasterWorkerCommunication,
       receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getCellSize(),
       receivedVerticesEnumerator.getLevel());
+  
+    exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
+      tarch::parallel::Node::getInstance().getMasterRank(),
+      receivedCell,
+      peano::heap::MessageType::MasterWorkerCommunication,
+      receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getLevel());
+    
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int receivedCellDescriptionsIndex = receivedCell.getCellDescriptionsIndex()
+      const int receivedElement = tryGetElement(receivedCellDescriptionsIndex,solverNumber);
+      
+      if ( receivedElement!=exahype::solvers::Solver::NotFound ) {
+        solver->progressMeshRefinementInReceiveDataFromWorker(
+          tarch::parallel::Node::getInstance().getMasterRank(),
+          receivedCellDescriptionsIndex,receivedElement);
+      }
+    }
+  }  
+  
 
   logTraceOut( "receiveDataFromMaster(...)" );
 }
@@ -601,10 +625,8 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
 
-  localCell.mergeWithMetadataFromMasterPerCell(
-      cellSize,
-      exahype::State::AlgorithmSection::MeshRefinement);
-
+  
+  
   logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
 }
 
