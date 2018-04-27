@@ -19,7 +19,9 @@
 
 #include "peano/utils/Globals.h"
 #include "peano/utils/Loop.h"
+
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -152,7 +154,7 @@ bool exahype::mappings::PredictionOrLocalRecomputation::performLocalRecomputatio
 
 bool exahype::mappings::PredictionOrLocalRecomputation::performPrediction(
     exahype::solvers::Solver* solver) {
-  return exahype::State::fuseADERDGPhases() &&
+  return exahype::solvers::Solver::FuseADERDGPhases &&
          solver->getMeshUpdateRequest();
 }
 
@@ -174,7 +176,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 
         if (
-            exahype::State::fuseADERDGPhases()
+            exahype::solvers::Solver::FuseADERDGPhases
             #ifdef Parallel
             && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
             #endif
@@ -182,7 +184,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
           exahype::solvers::Solver::
           reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
         }
-        if (exahype::State::fuseADERDGPhases()) {
+        if (exahype::solvers::Solver::FuseADERDGPhases) {
           solver->startNewTimeStepFused(true,true);
         } else {
           solver->startNewTimeStep();
@@ -191,6 +193,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
       }
     }
+
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
     #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
     logInfo("endIteration(...)","interiorFaceSolves: " << _interiorFaceMerges);
@@ -227,7 +231,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
               cellDescriptionsIndex,element);
 
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
-          if (exahype::State::fuseADERDGPhases()) {
+          if (exahype::solvers::Solver::FuseADERDGPhases) {
             limitingADERDG->recomputePredictorLocally(
                 cellDescriptionsIndex,element,
                 exahype::Cell::isAtRemoteBoundary(
@@ -287,7 +291,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if ( exahype::State::fuseADERDGPhases() ) {
+  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
     exahype::mappings::Prediction::restriction(
         fineGridCell,exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
   }
@@ -526,7 +530,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith3Arguments( "prepareSendToNeighbour(...)", vertex, toRank, level );
 
-  if ( exahype::State::fuseADERDGPhases() ) {
+  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
    vertex.sendToNeighbour(toRank,true,x,h,level); 
   }
 
@@ -590,7 +594,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
     }
   }
 
-  if ( exahype::State::fuseADERDGPhases() ) {
+  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
     localCell.reduceDataToMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         verticesEnumerator.getCellCenter(),
@@ -624,7 +628,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
     }
   }
 
-  if ( exahype::State::fuseADERDGPhases() ) {
+  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
     fineGridCell.mergeWithDataFromWorkerPerCell(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),

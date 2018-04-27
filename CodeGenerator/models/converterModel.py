@@ -17,26 +17,17 @@
 #
 # @section DESCRIPTION
 #
-# Generate the a cpp+h to include the libxsmm gemm properly
+# Generate the converter, used to mix generic and optimized kernels
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class GemmsCPPGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filenameRoot = "gemmsCPP"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-        
+class ConverterModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.m_context["gemm_prefix"]  = "gemm"
+        self.context["noVarPadding"] = self.context["nVarPad"] == self.context["nVar"]
         
-        TemplatingUtils.renderAsFile("gemmsCPP_h.template",   self.m_filenameRoot+".h",   self.m_context)
-        TemplatingUtils.renderAsFile("gemmsCPP_cpp.template", self.m_filenameRoot+".cpp", self.m_context)
+        self.render("converter_h.template",   "converter.h")
+        self.render("converter_cpp.template", "converter.cpp")

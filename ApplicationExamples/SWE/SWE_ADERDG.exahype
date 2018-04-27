@@ -44,9 +44,9 @@ exahype-project  SWE
       spawn-predictor-as-background-thread = off
       spawn-amr-background-threads         = off
       /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-      timestep-batch-factor           = 0.0
-      skip-reduction-in-batched-time-steps = on
-      disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+      disable-vertex-exchange-in-time-steps = on
+      time-step-batch-factor           = 0.0
+      disable-metadata-exchange-in-batched-time-steps = off
       double-compression = 0.0
       spawn-double-compression-as-background-thread = off
    end global-optimisation
@@ -55,7 +55,7 @@ exahype-project  SWE
     variables const   = h:1,hu:1,hv:1,b:1
     //parameters const  = b:1
     order const       = 3
-    maximum-mesh-size = 0.05
+    maximum-mesh-size = 0.15
     time-stepping     = global
     type const = nonlinear
 	terms const = flux,ncp

@@ -22,24 +22,13 @@
 # Call user function flux, ncp, eigenvalue
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class RiemannGenerator:
-    m_context = {}
-    
-    # name of generated output file
-    m_filename = "riemannSolver.cpp"
+class RiemannModel(AbstractModelBaseClass):
 
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-
-
-    def generateCode(self):        
-        if(self.m_context["isLinear"]):
-            # render template
-            TemplatingUtils.renderAsFile("riemannSolverLinear_cpp.template", self.m_filename, self.m_context)
+    def generateCode(self):
+        if(self.context["isLinear"]):
+            self.render("riemannSolverLinear_cpp.template", "riemannSolver.cpp")
         else:            
-            # render template
-            TemplatingUtils.renderAsFile("riemannSolverNonLinear_cpp.template", self.m_filename, self.m_context)
+            self.render("riemannSolverNonLinear_cpp.template", "riemannSolver.cpp")

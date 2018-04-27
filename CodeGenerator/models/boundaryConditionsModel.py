@@ -17,25 +17,16 @@
 #
 # @section DESCRIPTION
 #
-# Generate the Kernels.h header
+# Generates the kernel to apply the boundary condition at the border of the domain
+#
+# Call the user function boundaryValues
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class KernelsHeaderGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "Kernels.h"
-
-    
-    def __init__(self, i_context):
-        self.m_context = i_context
-
+class BoundaryConditionsModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.m_context["solverNamespace"] = self.m_context["solverName"].split("::")[0]
-        self.m_context["solverClass"] = self.m_context["solverName"].split("::")[1]
-        TemplatingUtils.renderAsFile("Kernels_h.template", self.m_filename, self.m_context)
+        self.render("boundaryConditions_cpp.template", "boundaryConditions.cpp")

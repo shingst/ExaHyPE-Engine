@@ -232,7 +232,11 @@ private:
    *
    * Finish plotting if a plotter is active.
    *
+   * <h2> Background Jobs </h2>
    * Reset the _backgroundJobsHaveTerminated switch.
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
    */
   void endIteration(exahype::State& solverState);
 

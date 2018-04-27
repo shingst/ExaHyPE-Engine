@@ -3190,6 +3190,7 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren() ||
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
+
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     ensureNecessaryMemoryIsAllocated(cellDescription);
   }
@@ -3205,13 +3206,11 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterMetadata(
     CellDescription& cellDescription =
         getCellDescription(cellDescriptionsIndex,element);
 
-    #ifdef Asserts
     const CellDescription::Type receivedType =
         static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType]);
-    #endif
-    const bool masterHoldsData               = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
+    const bool masterHoldsData = receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
 
-    assertion(receivedType==cellDescription.getType());
+    assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
     if (cellDescription.getType()==CellDescription::Type::Ancestor) {
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(masterHoldsData);
       ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
@@ -3257,6 +3256,33 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
   } // do nothing for descendants; wait for info from worker
     // see mergeWithWorkerMetadata
 
+  // Unset all erasing requests
+  const int coarseGridElement = tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription =
+        getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
+    tarch::multicore::Lock lock(CoarseGridSemaphore);
+    switch (coarseGridCellDescription.getRefinementEvent()) {
+    case CellDescription::ErasingVirtualChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
+          coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
+          coarseGridCellDescription.toString());
+
+      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+    }  break;
+    case CellDescription::ErasingChildrenRequested:
+    case CellDescription::ChangeChildrenToVirtualChildrenRequested: {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
+          coarseGridCellDescription.toString());
+
+      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+    } break;
+    default:
+      break;
+    }
+    lock.free();
+  }
+
 
   return cellDescriptionRequiresVerticalCommunication;
 }
@@ -3277,7 +3303,7 @@ bool exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus];
   const bool workerHoldsData               =
       receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData]==1;
-  assertion(receivedType==cellDescription.getType());
+  assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
 
   bool cellDescriptionRequiresVerticalCommunication = false;
   if (cellDescription.getType()==CellDescription::Type::Descendant) {
@@ -4343,7 +4369,7 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
   bool uncompress   = false;
 
   while (!madeDecision) {
-    peano::datatraversal::TaskSet::processBackgroundJobs();
+    peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;

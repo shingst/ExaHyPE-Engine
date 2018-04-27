@@ -49,7 +49,7 @@ void exahype::plotters::ExaHyPE2Tecplot::finishPlotting() {}
 
 // Define the Fortran routines here.
 
-void ExaHyPETecplotWriter_init_(const char* filename, int* solverType, int* basisSize, int* writtenUnkowns) {} // stub here because fortran linking does not work anyway
+void exahypetecplotwriter_init_(char* filename, int* filename_len, int* solverType, int* basisSize, int* writtenUnkowns) {}
 
 // Additional headers and helper routines
 
@@ -99,8 +99,9 @@ void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int b
 	}
 
 	int solverType = 12345; // make 1,2 or 3 depending on DG, FV, Limiter or so.
+	int flen = 0; // filename_len
 	
-	ExaHyPETecplotWriter_init_(filename_for_Fortran, &solverType, &basisSize, &writtenUnknowns);
+	exahypetecplotwriter_init_(filename_for_Fortran, &flen, &solverType, &basisSize, &writtenUnknowns);
 }
 
 void exahype::plotters::ExaHyPE2Tecplot::plotPatch(

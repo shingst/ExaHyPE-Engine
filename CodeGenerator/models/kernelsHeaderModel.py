@@ -14,21 +14,20 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
 # @section DESCRIPTION
 #
-# Method to render a template using by default jinja2
+# Generate the Kernels.h header
 #
 
 
-import os
-
-from jinja2 import Template
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-def renderAsFile(inputFilename, outputFilename, context):
-    dir = os.path.dirname(__file__)
-           
-    with open(os.path.join(dir,'..','templates',inputFilename), 'r') as input:
-        template = Template(input.read(), trim_blocks=True)                
-        with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
-            output.write(template.render(context))
+class KernelsHeaderModel(AbstractModelBaseClass):
+
+    def generateCode(self):
+        self.context["solverNamespace"] = self.context["solverName"].split("::")[0]
+        self.context["solverClass"] = self.context["solverName"].split("::")[1]
+        
+        self.render("Kernels_h.template", "Kernels.h")

@@ -225,6 +225,52 @@ void SWE::RunUpShelf(const double* const x, double* Q) {
    //vars.hu() = -vars.h()* sqrt(grav*vars.h());
 }
 
+// width = 10.0,10.0
+// offset = 0.0, 0.0
+void SWE::WettingDryingProblem(const double* const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  if(x[0] < -5) {
+      vars.h() = 2.0;
+  } else {
+      vars.h() = 0.0;
+  }
+  vars.hu() = 0.0;
+  vars.hv() = 0.0;
+  vars.b() = -0.1*x[0] + exp((-x[0]*x[0])/(0.1*0.1));
+}
+
+void SWE::OscillatingLake(const double* const x, double* Q){
+    MySWESolver::Variables vars(Q);
+
+    double omega = sqrt(0.2*grav);
+
+    vars.b() = 0.1 * (pow(x[0], 2) + pow(x[1], 2));
+    vars.h() = max(0.0, 0.05 * (2 * x[0] * cos(omega * 0) + 2 * x[1] * sin(omega * 0)) + 0.075 - vars.b());
+    vars.hu() = 0.5 * omega * sin(omega * 0) * vars.h();
+    vars.hv() = 0.5 * omega * cos(omega * 0) * vars.h();
+}
+
+// width = 10.0,10.0
+// offset = 0.0, 0.0
+void SWE::RunUpTest(const double* const x, double* Q){
+    MySWESolver::Variables vars(Q);
+
+    if(x[0] < 7){
+        vars.h() = 0.5*exp(-pow(x[0] - 3.5, 2)) + 0.5;
+        vars.hu() = 2.0;
+        vars.b() = 0.0;
+    }
+    else {
+        vars.h() = 0.0;
+        vars.hu() = 0.0;
+        vars.b() = (x[0] - 7) * 1;
+    }
+    vars.hv() = 0.0;
+}
+
+
+
 #endif
 
 void SWE::initialData(const double* const x,double* Q) {
@@ -238,4 +284,7 @@ void SWE::initialData(const double* const x,double* Q) {
   //RunUpLinear(x,Q);
   //SteadyRunUpShelf(x,Q);
   //RunUpShelf(x, Q);
+  //WettingDryingProblem(x, Q);
+  //OscillatingLake(x, Q);
+  //RunUpTest(x, Q);
 }

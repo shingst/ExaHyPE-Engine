@@ -117,39 +117,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   };
 
   /**
-   * A flag indicating we fuse the algorithmic
-   * phases of all ADERDGSolver and
-   * LimitingADERDGSolver instances.
-   *
-   * TODO(Dominic): Make private and hide in init function
-   */
-  static bool FuseADERDGPhases;
-
-  /**
-   * The weight which is used to scale
-   * the stable time step size the fused
-   * ADERDG time stepping scheme is
-   * reset to after a rerun has become necessary.
-   *
-   * TODO(Dominic): Further consider to introduce
-   * a second weight for the averaging:
-   *
-   * t_est = 0.5 (t_est_old + beta t_stable), beta<1.
-   *
-   * fuse-algorithmic-steps-reset-factor
-   * fuse-algorithmic-steps-averaging-factor
-   *
-   * TODO(Dominic): Make private and hide in init function
-   */
-  static double WeightForPredictionRerun;
-
-  /**
-   * Flag indicating that the predictor should
-   * be run as background task whenever this is possible.
-   */
-  static bool SpawnPredictorAsBackgroundThread;
-
-  /**
    * A flag indicating that the bounding box
    * has been virtually expanded (or not).
    *
@@ -164,21 +131,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * TODO(Dominic): Make private and hide in init function
    */
   static bool VirtuallyExpandBoundingBox;
-
-  /**
-   * Indicates that the fused time stepping
-   * scheme is used in the runner
-   * instead of the standard time stepping.
-   */
-  static bool fuseADERDGPhases();
-
-  static double getTimeStepSizeWeightForPredictionRerun();
-
-  /**
-   * Indicates that the predictor should be spawned
-   * as background thread whenever this is possible.
-   */
-  static bool spawnPredictorAsBackgroundThread();
 
   /**
    * \return true if the current batch state is
