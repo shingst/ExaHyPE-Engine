@@ -15,8 +15,6 @@
 # For the full license text, see LICENSE.txt
 
 
-import Backend
-
 import math
 
 

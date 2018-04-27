@@ -21,53 +21,46 @@
 #
 
 
-import Backend
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
+
+import controller
 from utils.MatmulConfig import MatmulConfig
 
 
-class LimiterGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "limiter.cpp"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-        
-
+class LimiterModel(AbstractModelBaseClass):
+    
     def generateCode(self):
-        if(not self.m_context['useLimiter']):
+        if(not self.context['useLimiter']):
             return None
-        self.m_context["gemm_dg2fv"] = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDofLim"])+"_"+str(self.m_context["nDof"])+"_dg2fv"
-        self.m_context["gemm_fv2dg"] = "gemm_"+str(self.m_context["nVar"]) +"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDofLim"])+"_fv2dg"
-        self.m_context["gemm_uh2lob"] = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])+"_uh2lob"
+        self.context["gemm_dg2fv"]  = "gemm_"+str(self.context["nVar"])+"_"+str(self.context["nDofLim"])+"_"+str(self.context["nDof"])   +"_dg2fv"
+        self.context["gemm_fv2dg"]  = "gemm_"+str(self.context["nVar"])+"_"+str(self.context["nDof"])   +"_"+str(self.context["nDofLim"])+"_fv2dg"
+        self.context["gemm_uh2lob"] = "gemm_"+str(self.context["nVar"])+"_"+str(self.context["nDof"])   +"_"+str(self.context["nDof"])   +"_uh2lob"
         
-        TemplatingUtils.renderAsFile("limiter_cpp.template", self.m_filename, self.m_context)
+        self.render("limiter_cpp.template", "limiter.cpp")
         # generates gemms
-        if(self.m_context["useLibxsmm"]):
-            self.generateGemms()
-
-    def generateGemms(self):
-        # define a sequence of matmul configs
-        l_matmulList = []
+        if(self.context["useLibxsmm"]):
+            self.controller.generateGemms("asm_limiter.c", self.buildGemmsConfig())
+    
+    
+    def buildGemmsConfig(self):
+       # define a sequence of matmul configs
+        matmulList = []
 
         #-----------------------------
         # implementation file
         #-----------------------------        
-        l_dg2fv = MatmulConfig(  # M
-                                    self.m_context["nVar"],      \
+        dg2fv = MatmulConfig(  # M
+                                    self.context["nVar"],      \
                                     # N
-                                    self.m_context["nDofLim"],       \
+                                    self.context["nDofLim"],       \
                                     # K
-                                    self.m_context["nDof"],       \
+                                    self.context["nDof"],       \
                                     # LDA
-                                    self.m_context["nData"],   \
+                                    self.context["nData"],   \
                                     # LDB
-                                    self.m_context["nDofPad"],    \
+                                    self.context["nDofPad"],    \
                                     # LDC
-                                    self.m_context["nVar"],   \
+                                    self.context["nVar"],   \
                                     # alpha 
                                     1,                            \
                                     # beta
@@ -82,19 +75,19 @@ class LimiterGenerator:
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        l_matmulList.append(l_dg2fv)
-        l_fv2dg = MatmulConfig(  # M
-                                    self.m_context["nVar"],      \
+        matmulList.append(dg2fv)
+        fv2dg = MatmulConfig(  # M
+                                    self.context["nVar"],      \
                                     # N
-                                    self.m_context["nDof"],       \
+                                    self.context["nDof"],       \
                                     # K
-                                    self.m_context["nDofLim"],       \
+                                    self.context["nDofLim"],       \
                                     # LDA
-                                    self.m_context["nVar"],   \
+                                    self.context["nVar"],   \
                                     # LDB
-                                    self.m_context["nDofLimPad"],    \
+                                    self.context["nDofLimPad"],    \
                                     # LDC
-                                    self.m_context["nData"],   \
+                                    self.context["nData"],   \
                                     # alpha 
                                     1,                            \
                                     # beta
@@ -109,19 +102,19 @@ class LimiterGenerator:
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        l_matmulList.append(l_fv2dg)
-        l_uh2lob = MatmulConfig(  # M
-                                    self.m_context["nVar"],      \
+        matmulList.append(fv2dg)
+        uh2lob = MatmulConfig(  # M
+                                    self.context["nVar"],      \
                                     # N
-                                    self.m_context["nDof"],       \
+                                    self.context["nDof"],       \
                                     # K
-                                    self.m_context["nDof"],       \
+                                    self.context["nDof"],       \
                                     # LDA
-                                    self.m_context["nData"],   \
+                                    self.context["nData"],   \
                                     # LDB
-                                    self.m_context["nDofPad"],    \
+                                    self.context["nDofPad"],    \
                                     # LDC
-                                    self.m_context["nVar"],   \
+                                    self.context["nVar"],   \
                                     # alpha 
                                     1,                            \
                                     # beta
@@ -136,8 +129,6 @@ class LimiterGenerator:
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        l_matmulList.append(l_uh2lob)
-        
-        
-        
-        Backend.generateAssemblerCode("asm_"+self.m_filename, l_matmulList)
+        matmulList.append(uh2lob)
+
+        return matmulList

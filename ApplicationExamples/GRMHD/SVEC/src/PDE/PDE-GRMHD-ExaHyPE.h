@@ -23,6 +23,10 @@
 namespace SVEC {
 namespace GRMHD {
 namespace ExaHyPEAdapter {
+	// This should be collected in runtime settings once.
+	// Similar to the EOS and so on.
+	constexpr bool crash_on_c2p_failure = true;
+	
 
 	#ifdef TEST_NEW_PDE_AUTONOMOUSLY
 		// for an autonomous test distinct from ExaHyPE
@@ -107,14 +111,14 @@ namespace ExaHyPEAdapter {
 	
 	inline Fluxes flux(const double* const Q, double** F) {
 		Fluxes f(F);
-		GRMHD::PDE(Q).flux(f);
+		GRMHD::PDE(Q, crash_on_c2p_failure).flux(f);
 		return f;
 	}
 
 	// we also can work with splitted fluxes:
 	inline Fluxes flux(const double* const Q, double *Fx, double *Fy, double *Fz) {
 		Fluxes f(Fx,Fy,Fz);
-		GRMHD::PDE(Q).flux(f);
+		GRMHD::PDE(Q, crash_on_c2p_failure).flux(f);
 		return f;
 	}
 	
@@ -125,7 +129,7 @@ namespace ExaHyPEAdapter {
 	inline GRMHD::Shadow nonConservativeProduct(const double* const Q, const double* const gradQ, double* BgradQ) {
 		GRMHD::Shadow n(BgradQ);
 		Gradients g(gradQ);
-		GRMHD::PDE(Q).nonConservativeProduct(g, n);
+		GRMHD::PDE(Q, crash_on_c2p_failure).nonConservativeProduct(g, n);
 		return n;
 	}
 	
@@ -133,7 +137,7 @@ namespace ExaHyPEAdapter {
 	inline GRMHD::Shadow nonConservativeProduct(const double* const Q, const double* const Qx, const double* const Qy, const double* const Qz, double* BgradQ) {
 		GRMHD::Shadow n(BgradQ);
 		Gradients g(Qx,Qy,Qz);
-		GRMHD::PDE(Q).nonConservativeProduct(g, n);
+		GRMHD::PDE(Q, crash_on_c2p_failure).nonConservativeProduct(g, n);
 		return n;
 	}
 	
@@ -141,14 +145,14 @@ namespace ExaHyPEAdapter {
 		// GRMHD::Densitied state(Q); // GRMHD::Shadow not sufficient, need densitied + ADM for gam.det
 		// subject to further improvements: More efficient source without C2P.
 		GRMHD::Shadow s(S);
-		GRMHD::PDE(Q).algebraicSource(s);
+		GRMHD::PDE(Q, crash_on_c2p_failure).algebraicSource(s);
 		return s;
 	}
 	
 	inline GRMHD::Shadow fusedSource(const double* const Q, const double* const gradQ, double* S) {
 		GRMHD::Shadow s(S);
 		Gradients g(gradQ);
-		GRMHD::PDE(Q).fusedSource(g, s);
+		GRMHD::PDE(Q, crash_on_c2p_failure).fusedSource(g, s);
 		return s;
 	}
 
@@ -156,13 +160,13 @@ namespace ExaHyPEAdapter {
 	inline GRMHD::Shadow fusedSource(const double* const Q, const double* const Qx, const double* const Qy, const double* const Qz, double* S) {
 		GRMHD::Shadow s(S);
 		Gradients g(Qx,Qy,Qz);
-		GRMHD::PDE(Q).fusedSource(g, s);
+		GRMHD::PDE(Q, crash_on_c2p_failure).fusedSource(g, s);
 		return s;
 	}
 	
 	inline GRMHD::Shadow eigenvalues(const double* const Q, const int dIndex, double* lambda) {
 		GRMHD::Shadow L(lambda);
-		GRMHD::PDE(Q).eigenvalues(L,dIndex);
+		GRMHD::PDE(Q, crash_on_c2p_failure).eigenvalues(L,dIndex);
 		return L;
 	}
 	

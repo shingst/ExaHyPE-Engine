@@ -21,19 +21,10 @@
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class StableTimeStepSizeGenerator:
-    m_context = {}
-    
-    # name of generated output file
-    m_filename = "stableTimeStepSize.cpp"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-
+class StableTimeStepSizeModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("stableTimeStepSize_cpp.template", self.m_filename, self.m_context)
+        self.render("stableTimeStepSize_cpp.template", "stableTimeStepSize.cpp")

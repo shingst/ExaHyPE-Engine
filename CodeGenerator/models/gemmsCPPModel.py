@@ -17,30 +17,17 @@
 #
 # @section DESCRIPTION
 #
-# Generates the SurfaceIntegral kernel
+# Generate the a cpp+h to include the libxsmm gemm properly
 #
 
 
-from utils import TemplatingUtils
+from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class SurfaceIntegralGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "surfaceIntegral.cpp"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-
+class GemmsCPPModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.m_context["bndFaceSize"] = self.m_context["nVarPad"] * self.m_context["nDof"] * self.m_context["nDof3D"]  
-        TemplatingUtils.renderAsFile("surfaceIntegral_cpp.template", self.m_filename, self.m_context)
-
-
-
-
-
-
+        self.context["gemm_prefix"]  = "gemm"
+        
+        self.render("gemmsCPP_h.template",   "gemmsCPP.h")
+        self.render("gemmsCPP_cpp.template", "gemmsCPP.cpp")

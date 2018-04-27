@@ -934,18 +934,22 @@ void exahype::Vertex::sendToNeighbour(
         //logInfo("prepareSendToNeighbour(...)","to rank "<<toRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
         //#endif
 
-        bool sendMetadata =
-            !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting ||
-            isLastIterationOfBatchOrNoBatch;
+        bool sendNoMetadata =
+            (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
+            exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
+            ||
+            (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
+            && !isLastIterationOfBatchOrNoBatch);
+
         if ( hasToSendDataToNeighbour(src,dest) ) {
           sendSolverDataToNeighbour(
-              toRank,sendMetadata,src,dest,
+              toRank,!sendNoMetadata,src,dest,
               getCellDescriptionsIndex()[srcScalar],
               getCellDescriptionsIndex()[destScalar],
               x,level);
         } else {
           sendEmptySolverDataToNeighbour(
-              toRank,sendMetadata,src,dest,x,level);
+              toRank,!sendNoMetadata,src,dest,x,level);
         }
       }
       enddforx
@@ -1033,11 +1037,15 @@ void exahype::Vertex::receiveNeighbourData(
           //logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           //#endif
 
+          bool receiveNoMetadata =
+              (exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps &&
+              exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps)
+              ||
+              (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
+              && !isFirstIterationOfBatchOrNoBatch);
+
           int receivedMetadataIndex = InvalidMetadataIndex;
-          if (
-              !exahype::solvers::Solver::AllSolversPerformStaticOrNoLimiting ||
-              isFirstIterationOfBatchOrNoBatch
-          ) {
+          if ( receiveNoMetadata==false ) {
             receivedMetadataIndex = exahype::receiveNeighbourCommunicationMetadata(fromRank, x, level);
           }
 

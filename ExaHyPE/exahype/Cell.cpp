@@ -349,11 +349,17 @@ int exahype::Cell::countListingsOfRemoteRankAtInsideFace(
 #ifdef Asserts
   std::stringstream message;
   message << std::endl;
+  bool foundHangingNode = false;
   dfor2(v)
-  message << "v="<<v.toString()<<": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
+    foundHangingNode |= verticesAroundCell[ verticesEnumerator(v) ].isHangingNode();
+    message << "v="<<v.toString() <<
+    ", hanging node=" << verticesAroundCell[ verticesEnumerator(v) ].isHangingNode() <<
+    ", location=" <<
+    exahype::Vertex::Records::toString(verticesAroundCell[ verticesEnumerator(v) ].getRecords().getInsideOutsideDomain()) <<
+    ": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
   enddforx
 #endif
-  assertion5(result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/4||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,
+  assertion5(foundHangingNode||result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/4||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,
              result,pos.toString(),faceIndex,tarch::parallel::Node::getInstance().getRank(),message.str());
   return result;
 }

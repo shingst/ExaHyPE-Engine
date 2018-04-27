@@ -12,6 +12,9 @@ void SteadyRunUpLinear(const double* const x,double* Q);
 void RunUpLinear(const double* const x,double* Q);
 void SteadyRunUpShelf(const double* const x,double* Q);
 void RunUpShelf(const double* const x,double* Q);
+void WettingDryingProblem(const double* const x, double* Q);
+void RunUpTest(const double* const x, double* Q);
+void OscillatingLake(const double* const x, double* Q);
 void initialData(const double* const x,double* Q);
 
 }

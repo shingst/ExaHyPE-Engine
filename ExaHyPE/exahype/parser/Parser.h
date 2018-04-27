@@ -216,12 +216,23 @@ class exahype::parser::Parser {
   bool   getSpawnDoubleCompressionAsBackgroundTask() const;
 
   /**
-   * If we batch time steps, we can in principle switch off the boundary data
+   * If we batch time steps, we can in principle switch off the Peano boundary data
    * exchange, as ExaHyPE's data flow is realised through heaps. However, if we
-   * turn off the boundary exchange, we enforce that no AMR is done in-between
-   * domain boundaries.
+   * turn off the boundary exchange, we enforce that no AMR and load balancing
+   * is done in-between time steps.
    */
-  bool getExchangeBoundaryDataInBatchedTimeSteps() const;
+  bool getDisablePeanoNeighbourExchangeInTimeSteps() const;
+
+  /**
+   * If we batch time steps, we can in principle switch off the
+   * exchange of ExaHyPE metadata if and only if no dynamic limiting
+   * and no dynamic AMR is used.
+   *
+   * \note That this is upgraded to all time stepping communication
+   * if you turn getDisablePeanoNeighbourExchangeDuringTimeSteps()
+   * returns true as well.
+   */
+  bool getDisableMetadataExchangeInBatchedTimeSteps() const;
 
   /**
    * \return The type of a solver.
