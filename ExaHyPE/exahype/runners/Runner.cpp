@@ -262,6 +262,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
+  // EnterLeaveCell should be done in parallel iff we spawn prediction as background job
+  const int grainSizeForEnterLeaveCell = exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? 0 : 1;
+
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
@@ -283,7 +286,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
-         1, //   int  grainSizeForEnterLeaveCell         = 2,
+         grainSizeForEnterLeaveCell, //   int  grainSizeForEnterLeaveCell         = 2,
          1, //   int  smallestProblemSizeForTouchFirstLast = tarch::la::aPowI(DIMENSIONS,3*3*3*3+1),
          1, //   int  grainSizeForTouchFirstLast         = 64,
          1, //   int  smallestProblemSizeForSplitLoadStore = tarch::la::aPowI(DIMENSIONS,3*3*3),
