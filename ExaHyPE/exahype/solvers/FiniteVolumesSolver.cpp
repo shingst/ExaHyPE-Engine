@@ -2011,7 +2011,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    peano::datatraversal::TaskSet::processBackgroundJobs();
+    peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

@@ -118,7 +118,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
     }
     #endif
 
-    peano::datatraversal::TaskSet::processBackgroundJobs();
+    peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
