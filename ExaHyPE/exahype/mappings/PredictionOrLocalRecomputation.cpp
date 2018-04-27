@@ -19,7 +19,9 @@
 
 #include "peano/utils/Globals.h"
 #include "peano/utils/Loop.h"
+
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -191,6 +193,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
       }
     }
+
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
     #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
     logInfo("endIteration(...)","interiorFaceSolves: " << _interiorFaceMerges);

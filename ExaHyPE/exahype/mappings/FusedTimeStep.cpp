@@ -18,6 +18,7 @@
 #include "peano/utils/Globals.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -149,6 +150,8 @@ void exahype::mappings::FusedTimeStep::endIteration(
       true);
 
   _backgroundJobsHaveTerminated = false;
+
+  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }

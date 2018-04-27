@@ -18,6 +18,7 @@
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 

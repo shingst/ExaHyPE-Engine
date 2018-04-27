@@ -194,14 +194,17 @@ private:
   #endif
 
   /**
-   * Copy the state.
-   * Further initialise temporary variables
-   * if they are not initialised yet (or
-   * if a new solver was introuced to the grid.
-   * This is why we put the initialisation
-   * in beginIteration().
+   * Turns ITAC on if required
    */
   void beginIteration(exahype::State& solverState);
+
+  /**
+   * <h2>Background Jobs</h2>
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
+   */
+  void endIteration(exahype::State& solverState);
 
   /**
    * \see performPredictionAndProlongateData
@@ -465,11 +468,6 @@ private:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Nop
-   */
-  void endIteration(exahype::State& solverState);
 
   /**
    * Nop

@@ -13,11 +13,13 @@
  
 #include "exahype/mappings/Prediction.h"
 
+#include "tarch/multicore/Loop.h"
+
 #include "peano/utils/Loop.h"
-#include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/utils/Globals.h"
 
-#include "tarch/multicore/Loop.h"
+#include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -101,14 +103,22 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-#ifdef USE_ITAC
+  logTraceInWith1Argument("endIteration(State)", state);
+
+  #ifdef USE_ITAC
   VT_traceon();
-#endif
+  #endif
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  // do nothing
+  logTraceInWith1Argument("endIteration(State)", state);
+
+  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(
