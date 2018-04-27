@@ -551,7 +551,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
 #endif
               #pragma forceinline
 #endif
-              {{gemm_volume}}(&luhCoarse[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
+              {{gemm_volume}}(&luhCoarse[(n3*{{nDof3D}}+n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
             }
           }
         }
@@ -600,7 +600,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
 #endif
               #pragma forceinline
 #endif
-              {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
+              {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}+n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
             }
           }
         }
@@ -723,7 +723,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
 #endif
               #pragma forceinline
 #endif
-              {{gemm_volume}}(&luhFine[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
+              {{gemm_volume}}(&luhFine[(n3*{{nDof3D}}+n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
             }
           }
         }
@@ -772,7 +772,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
 #endif
               #pragma forceinline
 #endif
-              {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}*n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
+              {{gemm_volume}}(&pointerUh2[(n3*{{nDof3D}}+n2)*{{nDof*nData}}],&coeff[0],&pointerUh1[(m3*{{nDof3D}}+m2)*{{nDof*nData}}]);
             }
           }
         }
