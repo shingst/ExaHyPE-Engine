@@ -685,7 +685,7 @@ private:
    * to notify the worker about the master's coarse grid cell's
    * erasing decision.
    */
-  bool deduceChildCellErasingEvents(CellDescription& cellDescription) const;
+  void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #endif
 
@@ -1109,8 +1109,10 @@ public:
    *
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
+   *
+   * \param
    */
-  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription);
+  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription,const bool allocateSolution=true);
 
 
   /**
@@ -2190,7 +2192,7 @@ public:
 
   void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
-      peano::heap::MessageType&                     messageType,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
