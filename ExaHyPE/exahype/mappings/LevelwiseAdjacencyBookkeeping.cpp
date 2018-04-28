@@ -110,15 +110,10 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
-  exahype::Cell&                 fineGridCell,
-  exahype::Vertex * const        fineGridVertices,
-  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-  exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-  exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
-) {
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::updateAdjacencyMapsOfAdjacentVertices(
+    exahype::Cell&                       fineGridCell,
+    exahype::Vertex * const              fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   // Write cell's index into adjacent vertices
   dfor2(k)
     if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
@@ -141,8 +136,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
         dfor2(v)
           dfor2(c)
             if (
-              v(direction)==orientation &&
-              c(direction)==orientation
+                v(direction)==orientation &&
+                c(direction)==orientation
             ) {
               assertion( !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() );
 
@@ -155,6 +150,18 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
       }
     }
   }
+}
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
+  exahype::Cell&                 fineGridCell,
+  exahype::Vertex * const        fineGridVertices,
+  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+  exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+  exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+) {
+  updateAdjacencyMapsOfAdjacentVertices(fineGridCell,fineGridVertices,fineGridVerticesEnumerator);
 }
 
 #ifdef Parallel
@@ -291,6 +298,7 @@ bool exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareSendToWorker(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
   int                                                                  worker
 ) {
+  updateAdjacencyMapsOfAdjacentVertices(fineGridCell,fineGridVertices,fineGridVerticesEnumerator);
   return false;
 }
 

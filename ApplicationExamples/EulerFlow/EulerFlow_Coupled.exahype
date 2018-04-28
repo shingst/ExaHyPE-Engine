@@ -52,10 +52,10 @@ exahype-project  Euler
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    timestep-batch-factor           = 0.8
-    skip-reduction-in-batched-time-steps = on
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = on
-  end global-optimisation
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.8
+    disable-metadata-exchange-in-batched-time-steps = off
+    end global-optimisation
 
   solver ADER-DG MyADERDG
     variables const         = 5

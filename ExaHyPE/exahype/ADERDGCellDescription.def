@@ -217,7 +217,15 @@ class exahype::records::ADERDGCellDescription {
     ErasingVirtualChildren, 
     
     VirtualRefiningRequested,         
-    VirtualRefining  
+    VirtualRefining,  
+    
+    /**
+     * Additional events for notifying a deployed child cell about an erasing
+     * decision made by the master.
+     */
+    Erasing,
+    ChangeToVirtualCell,
+    ErasingVirtualCell
   };
 
   /**

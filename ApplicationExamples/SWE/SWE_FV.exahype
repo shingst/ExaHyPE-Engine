@@ -38,19 +38,32 @@ exahype-project  SWE
 
   shared-memory
       identifier = dummy
-      configure = {background-tasks:4}
-      cores = 4
+      configure = {background-tasks:8}
+      cores = 8
       properties-file = sharedmemory.properties
   end shared-memory
 
+  global-optimisation
+      fuse-algorithmic-steps          = on
+      fuse-algorithmic-steps-factor   = 0.99
+      spawn-predictor-as-background-thread = off
+      spawn-amr-background-threads         = off
+      /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+      disable-vertex-exchange-in-time-steps = on
+      time-step-batch-factor           = 0.0
+      disable-metadata-exchange-in-batched-time-steps = off
+      double-compression = 0.0
+      spawn-double-compression-as-background-thread = off
+   end global-optimisation
+
   solver Finite-Volumes MySWESolver
-    variables const   = h:1,hu:1,hv:1
-    parameters const  = b:1
+    variables const   = h:1,hu:1,hv:1,b:1
+    //parameters const  = b:1
     patch-size const   = 3
-    maximum-mesh-size = 0.05
+    maximum-mesh-size = 0.15
     time-stepping     = global
     type const      = godunov
-    terms const = flux
+    terms const = flux, ncp
     optimisation const = generic
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter

@@ -922,7 +922,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 
 #ifdef Parallel
 const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerNeighbourCommunication    = 1;
-const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerForkOrJoinCommunication   = 1;
+const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerForkOrJoinCommunication   = 2;
 const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerMasterWorkerCommunication = 0;
 
 void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
@@ -1081,6 +1081,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
@@ -1088,29 +1089,33 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
       element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  CellDescription& p = Heap::getInstance().getData(cellDescriptionsIndex)[element];
+  logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)","solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
+      ", cell: "<< x << ", level: " << level);
 
-  if (p.getType()==CellDescription::Cell) {
-    double* solution = DataHeap::getInstance().getData(p.getSolution()).data();
+  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
 
-    logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)","solution of solver " << p.getSolverNumber() << " sent to rank "<<toRank<<
-        ", cell: "<< x << ", level: " << level);
-
-    DataHeap::getInstance().sendData(
-        solution, getDataPerPatch()+getGhostDataPerPatch(), toRank, x, level,
-        peano::heap::MessageType::ForkOrJoinCommunication);
-  }
+  assertion(cellDescription.getType()==CellDescription::Cell);
+  assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()),
+      cellDescriptionsIndex,cellDescription.toString());
+  assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()),
+      cellDescriptionsIndex,cellDescription.toString());
+  DataHeap::getInstance().sendData(
+      DataHeap::getInstance().getData(cellDescription.getSolution()).data(),
+      getDataPerPatch()+getGhostDataPerPatch(), toRank, x, level, messageType);
+  DataHeap::getInstance().sendData(
+      DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data(),
+      getDataPerPatch()+getGhostDataPerPatch(), toRank, x, level, messageType);
 }
 
 
 void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   for(int sends=0; sends<DataMessagesPerForkOrJoinCommunication; ++sends)
     DataHeap::getInstance().sendData(
-        exahype::EmptyDataHeapMessage, toRank, x, level,
-        peano::heap::MessageType::ForkOrJoinCommunication);
+        exahype::EmptyDataHeapMessage, toRank, x, level, messageType);
 }
 
 
@@ -1118,31 +1123,33 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
     const int                                     fromRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion4(tarch::la::equals(x,cellDescription.getOffset()+0.5*cellDescription.getSize()),x,cellDescription.getOffset()+0.5*cellDescription.getSize(),level,cellDescription.getLevel());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
+  assertion(cellDescription.getType()==CellDescription::Cell);
 
-  if (cellDescription.getType()==CellDescription::Cell) {
-    logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
-             ", cell: "<< x << ", level: " << level);
+  logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
+           ", cell: "<< x << ", level: " << level);
 
-    DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
-    DataHeap::getInstance().receiveData(
-        cellDescription.getSolution(),fromRank,x,level,
-        peano::heap::MessageType::ForkOrJoinCommunication);
-  }
+  DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
+  DataHeap::getInstance().receiveData( cellDescription.getSolution(),
+      fromRank, x, level, messageType);
+
+  DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).clear();
+  DataHeap::getInstance().receiveData( cellDescription.getPreviousSolution(),
+      fromRank, x, level, messageType );
 }
 
 void exahype::solvers::FiniteVolumesSolver::dropWorkerOrMasterDataDueToForkOrJoin(
     const int                                     fromRank,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   for(int receives=0; receives<DataMessagesPerForkOrJoinCommunication; ++receives)
-    DataHeap::getInstance().receiveData(
-        fromRank, x, level,
-        peano::heap::MessageType::ForkOrJoinCommunication);
+    DataHeap::getInstance().receiveData(fromRank, x, level, messageType);
 }
 
 ///////////////////////////////////
@@ -1261,8 +1268,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   const int direction   = tarch::la::equalsReturnIndex(src, dest);
   const int orientation = (1 + src(direction) - dest(direction))/2;
   const int faceIndex   = 2*direction+orientation;
-
-  assertion1(cellDescription.getType()==CellDescription::Type::Cell,neighbourType);
 
   assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
       faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
@@ -2013,7 +2018,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    peano::datatraversal::TaskSet::processBackgroundJobs();
+    peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

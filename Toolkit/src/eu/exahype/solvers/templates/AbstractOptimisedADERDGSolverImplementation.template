@@ -164,25 +164,18 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- if usePointSources %}
   int picardIt = -1;
   std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),center,dx);
-   
+{%- if countFlops %}
+  const int psSize = pointSources != nullptr ? pointSources->size() : 0;
+{%- endif %}
+  
   if(pointSources != nullptr) {
     // perform pointsource
     picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
-{%- if countFlops  %}
-    total_flops += 0; // TODO JMG
-{%- endif %}  
   } else {
     picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, pointSources);
-{%- if countFlops  %}
-    total_flops += 0; // TODO JMG
-{%- endif %} 
   }
 {%- else %}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center, dx[0], t, dt, nullptr);
-{%- if countFlops  %}
-  total_flops += 0; // TODO JMG
-  total_time += 0; // TODO JMG
-{%- endif %} 
 {%- endif %}
   
 {%- else %}
@@ -203,7 +196,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
 {%- if isLinear %}
-  const unsigned long f = 0; //TODO JMG
+  const unsigned long f = {{optNamespace}}::fusedSTPVI_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops+matparamPDEFlops){% if usePointSources %} + std::min(1,psSize)*({{optNamespace}}::fusedSTPVI_ps_flops + psSize*({{optNamespace}}::fusedSTPVI_ps_PDE_factor*pointsourcesFlops+{{optNamespace}}::fusedSTPVI_ps_nPS_flops)){% endif %};
 {%- else %}
   const unsigned long f = picardIt*({{optNamespace}}::fusedSTPVI_picard_flops + {{optNamespace}}::fusedSTPVI_PDE_factor * (fluxPDEFlops+ncpPDEFlops+sourcesPDEFlops)) + {{optNamespace}}::fusedSTPVI_other_flops;
 {%- endif %}

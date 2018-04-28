@@ -15,9 +15,11 @@
 
 #include "tarch/multicore/Loop.h"
 
-#include "peano/utils/Loop.h"
-#include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/utils/Globals.h"
+#include "peano/utils/Loop.h"
+
+#include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "peano/utils/UserInterface.h"
 
@@ -98,12 +100,20 @@ void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
 
 void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
+  logTraceInWith1Argument("beginIteration(State)", state);
+
   exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+
+  logTraceOutWith1Argument("beginIteration(State)", state);
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
-  // do nothing
+  logTraceInWith1Argument("endIteration(State)", state);
+
+  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::PredictionRerun::enterCell(

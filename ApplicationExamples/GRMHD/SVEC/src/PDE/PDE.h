@@ -519,7 +519,7 @@ namespace SVEC {
 		*/
 		// NEW:
 		struct Cons2Prim : public GRMHD::DensitiedExtendable, public Hydro::Primitives::ShadowExtendable, public Parameters {
-			Cons2Prim(double* const V, const double* const Q_, bool _crash_on_failure=true) :
+			Cons2Prim(double* const V, const double* const Q_, bool _crash_on_failure=false) :
 				GRMHD::DensitiedExtendable(Q_),
 				Hydro::Primitives::ShadowExtendable(V),
 				crash_on_failure(_crash_on_failure)
@@ -569,7 +569,7 @@ namespace SVEC {
 		/// A version which does not write to a shadowed storage but a local one
 		struct Cons2Prim::Stored : public Cons2Prim {
 			double V[Hydro::size];
-			Stored(const double* const Q_) : Cons2Prim(V, Q_) {}
+			Stored(const double* const Q_, bool _crash_on_failure=false) : Cons2Prim(V, Q_, _crash_on_failure) {}
 		};
 		
 		/**
@@ -586,7 +586,7 @@ namespace SVEC {
 			typedef GRMHD::Shadow Flux;
 			typedef GenericUp<generic::shadow<Flux, TDIM>, Flux*> Fluxes;
 			
-			RawPDE(const double* const Q) : Cons2Prim::Stored(Q) {}
+			RawPDE(const double* const Q, bool crash_on_c2p_failure=false) : Cons2Prim::Stored(Q, crash_on_c2p_failure) {}
 		
 			/// Conserved fluxes
 			void flux(Fluxes& flux);
@@ -616,7 +616,7 @@ namespace SVEC {
 			typedef typename P::Fluxes Fluxes;
 			typedef typename P::Gradients Gradients;
 			
-			DensitiedPDE(const double* const Q) : P(Q) {}
+			DensitiedPDE(const double* const Q, bool crash_on_c2p_failure=false) : P(Q, crash_on_c2p_failure) {}
 
 			void weight(State& state) {
 				// For the quick and dirty, assume all MHD parts to be next to each other

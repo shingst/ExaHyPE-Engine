@@ -2070,7 +2070,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerOrMasterDueToForkOr
     const int                                     element,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->sendDataToWorkerOrMasterDueToForkOrJoin(
+  _solver->sendSolutionToWorkerOrMaster(
       toRank,cellDescriptionsIndex,element,x,level);
 
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);

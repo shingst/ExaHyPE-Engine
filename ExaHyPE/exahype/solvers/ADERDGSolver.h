@@ -300,7 +300,7 @@ private:
    */
   void vetoErasingRequestsIfNecessary(
       CellDescription& coarseGridCellDescription,
-      const int fineGridCellDescriptionsIndex);
+      const int fineGridCellDescriptionsIndex) const;
 
   /**
    * Fills the solution and previous solution arrays
@@ -340,7 +340,6 @@ private:
   void eraseCellDescriptionIfNecessary(
       const int cellDescriptionsIndex,
       const int fineGridCellElement,
-      const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,
       CellDescription& coarseGridCellDescription);
 
   /**
@@ -351,7 +350,6 @@ private:
    */
   void addNewCell(
       exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
@@ -410,7 +408,6 @@ private:
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,
       CellDescription& coarseGridCellDescription,
       const int coarseGridCellDescriptionsIndex,
       const bool initialGrid);
@@ -661,6 +658,34 @@ private:
   static void resetDataHeapIndices(
       const int cellDescriptionsIndex,
       const int parentIndex);
+
+  /**
+   * If the cell description is of type Ancestor, we look up
+   * if its top-most parent stores face data during the time stepping
+   * iterations. That's the case if the parent Ancestor is next
+   * to a Cell type cell description (compute cell), or if
+   * itself has to store data for master worker communication.
+   *
+   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required memory.
+   *
+   * Similarly, we check if a cell description of type Cell has such
+   * a top-most parent (of type Ancestor). In this case,
+   * we still need to set the flag but we do not need to allocate additional memory.
+   *
+   * \return if we need to master-worker communication for this cell description.
+   */
+  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
+      const int cellDescriptionsIndex,
+      const int element) const override;
+
+  /**
+   * As the worker does not know anything about the master's coarse
+   * grid cell, we set special child cell based erasing events
+   * to notify the worker about the master's coarse grid cell's
+   * erasing decision.
+   */
+  bool deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #endif
 
@@ -1524,9 +1549,7 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
       const int solverNumber) override;
 
@@ -1535,8 +1558,6 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) override;
 
@@ -2097,26 +2118,22 @@ public:
   // MASTER<=>WORKER
   ///////////////////////////////////
   /**
-   * \copydoc Solver::prepareMasterCellDescriptionAtMasterWorkerBoundary
+   * Kind of similar to progressMeshRefinementInPrepareSendToWorker
+   * but performs a few additional operations in order to
+   * notify the worker about some coarse grid operations only
+   * the master knows.
    *
-   * If the cell description is of type Ancestor, we look up
-   * if its top-most parent stores face data during the time stepping
-   * iterations. That's the case if the parent Ancestor is next
-   * to a Cell type cell description (compute cell), or if
-   * itself has to store data for master worker communication.
-   *
-   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
-   * on the cell description to true and allocate the required memory.
-   *
-   * Similarly, we check if a cell description of type Cell has such
-   * a top-most parent (of type Ancestor). In this case,
-   * we still need to set the flag but we do not need to allocate additional memory.
-   *
-   * \return if we need to master-worker communication for this cell description.
+   * \note This function sends out MPI messages.
    */
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) override;
+  bool progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) override;
 
   /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
    *
@@ -2150,26 +2167,30 @@ public:
       const int                        element) override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                    toRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const peano::heap::MessageType&               messageType,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const override;
 
   void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                    toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                     toRank,
+      const peano::heap::MessageType&               messageType,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const override;
 
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
-      const int                                    fromRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                     fromRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const peano::heap::MessageType&               messageType,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const override;
 
   void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
+      peano::heap::MessageType&                     messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
