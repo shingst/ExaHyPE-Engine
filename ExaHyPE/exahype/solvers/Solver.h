@@ -1851,30 +1851,12 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
   // WORKER<=>MASTER
   ///////////////////////////////////
-//  /**
-//   * Prepares a solver's cell descriptions at a
-//   * master-worker boundary for exchanging data
-//   * (with the master or worker, respectively).
-//   *
-//   * \note Thread-safe
-//   *
-//   * \note ADERDGSolver, e.g., calls a method here which locks a semaphore.
-//   * This routine can thus not have a const modifier.
-//   *
-//   * \note TODO ADERDGSolver: We currently assume there is no cell at a master worker boundary
-//   * that needs to restrict data up to an Ancestor on the
-//   * master rank. However, this can definitively happen. For example,
-//   * in situations where a refined cell is augmented as well, i.e.
-//   * has virtual children (Descendants). (Still applicable??)
-//   *
-//   * \return if we need to perform vertical communication of solver face data for the
-//   * considered cell description during the time stepping.
-//   */
-//  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-//      const int cellDescriptionsIndex,
-//      const int element) = 0;
-
-  virtual bool progressMeshRefinementInPrepareSendToWorker(
+  /**
+   * Finishes outstanding refinement operations
+   * and sends solution data down to the worker
+   * if required.
+   */
+  virtual void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
@@ -1883,6 +1865,36 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const bool initialGrid,
       const int solverNumber) = 0;
+
+  /**
+   * Just receive data or not from the master
+   * depending on the refinement event.
+   */
+  virtual void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement) const = 0;
+
+  /**
+   * Finish prolongation operations started on the master.
+   */
+  virtual void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) = 0;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  virtual void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      exahype::Cell& fineGridCell,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      const int solverNumber) const = 0;
 
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex

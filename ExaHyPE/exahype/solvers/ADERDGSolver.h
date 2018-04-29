@@ -674,10 +674,12 @@ private:
    * we still need to set the flag but we do not need to allocate additional memory.
    *
    * \return if we need to master-worker communication for this cell description.
+   *
+   * TODO(Dominic): Restrictions of face data should not be necessary
+   * anymore as soon as we follow the LTS workflow.
    */
   bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) const;
+      CellDescription& cellDescription) const;
 
   /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
    *
@@ -689,8 +691,7 @@ private:
    * memory.
    */
   void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) const;
+      CellDescription& cellDescription) const;
 
   /**
    * As the worker does not know anything about the master's coarse
@@ -1111,7 +1112,7 @@ public:
    *
    * \note This operation is thread safe as we serialise it.
    */
-  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   /**
    * Checks if all the necessary memory is allocated for the cell description.
@@ -1125,7 +1126,7 @@ public:
    *
    * \param
    */
-  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription,const bool allocateSolution=true);
+  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription,const bool allocateSolution=true) const;
 
 
   /**
@@ -1948,11 +1949,14 @@ public:
    *
    * \note The data heap indices of the cell descriptions are not
    * valid anymore on rank \p toRank.
+   *
+   * \param fromWorkerSide Indicates that we sent these cell descriptions from the
+   *                       worker side, e.g. during a joining operation.
    */
-  static void sendCellDescriptions(
+  static bool sendCellDescriptions(
       const int                                    toRank,
       const int                                    cellDescriptionsIndex,
-      const bool                                   fromMasterSide,
+      const bool                                   fromWorkerSide,
       const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
@@ -2003,6 +2007,21 @@ public:
       const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
+
+  /**
+   * Ensure that we have the same number of
+   * cell descriptions on the worker as on the
+   * master.
+   *
+   * The master might introduce new cell descriptions
+   * to a cell if a coarse grid cell is refined or
+   * virtually refined.
+   *
+   * \note Should be called from the worker.
+   */
+  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
+      exahype::Cell& localCell,
+      const exahype::Cell& receivedMasterCell);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2141,7 +2160,7 @@ public:
    *
    * \note This function sends out MPI messages.
    */
-  bool progressMeshRefinementInPrepareSendToWorker(
+  void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
@@ -2149,7 +2168,40 @@ public:
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const bool initialGrid,
-      const int solverNumber) override;
+      const int solverNumber) final override;
+
+  /**
+   * Just receive data depending on the refinement
+   * event of a cell description.
+   */
+  void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      exahype::Cell& fineGridCell,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      const int solverNumber) const final override;
+
 
   void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,

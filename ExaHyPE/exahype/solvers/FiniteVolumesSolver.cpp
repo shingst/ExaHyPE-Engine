@@ -934,9 +934,8 @@ void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
   assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),
       cellDescriptionsIndex);
 
-  if (Heap::getInstance().getData(cellDescriptionsIndex).size()>0) {
-    Heap::getInstance().sendData(cellDescriptionsIndex,
-                                 toRank,x,level,messageType);
+  if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
+    Heap::getInstance().sendData(cellDescriptionsIndex,toRank,x,level,messageType);
   } else {
     sendEmptyCellDescriptions(toRank,messageType,x,level);
   }
@@ -1002,6 +1001,22 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
   assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
+void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
+    exahype::Cell& localCell,
+    const exahype::Cell& receivedMasterCell) {
+  for (CellDescription& receivedCellDescription : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
+    bool found = false;
+    for (CellDescription& localCellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
+      if ( receivedCellDescription.getSolverNumber()==localCellDescription.getSolverNumber() ) {
+        found = true;
+      }
+    }
+    if ( !found ) {
+      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(receivedCellDescription); // this copies
+    }
+  }
+}
+
 void exahype::solvers::FiniteVolumesSolver::resetDataHeapIndices(
     const int cellDescriptionsIndex,
     const int parentIndex) {
@@ -1041,17 +1056,6 @@ void exahype::solvers::FiniteVolumesSolver::dropCellDescriptions(
 ////////////////////////////////////
 // MASTER <=> WORKER
 ////////////////////////////////////
-bool exahype::solvers::FiniteVolumesSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) {
-  return false;
-}
-
-void exahype::solvers::FiniteVolumesSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) {
-  // do nothing
-}
 
 void
 exahype::solvers::FiniteVolumesSolver::appendMasterWorkerCommunicationMetadata(
