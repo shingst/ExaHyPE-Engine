@@ -3035,21 +3035,30 @@ const int exahype::solvers::ADERDGSolver::DataMessagesPerMasterWorkerCommunicati
  * are not accessed by enterCell(...) on the master
  * anymore. However we still use them as buffer for saving data.
  */
-void exahype::solvers::ADERDGSolver::sendCellDescriptions(
+bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,
+    const bool                                    fromMasterSide,
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),
-      cellDescriptionsIndex);
+  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
 
-  if ( !Heap::getInstance().getData(cellDescriptionsIndex).empty() ) {
-    logDebug("sendCellDescriptions(...)","send "<<
-        Heap::getInstance().getData(cellDescriptionsIndex).size()<<
-        " cell descriptions to rank "<<toRank<<
-        " at (center="<< x.toString() <<
-        ",level="<< level << ")");
+  bool oneSolverRequiresVerticalCommunication = false;
+
+  Heap::HeapEntries& cellDescriptions = Heap::getInstance().getData(cellDescriptionsIndex);
+  if ( !cellDescriptions.empty() ) {
+    logDebug("sendCellDescriptions(...)","send "<< cellDescriptions.size()<<
+        " cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
+    for (auto& cellDescription : cellDescriptions) {
+      if ( fromMasterSide ) {
+        oneSolverRequiresVerticalCommunication |=
+            prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescription);
+      } else {
+        oneSolverRequiresVerticalCommunication |=
+            prepareWorkerCellDescriptionAtMasterWorkerBoundary(cellDescription);
+      }
+    }
 
     Heap::getInstance().sendData(cellDescriptionsIndex,
         toRank,x,level,messageType);
@@ -3307,8 +3316,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const bool initialGrid,
     const int solverNumber) {
-  bool cellDescriptionRequiresVerticalCommunication = false;
-
   // coarse grid based operations
   const int coarseGridCellDescriptionsIndex = coarseGridCell.getCellDescriptionsIndex()
   const int coarseGridCellElement = tryGetElement(coarseGridCellDescriptionsIndex,solverNumber);
@@ -3340,6 +3347,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
   } 
 
   // fine grid based operations
+  bool cellDescriptionRequiresVerticalCommunication = false;
   const int fineGridCellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex()
   const int fineGridElement = tryGetElement(fineGridCellDescriptionsIndex,solverNumber);
   if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
@@ -3348,9 +3356,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
     // update the comm flags
     updateCommunicationStatus(fineGridCellDescription);
     updateAugmentationStatus(fineGridCellDescription);
-    cellDescriptionRequiresVerticalCommunication |=
-        prepareMasterCellDescriptionAtMasterWorkerBoundary(
-            fineGridCellDescriptionsIndex,fineGridElement);
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
     

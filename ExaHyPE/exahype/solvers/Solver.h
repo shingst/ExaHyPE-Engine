@@ -1885,13 +1885,6 @@ class exahype::solvers::Solver {
       const int solverNumber) = 0;
 
   /**
-   * Prepare a worker cell description at the master worker boundary.
-   */
-  virtual void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-        const int cellDescriptionsIndex,
-        const int element) = 0;
-
-  /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex
    * for solver \p solverNumber, encode metadata of the cell description
    * and push it to the back of the metadata vector \p metadata.
@@ -1935,7 +1928,7 @@ class exahype::solvers::Solver {
    *                    the array with address \p cellDescriptionsIndex.
    *                    This is not the solver number.
    */
-  virtual void sendSolutionToWorkerOrMaster(
+  virtual void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                    toRank,
       const int                                    cellDescriptionsIndex,
       const int                                    element,

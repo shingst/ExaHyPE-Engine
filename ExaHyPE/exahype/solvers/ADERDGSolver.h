@@ -677,7 +677,20 @@ private:
    */
   bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
-      const int element) const override;
+      const int element) const;
+
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Descendant and
+   * is next to a cell description of type Cell
+   * or is virtually refined, i.e. has children of type Descendant itself,
+   * we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required
+   * memory.
+   */
+  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
+      const int cellDescriptionsIndex,
+      const int element) const;
 
   /**
    * As the worker does not know anything about the master's coarse
@@ -1939,6 +1952,7 @@ public:
   static void sendCellDescriptions(
       const int                                    toRank,
       const int                                    cellDescriptionsIndex,
+      const bool                                   fromMasterSide,
       const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
@@ -2136,19 +2150,6 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const bool initialGrid,
       const int solverNumber) override;
-
-  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
-   *
-   * If the cell description is of type Descendant and
-   * is next to a cell description of type Cell
-   * or is virtually refined, i.e. has children of type Descendant itself,
-   * we set the hasToHoldDataForMasterWorkerCommunication flag
-   * on the cell description to true and allocate the required
-   * memory.
-   */
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) override;
 
   void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
