@@ -298,7 +298,7 @@ private:
    *
    * \note Not thread-safe!
    */
-  void vetoErasingRequestsIfNecessary(
+  void alterErasingRequestsIfNecessary(
       CellDescription& coarseGridCellDescription,
       const int fineGridCellDescriptionsIndex) const;
 
