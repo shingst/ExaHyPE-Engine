@@ -1872,9 +1872,9 @@ class exahype::solvers::Solver {
    */
   virtual void progressMeshRefinementInReceiveDataFromMaster(
       const int masterRank,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
       const int receivedCellDescriptionsIndex,
-      const int receivedElement) const = 0;
+      const int receivedElement,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator) const = 0;
 
   /**
    * Finish prolongation operations started on the master.
@@ -1891,10 +1891,23 @@ class exahype::solvers::Solver {
    * operations.
    */
   virtual void progressMeshRefinementInPrepareSendToMaster(
-      const int masterRank,
-      exahype::Cell& fineGridCell,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const = 0;
+        const int masterRank,
+        const int cellDescriptionsIndex, const int element,
+        const tarch::la::Vector<DIMENSIONS,double>& x,
+        const int level) const override;
+
+  /**
+   * Finish erasing operations started on the master which
+   * require data from the worker.
+   *
+   * Veto erasing requests from the coarse grid cell as well.
+   */
+  virtual bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) = 0;
 
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex

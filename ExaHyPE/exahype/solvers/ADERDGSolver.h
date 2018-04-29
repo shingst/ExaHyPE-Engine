@@ -2198,9 +2198,24 @@ public:
    */
   void progressMeshRefinementInPrepareSendToMaster(
       const int masterRank,
-      exahype::Cell& fineGridCell,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const final override;
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+    * Finish prolongation operations started on the master.
+    *
+    * \return If we the solver requires master worker communication
+    * at this cell
+    *
+    * TODO(Dominic): No const modifier const as kernels are not const yet
+    */
+   bool progressMeshRefinementInMergeWithMaster(
+       const int worker,
+       const int localCellDescriptionsIndex,    const int localElement,
+       const int receivedCellDescriptionsIndex, const int receivedElement,
+       const tarch::la::Vector<DIMENSIONS, double>& x,
+       const int                                    level) final override;
 
 
   void appendMasterWorkerCommunicationMetadata(

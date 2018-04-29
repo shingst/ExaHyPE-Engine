@@ -609,8 +609,8 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
       if ( receivedElement!=exahype::solvers::Solver::NotFound ) {
         solver->progressMeshRefinementInReceiveDataFromMaster( // TODO(Dominic): FV should not nothing here
             tarch::parallel::NodePool::getInstance().getMasterRank(),
-            receivedVerticesEnumerator,
-            receivedCellDescriptionsIndex,receivedElement);
+            receivedCellDescriptionsIndex,receivedElement,
+            receivedVerticesEnumerator);
       }
     }
   }  
@@ -676,27 +676,35 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
 
   if ( localCell.hasToCommunicate( verticesEnumerator.getCellSize()) ) {
     const int localCellDescriptionsIndex = localCell.getCellDescriptionsIndex();
-      exahype::solvers::ADERDGSolver::sendCellDescriptions(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          localCellDescriptionsIndex,true/** send data from worker side**/,
-          peano::heap::MessageType::MasterWorkerCommunication,
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getLevel());
-      exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          localCellDescriptionsIndex,
-          peano::heap::MessageType::MasterWorkerCommunication,
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getLevel()); // make collective
+    exahype::solvers::ADERDGSolver::sendCellDescriptions(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        localCellDescriptionsIndex,true/* send data from worker side*/,
+        peano::heap::MessageType::MasterWorkerCommunication,
+        verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getLevel());
+    exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        localCellDescriptionsIndex,
+        peano::heap::MessageType::MasterWorkerCommunication,
+        verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getLevel()); // make collective
 
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        const int element = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
+      if ( element!=exahype::solvers::Solver::NotFound ) {
         solver->progressMeshRefinementInPrepareSendToMaster(
             tarch::parallel::NodePool::getInstance().getMasterRank(),
-            localCell,verticesEnumerator,
+            localCellDescriptionsIndex,element,
+            verticesEnumerator.getCellCenter(),verticesEnumerator.getLevel(),s
             solverNumber);
+      } else {
+        solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
+            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            peano::heap::MessageType::MasterWorkerCommunication,
+            verticesEnumerator.getCellCenter(),verticesEnumerator.getLevel());
       }
+    }
   }
 
   // TODO(Dominic): Send cell descriptions
@@ -735,7 +743,6 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
   }
 
   if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getCellSize()) ) {
-    // todo 1 receive the cell descriptions into the worker grid cell
     // todo 2 merge the comm. flags for descendants
     // todo 3 finalise restriction operations (limiter status and normal restriction)
     exahype::Cell dummyCell;
@@ -751,11 +758,27 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel());
 
+    const int localCellDescriptionsIndex    = fineGridCell.getCellDescriptionsIndex();
+    const int receivedCellDescriptionsIndex = dummyCell.getCellDescriptionsIndex();
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      _verticalExchangeOfSolverDataRequired |=
-          solver->progressMeshRefinementInMergeWithMaster(...asda); // TODO
+      const int localElement    = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
+      const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
+      if ( localElement!=exahype::solvers::Solver::NotFound ) {
+        assertion( receivedElement!=exahype::solvers::Solver::NotFound );
+
+        _verticalExchangeOfSolverDataRequired |=
+            solver->progressMeshRefinementInMergeWithMaster(
+                worker, localCellDescriptionsIndex, localElement,
+                receivedCellDescriptionsIndex, receivedElement,
+                fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
+      } else {
+        solver->dropWorkerOrMasterDataDueToForkOrJoin(
+            worker,peano::heap::MessageType::MasterWorkerCommunication,
+            fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
+      }
     }
+    dummyCell.shutdownMetaData();
   }
 
   // TODO(Dominic): Replace
