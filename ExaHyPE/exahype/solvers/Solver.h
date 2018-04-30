@@ -706,6 +706,24 @@ class exahype::solvers::Solver {
   static PredictionIterationTag getPredictionIterationTag();
 
   /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to send out riemann data in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  static bool sendOutRiemannDataInThisIteration();
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to issue prediction jobs in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  static bool issuePredictionJobsInThisIteration();
+
+  /**
    * Moves a DataHeap array, i.e. copies the found
    * data at "fromIndex" to the array at "toIndex" and
    * deletes the "fromIndex" array afterwards.

@@ -143,10 +143,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if (
-      exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
-  ) {
+  if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
@@ -197,8 +194,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
 
   if (
       fineGridCell.isInitialised() &&
-      exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+      exahype::solvers::Solver::issuePredictionJobsInThisIteration()
   ) {
     exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
         fineGridCell.getCellDescriptionsIndex(),
@@ -287,10 +283,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if (
-      exahype::solvers::Solver::getPredictionIterationTag()==
-      exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
-  ) {
+  if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
     exahype::mappings::Prediction::restriction(
         fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
   }
@@ -305,17 +298,12 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-//  if (tarch::parallel::Node::getInstance().getRank()==2) {
-//    logInfo("mergeWithNeighbour(...)","iteration="<<
-//            exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
-//  }
+  if (tarch::parallel::Node::getInstance().getRank()==2) {
+    logInfo("mergeWithNeighbour(...)","iteration="<<
+            exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+  }
 
-  if (
-      exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs ||
-      exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::NoBatch
-  ) {
+  if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
         fromRank,
         true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
@@ -331,17 +319,12 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-//  if (tarch::parallel::Node::getInstance().getRank()==2) {
-//    logInfo("prepareSendToNeighbour(...)","iteration="<<
-//        exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
-//  }
+  if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+    if (tarch::parallel::Node::getInstance().getRank()==2) {
+      logInfo("prepareSendToNeighbour(...)","iteration="<<
+          exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+    }
 
-  if (
-      exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData ||
-      exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::NoBatch
-  ) {
     vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
   }
 

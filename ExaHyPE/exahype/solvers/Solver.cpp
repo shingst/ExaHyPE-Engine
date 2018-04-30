@@ -129,6 +129,20 @@ exahype::solvers::Solver::PredictionIterationTag exahype::solvers::Solver::getPr
   return STPIterationTag;
 }
 
+bool exahype::solvers::Solver::sendOutRiemannDataInThisIteration() {
+  return exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData ||
+        exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::NoBatch;
+}
+
+bool exahype::solvers::Solver::issuePredictionJobsInThisIteration() {
+  return exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs ||
+        exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::NoBatch;
+}
+
 void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
