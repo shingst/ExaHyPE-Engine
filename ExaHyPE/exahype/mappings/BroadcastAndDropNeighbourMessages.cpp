@@ -84,7 +84,10 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
   #endif
 
   // background threads
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+      exahype::solvers::Solver::NumberOfSkeletonJobs);
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+      exahype::solvers::Solver::NumberOfEnclaveJobs);
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

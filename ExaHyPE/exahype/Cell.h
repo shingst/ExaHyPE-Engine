@@ -213,7 +213,11 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * via one of the faces.
    * Only inside faces are checked, i.e. faces where
    * at least one vertex is inside.
+   *
    * Boundary and outside vertices are ignored.
+   * We thus claim we are not at a remote boundary
+   * even though we might be neighbouring the global
+   * master rank at the domain boundary.
    */
   static bool isAtRemoteBoundary(
       exahype::Vertex* const               verticesAroundCell,

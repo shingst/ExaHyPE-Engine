@@ -791,7 +791,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
         !SpawnPredictionAsBackgroundJob ||
-        isAtRemoteBoundary              ||
+        isAtRemoteBoundary || // TODO(Dominic): Actually spawn skeleton job;
         ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
 
     if (
@@ -804,8 +804,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           isFirstIterationOfBatch,isLastIterationOfBatch,
           solverPatch.getNeighbourMergePerformed(),vetoSpawnBackgroundJobs);
     } else {
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, solverPatch.getNeighbourMergePerformed() );
-      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
+          solverPatch.getNeighbourMergePerformed(),
+          jobCounter );
+      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background );
+      // TODO(Dominic): Actually spawn skeleton job
       return UpdateResult();
     }
   } else {
@@ -2353,23 +2357,28 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   LimitingADERDGSolver& solver,
   const int             cellDescriptionsIndex,
   const int             element,
-  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed):
+  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+  int&                  jobCounter):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
-  _neighbourMergePerformed(neighbourMergePerformed) {
+  _neighbourMergePerformed(neighbourMergePerformed),
+  _jobCounter(jobCounter) {
   // copy the neighbour merge performed array
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs++;
+  {
+    _jobCounter++;
+  }
   lock.free();
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStepBody(_cellDescriptionsIndex,_element,false,false,_neighbourMergePerformed,true);
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs--;
-  assertion( NumberOfBackgroundJobs>=0 );
+  {
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }
@@ -2382,7 +2391,9 @@ exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::AdjustLimiterS
   _solverPatch(solverPatch),
   _limiterPatch(limiterPatch) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs++;
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
   lock.free();
 }
 
@@ -2390,8 +2401,10 @@ bool exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::operator(
   _solver.adjustLimiterSolution(_solverPatch,_limiterPatch);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs--;
-  assertion( NumberOfBackgroundJobs>=0 );
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
+  }
   lock.free();
   return false;
 }

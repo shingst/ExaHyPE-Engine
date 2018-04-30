@@ -868,32 +868,39 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
- /**
-  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
-  * further. We have to wait until all tasks have terminated if we want to modify the heap,
-  * i.e. insert new data or remove data.
-  * Therefore, the wait (as well as the underlying semaphore) belong
-  * into this abstract superclass.
-  */
- static void ensureAllBackgroundJobsHaveTerminated();
-
- protected:
   /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
+   * \see ensureAllBackgroundJobsHaveTerminated
    */
-  static int NumberOfBackgroundJobs;
+  static int NumberOfAMRBackgroundJobs;
 
   /**
    * Number of background jobs spawned
    * from enclave cells.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
    */
   static int NumberOfEnclaveJobs;
   /**
    * Number of background jobs spawned
    * from skeleton cells, i.e. cells at parallel
    * or adaptivity boundaries.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
    */
   static int NumberOfSkeletonJobs;
+
+ /**
+  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
+  * further. We have to wait until all tasks have terminated if we want to modify the heap,
+  * i.e. insert new data or remove data.
+  * Therefore, the wait (as well as the underlying semaphore) belong
+  * into this abstract superclass.
+  *
+  * \param[in] backgroundJobCounter A reference to a background job counter.
+  */
+ static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter);
+
+ protected:
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.

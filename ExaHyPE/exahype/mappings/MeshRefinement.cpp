@@ -142,7 +142,8 @@ void exahype::mappings::MeshRefinement::beginIteration(
   }
 
   // background threads
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+      exahype::solvers::Solver::NumberOfAMRBackgroundJobs);
 
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {

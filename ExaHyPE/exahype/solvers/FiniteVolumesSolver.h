@@ -168,7 +168,7 @@ private:
 
   void compress(
       CellDescription& cellDescription,
-      const bool vetoSpawnBackgroundTask) const;
+      const bool isAtRemoteBoundary) const;
   /**
    * \copydoc ADERDGSolver::computeHierarchicalTransform()
    *
@@ -193,11 +193,12 @@ private:
     private:
       const FiniteVolumesSolver&                       _solver;
       exahype::records::FiniteVolumesCellDescription&  _cellDescription;
+      int&                                             _jobCounter;
     public:
       CompressionTask(
-        const FiniteVolumesSolver&                       _solver,
-        exahype::records::FiniteVolumesCellDescription&  _cellDescription
-      );
+        const FiniteVolumesSolver&                      solver,
+        exahype::records::FiniteVolumesCellDescription& cellDescription,
+        int&                                            jobCounter);
 
       bool operator()();
   };
@@ -216,11 +217,13 @@ private:
     FiniteVolumesSolver&  _solver;
     const int             _cellDescriptionsIndex;
     const int             _element;
+    int&                  _jobCounter;
   public:
     FusedTimeStepJob(
-        FiniteVolumesSolver& _solver,
+        FiniteVolumesSolver& solver,
         const int            cellDescriptionsIndex,
-        const int            element
+        const int            element,
+        int&                 jobCounter
     );
 
     bool operator()();

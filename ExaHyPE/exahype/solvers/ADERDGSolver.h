@@ -725,13 +725,14 @@ private:
 
   class CompressionJob {
     private:
-      const ADERDGSolver&     _solver;
-      CellDescription&  _cellDescription;
+      const ADERDGSolver& _solver;
+      CellDescription&    _cellDescription;
+      int&                _jobCounter;
     public:
       CompressionJob(
-        const ADERDGSolver&     _solver,
-        CellDescription&  _cellDescription
-      );
+        const ADERDGSolver& solver,
+        CellDescription&    cellDescription,
+        int&                jobCounter);
 
       bool operator()();
   };
@@ -743,13 +744,15 @@ private:
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
+      int&             _jobCounter;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
           CellDescription&  cellDescription,
           const double      predictorTimeStamp,
           const double      predictorTimeStepSize,
-          const bool        uncompressBefore);
+          const bool        uncompressBefore,
+          int&              jobCounter);
 
       bool operator()();
   };
@@ -770,11 +773,13 @@ private:
       ADERDGSolver&    _solver;
       const int        _cellDescriptionsIndex;
       const int        _element;
+      int&             _jobCounter;
     public:
       FusedTimeStepJob(
           ADERDGSolver& solver,
           const int     cellDescriptionsIndex,
-          const int     element);
+          const int     element,
+          int&          jobCounter);
 
       bool operator()();
   };
@@ -1703,7 +1708,8 @@ public:
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
         const bool vetoSpawnPredictionAsBackgroundJob,
-        const bool vetoSpawnAnyBackgroundJobs);
+        const bool vetoSpawnAnyBackgroundJobs,
+        int&  jobCounter);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,

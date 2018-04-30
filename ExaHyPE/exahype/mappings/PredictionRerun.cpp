@@ -102,7 +102,10 @@ void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", state);
 
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+      exahype::solvers::Solver::NumberOfSkeletonJobs);
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+      exahype::solvers::Solver::NumberOfEnclaveJobs);
 
   logTraceOutWith1Argument("beginIteration(State)", state);
 }

@@ -88,7 +88,7 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int exahype::solvers::Solver::NumberOfBackgroundJobs = 0;
+int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
@@ -143,11 +143,11 @@ bool exahype::solvers::Solver::issuePredictionJobsInThisIteration() {
           exahype::solvers::Solver::PredictionIterationTag::NoBatch;
 }
 
-void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
+void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter) {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  int numberOfExaHyPEBackgroundJobs = NumberOfBackgroundJobs;
+  int numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -171,7 +171,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    numberOfExaHyPEBackgroundJobs = NumberOfBackgroundJobs;
+    numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
     lock.free();
     finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -764,7 +764,9 @@ exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionD
   _isInitialMeshRefinement(isInitialMeshRefinement)
 {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs++;
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
   lock.free();
 }
 
@@ -772,8 +774,10 @@ bool exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::operator()
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element,_isInitialMeshRefinement);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs--;
-  assertion( NumberOfBackgroundJobs>=0 );
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
+  }
   lock.free();
   return false;
 }

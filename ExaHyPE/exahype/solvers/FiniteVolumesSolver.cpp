@@ -716,7 +716,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
         cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
     return result;
   } else {
-    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
+    int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, jobCounter );
     peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
     return UpdateResult();
   }
@@ -1889,19 +1890,22 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
       lock.lock();
       cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
       lock.lock();
       cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
       lock.lock();
       cellDescription.setExtrapolatedSolution( DataHeap::getInstance().createData(dataPerBoundary, dataPerBoundary ) );
       lock.free();
@@ -1974,17 +1978,13 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescription,const bool vetoSpawnBackgroundJob) const {
+void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescription,const bool isAtRemoteBoundary) const {
   assertion1( cellDescription.getCompressionState() ==  CellDescription::Uncompressed, cellDescription.toString() );
   if (CompressionAccuracy>0.0) {
-    if (!vetoSpawnBackgroundJob && SpawnCompressionAsBackgroundJob) {
+    if (!isAtRemoteBoundary && SpawnCompressionAsBackgroundJob) {
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
-
-      tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      NumberOfBackgroundJobs++;
-      lock.free();
-
-      CompressionTask compressionJob( *this, cellDescription );
+      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+      CompressionTask compressionJob( *this, cellDescription, jobCounter );
       peano::datatraversal::TaskSet spawnedSet( compressionJob,peano::datatraversal::TaskSet::TaskType::Background );
     }
     else {
@@ -2115,11 +2115,18 @@ void exahype::solvers::FiniteVolumesSolver::computeHierarchicalTransform(
 }
 
 exahype::solvers::FiniteVolumesSolver::CompressionTask::CompressionTask(
-  const FiniteVolumesSolver&  solver,
-  CellDescription&      cellDescription
+  const FiniteVolumesSolver& solver,
+  CellDescription&           cellDescription,
+  int&                       jobCounter
 ):
   _solver(solver),
-  _cellDescription(cellDescription) {
+  _cellDescription(cellDescription),
+  _jobCounter(jobCounter) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    _jobCounter++;
+  }
+  lock.free();
 }
 
 
@@ -2129,10 +2136,12 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
   _solver.putUnknownsIntoByteStream(_cellDescription);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _cellDescription.setCompressionState(CellDescription::Compressed);
-  // @todo raus
-  NumberOfBackgroundJobs--;
-  assertion( NumberOfBackgroundJobs>=0 );
+  {
+    _cellDescription.setCompressionState(CellDescription::Compressed);
+    // @todo raus
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }
@@ -2141,21 +2150,26 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
 exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   FiniteVolumesSolver&     solver,
   const int                cellDescriptionsIndex,
-  const int                element):
+  const int                element,
+  int&                     jobCounter):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element) {
+  _element(element),
+  _jobCounter(jobCounter) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs++;
+  {
+    _jobCounter++;
+  }
   lock.free();
 }
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  NumberOfBackgroundJobs--;
-  assertion( NumberOfBackgroundJobs>=0 );
+  {
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }

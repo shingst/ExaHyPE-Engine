@@ -143,7 +143,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     if ( !_backgroundJobsHaveTerminated ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+          exahype::solvers::Solver::NumberOfAMRBackgroundJobs);
       _backgroundJobsHaveTerminated = true;
     }
 

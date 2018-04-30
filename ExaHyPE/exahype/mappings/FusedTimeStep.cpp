@@ -247,7 +247,14 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
 
   if ( !_backgroundJobsHaveTerminated ) {
     exahype::solvers::Solver::updatePredictionIterationTag();
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+          exahype::solvers::Solver::NumberOfEnclaveJobs);
+    }
+    if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+                exahype::solvers::Solver::NumberOfSkeletonJobs);
+    }
     _backgroundJobsHaveTerminated = true;
   }
 
@@ -291,7 +298,14 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
 
   if ( !_backgroundJobsHaveTerminated ) {
     exahype::solvers::Solver::updatePredictionIterationTag();
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+          exahype::solvers::Solver::NumberOfEnclaveJobs);
+    }
+    if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+          exahype::solvers::Solver::NumberOfSkeletonJobs);
+    }
     _backgroundJobsHaveTerminated = true;
   }
 

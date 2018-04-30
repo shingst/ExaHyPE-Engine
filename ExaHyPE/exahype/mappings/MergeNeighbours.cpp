@@ -116,7 +116,10 @@ void exahype::mappings::MergeNeighbours::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( !_backgroundJobsHaveTerminated ) {
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+        exahype::solvers::Solver::NumberOfSkeletonJobs);
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+        exahype::solvers::Solver::NumberOfEnclaveJobs);
     _backgroundJobsHaveTerminated = true;
   }
 
