@@ -327,7 +327,7 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     context = {}
     # mandatory
-    context["ranks"]   = ranks
+    context["ranks"]       = ranks
     context["nodes"]       = nodes
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
@@ -549,7 +549,7 @@ def generateScripts():
                                 jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
                                 # pipe the commands into the output file
                                 runCommand = general["run_command"].replace("\"","")
-                                runCommand = runCommand.replace("{{ranks}}",str(int(nodes)*int(tasks)));
+                                runCommand = runCommand.replace("{{ranks}}",ranks);
                                 runCommand = runCommand.replace("{{nodes}}",nodes);
                                 runCommand = runCommand.replace("{{tasks}}",tasks);
                                 runCommand = runCommand.replace("{{cores}}",cores);
