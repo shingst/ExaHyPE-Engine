@@ -129,12 +129,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     }
 
     initialiseLocalVariables();
-
-    exahype::solvers::Solver::updatePredictionIterationTag(); // do update it in the endIteration in other iterations
   }
-
-  logInfo("beginIteration(State)","iteration="<<
-      exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -154,11 +149,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 
   _backgroundJobsHaveTerminated = false;
-
-  exahype::solvers::Solver::updatePredictionIterationTag();
-
-  logInfo("endIteration(State)","iteration="<<
-      exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
 
   peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
@@ -256,6 +246,7 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( !_backgroundJobsHaveTerminated ) {
+    exahype::solvers::Solver::updatePredictionIterationTag();
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
     _backgroundJobsHaveTerminated = true;
   }
@@ -298,9 +289,10 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if (tarch::parallel::Node::getInstance().getRank()==2) {
-    logInfo("mergeWithNeighbour(...)","iteration="<<
-            exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+  if ( !_backgroundJobsHaveTerminated ) {
+    exahype::solvers::Solver::updatePredictionIterationTag();
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    _backgroundJobsHaveTerminated = true;
   }
 
   if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
@@ -320,11 +312,6 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
-    if (tarch::parallel::Node::getInstance().getRank()==2) {
-      logInfo("prepareSendToNeighbour(...)","iteration="<<
-          exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
-    }
-
     vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
   }
 
