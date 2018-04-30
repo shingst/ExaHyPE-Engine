@@ -31,6 +31,25 @@
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
+void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    _batchIteration = 0;
+  } else {
+    _batchIteration++;
+  }
+}
+
+bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() {
+  return _batchIteration % 2 == 0;
+}
+
+bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() {
+  return
+      exahype::State::isLastIterationOfBatchOrNoBatch() || // covers the NoBatch case
+      _batchIteration % 2 != 0;
+}
+
+
 void exahype::mappings::FusedTimeStep::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
@@ -138,7 +157,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+  if ( sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
@@ -183,8 +202,8 @@ void exahype::mappings::FusedTimeStep::enterCell(
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if (
-      fineGridCell.isInitialised() &&
-      exahype::solvers::Solver::issuePredictionJobsInThisIteration()
+      issuePredictionJobsInThisIteration() &&
+      fineGridCell.isInitialised()
   ) {
     exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
         fineGridCell.getCellDescriptionsIndex(),
@@ -246,22 +265,19 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( !_backgroundJobsHaveTerminated ) {
-    exahype::solvers::Solver::updatePredictionIterationTag();
-    if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
+    updateBatchIterationCounter();
+    if ( issuePredictionJobsInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
           exahype::solvers::Solver::NumberOfEnclaveJobs);
     }
-    if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+    if ( sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
                 exahype::solvers::Solver::NumberOfSkeletonJobs);
     }
     _backgroundJobsHaveTerminated = true;
   }
 
-  if (
-      exahype::solvers::Solver::getPredictionIterationTag()==
-      exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
-  ) {
+  if ( issuePredictionJobsInThisIteration() ) {
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
   }
 
@@ -281,7 +297,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
+  if ( issuePredictionJobsInThisIteration() ) {
     exahype::mappings::Prediction::restriction(
         fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
   }
@@ -297,19 +313,19 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
   if ( !_backgroundJobsHaveTerminated ) {
-    exahype::solvers::Solver::updatePredictionIterationTag();
-    if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
+    updateBatchIterationCounter();
+    if ( issuePredictionJobsInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
           exahype::solvers::Solver::NumberOfEnclaveJobs);
     }
-    if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+    if ( sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
           exahype::solvers::Solver::NumberOfSkeletonJobs);
     }
     _backgroundJobsHaveTerminated = true;
   }
 
-  if ( exahype::solvers::Solver::issuePredictionJobsInThisIteration() ) {
+  if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
         fromRank,
         true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
@@ -325,7 +341,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( exahype::solvers::Solver::sendOutRiemannDataInThisIteration() ) {
+  if ( sendOutRiemannDataInThisIteration() ) {
     vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
   }
 

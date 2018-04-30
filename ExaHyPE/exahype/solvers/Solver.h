@@ -555,24 +555,6 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
-  /**
-   * A set of tags for FusedTimeStep, Prediction,PredictionRerun, and PredictionOrLocalRecomputation
-   * iterations.
-   *
-   * NoBatch             - In this case the skeleton cells are processed in serial.
-   * IssuePredictionJobs - Here, we issue all enclave and skeleton jobs but do not wait until they are
-   *                       processed. TODO(Dominic): Maybe wait in endIteration(..)?
-   * SendOutRiemannData  - Here, we know that the skeleton jobs have all been processed (higher priority).
-   *                       We can thus send out Riemann data.
-   */
-  enum class PredictionIterationTag { NoBatch, IssuePredictionJobs, SendOutRiemannData };
-
-  static std::string toString(const exahype::solvers::Solver::PredictionIterationTag& tag);
-
- private:
-
-  static PredictionIterationTag STPIterationTag;
-
  public:
 
   /**
@@ -687,41 +669,6 @@ class exahype::solvers::Solver {
    * stored at a heap address.
    */
   static constexpr int NotFound = -1;
-
-  /**
-   * Updates the iteration tag from the mappings/adapters
-   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation.
-   *
-   * \note This routine must only be called once in every batch iteration
-   * (exceptions: first batch iteration or if no batch is run)
-   * as it toggles a state in intermediate batch iterations.
-   */
-  static void updatePredictionIterationTag();
-
-  /**
-   * Returns the prediction iteration tag.
-   *
-   * \see updatePredictionIterationTag(...)
-   */
-  static PredictionIterationTag getPredictionIterationTag();
-
-  /**
-   * \return if the mappings/adapters
-   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
-   * are supposed to send out riemann data in this iteration.
-   *
-   * \see updatePredictionIterationTag(...)
-   */
-  static bool sendOutRiemannDataInThisIteration();
-
-  /**
-   * \return if the mappings/adapters
-   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
-   * are supposed to issue prediction jobs in this iteration.
-   *
-   * \see updatePredictionIterationTag(...)
-   */
-  static bool issuePredictionJobsInThisIteration();
 
   /**
    * Moves a DataHeap array, i.e. copies the found

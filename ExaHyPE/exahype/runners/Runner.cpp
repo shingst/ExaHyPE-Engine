@@ -817,7 +817,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
 
     repository.switchToPrediction();
-    repository.iterate( 1, communicatePeanoVertices );
+    repository.iterate( PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor");
 
     printTimeStepInfo(-1,repository);
@@ -1177,7 +1177,8 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
-    repository.iterate(1,false); // local recomputation: has now recomputed predictor in interface cells
+    const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? PredictionSweeps : 1;
+    repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
   }
 }
 
@@ -1301,9 +1302,9 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
 
   repository.switchToFusedTimeStep();
   if (numberOfStepsToRun==0) {
-    repository.iterate(1,communicatePeanoVertices);
+    repository.iterate( 1,communicatePeanoVertices );
   } else {
-    repository.iterate(2*numberOfStepsToRun,false/*Always disable during batching*/);
+    repository.iterate( PredictionSweeps*numberOfStepsToRun,false/*Always disable during batching*/ );
   }
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
@@ -1325,7 +1326,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
     repository.switchToPredictionRerun();
-    repository.iterate( 1, communicatePeanoVertices );
+    repository.iterate( PredictionSweeps, communicatePeanoVertices );
   }
 
   updateStatistics();
@@ -1363,7 +1364,7 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
   printTimeStepInfo(1,repository);
 
   repository.switchToPrediction(); // Cell onto faces
-  repository.iterate(1, communicatePeanoVertices );
+  repository.iterate( PredictionSweeps, communicatePeanoVertices );
 
   updateStatistics();
 }

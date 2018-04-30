@@ -77,12 +77,6 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  #ifdef Parallel
-  if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
-    exit(-1);
-  }
-  #endif
-
   // background threads
   exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
       exahype::solvers::Solver::NumberOfSkeletonJobs);

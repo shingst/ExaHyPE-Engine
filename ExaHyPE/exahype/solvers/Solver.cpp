@@ -92,57 +92,6 @@ int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
-exahype::solvers::Solver::PredictionIterationTag exahype::solvers::Solver::STPIterationTag =
-    exahype::solvers::Solver::PredictionIterationTag::NoBatch;
-
-std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::PredictionIterationTag& tag) {
-  switch (tag) {
-  case solvers::Solver::PredictionIterationTag::NoBatch:
-    return "NoBatch";
-  case solvers::Solver::PredictionIterationTag::IssuePredictionJobs:
-    return "IssuePredictionJobs";
-  case solvers::Solver::PredictionIterationTag::SendOutRiemannData:
-    return "SendOutRiemannData";
-  default:
-    return "unknown";
-  }
-}
-
-void exahype::solvers::Solver::updatePredictionIterationTag() {
-  if (
-      exahype::State::isFirstIterationOfBatchOrNoBatch() &&
-      exahype::State::isLastIterationOfBatchOrNoBatch() // NoBatch
-  ) {
-    STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::NoBatch;
-  } else if (
-      STPIterationTag != exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
-  ) {
-    STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs;
-  } else if (
-      STPIterationTag != exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
-  ) {
-    STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData;
-  }
-}
-
-exahype::solvers::Solver::PredictionIterationTag exahype::solvers::Solver::getPredictionIterationTag() {
-  return STPIterationTag;
-}
-
-bool exahype::solvers::Solver::sendOutRiemannDataInThisIteration() {
-  return exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData ||
-        exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::NoBatch;
-}
-
-bool exahype::solvers::Solver::issuePredictionJobsInThisIteration() {
-  return exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs ||
-        exahype::solvers::Solver::getPredictionIterationTag()==
-          exahype::solvers::Solver::PredictionIterationTag::NoBatch;
-}
-
 void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter) {
   bool finishedWait = false;
 

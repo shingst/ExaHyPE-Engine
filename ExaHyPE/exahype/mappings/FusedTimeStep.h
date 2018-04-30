@@ -105,6 +105,36 @@ private:
    */
   bool _backgroundJobsHaveTerminated = false;
 
+
+  int _batchIteration = 0;
+  /**
+   * Updates the iteration tag from the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation.
+   *
+   * \note This routine must only be called once in every batch iteration
+   * (exceptions: first batch iteration or if no batch is run)
+   * as it toggles a state in intermediate batch iterations.
+   */
+  void updateBatchIterationCounter();
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to send out riemann data in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  bool sendOutRiemannDataInThisIteration();
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to issue prediction jobs in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  bool issuePredictionJobsInThisIteration();
+
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
