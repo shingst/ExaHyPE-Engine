@@ -128,6 +128,10 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     }
 
     initialiseLocalVariables();
+
+    exahype::solvers::Solver::updatePredictionIterationTag(); // do update it in the endIteration in other iterations
+
+    logInfo("beginIteration(State)","iteration="<<static_cast<int>(exahype::solvers::Solver::getPredictionIterationTag()));
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -141,15 +145,22 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  exahype::plotters::finishedPlotting();
+  if (
+      exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
+  ) {
+    exahype::plotters::finishedPlotting();
 
-  exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
-      exahype::State::isFirstIterationOfBatchOrNoBatch(),
-      exahype::State::isLastIterationOfBatchOrNoBatch(),
-      true);
+    exahype::solvers::Solver::startNewTimeStepForAllSolvers(
+        _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
+        exahype::State::isFirstIterationOfBatchOrNoBatch(),
+        exahype::State::isLastIterationOfBatchOrNoBatch(),
+        true);
+  }
 
   _backgroundJobsHaveTerminated = false;
+
+  exahype::solvers::Solver::updatePredictionIterationTag();
 
   peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
@@ -183,7 +194,11 @@ void exahype::mappings::FusedTimeStep::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
-  if ( fineGridCell.isInitialised() ) {
+  if (
+      fineGridCell.isInitialised() &&
+      exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+  ) {
     exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVerticesEnumerator);
@@ -248,6 +263,13 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
     _backgroundJobsHaveTerminated = true;
   }
 
+  if (
+      exahype::solvers::Solver::getPredictionIterationTag()==
+      exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+  ) {
+    fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
+  }
+
   fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
@@ -264,8 +286,13 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restriction(
-      fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  if (
+      exahype::solvers::Solver::getPredictionIterationTag()==
+      exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+  ) {
+    exahype::mappings::Prediction::restriction(
+        fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
@@ -277,10 +304,15 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  vertex.receiveNeighbourData(
+  if (
+      exahype::solvers::Solver::getPredictionIterationTag()==
+      exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+  ) {
+    vertex.receiveNeighbourData(
         fromRank,
-        true/*merge*/,exahype::State::isFirstIterationOfBatchOrNoBatch()/*receive metadata*/,
+        true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
+  }
 
   logTraceOut( "mergeWithNeighbour(...)" );
 }
@@ -291,7 +323,12 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
+  if (
+      exahype::solvers::Solver::getPredictionIterationTag()==
+      exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
+  ) {
+    vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
+  }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
 }

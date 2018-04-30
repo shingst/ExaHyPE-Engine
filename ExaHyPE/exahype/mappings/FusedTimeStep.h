@@ -27,7 +27,6 @@
 #include "exahype/State.h"
 #include "exahype/Vertex.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 namespace exahype {
 namespace mappings {
@@ -214,12 +213,12 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Prepares the temporary variables and copies
-   * the state.
-   *
-   * Resets the next mesh update request flag to false and
+   *Resets the next mesh update request flag to false and
    * the next limiter domain change to Regular
    * using the "setNext..." methods.
+   *
+   * Updates the prediction iteration tag in the first iteration
+   * of a batch or if no batch is run.
    */
   void beginIteration(exahype::State& solverState);
 
@@ -237,6 +236,8 @@ private:
    *
    * Notify Peano's tarch that we want to start processing
    * background jobs with all available cores.
+   *
+   * Updates the prediction iteration tag in every iteration.
    */
   void endIteration(exahype::State& solverState);
 

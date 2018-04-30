@@ -64,9 +64,6 @@ double exahype::solvers::Solver::PipedUncompressedBytes = 0;
 double exahype::solvers::Solver::PipedCompressedBytes = 0;
 #endif
 
-
-const int exahype::solvers::Solver::NotFound = -1;
-
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
 double exahype::solvers::convertToDouble(const LimiterDomainChange& limiterDomainChange) {
@@ -91,13 +88,40 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
+int exahype::solvers::Solver::NumberOfBackgroundJobs = 0;
+int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
+int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
+
+exahype::solvers::Solver::PredictionIterationTag exahype::solvers::Solver::STPIterationTag =
+    exahype::solvers::Solver::PredictionIterationTag::NoBatch;
+
+void exahype::solvers::Solver::updatePredictionIterationTag() {
+  if (
+      exahype::State::isFirstIterationOfBatchOrNoBatch() &&
+      exahype::State::isLastIterationOfBatchOrNoBatch() // NoBatch
+  ) {
+    STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::NoBatch;
+  } else if (
+      exahype::State::isFirstIterationOfBatchOrNoBatch() ||  // FirstIterationOfBatch
+      STPIterationTag == exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
+  ) {
+    STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs;
+  } else if (
+      STPIterationTag == exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+  ) {
+    STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData;
+  }
+}
+
+exahype::solvers::Solver::PredictionIterationTag exahype::solvers::Solver::getPredictionIterationTag() {
+  return STPIterationTag;
+}
 
 void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  int numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
+  int numberOfExaHyPEBackgroundJobs = NumberOfBackgroundJobs;
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -121,7 +145,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
+    numberOfExaHyPEBackgroundJobs = NumberOfBackgroundJobs;
     lock.free();
     finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -714,7 +738,7 @@ exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionD
   _isInitialMeshRefinement(isInitialMeshRefinement)
 {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -722,8 +746,8 @@ bool exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::operator()
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element,_isInitialMeshRefinement);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  NumberOfBackgroundJobs--;
+  assertion( NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }

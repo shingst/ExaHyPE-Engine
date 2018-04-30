@@ -4274,7 +4274,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   _predictorTimeStepSize(predictorTimeStepSize),
   _uncompressBefore(uncompressBefore){
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -4286,8 +4286,8 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
       _uncompressBefore,false /*existence of job means there is no veto*/); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  NumberOfBackgroundJobs--;
+  assertion( NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -4301,7 +4301,7 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -4310,8 +4310,8 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
       _cellDescriptionsIndex,_element,false,false,true,false);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  NumberOfBackgroundJobs--;
+  assertion( NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -4333,8 +4333,8 @@ bool exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     _cellDescription.setCompressionState(CellDescription::Compressed);
-    _NumberOfBackgroundJobs--;
-    assertion( _NumberOfBackgroundJobs>=0 );
+    NumberOfBackgroundJobs--;
+    assertion( NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -4347,7 +4347,7 @@ void exahype::solvers::ADERDGSolver::compress(CellDescription& cellDescription,c
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      _NumberOfBackgroundJobs++;
+      NumberOfBackgroundJobs++;
       lock.free();
 
       CompressionJob compressionJob( *this, cellDescription );

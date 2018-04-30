@@ -556,6 +556,24 @@ class exahype::solvers::Solver {
   static bool SpawnAMRBackgroundJobs;
 
   /**
+   * A set of tags for FusedTimeStep, Prediction,PredictionRerun, and PredictionOrLocalRecomputation
+   * iterations.
+   *
+   * NoBatch             - In this case the skeleton cells are processed in serial.
+   * IssuePredictionJobs - Here, we issue all enclave and skeleton jobs but do not wait until they are
+   *                       processed. TODO(Dominic): Maybe wait in endIteration(..)?
+   * SendOutRiemannData  - Here, we know that the skeleton jobs have all been processed (higher priority).
+   *                       We can thus send out Riemann data.
+   */
+  enum class PredictionIterationTag { NoBatch, IssuePredictionJobs, SendOutRiemannData };
+
+ private:
+
+  static PredictionIterationTag STPIterationTag;
+
+ public:
+
+  /**
    * The type of a solver.
    */
   enum class Type { ADERDG, FiniteVolumes, LimitingADERDG };
@@ -666,7 +684,24 @@ class exahype::solvers::Solver {
    * If we do not find the element in a vector
    * stored at a heap address.
    */
-  static const int NotFound;
+  static constexpr int NotFound = -1;
+
+  /**
+   * Updates the iteration tag from the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation.
+   *
+   * \note This routine must only be called once in every batch iteration
+   * (exceptions: first batch iteration or if no batch is run)
+   * as it toggles a state in intermediate batch iterations.
+   */
+  static void updatePredictionIterationTag();
+
+  /**
+   * Returns the prediction iteration tag.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  static PredictionIterationTag getPredictionIterationTag();
 
   /**
    * Moves a DataHeap array, i.e. copies the found
@@ -826,7 +861,19 @@ class exahype::solvers::Solver {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  static int                                _NumberOfBackgroundJobs;
+  static int NumberOfBackgroundJobs;
+
+  /**
+   * Number of background jobs spawned
+   * from enclave cells.
+   */
+  static int NumberOfEnclaveJobs;
+  /**
+   * Number of background jobs spawned
+   * from skeleton cells, i.e. cells at parallel
+   * or adaptivity boundaries.
+   */
+  static int NumberOfSkeletonJobs;
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.

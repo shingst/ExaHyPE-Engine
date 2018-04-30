@@ -2360,7 +2360,7 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   _neighbourMergePerformed(neighbourMergePerformed) {
   // copy the neighbour merge performed array
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -2368,8 +2368,8 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStepBody(_cellDescriptionsIndex,_element,false,false,_neighbourMergePerformed,true);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  NumberOfBackgroundJobs--;
+  assertion( NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }
@@ -2382,7 +2382,7 @@ exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::AdjustLimiterS
   _solverPatch(solverPatch),
   _limiterPatch(limiterPatch) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  NumberOfBackgroundJobs++;
   lock.free();
 }
 
@@ -2390,8 +2390,8 @@ bool exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::operator(
   _solver.adjustLimiterSolution(_solverPatch,_limiterPatch);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  NumberOfBackgroundJobs--;
+  assertion( NumberOfBackgroundJobs>=0 );
   lock.free();
   return false;
 }

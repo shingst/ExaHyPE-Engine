@@ -1293,7 +1293,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","plot");
   }
   else if (numberOfStepsToRun>1) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","run "<<numberOfStepsToRun<< " iterations within one batch");
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","run "<<numberOfStepsToRun<< " time steps within one batch");
   }
 
   bool communicatePeanoVertices =
@@ -1303,7 +1303,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   if (numberOfStepsToRun==0) {
     repository.iterate(1,communicatePeanoVertices);
   } else {
-    repository.iterate(numberOfStepsToRun,communicatePeanoVertices);
+    repository.iterate(2*numberOfStepsToRun,false/*Always disable during batching*/);
   }
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
