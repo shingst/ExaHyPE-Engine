@@ -1,5 +1,6 @@
 package minitemp.syntaxtree;
 
+import java.lang.StringBuilder;
 import minitemp.Context;
 
 /**
@@ -16,6 +17,11 @@ public class TextLeaf extends SyntaxTree {
   @Override
   public String render(Context context) throws IllegalArgumentException {
     return text;
+  }
+  
+  @Override
+  public void renderWithStringBuilder(Context context, StringBuilder sb) throws IllegalArgumentException {
+    sb.append(text);
   }
   
 }
