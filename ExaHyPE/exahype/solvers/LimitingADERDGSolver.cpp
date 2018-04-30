@@ -789,10 +789,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
+    // TODO(Dominic): Can spawn to skeleton only if
+
     bool vetoSpawnBackgroundJobs =
         !SpawnPredictionAsBackgroundJob ||
         isAtRemoteBoundary || // TODO(Dominic): Actually spawn skeleton job;
-        ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
+        ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
 
     if (
         isFirstIterationOfBatch ||
@@ -862,7 +864,7 @@ void exahype::solvers::LimitingADERDGSolver::compress(
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
-        isAtRemoteBoundary || ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
+        isAtRemoteBoundary || ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
     _solver->compress(solverPatch,vetoSpawnBackgroundJobs);
     const int limiterElement =
         tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);

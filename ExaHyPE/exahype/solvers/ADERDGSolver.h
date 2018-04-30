@@ -493,7 +493,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool isInvolvedInProlongationOrParentNeedsToRestrictToo(
+  static bool isInvolvedInProlongationOrRestriction(
       CellDescription& cellDescription);
 
   /**

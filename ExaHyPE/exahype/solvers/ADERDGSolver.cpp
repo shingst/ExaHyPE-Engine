@@ -1859,13 +1859,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
+    const int batchIteration,
     const bool isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
     const bool vetoSpawnBackgroundJobs =
         isAtRemoteBoundary || // TODO(Dominic): Jobs
-        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription);
+        isInvolvedInProlongationOrRestriction(cellDescription);
     const bool vetoSpawnPredictionAsBackgroundJob =
         vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
 
@@ -1918,7 +1919,7 @@ void exahype::solvers::ADERDGSolver::compress(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary ||
-        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription);
+        isInvolvedInProlongationOrRestriction(cellDescription);
     compress(cellDescription,vetoSpawnAnyBackgroundJob);
   }
 }
@@ -1956,9 +1957,9 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(
+bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrRestriction(
     CellDescription& cellDescription) {
-  bool isInvolvedInProlongationOrParentNeedsToRestrictToo = cellDescription.getHasVirtualChildren();
+  bool isInvolvedInProlongationRestriction = cellDescription.getHasVirtualChildren();
 
   // this might be the expensive part (mostly integer stuff though)
   SubcellPosition subcellPosition =
@@ -1968,23 +1969,12 @@ bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRest
     CellDescription& parentCellDescription =
           exahype::solvers::ADERDGSolver::getCellDescription(
               subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-    if (
+    isInvolvedInProlongationRestriction |=
         exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference)
-    ) {
-      // check if the parent needs to restrict to its parent too
-      SubcellPosition parentSubcellPosition =
-          exahype::amr::computeSubcellPositionOfCellOrAncestor
-          <CellDescription,Heap>(parentCellDescription);
-
-      isInvolvedInProlongationOrParentNeedsToRestrictToo |=
-          parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-          exahype::amr::onBoundaryOfParent(
-              parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
-    }
+            subcellPosition.subcellIndex,subcellPosition.levelDifference);
   }
 
-  return isInvolvedInProlongationOrParentNeedsToRestrictToo;
+  return isInvolvedInProlongationRestriction;
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
@@ -2020,7 +2010,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
 
   // If a PredictionJob is launched, this operation will only perform a restriction
   // if the parent of this cell does not need to restrict itself.
-  restriction(cellDescription);
+  restriction(cellDescription); // TODO(Dominic): Not necessary anymore as soon we have LTS workflow
 
   compress(cellDescription,vetoSpawnAnyBackgroundJob);
 
@@ -2036,7 +2026,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         isAtRemoteBoundary || // TODO(Dominic): JOb
-        isInvolvedInProlongationOrParentNeedsToRestrictToo(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
+        isInvolvedInProlongationOrRestriction(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
 
     if (
         vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
