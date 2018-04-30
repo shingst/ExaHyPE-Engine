@@ -108,7 +108,8 @@ exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
-
+exahype::mappings::FusedTimeStep::FusedTimeStep() {
+}
 
 void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
@@ -130,15 +131,12 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     initialiseLocalVariables();
 
     exahype::solvers::Solver::updatePredictionIterationTag(); // do update it in the endIteration in other iterations
-
-    logInfo("beginIteration(State)","iteration="<<static_cast<int>(exahype::solvers::Solver::getPredictionIterationTag()));
   }
 
+  logInfo("beginIteration(State)","iteration="<<
+      exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+
   logTraceOutWith1Argument("beginIteration(State)", solverState);
-}
-
-
-exahype::mappings::FusedTimeStep::FusedTimeStep() {
 }
 
 void exahype::mappings::FusedTimeStep::endIteration(

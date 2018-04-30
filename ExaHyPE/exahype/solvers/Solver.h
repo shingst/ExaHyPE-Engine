@@ -567,6 +567,8 @@ class exahype::solvers::Solver {
    */
   enum class PredictionIterationTag { NoBatch, IssuePredictionJobs, SendOutRiemannData };
 
+  static std::string toString(const exahype::solvers::Solver::PredictionIterationTag& tag);
+
  private:
 
   static PredictionIterationTag STPIterationTag;

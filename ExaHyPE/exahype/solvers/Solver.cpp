@@ -95,6 +95,19 @@ int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 exahype::solvers::Solver::PredictionIterationTag exahype::solvers::Solver::STPIterationTag =
     exahype::solvers::Solver::PredictionIterationTag::NoBatch;
 
+std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::PredictionIterationTag& tag) {
+  switch (tag) {
+  case solvers::Solver::PredictionIterationTag::NoBatch:
+    return "NoBatch";
+  case solvers::Solver::PredictionIterationTag::IssuePredictionJobs:
+    return "IssuePredictionJobs";
+  case solvers::Solver::PredictionIterationTag::SendOutRiemannData:
+    return "SendOutRiemannData";
+  default:
+    return "unknown";
+  }
+}
+
 void exahype::solvers::Solver::updatePredictionIterationTag() {
   if (
       exahype::State::isFirstIterationOfBatchOrNoBatch() &&
@@ -102,12 +115,11 @@ void exahype::solvers::Solver::updatePredictionIterationTag() {
   ) {
     STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::NoBatch;
   } else if (
-      exahype::State::isFirstIterationOfBatchOrNoBatch() ||  // FirstIterationOfBatch
-      STPIterationTag == exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
+      STPIterationTag != exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
   ) {
     STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs;
   } else if (
-      STPIterationTag == exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+      STPIterationTag != exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
   ) {
     STPIterationTag = exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData;
   }
