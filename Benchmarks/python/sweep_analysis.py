@@ -152,38 +152,37 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                 run                 = match.group(8)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
-                if len(adapters):
-                    # write header
-                    if firstFile:
-                        header = []
-                        header += sorted(environmentDict)
-                        for parameter in knownParameters:
+                # write header
+                if firstFile:
+                    header = []
+                    header += sorted(environmentDict)
+                    for parameter in knownParameters:
+                        header.append(parameter)
+                    for parameter in sorted(parameterDict):
+                        if parameter not in knownParameters:
                             header.append(parameter)
-                        for parameter in sorted(parameterDict):
-                            if parameter not in knownParameters:
-                                header.append(parameter)
-                        header.append("ranks")
-                        header.append("nodes")
-                        header.append("tasks")
-                        header.append("cores")
-                        header.append("run")
-                        header.append("adapter")
-                        header.append("iterations")
-                        header.append("total_cputime")
-                        header.append("total_usertime")
-                        header.append("normalised_cputime")
-                        header.append("normalised_usertime")
-                        header.append("unrefined_inner_cells_min")
-                        header.append("unrefined_inner_cells_max")
-                        header.append("unrefined_inner_cells_avg")
-                        header.append("inner_cells_min")
-                        header.append("inner_cells_max")
-                        header.append("inner_cells_avg")
-                        header.append("file")
-                        csvwriter.writerow(header)
-                        firstFile=False
-                    print(resultsFolderPath+"/"+fileName)
+                    header.append("ranks")
+                    header.append("nodes")
+                    header.append("tasks")
+                    header.append("cores")
+                    header.append("run")
+                    header.append("adapter")
+                    header.append("iterations")
+                    header.append("total_cputime")
+                    header.append("total_usertime")
+                    header.append("normalised_cputime")
+                    header.append("normalised_usertime")
+                    header.append("unrefined_inner_cells_min")
+                    header.append("unrefined_inner_cells_max")
+                    header.append("unrefined_inner_cells_avg")
+                    header.append("inner_cells_min")
+                    header.append("inner_cells_max")
+                    header.append("inner_cells_avg")
+                    header.append("file")
+                    csvwriter.writerow(header)
+                    firstFile=False
 
+                if len(adapters):
                     # write rows
                     for adapter in adapters:
                         row=[]
@@ -215,6 +214,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(str( stats["inner_cells_avg"] ))
                         row.append(fileName)
                         csvwriter.writerow(row)
+                    print(resultsFolderPath+"/"+fileName)
                 else:
                     row=[]
                     for key in sorted(environmentDict):
@@ -251,21 +251,20 @@ def parseAdapterTimes(resultsFolderPath,projectName):
             for job in unfinishedRuns:
                 print(job)
 
-        success = not firstFile
-        if success:
-            # reopen the file and sort it
-            tableFile   = open(tablePath, 'r')
-            header      = next(tableFile)
-            header      = header.strip()
-            reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
+        # reopen the file and sort it
+        tableFile  = open(tablePath, 'r')
+        headerLine = next(tableFile)
+        header     = []
+        for line in csv.reader([headerLine.strip()],delimiter=","):
+            header = line
+        reader      = csv.reader(tableFile,delimiter=",")
+        sortedData = sorted(reader,key=getAdapterTimesSortingKey)
+        tableFile.close()
 
-            sortedData = sorted(reader,key=getAdapterTimesSortingKey)
-            tableFile.close()
-
-            with open(tablePath, 'w') as sortedTableFile:
-                writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
-                writer.writerow(header.split(','))
-                writer.writerows(sortedData)
+        with open(tablePath, 'w') as sortedTableFile:
+            writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
+            writer.writerow(header)
+            writer.writerows(sortedData)
             print("created table:")
             print(tablePath)
 
@@ -299,8 +298,11 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     try:
         print ("reading table "+adaptersTablePath+"")
         adaptersTableFile  = open(adaptersTablePath, 'r')
-        header             = next(adaptersTableFile).strip().split(',')
-        csvreader          = csv.reader(adaptersTableFile,delimiter=",",quotechar="\"")
+        headerLine         = next(adaptersTableFile)
+        header = []
+        for line in csv.reader([headerLine.strip()],delimiter=","):
+            header = line
+        csvreader = csv.reader(adaptersTableFile,delimiter=",",quotechar="\"")
 
         runColumn                = header.index("run")
         adapterColumn            = header.index("adapter")
@@ -389,7 +391,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     appendMoments(row,summedUserTimes)
                     appendMoments(row,summedNormalisedCPUTimes)
                     appendMoments(row,summedNormalisedUserTimes)
-                    
+                                        
                     csvwriter.writerow(row)
                     
                     # reset 
