@@ -118,6 +118,7 @@ def verifyEnvironmentIsCorrect(justWarn=False):
     if justWarn:
         messageType = "WARNING"
     
+    cpus = jobs["num_cpus"]
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
             os.environ[key]=value
