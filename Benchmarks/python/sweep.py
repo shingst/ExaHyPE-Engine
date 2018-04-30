@@ -869,10 +869,10 @@ typical workflow:
     
     verifySweepAgreesWithHistoricalExperiments()
     
-    specFileTemplatePath = general["spec_template"]
+    specFileTemplatePath = exahypeRoot+"/"+general["spec_template"]
     specFileTemplate     = None
     try:
-        with open(exahypeRoot+"/"+specFileTemplatePath, "r") as specFileTemplateFile:
+        with open(specFileTemplatePath, "r") as specFileTemplateFile:
             specFileTemplate=specFileTemplateFile.read()
     except IOError:
         print("ERROR: couldn\'t open specification file template file: "+templateFileName,file=sys.stderr)

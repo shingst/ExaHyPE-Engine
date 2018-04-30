@@ -216,7 +216,36 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
+                    row=[]
+                    for key in sorted(environmentDict):
+                        row.append(environmentDict[key])
+                    for key in knownParameters:
+                        row.append(parameterDict[key])
+                    for key in sorted(parameterDict):
+                        if key not in knownParameters:
+                            row.append(parameterDict[key])
+                    row.append(ranks)
+                    row.append(nodes)
+                    row.append(tasks)
+                    row.append(cores)
+                    row.append(run)
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append(fileName)
+                    csvwriter.writerow(row)
+
                     unfinishedRuns.append(resultsFolderPath+"/"+fileName)
+
         if len(unfinishedRuns):
             print("output files of unfinished runs:")
             for job in unfinishedRuns:
@@ -260,8 +289,8 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     and nonfused scheme.
     """
     fusedAdapters        = ["FusedTimeStep"]
-    firstNonfusedAdapter = "BroadcastAndMergeNeighbours"
-    nonfusedAdapters     = [firstNonfusedAdapter, "Prediction", "UpdateAndReduce"]
+    firstFusedAdapter    = "BroadcastAndDropNeighbourMessages"
+    nonfusedAdapters     = ["MergeNeighbours", "Prediction", "UpdateAndReduce"]
 
     adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
     outputTablePath   = resultsFolderPath+"/"+projectName+'-total-times.csv'
@@ -321,6 +350,19 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     row.append(str(statistics.stdev(measurements)))
                 else:
                     row.append("0.0")
+
+            def sumUpTimes(line,fused):
+                adapter = line[adapterColumn]
+                if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                    summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
+                    summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[iterationsColumn])
+                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[iterationsColumn])
+                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[iterationsColumn])
+                elif not timePerTimeStep:
+                    summedCPUTimes[-1]            += float(line[cpuTimeColumn])
+                    summedUserTimes[-1]           += float(line[userTimeColumn])
+                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn])
+                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn])
             
             previousLine      = None
             fused             = True
@@ -330,25 +372,15 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     previousLine=line
                 
                 if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
-                    adapter = line[adapterColumn]
-                    if adapter==firstNonfusedAdapter:
-                       fused = False
-                    
-                    if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                        summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
-                        summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[iterationsColumn])
-                        summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[iterationsColumn])
-                        summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[iterationsColumn])
-                    elif not timePerTimeStep:
-                        summedCPUTimes[-1]            += float(line[cpuTimeColumn])
-                        summedUserTimes[-1]           += float(line[userTimeColumn])
-                        summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn])
-                        summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn])
+                    sumUpTimes(line,fused)
+ 
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
                     summedCPUTimes.append(0.0)
                     summedUserTimes.append(0.0)
                     summedNormalisedCPUTimes.append(0.0)
                     summedNormalisedUserTimes.append(0.0)
+                    
+                    sumUpTimes(line,fused)
                 else:
                     row = previousLine[0:runColumn]
                     row.append(str(len(summedCPUTimes)))
@@ -360,13 +392,21 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     
                     csvwriter.writerow(row)
                     
-                    # reset
-                    summedCPUTimes            = [0.0]
-                    summedUserTimes           = [0.0]
-                    summedNormalisedCPUTimes  = [0.0]
-                    summedNormalisedUserTimes = [0.0]
-                    
-                    fused = True
+                    # reset 
+                    adapter = line[adapterColumn]
+                    fused = (adapter==firstFusedAdapter)
+                    if adapter=="missing": 
+                        summedCPUTimes[-1]            = float('nan')
+                        summedUserTimes[-1]           = float('nan')
+                        summedNormalisedCPUTimes[-1]  = float('nan')
+                        summedNormalisedUserTimes[-1] = float('nan')
+                    else: 
+                        summedCPUTimes            = [0.0]
+                        summedUserTimes           = [0.0]
+                        summedNormalisedCPUTimes  = [0.0]
+                        summedNormalisedUserTimes = [0.0]
+                        
+                        sumUpTimes(line,fused)
                 
                 previousLine  = line
             
