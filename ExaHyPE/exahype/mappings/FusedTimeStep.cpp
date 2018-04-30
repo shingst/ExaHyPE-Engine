@@ -302,6 +302,11 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
+  if (tarch::parallel::Node::getInstance().getRank()==2) {
+    logInfo("mergeWithNeighbour(...)","iteration="<<
+            exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+  }
+
   if (
       exahype::solvers::Solver::getPredictionIterationTag()==
       exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
@@ -320,6 +325,11 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
+
+  if (tarch::parallel::Node::getInstance().getRank()==2) {
+    logInfo("prepareSendToNeighbour(...)","iteration="<<
+        exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+  }
 
   if (
       exahype::solvers::Solver::getPredictionIterationTag()==
