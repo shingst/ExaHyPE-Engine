@@ -160,6 +160,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
   exahype::solvers::Solver::updatePredictionIterationTag();
 
+  logInfo("endIteration(State)","iteration="<<
+      exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+
   peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
   logTraceOutWith1Argument("endIteration(State)", state);
@@ -302,14 +305,16 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if (tarch::parallel::Node::getInstance().getRank()==2) {
-    logInfo("mergeWithNeighbour(...)","iteration="<<
-            exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
-  }
+//  if (tarch::parallel::Node::getInstance().getRank()==2) {
+//    logInfo("mergeWithNeighbour(...)","iteration="<<
+//            exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+//  }
 
   if (
       exahype::solvers::Solver::getPredictionIterationTag()==
-      exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs
+          exahype::solvers::Solver::PredictionIterationTag::IssuePredictionJobs ||
+      exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::NoBatch
   ) {
     vertex.receiveNeighbourData(
         fromRank,
@@ -326,14 +331,16 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if (tarch::parallel::Node::getInstance().getRank()==2) {
-    logInfo("prepareSendToNeighbour(...)","iteration="<<
-        exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
-  }
+//  if (tarch::parallel::Node::getInstance().getRank()==2) {
+//    logInfo("prepareSendToNeighbour(...)","iteration="<<
+//        exahype::solvers::Solver::toString(exahype::solvers::Solver::getPredictionIterationTag()));
+//  }
 
   if (
       exahype::solvers::Solver::getPredictionIterationTag()==
-      exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData
+          exahype::solvers::Solver::PredictionIterationTag::SendOutRiemannData ||
+      exahype::solvers::Solver::getPredictionIterationTag()==
+          exahype::solvers::Solver::PredictionIterationTag::NoBatch
   ) {
     vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
   }
