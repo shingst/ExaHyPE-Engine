@@ -771,16 +771,6 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
   /**
    * Send all ADERDG cell descriptions to rank
    * \p toRank.

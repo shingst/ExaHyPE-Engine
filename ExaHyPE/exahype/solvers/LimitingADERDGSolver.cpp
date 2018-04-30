@@ -2028,17 +2028,7 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourSolverAndLimiterData(
 /////////////////////////////////////
 // MASTER<=>WORKER
 /////////////////////////////////////
-bool exahype::solvers::LimitingADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
-    const int cellDescriptionsIndex,
-    const int element) {
-  return _solver->prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
-}
-
-void exahype::solvers::LimitingADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-    const int cellDescriptionsIndex,
-    const int element) {
-  _solver->prepareWorkerCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
-}
+progressMeshRefinementInPrepareSendToWorker
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
     exahype::MetadataHeap::HeapEntries& metadata,
@@ -2048,38 +2038,25 @@ void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMeta
       metadata,cellDescriptionsIndex,solverNumber);
 }
 
-void exahype::solvers::LimitingADERDGSolver::mergeWithMasterMetadata(
-    const exahype::MetadataHeap::HeapEntries& metadata,
-    const int                                 cellDescriptionsIndex,
-    const int                                 element) {
-  _solver->mergeWithMasterMetadata(
-      metadata,cellDescriptionsIndex,element);
-}
-
-bool exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMetadata(
-    const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-    const int                                 cellDescriptionsIndex,
-    const int                                 element) {
-  return _solver->mergeWithWorkerMetadata(
-      receivedMetadata,cellDescriptionsIndex,element);
-}
-
 void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->sendSolutionToWorkerOrMaster(
-      toRank,cellDescriptionsIndex,element,x,level);
+  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
+      toRank,cellDescriptionsIndex,element,messageType,x,level);
 
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
   if (limiterElement!=Solver::NotFound) {
     _limiter->sendDataToWorkerOrMasterDueToForkOrJoin(
-          toRank,cellDescriptionsIndex,limiterElement,x,level);
+          toRank,cellDescriptionsIndex,limiterElement,
+
+          x,level);
   } else {
     _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-          toRank,x,level);
+          toRank,
+          x,level);
   }
 }
 

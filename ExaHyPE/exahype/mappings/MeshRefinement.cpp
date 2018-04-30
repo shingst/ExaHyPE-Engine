@@ -484,7 +484,6 @@ void exahype::mappings::MeshRefinement::leaveCell(
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
 
-
 void exahype::mappings::MeshRefinement::destroyCell(
     const exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -707,13 +706,6 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
     }
   }
 
-  // TODO(Dominic): Send cell descriptions
-//  localCell.reduceMetadataToMasterPerCell(
-//      tarch::parallel::NodePool::getInstance().getMasterRank(),
-//      verticesEnumerator.getCellCenter(),
-//      verticesEnumerator.getCellSize(),
-//      verticesEnumerator.getLevel());
-
   logTraceOut( "prepareSendToMaster(...)" );
 }
 
@@ -780,17 +772,6 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
     }
     dummyCell.shutdownMetaData();
   }
-
-  // TODO(Dominic): Replace
-
-//  // Merge cell data
-//  _verticalExchangeOfSolverDataRequired |=
-//      fineGridCell.mergeWithMetadataFromWorkerPerCell(
-//      worker,
-//      fineGridVerticesEnumerator.getCellCenter(),
-//      fineGridVerticesEnumerator.getCellSize(),
-//      fineGridVerticesEnumerator.getLevel(),
-//      exahype::State::AlgorithmSection::MeshRefinement);
 
   logTraceOut( "mergeWithMaster(...)" );
 }

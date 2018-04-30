@@ -1924,25 +1924,6 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * Merge with the master's metadata.
-   */
-  virtual void mergeWithMasterMetadata(
-        const MetadataHeap::HeapEntries& receivedMetadata,
-        const int                        cellDescriptionsIndex,
-        const int                        element) = 0;
-
-  /**
-   * Merge with the worker's metadata.
-   *
-   * \return if we need to perform vertical communication of solver face data for the
-   * considered cell description during the time stepping.
-   */
-  virtual bool mergeWithWorkerMetadata(
-          const MetadataHeap::HeapEntries& receivedMetadata,
-          const int                        cellDescriptionsIndex,
-          const int                        element) = 0;
-
-  /**
    * Send solver data to master or worker rank. Read the data from
    * the cell description \p element in
    * the cell descriptions vector stored at \p

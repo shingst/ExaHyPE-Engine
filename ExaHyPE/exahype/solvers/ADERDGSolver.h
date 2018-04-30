@@ -2217,24 +2217,10 @@ public:
        const tarch::la::Vector<DIMENSIONS, double>& x,
        const int                                    level) final override;
 
-
   void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
-  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
-   * \return if we need to master-worker communication for this cell description.
-   */
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,

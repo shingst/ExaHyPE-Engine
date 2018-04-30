@@ -1067,20 +1067,6 @@ exahype::solvers::FiniteVolumesSolver::appendMasterWorkerCommunicationMetadata(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  // do nothing
-}
-
-bool exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  return false;
-}
-
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,

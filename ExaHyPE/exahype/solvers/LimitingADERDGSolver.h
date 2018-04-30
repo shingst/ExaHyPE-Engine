@@ -1451,21 +1451,76 @@ public:
   /////////////////////////////////////
   // MASTER<=>WORKER
   /////////////////////////////////////
+  /**
+   * Kind of similar to progressMeshRefinementInPrepareSendToWorker
+   * but performs a few additional operations in order to
+   * notify the worker about some coarse grid operations only
+   * the master knows.
+   *
+   * \note This function sends out MPI messages.
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) final override;
+
+  /**
+   * Just receive data depending on the refinement
+   * event of a cell description.
+   */
+  void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * \return If we the solver requires master worker communication
+   * at this cell
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) final override;
+
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const final override;
-
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
