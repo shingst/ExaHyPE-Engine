@@ -784,12 +784,15 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
+    const int  batchIteration, or const bool isEvenIteration
     const bool isAtRemoteBoundary
 ) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
-    // TODO(Dominic): Can spawn to skeleton only if
+    // TODO(Dominic): Can spawn skeleton only if we run at least two iterations -> no
+    const bool isBatch = isFirstIterationOfBatch != isLastIterationOfBatch;
+
 
     bool vetoSpawnBackgroundJobs =
         !SpawnPredictionAsBackgroundJob ||
