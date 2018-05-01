@@ -79,9 +79,9 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
 
   // background threads
   exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-      exahype::solvers::Solver::NumberOfSkeletonJobs);
+      exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
   exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-      exahype::solvers::Solver::NumberOfEnclaveJobs);
+      exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

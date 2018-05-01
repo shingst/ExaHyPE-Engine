@@ -117,9 +117,9 @@ void exahype::mappings::MergeNeighbours::touchVertexFirstTime(
 
   if ( !_backgroundJobsHaveTerminated ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfSkeletonJobs);
+        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfEnclaveJobs);
+        exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
     _backgroundJobsHaveTerminated = true;
   }
 

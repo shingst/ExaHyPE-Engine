@@ -92,7 +92,8 @@ int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
-void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter) {
+void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+    const int& backgroundJobCounter,std::string counterTag) {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
@@ -110,7 +111,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(const int& 
       logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
           "waiting for roughly "
           << numberOfBackgroundJobs
-          << " background tasks to complete while "
+          << " background tasks to complete (counter: "<<counterTag.c_str()<< ") while "
           << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
       );
       reported = numberOfExaHyPEBackgroundJobs;

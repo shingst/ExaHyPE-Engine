@@ -178,6 +178,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 exahype::mappings::FusedTimeStep::FusedTimeStep(
     const FusedTimeStep& masterThread) {
   _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
+  _batchIteration=masterThread._batchIteration;
   initialiseLocalVariables();
 }
 // Merge over threads
@@ -227,7 +228,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
 
-        // this operates only on helper cells
+        // this operates only on virtual helper cells (pull from below)
         solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _meshUpdateRequests    [solverNumber]  =
@@ -268,11 +269,11 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
     updateBatchIterationCounter();
     if ( issuePredictionJobsInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfEnclaveJobs);
+          exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
     }
     if ( sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-                exahype::solvers::Solver::NumberOfSkeletonJobs);
+          exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
     }
     _backgroundJobsHaveTerminated = true;
   }
@@ -280,8 +281,6 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
   if ( issuePredictionJobsInThisIteration() ) {
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
   }
-
-  fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -316,19 +315,18 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     updateBatchIterationCounter();
     if ( issuePredictionJobsInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfEnclaveJobs);
+          exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
     }
     if ( sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfSkeletonJobs);
+          exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
     }
     _backgroundJobsHaveTerminated = true;
   }
 
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
-        fromRank,
-        true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
+        fromRank, true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
   }
 

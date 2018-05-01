@@ -761,19 +761,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const double memorisedPredictorTimeStepSize = solverPatch.getPredictorTimeStepSize();
   result._timeStepSize = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-  // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
-  // and must thus come last. This order is more natural anyway
-  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {
-    _solver->performPredictionAndVolumeIntegral(
-        solverPatch,
+
+  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+    _solver->performPredictionAndVolumeIntegral( solverPatch,
         memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
         false/*already uncompressed*/,vetoSpawnPredictionJob);
-  } else {
-    // just perform a restriction of the limiter status to the next parent
+  } else { // just perform a restriction of the limiter status to the next parent
     const int parentElement = tryGetElement(
         solverPatch.getParentIndex(),solverPatch.getSolverNumber());
     if (parentElement!=exahype::solvers::Solver::NotFound) {
-      _solver->restrictToNextParent(solverPatch,parentElement);
+      _solver->restrictToNextParent(solverPatch,parentElement); // TODO(Dominic): This job should be not stolen
     }
   }
   return result;
@@ -784,19 +781,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const int  batchIteration, or const bool isEvenIteration
-    const bool isAtRemoteBoundary
-) {
+    const bool isAtRemoteBoundary) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
-    // TODO(Dominic): Can spawn skeleton only if we run at least two iterations -> no
-    const bool isBatch = isFirstIterationOfBatch != isLastIterationOfBatch;
-
-
     bool vetoSpawnBackgroundJobs =
         !SpawnPredictionAsBackgroundJob ||
-        isAtRemoteBoundary || // TODO(Dominic): Actually spawn skeleton job;
         ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
 
     if (
@@ -811,10 +801,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     } else {
       int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
-          solverPatch.getNeighbourMergePerformed(),
-          jobCounter );
+          solverPatch.getNeighbourMergePerformed(), jobCounter );
       peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background );
-      // TODO(Dominic): Actually spawn skeleton job
       return UpdateResult();
     }
   } else {

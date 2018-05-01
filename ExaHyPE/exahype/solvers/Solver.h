@@ -845,7 +845,7 @@ class exahype::solvers::Solver {
   *
   * \param[in] backgroundJobCounter A reference to a background job counter.
   */
- static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter);
+ static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
 
  protected:
 

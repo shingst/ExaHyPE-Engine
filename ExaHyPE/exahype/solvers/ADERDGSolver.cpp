@@ -1825,31 +1825,33 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool vetoSpawnPredictionAsBackgroundJob,
     const bool vetoSpawnCompressionAsBackgroundJob,
-    int& jobCounter) {
+    const bool isAtRemoteBoundary) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
   updateSolution(cellDescription,isFirstIterationOfBatch);
 
-  // This is important to memorise before calling startNewTimeStepFused
-  // TODO(Dominic): Add to docu and/or make cleaner
+  // This is important to memorise before calling startNewTimeStepFused; TODO(Dominic): Add to docu and/or make cleaner
   UpdateResult result;
   const double predictorTimeStamp    = cellDescription.getPredictorTimeStamp();
   const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
   result._timeStepSize        = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
   result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
-  // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
-  // and must thus come last. This order is more natural anyway
-  if ( vetoSpawnPredictionAsBackgroundJob ) {
-    performPredictionAndVolumeIntegralBody(
-          cellDescription,
+
+  if ( vetoSpawnPredictionAsBackgroundJob ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+    performPredictionAndVolumeIntegralBody( cellDescription,
           predictorTimeStamp,predictorTimeStepSize,
           false,vetoSpawnCompressionAsBackgroundJob);
   } else {
+    int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
     PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,
         false/*already uncompressed*/, jobCounter );
-    peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    if (isAtRemoteBoundary) {
+      peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+    } else {
+      peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    }
   }
   return result;
 }
@@ -1859,13 +1861,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const int batchIteration,
     const bool isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
     const bool vetoSpawnBackgroundJobs =
-        isAtRemoteBoundary || // TODO(Dominic): Jobs
         isInvolvedInProlongationOrRestriction(cellDescription);
     const bool vetoSpawnPredictionAsBackgroundJob =
         vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
@@ -1877,11 +1877,15 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     ) {
       return fusedTimeStepBody(
           cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch,
-          vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs,jobCounter);
+          vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs,isAtRemoteBoundary);
     } else {
+      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, jobCounter );
-      // TODO(Dominic): Jobs
-      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      if (isAtRemoteBoundary) {
+        peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+      } else {
+        peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      }
       return UpdateResult();
     }
   } else {
@@ -1966,9 +1970,6 @@ bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrRestriction(
       exahype::amr::computeSubcellPositionOfCellOrAncestor
       <CellDescription,Heap>(cellDescription);
   if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& parentCellDescription =
-          exahype::solvers::ADERDGSolver::getCellDescription(
-              subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
     isInvolvedInProlongationRestriction |=
         exahype::amr::onBoundaryOfParent(
             subcellPosition.subcellIndex,subcellPosition.levelDifference);
@@ -2010,7 +2011,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
 
   // If a PredictionJob is launched, this operation will only perform a restriction
   // if the parent of this cell does not need to restrict itself.
-  restriction(cellDescription); // TODO(Dominic): Not necessary anymore as soon we have LTS workflow
+  restriction(cellDescription); // TODO(Dominic): These restrictions are not necessary anymore as soon we have LTS workflow
 
   compress(cellDescription,vetoSpawnAnyBackgroundJob);
 
@@ -2025,11 +2026,11 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool isAtRemoteBoundary) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
-        isAtRemoteBoundary || // TODO(Dominic): JOb
-        isInvolvedInProlongationOrRestriction(cellDescription); // TODO(Dominic): Overthink this recursive stuff; get's complicated with compression
+        isInvolvedInProlongationOrRestriction(cellDescription);
 
     if (
-        vetoSpawnAnyBackgroundJob || !SpawnPredictionAsBackgroundJob
+        vetoSpawnAnyBackgroundJob ||
+        !SpawnPredictionAsBackgroundJob
     ) {
       performPredictionAndVolumeIntegralBody(
           cellDescription,predictorTimeStamp,predictorTimeStepSize,
@@ -2039,8 +2040,11 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
       PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,
           uncompressBefore, jobCounter );
-      // TODO(Dominic): Jobs
-      peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      if (isAtRemoteBoundary) {
+        peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+      } else {
+        peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      }
     }
   }
 }
@@ -4812,36 +4816,36 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
-      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
         cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
-      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
         cellDescription.setSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getUpdate()==-1) {
-      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
-      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
         cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedPredictor()==-1) {
-      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
-      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
         cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(unknownsPerCellBoundary ) );
       lock.free();
     }
     if (cellDescription.getFluctuation()==-1) {
-      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs);
-      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs);
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
         cellDescription.setFluctuation( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
       lock.free();

@@ -144,7 +144,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
   ) {
     if ( !_backgroundJobsHaveTerminated ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfAMRBackgroundJobs);
+          exahype::solvers::Solver::NumberOfAMRBackgroundJobs,"amr-jobs");
       _backgroundJobsHaveTerminated = true;
     }
 

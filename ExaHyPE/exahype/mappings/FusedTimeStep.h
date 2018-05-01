@@ -181,8 +181,8 @@ private:
 
   #if defined(SharedMemoryParallelisation)
   /**
-   * Prepare the temporary variables for
-   * the worker threads.
+   * Copy the _backgroundJobsHaveTerminated
+   * and _batchIteration fields form the masterThread
    */
   FusedTimeStep(const FusedTimeStep& masterThread);
   /**
