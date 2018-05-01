@@ -3331,9 +3331,9 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
 
 void exahype::solvers::ADERDGSolver::progressMeshRefinementInReceiveDataFromMaster(
   const int masterRank,
-  const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
 	const int receivedCellDescriptionsIndex,
-  const int receivedElement) const {
+  const int receivedElement,
+  const peano::grid::VertexEnumerator& receivedVerticesEnumerator) const {
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
 
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
@@ -4249,30 +4249,6 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
             ",data[5]=" << messageFromMaster[5] <<
             ",data[6]=" << messageFromMaster[6]);
   }
-}
-
-bool exahype::solvers::ADERDGSolver::hasToSendDataToMaster(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-  if (cellDescription.getType()==CellDescription::Type::Ancestor) {
-    #if defined(Debug) || defined(Asserts)
-    exahype::solvers::Solver::SubcellPosition subcellPosition =
-          exahype::amr::computeSubcellPositionOfCellOrAncestor
-          <CellDescription,Heap>(cellDescription);
-    assertion(cellDescription.getHasToHoldDataForMasterWorkerCommunication() ||
-              subcellPosition.parentElement==exahype::solvers::Solver::NotFound);
-    #endif
-
-    return cellDescription.getHasToHoldDataForMasterWorkerCommunication();
-  }
-
-  return false;
 }
 
 void exahype::solvers::ADERDGSolver::sendDataToWorker(

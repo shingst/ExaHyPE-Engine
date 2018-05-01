@@ -141,17 +141,6 @@ private:
   static const int DataMessagesPerMasterWorkerCommunication;
 #endif
 
-  /**
-   * Ensure that we have the same number of
-   * cell descriptions on the worker as on the
-   * master.
-   *
-   * The master might introduce new cell descriptions
-   * to a cell if a coarse grid cell is refined or
-   * virtually refined.
-   *
-   * \note Should be called from the worker.
-   */
   static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
       exahype::Cell& localCell,
       const exahype::Cell& receivedMasterCell);
@@ -916,9 +905,54 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const override;
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement) const final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop. TODO(Dominic): As long as no multi-solver and limiter
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) final override;
 
   void sendDataToMaster(
       const int                                    masterRank,

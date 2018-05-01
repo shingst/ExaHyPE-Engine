@@ -1518,7 +1518,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
-
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
@@ -1528,33 +1527,33 @@ public:
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
-
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,

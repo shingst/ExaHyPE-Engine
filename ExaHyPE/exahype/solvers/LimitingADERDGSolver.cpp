@@ -363,8 +363,8 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
   return
       _solver->progressMeshRefinementInEnterCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
-          fineGridPositionOfCell,initialGrid,solverNumber);
+          coarseGridCell,coarseGridVerticesEnumerator,
+          initialGrid,solverNumber);
 
 }
 
@@ -412,8 +412,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
   return
       _solver->progressMeshRefinementInLeaveCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
-          fineGridPositionOfCell,solverNumber);
+          coarseGridCell,fineGridPositionOfCell,solverNumber);
 }
 
 exahype::solvers::Solver::RefinementControl
@@ -2032,7 +2031,60 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourSolverAndLimiterData(
 /////////////////////////////////////
 // MASTER<=>WORKER
 /////////////////////////////////////
-progressMeshRefinementInPrepareSendToWorker
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSendToWorker(
+    const int workerRank,
+    exahype::Cell& fineGridCell,
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    const bool initialGrid,
+    const int solverNumber) {
+  _solver->progressMeshRefinementInPrepareSendToWorker(
+      workerRank, fineGridCell, fineGridVertices,fineGridVerticesEnumerator,
+      coarseGridCell, coarseGridVerticesEnumerator,
+      initialGrid, solverNumber);
+}
+
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInReceiveDataFromMaster(
+  const int masterRank,
+  const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+  const int receivedCellDescriptionsIndex,
+  const int receivedElement) const {
+  _solver->progressMeshRefinementInReceiveDataFromMaster(
+      masterRank,
+      receivedCellDescriptionsIndex,receivedElement,
+      receivedVerticesEnumerator);
+}
+
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const bool initialGrid) {
+  _solver->progressMeshRefinementInMergeWithWorker(
+      localCellDescriptionsIndex,localElement,
+      receivedCellDescriptionsIndex,receivedElement,
+      initialGrid);
+}
+
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSendToMaster(
+    const int masterRank,
+    const int cellDescriptionsIndex, const int element,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+  _solver->progressMeshRefinementInPrepareSendToMaster(
+      masterRank,cellDescriptionsIndex,element,x,level);
+}
+
+bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMaster(
+    const int worker,
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level) {
+  // do nothing
+  return false;
+}
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
     exahype::MetadataHeap::HeapEntries& metadata,
@@ -2046,61 +2098,56 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerOrMasterDueToForkOr
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
+  _solver->sendDataToWorkerOrMasterDueToForkOrJoin(
       toRank,cellDescriptionsIndex,element,messageType,x,level);
 
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
   if (limiterElement!=Solver::NotFound) {
     _limiter->sendDataToWorkerOrMasterDueToForkOrJoin(
-          toRank,cellDescriptionsIndex,limiterElement,
-
-          x,level);
+        toRank,cellDescriptionsIndex,limiterElement,messageType,x,level);
   } else {
-    _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-          toRank,
-          x,level);
+    _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
   }
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-        toRank,x,level);
-  _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-        toRank,x,level);
+  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
+  _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     const int                                     fromRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   _solver->mergeWithWorkerOrMasterDataDueToForkOrJoin(
-      fromRank,cellDescriptionsIndex,element,x,level);
+      fromRank,cellDescriptionsIndex,element,messageType,x,level);
 
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
   if (limiterElement!=Solver::NotFound) {
     _limiter->mergeWithWorkerOrMasterDataDueToForkOrJoin(
-        fromRank,cellDescriptionsIndex,limiterElement,x,level);
+        fromRank,cellDescriptionsIndex,limiterElement,messageType,x,level);
   } else {
-    _limiter->dropWorkerOrMasterDataDueToForkOrJoin(
-        fromRank,x,level);
+    _limiter->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
   } // !!! Receive order must be the same in master<->worker comm.
 }
 
 void exahype::solvers::LimitingADERDGSolver::dropWorkerOrMasterDataDueToForkOrJoin(
     const int                                     fromRank,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->dropWorkerOrMasterDataDueToForkOrJoin(
-          fromRank,x,level);
-  _limiter->dropWorkerOrMasterDataDueToForkOrJoin(
-          fromRank,x,level);
+  _solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
+  _limiter->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
 }
 
 ///////////////////////////////////
@@ -2160,19 +2207,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
              " messageFromWorker[3]=" << messageFromWorker[3]);
     logDebug("mergeWithWorkerData(...)","nextLimiterDomainChange=" << static_cast<int>(_nextLimiterDomainChange));
   }
-}
-
-bool exahype::solvers::LimitingADERDGSolver::hasToSendDataToMaster(
-      const int cellDescriptionsIndex,
-      const int element) const {
-  #if defined(Asserts) || defined(Debug)
-  const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
-  if (limiterElement!=Solver::NotFound) {
-    assertion(_limiter->hasToSendDataToMaster(cellDescriptionsIndex,limiterElement));
-  }
-  #endif
-
-  return _solver->hasToSendDataToMaster(cellDescriptionsIndex,element);
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(

@@ -1153,6 +1153,57 @@ void exahype::solvers::FiniteVolumesSolver::dropWorkerOrMasterDataDueToForkOrJoi
     DataHeap::getInstance().receiveData(fromRank, x, level, messageType);
 }
 
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToWorker(
+    const int workerRank,
+    exahype::Cell& fineGridCell,
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    const bool initialGrid,
+    const int solverNumber) {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInReceiveDataFromMaster(
+  const int masterRank,
+  const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+  const int receivedCellDescriptionsIndex,
+  const int receivedElement) const {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
+    exahype::Cell& localCell,
+    const exahype::Cell& receivedMasterCell) {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const bool initialGrid) {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToMaster(
+    const int masterRank,
+    const int cellDescriptionsIndex, const int element,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+ // do nothing
+}
+
+bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
+    const int worker,
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level) {
+  // do nothing
+  return false;
+}
+
 ///////////////////////////////////
 // NEIGHBOUR
 ///////////////////////////////////
@@ -1523,17 +1574,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
 
   _minTimeStamp    = receivedTimeStepData[0];
   _minTimeStepSize = receivedTimeStepData[1];
-}
-
-bool exahype::solvers::FiniteVolumesSolver::hasToSendDataToMaster(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(

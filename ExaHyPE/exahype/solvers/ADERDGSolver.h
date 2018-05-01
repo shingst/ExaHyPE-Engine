@@ -2183,9 +2183,9 @@ public:
    */
   void progressMeshRefinementInReceiveDataFromMaster(
       const int masterRank,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
       const int receivedCellDescriptionsIndex,
-      const int receivedElement) const final override;
+      const int receivedElement,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator) const final override;
 
   /**
    * Finish prolongation operations started on the master.
@@ -2260,10 +2260,6 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
   /**
    * Compiles a message for the master.
    *
