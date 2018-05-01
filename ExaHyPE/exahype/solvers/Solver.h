@@ -555,6 +555,8 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
+ public:
+
   /**
    * The type of a solver.
    */
@@ -666,7 +668,7 @@ class exahype::solvers::Solver {
    * If we do not find the element in a vector
    * stored at a heap address.
    */
-  static const int NotFound;
+  static constexpr int NotFound = -1;
 
   /**
    * Moves a DataHeap array, i.e. copies the found
@@ -813,20 +815,39 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
+  /**
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfAMRBackgroundJobs;
+
+  /**
+   * Number of background jobs spawned
+   * from enclave cells.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfEnclaveJobs;
+  /**
+   * Number of background jobs spawned
+   * from skeleton cells, i.e. cells at parallel
+   * or adaptivity boundaries.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfSkeletonJobs;
+
  /**
   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
   * further. We have to wait until all tasks have terminated if we want to modify the heap,
   * i.e. insert new data or remove data.
   * Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
+  *
+  * \param[in] backgroundJobCounter A reference to a background job counter.
   */
- static void ensureAllBackgroundJobsHaveTerminated();
+ static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
 
  protected:
-  /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
-   */
-  static int                                _NumberOfBackgroundJobs;
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.
@@ -1336,9 +1357,7 @@ class exahype::solvers::Solver {
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
       const int solverNumber) = 0;
 
@@ -1354,8 +1373,6 @@ class exahype::solvers::Solver {
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) = 0;
 
@@ -1851,30 +1868,12 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
   // WORKER<=>MASTER
   ///////////////////////////////////
-//  /**
-//   * Prepares a solver's cell descriptions at a
-//   * master-worker boundary for exchanging data
-//   * (with the master or worker, respectively).
-//   *
-//   * \note Thread-safe
-//   *
-//   * \note ADERDGSolver, e.g., calls a method here which locks a semaphore.
-//   * This routine can thus not have a const modifier.
-//   *
-//   * \note TODO ADERDGSolver: We currently assume there is no cell at a master worker boundary
-//   * that needs to restrict data up to an Ancestor on the
-//   * master rank. However, this can definitively happen. For example,
-//   * in situations where a refined cell is augmented as well, i.e.
-//   * has virtual children (Descendants). (Still applicable??)
-//   *
-//   * \return if we need to perform vertical communication of solver face data for the
-//   * considered cell description during the time stepping.
-//   */
-//  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-//      const int cellDescriptionsIndex,
-//      const int element) = 0;
-
-  virtual bool progressMeshRefinementInPrepareSendToWorker(
+  /**
+   * Finishes outstanding refinement operations
+   * and sends solution data down to the worker
+   * if required.
+   */
+  virtual void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
@@ -1885,11 +1884,48 @@ class exahype::solvers::Solver {
       const int solverNumber) = 0;
 
   /**
-   * Prepare a worker cell description at the master worker boundary.
+   * Just receive data or not from the master
+   * depending on the refinement event.
    */
-  virtual void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-        const int cellDescriptionsIndex,
-        const int element) = 0;
+  void progressMeshRefinementInReceiveDataFromMaster(
+        const int masterRank,
+        const int receivedCellDescriptionsIndex,
+        const int receivedElement,
+        const tarch::la::Vector<DIMENSIONS,double>& x,
+        const int level) const = 0;
+
+  /**
+   * Finish prolongation operations started on the master.
+   */
+  virtual void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) = 0;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  virtual void progressMeshRefinementInPrepareSendToMaster(
+        const int masterRank,
+        const int cellDescriptionsIndex, const int element,
+        const tarch::la::Vector<DIMENSIONS,double>& x,
+        const int level) const = 0;
+
+  /**
+   * Finish erasing operations started on the master which
+   * require data from the worker.
+   *
+   * Veto erasing requests from the coarse grid cell as well.
+   */
+  virtual bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) = 0;
 
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex
@@ -1906,25 +1942,6 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * Merge with the master's metadata.
-   */
-  virtual void mergeWithMasterMetadata(
-        const MetadataHeap::HeapEntries& receivedMetadata,
-        const int                        cellDescriptionsIndex,
-        const int                        element) = 0;
-
-  /**
-   * Merge with the worker's metadata.
-   *
-   * \return if we need to perform vertical communication of solver face data for the
-   * considered cell description during the time stepping.
-   */
-  virtual bool mergeWithWorkerMetadata(
-          const MetadataHeap::HeapEntries& receivedMetadata,
-          const int                        cellDescriptionsIndex,
-          const int                        element) = 0;
-
-  /**
    * Send solver data to master or worker rank. Read the data from
    * the cell description \p element in
    * the cell descriptions vector stored at \p
@@ -1935,7 +1952,7 @@ class exahype::solvers::Solver {
    *                    the array with address \p cellDescriptionsIndex.
    *                    This is not the solver number.
    */
-  virtual void sendSolutionToWorkerOrMaster(
+  virtual void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                    toRank,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
@@ -1986,26 +2003,6 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-
-  /**
-   * Determine if the solver has to reduce data for the cell description
-   * \p element at heap address \p cellDescriptionsIndex.
-   * This is the case if we have adaptive mesh refinement
-   * activated and a cell description located at the
-   * master worker boundary is of type Ancestor (not EmptyAncestor).
-   * In this case the worker will restrict face data up to the
-   * master in this iteration.
-   *
-   * Note that this function must be called in
-   * prepareSendToWorker(...) if you plug it into the Peano engine.
-   *
-   * Note that this function is not in control of determining when to reduce
-   * time step data. This should be done outside of this function.
-   */
-  virtual bool hasToSendDataToMaster(
-      const int cellDescriptionsIndex,
-      const int element) const = 0;
-
   /**
    * Send data to the master that is not
    * depending on a particular cell description.

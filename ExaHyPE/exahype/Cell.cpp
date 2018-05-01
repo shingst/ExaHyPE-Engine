@@ -199,7 +199,7 @@ bool exahype::Cell::isAtRemoteBoundary(
     if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
       dfor2(a) // Loop over adjacent ranks. Does also include own rank.
         result |= tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
-                  verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
+                  verticesAroundCell[ verticesEnumerator(v) ].isInside() && // exclude boundary and outside vertices
                   verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
                       tarch::parallel::Node::getInstance().getRank();
       enddforx //a
@@ -373,66 +373,6 @@ bool exahype::Cell::hasToCommunicate(
 
 // MASTER->WORKER
 
-void exahype::Cell::broadcastMetadataToWorkerPerCell(
-    const int                                   worker,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level) {
-  if ( hasToCommunicate(cellSize) ) {
-    exahype::sendMasterWorkerCommunicationMetadata(
-        worker,
-        getCellDescriptionsIndex(),
-        cellCentre,level);
-  }
-}
-
-void exahype::Cell::receiveMetadataFromMasterPerCell(
-    const int                                   master,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level) {
-  if ( hasToCommunicate(cellSize) ) {
-    ReceivedMetadataHeapIndex =
-        exahype::receiveMasterWorkerCommunicationMetadata(
-            master,cellCentre,level);
-  }
-}
-
-void exahype::Cell::mergeWithMetadataFromMasterPerCell(
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const exahype::State::AlgorithmSection&     section) {
-  if ( hasToCommunicate(cellSize) ) {
-    assertion(exahype::MetadataHeap::getInstance().isValidIndex(ReceivedMetadataHeapIndex));
-
-    MetadataHeap::HeapEntries& receivedMetadata =
-        MetadataHeap::getInstance().getData(ReceivedMetadataHeapIndex);
-    assertionEquals(
-        receivedMetadata.size(),exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
-
-    if ( isInitialised() ) {
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
-        const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-        if (solver->isMergingMetadata(section) &&
-            element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
-          MetadataHeap::HeapEntries metadataPortion(
-              receivedMetadata.begin()+offset,
-              receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
-
-          solver->mergeWithMasterMetadata(
-              metadataPortion,
-              getCellDescriptionsIndex(),element);
-        }
-      }
-    }
-
-    MetadataHeap::getInstance().deleteData(ReceivedMetadataHeapIndex,true);
-    ReceivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
-  }
-}
-
 void exahype::Cell::broadcastDataToWorkerPerCell(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
@@ -574,63 +514,6 @@ void exahype::Cell::mergeWithGlobalDataFromWorker(
 }
 
 // per cell
-
-void exahype::Cell::reduceMetadataToMasterPerCell(
-    const int                                   master,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level) const {
-  if ( hasToCommunicate(cellSize) ) {
-    exahype::sendMasterWorkerCommunicationMetadata(
-        master,
-        getCellDescriptionsIndex(),
-        cellCentre,level);
-  }
-}
-
-bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
-    const int                                   workerRank,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level,
-    const exahype::State::AlgorithmSection&     section) const {
-  if ( hasToCommunicate(cellSize) ) {
-    const int receivedMetadataIndex =
-        exahype::receiveMasterWorkerCommunicationMetadata(workerRank,cellCentre,level);
-    exahype::MetadataHeap::HeapEntries& receivedMetadata =
-        MetadataHeap::getInstance().getData(receivedMetadataIndex);
-    assertionEquals(receivedMetadata.size(),
-                    exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
-
-    bool verticalExchangeOfSolverDataRequired = false;
-    if ( isInitialised() ) {
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
-        const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-        if (
-            solver->isMergingMetadata(section) &&
-            element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset]!=exahype::InvalidMetadataEntry
-        ) {
-          MetadataHeap::HeapEntries metadataPortion(
-              receivedMetadata.begin()+offset,
-              receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
-
-          verticalExchangeOfSolverDataRequired |=
-              solver->mergeWithWorkerMetadata(
-                  metadataPortion,
-                  getCellDescriptionsIndex(),element);
-        }
-      }
-    }
-
-    MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
-    return verticalExchangeOfSolverDataRequired;
-  } else {
-    return false;
-  }
-}
 
 void exahype::Cell::reduceDataToMasterPerCell(
     const int                                   master,

@@ -141,6 +141,10 @@ private:
   static const int DataMessagesPerMasterWorkerCommunication;
 #endif
 
+  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
+      exahype::Cell& localCell,
+      const exahype::Cell& receivedMasterCell);
+
   /**
    * Sets heap indices of all finite volumes cell descriptions that were
    * received due to a fork or join event to
@@ -166,9 +170,13 @@ private:
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
 
+  /**
+   * There are no prolongations and restrictions
+   * for the Finite Volums Solver in ExaHyPE
+   */
   void compress(
       CellDescription& cellDescription,
-      const bool vetoSpawnBackgroundTask) const;
+      const bool isAtRemoteBoundary) const;
   /**
    * \copydoc ADERDGSolver::computeHierarchicalTransform()
    *
@@ -193,11 +201,12 @@ private:
     private:
       const FiniteVolumesSolver&                       _solver;
       exahype::records::FiniteVolumesCellDescription&  _cellDescription;
+      int&                                             _jobCounter;
     public:
       CompressionTask(
-        const FiniteVolumesSolver&                       _solver,
-        exahype::records::FiniteVolumesCellDescription&  _cellDescription
-      );
+        const FiniteVolumesSolver&                      solver,
+        exahype::records::FiniteVolumesCellDescription& cellDescription,
+        int&                                            jobCounter);
 
       bool operator()();
   };
@@ -216,11 +225,13 @@ private:
     FiniteVolumesSolver&  _solver;
     const int             _cellDescriptionsIndex;
     const int             _element;
+    int&                  _jobCounter;
   public:
     FusedTimeStepJob(
-        FiniteVolumesSolver& _solver,
+        FiniteVolumesSolver& solver,
         const int            cellDescriptionsIndex,
-        const int            element
+        const int            element,
+        int&                 jobCounter
     );
 
     bool operator()();
@@ -585,9 +596,7 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
       const int solverNumber) override;
 
@@ -596,8 +605,6 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) override;
 
@@ -750,28 +757,11 @@ public:
   ///////////////////////////////////
   // MASTER<=>WORKER
   ///////////////////////////////////
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) override;
-
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-        const int cellDescriptionsIndex,
-        const int element) override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
 
   /**
    * Send all ADERDG cell descriptions to rank
@@ -911,9 +901,55 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const override;
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop. TODO(Dominic): As long as no multi-solver and limiter
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) final override;
 
   void sendDataToMaster(
       const int                                    masterRank,

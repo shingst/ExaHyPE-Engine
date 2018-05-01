@@ -342,12 +342,9 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const bool initialGrid,
-    const int solverNumber)  {
-
+    const int solverNumber) {
   const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
   const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
   if (solverElement!=exahype::solvers::Solver::NotFound) {
@@ -363,8 +360,8 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
   return
       _solver->progressMeshRefinementInEnterCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
-          fineGridPositionOfCell,initialGrid,solverNumber);
+          coarseGridCell,coarseGridVerticesEnumerator,
+          initialGrid,solverNumber);
 
 }
 
@@ -392,10 +389,8 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber)  {
+    const int solverNumber) {
   const int solverElement =
       _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   const int parentSolverElement =
@@ -412,8 +407,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
   return
       _solver->progressMeshRefinementInLeaveCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
-          fineGridPositionOfCell,solverNumber);
+          coarseGridCell,fineGridPositionOfCell,solverNumber);
 }
 
 exahype::solvers::Solver::RefinementControl
@@ -761,19 +755,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const double memorisedPredictorTimeStepSize = solverPatch.getPredictorTimeStepSize();
   result._timeStepSize = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-  // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
-  // and must thus come last. This order is more natural anyway
-  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {
-    _solver->performPredictionAndVolumeIntegral(
-        solverPatch,
+
+  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+    _solver->performPredictionAndVolumeIntegral( solverPatch,
         memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
         false/*already uncompressed*/,vetoSpawnPredictionJob);
-  } else {
-    // just perform a restriction of the limiter status to the next parent
+  } else { // just perform a restriction of the limiter status to the next parent
     const int parentElement = tryGetElement(
         solverPatch.getParentIndex(),solverPatch.getSolverNumber());
     if (parentElement!=exahype::solvers::Solver::NotFound) {
-      _solver->restrictToNextParent(solverPatch,parentElement);
+      _solver->restrictToNextParent(solverPatch,parentElement); // TODO(Dominic): This job should be not stolen
     }
   }
   return result;
@@ -784,15 +775,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool isAtRemoteBoundary
-) {
+    const bool isAtRemoteBoundary) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
         !SpawnPredictionAsBackgroundJob ||
-        isAtRemoteBoundary              ||
-        ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
+        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
+        isAtRemoteBoundary ||
+        #endif
+        ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
 
     if (
         isFirstIterationOfBatch ||
@@ -804,8 +796,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           isFirstIterationOfBatch,isLastIterationOfBatch,
           solverPatch.getNeighbourMergePerformed(),vetoSpawnBackgroundJobs);
     } else {
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, solverPatch.getNeighbourMergePerformed() );
-      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
+          solverPatch.getNeighbourMergePerformed(), jobCounter );
+      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background );
       return UpdateResult();
     }
   } else {
@@ -858,13 +852,17 @@ void exahype::solvers::LimitingADERDGSolver::compress(
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
-        isAtRemoteBoundary || ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
-    _solver->compress(solverPatch,vetoSpawnBackgroundJobs);
+      #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
+      isAtRemoteBoundary ||
+      #endif
+      ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
+
+    _solver->compress(solverPatch,vetoSpawnBackgroundJobs,isAtRemoteBoundary);
     const int limiterElement =
         tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
     if (limiterElement!=exahype::solvers::Solver::NotFound) {
       LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
-      _limiter->compress(limiterPatch,vetoSpawnBackgroundJobs);
+      _limiter->compress(limiterPatch,isAtRemoteBoundary);
     }
   }
 }
@@ -2028,16 +2026,60 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourSolverAndLimiterData(
 /////////////////////////////////////
 // MASTER<=>WORKER
 /////////////////////////////////////
-bool exahype::solvers::LimitingADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
-    const int cellDescriptionsIndex,
-    const int element) {
-  return _solver->prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSendToWorker(
+    const int workerRank,
+    exahype::Cell& fineGridCell,
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    const bool initialGrid,
+    const int solverNumber) {
+  _solver->progressMeshRefinementInPrepareSendToWorker(
+      workerRank, fineGridCell, fineGridVertices,fineGridVerticesEnumerator,
+      coarseGridCell, coarseGridVerticesEnumerator,
+      initialGrid, solverNumber);
 }
 
-void exahype::solvers::LimitingADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-    const int cellDescriptionsIndex,
-    const int element) {
-  _solver->prepareWorkerCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInReceiveDataFromMaster(
+    const int masterRank,
+    const int receivedCellDescriptionsIndex,
+    const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+  _solver->progressMeshRefinementInReceiveDataFromMaster(
+      masterRank,
+      receivedCellDescriptionsIndex,receivedElement,
+      x,level);
+}
+
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const bool initialGrid) {
+  _solver->progressMeshRefinementInMergeWithWorker(
+      localCellDescriptionsIndex,localElement,
+      receivedCellDescriptionsIndex,receivedElement,
+      initialGrid);
+}
+
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSendToMaster(
+    const int masterRank,
+    const int cellDescriptionsIndex, const int element,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+  _solver->progressMeshRefinementInPrepareSendToMaster(
+      masterRank,cellDescriptionsIndex,element,x,level);
+}
+
+bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMaster(
+    const int worker,
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level) {
+  // do nothing
+  return false;
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
@@ -2048,78 +2090,60 @@ void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMeta
       metadata,cellDescriptionsIndex,solverNumber);
 }
 
-void exahype::solvers::LimitingADERDGSolver::mergeWithMasterMetadata(
-    const exahype::MetadataHeap::HeapEntries& metadata,
-    const int                                 cellDescriptionsIndex,
-    const int                                 element) {
-  _solver->mergeWithMasterMetadata(
-      metadata,cellDescriptionsIndex,element);
-}
-
-bool exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMetadata(
-    const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-    const int                                 cellDescriptionsIndex,
-    const int                                 element) {
-  return _solver->mergeWithWorkerMetadata(
-      receivedMetadata,cellDescriptionsIndex,element);
-}
-
 void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->sendSolutionToWorkerOrMaster(
-      toRank,cellDescriptionsIndex,element,x,level);
+  _solver->sendDataToWorkerOrMasterDueToForkOrJoin(
+      toRank,cellDescriptionsIndex,element,messageType,x,level);
 
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
   if (limiterElement!=Solver::NotFound) {
     _limiter->sendDataToWorkerOrMasterDueToForkOrJoin(
-          toRank,cellDescriptionsIndex,limiterElement,x,level);
+        toRank,cellDescriptionsIndex,limiterElement,messageType,x,level);
   } else {
-    _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-          toRank,x,level);
+    _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
   }
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-        toRank,x,level);
-  _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-        toRank,x,level);
+  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
+  _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     const int                                     fromRank,
     const int                                     cellDescriptionsIndex,
     const int                                     element,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   _solver->mergeWithWorkerOrMasterDataDueToForkOrJoin(
-      fromRank,cellDescriptionsIndex,element,x,level);
+      fromRank,cellDescriptionsIndex,element,messageType,x,level);
 
   const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
   if (limiterElement!=Solver::NotFound) {
     _limiter->mergeWithWorkerOrMasterDataDueToForkOrJoin(
-        fromRank,cellDescriptionsIndex,limiterElement,x,level);
+        fromRank,cellDescriptionsIndex,limiterElement,messageType,x,level);
   } else {
-    _limiter->dropWorkerOrMasterDataDueToForkOrJoin(
-        fromRank,x,level);
+    _limiter->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
   } // !!! Receive order must be the same in master<->worker comm.
 }
 
 void exahype::solvers::LimitingADERDGSolver::dropWorkerOrMasterDataDueToForkOrJoin(
     const int                                     fromRank,
+    const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  _solver->dropWorkerOrMasterDataDueToForkOrJoin(
-          fromRank,x,level);
-  _limiter->dropWorkerOrMasterDataDueToForkOrJoin(
-          fromRank,x,level);
+  _solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
+  _limiter->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
 }
 
 ///////////////////////////////////
@@ -2179,19 +2203,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
              " messageFromWorker[3]=" << messageFromWorker[3]);
     logDebug("mergeWithWorkerData(...)","nextLimiterDomainChange=" << static_cast<int>(_nextLimiterDomainChange));
   }
-}
-
-bool exahype::solvers::LimitingADERDGSolver::hasToSendDataToMaster(
-      const int cellDescriptionsIndex,
-      const int element) const {
-  #if defined(Asserts) || defined(Debug)
-  const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
-  if (limiterElement!=Solver::NotFound) {
-    assertion(_limiter->hasToSendDataToMaster(cellDescriptionsIndex,limiterElement));
-  }
-  #endif
-
-  return _solver->hasToSendDataToMaster(cellDescriptionsIndex,element);
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(
@@ -2353,23 +2364,28 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   LimitingADERDGSolver& solver,
   const int             cellDescriptionsIndex,
   const int             element,
-  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed):
+  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+  int&                  jobCounter):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
-  _neighbourMergePerformed(neighbourMergePerformed) {
+  _neighbourMergePerformed(neighbourMergePerformed),
+  _jobCounter(jobCounter) {
   // copy the neighbour merge performed array
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  {
+    _jobCounter++;
+  }
   lock.free();
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStepBody(_cellDescriptionsIndex,_element,false,false,_neighbourMergePerformed,true);
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }
@@ -2382,7 +2398,9 @@ exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::AdjustLimiterS
   _solverPatch(solverPatch),
   _limiterPatch(limiterPatch) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
   lock.free();
 }
 
@@ -2390,8 +2408,10 @@ bool exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::operator(
   _solver.adjustLimiterSolution(_solverPatch,_limiterPatch);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
+  }
   lock.free();
   return false;
 }

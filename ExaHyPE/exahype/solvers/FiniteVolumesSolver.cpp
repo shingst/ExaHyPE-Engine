@@ -310,9 +310,7 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const bool initialGrid,
     const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
@@ -521,10 +519,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber) {
+     const int solverNumber) {
   return false;
 }
 
@@ -705,10 +701,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
+  bool vetoSpawnBackgroundJobs =
+      #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
+      isAtRemoteBoundary ||
+      #endif
+      !SpawnPredictionAsBackgroundJob;
+
   if (
       isFirstIterationOfBatch ||
       isLastIterationOfBatch  ||
-      isAtRemoteBoundary
+      vetoSpawnBackgroundJobs
   ) {
     updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
     UpdateResult result;
@@ -716,8 +718,13 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
         cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
     return result;
   } else {
-    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element );
-    peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+    FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, jobCounter );
+    if (isAtRemoteBoundary) {
+      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+    } else {
+      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+    }
     return UpdateResult();
   }
 }
@@ -934,9 +941,8 @@ void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
   assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),
       cellDescriptionsIndex);
 
-  if (Heap::getInstance().getData(cellDescriptionsIndex).size()>0) {
-    Heap::getInstance().sendData(cellDescriptionsIndex,
-                                 toRank,x,level,messageType);
+  if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
+    Heap::getInstance().sendData(cellDescriptionsIndex,toRank,x,level,messageType);
   } else {
     sendEmptyCellDescriptions(toRank,messageType,x,level);
   }
@@ -1002,6 +1008,22 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
   assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
+void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
+    exahype::Cell& localCell,
+    const exahype::Cell& receivedMasterCell) {
+  for (CellDescription& receivedCellDescription : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
+    bool found = false;
+    for (CellDescription& localCellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
+      if ( receivedCellDescription.getSolverNumber()==localCellDescription.getSolverNumber() ) {
+        found = true;
+      }
+    }
+    if ( !found ) {
+      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(receivedCellDescription); // this copies
+    }
+  }
+}
+
 void exahype::solvers::FiniteVolumesSolver::resetDataHeapIndices(
     const int cellDescriptionsIndex,
     const int parentIndex) {
@@ -1041,17 +1063,6 @@ void exahype::solvers::FiniteVolumesSolver::dropCellDescriptions(
 ////////////////////////////////////
 // MASTER <=> WORKER
 ////////////////////////////////////
-bool exahype::solvers::FiniteVolumesSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) {
-  return false;
-}
-
-void exahype::solvers::FiniteVolumesSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) {
-  // do nothing
-}
 
 void
 exahype::solvers::FiniteVolumesSolver::appendMasterWorkerCommunicationMetadata(
@@ -1061,20 +1072,6 @@ exahype::solvers::FiniteVolumesSolver::appendMasterWorkerCommunicationMetadata(
   for (int i = 0; i < exahype::MasterWorkerCommunicationMetadataPerSolver; ++i) {
     metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion
   }
-}
-
-void exahype::solvers::FiniteVolumesSolver::mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  // do nothing
-}
-
-bool exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
@@ -1150,6 +1147,58 @@ void exahype::solvers::FiniteVolumesSolver::dropWorkerOrMasterDataDueToForkOrJoi
     const int                                     level) const {
   for(int receives=0; receives<DataMessagesPerForkOrJoinCommunication; ++receives)
     DataHeap::getInstance().receiveData(fromRank, x, level, messageType);
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToWorker(
+    const int workerRank,
+    exahype::Cell& fineGridCell,
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    const bool initialGrid,
+    const int solverNumber) {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInReceiveDataFromMaster(
+    const int masterRank,
+    const int receivedCellDescriptionsIndex,
+    const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
+    exahype::Cell& localCell,
+    const exahype::Cell& receivedMasterCell) {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const bool initialGrid) {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToMaster(
+    const int masterRank,
+    const int cellDescriptionsIndex, const int element,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
+ // do nothing
+}
+
+bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
+    const int worker,
+    const int localCellDescriptionsIndex,    const int localElement,
+    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const int                                    level) {
+  // do nothing
+  return false;
 }
 
 ///////////////////////////////////
@@ -1524,17 +1573,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
   _minTimeStepSize = receivedTimeStepData[1];
 }
 
-bool exahype::solvers::FiniteVolumesSolver::hasToSendDataToMaster(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  return false;
-}
-
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
     const int                                     workerRank,
     const int                                     cellDescriptionsIndex,
@@ -1896,19 +1934,22 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
       cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
       cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedSolution()==-1) {
-      ensureAllBackgroundJobsHaveTerminated();
+      ensureAllBackgroundJobsHaveTerminated(NumberOfSkeletonJobs,"skeleton-jobs");
+      ensureAllBackgroundJobsHaveTerminated(NumberOfEnclaveJobs,"enclave-jobs");
       lock.lock();
       cellDescription.setExtrapolatedSolution( DataHeap::getInstance().createData(dataPerBoundary, dataPerBoundary ) );
       lock.free();
@@ -1981,17 +2022,18 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescription,const bool vetoSpawnBackgroundJob) const {
+void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescription,const bool isAtRemoteBoundary) const {
   assertion1( cellDescription.getCompressionState() ==  CellDescription::Uncompressed, cellDescription.toString() );
   if (CompressionAccuracy>0.0) {
-    if (!vetoSpawnBackgroundJob && SpawnCompressionAsBackgroundJob) {
+    if (
+        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
+        !isAtRemoteBoundary &&
+        #endif
+        SpawnCompressionAsBackgroundJob
+    ) {
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
-
-      tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-      _NumberOfBackgroundJobs++;
-      lock.free();
-
-      CompressionTask compressionJob( *this, cellDescription );
+      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+      CompressionTask compressionJob( *this, cellDescription, jobCounter );
       peano::datatraversal::TaskSet spawnedSet( compressionJob,peano::datatraversal::TaskSet::TaskType::Background );
     }
     else {
@@ -2122,11 +2164,18 @@ void exahype::solvers::FiniteVolumesSolver::computeHierarchicalTransform(
 }
 
 exahype::solvers::FiniteVolumesSolver::CompressionTask::CompressionTask(
-  const FiniteVolumesSolver&  solver,
-  CellDescription&      cellDescription
+  const FiniteVolumesSolver& solver,
+  CellDescription&           cellDescription,
+  int&                       jobCounter
 ):
   _solver(solver),
-  _cellDescription(cellDescription) {
+  _cellDescription(cellDescription),
+  _jobCounter(jobCounter) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    _jobCounter++;
+  }
+  lock.free();
 }
 
 
@@ -2136,10 +2185,12 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
   _solver.putUnknownsIntoByteStream(_cellDescription);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _cellDescription.setCompressionState(CellDescription::Compressed);
-  // @todo raus
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    _cellDescription.setCompressionState(CellDescription::Compressed);
+    // @todo raus
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }
@@ -2148,21 +2199,26 @@ bool exahype::solvers::FiniteVolumesSolver::CompressionTask::operator()() {
 exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   FiniteVolumesSolver&     solver,
   const int                cellDescriptionsIndex,
-  const int                element):
+  const int                element,
+  int&                     jobCounter):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element) {
+  _element(element),
+  _jobCounter(jobCounter) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  {
+    _jobCounter++;
+  }
   lock.free();
 }
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStep(_cellDescriptionsIndex,_element,false,false,true);
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }

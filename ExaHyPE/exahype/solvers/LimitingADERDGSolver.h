@@ -501,12 +501,14 @@ private:
     const int                         _cellDescriptionsIndex;
     const int                         _element;
     std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+    int&                              _jobCounter;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        int&                                     jobCounter);
 
     bool operator()();
   };
@@ -854,25 +856,21 @@ public:
    * criterion have not been evaluated.
    */
   bool progressMeshRefinementInEnterCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) final override;
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+     const bool initialGrid,
+     const int solverNumber) override;
 
-  bool progressMeshRefinementInLeaveCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) final override;
+ bool progressMeshRefinementInLeaveCell(
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+     const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
         const int& cellDescriptionsIndex,
@@ -1451,60 +1449,108 @@ public:
   /////////////////////////////////////
   // MASTER<=>WORKER
   /////////////////////////////////////
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  /**
+   * Kind of similar to progressMeshRefinementInPrepareSendToWorker
+   * but performs a few additional operations in order to
+   * notify the worker about some coarse grid operations only
+   * the master knows.
+   *
+   * \note This function sends out MPI messages.
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) final override;
 
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  /**
+   * Just receive data depending on the refinement
+   * event of a cell description.
+   */
+  void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * \return If we the solver requires master worker communication
+   * at this cell
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const final override;
 
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
-
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,

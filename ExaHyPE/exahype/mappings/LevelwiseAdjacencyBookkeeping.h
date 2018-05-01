@@ -61,17 +61,6 @@ namespace exahype {
  * @version $Revision: 1.1 $
  */
 class exahype::mappings::LevelwiseAdjacencyBookkeeping {
-  private:
-
-    /**
-     * Write a cell's cell description index into the adjacency index maps of
-     * its adjacent vertices.
-     */
-    void updateAdjacencyMapsOfAdjacentVertices(
-        exahype::Cell&                       fineGridCell,
-        exahype::Vertex * const              fineGridVertices,
-        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
-
   public:
 
     /**

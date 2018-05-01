@@ -298,7 +298,7 @@ private:
    *
    * \note Not thread-safe!
    */
-  void vetoErasingRequestsIfNecessary(
+  void alterErasingRequestsIfNecessary(
       CellDescription& coarseGridCellDescription,
       const int fineGridCellDescriptionsIndex) const;
 
@@ -490,7 +490,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool isInvolvedInProlongationOrParentNeedsToRestrictToo(
+  static bool isInvolvedInProlongationOrRestriction(
       CellDescription& cellDescription);
 
   /**
@@ -674,10 +674,24 @@ private:
    * we still need to set the flag but we do not need to allocate additional memory.
    *
    * \return if we need to master-worker communication for this cell description.
+   *
+   * TODO(Dominic): Restrictions of face data should not be necessary
+   * anymore as soon as we follow the LTS workflow.
    */
   bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) const override;
+      CellDescription& cellDescription) const;
+
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Descendant and
+   * is next to a cell description of type Cell
+   * or is virtually refined, i.e. has children of type Descendant itself,
+   * we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required
+   * memory.
+   */
+  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
+      CellDescription& cellDescription) const;
 
   /**
    * As the worker does not know anything about the master's coarse
@@ -685,7 +699,7 @@ private:
    * to notify the worker about the master's coarse grid cell's
    * erasing decision.
    */
-  bool deduceChildCellErasingEvents(CellDescription& cellDescription) const;
+  void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #endif
 
@@ -750,13 +764,14 @@ private:
 
   class CompressionJob {
     private:
-      const ADERDGSolver&     _solver;
-      CellDescription&  _cellDescription;
+      const ADERDGSolver& _solver;
+      CellDescription&    _cellDescription;
+      int&                _jobCounter;
     public:
       CompressionJob(
-        const ADERDGSolver&     _solver,
-        CellDescription&  _cellDescription
-      );
+        const ADERDGSolver& solver,
+        CellDescription&    cellDescription,
+        int&                jobCounter);
 
       bool operator()();
   };
@@ -768,13 +783,15 @@ private:
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
+      const bool       _isAtRemoteBoundary;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
           CellDescription&  cellDescription,
           const double      predictorTimeStamp,
           const double      predictorTimeStepSize,
-          const bool        uncompressBefore);
+          const bool        uncompressBefore,
+          const bool        isAtRemoteBoundary);
 
       bool operator()();
   };
@@ -795,11 +812,13 @@ private:
       ADERDGSolver&    _solver;
       const int        _cellDescriptionsIndex;
       const int        _element;
+      int&             _jobCounter;
     public:
       FusedTimeStepJob(
           ADERDGSolver& solver,
           const int     cellDescriptionsIndex,
-          const int     element);
+          const int     element,
+          int&          jobCounter);
 
       bool operator()();
   };
@@ -1098,7 +1117,7 @@ public:
    *
    * \note This operation is thread safe as we serialise it.
    */
-  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   /**
    * Checks if all the necessary memory is allocated for the cell description.
@@ -1109,8 +1128,10 @@ public:
    *
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
+   *
+   * \param
    */
-  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription);
+  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription,const bool allocateSolution=true) const;
 
 
   /**
@@ -1625,7 +1646,8 @@ public:
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
-      const bool   vetoCompressionBackgroundJob);
+      const bool   vetoCompressionBackgroundJob,
+      const bool   isAtRemoteBoundary);
 
   /**
    *
@@ -1723,6 +1745,7 @@ public:
         const int element,
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
+        const bool isAtRemoteBoundary,
         const bool vetoSpawnPredictionAsBackgroundJob,
         const bool vetoSpawnAnyBackgroundJobs);
 
@@ -1933,10 +1956,14 @@ public:
    *
    * \note The data heap indices of the cell descriptions are not
    * valid anymore on rank \p toRank.
+   *
+   * \param fromWorkerSide Indicates that we sent these cell descriptions from the
+   *                       worker side, e.g. during a joining operation.
    */
-  static void sendCellDescriptions(
+  static bool sendCellDescriptions(
       const int                                    toRank,
       const int                                    cellDescriptionsIndex,
+      const bool                                   fromWorkerSide,
       const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
@@ -1987,6 +2014,21 @@ public:
       const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
+
+  /**
+   * Ensure that we have the same number of
+   * cell descriptions on the worker as on the
+   * master.
+   *
+   * The master might introduce new cell descriptions
+   * to a cell if a coarse grid cell is refined or
+   * virtually refined.
+   *
+   * \note Should be called from the worker.
+   */
+  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
+      exahype::Cell& localCell,
+      const exahype::Cell& receivedMasterCell);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2125,7 +2167,7 @@ public:
    *
    * \note This function sends out MPI messages.
    */
-  bool progressMeshRefinementInPrepareSendToWorker(
+  void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
@@ -2133,38 +2175,60 @@ public:
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const bool initialGrid,
-      const int solverNumber) override;
+      const int solverNumber) final override;
 
-  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
-   *
-   * If the cell description is of type Descendant and
-   * is next to a cell description of type Cell
-   * or is virtually refined, i.e. has children of type Descendant itself,
-   * we set the hasToHoldDataForMasterWorkerCommunication flag
-   * on the cell description to true and allocate the required
-   * memory.
+  /**
+   * Just receive data depending on the refinement
+   * event of a cell description.
    */
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) override;
+  void progressMeshRefinementInReceiveDataFromMaster(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+    * Finish prolongation operations started on the master.
+    *
+    * \return If we the solver requires master worker communication
+    * at this cell
+    *
+    * TODO(Dominic): No const modifier const as kernels are not const yet
+    */
+   bool progressMeshRefinementInMergeWithMaster(
+       const int worker,
+       const int localCellDescriptionsIndex,    const int localElement,
+       const int receivedCellDescriptionsIndex, const int receivedElement,
+       const tarch::la::Vector<DIMENSIONS, double>& x,
+       const int                                    level) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
-  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
-   * \return if we need to master-worker communication for this cell description.
-   */
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
@@ -2190,17 +2254,13 @@ public:
 
   void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
-      peano::heap::MessageType&                     messageType,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
   /**
    * Compiles a message for the master.
    *
@@ -2365,12 +2425,11 @@ public:
    * However, we have to take care about the interplay of compression and
    * uncompression.
    *
-   * \param[in] vetoSpawnAsBackgroundJob - switch for manually vetoing the spawning
-   *                                       of background jobs.
+   * \param[in] isAtRemoteBoundary
    */
-  void compress(
-      exahype::records::ADERDGCellDescription& cellDescription,
-      const bool vetoSpawnAsBackgroundJob) const;
+  void compress(CellDescription& cellDescription,
+      const bool vetoSpawnBackgroundJob,
+      const bool isAtRemoteBoundary) const;
 };
 
 #endif

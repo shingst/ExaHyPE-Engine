@@ -27,7 +27,6 @@
 #include "exahype/State.h"
 #include "exahype/Vertex.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 namespace exahype {
 namespace mappings {
@@ -106,6 +105,36 @@ private:
    */
   bool _backgroundJobsHaveTerminated = false;
 
+
+  int _batchIteration = 0;
+  /**
+   * Updates the iteration tag from the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation.
+   *
+   * \note This routine must only be called once in every batch iteration
+   * (exceptions: first batch iteration or if no batch is run)
+   * as it toggles a state in intermediate batch iterations.
+   */
+  void updateBatchIterationCounter();
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to send out riemann data in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  bool sendOutRiemannDataInThisIteration();
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to issue prediction jobs in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  bool issuePredictionJobsInThisIteration();
+
  public:
   /**
    * Run through the whole tree. Run concurrently on the fine grid.
@@ -152,8 +181,8 @@ private:
 
   #if defined(SharedMemoryParallelisation)
   /**
-   * Prepare the temporary variables for
-   * the worker threads.
+   * Copy the _backgroundJobsHaveTerminated
+   * and _batchIteration fields form the masterThread
    */
   FusedTimeStep(const FusedTimeStep& masterThread);
   /**
@@ -214,12 +243,12 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Prepares the temporary variables and copies
-   * the state.
-   *
-   * Resets the next mesh update request flag to false and
+   *Resets the next mesh update request flag to false and
    * the next limiter domain change to Regular
    * using the "setNext..." methods.
+   *
+   * Updates the prediction iteration tag in the first iteration
+   * of a batch or if no batch is run.
    */
   void beginIteration(exahype::State& solverState);
 
@@ -237,6 +266,8 @@ private:
    *
    * Notify Peano's tarch that we want to start processing
    * background jobs with all available cores.
+   *
+   * Updates the prediction iteration tag in every iteration.
    */
   void endIteration(exahype::State& solverState);
 
