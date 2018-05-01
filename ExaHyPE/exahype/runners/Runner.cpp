@@ -520,7 +520,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     }
     logInfo("createRepository(...)",
         "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
-        coarsestUserMeshSize << " and domain size " << scaledDomainSize);
+        coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
       logInfo("createRepository(...)",
           "We will need to refine the grid " << boundingBoxMeshLevel-coarsestUserMeshLevel << " more time(s) than expected "
