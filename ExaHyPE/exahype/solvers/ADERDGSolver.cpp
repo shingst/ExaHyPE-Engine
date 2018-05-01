@@ -3061,8 +3061,7 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
     bool oneSolverRequiresVerticalCommunication = false;
     for (auto& cellDescription : Heap::getInstance().getData(cellDescriptionsIndex)) {
       if ( fromWorkerSide ) {
-        oneSolverRequiresVerticalCommunication |=
-            prepareWorkerCellDescriptionAtMasterWorkerBoundary(cellDescription);
+        prepareWorkerCellDescriptionAtMasterWorkerBoundary(cellDescription);
       } else {
         oneSolverRequiresVerticalCommunication |=
             prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescription);
@@ -3214,14 +3213,15 @@ exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
 }
 
 void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-    CellDescription& cellDescription) const {
+    CellDescription& cellDescription) {
   if (cellDescription.getType()==CellDescription::Type::Descendant) {
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren() ||
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
 
-    ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-    ensureNecessaryMemoryIsAllocated(cellDescription);
+    auto* solver = static_cast<ADERDGSolver*>(RegisteredSolvers[cellDescription.getSolverNumber()]);
+    solver->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    solver->ensureNecessaryMemoryIsAllocated(cellDescription);
   }
   // Ancestors; wait for info from master
 }
@@ -3257,7 +3257,7 @@ void exahype::solvers::ADERDGSolver::deduceChildCellErasingEvents(CellDescriptio
 }
 
 bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
-    CellDescription& cellDescription) const {
+    CellDescription& cellDescription)  {
   bool cellDescriptionRequiresVerticalCommunication = false;
   if ( cellDescription.getType()==CellDescription::Type::Ancestor ) {
     Solver::SubcellPosition subcellPosition =
@@ -3268,6 +3268,10 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
       cellDescriptionRequiresVerticalCommunication = true;
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
       cellDescription.setCommunicationStatus(MinimumCommunicationStatusForNeighbourCommunication);
+    
+      auto* solver = static_cast<ADERDGSolver*>(RegisteredSolvers[cellDescription.getSolverNumber()]);
+      solver->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+      solver->ensureNecessaryMemoryIsAllocated(cellDescription);
     }
   } // do nothing for descendants; wait for info from worker
 
@@ -3284,7 +3288,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
     const bool initialGrid,
     const int solverNumber) {
   // coarse grid based operations
-  const int coarseGridCellDescriptionsIndex = coarseGridCell.getCellDescriptionsIndex()
+  const int coarseGridCellDescriptionsIndex = coarseGridCell.getCellDescriptionsIndex();
   const int coarseGridCellElement = tryGetElement(coarseGridCellDescriptionsIndex,solverNumber);
   if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
     CellDescription& coarseGridCellDescription = getCellDescription(
@@ -3300,7 +3304,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
             initialGrid);
     if ( addedNewCell ) {
-      const int fineGridCellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex()
+      const int fineGridCellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
       const int fineGridElement = tryGetElement(fineGridCellDescriptionsIndex,solverNumber);
 
       CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
@@ -3456,7 +3460,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
       localCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Erasing ||
       localCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeToVirtualCell
   ) {
-    assertion()
     mergeWithWorkerOrMasterDataDueToForkOrJoin(worker,localCellDescriptionsIndex,localElement,
         peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
   } else {
@@ -3472,7 +3475,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     // use the received data
     const int coarseGridElement = tryGetElement(
         localCellDescription.getParentIndex(),localCellDescription.getSolverNumber());
-    assertion(coarseGridElement!=exahype::solvers::Solver::NotFound,localCellDescription.toString());
+    assertion1(coarseGridElement!=exahype::solvers::Solver::NotFound,localCellDescription.toString());
     CellDescription& coarseGridCellDescription =
         getCellDescription(localCellDescription.getParentIndex(),coarseGridElement); // TODO(Dominic): Have helper function for that
     assertion2( coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildren ||

@@ -1887,7 +1887,7 @@ class exahype::solvers::Solver {
    * Just receive data or not from the master
    * depending on the refinement event.
    */
-  void progressMeshRefinementInReceiveDataFromMaster(
+  virtual void progressMeshRefinementInReceiveDataFromMaster(
         const int masterRank,
         const int receivedCellDescriptionsIndex,
         const int receivedElement,

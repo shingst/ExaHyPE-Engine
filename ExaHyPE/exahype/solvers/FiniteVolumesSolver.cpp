@@ -1008,22 +1008,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
   assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
-void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
-    exahype::Cell& localCell,
-    const exahype::Cell& receivedMasterCell) {
-  for (CellDescription& receivedCellDescription : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
-    bool found = false;
-    for (CellDescription& localCellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
-      if ( receivedCellDescription.getSolverNumber()==localCellDescription.getSolverNumber() ) {
-        found = true;
-      }
-    }
-    if ( !found ) {
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(receivedCellDescription); // this copies
-    }
-  }
-}
-
 void exahype::solvers::FiniteVolumesSolver::resetDataHeapIndices(
     const int cellDescriptionsIndex,
     const int parentIndex) {

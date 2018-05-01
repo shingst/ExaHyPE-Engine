@@ -141,10 +141,6 @@ private:
   static const int DataMessagesPerMasterWorkerCommunication;
 #endif
 
-  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
-      exahype::Cell& localCell,
-      const exahype::Cell& receivedMasterCell);
-
   /**
    * Sets heap indices of all finite volumes cell descriptions that were
    * received due to a fork or join event to
@@ -901,6 +897,10 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
+  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
+      exahype::Cell& localCell,
+      const exahype::Cell& receivedMasterCell);
+
   /**
    * Nop
    */

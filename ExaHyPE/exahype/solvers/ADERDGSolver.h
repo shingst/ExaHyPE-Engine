@@ -678,8 +678,8 @@ private:
    * TODO(Dominic): Restrictions of face data should not be necessary
    * anymore as soon as we follow the LTS workflow.
    */
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      CellDescription& cellDescription) const;
+  static bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
+      CellDescription& cellDescription);
 
   /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
    *
@@ -690,8 +690,8 @@ private:
    * on the cell description to true and allocate the required
    * memory.
    */
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      CellDescription& cellDescription) const;
+  static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
+      CellDescription& cellDescription);
 
   /**
    * As the worker does not know anything about the master's coarse
