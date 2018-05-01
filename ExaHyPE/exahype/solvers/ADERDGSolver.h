@@ -493,7 +493,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool isInvolvedInProlongationOrParentNeedsToRestrictToo(
+  static bool isInvolvedInProlongationOrRestriction(
       CellDescription& cellDescription);
 
   /**
@@ -725,13 +725,14 @@ private:
 
   class CompressionJob {
     private:
-      const ADERDGSolver&     _solver;
-      CellDescription&  _cellDescription;
+      const ADERDGSolver& _solver;
+      CellDescription&    _cellDescription;
+      int&                _jobCounter;
     public:
       CompressionJob(
-        const ADERDGSolver&     _solver,
-        CellDescription&  _cellDescription
-      );
+        const ADERDGSolver& solver,
+        CellDescription&    cellDescription,
+        int&                jobCounter);
 
       bool operator()();
   };
@@ -743,13 +744,15 @@ private:
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
+      const bool       _isAtRemoteBoundary;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
           CellDescription&  cellDescription,
           const double      predictorTimeStamp,
           const double      predictorTimeStepSize,
-          const bool        uncompressBefore);
+          const bool        uncompressBefore,
+          const bool        isAtRemoteBoundary);
 
       bool operator()();
   };
@@ -770,11 +773,13 @@ private:
       ADERDGSolver&    _solver;
       const int        _cellDescriptionsIndex;
       const int        _element;
+      int&             _jobCounter;
     public:
       FusedTimeStepJob(
           ADERDGSolver& solver,
           const int     cellDescriptionsIndex,
-          const int     element);
+          const int     element,
+          int&          jobCounter);
 
       bool operator()();
   };
@@ -1604,7 +1609,8 @@ public:
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
-      const bool   vetoCompressionBackgroundJob);
+      const bool   vetoCompressionBackgroundJob,
+      const bool   isAtRemoteBoundary);
 
   /**
    *
@@ -1702,6 +1708,7 @@ public:
         const int element,
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
+        const bool isAtRemoteBoundary,
         const bool vetoSpawnPredictionAsBackgroundJob,
         const bool vetoSpawnAnyBackgroundJobs);
 
@@ -2344,12 +2351,11 @@ public:
    * However, we have to take care about the interplay of compression and
    * uncompression.
    *
-   * \param[in] vetoSpawnAsBackgroundJob - switch for manually vetoing the spawning
-   *                                       of background jobs.
+   * \param[in] isAtRemoteBoundary
    */
-  void compress(
-      exahype::records::ADERDGCellDescription& cellDescription,
-      const bool vetoSpawnAsBackgroundJob) const;
+  void compress(CellDescription& cellDescription,
+      const bool vetoSpawnBackgroundJob,
+      const bool isAtRemoteBoundary) const;
 };
 
 #endif

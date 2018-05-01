@@ -555,6 +555,8 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
+ public:
+
   /**
    * The type of a solver.
    */
@@ -666,7 +668,7 @@ class exahype::solvers::Solver {
    * If we do not find the element in a vector
    * stored at a heap address.
    */
-  static const int NotFound;
+  static constexpr int NotFound = -1;
 
   /**
    * Moves a DataHeap array, i.e. copies the found
@@ -813,20 +815,39 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
+  /**
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfAMRBackgroundJobs;
+
+  /**
+   * Number of background jobs spawned
+   * from enclave cells.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfEnclaveJobs;
+  /**
+   * Number of background jobs spawned
+   * from skeleton cells, i.e. cells at parallel
+   * or adaptivity boundaries.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfSkeletonJobs;
+
  /**
   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
   * further. We have to wait until all tasks have terminated if we want to modify the heap,
   * i.e. insert new data or remove data.
   * Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
+  *
+  * \param[in] backgroundJobCounter A reference to a background job counter.
   */
- static void ensureAllBackgroundJobsHaveTerminated();
+ static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
 
  protected:
-  /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
-   */
-  static int                                _NumberOfBackgroundJobs;
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.

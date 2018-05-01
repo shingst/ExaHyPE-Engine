@@ -25,7 +25,6 @@
 
 #include "tarch/multicore/BooleanSemaphore.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 #include "exahype/Cell.h"
 #include "exahype/State.h"

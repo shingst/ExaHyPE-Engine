@@ -64,9 +64,6 @@ double exahype::solvers::Solver::PipedUncompressedBytes = 0;
 double exahype::solvers::Solver::PipedCompressedBytes = 0;
 #endif
 
-
-const int exahype::solvers::Solver::NotFound = -1;
-
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
 double exahype::solvers::convertToDouble(const LimiterDomainChange& limiterDomainChange) {
@@ -91,13 +88,16 @@ bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
 bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int                                exahype::solvers::Solver::_NumberOfBackgroundJobs(0);
+int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
+int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
+int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
-void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
+void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+    const int& backgroundJobCounter,std::string counterTag) {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  int numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
+  int numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
   lock.free();
   finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -111,7 +111,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
       logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
           "waiting for roughly "
           << numberOfBackgroundJobs
-          << " background tasks to complete while "
+          << " background tasks to complete (counter: "<<counterTag.c_str()<< ") while "
           << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
       );
       reported = numberOfExaHyPEBackgroundJobs;
@@ -121,7 +121,7 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated() {
     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
 
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    numberOfExaHyPEBackgroundJobs = _NumberOfBackgroundJobs;
+    numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
     lock.free();
     finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
@@ -714,7 +714,9 @@ exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionD
   _isInitialMeshRefinement(isInitialMeshRefinement)
 {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
   lock.free();
 }
 
@@ -722,8 +724,10 @@ bool exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::operator()
   _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element,_isInitialMeshRefinement);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
+  }
   lock.free();
   return false;
 }

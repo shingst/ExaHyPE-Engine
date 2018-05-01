@@ -29,7 +29,6 @@
 
 #include "exahype/solvers/Solver.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 namespace exahype {
 namespace mappings {
