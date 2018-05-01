@@ -1404,7 +1404,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber) {
+    const int solverNumber) {
   bool newComputeCell = false;
 
   const int fineGridCellElement =
@@ -3333,21 +3333,18 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInReceiveDataFromMast
   const int masterRank,
 	const int receivedCellDescriptionsIndex,
   const int receivedElement,
-  const peano::grid::VertexEnumerator& receivedVerticesEnumerator) const {
+  const tarch::la::Vector<DIMENSIONS,double>& x,
+  const int level) const {
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
 
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
     mergeWithWorkerOrMasterDataDueToForkOrJoin(
-      masterRank,receivedCellDescriptionsIndex,receivedElement,
-      peano::heap::MessageType::MasterWorkerCommunication,
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
+      masterRank,
+      receivedCellDescriptionsIndex,receivedElement,
+      peano::heap::MessageType::MasterWorkerCommunication,x,level);
   } else {
     dropWorkerOrMasterDataDueToForkOrJoin(
-      masterRank,
-      peano::heap::MessageType::MasterWorkerCommunication,
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
+      masterRank,peano::heap::MessageType::MasterWorkerCommunication,x,level);
   }
 }
 

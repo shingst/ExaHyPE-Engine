@@ -342,12 +342,9 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const bool initialGrid,
-    const int solverNumber)  {
-
+    const int solverNumber) {
   const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
   const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
   if (solverElement!=exahype::solvers::Solver::NotFound) {
@@ -392,10 +389,8 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber)  {
+    const int solverNumber) {
   const int solverElement =
       _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   const int parentSolverElement =
@@ -2047,14 +2042,15 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
 }
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInReceiveDataFromMaster(
-  const int masterRank,
-  const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-  const int receivedCellDescriptionsIndex,
-  const int receivedElement) const {
+    const int masterRank,
+    const int receivedCellDescriptionsIndex,
+    const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
   _solver->progressMeshRefinementInReceiveDataFromMaster(
       masterRank,
       receivedCellDescriptionsIndex,receivedElement,
-      receivedVerticesEnumerator);
+      x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(

@@ -596,9 +596,7 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
       const int solverNumber) override;
 
@@ -607,8 +605,6 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) override;
 
@@ -923,9 +919,10 @@ public:
    */
   void progressMeshRefinementInReceiveDataFromMaster(
       const int masterRank,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
       const int receivedCellDescriptionsIndex,
-      const int receivedElement) const final override;
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
 
   /**
    * Nop

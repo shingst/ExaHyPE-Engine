@@ -2185,7 +2185,8 @@ public:
       const int masterRank,
       const int receivedCellDescriptionsIndex,
       const int receivedElement,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator) const final override;
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
 
   /**
    * Finish prolongation operations started on the master.

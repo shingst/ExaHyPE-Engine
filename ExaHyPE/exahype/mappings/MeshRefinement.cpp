@@ -393,9 +393,7 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridVertices,
               fineGridVerticesEnumerator,
               coarseGridCell,
-              coarseGridVertices,
               coarseGridVerticesEnumerator,
-              fineGridPositionOfCell,
               exahype::mappings::MeshRefinement::IsInitialMeshRefinement,
               solverNumber);
 
@@ -445,8 +443,6 @@ void exahype::mappings::MeshRefinement::leaveCell(
               fineGridVertices,
               fineGridVerticesEnumerator,
               coarseGridCell,
-              coarseGridVertices,
-              coarseGridVerticesEnumerator,
               fineGridPositionOfCell,
               solverNumber);
 
@@ -610,7 +606,8 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
         solver->progressMeshRefinementInReceiveDataFromMaster( // TODO(Dominic): FV should not nothing here
             tarch::parallel::NodePool::getInstance().getMasterRank(),
             receivedCellDescriptionsIndex,receivedElement,
-            receivedVerticesEnumerator);
+            receivedVerticesEnumerator.getCellCenter(),
+            receivedVerticesEnumerator.getLevel());
       }
     }
   }  
@@ -696,8 +693,7 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
         solver->progressMeshRefinementInPrepareSendToMaster(
             tarch::parallel::NodePool::getInstance().getMasterRank(),
             localCellDescriptionsIndex,element,
-            verticesEnumerator.getCellCenter(),verticesEnumerator.getLevel(),s
-            solverNumber);
+            verticesEnumerator.getCellCenter(),verticesEnumerator.getLevel());
       } else {
         solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
             tarch::parallel::NodePool::getInstance().getMasterRank(),

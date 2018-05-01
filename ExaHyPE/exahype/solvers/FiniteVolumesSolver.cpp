@@ -310,9 +310,7 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const bool initialGrid,
     const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
@@ -521,10 +519,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber) {
+     const int solverNumber) {
   return false;
 }
 
@@ -1166,10 +1162,11 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
 }
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInReceiveDataFromMaster(
-  const int masterRank,
-  const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-  const int receivedCellDescriptionsIndex,
-  const int receivedElement) const {
+    const int masterRank,
+    const int receivedCellDescriptionsIndex,
+    const int receivedElement,
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const int level) const {
   // do nothing
 }
 

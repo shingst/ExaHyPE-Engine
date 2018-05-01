@@ -1357,9 +1357,7 @@ class exahype::solvers::Solver {
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
       const int solverNumber) = 0;
 
@@ -1375,8 +1373,6 @@ class exahype::solvers::Solver {
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) = 0;
 
@@ -1891,11 +1887,12 @@ class exahype::solvers::Solver {
    * Just receive data or not from the master
    * depending on the refinement event.
    */
-  virtual void progressMeshRefinementInReceiveDataFromMaster(
-      const int masterRank,
-      const int receivedCellDescriptionsIndex,
-      const int receivedElement,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator) const = 0;
+  void progressMeshRefinementInReceiveDataFromMaster(
+        const int masterRank,
+        const int receivedCellDescriptionsIndex,
+        const int receivedElement,
+        const tarch::la::Vector<DIMENSIONS,double>& x,
+        const int level) const = 0;
 
   /**
    * Finish prolongation operations started on the master.
@@ -1915,7 +1912,7 @@ class exahype::solvers::Solver {
         const int masterRank,
         const int cellDescriptionsIndex, const int element,
         const tarch::la::Vector<DIMENSIONS,double>& x,
-        const int level) const override;
+        const int level) const = 0;
 
   /**
    * Finish erasing operations started on the master which

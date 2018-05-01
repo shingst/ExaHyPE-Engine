@@ -856,25 +856,21 @@ public:
    * criterion have not been evaluated.
    */
   bool progressMeshRefinementInEnterCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) final override;
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+     const bool initialGrid,
+     const int solverNumber) override;
 
-  bool progressMeshRefinementInLeaveCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) final override;
+ bool progressMeshRefinementInLeaveCell(
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+     const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
         const int& cellDescriptionsIndex,
@@ -1477,9 +1473,10 @@ public:
    */
   void progressMeshRefinementInReceiveDataFromMaster(
       const int masterRank,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
       const int receivedCellDescriptionsIndex,
-      const int receivedElement) const final override;
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
 
   /**
    * Finish prolongation operations started on the master.
