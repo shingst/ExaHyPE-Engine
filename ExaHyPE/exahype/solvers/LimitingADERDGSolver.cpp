@@ -761,19 +761,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const double memorisedPredictorTimeStepSize = solverPatch.getPredictorTimeStepSize();
   result._timeStepSize = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-  // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards
-  // and must thus come last. This order is more natural anyway
-  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {
-    _solver->performPredictionAndVolumeIntegral(
-        solverPatch,
+
+  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+    _solver->performPredictionAndVolumeIntegral( solverPatch,
         memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
         false/*already uncompressed*/,vetoSpawnPredictionJob);
-  } else {
-    // just perform a restriction of the limiter status to the next parent
+  } else { // just perform a restriction of the limiter status to the next parent
     const int parentElement = tryGetElement(
         solverPatch.getParentIndex(),solverPatch.getSolverNumber());
     if (parentElement!=exahype::solvers::Solver::NotFound) {
-      _solver->restrictToNextParent(solverPatch,parentElement);
+      _solver->restrictToNextParent(solverPatch,parentElement); // TODO(Dominic): This job should be not stolen
     }
   }
   return result;
@@ -784,15 +781,16 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool isAtRemoteBoundary
-) {
+    const bool isAtRemoteBoundary) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
         !SpawnPredictionAsBackgroundJob ||
-        isAtRemoteBoundary              ||
-        ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
+        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
+        isAtRemoteBoundary ||
+        #endif
+        ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
 
     if (
         isFirstIterationOfBatch ||
@@ -804,8 +802,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           isFirstIterationOfBatch,isLastIterationOfBatch,
           solverPatch.getNeighbourMergePerformed(),vetoSpawnBackgroundJobs);
     } else {
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, solverPatch.getNeighbourMergePerformed() );
-      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
+      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
+          solverPatch.getNeighbourMergePerformed(), jobCounter );
+      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background );
       return UpdateResult();
     }
   } else {
@@ -858,13 +858,17 @@ void exahype::solvers::LimitingADERDGSolver::compress(
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     bool vetoSpawnBackgroundJobs =
-        isAtRemoteBoundary || ADERDGSolver::isInvolvedInProlongationOrParentNeedsToRestrictToo(solverPatch);
-    _solver->compress(solverPatch,vetoSpawnBackgroundJobs);
+      #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
+      isAtRemoteBoundary ||
+      #endif
+      ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
+
+    _solver->compress(solverPatch,vetoSpawnBackgroundJobs,isAtRemoteBoundary);
     const int limiterElement =
         tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
     if (limiterElement!=exahype::solvers::Solver::NotFound) {
       LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
-      _limiter->compress(limiterPatch,vetoSpawnBackgroundJobs);
+      _limiter->compress(limiterPatch,isAtRemoteBoundary);
     }
   }
 }
@@ -2330,23 +2334,28 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   LimitingADERDGSolver& solver,
   const int             cellDescriptionsIndex,
   const int             element,
-  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed):
+  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+  int&                  jobCounter):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
-  _neighbourMergePerformed(neighbourMergePerformed) {
+  _neighbourMergePerformed(neighbourMergePerformed),
+  _jobCounter(jobCounter) {
   // copy the neighbour merge performed array
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  {
+    _jobCounter++;
+  }
   lock.free();
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStepBody(_cellDescriptionsIndex,_element,false,false,_neighbourMergePerformed,true);
-
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    _jobCounter--;
+    assertion( _jobCounter>=0 );
+  }
   lock.free();
   return false;
 }
@@ -2359,7 +2368,9 @@ exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::AdjustLimiterS
   _solverPatch(solverPatch),
   _limiterPatch(limiterPatch) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs++;
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
   lock.free();
 }
 
@@ -2367,8 +2378,10 @@ bool exahype::solvers::LimitingADERDGSolver::AdjustLimiterSolutionJob::operator(
   _solver.adjustLimiterSolution(_solverPatch,_limiterPatch);
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  _NumberOfBackgroundJobs--;
-  assertion( _NumberOfBackgroundJobs>=0 );
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
+  }
   lock.free();
   return false;
 }

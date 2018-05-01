@@ -21,8 +21,9 @@ public class TemplateEngine {
   /** Block tokens contain logic and come in group, requiring a syntax tree to evaluate */
   public static final String BLOCK_TOKEN_START = "{%";
   public static final String BLOCK_TOKEN_END   = "%}";
+  
   /** Special block token start delimiter that strip whitespaces around it */
-  public static final String STRIP_BLOCK_TOKEN_START = "{%-"; //must start like BLOCK_TOKEN_START
+  public static final String STRIP_BLOCK_TOKEN_START = "{%-";
   
   /** Tags of the logic block for Branches */
   public static final String LOGIC_IF_TAG    = "if";
@@ -33,9 +34,6 @@ public class TemplateEngine {
   public static final String LOGIC_FOR_TAG     = "for";
   public static final String LOGIC_FOR_SET_TAG = "in"; // {% for value in collection %}
   public static final String LOGIC_ENDFOR_TAG  = "endfor";
-  
-  /** The size of the content of a grammar token has to be constrained for the look trick */
-  private static final int TOKEN_MAX_SIZE = 99999;
   
   /** Regex used to tokenize the template */
   private String regex;
@@ -53,25 +51,24 @@ public class TemplateEngine {
    *
    * A grammar token is delimiter start, content, delimiter end
    * All the text between two grammar token (or before the first/ after the last) is one text token
-   * Grammar tokens are contrained in size by TOKEN_MAX_SIZE (arbitrary large int)
-   * Text tokens can be arbitrary long
    *
-   * The base regex find the grammar tokens, the regex then use it with the lookahead and lookbehind 
+   * The base regex find the grammar tokens delimiters, the regex then use it with the lookahead and lookbehind
    * trick to keep the grammar token matches in the split result
+   *
+   * The tokens should then be rebuild from the identified delimiter start, content, delimiter end
    */
   private void buildRegex() {
-    //constrains the size of a grammar token for the look trick
-    final String tokenContent = ".{0,"+TOKEN_MAX_SIZE+"}?";
-    
     // tokens
-    final String varToken = escRegex(VAR_TOKEN_START)+tokenContent+escRegex(VAR_TOKEN_END);
-    final String blockToken = escRegex(BLOCK_TOKEN_START)+tokenContent+escRegex(BLOCK_TOKEN_END);
+    final String varTokenStart   = escRegex(VAR_TOKEN_START);
+    final String varTokenEnd     = escRegex(VAR_TOKEN_END);
+    final String blockTokenStart = escRegex(BLOCK_TOKEN_START);
+    final String blockTokenEnd   = escRegex(BLOCK_TOKEN_END);
     
     //match one of the grammar tokens
-    final String tokenPattern = varToken+"|"+blockToken; 
+    final String tokenPattern = varTokenStart+"|"+varTokenEnd+"|"+blockTokenStart+"|"+blockTokenEnd;
     
     //lookahead+lookbehind trick
-    this.regex = "(?="+tokenPattern+")|(?<="+tokenPattern+")"; 
+    this.regex = "(?="+tokenPattern+")|(?<="+tokenPattern+")";
   }
   
   /** escape regex special char '{' and '}' by adding '\' */
@@ -88,7 +85,10 @@ public class TemplateEngine {
    * @return a string with the rendered template
    */
   public String render(String template, Context context) throws IllegalArgumentException {
-    return SyntaxTree.buildTree(template, this.regex).render(context);
+    SyntaxTree st = SyntaxTree.buildTree(template, this.regex);
+    StringBuilder sb = new StringBuilder(template.length()); //initial guess
+    st.renderWithStringBuilder(context, sb);
+    return sb.toString();
   }
   
 }

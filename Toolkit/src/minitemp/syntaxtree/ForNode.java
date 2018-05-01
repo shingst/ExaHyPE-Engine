@@ -1,5 +1,6 @@
 package minitemp.syntaxtree;
 
+import java.lang.StringBuilder;
 import java.util.Collection;
 import minitemp.Context;
 import minitemp.TemplateEngine;
@@ -42,6 +43,18 @@ public class ForNode extends SyntaxTree {
     context.put(variable, previousValue); //restore the previous value of variable
     
     return result;
+  }
+  
+  /** Render the subtree corresponding to the correct branch (eventually empty) */
+  @Override
+  public void renderWithStringBuilder(Context context, StringBuilder sb) throws IllegalArgumentException {
+    Object previousValue = context.getValueOrNull(variable); //store the previous value of variable
+    Collection<Object> values = context.getCollection(collectionName);
+    for(Object value : values) {
+      context.put(variable, value);
+      forBlock.renderWithStringBuilder(context, sb);
+    }
+    context.put(variable, previousValue); //restore the previous value of variable
   }
   
 }

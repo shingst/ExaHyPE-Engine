@@ -199,7 +199,7 @@ bool exahype::Cell::isAtRemoteBoundary(
     if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
       dfor2(a) // Loop over adjacent ranks. Does also include own rank.
         result |= tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
-                  verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
+                  verticesAroundCell[ verticesEnumerator(v) ].isInside() && // exclude boundary and outside vertices
                   verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
                       tarch::parallel::Node::getInstance().getRank();
       enddforx //a

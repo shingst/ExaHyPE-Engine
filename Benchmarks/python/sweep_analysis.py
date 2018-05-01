@@ -62,6 +62,7 @@ def parseResultFile(filePath):
     parameterDict   = {}
     
     stats = {}
+    stats["run_time_steps"]  = 0
     stats["inner_cells_min"] = 10**20
     stats["inner_cells_max"] = 0
     stats["inner_cells_avg"] = 0.0
@@ -95,7 +96,11 @@ def parseResultFile(filePath):
                 stats["unrefined_inner_cells_min"]  = min( stats["unrefined_inner_cells_min"], unrefinedInnerCells )
                 stats["unrefined_inner_cells_max"]  = max( stats["unrefined_inner_cells_max"], unrefinedInnerCells )
                 stats["unrefined_inner_cells_avg"] += unrefinedInnerCells
-                
+            # 154.448      [i22r02c02s11],rank:0 info         exahype::runners::Runner::startNewTimeStep(...)         step 20	t_min          =0.0015145
+            m = re.search("step(\s*)([0-9]+)(\s*)t_min",line)
+            if m:
+                stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
+   
             anchor = '|'
             header = '||'
             if anchor in line and header not in line:
@@ -179,6 +184,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         header.append("inner_cells_min")
                         header.append("inner_cells_max")
                         header.append("inner_cells_avg")
+                        header.append("run_time_steps")
                         header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
@@ -213,6 +219,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(str( int(stats["inner_cells_min"]) ))
                         row.append(str( int(stats["inner_cells_max"]) ))
                         row.append(str( stats["inner_cells_avg"] ))
+                        row.append(str( stats["run_time_steps"] ))
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
@@ -309,6 +316,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         userTimeColumn           = header.index("total_usertime")
         normalisedCPUTimeColumn  = header.index("normalised_cputime")
         normalisedUserTimeColumn = header.index("normalised_usertime")
+        runTimeStepsColumn       = header.index("run_time_steps")
         
         if runColumn >= adapterColumn:
             print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
@@ -354,10 +362,10 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             def sumUpTimes(line,fused):
                 adapter = line[adapterColumn]
                 if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                    summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
-                    summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[iterationsColumn])
-                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[iterationsColumn])
-                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[iterationsColumn])
+                    summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[runTimeStepsColumn])
+                    summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[runTimeStepsColumn])
+                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[runTimeStepsColumn])
+                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[runTimeStepsColumn])
                 elif not timePerTimeStep:
                     summedCPUTimes[-1]            += float(line[cpuTimeColumn])
                     summedUserTimes[-1]           += float(line[userTimeColumn])
