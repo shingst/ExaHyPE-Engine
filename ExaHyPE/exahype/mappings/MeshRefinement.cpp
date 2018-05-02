@@ -583,6 +583,7 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
   receivedCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   if ( receivedCell.hasToCommunicate( receivedVerticesEnumerator.getCellSize()) ) {
+    receivedCell.setupMetaData();
     exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       receivedCell,
@@ -624,12 +625,11 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
 
   if ( receivedMasterCell.isInitialised() ) { // we do not receive anything here
     if ( !localCell.isInitialised() ) { // simply copy the index
-      localCell.setCellDescriptionsIndex(receivedMasterCell.getCellDescriptionsIndex());
-    } else { // make consistent
-      exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
-      exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
-      // TODO(Dominic): Make collective operations in cell
+      localCell.setupMetaData();
     }
+    // make consistent     // TODO(Dominic): Make collective operations in cell
+    exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
+    exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
 
     const int localCellDescriptionsIndex    = localCell.getCellDescriptionsIndex();
     const int receivedCellDescriptionsIndex = receivedMasterCell.getCellDescriptionsIndex();
@@ -645,7 +645,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
             IsInitialMeshRefinement);
       }
     }
-
+    DataHeap::getInstance().deleteData(receivedMasterCell.getCellDescriptionsIndex());
   }
   
   logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
