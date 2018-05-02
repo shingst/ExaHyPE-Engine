@@ -1968,15 +1968,40 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrRestriction(
     CellDescription& cellDescription) {
   bool isInvolvedInProlongationRestriction = cellDescription.getHasVirtualChildren();
+//
+//  // this might be the expensive part (mostly integer stuff though)
+//  SubcellPosition subcellPosition =
+//      exahype::amr::computeSubcellPositionOfCellOrAncestor
+//      <CellDescription,Heap>(cellDescription);
+//  if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
+//    isInvolvedInProlongationRestriction |=
+//        exahype::amr::onBoundaryOfParent(
+//            subcellPosition.subcellIndex,subcellPosition.levelDifference);
+//  }
 
+  // TODO(Dominic): Restored old behaviour; keep for now until we have LTS program flow
   // this might be the expensive part (mostly integer stuff though)
   SubcellPosition subcellPosition =
       exahype::amr::computeSubcellPositionOfCellOrAncestor
       <CellDescription,Heap>(cellDescription);
   if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-    isInvolvedInProlongationRestriction |=
+    CellDescription& parentCellDescription =
+          exahype::solvers::ADERDGSolver::getCellDescription(
+              subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+    if (
         exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference);
+            subcellPosition.subcellIndex,subcellPosition.levelDifference)
+    ) {
+      // check if the parent needs to restrict to its parent too
+      SubcellPosition parentSubcellPosition =
+          exahype::amr::computeSubcellPositionOfCellOrAncestor
+          <CellDescription,Heap>(parentCellDescription);
+
+      isInvolvedInProlongationRestriction |=
+          parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+          exahype::amr::onBoundaryOfParent(
+              parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
+    }
   }
 
   return isInvolvedInProlongationRestriction;
