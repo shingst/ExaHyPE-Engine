@@ -955,6 +955,25 @@ void exahype::solvers::FiniteVolumesSolver::sendEmptyCellDescriptions(
       toRank,x,level,messageType);
 }
 
+void exahype::solvers::FiniteVolumesSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
+  auto* solver = RegisteredSolvers[cellDescription.getSolverNumber()];
+  switch (solver->getType()) {
+  case exahype::solvers::Solver::Type::ADERDG:
+    assertionMsg(false,"Solver type not supported!");
+    break;
+  case exahype::solvers::Solver::Type::LimitingADERDG:
+    static_cast<LimitingADERDGSolver*>(solver)->
+        getLimiter()->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    static_cast<LimitingADERDGSolver*>(solver)->
+        getLimiter()->ensureNecessaryMemoryIsAllocated(cellDescription);
+    break;
+  case exahype::solvers::Solver::Type::FiniteVolumes:
+    static_cast<FiniteVolumesSolver*>(solver)->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    static_cast<FiniteVolumesSolver*>(solver)->ensureNecessaryMemoryIsAllocated(cellDescription);
+    break;
+  }
+}
+
 void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
     const int                                     fromRank,
     exahype::Cell&                                localCell,
@@ -978,12 +997,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
         multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
     assertion1(Heap::getInstance().isValidIndex(localCell.getCellDescriptionsIndex()),
         localCell.getCellDescriptionsIndex());
-    Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).reserve(
-            Heap::getInstance().getData(receivedCellDescriptionsIndex).size());
 
     for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).
-          push_back(pReceived);
+      ensureOnlyNecessaryMemoryIsAllocated(pReceived);
+      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
     }
   }
 

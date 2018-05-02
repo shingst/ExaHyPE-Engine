@@ -318,7 +318,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 }
 
 void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
-    CellDescription& cellDescription,const bool allocateSolution) const {
+    CellDescription& cellDescription) const {
   if (
       cellDescription.getType()==CellDescription::Type::Cell
       &&
@@ -330,13 +330,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     // Allocate volume DoF for limiter
     const int dataPerNode     = getNumberOfVariables()+getNumberOfParameters();
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
-    if ( allocateSolution ) {
-      cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
-      cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
-    } else {
-      cellDescription.setPreviousSolution( -1 );
-      cellDescription.setSolution( -1 );
-    }
+    cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
+    cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
 
     cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
 
@@ -372,9 +367,10 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     lock.free();
   }
 
-  assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
+  assertion2(cellDescription.getType()!=CellDescription::Type::Cell ||
       cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
-      cellDescription.toString());
+      cellDescription.toString(),
+      tarch::parallel::Node::getInstance().getRank());
 
   if(
       (cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
@@ -3117,8 +3113,7 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
     const int                                    level) {
   const int receivedCellDescriptionsIndex =
       Heap::getInstance().createData(0,exahype::solvers::RegisteredSolvers.size());
-  Heap::getInstance().receiveData(
-      receivedCellDescriptionsIndex,fromRank,x,level,messageType);
+  Heap::getInstance().receiveData(receivedCellDescriptionsIndex,fromRank,x,level,messageType);
 
   logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
           Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
@@ -3133,8 +3128,6 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
         multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
     assertion1(Heap::getInstance().isValidIndex(localCell.getCellDescriptionsIndex()),
                localCell.getCellDescriptionsIndex());
-    Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).reserve(
-        Heap::getInstance().getData(receivedCellDescriptionsIndex).size());
 
     assertion(Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).empty());
     for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
@@ -3180,7 +3173,6 @@ void exahype::solvers::ADERDGSolver::resetDataHeapIndices(
     p.setHasToHoldDataForMasterWorkerCommunication(false);
   }
 }
-
 
 void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
   auto* solver = RegisteredSolvers[cellDescription.getSolverNumber()];
@@ -3383,13 +3375,13 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
 void exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
     exahype::Cell& localCell,
     const exahype::Cell& receivedMasterCell) {
-  for (CellDescription& receivedCellDescription : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
+  for (CellDescription& pReceived : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
     bool found = false;
-    for (CellDescription& localCellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
-      found |= receivedCellDescription.getSolverNumber()==localCellDescription.getSolverNumber();
+    for (CellDescription& pLocal : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
+      found |= pReceived.getSolverNumber()==pLocal.getSolverNumber();
     }
     if ( !found ) {
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(receivedCellDescription); // this copies
+      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived); // this copies
     }
   }
 }
@@ -3411,9 +3403,16 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
 
     // we know we have received data in this case
     localCellDescription.setType(CellDescription::Type::Cell);
-    ensureNecessaryMemoryIsAllocated(localCellDescription,false/*do not allocate solution and previous solution arrays*/);
-    localCellDescription.setSolution(receivedCellDescription.getSolution());
-    localCellDescription.setPreviousSolution(receivedCellDescription.getPreviousSolution());
+    ensureNecessaryMemoryIsAllocated(localCellDescription);
+    std::copy(
+        DataHeap::getInstance().getData(receivedCellDescription.getSolution()).begin(),
+        DataHeap::getInstance().getData(receivedCellDescription.getSolution()).end(),
+        DataHeap::getInstance().getData(localCellDescription.getSolution()).begin());
+    std::copy(
+        DataHeap::getInstance().getData(receivedCellDescription.getPreviousSolution()).begin(),
+        DataHeap::getInstance().getData(receivedCellDescription.getPreviousSolution()).end(),
+        DataHeap::getInstance().getData(localCellDescription.getPreviousSolution()).begin());
+
     // adjust solution
     localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
     Solver::adjustSolutionDuringMeshRefinement(

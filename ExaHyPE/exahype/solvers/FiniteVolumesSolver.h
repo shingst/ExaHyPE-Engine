@@ -142,15 +142,9 @@ private:
 #endif
 
   /**
-   * Sets heap indices of all finite volumes cell descriptions that were
-   * received due to a fork or join event to
-   * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-   * and the parent index of the cell descriptions to the specified \p
-   * parentIndex.
+   * Allocate necessary memory and deallocate unnecessary memory.
    */
-  static void resetDataHeapIndices(
-      const int cellDescriptionsIndex,
-      const int parentIndex);
+  static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
   /**
    * Checks if the parent index of a fine grid cell description
@@ -758,6 +752,17 @@ public:
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
+
+  /**
+    * Sets heap indices of all finite volumes cell descriptions that were
+    * received due to a fork or join event to
+    * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
+    * and the parent index of the cell descriptions to the specified \p
+    * parentIndex.
+    */
+   static void resetDataHeapIndices(
+       const int cellDescriptionsIndex,
+       const int parentIndex);
 
   /**
    * Send all ADERDG cell descriptions to rank

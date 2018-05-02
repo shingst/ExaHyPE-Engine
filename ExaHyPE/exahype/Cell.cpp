@@ -415,6 +415,7 @@ void exahype::Cell::receiveDataFromMasterPerCell(
     assertion(ReceivedDataHeapIndices.empty());
     const int maxNumberOfMessages = 4; // TODO(Dominic): Ensure this is correct (from ADERDGSolver::DataMessagesPerMasterWorkerCommunication + 2 for observables).
     ReceivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*maxNumberOfMessages);
+    ReceivedDataHeapIndices.clear();
 
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

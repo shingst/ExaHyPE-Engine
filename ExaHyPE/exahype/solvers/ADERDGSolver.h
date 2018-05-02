@@ -660,7 +660,7 @@ private:
       const int parentIndex);
 
   /**
-   * Allocate necessary memory and deallocate the unnecessary memory.
+   * Allocate necessary memory and deallocate unnecessary memory.
    */
   static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
@@ -1126,7 +1126,7 @@ public:
    *
    * \param
    */
-  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription,const bool allocateSolution=true) const;
+  void ensureNecessaryMemoryIsAllocated(exahype::records::ADERDGCellDescription& cellDescription) const;
 
 
   /**
