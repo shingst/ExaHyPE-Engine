@@ -2003,6 +2003,18 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
+
+  /**
+   * Merge with the worker's metadata.
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
+   */
+  virtual void mergeWithWorkerMetadata(
+          const MetadataHeap::HeapEntries& receivedMetadata,
+          const int                        cellDescriptionsIndex,
+          const int                        element) = 0;
+
   /**
    * Send data to the master that is not
    * depending on a particular cell description.

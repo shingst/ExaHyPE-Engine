@@ -866,6 +866,10 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
+  ///////////////////////
+  // MASTER <=> WORKER
+  ///////////////////////
+
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
@@ -897,6 +901,12 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
+
+  void mergeWithWorkerMetadata(
+        const MetadataHeap::HeapEntries& receivedMetadata,
+        const int                        cellDescriptionsIndex,
+        const int                        element) override;
+
   static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
       exahype::Cell& localCell,
       const exahype::Cell& receivedMasterCell);

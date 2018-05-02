@@ -1551,6 +1551,11 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
+  void mergeWithWorkerMetadata(
+        const MetadataHeap::HeapEntries& receivedMetadata,
+        const int                        cellDescriptionsIndex,
+        const int                        element) override;
+
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,

@@ -439,6 +439,32 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   // WORKER->MASTER
 
   /**
+   * Reduce Metadata from a worker
+   * to the master.
+   */
+  void reduceMetadataToMasterPerCell(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level) const;
+
+  /**
+   * Receives metadata from a worker and merges it with all
+   * solvers registered on the cell.
+   *
+   * \return if vertical (master-worker) exchange
+   * of face data is required during the time stepping iterations
+   * for any of the registered solvers.
+   */
+  bool mergeWithMetadataFromWorkerPerCell(
+      const int                                   workerRank,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level,
+      const exahype::State::AlgorithmSection&     section) const;
+
+
+  /**
    * Reduce metadata and face data to the master
    * In contrast to the two-step broadcast merging
    * process, reductions are a single-step process.

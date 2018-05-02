@@ -2150,6 +2150,13 @@ void exahype::solvers::LimitingADERDGSolver::dropWorkerOrMasterDataDueToForkOrJo
 // WORKER->MASTER
 ///////////////////////////////////
 
+void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
+      const MetadataHeap::HeapEntries& receivedMetadata,
+      const int                        cellDescriptionsIndex,
+      const int                        element) {
+  // do nothing
+}
+
 void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,

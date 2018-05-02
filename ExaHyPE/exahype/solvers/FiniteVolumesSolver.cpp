@@ -1058,6 +1058,8 @@ exahype::solvers::FiniteVolumesSolver::appendMasterWorkerCommunicationMetadata(
   }
 }
 
+///////////////////////
+
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,
@@ -1366,6 +1368,13 @@ void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(
 ///////////////////////////////////
 // WORKER->MASTER
 ///////////////////////////////////
+
+void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
+      const MetadataHeap::HeapEntries& receivedMetadata,
+      const int                        cellDescriptionsIndex,
+      const int                        element) {
+  // do nothing
+}
 
 /*
  * At the time of sending data to the master,
