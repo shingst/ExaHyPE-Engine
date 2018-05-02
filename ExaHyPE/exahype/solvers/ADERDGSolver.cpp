@@ -3400,10 +3400,6 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
     const bool initialGrid) {
   CellDescription& localCellDescription    = getCellDescription(localCellDescriptionsIndex,localElement);
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
-  assertion2( localCellDescription.getType()==receivedCellDescription.getType(),
-              localCellDescription.toString(),receivedCellDescription.toString() );
-  assertion2( localCellDescription.getRefinementEvent()==receivedCellDescription.getRefinementEvent(),
-             localCellDescription.toString(),receivedCellDescription.toString() );
 
   // finalise prolongation operation started on master
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
@@ -3425,8 +3421,9 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
   }
 
   // check if we will need to restrict data up (TODO(Dominic): With LTS workflow this should change)
-  assertion(receivedCellDescription.getType()!=CellDescription::Type::Ancestor ||
-            localCellDescription.getType()==CellDescription::Type::Ancestor);
+  assertion2(
+      receivedCellDescription.getType()!=CellDescription::Type::Ancestor ||
+      localCellDescription.getType()==CellDescription::Type::Ancestor,localCellDescription.toString(),receivedCellDescription.toString());
   if ( localCellDescription.getType()==CellDescription::Type::Ancestor ) {
     localCellDescription.setHasToHoldDataForMasterWorkerCommunication(
         receivedCellDescription.getHasToHoldDataForMasterWorkerCommunication());
@@ -3479,7 +3476,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const int                                    level) {
   CellDescription& localCellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
-  assertion(localCellDescription.getType()==receivedCellDescription.getType());
+  localCellDescription.setType(receivedCellDescription.getType());
 
   // receive the data
   if (
@@ -3627,6 +3624,19 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion4(tarch::la::equals(x,cellDescription.getOffset()+0.5*cellDescription.getSize()),x,cellDescription.getOffset()+0.5*cellDescription.getSize(),level,cellDescription.getLevel());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
+
+  if (
+      (tarch::parallel::Node::getInstance().getRank()==11 ||
+      tarch::parallel::Node::getInstance().getRank()==6)
+      &&
+      messageType==peano::heap::MessageType::ForkOrJoinCommunication
+  ) {
+    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","receive from rank "<<fromRank<<
+             ", cell: "<< x << ", level: " << level <<
+             ",type=" << CellDescription::toString(cellDescription.getType()) <<
+             ",RefEv="<<CellDescription::toString(cellDescription.getRefinementEvent()) <<
+             ",RefReq="<<CellDescription::toString(cellDescription.getRefinementRequest()));
+  }
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<

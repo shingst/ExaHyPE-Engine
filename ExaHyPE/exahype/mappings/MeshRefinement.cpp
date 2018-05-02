@@ -491,7 +491,12 @@ void exahype::mappings::MeshRefinement::destroyCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   // TODO(Dominic): introduce some allSolversDoThis allSolversDoThat...  functions
-  if ( fineGridCell.isInitialised() ) {
+  exahype::State dummyState;
+  if (
+      fineGridCell.isInitialised() &&
+      fineGridCell.isRemote(dummyState,true,true) && // Do not delete the deployed root
+      coarseGridCell.isRemote(dummyState,true,true)
+  ) {
     exahype::solvers::ADERDGSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
     exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
 
@@ -565,12 +570,12 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
     // possibly send out data
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int receivedElement = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
 
-      if ( receivedElement!=exahype::solvers::Solver::NotFound ) {
+      if ( element!=exahype::solvers::Solver::NotFound ) {
         solver->sendDataToWorkerIfProlongating(
             tarch::parallel::NodePool::getInstance().getMasterRank(),
-            cellDescriptionsIndex,receivedElement,
+            cellDescriptionsIndex,element,
             fineGridVerticesEnumerator.getCellCenter(),
             fineGridVerticesEnumerator.getLevel());
       }
