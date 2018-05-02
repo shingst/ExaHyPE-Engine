@@ -379,54 +379,86 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                 if previousLine==None:
                     previousLine=line
                 
+                # new adapter 
                 if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
-                    sumUpTimes(line,fused)
+                    adapter = line[adapterColumn]
+                    #print("new adapter: "+adapter)
+                    if adapter!="missing":
+                        sumUpTimes(line,fused)
+                # new run  
+                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn): 
+                    adapter = line[adapterColumn]
+                    fused = (adapter==firstFusedAdapter) # only do this here
+                    #print("new run: "+adapter)
+                    if adapter!="missing":
+                        summedCPUTimes.append(0.0)
+                        summedUserTimes.append(0.0)
+                        summedNormalisedCPUTimes.append(0.0)
+                        summedNormalisedUserTimes.append(0.0)
  
-                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
-                    summedCPUTimes.append(0.0)
-                    summedUserTimes.append(0.0)
-                    summedNormalisedCPUTimes.append(0.0)
-                    summedNormalisedUserTimes.append(0.0)
-                    
-                    sumUpTimes(line,fused)
+                        sumUpTimes(line,fused)
+                # new experiment
                 else:
                     row = previousLine[0:runColumn]
                     row.append(str(len(summedCPUTimes)))
-                    
-                    appendMoments(row,summedCPUTimes)
-                    appendMoments(row,summedUserTimes)
-                    appendMoments(row,summedNormalisedCPUTimes)
-                    appendMoments(row,summedNormalisedUserTimes)
+
+                    if len(summedCPUTimes): 
+                        appendMoments(row,summedCPUTimes)
+                        appendMoments(row,summedUserTimes)
+                        appendMoments(row,summedNormalisedCPUTimes)
+                        appendMoments(row,summedNormalisedUserTimes)
+                    else:
+                        summedCPUTimes            = [float("nan")]
+                        summedUserTimes           = [float("nan")]
+                        summedNormalisedCPUTimes  = [float("nan")]
+                        summedNormalisedUserTimes = [float("nan")]
+                        appendMoments(row,summedCPUTimes)
+                        appendMoments(row,summedUserTimes)
+                        appendMoments(row,summedNormalisedCPUTimes)
+                        appendMoments(row,summedNormalisedUserTimes)
                     
                     csvwriter.writerow(row)
-                    
                     # reset 
+                    summedCPUTimes            = [0.0]
+                    summedUserTimes           = [0.0]
+                    summedNormalisedCPUTimes  = [0.0]
+                    summedNormalisedUserTimes = [0.0]
+                    
                     adapter = line[adapterColumn]
-                    fused = (adapter==firstFusedAdapter)
-                    if adapter=="missing": 
-                        summedCPUTimes[-1]            = float('nan')
-                        summedUserTimes[-1]           = float('nan')
-                        summedNormalisedCPUTimes[-1]  = float('nan')
-                        summedNormalisedUserTimes[-1] = float('nan')
-                    else: 
+                    # print("new experiment: "+adapter)
+                    fused = (adapter==firstFusedAdapter) # only do this here
+                    if adapter!="missing":
                         summedCPUTimes            = [0.0]
                         summedUserTimes           = [0.0]
                         summedNormalisedCPUTimes  = [0.0]
                         summedNormalisedUserTimes = [0.0]
-                        
+                   
                         sumUpTimes(line,fused)
+                    else:
+                        summedCPUTimes            = []
+                        summedUserTimes           = []
+                        summedNormalisedCPUTimes  = []
+                        summedNormalisedUserTimes = []
                 
                 previousLine  = line
             
             # write last row (copy and paste)
             row = previousLine[0:runColumn]
             row.append(str(len(summedCPUTimes)))
-            
-            appendMoments(row,summedCPUTimes)
-            appendMoments(row,summedUserTimes)
-            appendMoments(row,summedNormalisedCPUTimes)
-            appendMoments(row,summedNormalisedUserTimes)
-            
+            if len(summedCPUTimes): 
+                appendMoments(row,summedCPUTimes)
+                appendMoments(row,summedUserTimes)
+                appendMoments(row,summedNormalisedCPUTimes)
+                appendMoments(row,summedNormalisedUserTimes)
+            else:
+                summedCPUTimes            = [float("nan")]
+                summedUserTimes           = [float("nan")]
+                summedNormalisedCPUTimes  = [float("nan")]
+                summedNormalisedUserTimes = [float("nan")]
+                appendMoments(row,summedCPUTimes)
+                appendMoments(row,summedUserTimes)
+                appendMoments(row,summedNormalisedCPUTimes)
+                appendMoments(row,summedNormalisedUserTimes)     
             csvwriter.writerow(row)
             
             print("created table:")
