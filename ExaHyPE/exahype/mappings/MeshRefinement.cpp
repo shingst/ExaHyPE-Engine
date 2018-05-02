@@ -33,6 +33,8 @@
 
 #include "exahype/mappings/LimiterStatusSpreading.h"
 
+#include <sstream>
+
 bool exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = true;
 
@@ -540,8 +542,6 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
   logTraceIn( "prepareSendToWorker(...)" );
 
   if ( fineGridCell.hasToCommunicate(fineGridVerticesEnumerator.getCellSize()) ) {
-    assertion(fineGridCell.isInside());
-
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
           solver->progressMeshRefinementInPrepareSendToWorker(
