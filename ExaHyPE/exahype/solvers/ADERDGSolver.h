@@ -660,6 +660,11 @@ private:
       const int parentIndex);
 
   /**
+   * Allocate necessary memory and deallocate the unnecessary memory.
+   */
+  static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
+
+  /**
    * If the cell description is of type Ancestor, we look up
    * if its top-most parent stores face data during the time stepping
    * iterations. That's the case if the parent Ancestor is next
@@ -1100,16 +1105,6 @@ public:
    * which is twice the returned value.
    */
   int getMinimumLimiterStatusForTroubledCell() const;
-
-  /**
-   * Check if cell descriptions of type Ancestor or Descendant need to hold
-   * data or not based on virtual refinement criterion.
-   * Then, allocate the necessary memory or deallocate the unnecessary memory.
-   */
-  void ensureOnlyNecessaryMemoryIsAllocated(
-      CellDescription& fineGridCellDescription,
-      const exahype::solvers::Solver::AugmentationControl& augmentationControl,
-      const bool onMasterWorkerBoundary);
 
   /**
    * Checks if no unnecessary memory is allocated for the cell description.

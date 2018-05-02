@@ -3138,7 +3138,7 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
 
     assertion(Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).empty());
     for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-      pReceived.setHasToHoldDataForMasterWorkerCommunication(false);
+      ensureOnlyNecessaryMemoryIsAllocated(pReceived);
       Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
     }
   }
@@ -3175,6 +3175,29 @@ void exahype::solvers::ADERDGSolver::resetDataHeapIndices(
     p.setFacewiseAugmentationStatus(0);
     p.setFacewiseCommunicationStatus(0);
     p.setFacewiseLimiterStatus(0);
+
+    // reset MW comm flags
+    p.setHasToHoldDataForMasterWorkerCommunication(false);
+  }
+}
+
+
+void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
+  auto* solver = RegisteredSolvers[cellDescription.getSolverNumber()];
+  switch (solver->getType()) {
+  case exahype::solvers::Solver::Type::ADERDG:
+    static_cast<ADERDGSolver*>(solver)->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    static_cast<ADERDGSolver*>(solver)->ensureNecessaryMemoryIsAllocated(cellDescription);
+    break;
+  case exahype::solvers::Solver::Type::LimitingADERDG:
+    static_cast<LimitingADERDGSolver*>(solver)->
+    getSolver()->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    static_cast<LimitingADERDGSolver*>(solver)->
+        getSolver()->ensureNecessaryMemoryIsAllocated(cellDescription);
+    break;
+  case exahype::solvers::Solver::Type::FiniteVolumes:
+    assertionMsg(false,"Solver type not supported!");
+    break;
   }
 }
 
@@ -3221,22 +3244,7 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
         cellDescription.getHasVirtualChildren());
 
-    auto* solver = RegisteredSolvers[cellDescription.getSolverNumber()];
-    switch (solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      static_cast<ADERDGSolver*>(solver)->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      static_cast<ADERDGSolver*>(solver)->ensureNecessaryMemoryIsAllocated(cellDescription);
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      static_cast<LimitingADERDGSolver*>(solver)->
-      getSolver()->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      static_cast<LimitingADERDGSolver*>(solver)->
-          getSolver()->ensureNecessaryMemoryIsAllocated(cellDescription);
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      assertionMsg(false,"Solver type not supported!");
-      break;
-    }
+    ensureOnlyNecessaryMemoryIsAllocated(cellDescription);
   }
   // Ancestors; wait for info from master
 }
