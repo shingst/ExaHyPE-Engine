@@ -2731,11 +2731,6 @@ exahype::solvers::ADERDGSolver::determineCommunicationStatus(
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     return MaximumCommunicationStatus;
   }
-  #ifdef Parallel
-  else if (cellDescription.getHasToHoldDataForMasterWorkerCommunication()) {
-    return MinimumCommunicationStatusForNeighbourCommunication;
-  }
-  #endif
   else {
     int max = 0;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
@@ -3132,7 +3127,7 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
           "level="<< level << ")");
 
   Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).clear();
-  if (Heap::getInstance().getData(receivedCellDescriptionsIndex).size()>0) {
+  if ( Heap::getInstance().getData(receivedCellDescriptionsIndex).size()>0 ) {
     resetDataHeapIndices(
         receivedCellDescriptionsIndex,
         multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
@@ -3144,21 +3139,6 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
     assertion(Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).empty());
     for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
       pReceived.setHasToHoldDataForMasterWorkerCommunication(false);
-
-      auto* solver = exahype::solvers::RegisteredSolvers[pReceived.getSolverNumber()];
-
-      switch (solver->getType()) {
-      case exahype::solvers::Solver::Type::ADERDG:
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->ensureNecessaryMemoryIsAllocated(pReceived);
-        break;
-      case exahype::solvers::Solver::Type::LimitingADERDG:
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->ensureNecessaryMemoryIsAllocated(pReceived);
-        break;
-      case exahype::solvers::Solver::Type::FiniteVolumes:
-        assertionMsg(false,"Solver type not supported!");
-        break;
-      }
-
       Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
     }
   }
@@ -3237,14 +3217,26 @@ exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
 
 void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
     CellDescription& cellDescription) {
-  if (cellDescription.getType()==CellDescription::Type::Descendant) {
+  if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
     cellDescription.setHasToHoldDataForMasterWorkerCommunication(
-        cellDescription.getHasVirtualChildren() ||
-        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
+        cellDescription.getHasVirtualChildren());
 
-    auto* solver = static_cast<ADERDGSolver*>(RegisteredSolvers[cellDescription.getSolverNumber()]);
-    solver->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-    solver->ensureNecessaryMemoryIsAllocated(cellDescription);
+    auto* solver = RegisteredSolvers[cellDescription.getSolverNumber()];
+    switch (solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      static_cast<ADERDGSolver*>(solver)->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+      static_cast<ADERDGSolver*>(solver)->ensureNecessaryMemoryIsAllocated(cellDescription);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      static_cast<LimitingADERDGSolver*>(solver)->
+      getSolver()->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+      static_cast<LimitingADERDGSolver*>(solver)->
+          getSolver()->ensureNecessaryMemoryIsAllocated(cellDescription);
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      assertionMsg(false,"Solver type not supported!");
+      break;
+    }
   }
   // Ancestors; wait for info from master
 }
@@ -3290,11 +3282,23 @@ bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
     if (subcellPosition.parentElement!=NotFound) {
       cellDescriptionRequiresVerticalCommunication = true;
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
-      cellDescription.setCommunicationStatus(MinimumCommunicationStatusForNeighbourCommunication);
     
-      auto* solver = static_cast<ADERDGSolver*>(RegisteredSolvers[cellDescription.getSolverNumber()]);
-      solver->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      solver->ensureNecessaryMemoryIsAllocated(cellDescription);
+      auto* solver = RegisteredSolvers[cellDescription.getSolverNumber()];
+      switch (solver->getType()) {
+      case exahype::solvers::Solver::Type::ADERDG:
+        static_cast<ADERDGSolver*>(solver)->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+        static_cast<ADERDGSolver*>(solver)->ensureNecessaryMemoryIsAllocated(cellDescription);
+        break;
+      case exahype::solvers::Solver::Type::LimitingADERDG:
+        static_cast<LimitingADERDGSolver*>(solver)->
+        getSolver()->ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+        static_cast<LimitingADERDGSolver*>(solver)->
+            getSolver()->ensureNecessaryMemoryIsAllocated(cellDescription);
+        break;
+      case exahype::solvers::Solver::Type::FiniteVolumes:
+        assertionMsg(false,"Solver type not supported!");
+        break;
+      }
     }
   } // do nothing for descendants; wait for info from worker
 
@@ -3327,36 +3331,33 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
             initialGrid);
     if ( addedNewCell ) {
-      const int fineGridCellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
-      const int fineGridElement = tryGetElement(fineGridCellDescriptionsIndex,solverNumber);
+      const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+      const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
 
-      CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
+      CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
       prolongateVolumeData(fineGridCellDescription,initialGrid);
       assertion1( fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating,
         fineGridCellDescription.toString());
     } 
-  } 
-
-  // send out data
-  const int fineGridCellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
-  const int fineGridElement = tryGetElement(fineGridCellDescriptionsIndex,solverNumber);
-  if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
-
-    // send out the data
-    if ( fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
-      sendDataToWorkerOrMasterDueToForkOrJoin(workerRank,fineGridCellDescriptionsIndex,fineGridElement,
-          peano::heap::MessageType::MasterWorkerCommunication,
-          fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
-    } else {
-      sendEmptyDataToWorkerOrMasterDueToForkOrJoin(workerRank,
-          peano::heap::MessageType::MasterWorkerCommunication,
-          fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
-    }
   }
 }
 
-void exahype::solvers::ADERDGSolver::progressMeshRefinementInReceiveDataFromMaster(
+void exahype::solvers::ADERDGSolver::sendDataToWorkerIfProlongating(
+    const int                                     workerRank,
+    const int                                     cellDescriptionsIndex,
+    const int                                     element,
+    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const int                                     level) const {
+  CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  // send out the data
+  if ( fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
+    sendDataToWorkerOrMasterDueToForkOrJoin(workerRank,cellDescriptionsIndex,element,
+        peano::heap::MessageType::MasterWorkerCommunication,x,level);
+  }
+}
+
+void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
   const int masterRank,
 	const int receivedCellDescriptionsIndex,
   const int receivedElement,
@@ -3366,12 +3367,8 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInReceiveDataFromMast
 
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
     mergeWithWorkerOrMasterDataDueToForkOrJoin(
-      masterRank,
-      receivedCellDescriptionsIndex,receivedElement,
+      masterRank,receivedCellDescriptionsIndex,receivedElement,
       peano::heap::MessageType::MasterWorkerCommunication,x,level);
-  } else {
-    dropWorkerOrMasterDataDueToForkOrJoin(
-      masterRank,peano::heap::MessageType::MasterWorkerCommunication,x,level);
   }
 }
 
@@ -3381,9 +3378,7 @@ void exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescri
   for (CellDescription& receivedCellDescription : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
     bool found = false;
     for (CellDescription& localCellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
-      if ( receivedCellDescription.getSolverNumber()==localCellDescription.getSolverNumber() ) {
-        found = true;
-      }
+      found |= receivedCellDescription.getSolverNumber()==localCellDescription.getSolverNumber();
     }
     if ( !found ) {
       Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(receivedCellDescription); // this copies

@@ -2041,16 +2041,24 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
       initialGrid, solverNumber);
 }
 
-void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInReceiveDataFromMaster(
+void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerIfProlongating(
+    const int                                     workerRank,
+    const int                                     cellDescriptionsIndex,
+    const int                                     element,
+    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const int                                     level) const {
+  _solver->sendDataToWorkerIfProlongating(
+      workerRank,cellDescriptionsIndex,element,x,level);
+}
+
+void exahype::solvers::LimitingADERDGSolver::receiveDataFromMasterIfProlongating(
     const int masterRank,
     const int receivedCellDescriptionsIndex,
     const int receivedElement,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int level) const {
-  _solver->progressMeshRefinementInReceiveDataFromMaster(
-      masterRank,
-      receivedCellDescriptionsIndex,receivedElement,
-      x,level);
+  _solver->receiveDataFromMasterIfProlongating(
+      masterRank,receivedCellDescriptionsIndex,receivedElement,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(

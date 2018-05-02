@@ -337,8 +337,6 @@ class exahype::records::ADERDGCellDescription {
    * Index pointing to the update DoF belonging to this cell. All volume updates
    * and face fluctuations contribute to this Symbol. Symbol:
    * \f$ \Delta u_h \f$.
-   * 
-   * @deprecated
    */
   persistent int update;
   persistent int updateAverages;

@@ -927,7 +927,17 @@ public:
   /**
    * Nop
    */
-  void progressMeshRefinementInReceiveDataFromMaster(
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
+  /**
+   * Nop
+   */
+  void receiveDataFromMasterIfProlongating(
       const int masterRank,
       const int receivedCellDescriptionsIndex,
       const int receivedElement,

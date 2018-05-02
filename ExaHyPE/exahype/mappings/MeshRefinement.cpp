@@ -551,6 +551,7 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
               solverNumber);
     }
 
+    // send out the cell descriptions
     const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
     _verticalExchangeOfSolverDataRequired |=
         exahype::solvers::ADERDGSolver::sendCellDescriptions(worker,cellDescriptionsIndex,
@@ -560,6 +561,20 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
     exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(worker,cellDescriptionsIndex,
         peano::heap::MessageType::MasterWorkerCommunication,
         fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
+
+    // possibly send out data
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int receivedElement = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+
+      if ( receivedElement!=exahype::solvers::Solver::NotFound ) {
+        solver->sendDataToWorkerIfProlongating(
+            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            cellDescriptionsIndex,receivedElement,
+            fineGridVerticesEnumerator.getCellCenter(),
+            fineGridVerticesEnumerator.getLevel());
+      }
+    }
   }
 
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
@@ -598,13 +613,17 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
       receivedVerticesEnumerator.getCellCenter(),
       receivedVerticesEnumerator.getLevel());
     
+    logInfo( "receiveDataFromMaster(...)","cell="<<receivedVerticesEnumerator.getCellCenter()<<","<<
+        receivedVerticesEnumerator.getLevel()<<": received=" <<
+        exahype::solvers::ADERDGSolver::Heap::getInstance().getData(receivedCell.getCellDescriptionsIndex()).size());
+
     const int receivedCellDescriptionsIndex = receivedCell.getCellDescriptionsIndex();
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
       
       if ( receivedElement!=exahype::solvers::Solver::NotFound ) {
-        solver->progressMeshRefinementInReceiveDataFromMaster( // TODO(Dominic): FV should not nothing here
+        solver->receiveDataFromMasterIfProlongating(
             tarch::parallel::NodePool::getInstance().getMasterRank(),
             receivedCellDescriptionsIndex,receivedElement,
             receivedVerticesEnumerator.getCellCenter(),

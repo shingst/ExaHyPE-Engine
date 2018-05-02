@@ -1468,10 +1468,19 @@ public:
       const int solverNumber) final override;
 
   /**
-   * Just receive data depending on the refinement
-   * event of a cell description.
+   * Forward to ADERDGSolver
    */
-  void progressMeshRefinementInReceiveDataFromMaster(
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
+  /**
+   * Forward to ADERDGSolver
+   */
+  void receiveDataFromMasterIfProlongating(
       const int masterRank,
       const int receivedCellDescriptionsIndex,
       const int receivedElement,

@@ -2177,11 +2177,19 @@ public:
       const bool initialGrid,
       const int solverNumber) final override;
 
+
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
   /**
    * Just receive data depending on the refinement
    * event of a cell description.
    */
-  void progressMeshRefinementInReceiveDataFromMaster(
+  void receiveDataFromMasterIfProlongating(
       const int masterRank,
       const int receivedCellDescriptionsIndex,
       const int receivedElement,

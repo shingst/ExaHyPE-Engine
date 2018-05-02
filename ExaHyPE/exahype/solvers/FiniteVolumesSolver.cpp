@@ -982,20 +982,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
             Heap::getInstance().getData(receivedCellDescriptionsIndex).size());
 
     for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-      auto* solver = exahype::solvers::RegisteredSolvers[pReceived.getSolverNumber()];
-
-      switch (solver->getType()) {
-      case exahype::solvers::Solver::Type::ADERDG:
-        assertionMsg(false,"Solver type not appropriate!");
-        break;
-      case exahype::solvers::Solver::Type::LimitingADERDG:
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiter()->ensureNecessaryMemoryIsAllocated(pReceived);
-        break;
-      case exahype::solvers::Solver::Type::FiniteVolumes:
-        static_cast<FiniteVolumesSolver*>(solver)->ensureNecessaryMemoryIsAllocated(pReceived);
-        break;
-      }
-
       Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).
           push_back(pReceived);
     }
@@ -1144,7 +1130,16 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInReceiveDataFromMaster(
+void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerIfProlongating(
+    const int                                     toRank,
+    const int                                     cellDescriptionsIndex,
+    const int                                     element,
+    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const int                                     level) const {
+  // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
     const int masterRank,
     const int receivedCellDescriptionsIndex,
     const int receivedElement,

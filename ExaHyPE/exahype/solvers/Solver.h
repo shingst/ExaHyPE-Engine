@@ -1887,7 +1887,18 @@ class exahype::solvers::Solver {
    * Just receive data or not from the master
    * depending on the refinement event.
    */
-  virtual void progressMeshRefinementInReceiveDataFromMaster(
+  virtual void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const = 0;
+
+  /**
+   * Just receive data or not from the master
+   * depending on the refinement event.
+   */
+  virtual void receiveDataFromMasterIfProlongating(
         const int masterRank,
         const int receivedCellDescriptionsIndex,
         const int receivedElement,
