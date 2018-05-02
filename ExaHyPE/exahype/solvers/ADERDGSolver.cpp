@@ -3078,8 +3078,6 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-
   if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
     logDebug("sendCellDescriptions(...)","send "<< Heap::getInstance().getData(cellDescriptionsIndex).size()<<
         " cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
@@ -3405,7 +3403,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
              localCellDescription.toString(),receivedCellDescription.toString() );
 
   // finalise prolongation operation started on master
-  if ( receivedCellDescription.getType()==CellDescription::RefinementEvent::Prolongating ) {
+  if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
     assertion( localCellDescription.getType()==CellDescription::Type::Cell ||
                localCellDescription.getType()==CellDescription::Type::Descendant);
     assertion(receivedCellDescription.getType()==CellDescription::Type::Cell);

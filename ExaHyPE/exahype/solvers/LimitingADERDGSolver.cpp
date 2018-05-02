@@ -2150,11 +2150,11 @@ void exahype::solvers::LimitingADERDGSolver::dropWorkerOrMasterDataDueToForkOrJo
 // WORKER->MASTER
 ///////////////////////////////////
 
-void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
+void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) {
-  // do nothing
+  _solver->mergeWithWorkerMetadata(receivedMetadata,cellDescriptionsIndex,element);
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(

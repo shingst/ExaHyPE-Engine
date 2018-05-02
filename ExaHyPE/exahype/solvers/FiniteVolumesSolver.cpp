@@ -938,9 +938,6 @@ void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),
-      cellDescriptionsIndex);
-
   if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
     Heap::getInstance().sendData(cellDescriptionsIndex,toRank,x,level,messageType);
   } else {
