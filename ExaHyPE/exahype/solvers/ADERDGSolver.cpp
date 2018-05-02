@@ -3583,7 +3583,7 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""
             "solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
                  ", cell: "<< x << ", level: " << level);
@@ -3625,7 +3625,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
   assertion4(tarch::la::equals(x,cellDescription.getOffset()+0.5*cellDescription.getSize()),x,cellDescription.getOffset()+0.5*cellDescription.getSize(),level,cellDescription.getLevel());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
 
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
              ", cell: "<< x << ", level: " << level);
 
@@ -3635,6 +3635,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
         fromRank,x,level,messageType);
     DataHeap::getInstance().receiveData(cellDescription.getPreviousSolution(),
         fromRank,x,level,messageType);
+  } else {
+    dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
   }
 }
 
