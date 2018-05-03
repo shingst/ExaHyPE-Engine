@@ -569,7 +569,7 @@ public:
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    */
-  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   /**
    * Checks if all the necessary memory is allocated for the cell description.
@@ -579,7 +579,7 @@ public:
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
    */
-  void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
@@ -754,15 +754,11 @@ public:
       const int solverNumber) const override;
 
   /**
-    * Sets heap indices of all finite volumes cell descriptions that were
-    * received due to a fork or join event to
-    * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-    * and the parent index of the cell descriptions to the specified \p
-    * parentIndex.
-    */
-   static void resetDataHeapIndices(
-       const int cellDescriptionsIndex,
-       const int parentIndex);
+     * Sets heap indices of an FiniteVolumesCellDescription to -1,
+     * and the parent index of the cell descriptions to the specified \p
+     * parentIndex.
+     */
+   static void resetIndicesAndFlagsOfReceivedCellDescription(CellDescription& cellDescription,const int parentIndex);
 
   /**
    * Send all ADERDG cell descriptions to rank
@@ -883,22 +879,10 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
-      const peano::heap::MessageType&               messageType,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const peano::heap::MessageType&               messageType,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
       const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
@@ -971,8 +955,9 @@ public:
    */
   bool progressMeshRefinementInMergeWithMaster(
       const int worker,
-      const int localCellDescriptionsIndex,    const int localElement,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const int localCellDescriptionsIndex,
+      const int localElement,
+      const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 

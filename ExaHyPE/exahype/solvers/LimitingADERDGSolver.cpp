@@ -2082,12 +2082,13 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const int worker,
-    const int localCellDescriptionsIndex,    const int localElement,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const int localCellDescriptionsIndex,
+    const int localElement,
+    const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  // do nothing
-  return false;
+  return _solver->progressMeshRefinementInMergeWithMaster(
+      worker,localElement,localElement,coarseGridCellDescriptionsIndex,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
@@ -2112,18 +2113,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerOrMasterDueToForkOr
   if (limiterElement!=Solver::NotFound) {
     _limiter->sendDataToWorkerOrMasterDueToForkOrJoin(
         toRank,cellDescriptionsIndex,limiterElement,messageType,x,level);
-  } else {
-    _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
   }
-}
-
-void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-    const int                                     toRank,
-    const peano::heap::MessageType&               messageType,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
-  _limiter->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,messageType,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
@@ -2140,18 +2130,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerOrMasterDataDueToFor
   if (limiterElement!=Solver::NotFound) {
     _limiter->mergeWithWorkerOrMasterDataDueToForkOrJoin(
         fromRank,cellDescriptionsIndex,limiterElement,messageType,x,level);
-  } else {
-    _limiter->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
-  } // !!! Receive order must be the same in master<->worker comm.
-}
-
-void exahype::solvers::LimitingADERDGSolver::dropWorkerOrMasterDataDueToForkOrJoin(
-    const int                                     fromRank,
-    const peano::heap::MessageType&               messageType,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
-  _limiter->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,messageType,x,level);
+  }
 }
 
 ///////////////////////////////////

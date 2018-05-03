@@ -653,7 +653,7 @@ private:
    * and the parent index of the cell descriptions to the specified \p
    * parentIndex.
    */
-  static void resetIndicesAndFlags(CellDescription& p,const int parentIndex);
+  static void resetIndicesAndFlagsOfReceivedCellDescription(CellDescription& p,const int parentIndex);
 
   /**
    * Allocate necessary memory and deallocate unnecessary memory.
@@ -2157,6 +2157,8 @@ public:
    * the master knows.
    *
    * \note This function sends out MPI messages.
+   *
+   * \see prepareMasterCellDescriptionAtMasterWorkerBoundary
    */
   void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
@@ -2219,8 +2221,9 @@ public:
     */
    bool progressMeshRefinementInMergeWithMaster(
        const int worker,
-       const int localCellDescriptionsIndex,    const int localElement,
-       const int receivedCellDescriptionsIndex, const int receivedElement,
+       const int localCellDescriptionsIndex,
+       const int localElement,
+       const int coarseGridCellDescriptionsIndex,
        const tarch::la::Vector<DIMENSIONS, double>& x,
        const int                                    level) final override;
 
@@ -2245,22 +2248,10 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
-      const peano::heap::MessageType&               messageType,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const peano::heap::MessageType&               messageType,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
       const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;

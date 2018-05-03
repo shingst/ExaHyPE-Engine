@@ -398,7 +398,8 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) {
+void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated(
+    CellDescription& cellDescription) const {
   if (DataHeap::getInstance().isValidIndex(cellDescription.getSolution())) {
     switch (cellDescription.getType()) {
       case CellDescription::Erased: {
@@ -460,13 +461,14 @@ void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
+void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
+    CellDescription& cellDescription) const {
   switch (cellDescription.getType()) {
     case CellDescription::Cell:
       if (!DataHeap::getInstance().isValidIndex(cellDescription.getSolution())) {
         assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
         // Allocate volume data
-        const int patchSize         = getDataPerPatch()+getGhostDataPerPatch();
+        const int patchSize = getDataPerPatch()+getGhostDataPerPatch();
 
         tarch::multicore::Lock lock(exahype::HeapSemaphore);
           cellDescription.setSolution(        DataHeap::getInstance().createData( patchSize, patchSize ));
@@ -982,42 +984,44 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
     const int                                     level) {
   const int receivedCellDescriptionsIndex =
       Heap::getInstance().createData(0,exahype::solvers::RegisteredSolvers.size());
-  Heap::getInstance().receiveData(
-      receivedCellDescriptionsIndex,fromRank,x,level,messageType);
+  Heap::getInstance().receiveData(receivedCellDescriptionsIndex,fromRank,x,level,messageType);
 
   logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
-      Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
-      " cell descriptions for cell ("
-      "offset="<< x.toString() <<
-      "level="<< level << ")");
+          Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
+          " cell descriptions for cell (centre="<< x.toString() << "level="<< level << ")");
 
   Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).clear();
-  if ( !Heap::getInstance().getData(receivedCellDescriptionsIndex).empty() ) {
-    resetDataHeapIndices(receivedCellDescriptionsIndex,
-        multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
-    assertion1(Heap::getInstance().isValidIndex(localCell.getCellDescriptionsIndex()),
-        localCell.getCellDescriptionsIndex());
-
-    for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-      ensureOnlyNecessaryMemoryIsAllocated(pReceived);
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
-    }
+  for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
+    resetIndicesAndFlagsOfReceivedCellDescription(pReceived,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
+    Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
   }
 
   Heap::getInstance().deleteData(receivedCellDescriptionsIndex);
   assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
-void exahype::solvers::FiniteVolumesSolver::resetDataHeapIndices(
-    const int cellDescriptionsIndex,
-    const int parentIndex) {
-  for (auto& p : Heap::getInstance().getData(cellDescriptionsIndex)) {
-    p.setParentIndex(parentIndex);
+void exahype::solvers::FiniteVolumesSolver::resetIndicesAndFlagsOfReceivedCellDescription(
+    CellDescription& cellDescription,const int parentIndex) {
+  cellDescription.setParentIndex(parentIndex);
 
-    // Default field data indices
-    p.setPreviousSolution(-1);
-    p.setSolution(-1);
-  }
+  // Default field data indices
+  cellDescription.setSolution(-1);
+  cellDescription.setPreviousSolution(-1);
+  cellDescription.setExtrapolatedSolution(-1);
+
+  // compression
+  cellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
+
+  cellDescription.setExtrapolatedSolutionCompressed(-1);
+  cellDescription.setSolutionCompressed(-1);
+  cellDescription.setPreviousSolutionCompressed(-1);
+
+  cellDescription.setSolutionAverages(-1);
+  cellDescription.setSolutionAverages(-1);
+  cellDescription.setExtrapolatedSolutionAverages(-1);
+  cellDescription.setBytesPerDoFInPreviousSolution(-1);
+  cellDescription.setBytesPerDoFInSolution(-1);
+  cellDescription.setBytesPerDoFInExtrapolatedSolution(-1);
 }
 
 void exahype::solvers::FiniteVolumesSolver::ensureConsistencyOfParentIndex(
@@ -1090,18 +1094,6 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
       getDataPerPatch()+getGhostDataPerPatch(), toRank, x, level, messageType);
 }
 
-
-void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-    const int                                     toRank,
-    const peano::heap::MessageType&               messageType,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  for(int sends=0; sends<DataMessagesPerForkOrJoinCommunication; ++sends)
-    DataHeap::getInstance().sendData(
-        exahype::EmptyDataHeapMessage, toRank, x, level, messageType);
-}
-
-
 void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     const int                                     fromRank,
     const int                                     cellDescriptionsIndex,
@@ -1117,6 +1109,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
   logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
            ", cell: "<< x << ", level: " << level);
 
+  // allocate memory
+  ensureNecessaryMemoryIsAllocated(cellDescription);
+  ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+
   DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
   DataHeap::getInstance().receiveData( cellDescription.getSolution(),
       fromRank, x, level, messageType);
@@ -1124,15 +1120,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
   DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).clear();
   DataHeap::getInstance().receiveData( cellDescription.getPreviousSolution(),
       fromRank, x, level, messageType );
-}
-
-void exahype::solvers::FiniteVolumesSolver::dropWorkerOrMasterDataDueToForkOrJoin(
-    const int                                     fromRank,
-    const peano::heap::MessageType&               messageType,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  for(int receives=0; receives<DataMessagesPerForkOrJoinCommunication; ++receives)
-    DataHeap::getInstance().receiveData(fromRank, x, level, messageType);
 }
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToWorker(
@@ -1188,8 +1175,9 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
 
 bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
     const int worker,
-    const int localCellDescriptionsIndex,    const int localElement,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
+    const int localCellDescriptionsIndex,
+    const int localElement,
+    const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   // do nothing

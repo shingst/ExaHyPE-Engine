@@ -1519,8 +1519,9 @@ public:
    */
   bool progressMeshRefinementInMergeWithMaster(
       const int worker,
-      const int localCellDescriptionsIndex,    const int localElement,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const int localCellDescriptionsIndex,
+      const int localElement,
+      const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
@@ -1537,22 +1538,10 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
-      const peano::heap::MessageType&               messageType,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const peano::heap::MessageType&               messageType,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
       const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;

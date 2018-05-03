@@ -1933,8 +1933,9 @@ class exahype::solvers::Solver {
    */
   virtual bool progressMeshRefinementInMergeWithMaster(
       const int worker,
-      const int localCellDescriptionsIndex,    const int localElement,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const int localCellDescriptionsIndex,
+      const int localElement,
+      const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
 
@@ -1972,16 +1973,6 @@ class exahype::solvers::Solver {
       const int                                    level) const = 0;
 
   /**
-   * Send empty solver data to master or worker rank
-   * due to fork or join.
-   */
-  virtual void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                    toRank,
-      const peano::heap::MessageType&              messageType,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
    * Merge with solver data from master or worker rank
    * that was sent out due to a fork or join. Wrote the data to
    * the cell description \p element in
@@ -1997,16 +1988,6 @@ class exahype::solvers::Solver {
       const int                                    fromRank,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
-      const peano::heap::MessageType&              messageType,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Drop solver data from master or worker rank
-   * that was sent out due to a fork or join.
-   */
-  virtual void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                    fromRank,
       const peano::heap::MessageType&              messageType,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const = 0;
