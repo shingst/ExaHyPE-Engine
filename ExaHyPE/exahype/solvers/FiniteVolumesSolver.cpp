@@ -1116,7 +1116,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
   DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
   DataHeap::getInstance().receiveData( cellDescription.getSolution(),
       fromRank, x, level, messageType);
-
   DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).clear();
   DataHeap::getInstance().receiveData( cellDescription.getPreviousSolution(),
       fromRank, x, level, messageType );

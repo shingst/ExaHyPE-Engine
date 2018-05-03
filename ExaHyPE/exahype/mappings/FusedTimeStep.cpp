@@ -430,10 +430,10 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
   logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
 
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::Cell::reduceGlobalDataToMaster(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getLevel());
+//    exahype::Cell::reduceGlobalDataToMaster(
+//        tarch::parallel::NodePool::getInstance().getMasterRank(),
+//        verticesEnumerator.getCellCenter(),
+//        verticesEnumerator.getLevel());
 
     localCell.reduceDataToMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -460,10 +460,10 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
   logTraceIn( "mergeWithMaster(...)" );
 
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::Cell::mergeWithGlobalDataFromWorker(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
+//    exahype::Cell::mergeWithGlobalDataFromWorker(
+//        worker,
+//        fineGridVerticesEnumerator.getCellCenter(),
+//        fineGridVerticesEnumerator.getLevel());
 
     fineGridCell.mergeWithDataFromWorkerPerCell(
         worker,
