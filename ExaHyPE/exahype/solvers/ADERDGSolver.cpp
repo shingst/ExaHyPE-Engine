@@ -3117,61 +3117,64 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
 
   logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
           Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
-          " cell descriptions for cell ("
-          "centre="<< x.toString() <<
-          "level="<< level << ")");
+          " cell descriptions for cell (centre="<< x.toString() << "level="<< level << ")");
 
   Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).clear();
-  if ( Heap::getInstance().getData(receivedCellDescriptionsIndex).size()>0 ) {
-    resetDataHeapIndices(
-        receivedCellDescriptionsIndex,
-        multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
-    assertion1(Heap::getInstance().isValidIndex(localCell.getCellDescriptionsIndex()),
-               localCell.getCellDescriptionsIndex());
-
-    assertion(Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).empty());
-    for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-      ensureOnlyNecessaryMemoryIsAllocated(pReceived);
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
-    }
+  for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
+    resetIndicesAndFlags(pReceived,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
+    ensureOnlyNecessaryMemoryIsAllocated(pReceived);
+    Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
   }
 
   Heap::getInstance().deleteData(receivedCellDescriptionsIndex);
   assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
-void exahype::solvers::ADERDGSolver::resetDataHeapIndices(
-    const int cellDescriptionsIndex,
-    const int parentIndex) {
-  for (auto& p : Heap::getInstance().getData(cellDescriptionsIndex)) {
-    p.setParentIndex(parentIndex);
+void exahype::solvers::ADERDGSolver::resetIndicesAndFlags(
+    CellDescription& p,const int parentIndex) {
+  p.setParentIndex(parentIndex);
 
-    // Default field data indices
-    p.setSolution(-1);
-    p.setPreviousSolution(-1);
-    p.setUpdate(-1);
-    p.setExtrapolatedPredictor(-1);
-    p.setFluctuation(-1);
+  // Default field data indices
+  p.setSolution(-1);
+  p.setPreviousSolution(-1);
+  p.setUpdate(-1);
+  p.setExtrapolatedPredictor(-1);
+  p.setFluctuation(-1);
 
-    // Limiter meta data (oscillations identificator)
-    p.setSolutionMin(-1);
-    p.setSolutionMax(-1);
+  // Limiter meta data (oscillations identificator)
+  p.setSolutionMin(-1);
+  p.setSolutionMax(-1);
 
-    // compression
-    p.setExtrapolatedPredictorCompressed(-1);
-    p.setFluctuationCompressed(-1);
-    p.setSolutionCompressed(-1);
-    p.setPreviousSolutionCompressed(-1);
-    p.setUpdateCompressed(-1);
+  // compression
+  p.setCompressionState(CellDescription::CompressionState::Uncompressed);
 
-    // reset the facewise flags
-    p.setFacewiseAugmentationStatus(0);
-    p.setFacewiseCommunicationStatus(0);
-    p.setFacewiseLimiterStatus(0);
+  p.setExtrapolatedPredictorCompressed(-1);
+  p.setFluctuationCompressed(-1);
+  p.setSolutionCompressed(-1);
+  p.setPreviousSolutionCompressed(-1);
+  p.setUpdateCompressed(-1);
 
-    // reset MW comm flags
-    p.setHasToHoldDataForMasterWorkerCommunication(false);
-  }
+  p.setSolutionAverages(-1);
+  p.setSolutionAverages(-1);
+  p.setUpdateAverages(-1);
+  p.setExtrapolatedPredictorAverages(-1);
+  p.setFluctuationAverages(-1);
+  p.setBytesPerDoFInPreviousSolution(-1);
+  p.setBytesPerDoFInSolution(-1);
+  p.setBytesPerDoFInUpdate(-1);
+  p.setBytesPerDoFInExtrapolatedPredictor(-1);
+  p.setBytesPerDoFInFluctuation(-1);
+
+  // reset the facewise flags
+  p.setFacewiseAugmentationStatus(0);
+  p.setFacewiseCommunicationStatus(0);
+  p.setFacewiseLimiterStatus(0);
+
+  // limiter
+  p.setIterationsToCureTroubledCell(-1);
+
+  // reset MW comm flags
+  p.setHasToHoldDataForMasterWorkerCommunication(false);
 }
 
 void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
@@ -3365,6 +3368,9 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
   const int level) const {
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
 
+  logInfo( "receiveDataFromMaster(...)","cell="<<receivedCellDescription.getOffset()<<","<<
+      receivedCellDescription.getLevel()<<": received=" << receivedCellDescription.toString());
+
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
     mergeWithWorkerOrMasterDataDueToForkOrJoin(
       masterRank,receivedCellDescriptionsIndex,receivedElement,
@@ -3476,6 +3482,11 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
   CellDescription& localCellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
   localCellDescription.setType(receivedCellDescription.getType());
+  localCellDescription.setRefinementEvent(receivedCellDescription.getRefinementEvent());
+  localCellDescription.setRefinementRequest(receivedCellDescription.getRefinementRequest());
+  localCellDescription.setCommunicationStatus(receivedCellDescription.getCommunicationStatus());
+  localCellDescription.setAugmentationStatus(receivedCellDescription.getAugmentationStatus());
+  localCellDescription.setLimiterStatus(receivedCellDescription.getLimiterStatus());
 
   // receive the data
   if (
@@ -3530,7 +3541,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
 
   // block erasing request of coarse grid cell description if deployed cell
   // does not want to be erased
-  localCellDescription.setRefinementRequest(receivedCellDescription.getRefinementRequest());
   decideOnRefinement(localCellDescription);
 
   return solverRequiresVerticalCommunication;

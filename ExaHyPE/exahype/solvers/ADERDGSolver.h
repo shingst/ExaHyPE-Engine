@@ -649,15 +649,11 @@ private:
       const int indexOfFValues);
 
   /**
-   * Sets heap indices of all ADER-DG cell descriptions that were
-   * received due to a fork or join event to
-   * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
+   * Sets heap indices of an ADER-DG cell description to -1,
    * and the parent index of the cell descriptions to the specified \p
    * parentIndex.
    */
-  static void resetDataHeapIndices(
-      const int cellDescriptionsIndex,
-      const int parentIndex);
+  static void resetIndicesAndFlags(CellDescription& p,const int parentIndex);
 
   /**
    * Allocate necessary memory and deallocate unnecessary memory.
