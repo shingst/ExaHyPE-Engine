@@ -147,20 +147,6 @@ private:
   static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
   /**
-   * Checks if the parent index of a fine grid cell description
-   * was set to RemoteAdjacencyIndex during a previous forking event.
-   *
-   * If so, check if there exists a coarse grid cell description
-   * which must have been also received during a previous fork event.
-   * If so, update the parent index of the fine grid cell description
-   * with the coarse grid cell descriptions index.
-   */
-  void ensureConsistencyOfParentIndex(
-      CellDescription& cellDescription,
-      const int coarseGridCellDescriptionsIndex,
-      const int solverNumber);
-
-  /**
    * There are no prolongations and restrictions
    * for the Finite Volums Solver in ExaHyPE
    */

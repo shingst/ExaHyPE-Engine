@@ -923,16 +923,17 @@ int exahype::solvers::ADERDGSolver::tryGetElement(
 ///////////////////////////////////
 void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentIndex(
     CellDescription& fineGridCellDescription,
-    const int coarseGridCellDescriptionsIndex,
-    const int solverNumber) {
+    const int coarseGridCellDescriptionsIndex) {
   fineGridCellDescription.setParentIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-  int coarseGridElement = tryGetElement(coarseGridCellDescriptionsIndex,solverNumber);
-  if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
+  const int coarseGridElement = tryGetElement(coarseGridCellDescriptionsIndex,fineGridCellDescription.getSolverNumber());
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+    assertion2(
+        fineGridCellDescription.getParentIndex()==coarseGridCellDescriptionsIndex ||
+        fineGridCellDescription.getParentIndex()==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex ||
+        fineGridCellDescription.getParentIndex()==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
+        coarseGridCellDescriptionsIndex,
+        fineGridCellDescription.toString());
     fineGridCellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
-    // In this case, we are not at a master worker boundary only our parent is.
-    #ifdef Parallel
-    fineGridCellDescription.setHasToHoldDataForMasterWorkerCommunication(false);
-    #endif
   }
 }
 
@@ -959,17 +960,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   ) {
     logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<" at level "<<fineGridVerticesEnumerator.getLevel());
 
-    if ( tarch::parallel::Node::getInstance().getRank()==11) {
-      logInfo("progressMeshRefinementInEnterCell(...)","add new cell here="<<fineGridVerticesEnumerator.getCellCenter()<<", level="<<fineGridVerticesEnumerator.getLevel());
-    }
-//    tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
-//    if (
-//        tarch::la::equals(fineGridVerticesEnumerator.getCellCenter(),poi,1e-4) &&
-//        fineGridVerticesEnumerator.getLevel()==3
-//    ) {
-//      logInfo("progressMeshRefinementInEnterCell(...)","add new cell here="<<fineGridVerticesEnumerator.getCellCenter()<<", level="<<fineGridVerticesEnumerator.getLevel());
-//    }
-
     addNewCell(
         fineGridCell,fineGridVerticesEnumerator,
         multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
@@ -979,6 +969,11 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
+
+    // ensure that the fine grid cell descriptions's parent index is pointing to the
+    // coarse grid cell's cell descriptions room; this is important to re-establish
+    // the parent-child relations on a new worker after a fork.
+    ensureConsistencyOfParentIndex(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
 
     #if defined(Asserts) || defined(Debug)
     const int coarseGridCellElement =
