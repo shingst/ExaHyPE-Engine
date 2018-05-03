@@ -3182,9 +3182,6 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
 
   // limiter flagging
   cellDescription.setIterationsToCureTroubledCell(-1);
-
-  // reset MW comm flags
-  cellDescription.setHasToHoldDataForMasterWorkerCommunication(false);
 }
 
 void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
