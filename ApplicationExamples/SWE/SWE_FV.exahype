@@ -64,7 +64,7 @@ exahype-project  SWE
     time-stepping     = global
     type const      = godunov
     terms const = flux, ncp
-    optimisation const = generic
+    optimisation const = generic, usestack
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5

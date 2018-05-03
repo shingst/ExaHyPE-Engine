@@ -67,7 +67,7 @@ exahype-project  SWE
     optimisation const = generic
     language const = C
     limiter-type const = godunov
-    limiter-optimisation const = generic
+    limiter-optimisation const = generic, usestack
     limiter-language const = C
     dmp-observables const = 1
     dmp-relaxation-parameter = 1e-4
