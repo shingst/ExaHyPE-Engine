@@ -25,7 +25,6 @@
 
 #include "tarch/multicore/BooleanSemaphore.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 #include "exahype/Cell.h"
 #include "exahype/State.h"
@@ -86,28 +85,6 @@ private:
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
-
-  /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-   exahype::State _localState;
-
-   /**
-    * Temporary variables for every registered
-    * ADERDGSolver and LimitingADERDGSolver which are required for performing
-    * the prediction.
-    */
-   exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
-
-  /**
-   * A semaphore for restrictions.
-   */
-  static tarch::multicore::BooleanSemaphore SemaphoreForRestriction;
  public:
 
   /**
@@ -133,11 +110,10 @@ private:
    *
    * \see enterCellSpecification()
    */
-  static void performPredictionAndProlongateData(
+  static void performPredictionOrProlongate(
       const exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
       const exahype::State::AlgorithmSection& algorithmSection);
 
   /**
@@ -166,9 +142,8 @@ private:
    * threads. See the documentation of peano::datatraversal::TasksSet for a
    * remark on this.
    */
-  static void restrictDataAndPostProcess(
-      const exahype::Cell&                             fineGridCell,
-      const exahype::Cell&                             coarseGridCell,
+  static void restriction(
+      const exahype::Cell&  fineGridCell,
       const exahype::State::AlgorithmSection& algorithmSection);
 
   /**
@@ -188,7 +163,8 @@ private:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * Please consult the specification's documentation in NewTimeStep.
+   * Broadcast global solver data such as time step sizes at the beginning of the traversal.
+   * Do not reduce anything.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
@@ -217,14 +193,17 @@ private:
   #endif
 
   /**
-   * Copy the state.
-   * Further initialise temporary variables
-   * if they are not initialised yet (or
-   * if a new solver was introuced to the grid.
-   * This is why we put the initialisation
-   * in beginIteration().
+   * Turns ITAC on if required
    */
   void beginIteration(exahype::State& solverState);
+
+  /**
+   * <h2>Background Jobs</h2>
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
+   */
+  void endIteration(exahype::State& solverState);
 
   /**
    * \see performPredictionAndProlongateData
@@ -238,7 +217,7 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * \see restrictDataAndPostProcess
+   * \see restrictData
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -488,11 +467,6 @@ private:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Nop
-   */
-  void endIteration(exahype::State& solverState);
 
   /**
    * Nop

@@ -178,13 +178,9 @@ tarch::la::Vector<THREE_POWER_D,int> multiscalelinkedcell::getIndicesAroundCell(
 
 
 multiscalelinkedcell::HangingVertexBookkeeper::HangingVertexBookkeeper():
-    _inheritIndicesFromCoarserGrids(true),
   _vertexMap() {
 }
 
-void multiscalelinkedcell::HangingVertexBookkeeper::disableInheritingOfCoarseGridIndices() {
-  _inheritIndicesFromCoarserGrids = false;
-}
 
 multiscalelinkedcell::HangingVertexBookkeeper&  multiscalelinkedcell::HangingVertexBookkeeper::getInstance() {
   static multiscalelinkedcell::HangingVertexBookkeeper instance;
@@ -192,12 +188,12 @@ multiscalelinkedcell::HangingVertexBookkeeper&  multiscalelinkedcell::HangingVer
 }
 
 
-tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex() const {
+tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex() {
   return tarch::la::Vector<TWO_POWER_D,int>(InvalidAdjacencyIndex);
 }
 
 
-tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForBoundaryVertex() const {
+tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForBoundaryVertex() {
   return tarch::la::Vector<TWO_POWER_D,int>(DomainBoundaryAdjacencyIndex);
 }
 
@@ -369,21 +365,10 @@ tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper
       ||
       (_vertexMap[key].indicesOfAdjacentCells(kScalar)==DomainBoundaryAdjacencyIndex)
      ) {
-      int index = coarseGridAdjacencyEntries(
-          peano::utils::dLinearised(fromCoarseGridVertex,2) * TWO_POWER_D +
-          peano::utils::dLinearised(coarseGridVertexAdjacentCellDescriptionIndex,2));
-
-      if ( // Overwrite index by invalid index if not a  remote/boundary indicator
-          !_inheritIndicesFromCoarserGrids
-          &&
-          index!=DomainBoundaryAdjacencyIndex
-          &&
-          index!=RemoteAdjacencyIndex
-      ) {
-        index = InvalidAdjacencyIndex;
-      }
-
-      _vertexMap[key].indicesOfAdjacentCells(kScalar) = index;
+      _vertexMap[key].indicesOfAdjacentCells(kScalar) = coarseGridAdjacencyEntries(
+        peano::utils::dLinearised(fromCoarseGridVertex,2) * TWO_POWER_D +
+        peano::utils::dLinearised(coarseGridVertexAdjacentCellDescriptionIndex,2)
+      );
     }
   enddforx
 
@@ -399,7 +384,14 @@ tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper
 ) {
   tarch::la::Vector<TWO_POWER_D,int> result;
   for (int i=0; i<TWO_POWER_D; i++) {
-    if (adjacentRanks(i)!=tarch::parallel::Node::getInstance().getRank()) {
+    if (
+        adjacentRanks(i)==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+    ) {
+      result(i) = DomainBoundaryAdjacencyIndex;
+    }
+    else if (
+        adjacentRanks(i)!=tarch::parallel::Node::getInstance().getRank()
+    ) {
       result(i) = RemoteAdjacencyIndex;
     }
     else {

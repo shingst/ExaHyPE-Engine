@@ -373,12 +373,26 @@ namespace SVEC {
 	namespace MHD {
 		constexpr int size = Hydro::size + Magneto::size;
 		
-		// These types here are just for convenience and not used in the code:
+		namespace Conserved {
+			typedef TwoTheories::StateVector<double* const, Hydro::Conserved::Shadow, Magneto::Shadow> Shadow;
+			typedef TwoTheories::StateVector<const double* const, Hydro::Conserved::ConstShadow, Magneto::ConstShadow> ConstShadow;
+			typedef TwoTheories::StateVector<const double* const, Hydro::Conserved::ConstShadowExtendable, Magneto::ConstShadowExtendable> ConstShadowExtendable;
+			struct Stored : public Shadow { double MHDStorage[size]; Stored() : Shadow(MHDStorage) {} };
+		} // ns Conserved
 		
-		typedef TwoTheories::StateVector<double* const, Hydro::Conserved::Shadow, Magneto::Shadow> Shadow;
-		typedef TwoTheories::StateVector<const double* const, Hydro::Conserved::ConstShadow, Magneto::ConstShadow> ConstShadow;
-		typedef TwoTheories::StateVector<const double* const, Hydro::Conserved::ConstShadowExtendable, Magneto::ConstShadowExtendable> ConstShadowExtendable;
-		struct Stored : public Shadow { double MHDStorage[size]; Stored() : Shadow(MHDStorage) {} };
+		namespace Primitives {
+			typedef TwoTheories::StateVector<double* const, Hydro::Primitives::Shadow, Magneto::Shadow> Shadow;
+			typedef TwoTheories::StateVector<const double* const, Hydro::Primitives::ConstShadowExtendable, Magneto::ConstShadowExtendable> ConstShadowExtendable;
+			struct Stored : public Shadow { double MHDStorage[size]; Stored() : Shadow(MHDStorage) {} };
+		} // ns Primitives
+		
+		
+		// TODO: Do not use these abbreviations
+		
+		typedef Conserved::Shadow Shadow;
+		typedef Conserved::ConstShadow ConstShadow;
+		typedef Conserved::ConstShadowExtendable ConstShadowExtendable;
+		typedef Conserved::Stored Stored;
 	} // ns MHD
 	
 	// Generic PDE:
@@ -416,18 +430,32 @@ namespace SVEC {
 	// Naming suggestion: "GRMHD" for this namespace and "SVEC" for the parent.
 	namespace GRMHD { // need a better name
 		constexpr int size = MHD::size + ADMBase::size;
+
+		namespace Conserved {
+			typedef TwoTheories::StateVector<double* const, MHD::Conserved::Shadow, ADMBase::Shadow> Shadow;
+			typedef TwoTheories::StateVector<const double* const, MHD::Conserved::ConstShadow, ADMBase::ConstShadow> ConstShadow;
+			struct Stored : public Shadow { double GRMHDStorage[size]; Stored() : Shadow(GRMHDStorage) {} };
+			// The advantage of a single total system storage is a linear storage
+			// which can be copied, mapped and addressed easier.
+		} // ns Conserved
+
+		namespace Primitives {
+			typedef TwoTheories::StateVector<double* const, MHD::Primitives::Shadow, ADMBase::Shadow> Shadow;
+			struct Stored : public Shadow { double GRMHDStorage[size]; Stored() : Shadow(GRMHDStorage) {} };
+		} // ns Primitives
+
 		
-		typedef TwoTheories::StateVector<double* const, MHD::Shadow, ADMBase::Shadow> Shadow;
-		typedef TwoTheories::StateVector<const double* const, MHD::ConstShadow, ADMBase::ConstShadow> ConstShadow;
+		// TODO: Do not use these abbreviations
 		
-		// The advantage of a single total system storage is a linear storage
-		// which can be copied, mapped and addressed easier.
-		struct Stored : public Shadow { double GRMHDStorage[size]; Stored() : Shadow(GRMHDStorage) {} };
+		typedef Conserved::Shadow Shadow;
+		typedef Conserved::ConstShadow ConstShadow;
+		typedef Conserved::Stored Stored;
 		
 	
 		/**
 		 * The link between tensor densities and tensors: QDensity is a real conserved
-		 * vector and we remove the sqrt(gam.det)
+		 * vector and we remove the sqrt(gam.det).
+		 * This structure uses the Conserved quantities.
 		 **/
 		template<class MHDtype>
 		struct DensitiedState : public MHDtype, public ADMBase::Full {
@@ -460,7 +488,7 @@ namespace SVEC {
 			// Ideal EOS:
 			// 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
 			// 2.0 used for TOV stars
-			static constexpr double gamma = 4./3.; //2.0;
+			static constexpr double gamma = 2.0; //4./3.;
 	
 			// Divergence cleaning:
 			// 1.0 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
@@ -491,7 +519,7 @@ namespace SVEC {
 		*/
 		// NEW:
 		struct Cons2Prim : public GRMHD::DensitiedExtendable, public Hydro::Primitives::ShadowExtendable, public Parameters {
-			Cons2Prim(double* const V, const double* const Q_, bool _crash_on_failure=true) :
+			Cons2Prim(double* const V, const double* const Q_, bool _crash_on_failure=false) :
 				GRMHD::DensitiedExtendable(Q_),
 				Hydro::Primitives::ShadowExtendable(V),
 				crash_on_failure(_crash_on_failure)
@@ -541,7 +569,7 @@ namespace SVEC {
 		/// A version which does not write to a shadowed storage but a local one
 		struct Cons2Prim::Stored : public Cons2Prim {
 			double V[Hydro::size];
-			Stored(const double* const Q_) : Cons2Prim(V, Q_) {}
+			Stored(const double* const Q_, bool _crash_on_failure=false) : Cons2Prim(V, Q_, _crash_on_failure) {}
 		};
 		
 		/**
@@ -558,7 +586,7 @@ namespace SVEC {
 			typedef GRMHD::Shadow Flux;
 			typedef GenericUp<generic::shadow<Flux, TDIM>, Flux*> Fluxes;
 			
-			RawPDE(const double* const Q) : Cons2Prim::Stored(Q) {}
+			RawPDE(const double* const Q, bool crash_on_c2p_failure=false) : Cons2Prim::Stored(Q, crash_on_c2p_failure) {}
 		
 			/// Conserved fluxes
 			void flux(Fluxes& flux);
@@ -588,7 +616,7 @@ namespace SVEC {
 			typedef typename P::Fluxes Fluxes;
 			typedef typename P::Gradients Gradients;
 			
-			DensitiedPDE(const double* const Q) : P(Q) {}
+			DensitiedPDE(const double* const Q, bool crash_on_c2p_failure=false) : P(Q, crash_on_c2p_failure) {}
 
 			void weight(State& state) {
 				// For the quick and dirty, assume all MHD parts to be next to each other

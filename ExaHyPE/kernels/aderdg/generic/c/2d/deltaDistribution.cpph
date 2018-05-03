@@ -11,10 +11,18 @@
  * For the full license text, see LICENSE.txt
  **/
 
+#include "../../../../KernelUtils.h"
 
+#include <algorithm>
+#include <vector>
 #include <memory>
+#include <cstring>
 
+#include "peano/utils/Loop.h"
+
+#include "kernels/aderdg/generic/Kernels.h"
 #include "kernels/DGBasisFunctions.h"
+#include "kernels/DGMatrices.h"
 
 #if defined(_GLL)
 #include "kernels/GaussLobattoQuadrature.h"
@@ -22,158 +30,105 @@
 #include "kernels/GaussLegendreQuadrature.h"
 #endif
 
-#include "peano/utils/Loop.h"
-
-#include "kernels/aderdg/generic/Kernels.h"
-#include <algorithm>
-
-#include "kernels/DGMatrices.h"
-#include <cstring>
-#include "../../../../KernelUtils.h"
-
 #if DIMENSIONS == 2
+
+/**
+ * Returns a list of point source indices 
+ * in case of no point source returns nullptr
+ */
+template <typename SolverType>
+std::vector<int>* kernels::aderdg::generic::c::getPointSources(
+  SolverType& solver,
+  const tarch::la::Vector<DIMENSIONS, double>& center,
+  const tarch::la::Vector<DIMENSIONS, double>& dx
+){
+  std::vector<int>* pointSources=nullptr;
+  for (int m =0 ; m < SolverType::NumberOfPointSources; m++) {
+    const double* const x_ps = solver.pointSourceLocation[m];
+    if(   center[0]-0.5*dx[0] < x_ps[0] && x_ps[0] < center[0]+0.5*dx[0]
+       && center[1]-0.5*dx[1] < x_ps[1] && x_ps[1] < center[1]+0.5*dx[1]){
+      
+      if(pointSources==nullptr){
+        pointSources=new std::vector<int>();  //needs to be deleted in deltaDistribution
+      }
+      pointSources->push_back(m);
+    }
+  }
+  return pointSources;
+}
+					       
+
+					       
 
 template <typename SolverType>
 void kernels::aderdg::generic::c::deltaDistribution(
     SolverType& solver,
+    const double* const luh,
     const double t,
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int basisSize,
-    double** pointForceSources //memory space for forceVector
+    std::vector<int>* pointSources, // will be deleted in the end
+    double* PSi
 ) {
-  //TODO KD
-  double x0[DIMENSIONS];
-  double x[DIMENSIONS];
-
-
   constexpr int numberOfVariables = SolverType::NumberOfVariables;
-  constexpr int numberOfParameters = SolverType::NumberOfParameters;
-  constexpr int numberOfPointSources = SolverType::NumberOfPointSources;  //1 at the moment
+  constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
+  constexpr int basisSize = SolverType::Order +1;
+  constexpr int order = SolverType::Order;
 
-  //maybe reset tempStateSizedVector to 0 with std::memset
-
-  //idx4 idx_PSi(basisSize + 1, basisSize, basisSize,
-  //           numberOfVariables);
-  //loop over all quadrature point
-  //do your stuff to get ready to get the value for one quadrature pointer
-  //solver.pointSource(x, t, dt, &pointForceSources[idx_PSi(0,ndof1,ndof2,0)], &x0);
-  //apply the result for this quadrature point
-
-
-  int order = basisSize-1;
-
-  //maybe reset tempStateSizedVector to 0 with std::memset
-
-  idx4 idx_PSi(               basisSize + 1, basisSize, basisSize, numberOfVariables);
-  idx4 idx_forceVectorSourceN(basisSize + 1, basisSize, basisSize, numberOfVariables);
-  
-  double* PSi                = pointForceSources[0];
-  double* forceVectorSourceN = pointForceSources[1];
-
+  //check if here is at least one point source in element
   std::fill_n(PSi,(basisSize + 1) * basisSize * basisSize * numberOfVariables,0);
 
+  idx4 idx_PSi(basisSize + 1, basisSize, basisSize, numberOfVariables);
+  idx3 idx_luh(basisSize, basisSize, numberOfData);
 
-  for (int m =0 ; m < numberOfPointSources ; m++){
-    std::fill_n(forceVectorSourceN,(basisSize + 1) * basisSize * basisSize * numberOfVariables,0);      
-  
-  //loop over all quadrature point
+#if defined(_GLL)
+  const double* quad_weights=&gaussLobattoWeights[basisSize-1][0];
+  const double* quad_nodes  =&gaussLobattoNodes  [basisSize-1][0];
+  const auto index_nodes= [basisSize](int i){return basisSize-1-i; }; //GLL nodes are reverted
+#else
+  const double* quad_weights=&gaussLegendreWeights[basisSize-1][0];
+  const double* quad_nodes  =&gaussLegendreNodes  [basisSize-1][0];
+  const auto index_nodes= [basisSize](int i){return i; };
+#endif  
+
+  double tn;
+  double quad_node_on_element[DIMENSIONS];
+
+  double forceVectorSource[numberOfVariables];
+  //loop over all quadrature points
   for (int n = 0; n < basisSize+1; n++) { // time loop
-    double tn;
-    if (n == 0){
-      tn = t;
-    }
-    else {
-#if defined(_GLL)
-      const double node = gaussLobattoNodes[order][n-1];      
-#else      
-      const double node = gaussLegendreNodes[order][n-1];
-#endif      
-      tn = dt* node + t;	      	            
-    }
-    
-    for (int i = 0; i < basisSize; i++) {   //x loop
+    n == 0 ? tn = t : tn = dt * quad_nodes[index_nodes(n-1)] + t; //First Point in time is current time, then use GL nodes in time
+    for (int j = 0; j < basisSize; j++) {  //y loop
+      quad_node_on_element[1] = center[1] + dx[1] * (quad_nodes[index_nodes(j)] - 0.5); //transform onto element
+      for (int k = 0; k < basisSize; k++) {  //x loop
+        quad_node_on_element[0] = center[0] + dx[0] * (quad_nodes[index_nodes(k)] - 0.5); //transform onto element
+        //loop over all point sources  
+        for (int m : *pointSources) {
+          // get the source vector located at quadrature node x at time tn
+          solver.pointSource(luh + idx_luh(j, k, 0), quad_node_on_element, tn, dt, forceVectorSource, m);
 
-#if defined(_GLL)
-      double node = gaussLobattoNodes[basisSize-1][basisSize-1-i];
-#else
-      double node = gaussLegendreNodes[basisSize-1][i];      
-#endif      
-
-      
-      x[1] = center[1] + dx[1] * (node - 0.5);
-      for (int j = 0; j < basisSize; j++) {  //y loop
-#if defined(_GLL)
-	node = gaussLobattoNodes[basisSize-1][basisSize-1-j];
-#else
-	node = gaussLegendreNodes[basisSize-1][j];      
-#endif      
-        x[0] = center[0] + dx[0] * (node - 0.5);
-
-        // get the source vector located at x0 = (x, y) and at tn = t; and at the quadrature nodes tn
-        solver.pointSource(x, tn, dt, &forceVectorSourceN[idx_forceVectorSourceN(n,i,j,0)], &x0[0], m);
-
-        // position the source inside the dG cell
-        const tarch::la::Vector<DIMENSIONS, double> _x(x0[0], x0[1]);
-        const tarch::la::Vector<DIMENSIONS, double> offsetOfPatch = center - dx / 2.;
-        const tarch::la::Vector<DIMENSIONS, double> sizeOfPatch = dx;  // / 2.;
-
-
-
-
-        /** Generation of a point source **/
-
-        // Map coordinate vector x0 onto reference element
-        tarch::la::Vector<DIMENSIONS, double> xRef = _x - offsetOfPatch;
-        xRef(0) /= sizeOfPatch(0);
-        xRef(1) /= sizeOfPatch(1);
-
-        if (xRef(0) >= 0. && xRef(1) >= 0. && xRef(0) <= 1.0 && xRef(1) <= 1.0) {
-
-          for (int unknown = 0; unknown < numberOfVariables /*numberOfParameters*/;
-              unknown++) {
-
-            double value = kernels::basisFunctions[order][i](xRef(1)) *
-	      kernels::basisFunctions[order][j](xRef(0))*
-	      forceVectorSourceN[idx_forceVectorSourceN(n,i,j,unknown)];	      
-	    //                pointForceSources[idx_PSi(n,i,j,unknown)];
-
-#if defined(_GLL)
-	    double weight_1 = kernels::gaussLobattoWeights[order][i];
-	    double weight_2 = kernels::gaussLobattoWeights[order][j];
-#else
-	    double weight_1 = kernels::gaussLegendreWeights[order][i];
-	    double weight_2 = kernels::gaussLegendreWeights[order][j];
-#endif      
+         // Map point source location onto reference element
+         const double* const x_ps = solver.pointSourceLocation[m];
+         double  x_ref[DIMENSIONS];
+	    
+         x_ref[0] = (x_ps[0] - center[0]) / dx[0] + 0.5;
+         x_ref[1] = (x_ps[1] - center[1]) / dx[1] + 0.5;
+	    
+         double basis_at_ps = kernels::basisFunctions[order][k](x_ref[0])
+                            * kernels::basisFunctions[order][j](x_ref[1]);
+	    
+         double quad_weight_on_vol_inv = 1.0 / ( quad_weights[k] * dx[0]
+                                             * quad_weights[j] * dx[1]);
 
 	    
-            value /= ((weight_1)*dx[1]*
-                (weight_2)*dx[0]);
-
-            PSi[idx_PSi(n,i,j,unknown)] += value;
-
-
-
-            // }  // dfor
-          } // for
-
-        }  // endif xRef inside the domain
-
-        else {
-          for (int unknown = 0; unknown < numberOfVariables /*numberOfParameters*/;
-              unknown++) {
-
-            PSi[idx_PSi(n,i,j,unknown)] += 0.0;
-
-          } //end unknown
-        }//endif else
-
-      }// y loop
-    }// x loop
+         for (int u = 0; u < numberOfVariables; u++) { //evaluate
+           PSi[idx_PSi(n,j,k,u)] += quad_weight_on_vol_inv * basis_at_ps * forceVectorSource[u];
+         } // u
+        }//point sources
+      }// x loop
+    }// y loop
   }// time loop
- }// m 
 }
-
 
 #endif  // DIMENSIONS == 2

@@ -98,8 +98,6 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
 
     typedef std::map< tarch::la::Vector<DIMENSIONS+1,double >, HangingVertexIdentifier, tarch::la::VectorCompare<DIMENSIONS+1> >  VertexMap;
 
-    bool _inheritIndicesFromCoarserGrids;
-
     VertexMap _vertexMap;
 
     HangingVertexBookkeeper();
@@ -120,35 +118,11 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
     static HangingVertexBookkeeper&  getInstance();
 
     /**
-     * Disable inheriting the heap indices from coarser
-     * grids at a hanging node.
-     *
-     * !!! Domain and remote boundary indices !!!
-     * The above text does not tell the whole story.
-     *
-     * To be precise, we still inherit boundary
-     * adjacency information from the coarse grid
-     * but we do not inherit indices that
-     * point to actual simulation data.
-     *
-     * Remote boundary indices are set during
-     * a mesh traversal via ::updateCellIndicesInMergeWithNeighbour.
-     *
-     * !!! Background !!!
-     *
-     * This routine is for codes that do not require
-     * the actual hanging node bookkeeping but still
-     * want to use the adjacency information provided by
-     * the HangingVertexBookkepper.
-     */
-    void disableInheritingOfCoarseGridIndices();
-
-    /**
      * @see createBoundaryVertex
      * @see createInnerVertex
      */
-    tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForNewVertex() const;
-    tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForBoundaryVertex() const;
+    static tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForNewVertex();
+    static tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForBoundaryVertex();
 
     /**
      * Returns a real reference to an existing hanging vertex. It does not create
@@ -156,7 +130,7 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * please all the creational routines first.
      *
      * We have to relax the assertion: there can be hanging nodes on level 1 that 
-     * are not created before (though it is kind of strange and I hvae to check 
+     * are not created before (though it is kind of strange and I have to check
      * this once more).
      *
      * Besides the search for the right hanging node, this operation also places
@@ -225,8 +199,11 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * same and the dynamic update here is not really required. However, it may
      * happen that you fork the grid dynamically. Then, this routine updates
      * the entries dynamically, too.
+     *
+     * \note In case, the neighbour is the globla master rank, we simply
+     * prescribe a DomainBoundaryAdjacency index.
      */
-    tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
+    static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
       const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
       const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries
     );

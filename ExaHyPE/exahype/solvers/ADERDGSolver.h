@@ -31,9 +31,10 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
-
 namespace exahype {
+  namespace parser {
+    class ParserView;
+  }
   namespace solvers {
     class ADERDGSolver;
   }
@@ -45,17 +46,20 @@ namespace exahype {
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
+
+  static constexpr int BoundaryStatus = -1;
+
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
    * of type Cell.
    */
-  static int MaximumHelperStatus;
+  static int MaximumCommunicationStatus;
   /**
    * The minimum helper status a cell description
    * must have for it allocating boundary data.
    */
-  static int MinimumHelperStatusForAllocatingBoundaryData;
+  static int MinimumCommunicationStatusForNeighbourCommunication;
 
   /**
    * The maximum augmentation status.
@@ -69,7 +73,7 @@ public:
    * and add child cells of type Descendant to
    * the grid.
    */
-  static int MinimumAugmentationStatusForAugmentation;
+  static int MinimumAugmentationStatusForVirtualRefining;
   /**
    * The minimum augmentation status for refining
    * a cell. Note that there should be at least layer
@@ -84,6 +88,18 @@ public:
   static int MinimumAugmentationStatusForRefining;
 
   /**
+   * Semaphore for fine grid cells restricting face or
+   * volume data to a coarse grid parent which is a
+   * computationally intense operation.
+   */
+  static tarch::multicore::BooleanSemaphore RestrictionSemaphore;
+
+  /**
+   * Semaphore for fine grid cells accessing a coarse grid parent.
+   */
+  static tarch::multicore::BooleanSemaphore CoarseGridSemaphore;
+
+  /**
    * Rank-local heap that stores ADERDGCellDescription instances.
    *
    * \note This heap might be shared by multiple ADERDGSolver instances
@@ -94,6 +110,13 @@ public:
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
 private:
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  DataHeap::HeapEntries _invalidExtrapolatedPredictor;
+  DataHeap::HeapEntries _invalidFluctuations;
 
   /**
    * Log device.
@@ -175,16 +198,39 @@ private:
   /**
    * Different to compress(), this operation is called automatically by
    * mergeNeighbours(). Therefore the routine is private.
+   *
+   * \note This routine checks if a cell description is
+   * compressed. No previous check is necessary.
    */
-  void uncompress(exahype::records::ADERDGCellDescription& cellDescription) const;
+  void uncompress(CellDescription& cellDescription) const;
 
   /**
-   * TODO(Dominic): Add more docu.
-   *
+   * Simply adjust the solution if necessary. Do not modify the time step
+   * data or anything else.
+   */
+  void adjustSolution(CellDescription& cellDescription);
+
+  /**
+   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   */
+  void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isInitialMeshRefinement) final override;
+
+  /**
+   * Query the user's refinement criterion and
+   * write a refinement request back to the cell description.
+   */
+  void markForRefinement(CellDescription& cellDescription);
+
+  /**
    * Mark a cell description of Cell for refinement or erasing based
    * on a user supplied physics based refinement criterion.
    *
-   * <h2>Erasing</h2>
+   * TODO(Dominic): Move docu below to appropriate location.
+   *
+   * <h2>Erasing</h2> TODO(Dominic): Move docu.
    * Note that we use a not so obvious strategy for performing
    * erasing operations. We first set an erasing request on
    * a parent cell description of type Ancestor or EmptyAncestor,
@@ -193,35 +239,39 @@ private:
    * solution or refine even further.
    *
    * No erasing children request can be set on cell descriptions
-   * of type NewAncestor and NewEmptyAncestor.
+   * of type Ancestor which have been introduced to the grid during
+   * the current mesh update iterations.
    * This prevents races where a refinement criterion has triggered a
    * refinement event on the parent cell but does trigger an erasing
    * event on the children cells.
    *
    * We further veto erasing events if
    * a child of the parent itself is a parent
-   * of cell descriptions of type Descendant/EmptyDescendant.
+   * of cell descriptions of type Descendant.
    *
    * <h2>Augmentation</h2>
-   * Note that a cell description of type Cell is allowed to overwrite an augmentation request
+   * Note that cell descriptions of type Cell are allowed to overwrite an augmentation request
    * by a refinement request if applicable.
    * The refinement event of a cell description of type Cell might be set to
    * an augmentation request in the methods mergeWithNeighbourData(...)
    * as well as in markForAugmentation(...) which is called from within
    * enterCell(...)
+   *
+   * \note Thread-safe.
    */
-  bool markForRefinement(
-      CellDescription& pFine);
+  void decideOnRefinement(CellDescription& fineGridCellDescription);
 
   /**
-   * TODO(Dominic): Add docu.
+   * Performs three operations:
+   * 1. Checks if a ErasingVirtualChildrenRequestedTriggered event on the coarse
+   * grid parent can be changed to a ErasingVirtualChildrenRequested event.
+   * In this case, the triggered request becomes an actual request.
+   * The fine grid children can however still veto this request.
+   * 2.
    *
-   * \note Not thread-safe!
+   * \note Thread-safe.
    */
-  bool markForAugmentation(
-      CellDescription& pFine,
-      const tarch::la::Vector<THREE_POWER_D, int>& neighbourCellDescriptionIndices,
-      const bool onMasterWorkerBoundary);
+  void decideOnVirtualRefinement(CellDescription& fineGridCellDescription);
 
   /*
    * Change the erasing children request to a change children to descendants
@@ -229,8 +279,8 @@ private:
    * if the coarse grid cell has children itself (of type Descendant).
    * Rationale: We cannot directly erase a Cell that has children (of type Descendant).
    *
-   * Further, reset the deaugmenting children request if a coarse grid
-   * Descendant has children (of type Descendant). Rationale:
+   * Further, reset the erasing virtual children request if a coarse grid
+   * Descendant has virtual children itself (of type Descendant). Rationale:
    * We cannot erase a coarse grid cell that has children (of type Descendant)
    * before erasing the children.
    *
@@ -248,7 +298,7 @@ private:
    *
    * \note Not thread-safe!
    */
-  void vetoErasingOrDeaugmentingChildrenRequest(
+  void vetoErasingRequestsIfNecessary(
       CellDescription& coarseGridCellDescription,
       const int fineGridCellDescriptionsIndex);
 
@@ -263,21 +313,13 @@ private:
    * Starts of finish collective operations from a
    * fine cell description point of view.
    *
-   * Resets the refinement event of a fine grid cell of type
-   * Descendant to None if it was set to Refining.
-   * The latter event indicates that the fine grid cells in
-   * the next finer level have all been initialised with
-   * type EmptyAncestor/Ancestor.
-   *
-   * Resets the augmentation event of a fine grid cell of type
-   * Descendant to None if it was set to Augmenting.
-   * The latter event indicates that the fine grid cells in
-   * the next finer level have all been initialised with
-   * type Descendant.
-   *
-   * \return True if a fine grid cell can be erased.
+   * \return true if a new compute cell
+   * was allocated as result of an erasing operation.
    */
-  void startOrFinishCollectiveRefinementOperations(
+  void progressCollectiveRefinementOperationsInEnterCell(
+      CellDescription& fineGridCellDescription);
+
+  bool progressCollectiveRefinementOperationsInLeaveCell(
       CellDescription& fineGridCellDescription);
 
   /**
@@ -305,7 +347,7 @@ private:
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
    *
-   * \note This operations is not thread-safe
+   * \note This operations is thread-safe
    */
   void addNewCell(
       exahype::Cell& fineGridCell,
@@ -326,9 +368,20 @@ private:
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
    *
+   * Reset an augmentation request if the child cell does hold
+   * a Descendant or EmptyDescendant cell description with
+   * the same solver number.
+   *
+   * This scenario occurs if an augmentation request is triggered in
+   * enterCell().
+   *
+   * A similar scenario can never occur for refinement requests
+   * since only cell descriptions of type Cell can be refined.
+   * Ancestors can never request refinement.
+   *
    * \note This operations is not thread-safe
    */
-  void addNewDescendantIfAugmentingRequested(
+  void addNewDescendantIfVirtualRefiningRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -383,11 +436,11 @@ private:
    * Set the value of the mergedLimiterStatus elements to Troubled
    * in case the coarse grid cell descriptions' values are Troubled.
    * Otherwise, set it to Ok.
+   *
+   * \note No static or const modifiers as kernels are not const.
    */
   void prolongateVolumeData(
-      CellDescription&       fineGridCellDescription,
-      const CellDescription& coarseGridCellDescription,
-      const tarch::la::Vector<DIMENSIONS, int>& subcellIndex,
+      CellDescription& fineGridCellDescription,
       const bool initialGrid);
 
   /**
@@ -406,6 +459,42 @@ private:
       CellDescription&       coarseGridCellDescription,
       const CellDescription& fineGridCellDescription,
       const tarch::la::Vector<DIMENSIONS, int>& subcellIndex);
+
+  /**
+   * Evaluates if the predictor can be processed as a
+   * background task for this cell.
+   *
+   * This is the case if the following conditions hold:
+   *
+   * - The cell's (inside) faces are not adjacent to a remote boundary,
+   *   i.e. no data has to be send to a neighbouring rank.
+   *
+   * - A cell description is not augmented. Otherwise it
+   *   needs to prolongate face data such that its
+   *   children can perform their prolongation.
+   *
+   * - A cell description is not at the boundary
+   *   of a parent Ancestor which needs needs to restrict data
+   *   to a coarser level Ancestor itself. If the Ancestor doesn't
+   *   have a coarser level Ancestor, the restriction operation
+   *   does not need to wait for data from finer levels first.
+   *   (Problem could be circumevented by restricting directly
+   *   to all parents in the tree and not waiting for the hira
+   *
+   * The (later) goal of this method will be too prioritise
+   * certain cells --- especially the ones at the remote boundary --
+   * over other cells which do not need to finish computation before
+   * the next local neighbour merge.
+   * Cells at the remote boundary have to directly send out
+   * data such that their neighbours can receive the new boundary
+   * values in the next iteration.
+   *
+   * TODO(Dominic): If this method appears to be too expensive then
+   * it might make sense to precompute the flag after the grid setup and
+   * store it persistently on the patches.
+   */
+  static bool isInvolvedInProlongationOrRestriction(
+      CellDescription& cellDescription);
 
   /**
    * Sets the face unknowns of a cell description of type Ancestor to zero.
@@ -493,8 +582,7 @@ private:
       CellDescription& pLeft,
       CellDescription& pRight,
       const int faceIndexLeft,
-      const int faceIndexRight,
-      double**  tempFaceUnknowns);
+      const int faceIndexRight);
 
   /**
    * Apply the boundary conditions at the face with index \p faceIndex.
@@ -508,19 +596,16 @@ private:
    *
    * \note Not thread-safe.
    *
-   * @param[in] cellDescription         The cell description
-   * @param[in] faceIndex               The index of the interface
+   * \param[in] cellDescription         The cell description
+   * \param[in] faceIndex               The index of the interface
    *                                    from the perspective of the cell/cell
    *                                    description. The index is computed as 2 times the
-   *                                    position of the normal vector non-zero plus a
+   *                                    position of the normal vector non-zero entry plus a
    *                                    value that encodes the normal vector direction
    *                                    (0 for negative direction, 1 for positive direction).
    * \note Not thread-safe.
    */
-  void applyBoundaryConditions(
-      CellDescription& p,
-      const int faceIndex,
-      double**  tempFaceUnknowns);
+  void applyBoundaryConditions(CellDescription& p,const int faceIndex);
 
 #ifdef Parallel
   /**
@@ -564,8 +649,7 @@ private:
       records::ADERDGCellDescription& cellDescription,
       const int faceIndex,
       const int indexOfQValues,
-      const int indexOfFValues,
-      double**  tempFaceUnknowns);
+      const int indexOfFValues);
 
   /**
    * Sets heap indices of all ADER-DG cell descriptions that were
@@ -579,6 +663,7 @@ private:
       const int parentIndex);
 
 #endif
+
   /**
    * Determine average of each unknown
    *
@@ -636,19 +721,67 @@ private:
    *   calls should run in parallel, but I'm not 100% sure) should run.
    * - Create additional data.
    */
-  void pullUnknownsFromByteStream(exahype::records::ADERDGCellDescription& cellDescription) const;
+  void pullUnknownsFromByteStream(CellDescription& cellDescription) const;
 
-  class CompressionTask {
+  class CompressionJob {
     private:
-      ADERDGSolver&                             _solver;
-      exahype::records::ADERDGCellDescription&  _cellDescription;
+      const ADERDGSolver& _solver;
+      CellDescription&    _cellDescription;
+      int&                _jobCounter;
     public:
-      CompressionTask(
-        ADERDGSolver&                             _solver,
-        exahype::records::ADERDGCellDescription&  _cellDescription
-      );
+      CompressionJob(
+        const ADERDGSolver& solver,
+        CellDescription&    cellDescription,
+        int&                jobCounter);
 
-      void operator()();
+      bool operator()();
+  };
+
+  class PredictionJob {
+    private:
+      ADERDGSolver&    _solver;
+      CellDescription& _cellDescription;
+      const double     _predictorTimeStamp;
+      const double     _predictorTimeStepSize;
+      const bool       _uncompressBefore;
+      const bool       _isAtRemoteBoundary;
+    public:
+      PredictionJob(
+          ADERDGSolver&     solver,
+          CellDescription&  cellDescription,
+          const double      predictorTimeStamp,
+          const double      predictorTimeStepSize,
+          const bool        uncompressBefore,
+          const bool        isAtRemoteBoundary);
+
+      bool operator()();
+  };
+
+  /**
+   * A job which performs a fused ADER-DG time step, i.e., it performs the solution update,
+   * updates the local time stamp, and finally performs the space-time predictor commputation.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * do not plan to reduce the admissible time step size or refinement requests
+   * within a consequent reduction step.
+   *
+   * TODO(Dominic): Minimise time step sizes and refinement requests per patch
+   * (->transpose the typical minimisation order)
+   */
+  class FusedTimeStepJob {
+    private:
+      ADERDGSolver&    _solver;
+      const int        _cellDescriptionsIndex;
+      const int        _element;
+      int&             _jobCounter;
+    public:
+      FusedTimeStepJob(
+          ADERDGSolver& solver,
+          const int     cellDescriptionsIndex,
+          const int     element,
+          int&          jobCounter);
+
+      bool operator()();
   };
 
 public:
@@ -704,18 +837,12 @@ public:
    */
   static void eraseCellDescriptions(const int cellDescriptionsIndex);
 
-  void updateHelperStatus(
+  void updateCommunicationStatus(
         exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
   /**
    * TODO(Dominic): Add docu.
    */
-  int determineHelperStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void overwriteFacewiseHelperStatus(
+  int determineCommunicationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
 
   /**
@@ -728,12 +855,6 @@ public:
    * TODO(Dominic): Add docu.
    */
   int determineAugmentationStatus(
-      exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void overwriteFacewiseAugmentationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
 
   /**
@@ -775,8 +896,16 @@ public:
    *
    * \note The ADERDGSolver needs to know about the limiter status during mesh initialisation and
    * refinement operations.
+   *
+   * <h2>FusedTimeStep Background Jobs</h2>
+   * We assume that the limiter status might change locally during batching but
+   * not the adaptive mesh. When we perform Fused Time Stepping, we thus
+   * have to copy the neighbourMergePerformed array as it is potentially
+   * overwritten before the background job has been executed.
    */
-  static int determineLimiterStatus(CellDescription& cellDescription);
+  static int determineLimiterStatus(
+      const CellDescription& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * TODO(Dominic): Can later be replaced
@@ -979,7 +1108,7 @@ public:
   virtual int getBndTotalSize()                   const {return getDataPerCellBoundary();} // TODO function should be renamed
   virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
   virtual int getBndFluxTotalSize()               const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
-  virtual int getTempStateSizedVectorsSize()      const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints
+  virtual int getUpdateSize()                     const {return getUnknownsPerCell();}
 
   virtual bool alignTempArray()                   const {return false;}
 
@@ -994,32 +1123,20 @@ public:
   /**
    * @brief Adds the solution update to the solution.
    *
-   * @param[inout] luh  Cell-local solution DoF.
-   * @param[in]    lduh Cell-local update DoF.
-   * @param[dt]    dt   Time step size.
+   * \param[inout] luh  Cell-local solution DoF.
+   * \param[in]    lduh Cell-local update DoF.
+   * \param[dt]    dt   Time step size.
    */
   virtual void solutionUpdate(double* luh, const double* const lduh,
                               const double dt) = 0;
 
   /**
-   * @brief Computes the volume flux contribution to the cell update.
-   *
-   * @param[inout] lduh      Cell-local update DoF.
-   * @param[in]    cellSize  Extent of the cell in each coordinate direction.
-   * @param[dt]    dt        Time step size.
-   */
-  virtual void volumeIntegral(
-      double* lduh, 
-      const double* const lFi, const double* const lFhi, //take both lFi and lFhi, depending on the time averaging setting lFi may be unused or lFhi may be nullptr
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
-
-  /**
    * @brief Computes the surface integral contributions
    * to the cell update.
    *
-   * @param[inout] lduh   Cell-local update DoF.
-   * @param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
-   * @param[in]    cellSize     Extent of the cell in each coordinate direction.
+   * \param[inout] lduh   Cell-local update DoF.
+   * \param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
+   * \param[in]    cellSize     Extent of the cell in each coordinate direction.
    */
   virtual void surfaceIntegral(
       double* lduh, const double* const lFhbnd,
@@ -1029,16 +1146,13 @@ public:
    * @brief Computes the normal fluxes (or fluctuations) at the interface of two
    *cells.
    *
-   * @param[inout] FL             Flux DoF belonging to the left cell.
-   * @param[inout] FR             Flux DoF belonging the right cell.
-   * @param[in]    QL             DoF of the boundary extrapolated predictor
+   * \param[inout] FL             Flux DoF belonging to the left cell.
+   * \param[inout] FR             Flux DoF belonging the right cell.
+   * \param[in]    QL             DoF of the boundary extrapolated predictor
    *                              belonging to the left cell.
-   * @param[in]    QR             DoF of the boundary extrapolated predictor
+   * \param[in]    QR             DoF of the boundary extrapolated predictor
    *                              belonging to the right cell.
-   * @param[in]    tempFaceUnknownsArray        Temporary array of the size of a face unknowns array.
-   * @param[in]    tempStateSizedVectors        Five (5) state sized (=number of variables) temporary variables.
-   * @param[in]    tempStateSizedSquareMatrices Three (3) temporary variables of the size number of variables squared.
-   * @param[in]    direction  Index of the nonzero normal vector component,
+   * \param[in]    direction  Index of the nonzero normal vector component,
    *               i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
   virtual void riemannSolver(double* FL, double* FR,
@@ -1049,24 +1163,20 @@ public:
                              int faceIndex) = 0;
 
   /**
-   * Return the normal fluxes (or fluctuations) and state variables at the boundary.
+   * Impose boundary conditions on the fluxes (or fluctuations).
+   * The state is only read.
    *
-   * @param[inout] fluxOut       Flux DoF belonging to the left cell.
-   * @param[inout] stateOut      DoF of the boundary extrapolated predictor
-   *                             belonging to the left cell.
-     @param[in]    fluxIn        Flux DoF belonging to the left cell.
-   * @param[in]    stateIn       DoF of the boundary extrapolated predictor
-   *                             belonging to the left cell.
-   * @param[in]    cellCentre    Cell centre.
-   * @param[in]    cellSize      Cell size.
-   * @param[in]    t             The time.
-   * @param[in]    dt            A time step size.
-   * @param[in]    direction Index of the nonzero normal vector component,
-   *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * \param[in]    fluxIn        boundary-extrapolated (space-time) volume flux
+   * \param[in]    stateIn       boundary-extraplolated (space-time) predictor
+   * \param[in]    cellCentre    cell centre.
+   * \param[in]    cellSize      cell size.
+   * \param[in]    t             The time.
+   * \param[in]    dt            a time step size.
+   * \param[in]    faceIndex     Index of the face under consideration.
+   * \param[in]    direction     index of the nonzero component of the normal vector
+   *                             i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
-  virtual void boundaryConditions(double* fluxOut,
-                                  double* stateOut,
-                                  const double* const fluxIn,
+  virtual void boundaryConditions(double* fluxIn,
                                   const double* const stateIn,
                                   const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                                   const tarch::la::Vector<DIMENSIONS,
@@ -1075,43 +1185,34 @@ public:
                                   const int faceIndex,
                                   const int direction) = 0;
 
-
   /**
-   * @brief Computes cell-local predictor space-time, volume, and face DoF.
+   * @brief Computes cell-local space-time predictor, volume, and face DoF
+   * and performs volume integral.
    *
-   * Computes the cell-local space-time predictor lQi, the space-time volume
-   *flux lFi,
-   * the predictor lQhi, the volume flux lFhi, the boundary
-   * extrapolated predictor lQhbnd and normal flux lFhbnd.
+   * The space-time predictor computation also includes
+   * evaluating the point sources.
    *
-   * @param[inout] lQi       Space-time predictor DoF.
-   * @param[in]    lQi_old   Old space-time predictor DoF - only used in Picard loop.
-   * @param[in]    rhs       The right-hand side vector - only used in Picard loop.
-   * @param[in]    rhs_0     Constant term of the right-hand side - only used in Picard loop.
-   * @param[inout] lFi       Space-time flux DoF.
-   * @param[inout] lQhi      Predictor DoF
-   * @param[inout] lFhi      Volume flux DoF.
-   * @param[out]   luh       Solution DoF.
-   * @param[in]    cellSize     Extent of the cell in each coordinate direction.
-   * @param[in]    dt     Time step size.
+   * \param[out] lduh           cell-local update DoF.
+   * \param[out] lQhbnd, lFhbnd boundary-extrapolated space-time predictor and volume flux values.
+   * \param[int] luh            solution DoF.
+   * \param[in]  invDx          inverted extent of the cell per coordinate direction.
+   * \param[in]  dt             time step size.
+   *
+   * \return the number of Picard iterations performed by the
+   * space-time predictor computation kernel.
    */
-  virtual void spaceTimePredictor(
-      double*  lQhbnd, double* lFhbnd,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
+  virtual int fusedSpaceTimePredictorVolumeIntegral(
+      double* lduh, double*  lQhbnd, double* lFhbnd,
       const double* const luh,
-      const tarch::la::Vector<DIMENSIONS, 
-      double>& cellSize, 
-      const double dt,
-      double** tempPointForceSources) = 0;
+      const tarch::la::Vector<DIMENSIONS, double>& center,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
+      const double dt) = 0;
 
   /**
    * \brief Returns a stable time step size.
    *
    * \param[in] luh             Cell-local solution DoF.
-   * \param[in] tempEigenvalues A temporary array of size equalling the number of variables.
    * \param[in] cellSize        Extent of the cell in each coordinate direction.
    */
   virtual double stableTimeStepSize(
@@ -1136,16 +1237,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& dx,
       const double t,
       const double dt) = 0;
-
-  /**
-   * DeltaDistribution kernel (pointSource)
-   **/
-  virtual void deltaDistribution(
-    const double t,
-    const double dt, 
-    const tarch::la::Vector<DIMENSIONS,double>& center,
-    const tarch::la::Vector<DIMENSIONS,double>& dx, 
-    double** tempPointForceSources) = 0;
 
   /**
    * @defgroup AMR Solver routines for adaptive mesh refinement
@@ -1274,7 +1365,7 @@ public:
    */
   void synchroniseTimeStepping(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) const override;
 
   /**
    * \copydoc Solver::startNewTimeStep
@@ -1390,11 +1481,22 @@ public:
    */
   bool getStabilityConditionWasViolated() const;
 
+  /**
+    * User defined solver initialisation.
+    *
+    * \param[in] cmdlineargs the command line arguments.
+    */
+  virtual void init(
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& constants) = 0;
+
   void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parserView) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
@@ -1404,10 +1506,6 @@ public:
   int tryGetElement(
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-
-  SubcellPosition computeSubcellPositionOfCellOrAncestor(
-      const int cellDescriptionsIndex,
-      const int element) const override;
 
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
@@ -1426,7 +1524,7 @@ public:
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
 
-  bool markForRefinement(
+   bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1437,7 +1535,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-   UpdateStateInEnterCellResult updateStateInEnterCell(
+  bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1445,18 +1543,12 @@ public:
       exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
       const int solverNumber) override;
 
-  bool updateStateInLeaveCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+        const int& cellDescriptionsIndex,
+        const int& solverNumber,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -1482,36 +1574,75 @@ public:
       const int element) override;
 
   /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
+   *
+   * \note Uncompresses the cell description arrays before calling
+   * performPredictionAndVolumeIntegral(CellDescription,bool)
+   *
+   * \see performPredictionAndVolumeIntegral(CellDescription,bool)
    */
   static void performPredictionAndVolumeIntegral(
       exahype::solvers::Solver* solver,
       const int cellDescriptionsIndex,
       const int element,
-      exahype::solvers::PredictionTemporaryVariables& temporaryVariables);
+      const bool isAtRemoteBoundary);
 
   /**
    * Computes the space-time predictor quantities, extrapolates fluxes
    * and (space-time) predictor values to the boundary and
-   * computes the volume integral.
+   * computes the volume integral directly afterwards.
+   * Furthermore, it restricts face data up to coarser grids
+   * and compresses the cell description data again.
    *
-   * \param[in] tempSpaceTimeUnknows      Array of size 4 containing space-time predictor sized temporary arrays (see nonlinear predictor kernel).
-   * \param[in] tempSpaceTimeFluxUnknowns Array of size 2 containing space-time predictor volume flux sized temporary arrays (see linear predictor kernel).
-   * \param[in] tempUnknowns              Solution sized temporary array.
-   * \param[in] tempFluxUnknowns          Volume flux sized temporary array.
-   * \param[in] tempStateSizedVector      A vector of size of the state vector (=number of variables).
+   * Can be configured to uncompress the cell description
+   * arrays before computing the space-time predictor quantities.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * \see performPredictionAndVolumeIntegralBody
+   *
+   * \param[in] uncompressBefore             uncompress the cell description arrays before computing
+   *                                         the space-time predictor quantities.
+   * \param[in] vetoCompressionBackgroundJob veto that the compression is run as a background task
+   *
+   * \note If this job is called by
+   */
+  void performPredictionAndVolumeIntegralBody(
+      CellDescription& cellDescription,
+      const double predictorTimeStamp,
+      const double predictorTimeStepSize,
+      const bool   uncompressBefore,
+      const bool   vetoCompressionBackgroundJob,
+      const bool   isAtRemoteBoundary);
+
+  /**
+   *
+   *
+   * \note uncompress is not performed in this routine. It must
+   * be called before calling this routine if compression is employed.
+   *
+   * \note Has no const modifier since kernels are not const functions.
+   *
+   * \param[in] isAtRemoteBoundary indicates that we are at a remote boundary.
+   *                               Plays a role in filtering out cells where we cannot
+   *                               start backgroudn tasks.
    */
   void performPredictionAndVolumeIntegral(
       CellDescription& cellDescription,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double**  tempPointForceSources);
+      const double predictorTimeStamp,
+      const double predictorTimeStepSize,
+      const bool   uncompress,
+      const bool   isAtRemoteBoundary);
 
-  void validateNoNansInADERDGSolver(
+  /**
+   * Valdiate that the data stored on and for
+   * the cell description is valid.
+   *
+   * \note Must only be called if the compression
+   * is currently not in progress, i.e. processed as
+   * a background task.
+   */
+  void validateCellDescriptionData(
       const CellDescription& cellDescription,
+      const bool validateTimeStepData,
+      const bool afterCompression,
       const std::string& methodTraceOfCaller) const;
 
   /**
@@ -1572,20 +1703,31 @@ public:
       const int cellDescriptionsIndex,
       const int element) const override final;
 
-  void adjustSolution(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  UpdateResult fusedTimeStepBody(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isFirstIterationOfBatch,
+        const bool isLastIterationOfBatch,
+        const bool isAtRemoteBoundary,
+        const bool vetoSpawnPredictionAsBackgroundJob,
+        const bool vetoSpawnAnyBackgroundJobs);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double** tempPointForceSources) final override;
+      const bool isAtRemoteBoundary) final override;
+
+  UpdateResult update(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) final override;
+
+  void compress(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) const final override;
 
   /**
    * Computes the surface integral contributions to the
@@ -1611,10 +1753,21 @@ public:
       CellDescription& cellDescription,
       const bool backupPreviousSolution=true);
 
+  /**
+   * Update the solution of a cell description.
+   *
+   * \note Make sure to reset neighbour merge
+   * helper variables in this method call.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
+   */
   void updateSolution(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) final override;
+      const bool backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -1639,23 +1792,24 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void preProcess(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
-  void postProcess(
+  void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void prolongateDataAndPrepareDataRestriction(
+  /** \copydoc Solver::restrict
+   *
+   * Restrict certain flags to the next
+   * parent and restrict data to the
+   * top most parent.
+   */
+  void restriction(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void restrictToNextParent(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const override;
+  /**
+   * Body of the restrict function.
+   */
+  void restriction(const CellDescription& fineGridCellDescription);
 
   /**
    * Restrict the Troubled limiter status of a cell
@@ -1663,31 +1817,48 @@ public:
    *
    * Any other limiter status is ignored.
    *
-   * \note This operation is not thread-safe
+   * \p This operation ensures thread-safety by using a lock.
+   *
+   * \note This function assumes a bottom-up traversal of the grid and must thus
+   * be called from the leaveCell(...) mapping method.
    */
-  void restrictLimiterStatus(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const;
+  void restrictToNextParent(
+      const CellDescription& cellDescription,
+      const int parentElement) const;
 
+  /**
+   * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)
+   * if and only if the fine grid cell (Cell) has a face which intersects with one of the top most parent
+   * cell's faces.
+   *
+   * \note This function is used to restrict face data to the top most
+   * parent. We skip all intermediate parents if they do not
+   * need to hold data (EmptyAncestor).
+   *
+   * \p This operation is always surrounded by
+   * a lock. No locks are required internally.
+   *
+   * \note This function assumes a bottom-up traversal of the grid and must thus
+   * be called from the leaveCell(...) or ascend(...) mapping methods.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   */
   void restrictToTopMostParent(
-      const int cellDescriptionsIndex,
-      const int element,
-      const int parentCellDescriptionsIndex,
-      const int parentElement,
-      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
+        const CellDescription& cellDescription,
+        const int parentCellDescriptionsIndex,
+        const int parentElement,
+        const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
   // helper status
-  void mergeWithHelperStatus(
+  void mergeWithCommunicationStatus(
       CellDescription& cellDescription,
       const int direction,
-      const int otherHelperStatus) const;
+      const int otherCommunicationStatus) const;
 
-  void mergeNeighboursHelperStatus(
+  void mergeNeighboursCommunicationStatus(
       const int                                 cellDescriptionsIndex1,
       const int                                 element1,
       const int                                 cellDescriptionsIndex2,
@@ -1723,15 +1894,13 @@ public:
       const int                                 cellDescriptionsIndex2,
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      double**                                  tempFaceUnknowns) override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2) override;
 
   void mergeWithBoundaryData(
       const int                                 cellDescriptionsIndex,
       const int                                 element,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-      double**                                  tempFaceUnknowns) override;
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 #ifdef Parallel
   /**
    * Sends all the cell descriptions at address \p
@@ -1811,7 +1980,7 @@ public:
   /** \copydoc Solver::mergeWithNeighbourMetadata
    *
    * Appends cell type,limiterStatus,augmentationStatus,
-   * and helperStatus to \p metadata.
+   * and communicationStatus to \p metadata.
    */
   void appendNeighbourCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
@@ -1824,7 +1993,7 @@ public:
    *
    * Merges with a metadata message received from
    * a neighbour. The message contains the neighbours
-   * cell type,limiterStatus,augmentationStatus,helperStatus.
+   * cell type,limiterStatus,augmentationStatus,communicationStatus.
    *
    * <h2>LiimitingADERDGSolver</h2>
    * This routine also merges the cell's limiter status
@@ -1908,12 +2077,10 @@ public:
    */
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const MetadataHeap::HeapEntries&             neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
@@ -1937,14 +2104,35 @@ public:
   // MASTER<=>WORKER
   ///////////////////////////////////
   /**
-   * TODO(Dominic): Add docu
+   * \copydoc Solver::prepareMasterCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Ancestor, we look up
+   * if its top-most parent stores face data during the time stepping
+   * iterations. That's the case if the parent Ancestor is next
+   * to a Cell type cell description (compute cell), or if
+   * itself has to store data for master worker communication.
+   *
+   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required memory.
+   *
+   * Similarly, we check if a cell description of type Cell has such
+   * a top-most parent (of type Ancestor). In this case,
+   * we still need to set the flag but we do not need to allocate additional memory.
+   *
+   * \return if we need to master-worker communication for this cell description.
    */
-  void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  /**
-   * TODO(Dominic): Add docu
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Descendant and
+   * is next to a cell description of type Cell
+   * or is virtually refined, i.e. has children of type Descendant itself,
+   * we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required
+   * memory.
    */
   void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
@@ -1960,7 +2148,10 @@ public:
       const int                        cellDescriptionsIndex,
       const int                        element) override;
 
-  void mergeWithWorkerMetadata(
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   * \return if we need to master-worker communication for this cell description.
+   */
+  bool mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) override;
@@ -1999,7 +2190,7 @@ public:
   /**
    * Compiles a message for the master.
    *
-   * Capacity of the message vector can be modified
+   * Capacity (in byte) of the message vector can be modified
    * in case the calling function wants to push additional
    * entries to the back of the vector.
    *
@@ -2160,9 +2351,11 @@ public:
    * However, we have to take care about the interplay of compression and
    * uncompression.
    *
-   * The routine is triggered indirectly through postProcess()/preProcess().
+   * \param[in] isAtRemoteBoundary
    */
-  void compress(exahype::records::ADERDGCellDescription& cellDescription);
+  void compress(CellDescription& cellDescription,
+      const bool vetoSpawnBackgroundJob,
+      const bool isAtRemoteBoundary) const;
 };
 
 #endif

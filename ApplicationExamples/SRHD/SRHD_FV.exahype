@@ -32,9 +32,11 @@ exahype-project  SRHD
   global-optimisation
     fuse-algorithmic-steps        = off
     fuse-algorithmic-steps-factor = 0.99
-    timestep-batch-factor           = 0.0
-    skip-reduction-in-batched-time-steps = off
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread=off
   end global-optimisation

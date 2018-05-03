@@ -22,7 +22,7 @@ exahype-project  SWE
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/SWE/SWE_FV
   architecture const      = noarch
-  log-file                = mylogfile.log
+  //log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 2
@@ -33,23 +33,44 @@ exahype-project  SWE
     /* for dam breaks */ 
     width                = 10.0,10.0
     offset                   = 0.0, 0.0
-    end-time                 = 40.0
+    end-time                 = 5.0
   end computational-domain
 
+  shared-memory
+      identifier = dummy
+      configure = {background-tasks:8}
+      cores = 8
+      properties-file = sharedmemory.properties
+  end shared-memory
+
+  global-optimisation
+      fuse-algorithmic-steps          = on
+      fuse-algorithmic-steps-factor   = 0.99
+      spawn-predictor-as-background-thread = off
+      spawn-amr-background-threads         = off
+      /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+      disable-vertex-exchange-in-time-steps = on
+      time-step-batch-factor           = 0.0
+      disable-metadata-exchange-in-batched-time-steps = off
+      double-compression = 0.0
+      spawn-double-compression-as-background-thread = off
+   end global-optimisation
+
   solver Finite-Volumes MySWESolver
-    variables const   = h:1,hu:1,hv:1
-    parameters const  = b:1
+    variables const   = h:1,hu:1,hv:1,b:1
+    //parameters const  = b:1
     patch-size const   = 3
-    maximum-mesh-size = 0.05
+    maximum-mesh-size = 0.15
     time-stepping     = global
-    kernel const      = generic::godunov
+    type const      = godunov
+    terms const = flux, ncp
+    optimisation const = generic
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
       time            = 0.0
       repeat          = 0.1
       output          = ./conserved
-      select          = x:0.0,y:0.0
     end plot
   end solver
 end exahype-project

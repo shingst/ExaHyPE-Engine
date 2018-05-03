@@ -20,7 +20,7 @@
 
  #include "exahype/mappings/FinaliseMeshRefinement.h"
  #include "exahype/mappings/LocalRollback.h"
- #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2.h"
+ #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 
@@ -42,11 +42,11 @@ class exahype::adapters::FinaliseMeshRefinementOrLocalRollback {
   private:
     typedef mappings::FinaliseMeshRefinement Mapping0;
     typedef mappings::LocalRollback Mapping1;
-    typedef adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2 Mapping2;
+    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping2;
 
      Mapping0  _map2FinaliseMeshRefinement;
      Mapping1  _map2LocalRollback;
-     Mapping2  _map2FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2;
+     Mapping2  _map2LevelwiseAdjacencyBookkeeping;
 
 
   public:

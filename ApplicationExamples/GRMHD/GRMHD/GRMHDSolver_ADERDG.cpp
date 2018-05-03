@@ -27,7 +27,7 @@ ADERDG_BC* abc;
 // enable nan tracker
 #include <fenv.h>
 
-void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs,exahype::Parser::ParserView& constants) {
+void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // NAN checker
   feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
@@ -50,7 +50,7 @@ void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs,exahy
   }
 
   abc = new ADERDG_BC(this);
-  //if(!abc->setFromSpecFile<exahype::Parser::ParserView>(constants)) {
+  //if(!abc->setFromSpecFile<exahype::parser::ParserView>(constants)) {
   if(!abc->setFromSpecFile<StringMapView>(StringMapView(tbc))) {
 	logError("boundaryValues", "Some Boundary faces are missing in Specfile. Need: left,right,top,bottom,front,back. Got:" << tbc);
 	std::abort();

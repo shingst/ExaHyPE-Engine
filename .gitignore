@@ -8,11 +8,13 @@ buildinfo.h
 *~
 [._]*.s[a-w][a-z]
 [._]s[a-w][a-z]
+*.backup
 
 # IDE project files: Eclipse, Kdevelop
 .cproject
 .project
 .settings
+.directory
 .kdev4
 *.kdev4
 
@@ -53,6 +55,9 @@ buildinfo.h
 *.vtu
 *.pvd
 *.log-file
+*.png
+*.webm
+*.svg
 
 # Any kind of archives
 *.zip
@@ -96,6 +101,7 @@ ExaHyPE/kernels/aderdg/optimised/
 # Softlinks to the ExaHyPE-Astro repository
 AstroApplications
 ExternalLibraries
+AstroBenchmarks
 
 # Logs and other typical output of runs
 *.log
@@ -133,3 +139,4 @@ ExternalLibraries
 
 # Coredumps
 core
+/build/

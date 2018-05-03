@@ -5,4 +5,15 @@ class exahype::dastgen::State {
    * Consult Peano guidebook Section 6.3.2
    */
   persistent parallelise int maxRefinementLevelAllowed;
+  
+  /**
+   * Indicates that we need to exchange local solver
+   * data between master and worker at least for one cell at
+   * a master-worker boundary.
+   * 
+   * These local solver data are usually restricted or prolongated degrees of freedom. 
+   * They must not be confused with global solver data such as, e.g. 
+   * admissible time step sizes. 
+   */
+  persistent parallelise bool verticalExchangeOfSolverDataRequired;
 };

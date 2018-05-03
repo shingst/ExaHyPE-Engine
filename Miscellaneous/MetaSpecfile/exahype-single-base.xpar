@@ -16,7 +16,7 @@ ExaHyPE::log_file = "whatever.log"
 
 Solver::plotters = Plotters
 Solver::constants = Parameters
-Solver::parameters = Parameters
+Solver::parameters = Parameters  # what is this line for?
 ExaHyPE::solvers += Solver
 
 ExaHyPE::computational_domain = Coord
@@ -37,5 +37,8 @@ ExaHyPE::optimisation::skip_reduction = True
 ExaHyPE::optimisation::disable_amr_if_grid_has_been_stationary_in_previous_iteration = False
 ExaHyPE::optimisation::double_compression = 0.0
 ExaHyPE::optimisation::spawn_double_compression = False
-
+ExaHyPE::optimisation::spawn_predictor_as_background_thread = False
+ExaHyPE::optimisation::timestep_batch_factor = 1.0
+ExaHyPE::optimisation::skip_reduction_in_batched_time_steps = False
+ExaHyPE::optimisation::spawn_double_compression_as_background_thread = False
 

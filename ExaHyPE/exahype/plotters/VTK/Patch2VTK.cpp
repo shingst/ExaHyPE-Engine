@@ -35,7 +35,59 @@
 tarch::logging::Log exahype::plotters::Patch2VTK::_log("exahype::plotters::Patch2VTK");
 
 
-exahype::plotters::Patch2VTKAscii::Patch2VTKAscii(
+exahype::plotters::Patch2VTKBoxesAscii::Patch2VTKBoxesAscii(
+  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+  exahype::solvers::Solver::Type solvertype
+):
+  exahype::plotters::Patch2VTK(postProcessing,PlotterType::ASCIIVTK,false,solvertype) {
+}
+
+
+std::string exahype::plotters::Patch2VTKBoxesAscii::getIdentifier() {
+  return "vtk::patches::boxes::ascii";
+}
+
+
+exahype::plotters::Patch2VTKBoxesBinary::Patch2VTKBoxesBinary(
+  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+  exahype::solvers::Solver::Type solvertype
+):
+  exahype::plotters::Patch2VTK(postProcessing,PlotterType::BinaryVTK,false,solvertype) {
+}
+
+
+std::string exahype::plotters::Patch2VTKBoxesBinary::getIdentifier() {
+  return "vtk::patches::boxes::binary";
+}
+
+
+exahype::plotters::Patch2VTUBoxesAscii::Patch2VTUBoxesAscii(
+  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+  exahype::solvers::Solver::Type solvertype
+):
+  exahype::plotters::Patch2VTK(postProcessing,PlotterType::ASCIIVTU,false,solvertype) {
+}
+
+
+std::string exahype::plotters::Patch2VTUBoxesAscii::getIdentifier() {
+  return "vtu::patches::boxes::ascii";
+}
+
+
+exahype::plotters::Patch2VTUBoxesBinary::Patch2VTUBoxesBinary(
+  exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+  exahype::solvers::Solver::Type solvertype
+):
+  exahype::plotters::Patch2VTK(postProcessing,PlotterType::BinaryVTU,false,solvertype) {
+}
+
+
+std::string exahype::plotters::Patch2VTUBoxesBinary::getIdentifier() {
+  return "vtk::patches::boxes::binary";
+}
+
+
+exahype::plotters::Patch2VTKGapsAscii::Patch2VTKGapsAscii(
   exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
   exahype::solvers::Solver::Type solvertype
 ):
@@ -43,12 +95,12 @@ exahype::plotters::Patch2VTKAscii::Patch2VTKAscii(
 }
 
 
-std::string exahype::plotters::Patch2VTKAscii::getIdentifier() {
-  return "vtk::patches::boxes::ascii";
+std::string exahype::plotters::Patch2VTKGapsAscii::getIdentifier() {
+  return "vtk::patches::gaps::ascii";
 }
 
 
-exahype::plotters::Patch2VTKBinary::Patch2VTKBinary(
+exahype::plotters::Patch2VTKGapsBinary::Patch2VTKGapsBinary(
   exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
   exahype::solvers::Solver::Type solvertype
 ):
@@ -56,12 +108,12 @@ exahype::plotters::Patch2VTKBinary::Patch2VTKBinary(
 }
 
 
-std::string exahype::plotters::Patch2VTKBinary::getIdentifier() {
-  return "vtk::patches::boxes::binary";
+std::string exahype::plotters::Patch2VTKGapsBinary::getIdentifier() {
+  return "vtk::patches::gaps::binary";
 }
 
 
-exahype::plotters::Patch2VTUAscii::Patch2VTUAscii(
+exahype::plotters::Patch2VTUGapsAscii::Patch2VTUGapsAscii(
   exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
   exahype::solvers::Solver::Type solvertype
 ):
@@ -69,12 +121,12 @@ exahype::plotters::Patch2VTUAscii::Patch2VTUAscii(
 }
 
 
-std::string exahype::plotters::Patch2VTUAscii::getIdentifier() {
-  return "vtu::patches::boxes::ascii";
+std::string exahype::plotters::Patch2VTUGapsAscii::getIdentifier() {
+  return "vtu::patches::gaps::ascii";
 }
 
 
-exahype::plotters::Patch2VTUBinary::Patch2VTUBinary(
+exahype::plotters::Patch2VTUGapsBinary::Patch2VTUGapsBinary(
   exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
   exahype::solvers::Solver::Type solvertype
 ):
@@ -82,8 +134,8 @@ exahype::plotters::Patch2VTUBinary::Patch2VTUBinary(
 }
 
 
-std::string exahype::plotters::Patch2VTUBinary::getIdentifier() {
-  return "vtk::patches::boxes::binary";
+std::string exahype::plotters::Patch2VTUGapsBinary::getIdentifier() {
+  return "vtk::patches::gaps::binary";
 }
 
 
@@ -91,13 +143,13 @@ std::string exahype::plotters::Patch2VTUBinary::getIdentifier() {
 exahype::plotters::Patch2VTK::Patch2VTK(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     PlotterType plotterType,
-    bool plotCells,
+    bool plotGaps,
     exahype::solvers::Solver::Type solverType):
   Device(postProcessing),
   _solverType(solverType),
   _isLimitingSolver(_solverType == exahype::solvers::Solver::Type::LimitingADERDG),
   _plotterType(plotterType),
-  _plotCells(plotCells),
+  _plotGaps(plotGaps),
   #ifdef Parallel
   _hasMPIenabled(true),
   #else
@@ -241,15 +293,18 @@ std::pair<int,int> exahype::plotters::Patch2VTK::plotCellBoundary(
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch,
 	tarch::la::Vector<DIMENSIONS, double> sizeOfPatch) {
 	
-	constexpr double  gapScaleFactor = 0.9305681558; // mimics p=3 ADERDG
-	_cellScaleFactor = gapScaleFactor;
+	if(_plotGaps) {
+		constexpr double  gapScaleFactor = 0.9305681558; // mimics p=3 ADERDG
+		// TODO: Expose _cellScaleFactor as runtime parameter instead of a boolean _plotGaps.
+		_cellScaleFactor = gapScaleFactor;
 	
-	assert(_cellScaleFactor <= 1.0 && _cellScaleFactor >= 0.0);
+		assert(_cellScaleFactor <= 1.0 && _cellScaleFactor >= 0.0);
 	
-	// scale the apparent patch size
-	tarch::la::Vector<DIMENSIONS, double> gap = sizeOfPatch * (1-_cellScaleFactor);
-	offsetOfPatch += gap;
-	sizeOfPatch -= 2.0*gap;
+		// scale the apparent patch size
+		tarch::la::Vector<DIMENSIONS, double> gap = sizeOfPatch * (1-_cellScaleFactor);
+		offsetOfPatch += gap;
+		sizeOfPatch -= 2.0*gap;
+	}
 	
 	int firstVertex=-1;
 	

@@ -12,60 +12,45 @@
 
 #include "AbstractLimitingADERDG_ADERDG.h"
 
-
 /**
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
 
-
-
-
-
 namespace Euler{
   class LimitingADERDG_ADERDG;
 }
 
-class Euler::LimitingADERDG_ADERDG: public Euler::AbstractLimitingADERDG_ADERDG {
+class Euler::LimitingADERDG_ADERDG : public Euler::AbstractLimitingADERDG_ADERDG {
   private:
     /**
      * Log device
      */
     static tarch::logging::Log _log;
   public:
-    LimitingADERDG_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    LimitingADERDG_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
 
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
-    
-   
-    
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
+
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
      *
+     * \note Please overwrite function adjustSolution(...) if you want to
+     * adjust the solution degrees of freedom in a cellwise manner.
      *
      * \param[in]    x         the physical coordinate on the face.
-     * \param[in]    w         (deprecated) the quadrature weight corresponding to the quadrature point w.
      * \param[in]    t         the start of the time interval.
      * \param[in]    dt        the width of the time interval.
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
-    
-    /**
-     * Compute the flux tensor.
-     *
-     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
-     *                 as C array (already allocated).
-     * \param[inout] F the fluxes at that point as C array (already allocated).
-     */
-    virtual void flux(const double* const Q,double** F);
-    
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
+
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
      *
@@ -74,7 +59,7 @@ class Euler::LimitingADERDG_ADERDG: public Euler::AbstractLimitingADERDG_ADERDG 
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda);
+    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -95,7 +80,7 @@ class Euler::LimitingADERDG_ADERDG: public Euler::AbstractLimitingADERDG_ADERDG 
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -112,6 +97,18 @@ class Euler::LimitingADERDG_ADERDG: public Euler::AbstractLimitingADERDG_ADERDG 
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
     exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    
+    //PDE
+
+    /**
+     * Compute the flux tensor.
+     *
+     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
+     *                 as C array (already allocated).
+     * \param[inout] F the fluxes at that point as C array (already allocated).
+     */
+    void flux(const double* const Q,double** F) final override;
+
 
     void mapDiscreteMaximumPrincipleObservables(
         double* observables,const int numberOfObservables,
@@ -122,6 +119,9 @@ class Euler::LimitingADERDG_ADERDG: public Euler::AbstractLimitingADERDG_ADERDG 
       const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
       const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const override;
+
+
+
 };
 
 #endif // __LimitingADERDG_ADERDG_CLASS_HEADER__

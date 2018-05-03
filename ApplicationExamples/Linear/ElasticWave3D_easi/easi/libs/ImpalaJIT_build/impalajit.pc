@@ -1,0 +1,11 @@
+Name: ImpalaJIT
+Description: JIT Compilation to realize flexible data access
+URL: https://github.com/Manuel1605/ImpalaJIT
+Version: 0.9
+
+prefix=/usr/local
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Libs: -L${libdir} -limpalajit
+Cflags: -I${includedir}

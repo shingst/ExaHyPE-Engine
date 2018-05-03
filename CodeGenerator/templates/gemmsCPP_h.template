@@ -14,47 +14,66 @@
 #ifndef EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
 #define EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
 
+{% if useLibxsmm %}
+
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {
 {% endfor %}
 
 // amrRoutines gemms
-void {{gemm_prefix}}_{{nData}}_{{nDof}}_{{nDof}}_face_Q(const double* A, const double* B, double* C);
-void {{gemm_prefix}}_{{nVar }}_{{nDof}}_{{nDof}}_face_F(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nDataPad}}_{{nDof}}_{{nDof}}_face_Q(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad }}_{{nDof}}_{{nDof}}_face_F(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nData}}_{{nDof}}_{{nDof}}_volume(const double* A, const double* B, double* C);
 
-
-{% if isLinear %}
-{% else %}
-// picard gemms
-{% if useFlux %}
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_x(const double* A, const double* B, double* C);
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_y(const double* A, const double* B, double* C);
-{% if nDim == 3 %} 
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_z(const double* A, const double* B, double* C);
-{% endif %}
-{% endif %} {# useFlux #}
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lqi(const double* A, const double* B, double* C);
+// SpaceTimePredictor gemms
 {% if useNCP %}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_x(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_y(const double* A, const double* B, double* C);
 {% if nDim == 3 %} 
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_z(const double* A, const double* B, double* C);
 {% endif %}  
+{% endif %}  
+{% if isLinear %}
+{% if useFlux %}
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_flux_x(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_flux_y(const double* A, const double* B, double* C);
+{% if nDim == 3 %} 
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_flux_z(const double* A, const double* B, double* C);
+{% endif %}
+{% endif %} {# useFlux #}
+{% else %}
+{% if useFlux %}
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_rhs_x(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_rhs_y(const double* A, const double* B, double* C);
+{% if nDim == 3 %} 
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_rhs_z(const double* A, const double* B, double* C);
+{% endif %}
+{% endif %} {# useFlux #}
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lqi(const double* A, const double* B, double* C);
 {% endif %}
 
 {% if useFlux %}
 // volume integral gemms
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_x(const double* A, const double* B, double* C);
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_y(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_lduh_x(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_lduh_y(const double* A, const double* B, double* C);
 {% if nDim == 3 %} 
-void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const double* B, double* C);
-{% endif %}
+void {{gemm_prefix}}_{{nVarPad}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const double* B, double* C);
 {% endif %}
 {% endif %} {# useFlux #}
+
+
+{% if useLimiter %}
+// Limiter gemms
+void {{gemm_prefix}}_{{nVar}}_{{nDofLim}}_{{nDof}}_dg2fv(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDofLim}}_fv2dg(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_uh2lob(const double* A, const double* B, double* C);
+{% endif %}
+
 
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}
+
+{% endif %} {# useLibxsmm #}
 
 #endif //EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_

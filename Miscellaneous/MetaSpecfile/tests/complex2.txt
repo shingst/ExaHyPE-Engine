@@ -1,0 +1,10 @@
+# another debugging test.
+
+# these don't see coord/x. This is wrong.
+ExaHyPE::computational_domain = Coord
+Coord = Simulation/Coord
+
+# these see coord/x
+Simulation = Foo
+BaseFoo/Coord/x = 12
+Foo = BaseFoo

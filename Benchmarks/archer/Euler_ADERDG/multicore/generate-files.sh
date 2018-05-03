@@ -77,7 +77,7 @@ do
     cp $spec $newSpec
 
     sed -i -r 's,end-time(\s*)=(\s*)(([0-9]|\.)*),end-time\1=\2'$t',' $newSpec
-    sed -i -r 's,ranks_per_node:([0-9]+),ranks_per_node:1,' $newSpec 
+    sed -i -r 's,ranks-per-node:([0-9]+),ranks-per-node:1,' $newSpec 
     sed -i -r 's,cores(\s+)=(\s+)([0-9]+),cores\1=\2'$coresPerTask',' $newSpec
    
     sed -i -r 's,skip-reduction-in-batched-time-steps(\s*)=(\s*)(\w+),skip-reduction-in-batched-time-steps\1=\2'$skipReductionInBatchedTimeSteps',' $newSpec

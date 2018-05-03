@@ -15,6 +15,7 @@
 namespace {{namespaceName}} {
 {% endfor %}
 
+  // Global configuration 
   constexpr int getNumberOfVariable()        {return {{nVar}};}
   constexpr int getNumberOfVariablePadded()  {return {{nVarPad}};}
   
@@ -29,44 +30,170 @@ namespace {{namespaceName}} {
   constexpr int getDimension()               {return {{nDim}};}
 
   constexpr bool isLinear()                  {return {{isLinearCText}};}
+  
+{% if useLimiter %}
+  // Limiter configuration
+  constexpr int getBasisSizeLimiter()        {return {{nDofLim}};}
+  constexpr int getBasisSizeLimiterPadded()  {return {{nDofLimPad}};}
+  constexpr int getGhostLayerWidth()         {return {{ghostLayerWidth}};}
+  constexpr int getNumberOfObservable()      {return {{nObs}};}
+{% endif %}
 
 {% if isLinear %}  
-  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**nDim)*(1+nDof)}};} // == lQi size
-  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(2*nDim+1)}};} // == lFi size
+  {% set lQiSize = nDataPad*(nDof**nDim)*(1+nDof) %}
+  {% set lFiSize = nVarPad*(nDof**(nDim+1))*(2*nDim+1) %}
 {% else %}
-  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQi size
+  {% set lQiSize = nDataPad*(nDof**(nDim+1)) %}
 {% if useFlux %}
-  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFi size
+  {% set lFiSize = nVarPad*(nDof**(nDim+1))*nDim %}
 {% else %}
-  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))}};} // == lFi size, only source
+  {% set lFiSize = -1 %}
 {% endif %}
+{% endif %}
+{% if (not isLinear and useNCP) or useSource %}
+  {% set lSiSize = nVarPad*(nDof**(nDim+1)) %}
+{% else %}
+  {% set lSiSize = -1 %}
 {% endif %}
 {% if useNCP %}
-  constexpr int getTempSpaceTimeFluxUnknowns1Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == gradQ size
+  {% set gradQSize = nVarPad*(nDof**(nDim+1))*(nDim+1) %}
 {% else %}
-  constexpr int getTempSpaceTimeFluxUnknowns1Size() {return -1;} // == gradQ size, unused because !useNCP so -1 to not allocate
+  {% set gradQSize = -1 %}
 {% endif %}
-{% if noTimeAveraging %}
-  constexpr int getTempUnknownsSize()               {return -1;} // == lQhi size, unused because noTimeAveraging so -1 to not allocate
-  constexpr int getTempFluxUnknownsSize()           {return -1;} // == lFhi size, unused because noTimeAveraging so -1 to not allocate
-{% else %}
-  constexpr int getTempUnknownsSize()               {return {{nDataPad*(nDof**nDim)}};}  // == lQhi size
+  {% set lQhiSize = nDataPad*(nDof**nDim) %}
 {% if useFlux %}
-  constexpr int getTempFluxUnknownsSize()           {return {{nVarPad*(nDof**nDim)*(nDim+1)}};} // == lFhi size
+  {% set lFhiSize = nVarPad*(nDof**nDim)*nDim %}
 {% else %}
-  constexpr int getTempFluxUnknownsSize()           {return {{nVarPad*(nDof**nDim)}};} // == lFhi size, only source
+  {% set lFhiSize = -1 %}
 {% endif %}
+{% if (not isLinear and useNCP) or useSource %}
+  {% set lShiSize = nVarPad*(nDof**nDim) %}
+{% else %}
+  {% set lShiSize = -1 %}
 {% endif %}
 {% if usePointSources %}
-  constexpr int getTempPointForceSourcesSize()      {return {{(nDof+1) * (nDof ** nDim) * nVarPad}};} // == PSi (and forceVectorSourceN) size
+  {% set PSiSize = (nDof+1)*(nDof**nDim)*nVarPad %}
 {% else%}
-  constexpr int getTempPointForceSourcesSize()      {return -1;} //unused, not allocated
+  {% set PSiSize = -1 %}
 {% endif %}
-  constexpr int getBndFaceSize()                    {return {{nDataPad*(nDof*nDof3D)}};} // == QR/QL size
-  constexpr int getBndTotalSize()                   {return {{2*nDim*nDataPad*(nDof*nDof3D)}};} // == lQhbnd size
-  constexpr int getBndFluxSize()                    {return {{nVarPad*(nDof*nDof3D)}};} // == FR/FL size
-  constexpr int getBndFluxTotalSize()               {return {{2*nDim*nVarPad*(nDof*nDof3D)}};} // == lFhbnd size
-  constexpr int getTempStateSizedVectorsSize()      {return {{nDataPad}};}
+  {% set BndFaceSize = nDataPad*(nDof*nDof3D) %}
+  {% set BndFaceTotalSize = 2*nDim*nDataPad*(nDof*nDof3D) %}
+  {% set BndFluxSize = nVarPad*(nDof*nDof3D) %}
+  {% set BndFluxTotalSize = 2*nDim*nVarPad*(nDof*nDof3D) %}
+
+  // Array sizes
+  constexpr int getlQiSize()   {return {{lQiSize}};}
+{# //TODO JMG check useFlux and fix for linear #}
+  constexpr int getlFiSize()   {return {{lFiSize}};} 
+  constexpr int getlSiSize()   {return {{lSiSize}};}
+  constexpr int getgradQSize() {return {{gradQSize}};}
+  constexpr int getlQhiSize()  {return {{lQhiSize}};}
+  constexpr int getlFhiSize()  {return {{lFhiSize}};}
+  constexpr int getlShiSize()  {return {{lShiSize}};}
+  constexpr int getPSiSize()   {return {{PSiSize}};}
+
+  constexpr int getBndFaceSize()      {return {{BndFaceSize}};} // == QR/QL size
+  constexpr int getBndFaceTotalSize() {return {{BndFaceTotalSize}};} // == lQhbnd size
+  constexpr int getBndFluxSize()      {return {{BndFluxSize}};} // == FR/FL size
+  constexpr int getBndFluxTotalSize() {return {{BndFluxTotalSize}};} // == lFhbnd size
+  
+  constexpr int getUpdateSize() {return {{(nDof**nDim)*nVarPad}};} // == lduh size
+
+  //Shifts for fusedSTPVI local memory
+{% set shift = 0 %}  
+  constexpr int getlQiShift()   {return {{shift}};}
+{% set shift = shift+lQiSize %}  
+{%- if useFlux %}
+  constexpr int getlFiShift()   {return {{shift}};}
+{% set shift = shift+lFiSize %} 
+{%- endif %}
+{%- if (not isLinear and useNCP) or useSource %}
+  constexpr int getlSiShift()   {return {{shift}};}
+{% set shift = shift+lSiSize %} 
+{%- endif %}
+  constexpr int getlQhiShift()  {return {{shift}};}
+{% set shift = shift+lQhiSize %}
+{%- if useFlux %}
+  constexpr int getlFhiShift()  {return {{shift}};}
+{% set shift = shift+lFhiSize %}
+{%- endif %}
+{%- if (not isLinear and useNCP) or useSource %}
+  constexpr int getlShiShift()  {return {{shift}};}
+{% set shift = shift+lShiSize %}
+{%- endif %}
+{%- if useNCP %}
+  constexpr int getgradQShift() {return {{shift}};}
+{% set shift = shift+gradQSize %}
+{%- endif %}
+{%- if not isLinear %}
+  constexpr int getrhsShift()   {return {{shift}};} //Same size as lQi
+{% set shift = shift+lQiSize %} 
+{% endif %}
+{%- if usePointSources %} 
+  constexpr int getPSiShift()   {return {{shift}};}
+{% set shift = shift+PSiSize %}
+  constexpr int getPSderivativesShift() {return {{shift}};} //same size as PSi
+{% set shift = shift+PSiSize %} 
+{%- endif %}
+
+  constexpr int getFusedSTPVISize() {return {{shift}};}
+  
+  //Shifts for BoundaryConditions
+{% set shift2 = 0 %} 
+  constexpr int getBndFaceShift() {return {{shift2}};}
+{% set shift2 = shift2+BndFaceSize %}   
+  constexpr int getBndFluxShift()  {return {{shift2}};}
+{% set shift2 = shift2+BndFluxSize %}  
+  
+  constexpr int getBoundaryConditionsSize() {return {{shift2}};}
+  
+  
+//approx Flops (only mat operations)
+  //amr (*leveldelta)
+  constexpr unsigned long faceUnknownsProlongation_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long faceUnknownsRestriction_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long volumeUnknownsProlongation_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
+  constexpr unsigned long volumeUnknownsRestriction_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
+  
+  constexpr unsigned long boundaryConditions_factor = {{nDof*nDof3D}}; //flops of boundaryValue * this factor
+  constexpr unsigned long boundaryConditions_flops = {{nDof*nDof3D*3+nDof3D*3*(nDim-2)}}; //other flops
+  
+  constexpr unsigned long getPointSources_flops = {{4*nDim*nPointSources}};
+  
+  constexpr unsigned long solutionAdjustment_flops = {{(nDof**nDim)*3+nDof**(nDim-1)*3+(nDof**(nDim-2))*3*(nDim-2)}};
+  
+  constexpr unsigned long solutionUpdate_flops = {{(nDof**nDim)*(1+nVar*2)}};
+  
+  constexpr unsigned long stableTimeStepSize_factor = {{(nDof**nDim)*nDim}}; //flops of eigenvalues * this factor
+  constexpr unsigned long stableTimeStepSize_flops = {{(nDof**nDim)*nDim*2+(nDof**nDim)*2}};
+  
+  constexpr unsigned long surfaceIntegral_flops = {{(nDof*nDof3D + (nDof**nDim)*nVarPad*5)*nDim}};
+  
+{% if isLinear %}
+  constexpr unsigned long fusedSTPVI_flops = {{nDof*nDofPad+nDof*(useFluxFactor*(nDof**(nDim+1)*nVarPad*2*nDim)+useNCPFactor*(nDof**(nDim+1)*nVar*2*nDim+nDof**nDim*nDim*nVar)+nDof**nDim*nVarPad*(nDim+useSourceFactor))+(nDof-1)*nDof**nDim*nVar*2+(nDof-1)*nDof**nDim*nVarPad*(nDim+useSourceFactor)*2+nDof**nDim*(nVarPad+nDataPad)*4*nDim+nDof**nDim*nVarPad*(1+nDim+useSourceFactor)}}; //TODO JMG
+  constexpr unsigned long fusedSTPVI_ps_flops = {{(nDof+1)*(2+nDof3D*(3+nDof*(3+nDof*3)))+(nDof**(nDim+1))*nVar*3+(nDof**nDim)*nVar+(nDof-2)*((nDof**(nDim+2))*nVarPad*3+(nDof**(nDim+1))*nVarPad*2)+(nDof**(nDim+1))*(1+nVarPad*2)+(nDof**nDim)*nVarPad*nDim}}; //other point source flops
+  constexpr unsigned long fusedSTPVI_ps_nPS_flops = {{(nDof+1)*nDof**nDim*(nDim*(3*nDof-3)+2+nVarPad*2)}}; // * nbPointSource
+  constexpr unsigned long fusedSTPVI_ps_PDE_factor = {{(nDof+1)*nDof**nDim}}; // * nbPointSource * cost of PS PDE
+  constexpr unsigned long fusedSTPVI_PDE_factor = {{nDof**(nDim+1)}}; // flops of used PDE * this factor
+  constexpr unsigned long riemannSolver_flops = 0; //TODO JMG
+{% else %}
+  // fusedSTPVI, multiply by factor and sum
+  constexpr unsigned long fusedSTPVI_picard_flops = {{(nDof**(nDim+1))*(1+nVar)+useFluxFactor*nDim*((nDof**nDim)*(1+nDof*nDofPad+nDof*nDof*nVarPad*2))+useNCPFactor*nDim*((nDof**(nDim+2))*nVar*2)+useSourceOrNCPFactor*((nDof**(nDim+1))*(2+useNCPFactor*nVarPad+2*nVarPad))+(nDof**nDim)*(1+nDof*nDofPad+2*nDof*nDof*nVar+4*nVar*nDof)}}; // time picardIteration
+  constexpr unsigned long fusedSTPVI_PDE_factor = {{nDof**(nDim+1)}}; // flops of used PDE * this factor * picardIteration
+  constexpr unsigned long fusedSTPVI_other_flops = {{1+useNCPFactor*nDof*nDofPad + (nDof**(nDim+1))*(nDataPad*2+useFluxFactor*nDim*nVarPad*2+useSourceOrNCPFactor*nVarPad*2) + nDim*(nDof**nDim)*(nDataPad*4+useFluxFactor*nVarPad*4) + useFluxFactor*((nDof**nDim)*(nDofPad*2+2*nDof*nVarPad*nDim))+useSourceOrNCPFactor*(nDof**nDim)*nVarPad*2}}; // other flops
+  
+  // RiemannSolver, also 2 eigenvalues cost
+  constexpr unsigned long riemannSolver_flops = {{nDof*nDof3D*(nDataPad*4+nVar+nVarPad*3)+useNCPFactor*(nDof*nDof3D*(nVar*3+nVarPad*4))}};
+  constexpr unsigned long riemannSolver_factor = {{nDof*nDof3D*useNCPFactor}}; // flops of NCP * this factor
+{% endif %}
+
+{% if useLimiter %}
+  constexpr unsigned long  projectOnFVLimiterSpace_flops = {{nDofLim*nDofLim3D*nDof*nDofLim*(nDofLim*nDofPad*(nDim-1)+2*nVar*nDofLim*nDof)}};
+  constexpr unsigned long  projectOnDGSpace_flops = {{nDofLim*nDofLim3D*nDof*nDofLim*(nDofLimPad*nDof*(nDim-1)+2*nVar*nDofLim*nDof)}};
+  constexpr unsigned long  discreteMaximumPrincipleAndMinAndMaxSearch_flops = {{4*nObs+nDof*nDof*nDof3D*nDof3D*(nDofPad*nDof*(nDim-1)+nVar*nDof*nDof)+nDof*nDof3D*nDofLim*nDofLim3D*(nDofLim*nDofPad*(nDim-1)+nVar*nDof*nDofLim)}};
+  constexpr unsigned long  findCellLocalMinAndMax_flops = {{nDof*nDof*nDof3D*nDof3D*(nDofPad*nDof*(nDim-1)+nVar*nDof*nDof)+nDof*nDof3D*nDofLim*nDofLim3D*(nDofLim*nDofPad*(nDim-1)+nVar*nDof*nDofLim)}};
+  constexpr unsigned long  findCellLocalLimiterMinAndMax_flops = 0; //only min and max
+{% endif %}
 
 {% for namespaceName in codeNamespaceList %}
 }

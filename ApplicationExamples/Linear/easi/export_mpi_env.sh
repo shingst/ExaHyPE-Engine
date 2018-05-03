@@ -1,0 +1,1 @@
+export COMPILER_CFLAGS="${COMPILER_CFLAGS} -DnoMPIUsesItsOwnThread -DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks "

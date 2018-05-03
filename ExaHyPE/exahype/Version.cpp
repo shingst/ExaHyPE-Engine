@@ -11,7 +11,7 @@
 
 // build information about parallelization.
 // this assumes TBB to be available.
-#if (defined(SharedTBB) || defined(SharedTBBInvade))
+#if defined(SharedTBB)
 #include "tarch/multicore/Core.h"
 #include "tbb/tbb_stddef.h"
 #endif
@@ -70,7 +70,7 @@ std::string exahype::version(const std::string& programname) {
 
 #ifdef SharedMemoryParallelisation // cf. tarch/multicore
   out << "Shared Memory library:   ";
-#if (defined(SharedTBB) || defined(SharedTBBInvade))
+#if defined(SharedTBB)
   out << "TBB\n";
 #elif defined(SharedOMP)
   out << "OpenMP\n";
@@ -82,7 +82,7 @@ std::string exahype::version(const std::string& programname) {
   out << "Shared Memory support:   no\n";
 #endif
 
-#if (defined(SharedTBB) || defined(SharedTBBInvade))
+#if defined(SharedTBB)
   out << "TBB Compile time interface version: " << TBB_INTERFACE_VERSION  << "\n";
   out << "TBB Runtime interface version:      " << tbb::TBB_runtime_interface_version() << "\n";
 #endif

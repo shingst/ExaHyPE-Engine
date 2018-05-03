@@ -54,12 +54,19 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * Compare if two vectors are equal up to a relative
+   * tolerance.
+   */
+  static bool equalUpToRelativeTolerance(
+      const tarch::la::Vector<DIMENSIONS,double>& first,
+      const tarch::la::Vector<DIMENSIONS,double>& second);
+
   /*! Helper routine for mergeNeighbours.
    *
    * TODO(Dominic): Add docu.
    */
   void mergeNeighboursDataAndMetadata(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS,int>&  pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>&  pos2,
@@ -70,13 +77,14 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * TODO(Dominic): Add docu.
    */
   void mergeWithBoundaryData(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS,int>&  pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>&  pos2,
       const int pos2Scalar) const;
 
   #ifdef Parallel
+
+  static constexpr int InvalidMetadataIndex = -1;
 
   /*! Helper routine for sendToNeighbour
    *
@@ -88,6 +96,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void sendEmptySolverDataToNeighbour(
       const int                                     toRank,
+      const bool                                    sendMetadata,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
@@ -109,6 +118,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void sendSolverDataToNeighbour(
       const int                                    toRank,
+      const bool                                   isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS,int>&     src,
       const tarch::la::Vector<DIMENSIONS,int>&     dest,
       const int                                    srcCellDescriptionIndex,
@@ -125,7 +135,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void dropNeighbourData(
       const int fromRank,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -146,8 +155,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void mergeWithNeighbourData(
       const int fromRank,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
-      double*** tempFaceUnknowns,
+      const int receivedMetadataIndex,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -202,6 +210,19 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
 
   /**
+   * Evaluate if the current vertex can be erased, must be refined,
+   * or should be kept.
+   *
+   * \note We do not evaluate any physics-based refinement criterion in
+   * this function. This is done cell-wisely and usually triggered in enterCell(..).
+   * Instead, we simply check here the refinement events and flags of
+   * adjacent cell descriptions (which might have been modified earlier by
+   * a physics-based refinement criterion.)
+   */
+  exahype::solvers::Solver::RefinementControl evaluateRefinementCriterion(
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
    * Loop over all neighbouring cells and merge
    * the metadata of cell descriptions in neighbouring
    * cells which are owned by the same solver.
@@ -214,6 +235,17 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const exahype::State::AlgorithmSection& section,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
+   * Validate that a compute cell is not next to
+   * an invalid cell description index as long as their
+   * interface is an interior face.
+   */
+  void validateNeighbourhood(
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const int pos1Scalar,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const int pos2Scalar) const;
 
   /**
    * Checks if the cell descriptions at the indices corresponding
@@ -337,7 +369,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * of a cell.
    */
   void mergeNeighbours(
-      double*** tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
@@ -598,12 +629,18 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * Look up facewise neighbours. If we find a remote boundary,
    * send face data of every registered solver to the remote rank.
    *
+   * <h2> Batching </h2>
+   * If we are not in the last iteration of a batch or we do not run a batch at all and
+   * all solvers perform static or no limiting at all,
+   * we can switch off the metadata sends.
+   *
    * \param[in] x     position of the vertex.
    * \param[in] h     extents of adjacent cells.
    * \param[in] level level this vertex is residing.
   */
   void sendToNeighbour(
       int toRank,
+      const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
@@ -615,7 +652,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   void receiveNeighbourData(
       int fromRank,
       bool mergeWithReceivedData,
-      double*** tempFaceUnknowns,
+      bool isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;

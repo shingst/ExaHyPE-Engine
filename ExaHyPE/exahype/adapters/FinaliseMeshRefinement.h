@@ -19,7 +19,7 @@
 
 
  #include "exahype/mappings/FinaliseMeshRefinement.h"
- #include "exahype/adapters/FinaliseMeshRefinement2MultiscaleLinkedCell_1.h"
+ #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 
@@ -40,10 +40,10 @@ namespace exahype {
 class exahype::adapters::FinaliseMeshRefinement {
   private:
     typedef mappings::FinaliseMeshRefinement Mapping0;
-    typedef adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 Mapping1;
+    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping1;
 
      Mapping0  _map2FinaliseMeshRefinement;
-     Mapping1  _map2FinaliseMeshRefinement2MultiscaleLinkedCell_1;
+     Mapping1  _map2LevelwiseAdjacencyBookkeeping;
 
 
   public:

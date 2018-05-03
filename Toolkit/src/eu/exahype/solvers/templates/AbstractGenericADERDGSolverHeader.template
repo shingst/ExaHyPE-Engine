@@ -30,12 +30,15 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
   public:
-    static constexpr int NumberOfVariables  = {{numberOfVariables}};
-    static constexpr int NumberOfParameters = {{numberOfParameters}};
-    static constexpr int Order              = {{order}};
-    static constexpr double CFL             = 0.9;
+    static constexpr int NumberOfVariables       = {{numberOfVariables}};
+    static constexpr int NumberOfParameters      = {{numberOfParameters}};
+    static constexpr int Order                   = {{order}}; 
+    static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
+    static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
+    static constexpr double CFL                  = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
+    double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
     {%- endif %}
     
     // virtual getters for the constexpr's
@@ -94,7 +97,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      *
      * See superclass for function's semantics.
      */
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) override;
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
        
     /**
      * Default implementation. Please overwrite.
@@ -117,14 +120,12 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       	std::copy_n(Q,numberOfObservables,observables);
       }
   	}
-    
-    void deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempForceVector) override;
-    void spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt, double** tempPointForceSources) override; 
+     
+    int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override;
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
-    void volumeIntegral(double* lduh,const double* const lFi,const double* const lFhi,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
-    void boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) override;
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
+    void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     {%- if patchwiseAdjust %}
     // adjustSolution is implemented by the user solver as patchwise adjust option was used 

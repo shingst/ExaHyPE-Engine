@@ -27,21 +27,6 @@ class exahype::records::ADERDGCellDescription {
    * performed during the current traversal.
    */
   parallelise persistent packed bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
-  
-  /**
-   * These flags indicate which face of a cell is inside the domain.
-   * If a face is not inside of the domain, it might be part
-   * of the domain boundary or outside of the domain.
-   * 
-   * In both cases, we apply boundary conditions.
-   *
-   * !!! HangingVertexBookkeeper !!!
-   * We need this field since the HangingVertexBookkeeper overwrites
-   * DomainAdjacencyIndices by RemoteAdjacencyIndices if the rank's
-   * and a remote rank's domain's overlap contains the parts of the boundary
-   * or a sub-manifold that is located outside of the domain.   
-   */
-  parallelise persistent packed bool isInside[DIMENSIONS_TIMES_TWO];
   ///@}
   
   #ifdef Parallel  
@@ -75,12 +60,23 @@ class exahype::records::ADERDGCellDescription {
   #endif
 
   /**
+   * @defgroup AMRInfo AMR information
+   *
+   * Additional information that is necessary to realise adaptive mesh
+   * refinement (AMR).
+   */
+  ///@{
+  /**
    * The index of the ADERDGCellDescription that is the parent of
    * this ADERDGCellDescription or "-1" if no parent is specified.
    */
   parallelise persistent int parentIndex;
   
-  persistent bool isAugmented;
+  /**
+   * Flag indicating that a cell description is a 
+   * parent of virtual subcells.
+   */
+  parallelise persistent bool hasVirtualChildren;
  
   /**
    * Type of a cell description.
@@ -97,42 +93,36 @@ class exahype::records::ADERDGCellDescription {
    * associated to this cell description is not neighbouring
    * a cell that holds a cell description of type \p
    * Cell.
-   *
-   * TODO(Dominic):
-   * MasterWorkerBoundaryDescendant and MasterWorkerBoundaryAncestor are set
-   * as type of an ADERDGCellDescription if the ADERDGCellDescription
-   * needs to communicate data to a neighbour process, or a worker/master
-   * process. The worker is not allowed to change the type of these cells.
-   * The worker does further no
    */
-
   enum Type {
     Erased,
     Ancestor,
     Cell,
     Descendant
   };
-  
-  /**
-   * Can be used to flag a cell description as newly created.
-   * 
-   * Is currently only used for ancestors.
-   */
-  persistent packed bool newlyCreated;
-
-  /**
-   * @defgroup AMRInfo AMR information
-   *
-   * Additional information that is necessary to realise adaptive mesh
-   * refinement (AMR).
-   */
-  ///@{
+ 
   /**
    * The type of this ADERDGCellDescription. See the documentation of Cell for
    * more details.
    */
   parallelise persistent packed Type type;
-
+  
+  /**
+   * Using this enum, we can manifest the evaluation
+   * of the refinement criterion. It is then
+   * not necessary to evaluate the refinement criterion
+   * in every cell but only in the first iteration of
+   * a mesh update or in case a new cell is introduced.
+   */
+  enum RefinementRequest {
+    Pending,
+    Keep,
+    Erase,
+    Refine
+  };
+  
+  persistent packed RefinementRequest refinementRequest;
+  
   enum RefinementEvent {
     /**
      * In this state, the cell description is ready to
@@ -171,7 +161,7 @@ class exahype::records::ADERDGCellDescription {
      * In this case, we do not erase the children
      * of the Ancestor but change their type to (Empty)Descendant.
      */
-    ChangeChildrenToDescendantsRequested,
+    ChangeChildrenToVirtualChildrenRequested,
     /**
      * Change children to descendants.
      * An Ancestor cell description can adopt 
@@ -182,30 +172,27 @@ class exahype::records::ADERDGCellDescription {
      * In this case, we do not erase the children
      * of the Ancestor but change their type to (Empty)Descendant.
      */
-    ChangeChildrenToDescendants,
-    
-    RefiningRequested,           
-    Refining,                    
+    ChangeChildrenToVirtualChildren,
     
     /**
-     * This refinement event is set on 
-     * a cell description of type 
-     * Descendant or Cell in every 
-     * grid setup iteration
-     * if no other event is set. 
-     * 
-     * If the cell description has children,
-     * the first traversed child sets
-     * this event to DeaugmentingChildrenRequestedTriggered.
-     * 
-     * We have to rely on this mechanism since we
-     * cannot guess based on the cell description type if
-     * a cell description has children as opposed to the
-     * physics based refinement where we have
-     * Ancestor and EmptyAncestor parent cell descriptions and
-     * child cell descriptions of type Cell.
+     * If this refinement event is set, 
+     * a cell asks to be refined.
      */
-    DeaugmentingChildrenRequestedTriggered,
+    RefiningRequested,           
+    
+    /**
+     * If this refinement event is set, 
+     * the grid is ready to host the children
+     * of the current cell. 
+     * This event is set by the children.
+     */
+    Refining,
+    
+    /**
+     * This event notifies a child cell that it needs
+     * to prolongate data down from the parent.
+     */
+    Prolongating,
     
     /**
      * If this refinement event is set, 
@@ -216,7 +203,7 @@ class exahype::records::ADERDGCellDescription {
      * they leave the parent's RefinementEvent
      * unchanged. 
      */
-    DeaugmentingChildrenRequested,
+    ErasingVirtualChildrenRequested,
     /**
      * After all children of a parent left
      * the parent's refinement event DeaugmentingChildrenRequested
@@ -227,9 +214,10 @@ class exahype::records::ADERDGCellDescription {
      * the child cell descriptions need to be
      * removed from the grid.
      */
-    DeaugmentingChildren, 
-    AugmentingRequested,         
-    Augmenting                   
+    ErasingVirtualChildren, 
+    
+    VirtualRefiningRequested,         
+    VirtualRefining  
   };
 
   /**
@@ -406,9 +394,9 @@ class exahype::records::ADERDGCellDescription {
   
   
   /**
-   * \see helperStatus
+   * \see communicationStatus
    */
-  parallelise persistent int facewiseHelperStatus[DIMENSIONS_TIMES_TWO];
+  parallelise persistent int facewiseCommunicationStatus[DIMENSIONS_TIMES_TWO];
   
   /**
    * Status of a helper cell description (Descendant,Ancestor)
@@ -423,10 +411,10 @@ class exahype::records::ADERDGCellDescription {
    * neighbours to a cell description of type Cell
    * allocate memory and the others don't.
    * 
-   * We write the maximum value of the facewiseHelperStatus flags
+   * We write the maximum value of the facewiseCommunicationStatus flags
    * to this field in each limiter status merging iteration.
    */
-  parallelise persistent int helperStatus;
+  parallelise persistent int communicationStatus;
   
   enum LimiterStatus {
     /**

@@ -275,19 +275,6 @@ void ElasticityKernelTest::testRiemannSolverLinear() {
 
   const double dt = 1.916666666666667E-004;
 
-  // temp variables:
-  double  *tempFaceUnknowns = new double[basisSize*nData]; // nDOF(1) * nData
-  double **tempDataVectors  = new double*[5];
-  tempDataVectors[0] = new double[5*nData]; // ~nData
-  tempDataVectors[1] = tempDataVectors[0]+nData;
-  tempDataVectors[2] = tempDataVectors[1]+nData;
-  tempDataVectors[3] = tempDataVectors[2]+nData;
-  tempDataVectors[4] = tempDataVectors[3]+nData;
-  double **tempStateSizedSquareMatrices = new double*[3]; // ~nVar*nVar
-  tempStateSizedSquareMatrices[0] = new double[3*nVar*nVar];
-  tempStateSizedSquareMatrices[1] = tempStateSizedSquareMatrices[0]+nVar*nVar;
-  tempStateSizedSquareMatrices[2] = tempStateSizedSquareMatrices[1]+nVar*nVar;
-
   // TODO(Dominic): Fix test
   kernels::aderdg::generic::c::riemannSolverLinear<true,false,false,ElasticityKernelTest>(*this,
       FL, FR, qL, qR,
@@ -312,12 +299,6 @@ void ElasticityKernelTest::testRiemannSolverLinear() {
           eps, idx_F(i, j));
     }
   }
-
-  delete[] tempDataVectors[0];
-  delete[] tempDataVectors;
-  delete[] tempStateSizedSquareMatrices[0];
-  delete[] tempStateSizedSquareMatrices;
-  delete[] tempFaceUnknowns;
 }
 
 void ElasticityKernelTest::testSpaceTimePredictorLinear() {
@@ -348,27 +329,23 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
   }
 
   // Inputs:
-  double** tempSpaceTimeUnknowns = new double*[2];
-  tempSpaceTimeUnknowns[0] = new double[2* nData*basisSize2*(basisSize+1)];  // lQi; nVar * nDOFx * nDOFy * (nDOFt+1); nDOF+1 only here
-  tempSpaceTimeUnknowns[1] = tempSpaceTimeUnknowns[0] + nData*basisSize2*(basisSize+1);  // lQi; nVar * nDOFx * nDOFy * (nDOFt+1); nDOF+1 only here
-
-  // TODO(Dominic): new() and eventually malloc file for the flux unknowns on my machine. Interesting.
-  double** tempSpaceTimeFluxUnknowns = new double*[2];
-  tempSpaceTimeFluxUnknowns[0] = (double*)std::malloc((2+1)*nVar*basisSize3);  // lFi+source; (dim+1) * nVar * nDOFx * nDOFy * nDOFt;
-  tempSpaceTimeFluxUnknowns[1] = (double*)std::malloc((2+1)*nVar*basisSize3);  // gradQ; dim * nVar * nDOFx * nDOFy * nDOFt
+  double lQi[nData*basisSize2*(basisSize+1)];  // lQi; nVar * nDOFx * nDOFy * (nDOFt+1); nDOF+1 only here
+  double PSi[nData*basisSize3];  // point sources
+  double PSderivatives[nData*basisSize3];
+  double tmp_PSderivatives[nData*basisSize3];
+  double lFi[(2+1)*nVar*basisSize3]; // lFi; (dim+1) * nVar * nDOFx * nDOFy * nDOFt
+  double gradQ[2*nVar*basisSize3];   // gradQ; nDim * nVar * nDOFx * nDOFy * nDOFt
 
   // Outputs:
-  double *tempUnknowns     = new double[nData*basisSize3];     // lQhi; nVar * nDOFx * nDOFz
-  double *tempFluxUnknowns = new double[(DIMENSIONS+1)*nVar*basisSize2]; // lFh+source,nVar * nDOFx * nDOFy * (dim+1)
+  double lQhi[nData*basisSize2];                // lQhi; nVar * nDOFx * nDOFz
+  double lFhi[(DIMENSIONS+1)*nVar*basisSize2]; // lFh+source,nVar * nDOFx * nDOFy * (dim+1)
+
   double lQbnd[nData * basisSize * 2 * DIMENSIONS];
   double lFbnd[nVar  * basisSize * 2 * DIMENSIONS];
 
   kernels::idx3 idx_lQhi(basisSize, basisSize, nData);
-
   kernels::idx4 idx_lFhi(DIMENSIONS, basisSize, basisSize, nVar);
-
   kernels::idx3 idx_lQbnd(2 * DIMENSIONS, basisSize, nData);
-
   kernels::idx3 idx_lFbnd(2 * DIMENSIONS, basisSize, nVar);
 
   const tarch::la::Vector<DIMENSIONS, double> dx(38.4615384615385,
@@ -380,16 +357,15 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
   kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,true,false,ElasticityKernelTest>(
       *this,
       lQbnd, lFbnd,
-      tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
-      tempUnknowns,tempFluxUnknowns,
-      luh, dx, dt, nullptr);
+      lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,
+      luh, dx, dt);
 
   for (int i = 0; i < DIMENSIONS; i++) {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < basisSize; k++) {
         for (int l = 0; l < nVar; l++) {
           validateNumericalEqualsWithEpsWithParams1(
-              tempFluxUnknowns[idx_lFhi(i, j, k, l)],
+              lFhi[idx_lFhi(i, j, k, l)],
               exahype::tests::testdata::elasticity::
                   testSpaceTimePredictorLinear::lFhi_OUT[idx_lFhi(i, j, k,
                                                                       l)],
@@ -405,7 +381,7 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < nVar; k++) {
         validateNumericalEqualsWithEpsWithParams1(
-            tempUnknowns[idx_lQhi(i, j, k)],
+            lQhi[idx_lQhi(i, j, k)],
             exahype::tests::testdata::elasticity::testSpaceTimePredictorLinear::
             lQhi_OUT[idx_lQhi_OUT(i, j, k)],
             eps, idx_lQhi_OUT(i, j, k));
@@ -437,16 +413,6 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
       }
     }
   }
-
-  delete[] tempSpaceTimeUnknowns[0];
-  delete[] tempSpaceTimeUnknowns;
-
-  delete[] tempSpaceTimeFluxUnknowns[1];
-  delete[] tempSpaceTimeFluxUnknowns[0];
-  delete[] tempSpaceTimeFluxUnknowns;
-
-  delete[] tempUnknowns;
-  delete[] tempFluxUnknowns;
 }
 
 void ElasticityKernelTest::testVolumeIntegralLinear() {

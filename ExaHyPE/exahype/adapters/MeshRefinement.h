@@ -20,7 +20,7 @@
 
  #include "exahype/mappings/MeshRefinement.h"
  #include "exahype/mappings/LoadBalancing.h"
- #include "exahype/adapters/MeshRefinement2MultiscaleLinkedCell_2.h"
+ #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 
@@ -42,11 +42,11 @@ class exahype::adapters::MeshRefinement {
   private:
     typedef mappings::MeshRefinement Mapping0;
     typedef mappings::LoadBalancing Mapping1;
-    typedef adapters::MeshRefinement2MultiscaleLinkedCell_2 Mapping2;
+    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping2;
 
      Mapping0  _map2MeshRefinement;
      Mapping1  _map2LoadBalancing;
-     Mapping2  _map2MeshRefinement2MultiscaleLinkedCell_2;
+     Mapping2  _map2LevelwiseAdjacencyBookkeeping;
 
 
   public:

@@ -26,8 +26,8 @@ base_specfile = argv[1] # use the filename as input argument
 #base_specfile = "GRMHD_cpp_ADERDG-3D.exahype" # the base specfile to be overloaded
 base_folder = "test-output" # the name of the folder where the output goes to
 
-# all combinations of *k
-combine = lambda *k: list(product(*k))
+# all combinations of *k, where strings are not interpreted as lists
+combine = lambda *k: list(product(*(i if not isinstance(i, basestring) else [i] for i in k)))
 # flatten a potential 2d list, no flatten in tuples
 def flatten(l):
     for el in l:
@@ -67,13 +67,12 @@ storeposition = ("vertices", "cells")
 layout = ("binary", "ascii", "hdf5")
 
 plotters = list(flatten([
-	combine(["vtk"],basis,storeposition,["binary","ascii"]),
-	combine(["vtu"],basis,storeposition,["ascii"]),
-	combine(["Peano"],basis,storeposition,["ascii","hdf5"]),
-	combine(["vtk","vtu"],["Cartesian"],storeposition,["limited"],["binary","ascii"]),
+	combine("vtk",basis,storeposition,["binary","ascii"]),
+	combine("vtu",basis,storeposition,"ascii"),
+	combine("Peano",basis,storeposition,["ascii","hdf5"]),
+	combine(["vtk","vtu"],"Cartesian",storeposition,"limited",["binary","ascii"]),
 	("carpet","cartesian","vertices","hdf5"),
-	("vtk","patches","boxes","ascii"),
-	("vtu","patches","boxes","ascii"),
+	combine(["vtk","vtu"],"patches","boxes","ascii"),
 ]))
 
 plotterstrings = map(plotterstring, plotters)

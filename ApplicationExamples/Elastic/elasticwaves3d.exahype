@@ -39,6 +39,8 @@ exahype-project  elasticwaves3d
   global-optimisation
     fuse-algorithmic-steps        = on
     fuse-algorithmic-steps-factor = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
   end global-optimisation
 
   solver ADER-DG MyElasticSolver

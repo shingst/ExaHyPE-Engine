@@ -14,10 +14,12 @@
 #ifndef _EXAHYPE_RUNNERS_RUNNER_H_
 #define _EXAHYPE_RUNNERS_RUNNER_H_
 
-#include "exahype/Parser.h"
+#include "exahype/parser/Parser.h"
 #include "tarch/logging/Log.h"
 
 #include "exahype/State.h"
+
+#include "tarch/multicore/MulticoreDefinitions.h"
 
 namespace exahype {
 namespace runners {
@@ -36,7 +38,16 @@ class exahype::runners::Runner {
  private:
   static tarch::logging::Log _log;
 
-  exahype::Parser& _parser;
+  #if defined(Parallel) && defined(SharedMemoryParallelisation)
+  static constexpr int PredictionSweeps = 2;
+  #else
+  static constexpr int PredictionSweeps = 1;
+  #endif
+
+
+  exahype::parser::Parser& _parser;
+  std::vector<std::string>& _cmdlineargs;
+
 
   /**
    * The computational domain offset as used by the
@@ -82,6 +93,12 @@ class exahype::runners::Runner {
   void printStatistics();
 
   /**
+   * Parses global optimisations and
+   * prints them out. Must be used for all ranks.
+   */
+  void parseOptimisations() const;
+
+  /**
    * Setup the oracles for the shared memory parallelisation. Different
    * oracles can be employed:
    *
@@ -99,13 +116,13 @@ class exahype::runners::Runner {
    * created the repository. See Orace::loadStatistics().
    */
   void initSharedMemoryConfiguration();
+  void shutdownSharedMemoryConfiguration();
 
   /**
-   * The shared memory environment has to be set up before we create the
+   * The distributed memory environment has to be set up before we create the
    * repository.
    */
   void initDistributedMemoryConfiguration();
-  void shutdownSharedMemoryConfiguration();
   void shutdownDistributedMemoryConfiguration();
 
   int runAsMaster(exahype::repositories::Repository& repository);
@@ -136,7 +153,7 @@ class exahype::runners::Runner {
   /**
    * Plot some information about the current mesh setup iteration.
    */
-  void plotMeshSetupInfo(
+  void printMeshSetupInfo(
       exahype::repositories::Repository& repository,
       const int meshSetupIterations) const;
 
@@ -173,6 +190,11 @@ class exahype::runners::Runner {
   void initHeaps();
 
   /**
+   * Shutdown all heaps.
+   */
+  void shutdownHeaps();
+
+  /**
    * Print minimum of current solver time stamps and time step sizes.
    *
    * The solver time stamp and step sizes are computed as
@@ -187,6 +209,21 @@ class exahype::runners::Runner {
    */
   void printTimeStepInfo(int numberOfStepsRanSinceLastCall, const exahype::repositories::Repository& repository);
 
+  /**
+   * Determine how many time steps we can group into one batch until
+   * we either reach the user prescribed simulation end time or
+   * the user prescribed maximum number of time steps.
+   *
+   * The number of batched time steps is determined as minimum of
+   * the three ingredients:
+   * - estimated number of steps till the next plot weighted by a factor smaller 1.0,
+   * - (estimated) number of steps till the simulation end time weighted by a factor smaller 1.0,
+   * - number of steps till the maximum number of time steps is reached.
+   *
+   * Time steps are estimated based on the maximum time stamp of all solvers
+   * and the minimum time step size of all solvers.
+   */
+  int determineNumberOfBatchedTimeSteps(const int& currentTimeStep);
 
   /**
    * Do one time step where all phases are actually fused into one traversal
@@ -194,7 +231,7 @@ class exahype::runners::Runner {
    * @param numberOfStepsToRun Number of steps to run. If you hand in 0, then
    *           it runs one time step plus does a plot.
    */
-  void runOneTimeStepWithFusedAlgorithmicSteps(exahype::repositories::Repository& repository, int numberOfStepsToRun, bool exchangeBoundaryData);
+  void runTimeStepsWithFusedAlgorithmicSteps(exahype::repositories::Repository& repository, int numberOfStepsToRun);
 
   /**
    * Run the three (four for MPI) adapters necessary for initialising the
@@ -205,7 +242,7 @@ class exahype::runners::Runner {
   /**
    * TODO(Dominic): Add docu.
    */
-  void updateMeshAndSubdomains(
+  void updateMeshOrLimiterDomain(
       exahype::repositories::Repository& repository,
       const bool fusedTimeStepping);
 
@@ -343,16 +380,21 @@ class exahype::runners::Runner {
       const tarch::la::Vector<DIMENSIONS, double>& boundingBoxSize) const;
 
   /**
-   * If the user specifies a non-cubic computational domain or
-   * turns the virtual expansion of the bounding box on,
-   * the actual computational domain shrinks a little bit.
-   * The actual computational domain consists only of
-   * cells that are completely inside of the
-   * domain. This is usually not the case for
-   * all cells if one of the above is specified
-   * by the user.
+   * Find the smallest scaled computational domain consisting of hypercubes
+   * such that the original computational domain fits completely into it.
    *
-   * Compute the size of the shrunk domain.
+   * We scale Peano's bounding box such that the longest edge
+   * of the rectangular computational domain aligns with it.
+   * We further use only hypercubes to build our mesh.
+   * The shorter edges of the computational domain thus cannot be resolved
+   * exactly in general.
+   *
+   * They might be either clipped or we scale the computational domain a
+   * little bit such that the shorter edges are also integral multiples of the
+   * edge lengths of the hypercubes.
+   *
+   * We do the latter here in order to enable boundary treatment approaches
+   * such as the immersed boundary method.
    */
   tarch::la::Vector<DIMENSIONS, double> determineScaledDomainSize(
       const tarch::la::Vector<DIMENSIONS, double>& domainSize,
@@ -362,7 +404,7 @@ class exahype::runners::Runner {
   void preProcessTimeStepInSharedMemoryEnvironment();
   void postProcessTimeStepInSharedMemoryEnvironment();
  public:
-  explicit Runner(Parser& parser);
+  explicit Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs);
   virtual ~Runner();
 
   // Disallow copy and assignment

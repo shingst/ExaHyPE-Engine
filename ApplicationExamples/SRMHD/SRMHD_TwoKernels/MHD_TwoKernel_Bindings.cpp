@@ -70,7 +70,7 @@ struct check {
 };
 
 
-MHDSolver::MHDSolver::MHDSolver(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView constants):
+MHDSolver::MHDSolver::MHDSolver(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs, exahype::parser::ParserView constants):
   exahype::solvers::ADERDGSolver("MHDSolver",nVar /* numberOfUnknowns */,nParams /* numberOfParameters */,order + 1  /* nodesPerCoordinateAxis */,maximumMeshSize,timeStepping) {
   init(cmdlineargs, constants);
 }

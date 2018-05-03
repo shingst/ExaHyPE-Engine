@@ -1,6 +1,9 @@
 package eu.exahype;
 
 import java.util.LinkedList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileInputStream;
 
 import eu.exahype.analysis.DepthFirstAdapter;
 import eu.exahype.kernel.ADERDGKernel;
@@ -63,6 +66,50 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _versionBodyWriter.write("\n  ostream << \"\\n\";");
   }
   
+  /// Encode the specification file itself into C++. This makes debugging
+  /// easy and also can be useful in practise.
+  public String writeSpecfileAsCode() {
+    // Line by line:
+    /*
+    java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(_inputFileName));
+    for (String line = br.readLine(); line != null; line = br.readLine()) {
+        // This can be faulty: Escape single quotation marks "
+        String escapedline = line.replaceAll("\"","\\\"");
+    }
+    */
+    // Byte by byte is failproof:
+    String ret="";
+    int counter=0;
+    int maxlinelength=20;
+    int indent=4;
+
+    for(int j=0; j<indent; j++) ret += " ";
+    FileInputStream in = null;
+    try {
+      in = new java.io.FileInputStream(_inputFileName);
+      int c;
+
+      while ((c = in.read()) != -1) {
+          //ret += " 0x" + Integer.toHexString(c) + ",";
+          ret += String.format(" 0x%02X,", c);
+          if(++counter % maxlinelength == 0) {
+              ret += "\n";
+              for(int j=0; j<indent; j++) ret += " ";
+          }
+      }
+
+      // Add a zero at the end. Result is a zero-terminated string.
+      ret += "\n";
+      for(int j=0; j<indent; j++) ret += " ";
+      ret += " 0x00 /* Zero-terminated string */";
+
+      //return ret.substring(0, ret.length() - 1); // remove last ","
+      return ret;
+    } catch(Exception e) {
+      return "/* " + e.getMessage() + " */";
+    }
+  }
+  
   @Override
   public void inAProfiling(AProfiling node) {
     _enableProfiler = !node.getProfiler().getText().equals("NoOpProfiler");
@@ -112,7 +159,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
         _writer.write("#include \""+subPath+"/DGMatrices.h\"\n");
       }       
 
-      _methodBodyWriter.write("void kernels::initSolvers(exahype::Parser& parser, std::vector<std::string>& cmdlineargs) {\n");
+      _methodBodyWriter.write("void kernels::registerSolvers(exahype::parser::Parser& parser) {\n");
       if (node.getSolver().size() == 0) {
         System.out.println("no solvers specified - create empty kernel calls ... ok");
       }
@@ -169,12 +216,9 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       
       _methodBodyWriter.write("  // Create and register solver\n");
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( new " + _projectName +
-                          "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), 0, 0, parser.getTimeStepping("+_kernelNumber+"), cmdlineargs"+
+                          "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), 0, 0, parser.getTimeStepping("+_kernelNumber+")"+
                            (_enableProfiler ? ", std::move(profiler)": ""));
-      if (node.getConstants()!=null) {
-          _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-      }
-      _methodBodyWriter.write( "  ));\n");
+      _methodBodyWriter.write( " ));\n");
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n\n");
       _methodBodyWriter.write("  \n");
   
@@ -215,12 +259,8 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
 
       _methodBodyWriter.write("  // Create and register solver\n");
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( new " + _projectName +
-                          "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+"),"+
-                          "cmdlineargs"+
+                          "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
                           (_enableProfiler ? ", std::move(profiler)": ""));
-      if (node.getConstants()!=null) {
-        _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-      }
       _methodBodyWriter.write( " ));\n");
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n\n");
       _methodBodyWriter.write("  \n");
@@ -253,12 +293,13 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _solverName  = node.getName().getText();
       _solverType  = "ADERDG"; // TODO(Dominic): We currently use the ADERDG degrees of freedom as the plotter input for the LimitingADERDGSolver
 
-      _writer.write("#include \"exahype/solvers/LimitingADERDGSolver.h\"\n");
       
       // Consistency: We have the same definition at CreateSolverClasses.inALimitingAderdgSolver()
-      String solverNameADERDG = _solverName+"_ADERDG";
-      String solverNameFV     = _solverName+"_FV";
+      String solverNameADERDG  = _solverName+"_ADERDG";
+      String solverNameFV      = _solverName+"_FV";
+      String solverNameLimiter = "Abstract"+_solverName+"_Limiter";
       
+      _writer.write("#include \"" + solverNameLimiter + ".h\"\n");
       _writer.write("#include \"" + solverNameADERDG + ".h\"\n");
       _writer.write("#include \"" + solverNameFV + ".h\"\n");
 
@@ -285,11 +326,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       
       _methodBodyWriter.write("  solver = new " + _projectName +
                           "::" + solverNameADERDG+"(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getDMPObservables("+_kernelNumber+"), parser.getLimiterHelperLayers("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
-                           (_enableProfiler ? ", std::move(profiler)": "")+
-                           ", cmdlineargs");
-      if (node.getConstants()!=null) {
-          _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-        }
+                           (_enableProfiler ? ", std::move(profiler)": ""));
       _methodBodyWriter.write( ");\n");
   
       _methodBodyWriter.write("  }\n");
@@ -303,11 +340,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
 
       _methodBodyWriter.write("  solver = new " + _projectName +
                           "::" + solverNameFV+"(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
-                          (_enableProfiler ? ", std::move(profiler)": "")+
-                          ",cmdlineargs");
-      if (node.getConstants()!=null) {
-        _methodBodyWriter.write( ", parser.getParserView(" +  _kernelNumber + ")\n");
-      }
+                          (_enableProfiler ? ", std::move(profiler)": ""));
       _methodBodyWriter.write( ");\n");
       _methodBodyWriter.write("  }\n");
       
@@ -316,8 +349,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       // Limiting ADER-DG
       _methodBodyWriter.write("  \n");
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back(\n"
-          + "    new exahype::solvers::LimitingADERDGSolver(\""+_solverName+"\",std::move(aderdgSolver),std::move(finiteVolumesSolver),"
-                  + "parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
+          + "    new "+ _projectName + "::" + solverNameLimiter+"(\""+_solverName+"\",std::move(aderdgSolver),std::move(finiteVolumesSolver),parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
       
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n");
       _methodBodyWriter.write("  }\n\n");
@@ -429,6 +461,18 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _writer.write("/* Generated SolverRegistration code by the toolkit */\n");
       _writer.write(_versionBodyWriter.toString());
       _writer.write("\n}");
+      _writer.write("\n\n");
+
+      _writer.write("const char* kernels::compiledSpecfile() {\n");
+      _writer.write("  /* This is a hexdump of the specfile which was used to create this registration file.     */\n");
+      _writer.write("  /* Run ExaHyPE with --help to learn how to view it's contents and/or run ExaHyPE with it. */\n");
+      _writer.write("  static const char ret[] = \n");
+      _writer.write("  {\n");
+      // In case you have trouble compiling the generated code, comment the following line:
+      _writer.write(      writeSpecfileAsCode() + "\n");
+      _writer.write("  };\n");
+      _writer.write("  return ret;\n");
+      _writer.write("}\n");
       _writer.write("\n");
 
       System.out.println("configured all solver solvers ... ok");

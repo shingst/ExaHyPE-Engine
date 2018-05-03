@@ -60,47 +60,21 @@ namespace amr {
       const int levelDelta);
 
   /**
-   * Returns  AugmentationControl::::NextToCell if the cell has a neighbour of
-   * type exahype::records::ADERDGCellDescription:Cell,
-   * exahype::solvers::Solver::NextToAncestor if the cell has a neighbour of
-   * type exahype::records::ADERDGCellDescription:Ancestor or
-   * exahype::records::ADERDGCellDescription::EmptyAncestor.
-   * Is both the case, this function returns
-   * AugmentationControl::::NextToCellOrAncestor.
-   * If none of the previous is the case, this function returns
-   * AugmentationControl::Default.
+   * This method deemed to be necessary since I could
+   * not trust the Boundary markers.
+   *
+   * Per coordinate direction xi, check if the cell
+   * is at the boundary of the parent cell, i.e. if
+   * subcellIndex[xi] is either 0 or 3^levelDelta - 1,
+   * and if the parent face is a boundary face.
+   * If so, the face of the child is on the boundary as well.
    */
-  // TODO(Dominic): Not needed anymore. Keep a while for reference.
-//  template<class CellDescription,class CellDescriptionsHeap>
-//  exahype::solvers::Solver::AugmentationControl
-//  augmentationCriterion(
-//      const int solverNumber,
-//      const typename CellDescription::Type type,
-//      const int level,
-//      const tarch::la::Vector<THREE_POWER_D, int>&
-//      neighbourCellDescriptionsIndices);
-
-  /*
-   * Change the erasing request to a change to descendant request if the coarse grid Cell
-   * has children (of type Descendant).
-   * Rationale: We cannot directly erase a Cell that has children (of type Descendant).
-   *
-   * Further, reset the deaugmenting request if a coarse grid Descendant has children
-   * (of type Descendant). Rationale:
-   * We cannot erase a coarse grid cell that has children (of type Descendant)
-   * before erasing the children.
-   *
-   * \note This method should be called when we enter a fine grid cell,
-   * coarseGridCellDescription is a cell description associated with
-   * the coarse grid cell.
-   *
-   * \note A more sophisticated procedure has to performed for the refinement event
-   * AugmentationRequested. We need to use the taversal's descend event to handle
-   * this event. We thus do not rely on fineGridCell.isRefined() in the previous enterCell event
-   * to check if we need to reset the deaugmenting request.
-   */
-  template<class CellDescription>
-  void resetErasingOrDeaugmentingRequestIfParent(CellDescription& coarseGridCellDescription);
+  std::bitset<DIMENSIONS_TIMES_TWO> determineInsideAndOutsideFacesOfChild(
+      const tarch::la::Vector<DIMENSIONS,double>& childOffset,
+      const tarch::la::Vector<DIMENSIONS,double>& childSize,
+      const tarch::la::Vector<DIMENSIONS,double>& parentOffset,
+      const int                                   levelDelta,
+      const std::bitset<DIMENSIONS_TIMES_TWO>&    parentIsInside);
 
   /**
    * Determine the position of a Cell or Ancestor with respect

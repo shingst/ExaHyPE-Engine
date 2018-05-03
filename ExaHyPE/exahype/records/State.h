@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   28/11/2017 16:02
+    * @date   31/03/2018 21:14
     */
    class exahype::records::State { 
       
@@ -43,6 +43,7 @@ namespace exahype {
          
          struct PersistentRecords {
             int _maxRefinementLevelAllowed;
+            bool _verticalExchangeOfSolverDataRequired;
             bool _hasRefined;
             bool _hasTriggeredRefinementForNextIteration;
             bool _hasErased;
@@ -58,7 +59,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             
             inline int getMaxRefinementLevelAllowed() const 
@@ -77,6 +78,26 @@ namespace exahype {
  #endif 
  {
                _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+            }
+            
+            
+            
+            inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _verticalExchangeOfSolverDataRequired;
+            }
+            
+            
+            
+            inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
             }
             
             
@@ -239,7 +260,7 @@ namespace exahype {
             /**
              * Generated
              */
-            State(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             /**
              * Generated
@@ -263,6 +284,26 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+            }
+            
+            
+            
+            inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._verticalExchangeOfSolverDataRequired;
+            }
+            
+            
+            
+            inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
             }
             
             
@@ -448,14 +489,11 @@ namespace exahype {
                
                static void shutdownDatatype();
                
-               /**
-                * @param communicateSleep -1 Data exchange through blocking mpi
-                * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                */
-               void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+               enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                
-               void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+               void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+               
+               void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                
                static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                
@@ -482,7 +520,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   28/11/2017 16:02
+    * @date   31/03/2018 21:14
     */
    class exahype::records::StatePacked { 
       
@@ -490,6 +528,7 @@ namespace exahype {
          
          struct PersistentRecords {
             int _maxRefinementLevelAllowed;
+            bool _verticalExchangeOfSolverDataRequired;
             bool _isTraversalInverted;
             
             /** mapping of records:
@@ -511,7 +550,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             
             inline int getMaxRefinementLevelAllowed() const 
@@ -530,6 +569,26 @@ namespace exahype {
  #endif 
  {
                _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+            }
+            
+            
+            
+            inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _verticalExchangeOfSolverDataRequired;
+            }
+            
+            
+            
+            inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
             }
             
             
@@ -710,7 +769,7 @@ namespace exahype {
             /**
              * Generated
              */
-            StatePacked(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             /**
              * Generated
@@ -734,6 +793,26 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+            }
+            
+            
+            
+            inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._verticalExchangeOfSolverDataRequired;
+            }
+            
+            
+            
+            inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
             }
             
             
@@ -937,14 +1016,11 @@ namespace exahype {
                
                static void shutdownDatatype();
                
-               /**
-                * @param communicateSleep -1 Data exchange through blocking mpi
-                * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                */
-               void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+               enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                
-               void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+               void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+               
+               void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                
                static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                
@@ -967,7 +1043,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   28/11/2017 16:02
+       * @date   31/03/2018 21:14
        */
       class exahype::records::State { 
          
@@ -977,6 +1053,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
+               bool _verticalExchangeOfSolverDataRequired;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -1016,7 +1093,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -1035,6 +1112,26 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -1593,7 +1690,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -1617,6 +1714,26 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -2250,14 +2367,11 @@ namespace exahype {
                   
                   static void shutdownDatatype();
                   
-                  /**
-                   * @param communicateSleep -1 Data exchange through blocking mpi
-                   * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                   * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                   */
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                   
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                   
                   static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                   
@@ -2284,7 +2398,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   28/11/2017 16:02
+       * @date   31/03/2018 21:14
        */
       class exahype::records::StatePacked { 
          
@@ -2292,6 +2406,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
+               bool _verticalExchangeOfSolverDataRequired;
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth;
                tarch::la::Vector<DIMENSIONS,double> _maxMeshWidth;
                double _numberOfInnerVertices;
@@ -2329,7 +2444,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -2348,6 +2463,26 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -2933,7 +3068,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -2957,6 +3092,26 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -3617,14 +3772,11 @@ namespace exahype {
                   
                   static void shutdownDatatype();
                   
-                  /**
-                   * @param communicateSleep -1 Data exchange through blocking mpi
-                   * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                   * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                   */
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                   
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                   
                   static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                   
@@ -3648,7 +3800,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   28/11/2017 16:02
+       * @date   31/03/2018 21:14
        */
       class exahype::records::State { 
          
@@ -3658,6 +3810,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
+               bool _verticalExchangeOfSolverDataRequired;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -3694,7 +3847,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -3713,6 +3866,26 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -4211,7 +4384,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                /**
                 * Generated
@@ -4235,6 +4408,26 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -4808,14 +5001,11 @@ namespace exahype {
                   
                   static void shutdownDatatype();
                   
-                  /**
-                   * @param communicateSleep -1 Data exchange through blocking mpi
-                   * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                   * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                   */
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                   
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                   
                   static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                   
@@ -4842,7 +5032,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   28/11/2017 16:02
+       * @date   31/03/2018 21:14
        */
       class exahype::records::StatePacked { 
          
@@ -4850,6 +5040,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
+               bool _verticalExchangeOfSolverDataRequired;
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth;
                tarch::la::Vector<DIMENSIONS,double> _maxMeshWidth;
                double _numberOfInnerVertices;
@@ -4884,7 +5075,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -4903,6 +5094,26 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -5419,7 +5630,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                /**
                 * Generated
@@ -5443,6 +5654,26 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -6034,14 +6265,11 @@ namespace exahype {
                   
                   static void shutdownDatatype();
                   
-                  /**
-                   * @param communicateSleep -1 Data exchange through blocking mpi
-                   * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                   * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                   */
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                   
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                   
                   static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                   
@@ -6065,7 +6293,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   28/11/2017 16:02
+       * @date   31/03/2018 21:14
        */
       class exahype::records::State { 
          
@@ -6075,6 +6303,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
+               bool _verticalExchangeOfSolverDataRequired;
                bool _hasRefined;
                bool _hasTriggeredRefinementForNextIteration;
                bool _hasErased;
@@ -6093,7 +6322,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -6112,6 +6341,26 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -6334,7 +6583,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               State(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -6358,6 +6607,26 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -6603,14 +6872,11 @@ namespace exahype {
                   
                   static void shutdownDatatype();
                   
-                  /**
-                   * @param communicateSleep -1 Data exchange through blocking mpi
-                   * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                   * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                   */
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                   
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                   
                   static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                   
@@ -6637,7 +6903,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   28/11/2017 16:02
+       * @date   31/03/2018 21:14
        */
       class exahype::records::StatePacked { 
          
@@ -6645,6 +6911,7 @@ namespace exahype {
             
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
+               bool _verticalExchangeOfSolverDataRequired;
                bool _isTraversalInverted;
                
                /** mapping of records:
@@ -6669,7 +6936,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -6688,6 +6955,26 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -6937,7 +7224,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& verticalExchangeOfSolverDataRequired, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -6961,6 +7248,26 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
+               }
+               
+               
+               
+               inline bool getVerticalExchangeOfSolverDataRequired() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._verticalExchangeOfSolverDataRequired;
+               }
+               
+               
+               
+               inline void setVerticalExchangeOfSolverDataRequired(const bool& verticalExchangeOfSolverDataRequired) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._verticalExchangeOfSolverDataRequired = verticalExchangeOfSolverDataRequired;
                }
                
                
@@ -7233,14 +7540,11 @@ namespace exahype {
                   
                   static void shutdownDatatype();
                   
-                  /**
-                   * @param communicateSleep -1 Data exchange through blocking mpi
-                   * @param communicateSleep  0 Data exchange through non-blocking mpi, i.e. pending messages are received via polling until MPI_Test succeeds
-                   * @param communicateSleep >0 Same as 0 but in addition, each unsuccessful MPI_Test is follows by an usleep
-                   */
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
                   
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, int communicateSleep);
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
                   
                   static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
                   

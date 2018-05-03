@@ -1,0 +1,88 @@
+/**
+ * This is a dummy specfile for testing the mexa parser capabilities.
+ * Test it by providing it as a parameter for test-parser.cc
+ **/
+exahype-project GRMHD
+
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/GRMHD/GRMHD_cpp
+  architecture const               = noarch
+  log-file                         = whatever.log
+
+  computational-domain
+    dimension const                = 2
+    width                          = 1.0, 1.0
+    offset                         = 0.0, 0.0
+    end-time                       = 10.0
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:1}
+    buffer-size              = 64
+    timeout                  = 60
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    time-step-batch-factor           = 0.0
+    skip-reduction-in-batched-time-steps = on
+    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
+  solver Finite-Volumes GRMHDSolver_FV
+    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
+    patch-size const               = 8
+    maximum-mesh-size              = 0.11111133333339
+    maximum-mesh-depth             = 0
+    time-stepping                  = global
+    type const         = godunov
+    terms const        = flux,ncp,source
+    optimisation const = generic
+    language const                 = C
+    constants  = firstline:maynotbeempty,
+       string/test1:shocktube,
+       string/test2:foo-bar,
+       boundaries/left:exact,
+       boundaries/right:exact,
+       boundaries/top:exact,
+       boundaries/bottom:exact,
+       boundaries/front:exact,
+       boundaries/back:exact,
+       casting/float:0.5,
+       casting/int:-0,
+       casting/bool:on,
+       intvec/beta/x:0,
+       intvec/beta/y:1,
+       intvec/beta/z:2,
+       mixedvec/vel/x:.5,   
+       mixedvec/vel/y:+3,   
+       mixedvec/vel/z:1e-8,   
+       floatvec/right/a:0.1, 
+       floatvec/right/b:0.5,
+       floatvec/right/c:-1.0,
+       boolvec/beta/x:on, 
+       boolvec/beta/y:off, 
+       boolvec/beta/z:on, 
+
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.00590278
+      output    = ./vtk-output/conserved
+    end plot
+
+  end solver
+end exahype-project

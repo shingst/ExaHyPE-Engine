@@ -26,9 +26,12 @@ namespace c {
 class GenericEulerKernelTest : public tarch::tests::TestCase {
 	
  public:
-  static constexpr int NumberOfVariables  = 5;
-  static constexpr int NumberOfParameters = 1;
-  static constexpr int Order              = 3;
+  static constexpr int NumberOfVariables       = 5;
+  static constexpr int NumberOfParameters      = 1;
+  static constexpr int Order                   = 3;
+  static constexpr int MaxPicardIterations     = -1;
+  static constexpr bool UseMaxPicardIterations = false;
+
   static constexpr double CFL             = 0.9;
 
   GenericEulerKernelTest();

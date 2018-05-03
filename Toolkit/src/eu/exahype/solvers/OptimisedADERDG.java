@@ -32,19 +32,24 @@ public class OptimisedADERDG implements Solver {
     this.solverName                 = solverName;
     this.useConverterDebug          = kernel.useConverterDebug();
     
-    final boolean isLinear          = kernel.isLinear();
-    final boolean useFlux           = kernel.useFlux();
-    final boolean useSource         = kernel.useSource();
-    final boolean useNCP            = kernel.useNCP();
-    final boolean usePointSources   = kernel.usePointSources();
-    final boolean useMaterialParam  = kernel.useMaterialParameterMatrix();
-    final boolean noTimeAveraging   = kernel.noTimeAveraging();
-    final boolean patchwiseAdjust   = kernel.patchwiseAdjust();
-    final int numberOfPointSources  = kernel.getNumberOfPointSources();
+    final boolean isLinear               = kernel.isLinear();
+    final boolean useFlux                = kernel.useFlux();
+    final boolean useSource              = kernel.useSource();
+    final boolean useNCP                 = kernel.useNCP();
+    final boolean usePointSources        = kernel.usePointSources();
+    final boolean useMaterialParam       = kernel.useMaterialParameterMatrix();
+    final boolean noTimeAveraging        = kernel.noTimeAveraging();
+    final boolean patchwiseAdjust        = kernel.patchwiseAdjust();
+    final boolean tempVarsOnStack        = kernel.tempVarsOnStack();
+    final boolean useMaxPicardIterations = kernel.useMaxPicardIterations();
+    final boolean countFlops             = kernel.useFlopsDebug();
+    final int     maxPicardIterations    = kernel.maxPicardIterations();
+    final int     numberOfPointSources   = kernel.getNumberOfPointSources();
+    
     
     //generate the optimised kernel, can throw IOException
-    final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
-        microarchitecture, enableDeepProfiler, useFlux, useSource, useNCP, numberOfPointSources, noTimeAveraging);
+    final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, dimensions,
+        microarchitecture, enableDeepProfiler, kernel);
     final String optNamespace = CodeGeneratorHelper.getInstance().getNamespace(projectName, solverName);
     
     templateEngine = new TemplateEngine();
@@ -58,24 +63,28 @@ public class OptimisedADERDG implements Solver {
     context.put("optNamespace"      , optNamespace);
     
     //int
-    context.put("dimensions"        , dimensions);
-    context.put("order"             , order);
-    context.put("numberOfVariables" , numberOfVariables);
-    context.put("numberOfParameters", numberOfParameters);
+    context.put("dimensions"          , dimensions);
+    context.put("order"               , order);
+    context.put("numberOfVariables"   , numberOfVariables);
+    context.put("numberOfParameters"  , numberOfParameters);
     context.put("numberOfPointSources", numberOfPointSources);
+    context.put("maxPicardIterations" , maxPicardIterations);
     
     //boolean
-    context.put("enableProfiler"    , enableProfiler);
-    context.put("enableDeepProfiler", enableDeepProfiler);
-    context.put("hasConstants"      , hasConstants);
-    context.put("isLinear"          , isLinear);
-    context.put("useFlux"           , useFlux);
-    context.put("useSource"         , useSource);
-    context.put("useNCP"            , useNCP);
-    context.put("usePointSources"   , usePointSources);
-    context.put("useMaterialParam"  , useMaterialParam);
-    context.put("noTimeAveraging"   , noTimeAveraging);
-    context.put("patchwiseAdjust"   , patchwiseAdjust);
+    context.put("enableProfiler"        , enableProfiler);
+    context.put("enableDeepProfiler"    , enableDeepProfiler);
+    // context.put("hasConstants"          , hasConstants);
+    context.put("isLinear"              , isLinear);
+    context.put("useFlux"               , useFlux);
+    context.put("useSource"             , useSource);
+    context.put("useNCP"                , useNCP);
+    context.put("usePointSources"       , usePointSources);
+    context.put("useMaterialParam"      , useMaterialParam);
+    context.put("noTimeAveraging"       , noTimeAveraging);
+    context.put("patchwiseAdjust"       , patchwiseAdjust);
+    context.put("tempVarsOnStack"       , tempVarsOnStack);
+    context.put("useMaxPicardIterations", useMaxPicardIterations);
+    context.put("countFlops"            , countFlops);
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));
@@ -89,15 +98,12 @@ public class OptimisedADERDG implements Solver {
     context.put("range_0_nDim"      , IntStream.range(0, dimensions)                          .boxed().collect(Collectors.toList()));
     context.put("range_0_nVar"      , IntStream.range(0, numberOfVariables)                   .boxed().collect(Collectors.toList()));
     context.put("range_0_nVarParam" , IntStream.range(0, numberOfVariables+numberOfParameters).boxed().collect(Collectors.toList()));
+    context.put("range_0_numberOfPointSources", IntStream.range(0, numberOfPointSources)      .boxed().collect(Collectors.toList()));
   }
     
   @Override
   public String getSolverName() {
     return solverName;
-  }
-  
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
   }
   
   private String boolToTemplate(boolean b) {
@@ -107,14 +113,14 @@ public class OptimisedADERDG implements Solver {
   @Override
   public void writeHeader(java.io.BufferedWriter writer) throws IOException, IllegalArgumentException {
     //reuse the generic template
-	  final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/GenericADERDGSolverHeader.template");
+	  final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/ADERDGSolverHeader.template");
 	  writer.write(templateEngine.render(template, context));
   }
   
   @Override
   public void writeUserImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
       //reuse the generic template
-    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/GenericADERDGSolverInCUserCode.template");
+    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/ADERDGSolverInCUserCode.template");
     writer.write(templateEngine.render(template, context));
   }
   

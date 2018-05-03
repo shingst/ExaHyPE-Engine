@@ -110,7 +110,7 @@ void exahype::mappings::Plot::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if (!tarch::parallel::Node::getInstance().isGlobalMaster()) {
     if (!exahype::plotters::startPlottingIfAPlotterIsActive(
-        exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers())) {
+        exahype::solvers::Solver::getMinTimeStampOfAllSolvers())) {
       logWarning("beginIteration(State)",
                  "plot invoked though no plotter is active at all at min "
                  "solver time stamp "

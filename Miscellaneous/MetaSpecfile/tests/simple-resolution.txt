@@ -1,0 +1,7 @@
+# Simple example of resolving variables.
+
+a = 1
+a/x = 10
+a/y = 11
+a/z = y
+c = 2

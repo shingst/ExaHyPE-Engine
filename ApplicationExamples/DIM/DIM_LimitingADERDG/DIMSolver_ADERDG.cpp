@@ -14,7 +14,7 @@
 tarch::logging::Log DIM::DIMSolver_ADERDG::_log( "DIM::DIMSolver_ADERDG" );
 
 
-void DIM::DIMSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void DIM::DIMSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
 }
 

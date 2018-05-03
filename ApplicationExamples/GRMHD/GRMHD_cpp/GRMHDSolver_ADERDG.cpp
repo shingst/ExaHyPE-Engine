@@ -1,36 +1,47 @@
 #include "GRMHDSolver_ADERDG.h"
+#include "GRMHDSolver_ADERDG_Variables.h"
+
 #include <algorithm> // fill_n
 #include <cstring> // memset
 
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
-
 #include "peano/utils/Dimensions.h" // Defines DIMENSIONS
+
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
 #include "InitialData/InitialData.h"
-#include "BoundaryConditions_ADERDG.h"
-
 #include "PDE/PDE-GRMHD-ExaHyPE.h"
+#include "DebuggingHelpers.h"
+#include "BoundaryConditions.h"
+
 //namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
 #define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
 using namespace tensish;
 
-#include "GRMHDSolver_ADERDG_Variables.h"
-#include "DebuggingHelpers.h"
+
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 constexpr int order = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
 constexpr int basisSize = order + 1;
 constexpr int nDim = DIMENSIONS;
-BoundaryConditionsADERDG* aderdg_bc;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
-void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
+void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
-	aderdg_bc = new BoundaryConditionsADERDG(this);
-	setupProblem<BoundaryConditionsADERDG>(aderdg_bc);
+	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());
+	
+	//std::cout << "Mexa configuration: \n" << mf.toString();
+	//std::cout << "ID configuration: \n" << mf("initialdata").toString();
+	//std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
+	//std::cout << "ID subquery NAME: '" << mf("initialdata").get("name").get_string() << "'\n";
+	
+	logInfo("init()",  "Running DG init and setup ID and Boundaries");
+	logInfo("init()",  "The given parameters are: " << mf.toString());
+	
+	GlobalInitialData::getInstance().setByParameters(mf).prepare();
+	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf("boundaries"));
 }
 
 
@@ -168,7 +179,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 	*/
 	
 	// Let it be managed by user parameters
-	aderdg_bc->apply(ADERDG_BOUNDARY_CALL);
+	GlobalBoundaryConditions::getInstance().apply(ADERDG_BOUNDARY_CALL);
 	
 	/*
 	// employ time-integrated exact BC for AlfenWave.

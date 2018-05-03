@@ -1,12 +1,31 @@
-# The ExaHyPE meta specfile language
+# The ExaHyPE meta specfile language (smexa)
 
 This directory holds the exahype meta specfile language, also abbreveated
-as `exapar` (exahype parameter files) or `mexa`.
+as *mexa*. The mexa ecosystem covers quite a broad range of ideas and
+implementations.
 
-Small example (kitchen sink):
+## Rationale
+
+Mexa was born due to the limitations of the parameter language shipped with
+ExaHyPE. It is supposed as an on-top solution, to embed sophisticated
+configurations into the mentioned parameter language. To do so, a syntax
+was designed which ends up in a purely functional approach to parameter 
+handling. However, mexa tries not to replace one restrictive configuration
+language by another. Instead, the tooling tries to enhance interoperability,
+openness and compatibility to other data representation formats. Users are
+encouraged to choose the kind of file format and scripting language which
+fits their needs best.
+
+## The mexa language hierarchy
+
+The most sophisticated part of the *mexa* ecosystem is the full-blown
+immutable parameter language. It looks a bit like the Cactus parameter
+language but allows variables and arbitrary ordering. Here is an
+kitchen sink example:
 
 ```
-# arbitrarily structured parameters
+# This is a comment.
+# Arbitrarily structured parameters:
 ExaHyPE::project::name = "GRMHD"
 ExaHyPE::paths::peano_kernel_path = "./Peano"
 ExaHyPE::architecture = "noarch"
@@ -41,7 +60,51 @@ Parameters += Domain
 Parameters += IntegralPlotter
 ```
 
-## Usage
+The language is specified at `doc/MEXALANG.md`. We refer to this as
+**Level 1**. The simple version of this language is called `mexa-simple`.
+It is just another (hierarchical) configuration language but very easy
+to parse: 
+
+```
+initialdata::type = "blackhole-puncture"
+initialdata::blackhole::mass = 1
+initialdata::blackhole::isSpinning = True
+initialdata::blackhole::spin = 0.9
+```
+
+The simple mexa language is again specified at `doc/MEXALANG.md`. We
+refer to this as **Level 2**.
+
+Contents of a simple mexa file can be represented in any other parameter
+language such as Yaml, JSON or XML without any information loss. Especially
+they can be embedded straight forwardly. Thus we approach the third and
+most abstract level of this hierarchy: The hierarchical key-valued
+data structure. It can be easily represented in any programming language.
+We added this level to stress that parameter handling is a very basic form
+of data managament which can *meet* on the lowest common denominator. We
+refer to this as **Level 3**.
+
+## Overview of this directory
+
+
+**cpp/**: An implementation of a Level 3 code which has bindings to a
+C++ Standard template Library (STL) representation, a simple-mexa file
+parser as well as decodes BASE64/Quoted-printable simple-mexa files.
+
+**mexa.py**: The swiss army knife reference implementation of the Level 1
+mexa language. As thus, it can convert between the mexa level 1, level 2
+and other file formats such as Yaml, XML and JSON. It also generates
+ExaHyPE specification files. More documentation on this tool is given
+below.
+
+**examples**: Example mexa Level 1 files to test the interpreter. They
+primarily serve as test cases.
+
+**doc**: Documentation of the mexa paradigm, file formats and much more.
+We encourage you to browse throught these files. They explain many
+concepts in-depth.
+
+## mexa.py Usage
 
 The `mexa.py` reference implementation serves as a swiss army knife
 to convert between the mexa file format and something else. We support
@@ -64,84 +127,8 @@ operations *except* the assignment where carried out, including string
 variable substitution. Thus, the remaining Mexa file format can be parsed
 trivially line by line without taking any logic into account.
 
-## Concepts at a glance:
 
- * Every command is always a single line.
- * All assignments are immutable (pi=3.14 is always 3.14)
- * The order of the lines is interchangable.
- * Variables can be sorted hierarchically.
- * Native support for Int, Float, String
- * Symbolic/Lazy variables: References can always be put.
- * Principle of least surprise: Always does what is expected.
+## License
 
-### Principles, from top down
-
- * Variables can be sorted hierarchically. The seperator is
-   either "/" or "::". Hierarchy can just be used as it occurs
-   without previous definition.
- * Lists can be composed with "+=" over several lines.
- * Inline variables in strings can be evaluated. For instance,
-   in "foo @bar baz", @bar is replaced by the variable "bar".
-   For more complex names, "@{name::too:foo}bar" is evaluated
-   accordingly.
-
-### Principles, from bottom up:
-
- * All variables live on a hierarchy. No prefix means root.
- * There are only five commands:
-   1. The immutable assignment `a = b`
-   2. The list creation (appending): `a += b`
-   3. Datastructure extension (inheritance): `a <= b`
-   4. Inclusion of files at any level: `a << b`
-   5. The overwritable (non-immutable) assignment `a := b`
-
-## Rationale
-
-ExaHyPE ships with a sophisticated specification language, defined by its
-own grammar. Two distinct parsers are implemented, a fuzzy C parser and
-a full Java parser generated by SableCC.
-
-However, this language is hard to parse and compose. It is also not
-extensible at all. User parameters can hardly be specified.
-
-Therefore, we propose here a language which compiles to ExaHyPE specification
-files plus parameters which cannot be mapped to the ExaHyPE specfiles.
-
-### Design of an ExaHyPE specfile
-
-The ExaHyPE specification language can be approximated as an XMLish
-structure,
-
-```
-begin section unnamed-parameter1 unnamed-parameter2
-   assignment1 decorator = right hand side
-   assignment2 decorator = right hand side
-   assignment3 decorator = weird:embedded,lists:here
-   assignment4 decorator = {which:sometimes,are:enclosed}
-end section
-```
-
-This can be mapped for instance onto an XML ontology
-
-```
-<section some-name1="unnamed-parameter1" some-name2="unnamed-parameter2">
-   <assignment1 some-name="decorator">right hand side</assignemnt1>
-   <assignment2 some-name="decorator">right hand side</assignemnt2>
-   <assignment3 some-name="decorator">weird:embedded,lists:here</assignemnt3>
-   <assignment3 some-name="decorator">{which:sometimes,are:enclosed}</assignemnt3>
-</section>
-```
-
-That is, we would need a node tree, text leafs and attributes to describe an
-ExaHyPe specfile. We don't take the weird embedded lists into account.
-
-Note that in XML, the order of the tags is relevant. The same is true for the
-ExaHyPE specfiles. This is a quite weird decision in parameter file formats.
-
-### The Mexa approach
-
-Mexa can represent an arbitrary graph of parameters, however there is no support
-for node attributes. Since in general one should but doesn't need to pay attention
-to the order of assignments, we decided not to build ExaHyPE specification
-files dynamically from a Mexa graph but instead fill them out from a template.
-This is much less dynamic but quite safe in terms of ExaHyPE portability.
+The mexa approach was invented by SvenK in Dec 2017 for ExaHyPE. All code
+and texts is released under GPL/BSD. (c) 2017, 2018 http://exahype.eu

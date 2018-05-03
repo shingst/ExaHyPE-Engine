@@ -117,33 +117,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   };
 
   /**
-   * A flag indicating we fuse the algorithmic
-   * phases of all ADERDGSolver and
-   * LimitingADERDGSolver instances.
-   *
-   * TODO(Dominic): Make private and hide in init function
-   */
-  static bool FuseADERDGPhases;
-
-  /**
-   * The weight which is used to scale
-   * the stable time step size the fused
-   * ADERDG time stepping scheme is
-   * reset to after a rerun has become necessary.
-   *
-   * TODO(Dominic): Further consider to introduce
-   * a second weight for the averaging:
-   *
-   * t_est = 0.5 (t_est_old + beta t_stable), beta<1.
-   *
-   * fuse-algorithmic-steps-reset-factor
-   * fuse-algorithmic-steps-averaging-factor
-   *
-   * TODO(Dominic): Make private and hide in init function
-   */
-  static double WeightForPredictionRerun;
-
-  /**
    * A flag indicating that the bounding box
    * has been virtually expanded (or not).
    *
@@ -158,25 +131,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * TODO(Dominic): Make private and hide in init function
    */
   static bool VirtuallyExpandBoundingBox;
-
-  /**
-   * States used to disable or enable master-worker
-   * and neighbour communication.
-   * This makes sense for debugging only.
-   *
-   * TODO(Dominic): Remove this eventually - also from the grammar file!
-   */
-  static bool EnableMasterWorkerCommunication;
-  static bool EnableNeighbourCommunication;
-
-  /**
-   * Indicates that the fused time stepping
-   * scheme is used in the runner
-   * instead of the standard time stepping.
-   */
-  static bool fuseADERDGPhases();
-
-  static double getTimeStepSizeWeightForPredictionRerun();
 
   /**
    * \return true if the current batch state is
@@ -224,7 +178,23 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @todo Clarify which stuff has to be merged
    */
   void merge(const State& anotherState);
-  ///@}
+
+  /**
+   * Set to true if we need to exchange local solver
+   * data between master and worker at least for one cell at
+   * a master-worker boundary.
+   *
+   * These local solver data are usually restricted or prolongated degrees of freedom.
+   * They must not be confused with global solver data such as, e.g.
+   * admissible time step sizes.
+   *
+   * \see exahype::mappings::MeshRefinement
+   */
+  void setVerticalExchangeOfSolverDataRequired(bool state);
+  /**
+   * \see setVerticalExchangeOfSolverDataRequired
+   */
+  bool getVerticalExchangeOfSolverDataRequired() const;
 
   /**
    * Has to be called after the iteration!

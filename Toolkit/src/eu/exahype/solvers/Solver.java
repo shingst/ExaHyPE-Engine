@@ -15,5 +15,9 @@ public interface Solver {
   public void writeAbstractHeader(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException;
   
   public void writeAbstractImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException;
+  
+  default String getAbstractSolverName() {
+    return "Abstract"+getSolverName();
+  }
 
 }

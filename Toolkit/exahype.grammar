@@ -16,7 +16,7 @@ Helpers
    all                  =   [ 0 .. 127 ];
    dot                  =   '.';
    digit                =   [ '0' .. '9' ];
-   nondigit             =   [ '_' + [ [ 'a' .. 'z' ] + [ 'A' .. 'Z' ] ] ];
+   nondigit             =   [ '_' + [ '/' + [ '-' + [ [ 'a' .. 'z' ] + [ 'A' .. 'Z' ] ] ] ] ];
    nonzero_digit        =   [ '1' .. '9' ];
    not_star             =   [ all - '*' ];
    not_star_not_slash   =   [ not_star - '/' ];
@@ -65,6 +65,7 @@ Tokens
   token_maximum_mesh_depth          = 'maximum-mesh-depth';
   token_time_stepping               = 'time-stepping';
   token_end_time                    = 'end-time';
+  token_time_steps                  = 'time-steps';
 
   token_solver                      = 'solver';
   token_aderdg                      = 'ADER-DG';
@@ -107,15 +108,15 @@ Tokens
   token_configure                   = 'configure';
   token_buffer_size                 = 'buffer-size';
   token_timeout                     = 'timeout';
-  token_master_worker_communication = 'master-worker-communication';
-  token_neighbour_communication     = 'neighbour-communication';
 
   token_optimisation                = 'global-optimisation';
   token_fuse_algorithm_steps        = 'fuse-algorithmic-steps';
   token_fuse_algorithm_steps_factor = 'fuse-algorithmic-steps-factor';
-  token_batch_timesteps             = 'timestep-batch-factor';
-  token_skip_reduction              = 'skip-reduction-in-batched-time-steps';
-  token_disable_amr                 = 'disable-amr-if-grid-has-been-stationary-in-previous-iteration';
+  token_spawn_predictor             = 'spawn-predictor-as-background-thread';
+  token_spawn_amr                   = 'spawn-amr-background-threads'; 
+  token_disable_vertex                 = 'disable-vertex-exchange-in-time-steps';
+  token_batch_timesteps             = 'time-step-batch-factor';
+  token_disable_metadata            = 'disable-metadata-exchange-in-batched-time-steps';
   token_double_compression          = 'double-compression';
   token_spawn_double_compression    = 'spawn-double-compression-as-background-thread';
 
@@ -161,6 +162,26 @@ Ignored Tokens
 Productions
   
   project {->project} =
+   {serial}
+     [begin_token]:token_project [name]:identifier
+       paths architecture? logfile? computational_domain optimisation? profiling? solver_list?
+     token_end [end_token]:token_project
+       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, computational_domain.computational_domain, Null, Null, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
+   |
+   {shared}
+     [begin_token]:token_project [name]:identifier
+       paths architecture? logfile? computational_domain shared_memory distributed_memory? optimisation? profiling? solver_list?
+     token_end [end_token]:token_project
+       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
+   |
+   {distmem_first}
+     [begin_token]:token_project [name]:identifier
+       paths architecture? logfile? computational_domain distributed_memory shared_memory? optimisation? profiling? solver_list?
+     token_end [end_token]:token_project
+       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
+     ;
+
+/*
      {without_logfile_with_architecure}
      [begin_token]:token_project [name]:identifier
        paths
@@ -213,6 +234,15 @@ Productions
      token_end [end_token]:token_project
        { -> New project( name, paths.paths, Null, logfile, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
    ;
+*/
+
+  architecture {->architecture} =
+       token_architecture [architecture_const]:token_const [architecture_equals]:token_equals [architecture]:identifier
+    { -> New architecture(architecture) };
+
+  logfile {->logfile} =       
+       token_logfile      [logfile_equals]:token_equals      [logfile]:filename
+    { -> New logfile(logfile) };
 
   paths {->paths} =
     {without}
@@ -229,24 +259,14 @@ Productions
     { -> New paths(peano_kernel_path, peano_toolbox_path, exahype_path, output_directory) }
    ;
 
-	master_worker_communication {->token_on_off} = 
-  	   token_master_worker_communication token_equals [state]:token_on_off
-  	{ -> state };
-  	
-  	neighbour_communication {->token_on_off} = 
-  	   token_neighbour_communication token_equals [state]:token_on_off
-  	{ -> state };
-
   distributed_memory {->distributed_memory} =
    [begin_token]:token_distributed_memory
      token_identifier   [identifier_equals]:token_equals [identifier]:identifier
      token_configure    [configure_equals]:token_equals  [configure]:configure_type
      token_buffer_size  [buffersize_equals]:token_equals [buffersize]:int_number
      token_timeout      [timeout_equals]:token_equals    [timeout]:int_number
-     master_worker_communication? 
-     neighbour_communication?    
    token_end [end_token]:token_distributed_memory
-     { -> New distributed_memory( identifier,configure,buffersize,timeout,master_worker_communication.token_on_off,neighbour_communication.token_on_off ) };
+     { -> New distributed_memory( identifier,configure,buffersize,timeout ) };
 
   shared_memory {->shared_memory} =
    [begin_token]:token_shared_memory
@@ -258,35 +278,59 @@ Productions
      { -> New shared_memory( identifier,cores,properties_file ) };
 
   computational_domain {->computational_domain} =
-    {two_dimensional}
+    {two_dimensional_with_end_time}
      [begin_token]:token_computational_domain
       token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
       token_width                   [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number
       token_offset                  [offset_equals]:token_equals             [offset_x]:float_number [offset_comma_xy]:token_comma [offset_y]:float_number
       token_end_time                [end_time_equals]:token_equals           [end_time]:float_number
      token_end [end_token]:token_computational_domain
-      { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, end_time ) }
+      { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, end_time, Null ) }
       |
-    {three_dimensional}
+    {three_dimensional_with_end_time}
      [begin_token]:token_computational_domain
       token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
       token_width              [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number [width_comma_yz]:token_comma [width_z]:float_number
       token_offset             [offset_equals]:token_equals             [offset_x]:float_number  [offset_comma_xy]:token_comma [offset_y]:float_number [offset_comma_yz]:token_comma [offset_z]:float_number
       token_end_time           [end_time_equals]:token_equals           [end_time]:float_number
      token_end [end_token]:token_computational_domain
-      { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, end_time ) };
+      { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, end_time, Null ) }
+      |
+    {two_dimensional_with_time_steps}
+     [begin_token]:token_computational_domain
+      token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
+      token_width                   [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number
+      token_offset                  [offset_equals]:token_equals             [offset_x]:float_number [offset_comma_xy]:token_comma [offset_y]:float_number
+      token_time_steps              [end_time_equals]:token_equals           [end_time]:int_number
+     token_end [end_token]:token_computational_domain
+      { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, Null,  end_time ) }
+      |
+    {three_dimensional_with_time_steps}
+     [begin_token]:token_computational_domain
+      token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
+      token_width              [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number [width_comma_yz]:token_comma [width_z]:float_number
+      token_offset             [offset_equals]:token_equals             [offset_x]:float_number  [offset_comma_xy]:token_comma [offset_y]:float_number [offset_comma_yz]:token_comma [offset_z]:float_number
+      token_time_steps         [end_time_equals]:token_equals           [end_time]:int_number
+     token_end [end_token]:token_computational_domain
+      { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, Null, end_time ) }
+      ;
+
+
+
 
   optimisation {->optimisation} =
      [begin_token]:token_optimisation
        token_fuse_algorithm_steps        [token_fuse_algorithm_steps_equals]:token_equals        [fuse_algorithm_steps]:token_on_off
        token_fuse_algorithm_steps_factor [token_fuse_algorithm_steps_factor_equals]:token_equals [fuse_algorithm_steps_factor]:float_number
+       token_spawn_predictor             [token_spawn_predictor_equals]:token_equals             [spawn_predictor]:token_on_off
+       token_spawn_amr                   [token_spawn_amr_equals]:token_equals                   [spawn_amr]:token_on_off
+       token_disable_vertex              [token_disable_vertex_equals]:token_equals              [disable_vertex]:token_on_off
        token_batch_timesteps             [token_batch_timesteps_equals]:token_equals             [batch_timesteps]:float_number 
-       token_skip_reduction              [token_skip_reduction_equals]:token_equals              [skip_reduction]:token_on_off
-       token_disable_amr                 [token_disable_amr_equals]:token_equals                 [disable_amr]:token_on_off
+       token_disable_metadata            [token_disable_metadata_equals]:token_equals            [disable_metadata]:token_on_off
        token_double_compression          [token_double_compression_equals]:token_equals          [double_compression]:float_number
-       token_spawn_double_compression    [token_spawn_double_compression_equals]:token_equals    [spawn_double_compression]:token_on_off
+       token_spawn_double_compression    [token_spawn_double_compression_equals]:token_equals    [spawn_double_compression]:token_on_off 
      token_end [end_token]:token_optimisation
-       { -> New optimisation(fuse_algorithm_steps, fuse_algorithm_steps_factor,batch_timesteps,skip_reduction,disable_amr,double_compression,spawn_double_compression) }
+       { -> New optimisation(fuse_algorithm_steps, fuse_algorithm_steps_factor, spawn_predictor, spawn_amr, disable_vertex, batch_timesteps, disable_metadata, double_compression, spawn_double_compression) }
      ;
 
   profiling_deep_profiling {->token_on_off} =
@@ -399,7 +443,7 @@ Productions
         token_kernel_limiter_type        [kernel_limiter_type_const]:token_const       [kernel_limiter_type_equals]:token_equals              [kernel_limiter_type]:ids
 		token_kernel_limiter_opt         [kernel_limiter_opt_const]:token_const        [kernel_limiter_opt_equals]:token_equals               [kernel_limiter_opt]:ids
         token_language_limiter           [language_limiter_const]:token_const  [language_limiter_equals]:token_equals         [language_limiter]:identifier
-        token_dmp_observables                                                  [dmp_observables_equals]:token_equals          [dmp_observables]:int_number
+        token_dmp_observables            [kernel_limiter_obs_const]:token_const        [dmp_observables_equals]:token_equals          [dmp_observables]:int_number
         token_dmp_relaxation_parameter                                         [dmp_relaxation_parameter_equals]:token_equals [dmp_relaxation_parameter]:float_number
         token_dmp_difference_scaling                                           [dmp_difference_scaling_equals]:token_equals   [dmp_difference_scaling]:float_number
         steps_till_cured?
@@ -563,8 +607,8 @@ Abstract Syntax Tree
   project =
     [name]:identifier
     paths
-    [architecture]:identifier?
-    [log_file]:filename?
+    architecture?
+    logfile?
     computational_domain
     shared_memory?
     distributed_memory?
@@ -572,6 +616,10 @@ Abstract Syntax Tree
     profiling?
     solver*
     ;
+    
+  logfile = filename;
+  
+  architecture = identifier;
 
   paths =
     [peano_kernel_path]:filename [peano_toolbox_path]:filename? [exahype_path]:filename [output_directory]:filename;
@@ -583,19 +631,19 @@ Abstract Syntax Tree
     [identifier]:identifier
     [configure]:configure_type
     [buffersize]:int_number
-    [timeout]:int_number
-    [master_worker_communication]:token_on_off?
-    [neighbour_communication]:token_on_off?;
+    [timeout]:int_number;
 
   computational_domain =
-    [dimension]:int_number [width_x]:float_number [width_y]:float_number [width_z]:float_number? [offset_x]:float_number [offset_y]:float_number [offset_z]:float_number? [end_time]:float_number;
+    [dimension]:int_number [width_x]:float_number [width_y]:float_number [width_z]:float_number? [offset_x]:float_number [offset_y]:float_number [offset_z]:float_number? [end_time]:float_number?  [time_steps]:int_number?;
 
   optimisation =
     [fuse_algorithm_steps]:token_on_off 
     [fuse_algorithm_steps_factor]:float_number
+    [spawn_predictor]:token_on_off
+    [spawn_amr]:token_on_off
+    [disable_vertex]:token_on_off
     [batch_timesteps]:float_number 
-    [skip_reduction]:token_on_off
-    [disable_amr]:token_on_off
+    [disable_metadata]:token_on_off
     [double_compression]:float_number
     [spawn_double_compression]:token_on_off
     ;
@@ -643,6 +691,7 @@ Abstract Syntax Tree
       {int}        [name]:identifier [value]:int_number
     | {float}      [name]:identifier [value]:float_number
     | {file}       [name]:identifier [value]:filename
+    | {boolean}    [name]:identifier [value]:token_on_off
     | {type}       [name]:identifier [value]:typename
     | {identifier} [name]:identifier [value]:identifier
     ;

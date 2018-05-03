@@ -18,7 +18,7 @@ namespace {{Project}}{
 
 class {{Project}}::{{Solver}}: public exahype::solvers::ADERDGSolver {
   public:
-  	{{Solver}}(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeSteppingexahype::solvers::Solver::TimeStepping timeStepping, std::vector<std::string>& cmdlineargs{{SolverConstructorSignatureExtension}}):
+  	{{Solver}}(double maximumMeshSize, exahype::solvers::Solver::TimeStepping timeSteppingexahype::solvers::Solver::TimeStepping timeStepping{{SolverConstructorSignatureExtension}}):
 
     void spaceTimePredictor(double* lQhbnd,double* lFhbnd, double** tempSpaceTimeUnknowns, double** tempSpaceTimeFluxUnknowns, double* tempUnknowns, double* tempFluxUnknowns, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx, const double dt) override; 
     void solutionUpdate(double* luh, const double* const lduh, const double dt) override;

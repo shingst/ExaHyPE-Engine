@@ -23,21 +23,7 @@
 
 #include <limits>
 
-bool exahype::State::FuseADERDGPhases           = false;
-double exahype::State::WeightForPredictionRerun = 0.99;
-
 bool exahype::State::VirtuallyExpandBoundingBox = false;
-
-bool exahype::State::EnableMasterWorkerCommunication = true;
-bool exahype::State::EnableNeighbourCommunication    = true;
-
-bool exahype::State::fuseADERDGPhases() {
-  return FuseADERDGPhases;
-}
-
-double exahype::State::getTimeStepSizeWeightForPredictionRerun() {
-  return WeightForPredictionRerun;
-}
 
 bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
   return getBatchState()==BatchState::FirstIterationOfBatch ||
@@ -59,8 +45,18 @@ exahype::State::State(const Base::PersistentState& argument) : Base(argument) {
   // do nothing
 }
 
+void exahype::State::setVerticalExchangeOfSolverDataRequired(bool state) {
+  _stateData.setVerticalExchangeOfSolverDataRequired(state);
+}
+
+bool exahype::State::getVerticalExchangeOfSolverDataRequired() const {
+  return _stateData.getVerticalExchangeOfSolverDataRequired();
+}
+
 void exahype::State::merge(const exahype::State& anotherState) {
-  // do nothing
+  setVerticalExchangeOfSolverDataRequired(
+      getVerticalExchangeOfSolverDataRequired() ||
+      anotherState.getVerticalExchangeOfSolverDataRequired());
 }
 
 void exahype::State::writeToCheckpoint(

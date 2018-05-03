@@ -1,0 +1,28 @@
+#!/bin/bash
+# Mandatory parameters are:
+# time, ranks, nodes,
+# job_name, output_file, error_file, 
+# body
+# 
+# Optional parameters are:
+# tasks, cores, mail
+
+#SBATCH --job-name={{job_name}}
+#SBATCH -o {{output_file}}
+#SBATCH -e {{error_file}}
+#SBATCH -t {{time}}
+#SBATCH --exclusive
+#SBATCH --cluster=mpp3
+#SBATCH --partition=mpp3_batch
+#SBATCH --ntasks={{ranks}}
+#SBATCH --nodes={{nodes}}
+#SBATCH --cpus-per-task={{cores}}
+#SBATCH --mail-user={{mail}}
+#SBATCH --mail-type=END
+
+source /etc/profile.d/modules.sh
+
+module load tbb/2017
+module load likwid/4.0
+
+{{body}}

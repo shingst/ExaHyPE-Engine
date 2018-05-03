@@ -1,6 +1,7 @@
 #include "mpibalancing/FairNodePoolStrategy.h"
 #include "tarch/parallel/Node.h"
 #include "tarch/compiler/CompilerSpecificSettings.h"
+#include "peano/utils/PeanoOptimisations.h"
 
 
 #include <cstdlib>
@@ -50,7 +51,7 @@ void mpibalancing::FairNodePoolStrategy::fillWorkerRequestQueue(RequestQueue& qu
   while ( continueToWait ) {
     while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
       tarch::parallel::messages::WorkerRequestMessage message;
-      message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+      message.receive(MPI_ANY_SOURCE,_tag, true, tarch::parallel::messages::WorkerRequestMessage::ExchangeMode::Blocking);
       queue.push_back( message );
     }
 

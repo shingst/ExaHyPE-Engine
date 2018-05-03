@@ -8,7 +8,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "exahype/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 
 #include <ostream>
@@ -33,14 +33,14 @@ class CA::CellularAutomata_FV : public CA::AbstractCellularAutomata_FV {
      */
     static tarch::logging::Log _log;
   public:
-    CellularAutomata_FV(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    CellularAutomata_FV(double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
      *
      * \param[in] cmdlineargs the command line arguments.
      */
-    void init(std::vector<std::string>& cmdlineargs);
+    void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
 
     /**
      * @see FiniteVolumesSolver

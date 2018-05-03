@@ -6,26 +6,31 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 
+import eu.exahype.kernel.ADERDGKernel;
+
 public class CodeGeneratorHelper {
   
   //configuration parameters
   //------------------------
   private static String OPT_KERNELS_PATH_PREFIX = "kernels";                 //Desired relative path to the generated code, starts from application root
-  private static String CODEGENERATOR_PATH      = "CodeGenerator/Driver.py"; //Relative path to the CodeGenerator, starts from exahype root (ExaHyPE-Engine)
+  private static String CODEGENERATOR_PATH      = "CodeGenerator/main.py";   //Relative path to the CodeGenerator, starts from exahype root (ExaHyPE-Engine)
   private static String defineNamespace(String projectName, String solverName) {return projectName+"::"+solverName+"_kernels::aderdg";}  //build the generated code's namespace
   
   //options flags
   private static String useFluxOptionFlag            = "--useFlux";
   private static String useNCPOptionFlag             = "--useNCP";
   private static String useSourceOptionFlag          = "--useSource";
+  private static String useMaterialParamOptionFlag   = "--useMaterialParam";
   private static String usePointSourcesOptionFlag    = "--usePointSources";
+  private static String useLimiterOptionFlag         = "--useLimiter";
+  private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
   private static String enableDeepProfilerOptionFlag = "--enableDeepProfiler";
   
   
   //Internal states
   //---------------
-  private Collection<String> _optKernelsPaths;      //stores the paths to the generated code (used for imports in the KernelRegistration and in the Makefile)
+  private Map<String,String> _optKernelsPaths;      //stores the paths to the generated code (used for imports in the KernelRegistration and in the Makefile)
   private Map<String,String> _optKernelsNamespaces; //stores the namespace used. The specific namespace depend on the solvername (assume projectname is constant)
   private String _pathToApplication = null;
   
@@ -35,7 +40,7 @@ public class CodeGeneratorHelper {
   private static volatile CodeGeneratorHelper instance = null;
 
   private CodeGeneratorHelper() {
-    _optKernelsPaths = new HashSet<String>();
+    _optKernelsPaths = new HashMap<String,String>();
     _optKernelsNamespaces = new HashMap<String,String>();
   }
 
@@ -50,6 +55,11 @@ public class CodeGeneratorHelper {
       return instance;
   }
   
+  // shortcut method to build a unique key out of projectname + solver name
+  private static String getKey(String projectName, String solverName) {
+    return projectName + "::" + solverName;
+  }
+  
   
   //Setter
   //------
@@ -60,12 +70,17 @@ public class CodeGeneratorHelper {
   
   //Getter
   //------
+  
+  public String getIncludePath(String projectName, String solverName) {
+    return _optKernelsPaths.get(getKey(projectName,solverName));
+  }
+  
   public Collection<String> getIncludePaths() {
-    return _optKernelsPaths;
+    return _optKernelsPaths.values();
   }
   
   public String getNamespace(String projectName, String solverName) {
-    return _optKernelsNamespaces.get(projectName+"::"+solverName);
+    return _optKernelsNamespaces.get(getKey(projectName,solverName));
   }
   
   public Collection<String> getNamespaces() {
@@ -75,8 +90,7 @@ public class CodeGeneratorHelper {
   
   //Generate code
   //-------------
-  public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order,
-      boolean isLinear, int dimensions, String microarchitecture, boolean enableDeepProfiler, boolean useFlux, boolean useSource, boolean useNCP, int nPointSources, boolean noTimeAveraging)
+  public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order, int dimensions, String microarchitecture, boolean enableDeepProfiler, ADERDGKernel kernel)
       throws IOException {
     
     //check and defines paths       
@@ -96,14 +110,23 @@ public class CodeGeneratorHelper {
     
     //define the CodeGenerator arguments
     String namespace = defineNamespace(projectName, solverName);    
-    String numericsParameter = isLinear ? "linear" : "nonlinear";
-    String options = (enableDeepProfiler ? enableDeepProfiler+" " : "") + (useFlux ? useFluxOptionFlag+" " : "") + (useSource ? useSourceOptionFlag+" " : "") + (useNCP ?  useNCPOptionFlag+" " : "") + (nPointSources>=0 ?  usePointSourcesOptionFlag+" "+nPointSources+" " : "") + (noTimeAveraging ? noTimeAveragingOptionFlag+" " : "");
+    String numericsParameter = kernel.isLinear() ? "linear" : "nonlinear";
+    String options =  (enableDeepProfiler ? enableDeepProfiler+" " : "") 
+                    + (kernel.useFlux() ? useFluxOptionFlag+" " : "") 
+                    + (kernel.useSource() ? useSourceOptionFlag+" " : "") 
+                    + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
+                    + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
+                    + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
+                    + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
+                    + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")
+                    + (kernel.useLimiter() ?  ghostLayerWidthOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "")
+                    ;
 
     // set up the command to execute the code generator
     String args =   " " + _pathToApplication 
                   + " " + optKernelPath 
                   + " " + namespace
-                  + " " + projectName + "::" + solverName 
+                  + " " + projectName + "::" + solverName
                   + " " + numberOfUnknowns 
                   + " " + numberOfParameters 
                   + " " + order 
@@ -147,8 +170,8 @@ public class CodeGeneratorHelper {
         throw new IOException();
     }
     
-    _optKernelsPaths.add(optKernelPath);
-    _optKernelsNamespaces.put(projectName+"::"+solverName, namespace);
+    _optKernelsPaths.put(getKey(projectName,solverName),optKernelPath);
+    _optKernelsNamespaces.put(getKey(projectName,solverName), namespace);
     
     return optKernelPath;
     

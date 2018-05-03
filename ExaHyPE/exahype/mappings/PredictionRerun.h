@@ -25,7 +25,6 @@
 
 #include "tarch/multicore/BooleanSemaphore.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 #include "exahype/Cell.h"
 #include "exahype/State.h"
@@ -55,23 +54,6 @@ private:
    */
   static tarch::logging::Log _log;
 
-  /**
-   * Local copy of the state which
-   * is used to determine if a solver
-   * is active in the current algorithm section.
-   * (See exahype::runners::Runner for locations
-   * where the algorithm section is set. The new
-   * state is then broadcasted by Peano to all other ranks.)
-   */
-   exahype::State _localState;
-
-   /**
-    * Temporary variables for every registered
-    * ADERDGSolver and LimitingADERDGSolver which are required for performing
-    * the prediction.
-    */
-   exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
-
  public:
   /**
    * Level for which we ask what to do. This value is negative
@@ -90,7 +72,8 @@ private:
   peano::MappingSpecification descendSpecification(int level) const;
 
   /**
-   * Please consult the specification's documentation in NewTimeStep.
+   * Broadcast global solver data such as time step sizes at the beginning of the traversal.
+   * Do not reduce anything.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
@@ -119,14 +102,17 @@ private:
   #endif
 
   /**
-   * Copy the state.
-   * Further initialise temporary variables
-   * if they are not initialised yet (or
-   * if a new solver was introuced to the grid.
-   * This is why we put the initialisation
-   * in beginIteration().
+   * Ensure all background jobs have terminated.
    */
   void beginIteration(exahype::State& solverState);
+
+  /**
+   * <h2>Background Jobs</h2>
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
+   */
+  void endIteration(exahype::State& solverState);
 
   /**
    * \copydoc exahype::mappings::Prediction::enterCell
@@ -384,11 +370,6 @@ private:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Nop
-   */
-  void endIteration(exahype::State& solverState);
 
   /**
    * Nop

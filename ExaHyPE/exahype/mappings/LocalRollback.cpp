@@ -38,7 +38,7 @@ peano::MappingSpecification
 exahype::mappings::LocalRollback::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 /*
@@ -55,7 +55,7 @@ peano::MappingSpecification
 exahype::mappings::LocalRollback::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
@@ -69,18 +69,20 @@ peano::MappingSpecification
 exahype::mappings::LocalRollback::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::LocalRollback::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::LocalRollback::_log(
     "exahype::mappings::LocalRollback");
+
+bool exahype::mappings::LocalRollback::OneSolverRequestedLocalRecomputation = false;
 
 exahype::mappings::LocalRollback::LocalRollback() {
   // do nothing
@@ -99,7 +101,8 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  OneSolverRequestedLocalRecomputation =
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
@@ -113,20 +116,22 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
 
 void exahype::mappings::LocalRollback::endIteration(
     exahype::State& solverState) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (
-        performLocalRecomputation(solver) &&
-        exahype::State::fuseADERDGPhases()==true
-    ) {
-      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->rollbackToPreviousTimeStepFused();
-    } else if (
-        performLocalRecomputation(solver) &&
-        exahype::State::fuseADERDGPhases()==false
-    ) {
-      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->rollbackToPreviousTimeStep();
+  if ( OneSolverRequestedLocalRecomputation ) {
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      if (
+          performLocalRecomputation(solver) &&
+          exahype::solvers::Solver::FuseADERDGPhases==true
+      ) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDGSolver->rollbackToPreviousTimeStepFused();
+      } else if (
+          performLocalRecomputation(solver) &&
+          exahype::solvers::Solver::FuseADERDGPhases==false
+      ) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDGSolver->rollbackToPreviousTimeStep();
+      }
     }
   }
 }
@@ -142,27 +147,28 @@ void exahype::mappings::LocalRollback::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if (fineGridCell.isInitialised()) {
+  if (
+      OneSolverRequestedLocalRecomputation &&
+      fineGridCell.isInitialised()
+  ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined10);
-    pfor(i, 0, numberOfSolvers, grainSize.getGrainSize())
-      auto solver = exahype::solvers::RegisteredSolvers[i];
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+      auto solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),i);
+      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-          if (exahype::State::fuseADERDGPhases()) {
+          if (exahype::solvers::Solver::FuseADERDGPhases) {
             limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
           } else {
             limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
           }
-          limitingADERDGSolver->reinitialiseSolversLocally(fineGridCell.getCellDescriptionsIndex(),element);
+          limitingADERDGSolver->rollbackSolutionLocally(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
 
     // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)
@@ -180,7 +186,10 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  if (vertex.hasToCommunicate(h)) {
+  if (
+      OneSolverRequestedLocalRecomputation &&
+      vertex.hasToCommunicate(h)
+  ) {
     dfor2(dest)
       dfor2(src)
         if (vertex.hasToSendMetadata(toRank,src,dest)) {

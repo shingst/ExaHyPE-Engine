@@ -1,0 +1,28 @@
+
+# playback what happens in my exahype setup
+
+# Problem tested here: An situation A/B = B.
+
+# in the include
+
+Solver::constants = Parameters
+Solver::parameters = Parameters
+ExaHyPE::solvers += Solver
+
+# lateron
+
+Solver = FVSolver
+
+# and then
+
+FVSolver/a = 10
+#FVSolver/b = 15
+
+# but finally
+
+Simulation/s1 = 10
+#Simulation/s2 = 15
+
+Parameters::Boundaries = Simulation/s1
+#Parameters::idfunc = Simulation/s2
+Parameters::shocktube = Simulation

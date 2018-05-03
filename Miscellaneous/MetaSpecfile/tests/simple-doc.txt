@@ -1,0 +1,27 @@
+# The example from doc/MEXALANG.md written as
+# Level 3 mexa file.
+
+name = "AdvectionTest"  # this is the name of the simulation
+
+domain/size/width = 10
+domain/size/height = 10
+
+di/min = 1e-3
+di/max = 0.5
+
+grid/dx = di
+grid/dy = di
+
+e = "exact"
+bc/left = e
+bc/right = e
+bc/top = e
+bc/bottom = e
+
+id/name = "BlackHole"
+bhcode/pos = (0, 0)
+bhcode/M = 1.0
+bhcode/a = 0.9
+
+initial_data = id
+boundary_conditions = bc

@@ -41,7 +41,7 @@ exahype-project Trivial
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:1}
+    configure                = {hotspot,fair,ranks-per-node:1}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
@@ -49,9 +49,11 @@ exahype-project Trivial
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    timestep-batch-factor           = 0.0
-    skip-reduction-in-batched-time-steps = on
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = on
   end global-optimisation

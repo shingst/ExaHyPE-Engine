@@ -28,9 +28,10 @@ namespace exahype {
 namespace solvers {
 class FiniteVolumesSolver;
 }  // namespace solvers
+namespace parser {
+class ParserView;
+}  // namespace parser
 }  // namespace exahype
-
-
 
 /**
  * Abstract base class for one-step Finite Volumes solvers.
@@ -51,6 +52,13 @@ public:
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
 private:
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  DataHeap::HeapEntries _invalidExtrapolatedSolution;
+
   /**
    * Log device.
    */
@@ -98,6 +106,20 @@ private:
    */
   void synchroniseTimeStepping(CellDescription& cellDescription) const;
 
+  /**
+   * Simply adjust the solution if necessary. Do not modify the time step
+   * data or anything else.
+   */
+  void adjustSolution(CellDescription& cellDescription);
+
+  /**
+   * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
+   */
+  void adjustSolutionDuringMeshRefinementBody(
+      const int  cellDescriptionsIndex,
+      const int  element,
+      const bool isInitialMeshRefinement) final override;
+
 #ifdef Parallel
   /**
    * Data messages per neighbour communication.
@@ -144,7 +166,13 @@ private:
       const int coarseGridCellDescriptionsIndex,
       const int solverNumber);
 
-  void compress(CellDescription& cellDescription);
+  /**
+   * There are no prolongations and restrictions
+   * for the Finite Volums Solver in ExaHyPE
+   */
+  void compress(
+      CellDescription& cellDescription,
+      const bool isAtRemoteBoundary) const;
   /**
    * \copydoc ADERDGSolver::computeHierarchicalTransform()
    *
@@ -167,15 +195,42 @@ private:
 
   class CompressionTask {
     private:
-      FiniteVolumesSolver&                             _solver;
+      const FiniteVolumesSolver&                       _solver;
       exahype::records::FiniteVolumesCellDescription&  _cellDescription;
+      int&                                             _jobCounter;
     public:
       CompressionTask(
-        FiniteVolumesSolver&                             _solver,
-        exahype::records::FiniteVolumesCellDescription&  _cellDescription
-      );
+        const FiniteVolumesSolver&                      solver,
+        exahype::records::FiniteVolumesCellDescription& cellDescription,
+        int&                                            jobCounter);
 
-      void operator()();
+      bool operator()();
+  };
+
+  /**
+   * A job which performs the Finite Volumes solution update
+   * and further updates the local time stamp associated with
+   * the FV cell description.
+   *
+   * \note Spawning these operations as background job makes only sense if you
+   * do not plan to reduce the admissible time step size or refinement requests
+   * within a consequent reduction step.
+   */
+  class FusedTimeStepJob {
+  private:
+    FiniteVolumesSolver&  _solver;
+    const int             _cellDescriptionsIndex;
+    const int             _element;
+    int&                  _jobCounter;
+  public:
+    FusedTimeStepJob(
+        FiniteVolumesSolver& solver,
+        const int            cellDescriptionsIndex,
+        const int            element,
+        int&                 jobCounter
+    );
+
+    bool operator()();
   };
 
 public:
@@ -254,7 +309,6 @@ public:
    * \brief Returns a stable time step size.
    *
    * \param[in] luh             Cell-local solution DoF.
-   * \param[in] tempEigenvalues A temporary array of size equalling the number of variables.
    * \param[in] cellSize        Extent of the cell in each coordinate direction.
    */
   virtual double stableTimeStepSize(
@@ -318,22 +372,22 @@ public:
   /**
    * Return the state variables at the boundary.
    *
-   * @param[inout] stateOut
-   * @param[in]    stateIn
-   * @param[in]    cellCentre    Cell centre.
-   * @param[in]    cellSize      Cell size.
+   * @param[inout] luh           the solution patch
+   * @param[in]    cellCentre    cell centre.
+   * @param[in]    cellSize      cell size.
    * @param[in]    t             The time.
    * @param[in]    dt            A time step size.
    * @param[in]    normalNonZero Index of the nonzero normal vector component,
    *i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
-  virtual void boundaryConditions(double* stateOut,
-      const double* const stateIn,
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+  virtual void boundaryConditions(
+      double* luh,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const double t,const double dt,
-      const int faceIndex,
-      const int normalNonZero) = 0;
+      const tarch::la::Vector<DIMENSIONS, int>& posCell,
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
+
 
   /**
    * Compute the Riemann problem.
@@ -363,7 +417,6 @@ public:
    * \note Use this function and ::useAdjustSolution to set initial conditions.
    *
    * \param[in]    x         the physical coordinate on the face.
-   * \param[in]    w         (deprecated) the quadrature weight corresponding to the quadrature point w.
    * \param[in]    t         the start of the time interval.
    * \param[in]    dt        the width of the time interval.
    * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
@@ -441,7 +494,6 @@ public:
 
   virtual int getTempUnknownsSize()              const {return getDataPerPatch();} // TODO function should be renamed
   virtual int getBndFaceSize()                   const {return getDataPerPatchFace();} // TODO function should be renamed
-  virtual int getTempStateSizedVectorsSize()     const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints // TODO function should be renamed
 
   /**
    * Run over all solvers and identify the minimal time step size.
@@ -450,18 +502,29 @@ public:
 
   void updateMinNextTimeStepSize( double value ) override;
 
+  /**
+    * User defined solver initialisation.
+    *
+    * \param[in] cmdlineargs the command line arguments.
+    */
+  virtual void init(
+        const std::vector<std::string>& cmdlineargs,
+        const exahype::parser::ParserView& constants) = 0;
+
   void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parserView) override;
 
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,
-          const int element) override;
+          const int element) const override;
 
   void startNewTimeStep() override;
 
@@ -494,10 +557,6 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  SubcellPosition computeSubcellPositionOfCellOrAncestor(
-        const int cellDescriptionsIndex,
-        const int element) const override;
-
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
@@ -528,8 +587,7 @@ public:
    */
   void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
-
-  bool markForRefinement(
+  bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -540,7 +598,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  UpdateStateInEnterCellResult updateStateInEnterCell(
+  bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -548,18 +606,12 @@ public:
       exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
       const int solverNumber) override;
 
-  bool updateStateInLeaveCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+      const int& cellDescriptionsIndex,
+      const int& solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -619,25 +671,38 @@ public:
         const int cellDescriptionsIndex,
         const int element) const final override;
 
-  void adjustSolution(
-      const int cellDescriptionsIndex,
-      const int element) final override;
-
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double** tempPointForceSources) final override;
+      const bool isAtRemoteBoundary) final override;
 
+  UpdateResult update(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isAtRemoteBoundary) final override;
+
+  void compress(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isAtRemoteBoundary) const final override;
+
+  /**
+   * Update the solution of a cell description.
+   *
+   * \note Make sure to reset neighbour merge
+   * helper variables in this method call.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   *
+   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
+   *                                   we overwrite it by the updated solution.
+   */
   void updateSolution(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) final override;
+      const bool backupPreviousSolution);
 
   /**
    * TODO(Dominic): Update docu.
@@ -656,31 +721,13 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void preProcess(
-      const int cellDescriptionsIndex,
-      const int element) const override;
-
-  void postProcess(
+  void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void prolongateDataAndPrepareDataRestriction(
-      const int cellDescriptionsIndex,
-      const int element) override;
-
-  void restrictToNextParent(
-        const int fineGridCellDescriptionsIndex,
-        const int fineGridElement,
-        const int coarseGridCellDescriptionsIndex,
-        const int coarseGridElement) const override;
-
-  void restrictToTopMostParent(
-      const int cellDescriptionsIndex,
-      const int element,
-      const int parentCellDescriptionsIndex,
-      const int parentElement,
-      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
-
+  void restriction(
+        const int cellDescriptionsIndex,
+        const int element) override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -699,20 +746,18 @@ public:
       const int                                 cellDescriptionsIndex2,
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      double**                                  tempFaceUnknowns) override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2) override;
 
   void mergeWithBoundaryData(
       const int                                 cellDescriptionsIndex,
       const int                                 element,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-      double**                                  tempFaceUnknowns) override;
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 #ifdef Parallel
   ///////////////////////////////////
   // MASTER<=>WORKER
   ///////////////////////////////////
-  void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) override;
 
@@ -730,7 +775,7 @@ public:
       const int                        cellDescriptionsIndex,
       const int                        element) override;
 
-  void mergeWithWorkerMetadata(
+  bool mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) override;
@@ -827,12 +872,10 @@ public:
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
-      const MetadataHeap::HeapEntries&             neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 

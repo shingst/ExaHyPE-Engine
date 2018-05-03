@@ -15,7 +15,7 @@
 tarch::logging::Log Elastodynamics::MyElastodynamicsSolver::_log( "Elastodynamics::MyElastodynamicsSolver" );
 
 
-void Elastodynamics::MyElastodynamicsSolver::init(std::vector<std::string>& cmdlineargs) {
+void Elastodynamics::MyElastodynamicsSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
    static tarch::logging::Log _log("MyElastodynamicsSolver::init");
   // @todo Please implement/augment if required
 }

@@ -18,6 +18,7 @@
 #include "exahype/Cell.h"
 
 #include "tarch/multicore/Lock.h"
+#include "tarch/la/Scalar.h"
 
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
@@ -26,6 +27,7 @@
 #include <mm_malloc.h> //g++
 #include <cstring> //memset
 
+#include "../../../Peano/tarch/multicore/Jobs.h"
 #include "LimitingADERDGSolver.h"
 #include "ADERDGSolver.h"
 #include "FiniteVolumesSolver.h"
@@ -36,7 +38,7 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
-tarch::multicore::BooleanSemaphore exahype::BackgroundThreadSemaphore;
+tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
 
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
@@ -62,38 +64,7 @@ double exahype::solvers::Solver::PipedUncompressedBytes = 0;
 double exahype::solvers::Solver::PipedCompressedBytes = 0;
 #endif
 
-
-const int exahype::solvers::Solver::NotFound = -1;
-
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
-
-void exahype::solvers::initialiseSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  assertion(solverFlags._limiterDomainChange==nullptr);
-  assertion(solverFlags._meshUpdateRequest  ==nullptr);
-
-  int numberOfSolvers    = exahype::solvers::RegisteredSolvers.size();
-  solverFlags._limiterDomainChange = new LimiterDomainChange[numberOfSolvers];
-  solverFlags._meshUpdateRequest   = new bool               [numberOfSolvers];
-}
-
-void exahype::solvers::prepareSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    solverFlags._limiterDomainChange[solverNumber] = LimiterDomainChange::Regular;
-    solverFlags._meshUpdateRequest[solverNumber]   = false;
-  }
-}
-
-void exahype::solvers::deleteSolverFlags(exahype::solvers::SolverFlags& solverFlags) {
-  if (solverFlags._limiterDomainChange!=nullptr) {
-    assertion(solverFlags._limiterDomainChange!=nullptr);
-    assertion(solverFlags._meshUpdateRequest  !=nullptr);
-
-    delete[] solverFlags._limiterDomainChange;
-    delete[] solverFlags._meshUpdateRequest;
-    solverFlags._limiterDomainChange = nullptr;
-    solverFlags._meshUpdateRequest   = nullptr;
-  }
-}
 
 double exahype::solvers::convertToDouble(const LimiterDomainChange& limiterDomainChange) {
   return static_cast<double>(static_cast<int>(limiterDomainChange));
@@ -105,28 +76,60 @@ exahype::solvers::LimiterDomainChange exahype::solvers::convertToLimiterDomainCh
   return static_cast<LimiterDomainChange>((int) std::round(value));
 }
 
+bool exahype::solvers::Solver::FuseADERDGPhases           = false;
+double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 
+bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
+bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
+bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
-bool exahype::solvers::Solver::SpawnCompressionAsBackgroundThread = false;
+bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
-int                                exahype::solvers::Solver::_NumberOfTriggeredTasks(0);
+int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
+int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
+int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
-void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
+void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+    const int& backgroundJobCounter,std::string counterTag) {
   bool finishedWait = false;
 
-  while (!finishedWait) {
-    tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-    finishedWait = _NumberOfTriggeredTasks == 0;
-    lock.free();
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  int numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
+  lock.free();
+  finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
+  #ifdef Asserts
+  int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+  int reported               = numberOfExaHyPEBackgroundJobs;
+  #endif
+  while (!finishedWait) {
+    #ifdef Asserts
+    if (numberOfExaHyPEBackgroundJobs < reported) {
+      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+          "waiting for roughly "
+          << numberOfBackgroundJobs
+          << " background tasks to complete (counter: "<<counterTag.c_str()<< ") while "
+          << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
+      );
+      reported = numberOfExaHyPEBackgroundJobs;
+    }
+    #endif
+
+    peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+
+    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+    numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
+    lock.free();
+    finishedWait = numberOfExaHyPEBackgroundJobs == 0;
+
+    #ifdef Asserts
+    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
+    #endif
   }
 }
-
-
-
 
 
 exahype::solvers::Solver::Solver(
@@ -149,10 +152,8 @@ exahype::solvers::Solver::Solver(
       _maximumMeshSize(maximumMeshSize),
       _coarsestMeshLevel(3),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
-      _minCellSize(std::numeric_limits<double>::max()),
-      _nextMinCellSize(std::numeric_limits<double>::max()),
-      _maxCellSize(-std::numeric_limits<double>::max()), // "-", min
-      _nextMaxCellSize(-std::numeric_limits<double>::max()), // "-", min
+      _maxLevel(-std::numeric_limits<int>::max()), // "-", min
+      _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)),
       _meshUpdateRequest(false),
@@ -183,7 +184,7 @@ std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::T
 }
 
 void exahype::solvers::Solver::tearApart(
-    int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
+  int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
   char exponent;
   long int mantissa;
   char* pMantissa = reinterpret_cast<char*>( &(mantissa) );
@@ -193,37 +194,56 @@ void exahype::solvers::Solver::tearApart(
   assertion2( static_cast<int>(DataHeap::getInstance().getData(normalHeapIndex).size())==numberOfEntries, DataHeap::getInstance().getData(normalHeapIndex).size(), numberOfEntries );
   assertion( CompressedDataHeap::getInstance().getData(compressedHeapIndex).empty() );
 
-  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).resize(numberOfEntries * (bytesForMantissa+1));
+  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).clear();
 
-  int compressedDataHeapIndex = 0;
   for (int i=0; i<numberOfEntries; i++) {
-    peano::heap::decompose(
-      DataHeap::getInstance().getData( normalHeapIndex )[i],
-      exponent, mantissa, bytesForMantissa
-    );
-    CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = exponent;
-    compressedDataHeapIndex++;
-    for (int j=0; j<bytesForMantissa; j++) {
-      CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u = pMantissa[j];
-      compressedDataHeapIndex++;
-    }
+	if (tarch::la::equals(DataHeap::getInstance().getData( normalHeapIndex )[i],0.0,CompressionAccuracy)) {
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( 0 );
+	}
+	else {
+     peano::heap::decompose(
+	  DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  exponent, mantissa, bytesForMantissa
+		);
+
+		CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( exponent );
+		for (int j=0; j<bytesForMantissa-1; j++) {
+		  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( pMantissa[j] );
+		}
+		// ensure that 0 marker is not misused
+        if (pMantissa[bytesForMantissa-1]==0) {
+  		  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( 1 );
+        }
+        else {
+  		  CompressedDataHeap::getInstance().getData( compressedHeapIndex ).push_back( pMantissa[bytesForMantissa-1] );
+        }
+
+		#ifdef ValidateCompressedVsUncompressedData
+		const double reconstructedValue = peano::heap::compose(
+		  exponent, mantissa, bytesForMantissa
+		);
+		assertion9(
+		  tarch::la::equals( reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
+		  reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  reconstructedValue-DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex,
+		  static_cast<int>(exponent), mantissa
+		);
+		#endif
+	}
   }
 }
 
 
 void exahype::solvers::Solver::glueTogether(
-    int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const {
+  int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa
+) const {
   char exponent  = 0;
   long int mantissa;
   char* pMantissa = reinterpret_cast<char*>( &(mantissa) );
 
   assertion( DataHeap::getInstance().isValidIndex(normalHeapIndex) );
   assertion( CompressedDataHeap::getInstance().isValidIndex(compressedHeapIndex) );
-  assertion5(
-    static_cast<int>(CompressedDataHeap::getInstance().getData(compressedHeapIndex).size())==numberOfEntries * (bytesForMantissa+1),
-    CompressedDataHeap::getInstance().getData(compressedHeapIndex).size(), numberOfEntries * (bytesForMantissa+1),
-    numberOfEntries, compressedHeapIndex, bytesForMantissa
-  );
 
   #ifdef ValidateCompressedVsUncompressedData
   assertion( static_cast<int>(DataHeap::getInstance().getData(normalHeapIndex).size())==numberOfEntries );
@@ -231,27 +251,32 @@ void exahype::solvers::Solver::glueTogether(
   DataHeap::getInstance().getData(normalHeapIndex).resize(numberOfEntries);
   #endif
 
-  int compressedDataHeapIndex = numberOfEntries * (bytesForMantissa+1)-1;
   for (int i=numberOfEntries-1; i>=0; i--) {
-    mantissa = 0;
-    for (int j=bytesForMantissa-1; j>=0; j--) {
-      pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u; // TODO(Dominic):This line fails
-      compressedDataHeapIndex--;
+    const char firstEntry = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+	if (firstEntry==0) {
+      DataHeap::getInstance().getData(normalHeapIndex)[i] = 0.0;
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
+	}
+	else {
+      mantissa = 0;
+      for (int j=bytesForMantissa-1; j>=0; j--) {
+        pMantissa[j] = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+        CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
+      }
+      exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
+      CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
+      double reconstructedValue = peano::heap::compose(
+        exponent, mantissa, bytesForMantissa
+      );
+      #ifdef ValidateCompressedVsUncompressedData
+      assertion7(
+        tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
+        DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, DataHeap::getInstance().getData(normalHeapIndex)[i] - reconstructedValue,
+        CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex
+      );
+      #endif
+      DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
     }
-    exponent = CompressedDataHeap::getInstance().getData( compressedHeapIndex )[compressedDataHeapIndex]._persistentRecords._u;
-    compressedDataHeapIndex--;
-    double reconstructedValue = peano::heap::compose(
-      exponent, mantissa, bytesForMantissa
-    );
-    #ifdef ValidateCompressedVsUncompressedData
-    assertion7(
-      tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, CompressionAccuracy ),
-      DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, DataHeap::getInstance().getData(normalHeapIndex)[i] - reconstructedValue,
-      CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex
-    );
-    #else
-    DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
-    #endif
   }
 }
 
@@ -303,28 +328,16 @@ int exahype::solvers::Solver::getMaximumAdaptiveMeshLevel() const {
   return _coarsestMeshLevel+_maximumAdaptiveMeshDepth;
 }
 
- void exahype::solvers::Solver::updateNextMinCellSize(double minCellSize) {
-  _nextMinCellSize = std::min( _nextMinCellSize, minCellSize );
+ void exahype::solvers::Solver::updateNextMaxLevel(int maxLevel) {
+   _nextMaxLevel = std::max( _nextMaxLevel, maxLevel );
 }
 
- void exahype::solvers::Solver::updateNextMaxCellSize(double maxCellSize) {
-  _nextMaxCellSize = std::max( _nextMaxCellSize, maxCellSize );
+int exahype::solvers::Solver::getNextMaxLevel() const {
+  return _nextMaxLevel;
 }
 
- double exahype::solvers::Solver::getNextMinCellSize() const {
-  return _nextMinCellSize;
-}
-
- double exahype::solvers::Solver::getNextMaxCellSize() const {
-  return _nextMaxCellSize;
-}
-
- double exahype::solvers::Solver::getMinCellSize() const {
-  return _minCellSize;
-}
-
- double exahype::solvers::Solver::getMaxCellSize() const {
-  return _maxCellSize;
+int exahype::solvers::Solver::getMaxLevel() const {
+  return _maxLevel;
 }
 
 void exahype::solvers::Solver::resetMeshUpdateRequestFlags() {
@@ -373,7 +386,7 @@ void exahype::solvers::Solver::moveDataHeapArray(
   DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
 }
 
-double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
+double exahype::solvers::Solver::getMinTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
@@ -381,6 +394,18 @@ double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
         std::min(currentMinTimeStamp, p->getMinTimeStamp());
   }
   return currentMinTimeStamp;
+}
+
+
+double exahype::solvers::Solver::getMaxTimeStampOfAllSolvers() {
+  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+
+  for (const auto& p : exahype::solvers::RegisteredSolvers) {
+    currentMaxTimeStamp =
+        std::max(currentMaxTimeStamp, p->getMinTimeStamp());
+  }
+
+  return currentMaxTimeStamp;
 }
 
 double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
@@ -393,7 +418,7 @@ double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
   return currentMinTimeStamp;
 }
 
-double exahype::solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() {
+double exahype::solvers::Solver::getMinTimeStepSizeOfAllSolvers() {
   double currentMinTimeStepSize = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
@@ -404,18 +429,16 @@ double exahype::solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() {
   return currentMinTimeStepSize;
 }
 
-
-double exahype::solvers::Solver::getMaxSolverTimeStampOfAllSolvers() {
-  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+double exahype::solvers::Solver::getMaxSolverTimeStepSizeOfAllSolvers() {
+  double currentMaxTimeStepSize = -std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    currentMaxTimeStamp =
-        std::max(currentMaxTimeStamp, p->getMinTimeStamp());
+    currentMaxTimeStepSize =
+        std::max(currentMaxTimeStepSize, p->getMinTimeStepSize());
   }
 
-  return currentMaxTimeStamp;
+  return currentMaxTimeStepSize;
 }
-
 
 bool exahype::solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping scheme) {
   bool result = true;
@@ -472,54 +495,61 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
   int maxDepth = 0;
 
   for (auto solver : exahype::solvers::RegisteredSolvers) {
+/*
     assertion1(solver->getMaxCellSize()>0,solver->getMaxCellSize());
     assertion1(solver->getMinCellSize()>0,solver->getMinCellSize());
+*/
 
-    maxDepth =  std::max (
-        maxDepth,
-        tarch::la::round(
-            std::log(solver->getMaxCellSize()/solver->getMinCellSize())/std::log(3)));
+    maxDepth = std::max(
+        maxDepth, solver->getMaxLevel() - solver->getCoarsestMeshLevel()
+    );
   }
 
   assertion1(maxDepth>=0,maxDepth);
   return maxDepth;
 }
 
-bool exahype::solvers::Solver::oneSolverRequestedMeshUpdate() {
+bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
+  bool result = true;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getMeshUpdateRequest()) {
-      return true;
-    }
+    result &= solver->getMaximumAdaptiveMeshDepth()==0;
   }
-  return false;
+  return result;
+}
+
+bool exahype::solvers::Solver::oneSolverRequestedMeshUpdate() {
+  bool result = false;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result |= solver->getMeshUpdateRequest();
+  }
+  return result;
 }
 
 bool exahype::solvers::Solver::oneSolverHasNotAttainedStableState() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (!solver->getAttainedStableState()) {
-      return true;
-    }
+    result |= !solver->getAttainedStableState();
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::Solver::oneSolverViolatedStabilityCondition() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     switch (solver->getType()) {
       case Type::ADERDG:
-        if (static_cast<ADERDGSolver*>(solver)->getStabilityConditionWasViolated())
-          return true;
+        result |= static_cast<ADERDGSolver*>(solver)->getStabilityConditionWasViolated();
         break;
       case Type::LimitingADERDG:
-        if (static_cast<LimitingADERDGSolver*>(solver)->getSolver().get()->
-            getStabilityConditionWasViolated())
-          return true;
+        result |=
+            static_cast<LimitingADERDGSolver*>(solver)->getSolver().get()->
+            getStabilityConditionWasViolated();
         break;
       default:
         break;
     }
   }
-  return false;
+  return result;
 }
 
 
@@ -541,7 +571,7 @@ void exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(
   if (aderdgSolver!=nullptr) {
     const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
 
-    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
     aderdgSolver->updateMinNextPredictorTimeStepSize(
         timeStepSizeWeight * stableTimeStepSize);
     aderdgSolver->setMinPredictorTimeStepSize(
@@ -576,7 +606,7 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
     bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
     aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
 
-    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    const double timeStepSizeWeight = exahype::solvers::Solver::WeightForPredictionRerun;
     if (usedTimeStepSizeWasInstable) {
       aderdgSolver->updateMinNextPredictorTimeStepSize(
           timeStepSizeWeight * stableTimeStepSize);
@@ -590,10 +620,10 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 }
 
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-      const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
-      const std::vector<double>& minCellSizes,
-      const std::vector<double>& maxCellSizes,
+      const std::vector<int>& maxLevels,
+      const std::vector<bool>& meshUpdateRequests,
+      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -604,15 +634,21 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateRequest(solverFlags._meshUpdateRequest[solverNumber]);
+    solver->updateNextMeshUpdateRequest(meshUpdateRequests[solverNumber]);
     solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
     if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->updateNextLimiterDomainChange(solverFlags._limiterDomainChange[solverNumber]);
+      limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
+      if (
+          limitingADERDGSolver->getNextMeshUpdateRequest() &&
+          limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
+      ) {
+        limitingADERDGSolver->updateNextLimiterDomainChange(
+            exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate);
+      }
     }
     // cell sizes (for AMR)
-    solver->updateNextMinCellSize(minCellSizes[solverNumber]);
-    solver->updateNextMaxCellSize(maxCellSizes[solverNumber]);
+    solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
     // time
     assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
@@ -631,8 +667,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         limitingADERDGSolver->setNextLimiterDomainChange();
         assertion(
             limitingADERDGSolver->getLimiterDomainChange()
-            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-            solver->getMeshUpdateRequest());
+            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || solver->getMeshUpdateRequest());
       }
     }
 
@@ -654,6 +689,47 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       solver->startNewTimeStep();
     }
   }
+}
+
+void exahype::solvers::Solver::adjustSolutionDuringMeshRefinement(
+    const int cellDescriptionsIndex,
+    const int element,
+    const bool isInitialMeshRefinement) {
+  if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
+    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescriptionsIndex,element,isInitialMeshRefinement);
+    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+  } else {
+    adjustSolutionDuringMeshRefinementBody(cellDescriptionsIndex,element,isInitialMeshRefinement);
+  }
+}
+
+exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
+  Solver& solver,
+  const int     cellDescriptionsIndex,
+  const int     element,
+  const bool    isInitialMeshRefinement):
+  _solver(solver),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element),
+  _isInitialMeshRefinement(isInitialMeshRefinement)
+{
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
+  lock.free();
+}
+
+bool exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element,_isInitialMeshRefinement);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
+  }
+  lock.free();
+  return false;
 }
 
 std::string exahype::solvers::Solver::toString() const {
@@ -727,7 +803,15 @@ void exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
     const int                                   toRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level) {
-  MetadataHeap::HeapEntries metadata(0);
+   MetadataHeap::HeapEntries metadata(0);
+  #if defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+  // We currently do not send an empty metadata message
+  const unsigned int length =
+      exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
+  metadata.reserve(length);
+  metadata.assign(length, InvalidMetadataEntry);
+  assertion(metadata.size()==length);
+  #endif
 
   MetadataHeap::getInstance().sendData(
       metadata,toRank,x,level,
@@ -823,9 +907,10 @@ int exahype::receiveMasterWorkerCommunicationMetadata(
   assertion(metadata.size()==0 || metadata.size()==length);
   assertion(metadata.capacity()==length);
 
-  if (metadata.size()==0) {
+  if ( metadata.empty() ) {
     metadata.assign(length, InvalidMetadataEntry);
   }
+
   return receivedMetadataIndex;
 }
 

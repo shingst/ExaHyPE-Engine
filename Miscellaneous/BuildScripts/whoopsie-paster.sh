@@ -77,7 +77,9 @@ uploadWith() {
 }
 
 if have curl; then
-	uploadWith 'curl -s -F sprunge=<- http://sprunge.us'
+	# sprunge seems to have stopped working
+	# uploadWith 'curl -s -F sprunge=<- http://sprunge.us'
+	uploadWith 'curl -s -F clbin=<- https://clbin.com'
 elif have nc; then
 	uploadWith 'nc termbin.com 9999'
 else

@@ -13,11 +13,13 @@
  
 #include "exahype/mappings/Prediction.h"
 
+#include "tarch/multicore/Loop.h"
+
 #include "peano/utils/Loop.h"
-#include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/utils/Globals.h"
 
-#include "tarch/multicore/Loop.h"
+#include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -28,13 +30,16 @@
 
 #include "peano/utils/UserInterface.h"
 
-tarch::multicore::BooleanSemaphore exahype::mappings::Prediction::SemaphoreForRestriction;
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
 
 peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can relax?
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
 
@@ -42,39 +47,39 @@ peano::MappingSpecification
 exahype::mappings::Prediction::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::MappingSpecification
 exahype::mappings::Prediction::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 // The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::Prediction::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::Prediction::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
 exahype::mappings::Prediction::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
 exahype::mappings::Prediction::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
-      peano::MappingSpecification::AvoidCoarseGridRaces,true);
+      peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 tarch::logging::Log exahype::mappings::Prediction::_log(
@@ -83,13 +88,12 @@ tarch::logging::Log exahype::mappings::Prediction::_log(
 exahype::mappings::Prediction::Prediction() {}
 
 exahype::mappings::Prediction::~Prediction() {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::Prediction::Prediction(const Prediction& masterThread)
-  : _localState(masterThread._localState) {
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
+exahype::mappings::Prediction::Prediction(const Prediction& masterThread) {
+  // do nothing
 }
 
 void exahype::mappings::Prediction::mergeWithWorkerThread(
@@ -99,21 +103,28 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-  _localState = solverState;
+  logTraceInWith1Argument("endIteration(State)", state);
 
-  exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
+  #ifdef USE_ITAC
+  VT_traceon();
+  #endif
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
+  logTraceInWith1Argument("endIteration(State)", state);
+
+  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
-void exahype::mappings::Prediction::performPredictionAndProlongateData(
+void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     exahype::Cell::resetNeighbourMergeFlags(
@@ -124,19 +135,24 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
     if (
         solver->isPerformingPrediction(algorithmSection) &&
         element!=exahype::solvers::Solver::NotFound
     ) {
+      // this operates only on compute cells
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-          solver,fineGridCell.getCellDescriptionsIndex(),element,temporaryVariables);
+          solver,fineGridCell.getCellDescriptionsIndex(),element,
+          exahype::Cell::isAtRemoteBoundary(
+              fineGridVertices,fineGridVerticesEnumerator)
+      );
 
-      solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+      // this operates only on helper cells
+      solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }
-    endpfor
+    }
     grainSize.parallelSectionHasTerminated();
   }
 }
@@ -153,56 +169,31 @@ void exahype::mappings::Prediction::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::performPredictionAndProlongateData(
-      fineGridCell,
-      fineGridVertices,fineGridVerticesEnumerator,
-      _predictionTemporaryVariables,
-      exahype::State::AlgorithmSection::TimeStepping);
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::mappings::Prediction::performPredictionOrProlongate(
+        fineGridCell,
+        fineGridVertices,fineGridVerticesEnumerator,
+        exahype::State::AlgorithmSection::TimeStepping);
+  }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
-void exahype::mappings::Prediction::restrictDataAndPostProcess(
+void exahype::mappings::Prediction::restriction(
     const exahype::Cell&                             fineGridCell,
-    const exahype::Cell&                             coarseGridCell,
     const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (
           solver->isPerformingPrediction(algorithmSection) &&
           fineGridElement!=exahype::solvers::Solver::NotFound
       ) {
-        const int coarseGridElement = solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-        if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
-          tarch::multicore::Lock lock(SemaphoreForRestriction);
-          solver->restrictToNextParent(
-              fineGridCell.getCellDescriptionsIndex(),fineGridElement,
-              coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-          lock.free();
-        }
-
-        exahype::solvers::Solver::SubcellPosition subcellPosition =
-            solver->computeSubcellPositionOfCellOrAncestor(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-        if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-            exahype::amr::onBoundaryOfParent(
-                subcellPosition.subcellIndex,subcellPosition.levelDifference)) {
-          tarch::multicore::Lock lock(SemaphoreForRestriction);
-          solver->restrictToTopMostParent(fineGridCell.getCellDescriptionsIndex(),
-                                          fineGridElement,
-                                          subcellPosition.parentCellDescriptionsIndex,
-                                          subcellPosition.parentElement,
-                                          subcellPosition.subcellIndex);
-          lock.free();
-        }
-
-        solver->postProcess(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+        solver->restriction(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
+    }
   }
 }
 
@@ -217,14 +208,28 @@ void exahype::mappings::Prediction::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restrictDataAndPostProcess(
-      fineGridCell,coarseGridCell,
-      exahype::State::AlgorithmSection::TimeStepping);
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::mappings::Prediction::restriction(
+        fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
 
 #ifdef Parallel
+void exahype::mappings::Prediction::prepareSendToNeighbour(
+    exahype::Vertex& vertex, int toRank,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
+
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    vertex.sendToNeighbour(toRank,true,x,h,level);
+  }
+
+  logTraceOut( "prepareSendToNeighbour(...)" );
+}
+
 bool exahype::mappings::Prediction::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -233,10 +238,16 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  exahype::Cell::broadcastGlobalDataToWorker(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getLevel());
+  logTraceIn( "prepareSendToWorker(...)" );
+
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::Cell::broadcastGlobalDataToWorker(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
+  }
+
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
   return true;
 }
@@ -251,10 +262,16 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  exahype::Cell::mergeWithGlobalDataFromMaster(
+  logTraceIn( "receiveDataFromMaster(...)" );
+
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
         receivedVerticesEnumerator.getLevel());
+  }
+
+  logTraceOut( "receiveDataFromMaster(...)" );
 }
 
 void exahype::mappings::Prediction::prepareSendToMaster(
@@ -264,11 +281,17 @@ void exahype::mappings::Prediction::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  localCell.reduceDataToMasterPerCell(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      verticesEnumerator.getCellCenter(),
-      verticesEnumerator.getCellSize(),
-      verticesEnumerator.getLevel());
+  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
+
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    localCell.reduceDataToMasterPerCell(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getCellSize(),
+        verticesEnumerator.getLevel());
+  }
+
+  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::Prediction::mergeWithMaster(
@@ -283,18 +306,17 @@ void exahype::mappings::Prediction::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  fineGridCell.mergeWithDataFromWorkerPerCell(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getCellSize(),
-      fineGridVerticesEnumerator.getLevel());
-}
+  logTraceIn( "mergeWithMaster(...)" );
 
-void exahype::mappings::Prediction::prepareSendToNeighbour(
-    exahype::Vertex& vertex, int toRank,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  vertex.sendToNeighbour(toRank,x,h,level);
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    fineGridCell.mergeWithDataFromWorkerPerCell(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getCellSize(),
+        fineGridVerticesEnumerator.getLevel());
+  }
+
+  logTraceOut( "mergeWithMaster(...)" );
 }
 
 //

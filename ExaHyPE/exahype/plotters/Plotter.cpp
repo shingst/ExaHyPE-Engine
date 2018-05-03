@@ -22,6 +22,8 @@
 #include "exahype/plotters/CarpetHDF5/ADERDG2CarpetHDF5.h"
 #include "exahype/plotters/CarpetHDF5/FiniteVolume2CarpetHDF5.h"
 #include "exahype/plotters/FlashHDF5/ADERDG2FlashHDF5.h"
+#include "exahype/plotters/Tecplot/ExaHyPE2Tecplot.h"
+
 #include "exahype/plotters/VTK/FiniteVolumes2VTK.h"
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/LimitingADERDGSubcells2CartesianVTK.h"
@@ -57,7 +59,7 @@ tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotte
 
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
-        const exahype::Parser& parser,
+        const exahype::parser::Parser& parser,
         Device* device) :
         _solver(solverConfig),
         _identifier(parser.getIdentifierForPlotter(solverConfig, plotterConfig)),
@@ -122,7 +124,7 @@ exahype::plotters::Plotter::Plotter(
 
 exahype::plotters::Plotter::Plotter(
         const int solverConfig,const int plotterConfig,
-        const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing)
+        const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing)
     : _solver(solverConfig),
       _identifier(parser.getIdentifierForPlotter(solverConfig, plotterConfig)),
       _writtenUnknowns(parser.getUnknownsForPlotter(solverConfig, plotterConfig)),
@@ -204,6 +206,13 @@ exahype::plotters::Plotter::Plotter(
         _device = new LimitingADERDG2CartesianCellsVTUBinary(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      
+      if(equalsIgnoreCase(_identifier, LimitingADERDG2Tecplot::getIdentifier())) {
+        _device = new LimitingADERDG2Tecplot(postProcessing,
+	        static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                  solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth()
+	);
       }
 
       // plot only the FV subcells
@@ -329,18 +338,35 @@ exahype::plotters::Plotter::Plotter(
         _device = new ADERDG2FlashHDF5(postProcessing);
       }
 
-      if(equalsIgnoreCase(_identifier, Patch2VTKAscii::getIdentifier())) {
-        _device = new Patch2VTKAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTKBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTKBinary::getIdentifier())) {
-        _device = new Patch2VTKBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTKBoxesBinary(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUAscii::getIdentifier())) {
-        _device = new Patch2VTUAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTUBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUBinary::getIdentifier())) {
-        _device = new Patch2VTUBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTUBoxesBinary(postProcessing, solvertype);
       }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsAscii::getIdentifier())) {
+        _device = new Patch2VTKGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsBinary::getIdentifier())) {
+        _device = new Patch2VTKGapsBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsAscii::getIdentifier())) {
+        _device = new Patch2VTUGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsBinary::getIdentifier())) {
+        _device = new Patch2VTUGapsBinary(postProcessing, solvertype);
+      }
+
+      if(equalsIgnoreCase(_identifier, ADERDG2Tecplot::getIdentifier())) {
+        _device = new ADERDG2Tecplot(postProcessing);
+      }
+
     break;
     case exahype::solvers::Solver::Type::FiniteVolumes:
       /**
@@ -402,18 +428,37 @@ exahype::plotters::Plotter::Plotter(
                 postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTKAscii::getIdentifier())) {
-        _device = new Patch2VTKAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTKBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTKBinary::getIdentifier())) {
-        _device = new Patch2VTKBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTKBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTKBoxesBinary(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUAscii::getIdentifier())) {
-        _device = new Patch2VTUAscii(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesAscii::getIdentifier())) {
+        _device = new Patch2VTUBoxesAscii(postProcessing, solvertype);
       }
-      if(equalsIgnoreCase(_identifier, Patch2VTUBinary::getIdentifier())) {
-        _device = new Patch2VTUBinary(postProcessing, solvertype);
+      if(equalsIgnoreCase(_identifier, Patch2VTUBoxesBinary::getIdentifier())) {
+        _device = new Patch2VTUBoxesBinary(postProcessing, solvertype);
       }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsAscii::getIdentifier())) {
+        _device = new Patch2VTKGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKGapsBinary::getIdentifier())) {
+        _device = new Patch2VTKGapsBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsAscii::getIdentifier())) {
+        _device = new Patch2VTUGapsAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUGapsBinary::getIdentifier())) {
+        _device = new Patch2VTUGapsBinary(postProcessing, solvertype);
+      }
+
+      if(equalsIgnoreCase(_identifier, FiniteVolumes2Tecplot::getIdentifier())) {
+        _device = new FiniteVolumes2Tecplot(postProcessing,
+	     static_cast<exahype::solvers::FiniteVolumesSolver*>(
+                solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+
     break;
   }
 
@@ -448,7 +493,7 @@ exahype::plotters::Plotter::Plotter(
 
 exahype::plotters::Plotter::Plotter(
     const int solverConfig,const int plotterConfig,
-    const exahype::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
+    const exahype::parser::Parser& parser, UserOnTheFlyPostProcessing* postProcessing,
     const int solverDataSource)
 : exahype::plotters::Plotter::Plotter(solverConfig,plotterConfig,parser,postProcessing) {
   _solver   = solverDataSource;
@@ -571,10 +616,12 @@ void exahype::plotters::plotPatchIfAPlotterIsActive(
     if (plotter->plotDataFromSolver(solverNumber)) {
       tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
       plotter->plotPatch(cellDescriptionsIndex,element);
+      lock.free();
     }
   }
 }
 
+// TODO(Dominic): Get rid of the return value and only do the "side effects"
 bool exahype::plotters::startPlottingIfAPlotterIsActive(double currentTimeStamp) {
   bool result = false;
   for (const auto& p : RegisteredPlotters) {

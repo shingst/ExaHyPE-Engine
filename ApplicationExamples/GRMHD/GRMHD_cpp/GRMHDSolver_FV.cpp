@@ -1,5 +1,8 @@
 #include "GRMHDSolver_FV.h"
+#include "GRMHDSolver_FV_Variables.h"
+
 #include <algorithm> // fill_n
+
 #include "peano/utils/Dimensions.h"
 
 #include "PDE/PDE-GRMHD-ExaHyPE.h"
@@ -7,20 +10,27 @@
 #define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
 
 #include "InitialData/InitialData.h"
-#include "BoundaryConditions_FV.h"
-#include "GRMHDSolver_FV_Variables.h"
+#include "BoundaryConditions.h"
 #include "DebuggingHelpers.h"
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_FV::NumberOfVariables;
 constexpr int nDim = DIMENSIONS;
-BoundaryConditionsFV* fv_bc;
 using namespace GRMHD;
 
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
-void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs) { //, exahype::Parser::ParserView& constants) {
-	fv_bc  = new BoundaryConditionsFV(this);
-	setupProblem<BoundaryConditionsFV>(fv_bc);
+void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());
+	
+	//std::cout << "Mexa configuration: \n" << mf.toString();
+	//std::cout << "ID configuration: \n" << mf("initialdata").toString();
+	//std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
+	//std::cout << "ID subquery NAME: '" << mf("initialdata").get("name").get_string() << "'\n";
+	logInfo("init()",  "Running FV init and setup ID and Boundaries");
+	logInfo("init()",  "The given parameters are: " << mf.toString());
+	
+	GlobalInitialData::getInstance().setByParameters(mf).prepare();
+	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf("boundaries"));
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -94,7 +104,7 @@ void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
 		//NVARS(m) printf("Q[%d]=%e\n", m, Q[m]);
 		//std::abort();
 		// Set everything to some neutral value
-		DFOR(i) NVARS(m) F[i][m] = 0;
+		for(int i=0;i<DIMENSIONS;i++) NVARS(m) F[i][m] = 0;
 		return;
 	}
 	
@@ -122,7 +132,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 	// SET BV for all 9 variables + 11 parameters.
 	
 	// Let it be managed by user parameters
-	fv_bc->apply(FV_BOUNDARY_CALL);
+	GlobalBoundaryConditions::getInstance().apply(FV_BOUNDARY_CALL);
 	
 	// EXACT FV AlfenWave BC
 	// InitialData(x, t, stateOut);

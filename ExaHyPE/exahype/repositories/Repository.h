@@ -70,31 +70,31 @@ class exahype::repositories::Repository {
      * Switch to another event handle.
      */
     virtual void switchToMeshRefinement() = 0;    
-    virtual void switchToMeshRefinementAndPlotGrid() = 0;    
+    virtual void switchToMeshRefinementAndPlotTree() = 0;    
     virtual void switchToFinaliseMeshRefinement() = 0;    
     virtual void switchToFinaliseMeshRefinementOrLocalRollback() = 0;    
     virtual void switchToFusedTimeStep() = 0;    
     virtual void switchToPredictionRerun() = 0;    
-    virtual void switchToBroadcastGlobalDataAndDropNeighbourMessages() = 0;    
+    virtual void switchToBroadcastAndDropNeighbourMessages() = 0;    
     virtual void switchToLimiterStatusSpreading() = 0;    
     virtual void switchToPredictionOrLocalRecomputation() = 0;    
     virtual void switchToGlobalRollback() = 0;    
-    virtual void switchToBroadcastGlobalDataAndMergeNeighbourMessages() = 0;    
-    virtual void switchToSolutionUpdate() = 0;    
+    virtual void switchToMergeNeighbours() = 0;    
+    virtual void switchToUpdateAndReduce() = 0;    
     virtual void switchToPrediction() = 0;    
 
     virtual bool isActiveAdapterMeshRefinement() const = 0;
-    virtual bool isActiveAdapterMeshRefinementAndPlotGrid() const = 0;
+    virtual bool isActiveAdapterMeshRefinementAndPlotTree() const = 0;
     virtual bool isActiveAdapterFinaliseMeshRefinement() const = 0;
     virtual bool isActiveAdapterFinaliseMeshRefinementOrLocalRollback() const = 0;
     virtual bool isActiveAdapterFusedTimeStep() const = 0;
     virtual bool isActiveAdapterPredictionRerun() const = 0;
-    virtual bool isActiveAdapterBroadcastGlobalDataAndDropNeighbourMessages() const = 0;
+    virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const = 0;
     virtual bool isActiveAdapterLimiterStatusSpreading() const = 0;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const = 0;
     virtual bool isActiveAdapterGlobalRollback() const = 0;
-    virtual bool isActiveAdapterBroadcastGlobalDataAndMergeNeighbourMessages() const = 0;
-    virtual bool isActiveAdapterSolutionUpdate() const = 0;
+    virtual bool isActiveAdapterMergeNeighbours() const = 0;
+    virtual bool isActiveAdapterUpdateAndReduce() const = 0;
     virtual bool isActiveAdapterPrediction() const = 0;
 
 

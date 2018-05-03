@@ -23,6 +23,7 @@
 #include <deque>
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
+#include "peano/utils/PeanoOptimisations.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/la/Vector.h"
 #include "tarch/multicore/BooleanSemaphore.h"
@@ -30,16 +31,17 @@
 #include "peano/utils/Globals.h"
 #include "peano/grid/VertexEnumerator.h"
 #include "peano/heap/DoubleHeap.h"
+#include "peano/heap/CharHeap.h"
 #include "peano/heap/HeapAllocator.h"
+
+#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
 #include "exahype/State.h"
 
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
-#if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
+#if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
@@ -64,6 +66,9 @@ namespace exahype {
   class Cell;
   class Vertex;
 
+  namespace parser {
+  class ParserView;
+  }  // namespace parser
   /**
    * We store the degrees of freedom associated with the ADERDGCellDescription and FiniteVolumesCellDescription
    * instances on this heap.
@@ -74,51 +79,107 @@ namespace exahype {
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
   #ifdef ALIGNMENT
-  #if defined(CompilerICC) && (defined(SharedTBB) || defined(SharedTBBInvade))
+  #if defined(CompilerICC) && defined(SharedTBB)
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
   #else
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
   #endif
   typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
+  typedef peano::heap::AlignedCharSendReceiveTask<ALIGNMENT>   AlignedCharSendReceiveTask;
   #endif
 
-  #if ALIGNMENT==16
+  #if defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
-  #elif ALIGNMENT==32
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif defined(ALIGNMENT) and !defined(UsePeanosSymmetricBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, false, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
-  #elif ALIGNMENT==64
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif !defined(ALIGNMENT) and defined(UsePeanosSymmetricBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SymmetricBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
+  >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
+  >     CompressedDataHeap;
+
+  #elif defined(ALIGNMENT) and defined(UsePeanosAggregationBoundaryExchanger)
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
     std::vector< double, AlignedAllocator >
   >     DataHeap;
-  #elif defined(ALIGNMENT)
-  #error ALIGNMENT choice not supported
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif defined(ALIGNMENT) and !defined(UsePeanosAggregationBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< double, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+   std::vector< double, AlignedAllocator >
+  >      DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< char, true, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    peano::heap::AggregationBoundaryDataExchanger< char, AlignedCharSendReceiveTask, std::vector< char, AlignedAllocator > >,
+    std::vector< char, AlignedAllocator >
+  >     CompressedDataHeap;
+  #elif !defined(ALIGNMENT) and defined(UsePeanosAggregationBoundaryExchanger)
+  typedef peano::heap::DoubleHeap<
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
+    peano::heap::AggregationBoundaryDataExchanger< double, peano::heap::SendReceiveTask<double>, std::vector<double> >
+  >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
+  >     CompressedDataHeap;
   #else
   typedef peano::heap::DoubleHeap<
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::SynchronousDataExchanger< double, true,  peano::heap::SendReceiveTask<double> >,
     peano::heap::RLEBoundaryDataExchanger< double, false, peano::heap::SendReceiveTask<double> >
   >     DataHeap;
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::RLEBoundaryDataExchanger< char, false, peano::heap::SendReceiveTask<char> >
+  >     CompressedDataHeap;
   #endif
-
-  typedef peano::heap::PlainCharHeap CompressedDataHeap;
 
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
-  extern tarch::multicore::BooleanSemaphore BackgroundThreadSemaphore;
+  extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
 
   /**
    * A semaphore for serialising heap access.
@@ -149,13 +210,31 @@ namespace exahype {
    *
    * It is assumed by the metadata send routines of the solvers that
    * all data exchangers of the MetadataHeap create copies of the data to send.
+   *
+   * <h2> Implementation </h2>
+   *
+   * These meta data are not symmetric, i..e we can use the RLE heap but we
+   * may not use any symmetric heap.
    */
-  typedef peano::heap::Heap<
-      peano::heap::records::CharHeapData,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::SynchronousDataExchanger< peano::heap::records::CharHeapData, true,  peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >,
-      peano::heap::RLEBoundaryDataExchanger< peano::heap::records::CharHeapData, true, peano::heap::SendReceiveTask<peano::heap::records::CharHeapData> >
+  #if defined(UsePeanosAggregationBoundaryExchangerForMetaData)
+  typedef peano::heap::CharHeap<
+      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+      peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+      peano::heap::AggregationBoundaryDataExchanger< char, peano::heap::SendReceiveTask<char>, std::vector<char> >
   >     MetadataHeap;
+  #elif defined(UsePeanosSymmetricBoundaryExchangerForMetaData)
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SymmetricBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
+  >     MetadataHeap;
+  #else
+  typedef peano::heap::CharHeap<
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::SynchronousDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >,
+    peano::heap::RLEBoundaryDataExchanger< char, true,  peano::heap::SendReceiveTask<char> >
+  >     MetadataHeap;
+  #endif
 
   /**
    * Defines an invalid metadata entry.
@@ -175,14 +254,14 @@ namespace exahype {
 
   static constexpr int NeighbourCommunicationMetadataCellType           = 0;
   static constexpr int NeighbourCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int NeighbourCommunicationMetadataHelperStatus       = 2;
+  static constexpr int NeighbourCommunicationMetadataCommunicationStatus       = 2;
   static constexpr int NeighbourCommunicationMetadataLimiterStatus      = 3;
 
   static constexpr int MasterWorkerCommunicationMetadataPerSolver       = 5;
 
   static constexpr int MasterWorkerCommunicationMetadataCellType           = 0;
   static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int MasterWorkerCommunicationMetadataHelperStatus       = 2;
+  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus       = 2;
   static constexpr int MasterWorkerCommunicationMetadataLimiterStatus      = 3;
   static constexpr int MasterWorkerCommunicationMetadataSendReceiveData    = 4;
 
@@ -356,54 +435,8 @@ namespace exahype {
      * Converts a double to a LimiterDomainChange.
      */
     LimiterDomainChange convertToLimiterDomainChange(const double value);
-
-    /**
-     * Temporary variables that
-     * hold information if the grid has been updated
-     * or if the limiter domain has changed.
-     *
-     * Used if we employ multiple threads.
-     */
-    class SolverFlags;
-
-    /**
-     * Sets the limiter domain has changed flags per
-     * solver to false.
-     */
-    void initialiseSolverFlags(SolverFlags& solverFlags);
-
-    /**
-     * Sets the limiter domain has changed flags per
-     * solver to false.
-     */
-    void prepareSolverFlags(SolverFlags& solverFlags);
-
-    /**
-     * Sets the limiter domain has changed flags per
-     * solver to false.
-     */
-    void deleteSolverFlags(SolverFlags& solverFlags);
   }
 }
-
-
-class exahype::solvers::SolverFlags {
-public:
-  /**
-   * Per solver, we hold a status flag indicating
-   * if the limiter domain of the solver has
-   * changed.
-   *
-   * The flag has only a meaning for the LimitingADERDGSolver.
-   */
-  LimiterDomainChange* _limiterDomainChange = nullptr;
-
-  /**
-   * Per solver, we hold a status flag indicating
-   * if the solver has requested a mesh update.
-   */
-  bool* _meshUpdateRequest = nullptr;
-};
 
 /**
  * Describes one solver.
@@ -415,10 +448,39 @@ class exahype::solvers::Solver {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    Solver&       _solver;
+    const int     _cellDescriptionsIndex;
+    const int     _element;
+    const bool    _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        Solver&       solver,
+        const int     cellDescriptionsIndex,
+        const int     element,
+        const bool    isInitialMeshRefinement);
+
+    bool operator()();
+  };
+
  protected:
 
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
+
+  /**
+   * \see body adjustSolutionDuringMeshRefinement(...).
+   * Must be implemented by the subclasses.
+   */
+  virtual void adjustSolutionDuringMeshRefinementBody(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isInitialMeshRefinement) = 0;
+
  public:
 
   /**
@@ -432,6 +494,44 @@ class exahype::solvers::Solver {
 
 
   /**
+   * A flag indicating we fuse the algorithmic
+   * phases of all ADERDGSolver and
+   * LimitingADERDGSolver instances.
+   *
+   * TODO(Dominic): Make private and hide in init function
+   */
+  static bool FuseADERDGPhases;
+
+  /**
+   * The weight which is used to scale
+   * the stable time step size the fused
+   * ADERDG time stepping scheme is
+   * reset to after a rerun has become necessary.
+   *
+   * TODO(Dominic): Further consider to introduce
+   * a second weight for the averaging:
+   *
+   * t_est = 0.5 (t_est_old + beta t_stable), beta<1.
+   *
+   * fuse-algorithmic-steps-reset-factor
+   * fuse-algorithmic-steps-averaging-factor
+   *
+   * TODO(Dominic): Make private and hide in init function
+   */
+  static double WeightForPredictionRerun;
+
+  /**
+   * If this is set, we can skip sending metadata around during
+   * batching iterations.
+   */
+  static bool DisableMetaDataExchangeInBatchedTimeSteps;
+
+  /**
+   * If this is set, we can skip Peano vertex neighbour exchange during batching iterations.
+   */
+  static bool DisablePeanoNeighbourExchangeInTimeSteps;
+
+  /**
    * Set to 0 if no floating point compression is used. Is usually done in the
    * runner once at startup and from hereon is a read-only variable. The
    * subsequent field SpawnCompressionAsBackgroundThread has no semantics if
@@ -439,7 +539,23 @@ class exahype::solvers::Solver {
    */
   static double CompressionAccuracy;
 
-  static bool SpawnCompressionAsBackgroundThread;
+  static bool SpawnCompressionAsBackgroundJob;
+
+  /**
+   * Set to true if the prediction and/or the fused time step
+   * should be launched as background job whenever possible.
+   *
+   * TODO(Dominic): Rename as we start other background jobs as well
+   */
+  static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * Set to true if the mesh refinement iterations
+   * should run background jobs whenever possible.
+   */
+  static bool SpawnAMRBackgroundJobs;
+
+ public:
 
   /**
    * The type of a solver.
@@ -475,15 +591,9 @@ class exahype::solvers::Solver {
     double _timeStepSize                     = std::numeric_limits<double>::max();
     LimiterDomainChange _limiterDomainChange = LimiterDomainChange::Regular;
     bool _refinementRequested                = false;
-  } UpdateResult;
 
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  typedef struct UpdateStateInEnterCellResult {
-    bool _refinementRequested = false;
-    bool _newComputeCellAllocated   = false;
-  } UpdateStateInEnterCellResult;
+    UpdateResult() {}
+  } UpdateResult;
 
   /**
    * This struct is used in the AMR context
@@ -500,10 +610,20 @@ class exahype::solvers::Solver {
     int levelDifference;
 
     SubcellPosition() :
-      parentCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex),
+      parentCellDescriptionsIndex(),
       parentElement(NotFound),
       subcellIndex(-1),
       levelDifference(-1) {}
+
+    void invalidate() {
+      parentCellDescriptionsIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+      parentElement = NotFound;
+      for (int i=0; i<DIMENSIONS; i++) {
+        subcellIndex[i] = -1;
+      }
+      levelDifference = -1;
+    }
+
     ~SubcellPosition() {}
   } SubcellPosition;
 
@@ -548,7 +668,7 @@ class exahype::solvers::Solver {
    * If we do not find the element in a vector
    * stored at a heap address.
    */
-  static const int NotFound;
+  static constexpr int NotFound = -1;
 
   /**
    * Moves a DataHeap array, i.e. copies the found
@@ -560,7 +680,7 @@ class exahype::solvers::Solver {
   /**
    * Run over all solvers and identify the minimal time stamp.
    */
-  static double getMinSolverTimeStampOfAllSolvers();
+  static double getMinTimeStampOfAllSolvers();
 
   /**
    * Run over all solvers and identify the minimal sum of minimal time stamp
@@ -574,7 +694,12 @@ class exahype::solvers::Solver {
   /**
    * Run over all solvers and identify the minimal time step size.
    */
-  static double getMinSolverTimeStepSizeOfAllSolvers();
+  static double getMinTimeStepSizeOfAllSolvers();
+
+  /**
+   * Run over all solvers and identify the minimal time step size.
+   */
+  static double getMaxSolverTimeStepSizeOfAllSolvers();
 
   /**
    * Run over all solvers and identify the maximal time stamp.
@@ -583,7 +708,7 @@ class exahype::solvers::Solver {
    * far, so the routine returns the maximum over all min solver
    * time stamps.
    */
-  static double getMaxSolverTimeStampOfAllSolvers();
+  static double getMaxTimeStampOfAllSolvers();
 
   static bool allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping scheme);
 
@@ -614,7 +739,7 @@ class exahype::solvers::Solver {
    * Run over all solvers and identify the maximum depth of adaptive
    * refinement employed.
    *
-   * This number directly correlates with the number
+   * This number might correlate with the number
    * of grid iterations to run for performing an erasing operation.
    *
    * \note It is very important that initSolvers
@@ -622,6 +747,12 @@ class exahype::solvers::Solver {
    * method is used.
    */
   static int getMaxAdaptiveRefinementDepthOfAllSolvers();
+
+  /**
+   * Loop over the solver registry and check if no solver
+   * performs adaptive mesh refinement.
+   */
+  static bool allSolversPerformOnlyUniformRefinement();
 
   /**
    * Loop over the solver registry and check if one
@@ -633,6 +764,10 @@ class exahype::solvers::Solver {
    * Loop over the solver registry and check if one
    * of the solver's mesh refinement has not
    * attained a stable state yet.
+   *
+   * TODO(Dominic): Make this a state attribute since
+   * we do not need to know which particular solver
+   * did not attain a stable state.
    */
   static bool oneSolverHasNotAttainedStableState();
 
@@ -662,38 +797,57 @@ class exahype::solvers::Solver {
   /**
    * Starts a new time step on all solvers.
    *
-   * \param[in] solverFlags      flags for each solver indicating if a a mesh update
-   *                     is necessary or if the limiter domain has changed.
-   * \param[in] minTimeStepSizes the minimum CFL-stable time step size for all solvers
-   * \param[in] minCellSizes     the minimum cell size found in the grid for each solver.
-   * \param[in] maxCellSizes     the maximum cell size found in the grid for each solver.
+   * \param[in] meshUpdateRequests   flags for each solver indicating if a mesh update is necessary.
+   * \param[in] limiterDomainChanges flags for each solver indicating if the limiter domain has changed.
+   * \param[in] minTimeStepSizes     the minimum CFL-stable time step size for all solvers.
+   * \param[in] minCellSizes         the minimum cell size found in the grid for each solver.
+   * \param[in] maxCellSizes         the maximum cell size found in the grid for each solver.
    * \param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
    * \param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
    * \param[in] fusedTimeStepping fused time stepping is used or not
    */
   static void startNewTimeStepForAllSolvers(
-      const exahype::solvers::SolverFlags& solverFlags,
       const std::vector<double>& minTimeStepSizes,
-      const std::vector<double>& minCellSizes,
-      const std::vector<double>& maxCellSizes,
+      const std::vector<int>& maxLevels,
+      const std::vector<bool>& meshUpdateRequests,
+      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
+  /**
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfAMRBackgroundJobs;
+
+  /**
+   * Number of background jobs spawned
+   * from enclave cells.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfEnclaveJobs;
+  /**
+   * Number of background jobs spawned
+   * from skeleton cells, i.e. cells at parallel
+   * or adaptivity boundaries.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfSkeletonJobs;
+
  /**
-  * Some solvers can deploy data conversion into the background. How this is
-  * done is solver-specific. However, we have to wait until all tasks have
-  * terminated if we want to modify the heap, i.e. insert new data or remove
-  * data. Therefore, the wait (as well as the underlying semaphore) belong
+  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
+  * further. We have to wait until all tasks have terminated if we want to modify the heap,
+  * i.e. insert new data or remove data.
+  * Therefore, the wait (as well as the underlying semaphore) belong
   * into this abstract superclass.
+  *
+  * \param[in] backgroundJobCounter A reference to a background job counter.
   */
- static void waitUntilAllBackgroundTasksHaveTerminated();
+ static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
 
  protected:
-  /**
-   * @see waitUntilAllBackgroundTasksHaveTerminated()
-   */
-  static int                                _NumberOfTriggeredTasks;
 
   /**
    * Each solver has an identifier/name. It is used for debug purposes only.
@@ -755,20 +909,13 @@ class exahype::solvers::Solver {
   const int _maximumAdaptiveMeshDepth;
 
   /**
-   * The minimum extent in each coordinate direction at least one cell in the grid has.
+   * The maximum tree level which is occupied by
+   * cells of this solver.
    *
    * This value needs to be updated every time the grid has been changed.
    */
-  double _minCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
-  double _nextMinCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
-
-  /**
-   * The maximum extent in each coordinate direction at least one cell in the grid has.
-   *
-   * This value needs to be updated every time the grid has been changed.
-   */
-  double _maxCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
-  double _nextMaxCellSize; // TODO(Dominic): Remove these cell size variables and put them into the solver subclasses.
+  int _maxLevel;
+  int _nextMaxLevel;
 
   /**
    * The time stepping mode of this solver.
@@ -905,17 +1052,13 @@ class exahype::solvers::Solver {
    */
   int getMaximumAdaptiveMeshLevel() const;
 
-  virtual void updateNextMinCellSize(double minCellSize);
-
-  virtual void updateNextMaxCellSize(double maxCellSize);
-
-  virtual double getNextMinCellSize() const;
-
-  virtual double getNextMaxCellSize() const;
-
-  virtual double getMinCellSize() const;
-
-  virtual double getMaxCellSize() const;
+  /**
+   * \note methods are virtual in order to enable
+   * overriding by LimitingADERDGSolver
+   */
+  virtual void updateNextMaxLevel(int maxLevel);
+  virtual int getNextMaxLevel() const;
+  virtual int getMaxLevel() const;
 
   /**
    * Returns the identifier of this solver.
@@ -1061,11 +1204,14 @@ class exahype::solvers::Solver {
    * The maximum adaptive refinement level is defined
    * with respect to this level.
    */
+
   virtual void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) = 0;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize,
+      const std::vector<std::string>& cmdlineargs,
+      const exahype::parser::ParserView& parserView) = 0;
 
   /**
    * \return true if the solver is computing in the current algorithmic section.
@@ -1102,7 +1248,7 @@ class exahype::solvers::Solver {
    */
   virtual void synchroniseTimeStepping(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element) const = 0;
 
   /**
    * This routine is called if we perform
@@ -1193,45 +1339,12 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * \see exahype::amr::computeSubcellPositionOfCellOrAncestor
-   */
-  virtual SubcellPosition computeSubcellPositionOfCellOrAncestor(
-      const int cellDescriptionsIndex,
-      const int element) const = 0;
-
-  /**
-   * Evaluates the user refinement criterion and sets
-   * the RefinementEvent of a cell description to RefinementRequested
-   * if the users criterion has been accepted,
-   * or vetoes the ErasingChildrenRequested RefinementEvent
-   * set on an Ancestor if
-   * the users criterion returns a keep.
-   *
-   * \note We moved this routine out of the updateStateInEnterCell
-   * since it does a-priori refinement, and we want to
-   * reuse the updateStateInEnterCell and updateStateInLeaveCell methods
-   * for a-posteriori refinement performed by the LimitingADERDGSolver
-   * in scenarios where the mesh is refined based on a criterion
-   * that takes the limiter status into account.
-   */
-  virtual bool markForRefinement(
-        exahype::Cell& fineGridCell,
-        exahype::Vertex* const fineGridVertices,
-        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        exahype::Cell& coarseGridCell,
-        exahype::Vertex* const coarseGridVertices,
-        const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-        const bool initialGrid,
-        const int solverNumber) = 0;
-
-  /**
    * Modify a cell description in enter cell event.
    * This event should be used for single cell operations
    * like marking for refinement, erasing, augmenting,
    * or deaugmenting.
    *
-   * \return a struct of type UpdateStateInEnterCellResult.
+   * \return a struct of type bool.
    *
    * \note We use this at the moment only
    * for refinement events. We can consider later
@@ -1239,7 +1352,7 @@ class exahype::solvers::Solver {
    * (solution update, predictor comp.) into
    * this hook.
    */
-  virtual UpdateStateInEnterCellResult updateStateInEnterCell(
+  virtual bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1254,13 +1367,10 @@ class exahype::solvers::Solver {
    * Refinement routine that should be used for
    * collective children-parent operations.
    *
-   * \return true if the vertices around a
-   * parent cell can be erased after this
-   * parent cell has finished an erasing
-   * event. This is a single event.
-   * Returns false in all other scenarios.
+   * \return If a new compute cell was introduced
+   * as part of a refinement operation.
    */
-  virtual bool updateStateInLeaveCell(
+  virtual bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1269,6 +1379,15 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) = 0;
+
+  /**
+   * \return if the vertices around a cell should be erased, kept,
+   * or refined.
+   */
+  virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+      const int& cellDescriptionsIndex,
+      const int& solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
 
   /**
    * Returns true if the solver has attained
@@ -1451,9 +1570,10 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void adjustSolution(
+  void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element,
+      const bool isInitialMeshRefinement);
 
   /**
    * Fuse algorithmic phases of the solvers.
@@ -1473,128 +1593,101 @@ class exahype::solvers::Solver {
    * Either runs the ADERDGSolver triad or
    * performs an FV update. Performs some additional
    * tasks.
+   *
+   * \param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
+   *                                    we are in the first iteration of a batch.
+   * \param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
+   *                                    we are in the last iteration of a batch.
+   *                                    (If no batch is run, both flags
+   *                                    \p isFirstIterationOfBatch and
+   *                                    \p isLastIterationOfBatch are true).
+   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   *                                    cell description is adjacent to a remote rank.
    */
   virtual UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      double** tempSpaceTimeUnknowns,
-      double** tempSpaceTimeFluxUnknowns,
-      double*  tempUnknowns,
-      double*  tempFluxUnknowns,
-      double**  tempPointForceSources) = 0;
+      const bool isAtRemoteBoundary) = 0;
 
   /**
-   * Update the solution of a cell description.
+   * The nonfused update routine.
+   *
+   * <h2>FiniteVolumesSolver</h2>
+   *
+   * This call degenerates to an updateSolution
+   * call for the FiniteVolumesSolver.
+   *
+   * <h2>ADERDGSolver</h2>
+   *
+   * Update the solution and evaluate the refinement criterion.
+   *
+   * <h2>LimitingADERDGSolver</h2>
+   *
+   * Update the ADER-DG and or FV solution and
+   * evaluate the limiter and
+   * the refinement criteria.
    *
    * \note Make sure to reset neighbour merge
    * helper variables in this method call.
    *
    * \note Has no const modifier since kernels are not const functions yet.
-   *
-   * \param[in] backupPreviousSolution Set to true if the solution should be backed up before
-   *                                   we overwrite it by the updated solution.
    */
-  virtual void updateSolution(
+  virtual UpdateResult update(
+          const int cellDescriptionsIndex,
+          const int element,
+          const bool isAtRemoteBoundary) = 0;
+
+  /**
+   * Explicitly ask the solver to compress
+   * a cell description.
+   *
+   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
+   *                               cell description is adjacent to a remote rank.
+   */
+  virtual void compress(
       const int cellDescriptionsIndex,
       const int element,
-      const bool backupPreviousSolution) = 0;
+      const bool isAtRemoteBoundary) const = 0;
 
   /**
-     * In this method, the solver can perform post-processing
-     * operations, e.g., compression of the
-     * degrees of freedoms.
-     *
-     * \param[in] element Index of the cell description
-     *                    holding the data to send out in
-     *                    the array at address \p cellDescriptionsIndex.
-     *                    This is not the solver number.
-     *
-     * \see tryGetElement
-     */
-    virtual void preProcess(
-        const int cellDescriptionsIndex,
-        const int element) const = 0;
-
-  /**
-   * In this method, the solver can perform post-processing
-   * operations, e.g., compression of the
-   * degrees of freedoms.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array at address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \see tryGetElement
-   *
-   * \note Has no const modifier since a binding in ADERDGSolver::compress disregards
-   * the const modifier.
-   */
-  virtual void postProcess(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
-
-  /**
-    * Prolongates face data from a parent ADERDGCellDescription to
-    * \p cellDescription if the fine grid cell associated with
-    * \p cellDescription is adjacent to a boundary of the
-    * coarse grid cell associated with the parent cell description.
+    * Prolongates face data from a parent cell description to
+    * the cell description at address (cellDescriptionsIndex,element)
+    * in case the fine grid cell associated with the cell description is adjacent to
+    * the hull of the coarse grid cell associated with the parent cell description.
     *
     * Further zero out the face data of ancestors.
     *
     * \note This function assumes a top-down traversal of the grid and must thus
-    * be called from the enterCell(...) or descend(...) mapping methods.
+    * be called from the enterCell(...) mapping method.
     *
-    * \note Calling this method makes only sense if \p cellDescription is of type
-    * Descendant or Ancestor.
+    * \note It is assumed that this operation is applied only to helper cell descriptions
+    * of type Descendant and Ancestor. No cell description of type Cell
+    * must be touched by this operation. Otherwise, we cannot spawn
+    * the prediction and/or the compression as background task.
     *
     * \note Has no const modifier since kernels are not const functions yet.
     */
-  virtual void prolongateDataAndPrepareDataRestriction(
+  virtual void prolongateAndPrepareRestriction(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
   /**
-   * Restricts data to the the next parent independent of
-   * the cell type of the fine grid and coarse grid cell.
+   * Restrict data to a parent on
+   * a coarser level.
    *
-   * \p This operation is always surrounded by
-   * a lock. No locks are required internally.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) or ascend(...) mapping methods.
-   */
-  virtual void restrictToNextParent(
-      const int fineGridCellDescriptionsIndex,
-      const int fineGridElement,
-      const int coarseGridCellDescriptionsIndex,
-      const int coarseGridElement) const = 0;
-
-  /**
-   * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)
-   * if and only if the fine grid cell (Cell) has a face which intersects with one of the top most parent
-   * cell's faces.
-   *
-   * \note This function is used to restrict face data to the top most
-   * parent. We skip all intermediate parents if they do not
-   * need to hold data (EmptyAncestor).
-   *
-   * \p This operation is always surrounded by
-   * a lock. No locks are required internally.
+   * \note Thread-safety must be ensured by the implementation itself.
    *
    * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) or ascend(...) mapping methods.
+   * be called from the leaveCell(...) mapping method.
    *
-   * \note Has no const modifier since kernels are not const functions yet.
+   * \note Has no const modifier yet since kernels are not
+   * const yet.
    */
-  virtual void restrictToTopMostParent(
-        const int cellDescriptionsIndex,
-        const int element,
-        const int parentCellDescriptionsIndex,
-        const int parentElement,
-        const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) = 0;
+  virtual void restriction(
+      const int cellDescriptionsIndex,
+      const int element) = 0;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -1635,12 +1728,6 @@ class exahype::solvers::Solver {
    *
    * \see tryGetElement
    *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    */
   virtual void mergeNeighbours(
@@ -1649,8 +1736,7 @@ class exahype::solvers::Solver {
         const int                                 cellDescriptionsIndex2,
         const int                                 element2,
         const tarch::la::Vector<DIMENSIONS, int>& pos1,
-        const tarch::la::Vector<DIMENSIONS, int>& pos2,
-        double**                                  tempFaceUnknowns) = 0;
+        const tarch::la::Vector<DIMENSIONS, int>& pos2) = 0;
 
   /**
    * Take the cell descriptions \p element
@@ -1667,20 +1753,13 @@ class exahype::solvers::Solver {
    *
    * \see tryGetElement
    *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
-   *
    * \note Has no const modifier since kernels are not const functions yet.
    */
   virtual void mergeWithBoundaryData(
         const int                                 cellDescriptionsIndex,
         const int                                 element,
         const tarch::la::Vector<DIMENSIONS, int>& posCell,
-        const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-        double**                                  tempFaceUnknowns) = 0;
+        const tarch::la::Vector<DIMENSIONS, int>& posBoundary) = 0;
 
   #ifdef Parallel
   /**
@@ -1770,21 +1849,13 @@ class exahype::solvers::Solver {
    *                    holding the data to send out in
    *                    the array with address \p cellDescriptionsIndex.
    *                    This is not the solver number.
-   *
-   * <h2>Temporary variables</h2>
-   * See  exahype::mappings::Merging::prepareTemporaryVariables()
-   * exahype::mappings::SolutionRecomputation::prepareTemporaryVariables()
-   * for details on the size of the allocation of
-   * the temporary variables.
    */
   virtual void mergeWithNeighbourData(
       const int                                    fromRank,
-      const MetadataHeap::HeapEntries&             neighbourMetadata,
       const int                                    cellDescriptionsIndex,
       const int                                    element,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
 
@@ -1815,14 +1886,17 @@ class exahype::solvers::Solver {
    * that needs to restrict data up to an Ancestor on the
    * master rank. However, this can definitively happen. For example,
    * in situations where a refined cell is augmented as well, i.e.
-   * has virtual children (Descendants).
+   * has virtual children (Descendants). (Still applicable??)
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
    */
-  virtual void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
   /**
-   * TODO(Dominic): Add docu.
+   * Prepare a worker cell description at the master worker boundary.
    */
   virtual void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
         const int cellDescriptionsIndex,
@@ -1836,7 +1910,6 @@ class exahype::solvers::Solver {
    * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
    * times exahype::InvalidMetadataEntry to the back of the vector.
    *
-   * TODO(Dominic): Do send more information, e.g., the limiter status!
    */
   virtual void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
@@ -1844,7 +1917,7 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * TODO(Dominic): docu
+   * Merge with the master's metadata.
    */
   virtual void mergeWithMasterMetadata(
         const MetadataHeap::HeapEntries& receivedMetadata,
@@ -1852,9 +1925,12 @@ class exahype::solvers::Solver {
         const int                        element) = 0;
 
   /**
-   * TODO(Dominic): docu
+   * Merge with the worker's metadata.
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
    */
-  virtual void mergeWithWorkerMetadata(
+  virtual bool mergeWithWorkerMetadata(
           const MetadataHeap::HeapEntries& receivedMetadata,
           const int                        cellDescriptionsIndex,
           const int                        element) = 0;
