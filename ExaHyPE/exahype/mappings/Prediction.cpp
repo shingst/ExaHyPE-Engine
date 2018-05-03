@@ -13,11 +13,13 @@
  
 #include "exahype/mappings/Prediction.h"
 
+#include "tarch/multicore/Loop.h"
+
 #include "peano/utils/Loop.h"
-#include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/utils/Globals.h"
 
-#include "tarch/multicore/Loop.h"
+#include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -101,14 +103,22 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-#ifdef USE_ITAC
+  logTraceInWith1Argument("endIteration(State)", state);
+
+  #ifdef USE_ITAC
   VT_traceon();
-#endif
+  #endif
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  // do nothing
+  logTraceInWith1Argument("endIteration(State)", state);
+
+  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(
@@ -159,10 +169,12 @@ void exahype::mappings::Prediction::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::performPredictionOrProlongate(
-      fineGridCell,
-      fineGridVertices,fineGridVerticesEnumerator,
-      exahype::State::AlgorithmSection::TimeStepping);
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::mappings::Prediction::performPredictionOrProlongate(
+        fineGridCell,
+        fineGridVertices,fineGridVerticesEnumerator,
+        exahype::State::AlgorithmSection::TimeStepping);
+  }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -196,13 +208,28 @@ void exahype::mappings::Prediction::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  exahype::mappings::Prediction::restriction(
-      fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::mappings::Prediction::restriction(
+        fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
 
 #ifdef Parallel
+void exahype::mappings::Prediction::prepareSendToNeighbour(
+    exahype::Vertex& vertex, int toRank,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
+
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    vertex.sendToNeighbour(toRank,true,x,h,level);
+  }
+
+  logTraceOut( "prepareSendToNeighbour(...)" );
+}
+
 bool exahype::mappings::Prediction::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -213,10 +240,12 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
     int worker) {
   logTraceIn( "prepareSendToWorker(...)" );
 
-  exahype::Cell::broadcastGlobalDataToWorker(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getLevel());
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::Cell::broadcastGlobalDataToWorker(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
+  }
 
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
@@ -235,10 +264,12 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceIn( "receiveDataFromMaster(...)" );
 
-  exahype::Cell::mergeWithGlobalDataFromMaster(
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
         receivedVerticesEnumerator.getLevel());
+  }
 
   logTraceOut( "receiveDataFromMaster(...)" );
 }
@@ -252,11 +283,13 @@ void exahype::mappings::Prediction::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
 
-  localCell.reduceDataToMasterPerCell(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      verticesEnumerator.getCellCenter(),
-      verticesEnumerator.getCellSize(),
-      verticesEnumerator.getLevel());
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    localCell.reduceDataToMasterPerCell(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getCellSize(),
+        verticesEnumerator.getLevel());
+  }
 
   logTraceOut( "prepareSendToMaster(...)" );
 }
@@ -275,24 +308,15 @@ void exahype::mappings::Prediction::mergeWithMaster(
     exahype::State& masterState) {
   logTraceIn( "mergeWithMaster(...)" );
 
-  fineGridCell.mergeWithDataFromWorkerPerCell(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getCellSize(),
-      fineGridVerticesEnumerator.getLevel());
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    fineGridCell.mergeWithDataFromWorkerPerCell(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getCellSize(),
+        fineGridVerticesEnumerator.getLevel());
+  }
 
   logTraceOut( "mergeWithMaster(...)" );
-}
-
-void exahype::mappings::Prediction::prepareSendToNeighbour(
-    exahype::Vertex& vertex, int toRank,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
-
-  vertex.sendToNeighbour(toRank,true,x,h,level);
-
-  logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
 //

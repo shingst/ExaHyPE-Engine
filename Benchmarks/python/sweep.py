@@ -100,7 +100,7 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
 
 def verifyLogFilterExists(justWarn=False):
     foundLogFilter = False
-    for file in os.listdir(exahypeRoot + "/" + projectPath):i
+    for file in os.listdir(exahypeRoot + "/" + projectPath):
         foundLogFilter = foundLogFilter or file.endswith(".log-filter")
 
     messageType = "ERROR"
@@ -118,6 +118,7 @@ def verifyEnvironmentIsCorrect(justWarn=False):
     if justWarn:
         messageType = "WARNING"
     
+    cpus = jobs["num_cpus"]
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
             os.environ[key]=value
@@ -127,8 +128,8 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                 print(messageType+": DISTRIBUTEDMEM environment variable set to "+environmentDict["DISTRIBUTEDMEM"]+" and ranks is set to "+ranks+" > 1",file=sys.stderr)
                 environmentIsCorrect = False
             for nodes in nodeCounts:
-                print(messageType+": specified ranks (+"ranks"+) must always be greater than or equals to specified nodes ("+nodes+")",file=sys.stderr)
                 if int(nodes) > int(ranks):
+                    print(messageType+": specified ranks ("+ranks+") must always be greater than or equals to specified nodes ("+nodes+")",file=sys.stderr)
                     environmentIsCorrect = False
                 
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
@@ -327,7 +328,7 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     context = {}
     # mandatory
-    context["ranks"]   = ranks
+    context["ranks"]       = ranks
     context["nodes"]       = nodes
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
@@ -528,7 +529,7 @@ def generateScripts():
                                                  parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                                                  
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                                 "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                                 "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run+".out"
                                 outputFilePath = resultsFolderPath + "/" + outputFileName 
                                 
                                 # pipe some information into output file
@@ -549,7 +550,7 @@ def generateScripts():
                                 jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
                                 # pipe the commands into the output file
                                 runCommand = general["run_command"].replace("\"","")
-                                runCommand = runCommand.replace("{{ranks}}",str(int(nodes)*int(tasks)));
+                                runCommand = runCommand.replace("{{ranks}}",ranks);
                                 runCommand = runCommand.replace("{{nodes}}",nodes);
                                 runCommand = runCommand.replace("{{tasks}}",tasks);
                                 runCommand = runCommand.replace("{{cores}}",cores);
@@ -662,9 +663,9 @@ def verifyAllSpecFilesExist():
 
 def hashSweep():
     chain = ""
-    for value in nodeCounts:
+    for value in rankCounts:
         chain += value+";"
-    for value in taskCounts:
+    for value in nodeCounts:
         chain += value+";"
     for value in coreCounts:
         chain += value+";"
@@ -869,10 +870,10 @@ typical workflow:
     
     verifySweepAgreesWithHistoricalExperiments()
     
-    specFileTemplatePath = general["spec_template"]
+    specFileTemplatePath = exahypeRoot+"/"+general["spec_template"]
     specFileTemplate     = None
     try:
-        with open(exahypeRoot+"/"+specFileTemplatePath, "r") as specFileTemplateFile:
+        with open(specFileTemplatePath, "r") as specFileTemplateFile:
             specFileTemplate=specFileTemplateFile.read()
     except IOError:
         print("ERROR: couldn\'t open specification file template file: "+templateFileName,file=sys.stderr)

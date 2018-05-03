@@ -18,6 +18,7 @@
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -142,7 +143,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     if ( !_backgroundJobsHaveTerminated ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+          exahype::solvers::Solver::NumberOfAMRBackgroundJobs,"amr-jobs");
       _backgroundJobsHaveTerminated = true;
     }
 

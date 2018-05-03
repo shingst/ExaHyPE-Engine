@@ -17,6 +17,7 @@
 #include "peano/utils/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "peano/grid/aspects/VertexStateAnalysis.h"
 
@@ -141,7 +142,8 @@ void exahype::mappings::MeshRefinement::beginIteration(
   }
 
   // background threads
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+      exahype::solvers::Solver::NumberOfAMRBackgroundJobs,"amr-jobs");
 
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
@@ -151,6 +153,8 @@ void exahype::mappings::MeshRefinement::beginIteration(
 }
 
 void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState) {
+  logTraceInWith1Argument("endIteration(State)", state);
+
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
@@ -163,6 +167,10 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
 
   exahype::mappings::MeshRefinement::IsFirstIteration = false;
+
+  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+
+  logTraceOutWith1Argument("endIteration(State)", state);
 }
 
 void exahype::mappings::MeshRefinement::refineSafely(
