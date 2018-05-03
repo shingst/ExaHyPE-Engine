@@ -976,28 +976,23 @@ void exahype::solvers::FiniteVolumesSolver::ensureOnlyNecessaryMemoryIsAllocated
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
+void exahype::solvers::FiniteVolumesSolver::receiveCellDescriptions(
     const int                                     fromRank,
     exahype::Cell&                                localCell,
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  const int receivedCellDescriptionsIndex =
-      Heap::getInstance().createData(0,exahype::solvers::RegisteredSolvers.size());
-  Heap::getInstance().receiveData(receivedCellDescriptionsIndex,fromRank,x,level,messageType);
+  Heap::getInstance().receiveData(
+      localCell.getCellDescriptionsIndex(),fromRank,x,level,messageType);
 
   logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
-          Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
+          Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
           " cell descriptions for cell (centre="<< x.toString() << "level="<< level << ")");
 
-  Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).clear();
-  for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-    resetIndicesAndFlagsOfReceivedCellDescription(pReceived,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
-    Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
+  for (auto& cellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
+    resetIndicesAndFlagsOfReceivedCellDescription(
+        cellDescription,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
   }
-
-  Heap::getInstance().deleteData(receivedCellDescriptionsIndex);
-  assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
 void exahype::solvers::FiniteVolumesSolver::resetIndicesAndFlagsOfReceivedCellDescription(

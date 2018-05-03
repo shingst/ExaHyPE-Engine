@@ -1990,7 +1990,7 @@ public:
    * Here, we would merge first the cell descriptions sent by the master and worker
    * and then merge the data that is sent out right after.
    */
-  static void mergeCellDescriptionsWithRemoteData(
+  static void receiveCellDescriptions(
       const int                                    fromRank,
       exahype::Cell&                               localCell,
       const peano::heap::MessageType&              messageType,

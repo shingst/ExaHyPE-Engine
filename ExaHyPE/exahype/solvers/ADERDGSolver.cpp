@@ -906,7 +906,7 @@ bool exahype::solvers::ADERDGSolver::isValidCellDescriptionIndex(
 int exahype::solvers::ADERDGSolver::tryGetElement(
     const int cellDescriptionsIndex,
     const int solverNumber) const {
-  if (Heap::getInstance().isValidIndex(cellDescriptionsIndex)) {
+  if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
     int element=0;
     for (auto& p : Heap::getInstance().getData(cellDescriptionsIndex)) {
       if (p.getSolverNumber()==solverNumber) {
@@ -959,6 +959,17 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   ) {
     logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<" at level "<<fineGridVerticesEnumerator.getLevel());
 
+    if ( tarch::parallel::Node::getInstance().getRank()==11) {
+      logInfo("progressMeshRefinementInEnterCell(...)","add new cell here="<<fineGridVerticesEnumerator.getCellCenter()<<", level="<<fineGridVerticesEnumerator.getLevel());
+    }
+//    tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
+//    if (
+//        tarch::la::equals(fineGridVerticesEnumerator.getCellCenter(),poi,1e-4) &&
+//        fineGridVerticesEnumerator.getLevel()==3
+//    ) {
+//      logInfo("progressMeshRefinementInEnterCell(...)","add new cell here="<<fineGridVerticesEnumerator.getCellCenter()<<", level="<<fineGridVerticesEnumerator.getLevel());
+//    }
+
     addNewCell(
         fineGridCell,fineGridVerticesEnumerator,
         multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
@@ -992,6 +1003,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
     decideOnRefinement(fineGridCellDescription);
     decideOnVirtualRefinement(fineGridCellDescription);
+
+//    logInfo("progressMeshRefinementInEnterCell(...)","state [post]="<<fineGridCellDescription.toString());
   }
 
   // Coarse grid cell based adaptive mesh refinement operations.
@@ -3105,28 +3118,23 @@ void exahype::solvers::ADERDGSolver::sendEmptyCellDescriptions(
       toRank,x,level,messageType);
 }
 
-void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
+void exahype::solvers::ADERDGSolver::receiveCellDescriptions(
     const int                                    fromRank,
     exahype::Cell&                               localCell,
     const peano::heap::MessageType&              messageType,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  const int receivedCellDescriptionsIndex =
-      Heap::getInstance().createData(0,exahype::solvers::RegisteredSolvers.size());
-  Heap::getInstance().receiveData(receivedCellDescriptionsIndex,fromRank,x,level,messageType);
+  Heap::getInstance().receiveData(
+      localCell.getCellDescriptionsIndex(),fromRank,x,level,messageType);
 
-  logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
-          Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
-          " cell descriptions for cell (centre="<< x.toString() << "level="<< level << ")");
+//  logInfo("mergeCellDescriptionsWithRemoteData(...)","received " <<
+//          Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
+//          " cell descriptions for cell (centre="<< x.toString() << ", level="<< level << ")");
 
-  Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).clear();
-  for (auto& pReceived : Heap::getInstance().getData(receivedCellDescriptionsIndex)) {
-    resetIndicesAndFlagsOfReceivedCellDescription(pReceived,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
-    Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
+  for (auto& cellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
+    resetIndicesAndFlagsOfReceivedCellDescription(
+        cellDescription,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
   }
-
-  Heap::getInstance().deleteData(receivedCellDescriptionsIndex);
-  assertion(!Heap::getInstance().isValidIndex(receivedCellDescriptionsIndex));
 }
 
 void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescription(
@@ -3399,10 +3407,12 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
     const int receivedCellDescriptionsIndex, const int receivedElement,
     const bool initialGrid) {
   CellDescription& localCellDescription    = getCellDescription(localCellDescriptionsIndex,localElement);
-  CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
+  CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement); // need because of data
 
   // finalise prolongation operation started on master
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
+    logInfo("progressMeshRefinementInMergeWithWorker(...)","PROLONGATING");
+
     assertion( localCellDescription.getType()==CellDescription::Type::Cell ||
                localCellDescription.getType()==CellDescription::Type::Descendant);
     assertion(receivedCellDescription.getType()==CellDescription::Type::Cell);
@@ -3629,17 +3639,17 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
       &&
       messageType==peano::heap::MessageType::ForkOrJoinCommunication
   ) {
-    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","receive from rank "<<fromRank<<
-             ", cell: "<< x << ", level: " << level <<
-             ",type=" << CellDescription::toString(cellDescription.getType()) <<
-             ",RefEv="<<CellDescription::toString(cellDescription.getRefinementEvent()) <<
-             ",RefReq="<<CellDescription::toString(cellDescription.getRefinementRequest()));
+//    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","receive from rank "<<fromRank<<
+//             ", cell: "<< x << ", level: " << level <<
+//             ",type=" << CellDescription::toString(cellDescription.getType()) <<
+//             ",RefEv="<<CellDescription::toString(cellDescription.getRefinementEvent()) <<
+//             ",RefReq="<<CellDescription::toString(cellDescription.getRefinementRequest()));
   }
 
   // receive data
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
-             ", cell: "<< x << ", level: " << level);
+//    logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
+//             ", cell: "<< x << ", level: " << level);
 
 
     DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
