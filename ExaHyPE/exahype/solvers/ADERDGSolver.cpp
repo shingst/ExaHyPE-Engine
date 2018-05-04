@@ -950,9 +950,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     const int solverNumber) {
   bool result = false;
 
-//  logInfo("progressMeshRefinementInEnterCell(...)","Enter cell "<<fineGridVerticesEnumerator.getCellCenter() <<" at level "<<fineGridVerticesEnumerator.getLevel()
-//      << " for solver " << solverNumber << " at index=" << fineGridCell.getCellDescriptionsIndex());
-
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -961,10 +958,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
   ) {
-    logInfo("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel()
-        << ": solver=" << solverNumber << ", current cell index=" << fineGridCell.getCellDescriptionsIndex()
-        << ", is 3 valid index=" << Heap::getInstance().isValidIndex(3)
-    );
+    logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel()
+        << "for solver=" << solverNumber);
 
     addNewCell(
         fineGridCell,fineGridVerticesEnumerator,
@@ -1004,8 +999,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
     decideOnRefinement(fineGridCellDescription);
     decideOnVirtualRefinement(fineGridCellDescription);
-
-//    logInfo("progressMeshRefinementInEnterCell(...)","state [post]="<<fineGridCellDescription.toString());
   }
 
   // Coarse grid cell based adaptive mesh refinement operations.
@@ -3376,10 +3369,9 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
   const int level) const {
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
 
-  logInfo( "receiveDataFromMaster(...)","cell="<<receivedCellDescription.getOffset()<<","<<
-      receivedCellDescription.getLevel()<<": received=" << receivedCellDescription.toString());
-
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
+    logDebug( "receiveDataFromMaster(...)","received prolongated solution for " << receivedCellDescription.toString());
+
     mergeWithWorkerOrMasterDataDueToForkOrJoin(
       masterRank,receivedCellDescriptionsIndex,receivedElement,
       peano::heap::MessageType::MasterWorkerCommunication,x,level);
@@ -3409,7 +3401,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
 
   // finalise prolongation operation started on master
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
-    logInfo("progressMeshRefinementInMergeWithWorker(...)","PROLONGATING");
+    logDebug( "received(...)","merging prolongated solution for " << receivedCellDescription.toString());
 
     assertion( localCellDescription.getType()==CellDescription::Type::Cell ||
                localCellDescription.getType()==CellDescription::Type::Descendant);
@@ -3593,10 +3585,6 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  logInfo("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""
-      "cell description (" << cellDescription.getType() << ","<<cellDescription.getRefinementEvent() << ") sent to rank "<<toRank<<
-      ", cell: "<< x << ", level: " << level);
-
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""
             "solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
@@ -3635,24 +3623,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
   }
 
-  if (
-      (tarch::parallel::Node::getInstance().getRank()==11 ||
-      tarch::parallel::Node::getInstance().getRank()==6)
-      &&
-      messageType==peano::heap::MessageType::ForkOrJoinCommunication
-  ) {
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","receive from rank "<<fromRank<<
-//             ", cell: "<< x << ", level: " << level <<
-//             ",type=" << CellDescription::toString(cellDescription.getType()) <<
-//             ",RefEv="<<CellDescription::toString(cellDescription.getRefinementEvent()) <<
-//             ",RefReq="<<CellDescription::toString(cellDescription.getRefinementRequest()));
-  }
-
   // receive data
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-//    logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
-//             ", cell: "<< x << ", level: " << level);
-
+    logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
+             ", cell: "<< x << ", level: " << level);
 
     DataHeap::getInstance().getData(cellDescription.getSolution()).clear();
     DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).clear();
@@ -3994,7 +3968,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logInfo("sendDataToMaster(...)","Sending time step data: " <<
+    logDebug("sendDataToMaster(...)","Sending time step data: " <<
              "data[0]=" << messageForMaster[0] <<
              ",data[1]=" << messageForMaster[1] <<
              ",data[2]=" << messageForMaster[2] <<
@@ -4048,7 +4022,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
 
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logInfo("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
+    logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
   }
 
   DataHeap::getInstance().receiveData(
@@ -4094,7 +4068,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
       &&
       cellDescription.getHasToHoldDataForMasterWorkerCommunication()
   ) {
-    logInfo("sendDataToMaster(...)","face data of solver " << cellDescription.getSolverNumber() << " sent to rank "<<masterRank<<
+    logDebug("sendDataToMaster(...)","face data of solver " << cellDescription.getSolverNumber() << " sent to rank "<<masterRank<<
              ", cell: "<< x << ", level: " << level);
 
     // No inverted message order since we do synchronous data exchange.
@@ -4145,7 +4119,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getSolution())); // must hold for the other volume data, too
 
-    logInfo("mergeWithWorkerData(...)","Received face data for solver " <<
+    logDebug("mergeWithWorkerData(...)","Received face data for solver " <<
              cellDescription.getSolverNumber() << " from Rank "<<workerRank<<
              ", cell: "<< x << ", level: " << level);
 
