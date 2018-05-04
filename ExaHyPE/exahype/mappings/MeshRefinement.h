@@ -75,15 +75,6 @@ private:
   bool _verticalExchangeOfSolverDataRequired = false;
 
   /**
-   * Indicates that we merged with remote data
-   * in this iteration.
-   *
-   * We then skip the merge with worker data
-   * process.
-   */
-  bool _mergedWithRemoteDataInThisIteration = false;
-
-  /**
    * Prepare all local variables.
    */
   void initialiseLocalVariables();

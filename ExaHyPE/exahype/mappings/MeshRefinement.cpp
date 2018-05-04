@@ -287,6 +287,8 @@ void exahype::mappings::MeshRefinement::createCell(
   logTraceInWith4Arguments("createCell(...)", fineGridCell,
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
+
+  // do nothing
   fineGridCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 
@@ -402,7 +404,9 @@ void exahype::mappings::MeshRefinement::enterCell(
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
-          exahype::mappings::MeshRefinement::IsFirstIteration ||
+          (!exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+          exahype::mappings::MeshRefinement::IsFirstIteration)     // It has to be the first overall iteration
+          ||
           newComputeCell
       ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
@@ -545,12 +549,10 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
     int worker) {
   logTraceIn( "prepareSendToWorker(...)" );
 
-  if ( fineGridCell.hasToCommunicate(fineGridVerticesEnumerator.getCellSize()) ) {
-//    logInfo( "prepareSendToWorker(...)","isForking="<<exahype::State::isForking());
-//    logInfo( "prepareSendToWorker(...)","isForkingRank(worker)="<<exahype::State::isForkingRank(worker));
-//    logInfo( "prepareSendToWorker(...)","isNewWorkerDueToForkOfExistingDomain="<<exahype::State::isNewWorkerDueToForkOfExistingDomain());
-//    logInfo( "prepareSendToWorker(...)","isInvolvedInJoinOrFork="<<exahype::State::isInvolvedInJoinOrFork());
-
+  if (
+      !exahype::State::isForkingRank(worker) &&
+      fineGridCell.hasToCommunicate(fineGridVerticesEnumerator.getCellSize())
+  ) {
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       solver->progressMeshRefinementInPrepareSendToWorker(
@@ -603,20 +605,12 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceIn( "receiveDataFromMaster(...)" );
 
-  _mergedWithRemoteDataInThisIteration = false;
-
-  tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
-  if (
-      tarch::la::equals(receivedVerticesEnumerator.getCellCenter(),poi,1e-4) &&
-      receivedVerticesEnumerator.getLevel()==3
-  ) {
-    logInfo("mergeWithWorker(...)","[0.388889,0.388889] _mergedWithRemoteDataInThisIteration="<<_mergedWithRemoteDataInThisIteration);
-
-  }
-
   receivedCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-  if ( receivedCell.hasToCommunicate( receivedVerticesEnumerator.getCellSize()) ) {
+  if (
+      !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+      receivedCell.hasToCommunicate( receivedVerticesEnumerator.getCellSize())
+  ) {
     receivedCell.setupMetaData();
     exahype::solvers::ADERDGSolver::receiveCellDescriptions(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -630,11 +624,6 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
       peano::heap::MessageType::MasterWorkerCommunication,
       receivedVerticesEnumerator.getCellCenter(),
       receivedVerticesEnumerator.getLevel());
-//    logInfo( "receiveDataFromMaster(...)","cell="<<receivedVerticesEnumerator.getCellCenter()<<","<<
-//        receivedVerticesEnumerator.getLevel()<<": received=" <<
-//        exahype::solvers::ADERDGSolver::Heap::getInstance().getData(receivedCell.getCellDescriptionsIndex()).size());
-//    logInfo( "receiveDataFromMaster(...)","isNewWorkerDueToForkOfExistingDomain="<<exahype::State::isNewWorkerDueToForkOfExistingDomain());
-//    logInfo( "receiveDataFromMaster(...)","isInvolvedInJoinOrFork="<<exahype::State::isInvolvedInJoinOrFork());
 
     const int receivedCellDescriptionsIndex = receivedCell.getCellDescriptionsIndex();
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -650,13 +639,6 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
     }
   }
 
-  if (
-      tarch::la::equals(receivedVerticesEnumerator.getCellCenter(),poi,1e-4) &&
-      receivedVerticesEnumerator.getLevel()==3
-  ) {
-    logInfo("receiveDataFromMaster(...)","[0.388889,0.388889] receivedMasterCellIndex="<<receivedCell.getCellDescriptionsIndex());
-  }
-
   logTraceOut( "receiveDataFromMaster(...)" );
 }
 
@@ -666,65 +648,39 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
 
-  tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
-  if (
-      tarch::la::equals(cellCentre,poi,1e-4) &&
-      level==3
-  ) {
-    logInfo("mergeWithWorker(...)","[0.388889,0.388889] _mergedWithRemoteDataInThisIteration="<<_mergedWithRemoteDataInThisIteration);
-  }
+  if (  receivedMasterCell.isInitialised() ) { // we do not receive anything here
+    // Do not merge anything if our worker is on a newly forked part of the mesh
+    if ( !exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
+      if ( !localCell.isInitialised() ) { // simply copy the index
+        localCell.setupMetaData();
+      }
+      //  make consistent     // TODO(Dominic): Make collective operations in cell
+      exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
+      exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
 
-  if (
-//      !_mergedWithRemoteDataInThisIteration &&
-      receivedMasterCell.isInitialised()
-  ) { // we do not receive anything here
-    if ( !localCell.isInitialised() ) { // simply copy the index
-      localCell.setupMetaData();
-    }
-    //  make consistent     // TODO(Dominic): Make collective operations in cell
-    exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
-    exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
-
-    const int localCellDescriptionsIndex    = localCell.getCellDescriptionsIndex();
-    const int receivedCellDescriptionsIndex = receivedMasterCell.getCellDescriptionsIndex();
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int localElement    = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
-      const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
-      assertion4(receivedElement==exahype::solvers::Solver::NotFound || localElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
-      assertion4(localElement==exahype::solvers::Solver::NotFound    || receivedElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
-      if ( localElement!=exahype::solvers::Solver::NotFound ) {
-        solver->progressMeshRefinementInMergeWithWorker(
-            localCellDescriptionsIndex,localElement,
-            receivedCellDescriptionsIndex,receivedElement, // TODO(Dominic): Is the issue here?
-            IsInitialMeshRefinement);
+      const int localCellDescriptionsIndex    = localCell.getCellDescriptionsIndex();
+      const int receivedCellDescriptionsIndex = receivedMasterCell.getCellDescriptionsIndex();
+      for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        const int localElement    = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
+        const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
+        assertion4(receivedElement==exahype::solvers::Solver::NotFound || localElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
+        assertion4(localElement==exahype::solvers::Solver::NotFound    || receivedElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
+        if ( localElement!=exahype::solvers::Solver::NotFound ) {
+          solver->progressMeshRefinementInMergeWithWorker(
+              localCellDescriptionsIndex,localElement,
+              receivedCellDescriptionsIndex,receivedElement,
+              IsInitialMeshRefinement);
+        }
+      }
+      if ( localCell.isInitialised() && localCell.isEmpty() ) {
+        localCell.shutdownMetaData();
       }
     }
-    if ( localCell.isInitialised() && localCell.isEmpty() ) {
-      localCell.shutdownMetaData();
-    }
 
-    tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
-    if (
-        tarch::la::equals(cellCentre,poi,1e-4) &&
-        level==3
-    ) {
-      logInfo("mergeWithWorker(...)","[0.388889,0.388889] localCell.isInitialised()="<<localCell.isInitialised() && localCell.isEmpty());
-    }
-  }
-
-  if ( receivedMasterCell.isInitialised() ) {
     //  make consistent     // TODO(Dominic): Make collective operations in cell
     exahype::solvers::ADERDGSolver::eraseCellDescriptions(receivedMasterCell.getCellDescriptionsIndex());
     exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(receivedMasterCell.getCellDescriptionsIndex());
-  }
-  
-  if (
-      tarch::la::equals(cellCentre,poi,1e-4) &&
-      level==3
-  ) {
-    logInfo("mergeWithWorker(...)","[0.388889,0.388889] localCellIndex="<<localCell.getCellDescriptionsIndex());
-    logInfo("mergeWithWorker(...)","[0.388889,0.388889] receivedMasterCellIndex="<<receivedMasterCell.getCellDescriptionsIndex());
   }
 
   logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
@@ -902,26 +858,14 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith3Arguments( "mergeWithRemoteDataDueToForkOrJoin(...)", localCell, masterOrWorkerCell, fromRank );
 
-  _mergedWithRemoteDataInThisIteration = true;
-
-//  tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
-//  if (
-//      tarch::la::equals(cellCentre,poi,1e-4) &&
-//      level==3
-//  ) {
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","[0.388889,0.388889] has to communicate="<<localCell.hasToCommunicate(cellSize) << ",new worker=" << exahype::State::isNewWorkerDueToForkOfExistingDomain() );
-//  }
-
   if ( localCell.hasToCommunicate(cellSize) ) {
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","[0.388889,0.388889] has to communicate="<<localCell.hasToCommunicate(cellSize) << ",new worker=" << exahype::State::isNewWorkerDueToForkOfExistingDomain() );
-
     if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       localCell.setCellDescriptionsIndex(
           multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
       localCell.setupMetaData();
     } else if ( exahype::State::isJoiningWithWorker() ) {
-//      exahype::solvers::ADERDGSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
-//      exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
+      exahype::solvers::ADERDGSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
+      exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
     }
 
     exahype::solvers::ADERDGSolver::receiveCellDescriptions(
@@ -944,34 +888,20 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
       }
     }
 
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin","localCell.isInitialised()="<<localCell.isInitialised());
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin","cell descriptions="<<
-//        exahype::solvers::ADERDGSolver::Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size());
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin","oneSolverFound="<<foundOneSolver);
-
     // if no solver was found shut down the metadata again
     if ( localCell.isInitialised() && localCell.isEmpty() ) {
       localCell.shutdownMetaData();
     }
 
-    if ( localCell.isInitialised() && !localCell.isEmpty() ) {
-      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","index="<<localCell.getCellDescriptionsIndex()<<": received " <<
-          solvers::ADERDGSolver::Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
-          " cell descriptions for cell (centre="<< cellCentre.toString() << ", level="<< level << ")");
-    } else {
-      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","index="<<localCell.getCellDescriptionsIndex()<<": received " <<
-          0 <<
-                " cell descriptions for cell (centre="<< cellCentre.toString() << ", level="<< level << ")");
-    }
-
-//    tarch::la::Vector<DIMENSIONS,double> poi(0.388889,0.388889);
-//    if (
-//        tarch::la::equals(cellCentre,poi,1e-4) &&
-//        level==3
-//    ) {
-//      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","[0.388889,0.388889] localCell.isInitialised()="<<localCell.isInitialised());
+//    if ( localCell.isInitialised() && !localCell.isEmpty() ) {
+//      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)",localCell.toString()<<", address="<<&localCell<<": received " <<
+//          solvers::ADERDGSolver::Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
+//          " cell descriptions for cell (centre="<< cellCentre.toString() << ", level="<< level << ")");
+//    } else {
+//      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)",localCell.toString()<<", address="<<&localCell<<": received " <<
+//          0 <<
+//                " cell descriptions for cell (centre="<< cellCentre.toString() << ", level="<< level << ")");
 //    }
-//    logInfo("mergeWithRemoteDataDueToForkOrJoin(...)","localCell.isInitialised()="<<localCell.isInitialised());
   }
 
   logTraceOut( "mergeWithRemoteDataDueToForkOrJoin(...)" );

@@ -51,6 +51,8 @@ exahype::Cell::Cell() : Base() {
 
 exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
 : Base(value) {
+  _cellData.setCellDescriptionsIndex(
+      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
 exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {

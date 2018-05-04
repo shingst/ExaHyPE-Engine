@@ -950,6 +950,9 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     const int solverNumber) {
   bool result = false;
 
+//  logInfo("progressMeshRefinementInEnterCell(...)","Enter cell "<<fineGridVerticesEnumerator.getCellCenter() <<" at level "<<fineGridVerticesEnumerator.getLevel()
+//      << " for solver " << solverNumber << " at index=" << fineGridCell.getCellDescriptionsIndex());
+
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -958,7 +961,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
   ) {
-    logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<" at level "<<fineGridVerticesEnumerator.getLevel());
+    logInfo("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel()
+        << ": solver=" << solverNumber << ", current cell index=" << fineGridCell.getCellDescriptionsIndex()
+        << ", is 3 valid index=" << Heap::getInstance().isValidIndex(3)
+    );
 
     addNewCell(
         fineGridCell,fineGridVerticesEnumerator,
@@ -3586,6 +3592,10 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
+  logInfo("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""
+      "cell description (" << cellDescription.getType() << ","<<cellDescription.getRefinementEvent() << ") sent to rank "<<toRank<<
+      ", cell: "<< x << ", level: " << level);
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""

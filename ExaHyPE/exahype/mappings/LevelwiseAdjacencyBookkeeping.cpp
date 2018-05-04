@@ -225,10 +225,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-  if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
-    localCell.setCellDescriptionsIndex(
-        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-  }
+  // do not reset heap indices here. This will result in wrong behaviour when
+  // merging remote data if this mapping follows another mapping
 }
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
