@@ -579,9 +579,11 @@ void exahype::Cell::reduceDataToMasterPerCell(
         getCellDescriptionsIndex(),
         cellCentre,level);
 
+
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+
       if ( element!=exahype::solvers::Solver::NotFound ) {
         solver->sendDataToMaster(
             master,
@@ -611,10 +613,9 @@ void exahype::Cell::mergeWithDataFromWorkerPerCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (
-          receivedMetadata[offset]!=exahype::InvalidMetadataEntry &&
-          element!=exahype::solvers::Solver::NotFound
-      ) {
+
+      if ( receivedMetadata[offset]!=exahype::InvalidMetadataEntry ) {
+        assertion(element!=exahype::solvers::Solver::NotFound);
         exahype::MetadataHeap::HeapEntries metadataPortion(
             receivedMetadata.begin()+offset,
             receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);

@@ -39,7 +39,7 @@ peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can be masked out with LTS program flow
       true);
 }
 
@@ -287,7 +287,7 @@ void exahype::mappings::Prediction::prepareSendToMaster(
     localCell.reduceDataToMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getCellSize(),
+        verticesEnumerator.getCellSize(), // TODO(Dominic): Odd ones
         verticesEnumerator.getLevel());
   }
 
@@ -309,7 +309,7 @@ void exahype::mappings::Prediction::mergeWithMaster(
   logTraceIn( "mergeWithMaster(...)" );
 
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    fineGridCell.mergeWithDataFromWorkerPerCell(
+    fineGridCell.mergeWithDataFromWorkerPerCell(   // TODO(Dominic): Odd ones
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getCellSize(),
