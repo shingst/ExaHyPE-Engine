@@ -501,12 +501,14 @@ private:
     const int                         _cellDescriptionsIndex;
     const int                         _element;
     std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+    int&                              _jobCounter;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        int&                                     jobCounter);
 
     bool operator()();
   };

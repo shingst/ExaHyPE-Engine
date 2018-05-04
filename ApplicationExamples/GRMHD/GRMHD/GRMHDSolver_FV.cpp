@@ -33,12 +33,12 @@ void GRMHD::GRMHDSolver_FV::init(const std::vector<std::string>& cmdlineargs,con
   // Just copy and pasted from GRMHDSolver_ADERDG
   // Todo: Move this to specfile once we have working constants.
   // Todo: Move this to specfile once we have working constants.
-  std::string id_default = "Fortran";
-  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+  //std::string id_default = "Fortran";
+  //std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
   // alternatives:
-  //std::string id_RNSID = "RNSID";
-  //std::string bc_RNSID_octant = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
+  std::string id_default = "RNSID";
+  std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
 
   // try to obtain requested initial data and boundary conditions from the
   // environment variables, as the specfile parameter system is still broken.
@@ -95,8 +95,21 @@ void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex,
   pdeeigenvalues_(lambda, Q, nv);
 }
 
+
+// Detection of unphysical states. In these cases, the user PDE functions shall never be called.
+// We workaround by returning some kind of "neutral" values which go well with the scheme.
+inline bool isAllZero(const double* const Q) {
+	// TODO: Check only the metric, since we see 1e-14 values in Q despite
+	// the state vector is not coming from the ID.
+	for(int i=0; i<GRMHD::GRMHDSolver_FV::NumberOfVariables; i++)
+	   { if(Q[i]!=0) return false; }
+	return true;
+}
+
+
 void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
-  pdeflux_(F[0], F[1], (DIMENSIONS==3)?F[2]:nullptr, Q);
+  if(!isAllZero(Q))
+    pdeflux_(F[0], F[1], (DIMENSIONS==3)?F[2]:nullptr, Q);
 }
 
 // Source is exactly 0
@@ -120,7 +133,8 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 
 
 void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
-  pdencp_(BgradQ, Q, gradQ);
+  if(!isAllZero(Q))
+    pdencp_(BgradQ, Q, gradQ);
 }
 
 /*

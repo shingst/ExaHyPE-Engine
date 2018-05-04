@@ -145,13 +145,16 @@ void GRMHD::IntegralsWriter::mapQuantities(
 	double ExactCons[nVar];
 	double ExactPrim[nVar];
 	const double *xpos = x.data();
-	
-	id->Interpolate(xpos, timeStamp, ExactCons);
-	pdecons2prim_(ExactPrim, ExactCons, &err);
-	
-	double localError[nVar];
-	for(int i=0; i<nVar; i++) {
-		localError[i] = std::abs(V[i] - ExactPrim[i]);
+
+	double localError[nVar] = {0.};
+	try {
+		id->Interpolate(xpos, timeStamp, ExactCons);
+		pdecons2prim_(ExactPrim, ExactCons, &err);
+		for(int i=0; i<nVar; i++) {
+			localError[i] = std::abs(V[i] - ExactPrim[i]);
+		}
+	} catch(const std::domain_error&) {
+		// error is 0.
 	}
 	
 	errors.addValue(localError, dV);

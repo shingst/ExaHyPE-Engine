@@ -1,5 +1,6 @@
 package minitemp.syntaxtree;
 
+import java.lang.StringBuilder;
 import minitemp.Context;
 
 /**
@@ -40,6 +41,17 @@ public class IfNode extends SyntaxTree {
       return ifBlock.render(context);
     } else {
       return elseBlock.render(context);
+    }
+  }
+  
+  /** Render the subtree corresponding to the correct branch (eventually empty) */
+  @Override
+  public void renderWithStringBuilder(Context context, StringBuilder sb) throws IllegalArgumentException {
+    boolean value = context.evaluateBoolean(condition.getContentClean());
+    if(value) {
+      ifBlock.renderWithStringBuilder(context, sb);
+    } else {
+      elseBlock.renderWithStringBuilder(context, sb);
     }
   }
   

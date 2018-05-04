@@ -329,11 +329,11 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
 
     ! Check for NaN. Being a quantum computer, the presence of such a
     ! check changes the behaviour of the computer.
-    DO i=1,nVar
-	IF(.not.(BgradQ(i).eq.BgradQ(i))) THEN
-		PRINT *, "NaN: ", BgradQ
-	END IF
-    END DO
+!    DO i=1,nVar
+!	IF(.not.(BgradQ(i).eq.BgradQ(i))) THEN
+!		PRINT *, "NaN: ", BgradQ
+!	END IF
+ !   END DO
 END SUBROUTINE PDENCP
 
 
