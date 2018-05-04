@@ -25,4 +25,6 @@ source /etc/profile.d/modules.sh
 module load tbb/2017
 module load likwid/4.0
 
+I_MPI_FABRICS="tmi"
+
 {{body}}
