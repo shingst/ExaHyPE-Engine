@@ -240,10 +240,9 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
       int                                       level
     );
 
+
     /**
-     * If we are on a new worker, write an
-     * invalid index into the cell's
-     * heap index.
+     * Nop.
      */
     void mergeWithRemoteDataDueToForkOrJoin(
       exahype::Cell&  localCell,

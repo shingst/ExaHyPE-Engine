@@ -646,7 +646,8 @@ private:
       records::ADERDGCellDescription& cellDescription,
       const int faceIndex,
       const int indexOfQValues,
-      const int indexOfFValues);
+      const int indexOfFValues,
+      const int fromRank);
 
   /**
    * Sets heap indices of an ADER-DG cell description to -1,

@@ -759,7 +759,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   // a few extra iterations for the cell status flag spreading
   int extraIterations =
       std::max (
-          exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 4+3,
+          exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 4+8,
               // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell()+1);
   if (extraIterations>0) {
