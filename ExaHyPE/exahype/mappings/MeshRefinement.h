@@ -120,7 +120,7 @@ private:
    * \note Only erasing inside vertices ensures that we do not compete
    * with routine eraseButPreserveRegularityAlongRemoteBoundary(...).
    */
-  void eraseIfInsideAndNotRemote(
+  void eraseIfInside(
       exahype::Vertex& fineGridVertex,
       const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const;
 

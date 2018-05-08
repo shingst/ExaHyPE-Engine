@@ -1449,8 +1449,13 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
         cellDescriptionsIndex,element);
 
     bool refineAdjacentVertices =
+        cellDescription.getType()==CellDescription::Type::Ancestor ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren ||
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested ||
-        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested;
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Refining ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefining;
 
     #ifdef Asserts
     assertion1(

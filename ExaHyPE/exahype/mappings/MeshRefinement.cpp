@@ -194,19 +194,15 @@ void exahype::mappings::MeshRefinement::refineSafely(
   }
 }
 
-void exahype::mappings::MeshRefinement::eraseIfInsideAndNotRemote(
+void exahype::mappings::MeshRefinement::eraseIfInside(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const {
   if (
-      #ifdef Parallel
-      !fineGridVertex.isRemote( _localState, true, false)
-      &&
-      #endif
       !fineGridVertex.isHangingNode()
       &&
       fineGridVertex.isInside()       && // otherwise, we compete with ensureRegularityAlongBoundary
-      fineGridVertex.getRefinementControl()
-      == Vertex::Records::RefinementControl::Refined
+      fineGridVertex.getRefinementControl()==
+          Vertex::Records::RefinementControl::Refined
   ) {
     fineGridVertex.erase();
   }
@@ -225,8 +221,11 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
 
   if ( refinementControl==exahype::solvers::Solver::RefinementControl::Refine ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
-  } else if ( refinementControl==exahype::solvers::Solver::RefinementControl::Erase ) {
-    eraseIfInsideAndNotRemote(fineGridVertex,fineGridH);
+  } else if (
+      !exahype::mappings::MeshRefinement::IsFirstIteration
+      &&
+      refinementControl==exahype::solvers::Solver::RefinementControl::Erase ) {
+    eraseIfInside(fineGridVertex,fineGridH);
   }
 }
 
@@ -335,14 +334,14 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     bool oneInnerVertexIsRefined = false;
     bool noInnerVertexIsRefined  = true;
     dfor2(v)
-    oneInnerVertexIsRefined |=
-        fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
-        fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()
-        ==exahype::Vertex::Records::RefinementControl::Refined;
-    noInnerVertexIsRefined &=
-        !fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
-        fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()
-        ==exahype::Vertex::Records::RefinementControl::Unrefined;
+      oneInnerVertexIsRefined |=
+          fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
+          fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()
+          ==exahype::Vertex::Records::RefinementControl::Refined;
+      noInnerVertexIsRefined &=
+          !fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
+          fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()
+          ==exahype::Vertex::Records::RefinementControl::Unrefined;
     enddforx
 
     if (oneInnerVertexIsRefined) {
