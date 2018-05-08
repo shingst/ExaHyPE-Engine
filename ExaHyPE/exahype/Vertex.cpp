@@ -510,13 +510,16 @@ bool exahype::Vertex::hasToSendMetadata(
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
   const tarch::la::Vector<TWO_POWER_D,int> adjacentRanks = getAdjacentRanks();
 
-  return adjacentRanks(destScalar)   == toRank
+  return adjacentRanks[destScalar]   == toRank
          &&
-         adjacentRanks(destScalar)   != tarch::parallel::Node::getGlobalMasterRank() &&
-         adjacentRanks(srcScalar)    != tarch::parallel::Node::getGlobalMasterRank()
+         adjacentRanks[destScalar]   != tarch::parallel::Node::getGlobalMasterRank() &&
+         adjacentRanks[srcScalar]    != tarch::parallel::Node::getGlobalMasterRank()
          &&
-         (adjacentRanks(srcScalar)   == tarch::parallel::Node::getInstance().getRank() ||
-         State::isForkTriggeredForRank(adjacentRanks(srcScalar)))
+         (   // Send also when a fork/join was triggered for the current rank
+             adjacentRanks[srcScalar]   == tarch::parallel::Node::getInstance().getRank() ||
+             State::isForkTriggeredForRank(adjacentRanks[srcScalar]) ||
+             State::isJoinTriggeredForRank(adjacentRanks[srcScalar])
+         )
          &&
          tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1);
 }
@@ -597,13 +600,17 @@ bool exahype::Vertex::hasToReceiveMetadata(
   const tarch::la::Vector<TWO_POWER_D,int> adjacentRanks = getAdjacentRanks();
 
   return
-      adjacentRanks(srcScalar)    == fromRank
+      adjacentRanks[srcScalar]    == fromRank
       &&
-      adjacentRanks(srcScalar)    != tarch::parallel::Node::getGlobalMasterRank() &&
-      adjacentRanks(destScalar)   != tarch::parallel::Node::getGlobalMasterRank()
+      adjacentRanks[srcScalar]    != tarch::parallel::Node::getGlobalMasterRank() &&
+      adjacentRanks[destScalar]   != tarch::parallel::Node::getGlobalMasterRank()
       &&
-      (adjacentRanks(destScalar)  == tarch::parallel::Node::getInstance().getRank() ||
-      State::isForkingRank(adjacentRanks(destScalar)))
+      (   // Receive also when a fork/join is performed for the neighbour rank, i.e. such
+          // an event was triggered in the iteration before
+          adjacentRanks[destScalar] == tarch::parallel::Node::getInstance().getRank() ||
+          State::isForkingRank(adjacentRanks[destScalar]) ||
+          State::isJoiningRank(adjacentRanks[destScalar])
+      )
       &&
       tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1);
 }

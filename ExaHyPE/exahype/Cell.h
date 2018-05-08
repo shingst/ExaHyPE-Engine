@@ -382,37 +382,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const int                                   level);
 
-  /*! Broadcast metadata down to the worker.
-   * This is done per cell.
-   */
-  void broadcastMetadataToWorkerPerCell(
-      const int                                   worker,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level);
-
-  /*! Receive the metadata broadcasted down from the master.
-   * This is done per cell.
-   *
-   * \note must be called on the "receivedCell" in
-   * "Mapping::receiveDataFromMaster".
-   */
-  void receiveMetadataFromMasterPerCell(
-      const int                                   master,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level);
-
-  /*! Receives metadata from the master and merges it with all
-   * solvers registered on the cell.
-   *
-   * \note must be called on the "localCell" in
-   * "Mapping::mergeWithWorker".
-   */
-  void mergeWithMetadataFromMasterPerCell(
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const exahype::State::AlgorithmSection&     section);
-
   /*! Broadcast data per cell to a worker.
    *
    * Loop over all solvers and send data down
@@ -482,12 +451,8 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   /**
    * Receives metadata from a worker and merges it with all
    * solvers registered on the cell.
-   *
-   * \return if vertical (master-worker) exchange
-   * of face data is required during the time stepping iterations
-   * for any of the registered solvers.
    */
-  bool mergeWithMetadataFromWorkerPerCell(
+  void mergeWithMetadataFromWorkerPerCell(
       const int                                   workerRank,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,

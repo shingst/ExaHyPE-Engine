@@ -51,6 +51,8 @@ exahype::Cell::Cell() : Base() {
 
 exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
 : Base(value) {
+  _cellData.setCellDescriptionsIndex(
+      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
 exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
@@ -373,66 +375,6 @@ bool exahype::Cell::hasToCommunicate(
 
 // MASTER->WORKER
 
-void exahype::Cell::broadcastMetadataToWorkerPerCell(
-    const int                                   worker,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level) {
-  if ( hasToCommunicate(cellSize) ) {
-    exahype::sendMasterWorkerCommunicationMetadata(
-        worker,
-        getCellDescriptionsIndex(),
-        cellCentre,level);
-  }
-}
-
-void exahype::Cell::receiveMetadataFromMasterPerCell(
-    const int                                   master,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level) {
-  if ( hasToCommunicate(cellSize) ) {
-    ReceivedMetadataHeapIndex =
-        exahype::receiveMasterWorkerCommunicationMetadata(
-            master,cellCentre,level);
-  }
-}
-
-void exahype::Cell::mergeWithMetadataFromMasterPerCell(
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const exahype::State::AlgorithmSection&     section) {
-  if ( hasToCommunicate(cellSize) ) {
-    assertion(exahype::MetadataHeap::getInstance().isValidIndex(ReceivedMetadataHeapIndex));
-
-    MetadataHeap::HeapEntries& receivedMetadata =
-        MetadataHeap::getInstance().getData(ReceivedMetadataHeapIndex);
-    assertionEquals(
-        receivedMetadata.size(),exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
-
-    if ( isInitialised() ) {
-      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
-        const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-        if (solver->isMergingMetadata(section) &&
-            element!=exahype::solvers::Solver::NotFound &&
-            receivedMetadata[offset]!=exahype::InvalidMetadataEntry) {
-          MetadataHeap::HeapEntries metadataPortion(
-              receivedMetadata.begin()+offset,
-              receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
-
-          solver->mergeWithMasterMetadata(
-              metadataPortion,
-              getCellDescriptionsIndex(),element);
-        }
-      }
-    }
-
-    MetadataHeap::getInstance().deleteData(ReceivedMetadataHeapIndex,true);
-    ReceivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
-  }
-}
-
 void exahype::Cell::broadcastDataToWorkerPerCell(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
@@ -475,6 +417,7 @@ void exahype::Cell::receiveDataFromMasterPerCell(
     assertion(ReceivedDataHeapIndices.empty());
     const int maxNumberOfMessages = 4; // TODO(Dominic): Ensure this is correct (from ADERDGSolver::DataMessagesPerMasterWorkerCommunication + 2 for observables).
     ReceivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*maxNumberOfMessages);
+    ReceivedDataHeapIndices.clear();
 
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -582,13 +525,12 @@ void exahype::Cell::reduceMetadataToMasterPerCell(
     const int                                   level) const {
   if ( hasToCommunicate(cellSize) ) {
     exahype::sendMasterWorkerCommunicationMetadata(
-        master,
-        getCellDescriptionsIndex(),
+        master, getCellDescriptionsIndex(),
         cellCentre,level);
   }
 }
 
-bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
+void exahype::Cell::mergeWithMetadataFromWorkerPerCell(
     const int                                   workerRank,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
@@ -602,7 +544,6 @@ bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
     assertionEquals(receivedMetadata.size(),
                     exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
-    bool verticalExchangeOfSolverDataRequired = false;
     if ( isInitialised() ) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -617,18 +558,13 @@ bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
               receivedMetadata.begin()+offset,
               receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
 
-          verticalExchangeOfSolverDataRequired |=
               solver->mergeWithWorkerMetadata(
-                  metadataPortion,
-                  getCellDescriptionsIndex(),element);
+                  metadataPortion, getCellDescriptionsIndex(),element);
         }
       }
     }
 
     MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
-    return verticalExchangeOfSolverDataRequired;
-  } else {
-    return false;
   }
 }
 
@@ -643,9 +579,11 @@ void exahype::Cell::reduceDataToMasterPerCell(
         getCellDescriptionsIndex(),
         cellCentre,level);
 
+
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+
       if ( element!=exahype::solvers::Solver::NotFound ) {
         solver->sendDataToMaster(
             master,
@@ -675,10 +613,9 @@ void exahype::Cell::mergeWithDataFromWorkerPerCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (
-          receivedMetadata[offset]!=exahype::InvalidMetadataEntry &&
-          element!=exahype::solvers::Solver::NotFound
-      ) {
+
+      if ( receivedMetadata[offset]!=exahype::InvalidMetadataEntry ) {
+        assertion(element!=exahype::solvers::Solver::NotFound);
         exahype::MetadataHeap::HeapEntries metadataPortion(
             receivedMetadata.begin()+offset,
             receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);

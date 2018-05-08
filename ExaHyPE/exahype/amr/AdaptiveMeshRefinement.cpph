@@ -3,6 +3,8 @@ exahype::solvers::Solver::SubcellPosition
 exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
     const CellDescription& pChild) {
   // 1. Initialisation.
+  static tarch::logging::Log _log("exahype::amr::AdaptiveMeshRefinement");
+
   exahype::solvers::Solver::SubcellPosition subcellPosition;
   if (
       (pChild.getType()==CellDescription::Cell || 
@@ -13,7 +15,7 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
     CellDescription* pParent = 0;
     int parentElement=0;
     for (auto& p : CellDescriptionHeap::getInstance().getData(pChild.getParentIndex())) {
-      if (p.getSolverNumber()==pChild.getSolverNumber()) {
+      if ( p.getSolverNumber()==pChild.getSolverNumber() ) {
         subcellPosition.parentCellDescriptionsIndex = pChild.getParentIndex();
         subcellPosition.parentElement               = parentElement;
         pParent = &p;
@@ -24,10 +26,10 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
 
     // 2. If the current parent is an EmptyAncestor,
     // try to determine iteratively the next parent that holds data.
-    if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound) {
+    if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
       while (
           pParent->getType()==CellDescription::Ancestor            &&
-          pParent->getCommunicationStatus()==0                            &&
+          pParent->getCommunicationStatus()==0                     &&
           #ifdef Parallel
           !pParent->getHasToHoldDataForMasterWorkerCommunication() &&
           #endif
@@ -36,7 +38,7 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
         const int currentParentIndex = pParent->getParentIndex();
         int parentElement=0;
         for (auto& p : CellDescriptionHeap::getInstance().getData(currentParentIndex)) {  // Loop over cell descriptions
-          if (p.getSolverNumber() == pChild.getSolverNumber()) {
+          if ( p.getSolverNumber() == pChild.getSolverNumber() ) {
             subcellPosition.parentCellDescriptionsIndex = pParent->getParentIndex();
             subcellPosition.parentElement               = parentElement;
             pParent = &p;
@@ -76,8 +78,11 @@ exahype::amr::computeSubcellPositionOfCellOrAncestor(
   if (
       pChild.getType()==CellDescription::Cell
       || 
-      (pChild.getType()==CellDescription::Ancestor &&
-      pChild.getCommunicationStatus()>0)
+      (
+       pChild.getType()==CellDescription::Ancestor &&
+       (pChild.getCommunicationStatus()>0 ||
+       pChild.getHasToHoldDataForMasterWorkerCommunication())
+      )
   ) {
     exahype::solvers::Solver::SubcellPosition subcellPosition =
         computeSubcellPositionOfCellOrAncestorOrEmptyAncestor

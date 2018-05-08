@@ -110,10 +110,15 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::updateAdjacencyMapsOfAdjacentVertices(
-    exahype::Cell&                       fineGridCell,
-    exahype::Vertex * const              fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
+  exahype::Cell&                 fineGridCell,
+  exahype::Vertex * const        fineGridVertices,
+  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+  exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+  exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+) {
   // Write cell's index into adjacent vertices
   dfor2(k)
     if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
@@ -150,18 +155,6 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::updateAdjacencyMapsOfAdja
       }
     }
   }
-}
-
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
-  exahype::Cell&                 fineGridCell,
-  exahype::Vertex * const        fineGridVertices,
-  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-  exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-  exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
-) {
-  updateAdjacencyMapsOfAdjacentVertices(fineGridCell,fineGridVertices,fineGridVerticesEnumerator);
 }
 
 #ifdef Parallel
@@ -232,10 +225,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-  if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
-    localCell.setCellDescriptionsIndex(
-        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-  }
+  // do not reset heap indices here. This will result in wrong behaviour when
+  // merging remote data if this mapping follows another mapping
 }
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
@@ -298,7 +289,6 @@ bool exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareSendToWorker(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
   int                                                                  worker
 ) {
-  updateAdjacencyMapsOfAdjacentVertices(fineGridCell,fineGridVertices,fineGridVerticesEnumerator);
   return false;
 }
 

@@ -142,29 +142,9 @@ private:
 #endif
 
   /**
-   * Sets heap indices of all finite volumes cell descriptions that were
-   * received due to a fork or join event to
-   * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-   * and the parent index of the cell descriptions to the specified \p
-   * parentIndex.
+   * Allocate necessary memory and deallocate unnecessary memory.
    */
-  static void resetDataHeapIndices(
-      const int cellDescriptionsIndex,
-      const int parentIndex);
-
-  /**
-   * Checks if the parent index of a fine grid cell description
-   * was set to RemoteAdjacencyIndex during a previous forking event.
-   *
-   * If so, check if there exists a coarse grid cell description
-   * which must have been also received during a previous fork event.
-   * If so, update the parent index of the fine grid cell description
-   * with the coarse grid cell descriptions index.
-   */
-  void ensureConsistencyOfParentIndex(
-      CellDescription& cellDescription,
-      const int coarseGridCellDescriptionsIndex,
-      const int solverNumber);
+  static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
   /**
    * There are no prolongations and restrictions
@@ -575,7 +555,7 @@ public:
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    */
-  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   /**
    * Checks if all the necessary memory is allocated for the cell description.
@@ -585,16 +565,14 @@ public:
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
    */
-  void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
       const int solverNumber) override;
 
@@ -603,8 +581,6 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) override;
 
@@ -757,28 +733,18 @@ public:
   ///////////////////////////////////
   // MASTER<=>WORKER
   ///////////////////////////////////
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) override;
-
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-        const int cellDescriptionsIndex,
-        const int element) override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
+  /**
+     * Sets heap indices of an FiniteVolumesCellDescription to -1,
+     * and the parent index of the cell descriptions to the specified \p
+     * parentIndex.
+     */
+   static void resetIndicesAndFlagsOfReceivedCellDescription(CellDescription& cellDescription,const int parentIndex);
 
   /**
    * Send all ADERDG cell descriptions to rank
@@ -823,7 +789,7 @@ public:
    * Here, we would merge first the cell descriptions sent by the master and worker
    * and then merge the data that is sent out right after.
    */
-  static void mergeCellDescriptionsWithRemoteData(
+  static void receiveCellDescriptions(
       const int                                     fromRank,
       exahype::Cell&                                localCell,
       const peano::heap::MessageType&               messageType,
@@ -887,15 +853,15 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
+  ///////////////////////
+  // MASTER <=> WORKER
+  ///////////////////////
+
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
@@ -903,20 +869,83 @@ public:
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const override;
+
+  void mergeWithWorkerMetadata(
+        const MetadataHeap::HeapEntries& receivedMetadata,
+        const int                        cellDescriptionsIndex,
+        const int                        element) override;
+
+  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
+      exahype::Cell& localCell,
+      const exahype::Cell& receivedMasterCell);
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) final override;
+
+  /**
+   * Nop
+   */
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
+  /**
+   * Nop
+   */
+  void receiveDataFromMasterIfProlongating(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,    const int localElement,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop. TODO(Dominic): As long as no multi-solver and limiter
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,
+      const int localElement,
+      const int coarseGridCellDescriptionsIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) final override;
 
   void sendDataToMaster(
       const int                                    masterRank,
