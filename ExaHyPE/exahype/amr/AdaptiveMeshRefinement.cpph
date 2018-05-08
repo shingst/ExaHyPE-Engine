@@ -80,8 +80,12 @@ exahype::amr::computeSubcellPositionOfCellOrAncestor(
       || 
       (
        pChild.getType()==CellDescription::Ancestor &&
-       (pChild.getCommunicationStatus()>0 ||
-       pChild.getHasToHoldDataForMasterWorkerCommunication())
+       (
+           pChild.getCommunicationStatus()>0
+        #ifdef Parallel
+        || pChild.getHasToHoldDataForMasterWorkerCommunication()
+        #endif
+       )
       )
   ) {
     exahype::solvers::Solver::SubcellPosition subcellPosition =

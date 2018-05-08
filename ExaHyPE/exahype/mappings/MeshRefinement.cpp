@@ -404,7 +404,10 @@ void exahype::mappings::MeshRefinement::enterCell(
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
-          (!exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+          (
+          #ifdef Parallel
+          !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+          #endif
           exahype::mappings::MeshRefinement::IsFirstIteration)     // It has to be the first overall iteration
           ||
           newComputeCell
