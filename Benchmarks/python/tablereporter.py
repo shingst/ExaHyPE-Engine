@@ -383,8 +383,8 @@ NOTE: The order of the parameters in the section 'per_plot' is preserved.
     tableFile   = open(tablePath, 'r')
     columnNames = next(tableFile)
     columnNames = columnNames.strip()
-    columnNames = columnNames.split(";")
-    tableData   = list(csv.reader(tableFile,delimiter=";"))
+    columnNames = columnNames.split(",")
+    tableData   = list(csv.reader(tableFile,delimiter=","))
     tableFile.close()
     
     dataColumnIndex     = getDataColumnIndex()

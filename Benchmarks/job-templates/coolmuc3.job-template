@@ -14,6 +14,7 @@
 #SBATCH --exclusive
 #SBATCH --cluster=mpp3
 #SBATCH --partition=mpp3_batch
+#SBATCH --mem=MaxMemPerNode
 #SBATCH --ntasks={{ranks}}
 #SBATCH --nodes={{nodes}}
 #SBATCH --cpus-per-task={{cores}}
@@ -24,5 +25,7 @@ source /etc/profile.d/modules.sh
 
 module load tbb/2017
 module load likwid/4.0
+
+I_MPI_FABRICS="tmi"
 
 {{body}}

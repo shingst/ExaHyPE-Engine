@@ -13,6 +13,7 @@
 #SBATCH -t {{time}}
 #SBATCH --exclusive
 #SBATCH -p par7.q
+#SBATCH --mem=MaxMemPerNode
 #SBATCH --ntasks={{ranks}}
 #SBATCH --nodes={{nodes}}
 #SBATCH --cpus-per-task={{cores}}

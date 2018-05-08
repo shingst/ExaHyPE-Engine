@@ -29,10 +29,10 @@ exahype-project GRMHD
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 3
-    width                          = 15.0, 15.0, 15.0
-    offset                         = 0.0, 0.0, 0.0
-    end-time                       = 0.0000001
+    dimension const                = 2
+    width                          = 15.0, 10.0
+    offset                         = 0.0, 0.0
+    end-time                       = 2.0
   end computational-domain
   
   shared-memory
@@ -67,7 +67,7 @@ exahype-project GRMHD
     maximum-mesh-size              = 5.00009
     maximum-mesh-depth             = 0
     time-stepping                  = global
-    type const         = musclhancock
+    type const         = godunov
     terms const        = flux,ncp
     optimisation const = generic
     language const                 = C
@@ -90,7 +90,7 @@ exahype-project GRMHD
 */
     plot vtk::Cartesian::vertices::ascii ConservedWriter
       variables const = 19
-      time      = 0.0
+      time      = 10000.0
       repeat    = 0.00590278
       output    = ./vtk-output/cartesian-2d
       select    = z:0.0

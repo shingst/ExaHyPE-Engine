@@ -62,6 +62,7 @@ def parseResultFile(filePath):
     parameterDict   = {}
     
     stats = {}
+    stats["run_time_steps"]  = 0
     stats["inner_cells_min"] = 10**20
     stats["inner_cells_max"] = 0
     stats["inner_cells_avg"] = 0.0
@@ -95,7 +96,11 @@ def parseResultFile(filePath):
                 stats["unrefined_inner_cells_min"]  = min( stats["unrefined_inner_cells_min"], unrefinedInnerCells )
                 stats["unrefined_inner_cells_max"]  = max( stats["unrefined_inner_cells_max"], unrefinedInnerCells )
                 stats["unrefined_inner_cells_avg"] += unrefinedInnerCells
-                
+            # 154.448      [i22r02c02s11],rank:0 info         exahype::runners::Runner::startNewTimeStep(...)         step 20	t_min          =0.0015145
+            m = re.search("step(\s*)([0-9]+)(\s*)t_min",line)
+            if m:
+                stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
+   
             anchor = '|'
             header = '||'
             if anchor in line and header not in line:
@@ -179,6 +184,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         header.append("inner_cells_min")
                         header.append("inner_cells_max")
                         header.append("inner_cells_avg")
+                        header.append("run_time_steps")
                         header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
@@ -213,10 +219,40 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(str( int(stats["inner_cells_min"]) ))
                         row.append(str( int(stats["inner_cells_max"]) ))
                         row.append(str( stats["inner_cells_avg"] ))
+                        row.append(str( stats["run_time_steps"] ))
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
+                    row=[]
+                    for key in sorted(environmentDict):
+                        row.append(environmentDict[key])
+                    for key in knownParameters:
+                        row.append(parameterDict[key])
+                    for key in sorted(parameterDict):
+                        if key not in knownParameters:
+                            row.append(parameterDict[key])
+                    row.append(ranks)
+                    row.append(nodes)
+                    row.append(tasks)
+                    row.append(cores)
+                    row.append(run)
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
+                    row.append(fileName)
+                    csvwriter.writerow(row)
+
                     unfinishedRuns.append(resultsFolderPath+"/"+fileName)
+
         if len(unfinishedRuns):
             print("output files of unfinished runs:")
             for job in unfinishedRuns:
@@ -260,8 +296,8 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     and nonfused scheme.
     """
     fusedAdapters        = ["FusedTimeStep"]
-    firstNonfusedAdapter = "MergeNeighbours"
-    nonfusedAdapters     = [firstNonfusedAdapter, "Prediction", "UpdateAndReduce"]
+    firstFusedAdapter    = "BroadcastAndDropNeighbourMessages"
+    nonfusedAdapters     = ["MergeNeighbours", "Prediction", "UpdateAndReduce"]
 
     adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
     outputTablePath   = resultsFolderPath+"/"+projectName+'-total-times.csv'
@@ -280,6 +316,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         userTimeColumn           = header.index("total_usertime")
         normalisedCPUTimeColumn  = header.index("normalised_cputime")
         normalisedUserTimeColumn = header.index("normalised_usertime")
+        runTimeStepsColumn       = header.index("run_time_steps")
         
         if runColumn >= adapterColumn:
             print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
@@ -321,6 +358,19 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     row.append(str(statistics.stdev(measurements)))
                 else:
                     row.append("0.0")
+
+            def sumUpTimes(line,fused):
+                adapter = line[adapterColumn]
+                if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                    summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[runTimeStepsColumn])
+                    summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[runTimeStepsColumn])
+                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[runTimeStepsColumn])
+                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[runTimeStepsColumn])
+                elif not timePerTimeStep:
+                    summedCPUTimes[-1]            += float(line[cpuTimeColumn])
+                    summedUserTimes[-1]           += float(line[userTimeColumn])
+                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn])
+                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn])
             
             previousLine      = None
             fused             = True
@@ -329,56 +379,86 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                 if previousLine==None:
                     previousLine=line
                 
+                # new adapter 
                 if linesAreIdenticalUpToIndex(line,previousLine,adapterColumn):
                     adapter = line[adapterColumn]
-                    if adapter==firstNonfusedAdapter:
-                       fused = False
-                    
-                    if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                        summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[iterationsColumn])
-                        summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[iterationsColumn])
-                        summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[iterationsColumn])
-                        summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[iterationsColumn])
-                    elif not timePerTimeStep:
-                        summedCPUTimes[-1]            += float(line[cpuTimeColumn])
-                        summedUserTimes[-1]           += float(line[userTimeColumn])
-                        summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn])
-                        summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn])
-                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn):
-                    summedCPUTimes.append(0.0)
-                    summedUserTimes.append(0.0)
-                    summedNormalisedCPUTimes.append(0.0)
-                    summedNormalisedUserTimes.append(0.0)
+                    #print("new adapter: "+adapter)
+                    if adapter!="missing":
+                        sumUpTimes(line,fused)
+                # new run  
+                elif linesAreIdenticalUpToIndex(line,previousLine,runColumn): 
+                    adapter = line[adapterColumn]
+                    fused = (adapter==firstFusedAdapter) # only do this here
+                    #print("new run: "+adapter)
+                    if adapter!="missing":
+                        summedCPUTimes.append(0.0)
+                        summedUserTimes.append(0.0)
+                        summedNormalisedCPUTimes.append(0.0)
+                        summedNormalisedUserTimes.append(0.0)
+ 
+                        sumUpTimes(line,fused)
+                # new experiment
                 else:
                     row = previousLine[0:runColumn]
                     row.append(str(len(summedCPUTimes)))
-                    
-                    appendMoments(row,summedCPUTimes)
-                    appendMoments(row,summedUserTimes)
-                    appendMoments(row,summedNormalisedCPUTimes)
-                    appendMoments(row,summedNormalisedUserTimes)
+
+                    if len(summedCPUTimes): 
+                        appendMoments(row,summedCPUTimes)
+                        appendMoments(row,summedUserTimes)
+                        appendMoments(row,summedNormalisedCPUTimes)
+                        appendMoments(row,summedNormalisedUserTimes)
+                    else:
+                        summedCPUTimes            = [float("nan")]
+                        summedUserTimes           = [float("nan")]
+                        summedNormalisedCPUTimes  = [float("nan")]
+                        summedNormalisedUserTimes = [float("nan")]
+                        appendMoments(row,summedCPUTimes)
+                        appendMoments(row,summedUserTimes)
+                        appendMoments(row,summedNormalisedCPUTimes)
+                        appendMoments(row,summedNormalisedUserTimes)
                     
                     csvwriter.writerow(row)
-                    
-                    # reset
+                    # reset 
                     summedCPUTimes            = [0.0]
                     summedUserTimes           = [0.0]
                     summedNormalisedCPUTimes  = [0.0]
                     summedNormalisedUserTimes = [0.0]
                     
-                    fused = True
+                    adapter = line[adapterColumn]
+                    # print("new experiment: "+adapter)
+                    fused = (adapter==firstFusedAdapter) # only do this here
+                    if adapter!="missing":
+                        summedCPUTimes            = [0.0]
+                        summedUserTimes           = [0.0]
+                        summedNormalisedCPUTimes  = [0.0]
+                        summedNormalisedUserTimes = [0.0]
+                   
+                        sumUpTimes(line,fused)
+                    else:
+                        summedCPUTimes            = []
+                        summedUserTimes           = []
+                        summedNormalisedCPUTimes  = []
+                        summedNormalisedUserTimes = []
                 
                 previousLine  = line
             
             # write last row (copy and paste)
             row = previousLine[0:runColumn]
             row.append(str(len(summedCPUTimes)))
-            
-            appendMoments(row,summedCPUTimes)
-            appendMoments(row,summedUserTimes)
-            appendMoments(row,summedNormalisedCPUTimes)
-            appendMoments(row,summedNormalisedUserTimes)
-            
+            if len(summedCPUTimes): 
+                appendMoments(row,summedCPUTimes)
+                appendMoments(row,summedUserTimes)
+                appendMoments(row,summedNormalisedCPUTimes)
+                appendMoments(row,summedNormalisedUserTimes)
+            else:
+                summedCPUTimes            = [float("nan")]
+                summedUserTimes           = [float("nan")]
+                summedNormalisedCPUTimes  = [float("nan")]
+                summedNormalisedUserTimes = [float("nan")]
+                appendMoments(row,summedCPUTimes)
+                appendMoments(row,summedUserTimes)
+                appendMoments(row,summedNormalisedCPUTimes)
+                appendMoments(row,summedNormalisedUserTimes)     
             csvwriter.writerow(row)
             
             print("created table:")

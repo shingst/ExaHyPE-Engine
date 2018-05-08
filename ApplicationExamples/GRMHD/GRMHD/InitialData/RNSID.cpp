@@ -49,11 +49,13 @@ rnsid::rnsid() {
 	
 	id->Run();
 }
-	
-void rnsid::Interpolate(const double* x, double t, double* Q) {
+
+void get_conserved_quantities(rnsid* rnsid, const double* pos, double* Q) {
 	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
-	double V[nVar] = {0.0};
-	id->Interpolate(x, V);
+
+	double V[nVar] = {0.0}; // primitive variables, as returned by rnsid
+
+	rnsid->id->Interpolate(pos, V);
 	
 	// treatment of the atmostphere PROBABLY not done by RNSID
 	const double atmo_rho = 1e-13;
@@ -65,7 +67,70 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 		V[4] = atmo_press;
 	}
 	
+	//NVARS(i) printf("V[%d]=%e\n", i, V[i]);
+	for(int i=0;i<nVar;i++) Q[i] = 0.0;
+	
 	pdeprim2cons_(Q, V);
+}
+
+
+// A small Fortran helper routine
+extern "C" void rnsid_2d_cartesian2cylindrical_(double* Cartesian, const double* const Cylindrical, const double* const xGP_cylindrical);
+
+	
+void rnsid::Interpolate(const double* pos, double t, double* Q) {
+	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
+
+	// Copied from GRMHD_cpp, rnsid::Interpolate:
+	if(DIMENSIONS == 2) {
+		// in 2D, we interpret the coordinates (x,y) as (rho,z)
+		// Transfrom from cylindrical coordinates to cartesian ones:
+		const double rho=pos[0], z=pos[1], phi = 0.25*M_PI;
+
+		// The source and target coordinate systems. Mind that they have to be right-oriented
+		// coordinate systems for the cross product of Bmag and Scon.
+		double pos_cylindrical[3] = { rho, phi, z };
+		double pos_cartesian[3]   = { rho*std::cos(phi), rho*std::sin(phi), z };
+		
+		if(rho==0) {
+			throw std::domain_error("RNSID cannot be evaluated in 2D at the axis (radius=0) because coordinates are singular.");
+		}
+		
+		double  Q_Cartesian[nVar] = {0.0};  // intermediate step from rnsid
+		double *Q_Cylindrical = Q; // cylindrical output
+		
+		get_conserved_quantities(this, pos_cartesian, Q_Cartesian);
+		
+		// Since I don't believe this translation stuff, let me setup something on my own
+		// here.
+		//V_Cartesian[0] = std::sqrt( pos_cartesian[0]*pos_cartesian[0] + pos_cartesian[1]*pos_cartesian[1] + pos_cartesian[2]*pos_cartesian[2] );
+		//V_Cartesian[1] = 
+		
+
+		// Transform the metric from Cartesian back to cylindrical coordinates.
+		rnsid_2d_cartesian2cylindrical_(Q_Cylindrical, Q_Cartesian, pos_cylindrical);
+	} else {
+		get_conserved_quantities(this, pos, Q);
+	}
+	
+	/*
+	double V[nVar] = {0.0};
+	#if DIMENSIONS == 2
+	// this is only useful for lower dimensional debugging of the
+	// ExaHyPE infrastructure and not suitable Initial Data for simulation.
+	// If you want to do 2D, Pizza can use polar coordinates but it hasn't
+	// been implemented in the pizza_tovfront.
+	
+	// We now abuse this to get only values on the x axis, which effectively
+	// gives us a radius coordinate. This is fine for a nonrotating star.
+	double x3d[3] = { x[0], 0.0, 0.0 };
+	id->Interpolate(x3d, V);
+	#else
+	id->Interpolate(x, V);
+	#endif
+	*/
+	
+
 }
 
 #endif /* RNSID_AVAILABLE */
