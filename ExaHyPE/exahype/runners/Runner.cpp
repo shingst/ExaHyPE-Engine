@@ -741,35 +741,30 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
+  // a few extra iterations for the cell status flag spreading
+  const int spreadingIterations =
+      std::max (
+          exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  1 : 5,
+              // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
+              exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell()+1);
+  peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while (
     (
       repository.getState().continueToConstructGrid() ||
       exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
     )
   ) {
-    repository.iterate();
-    meshSetupIterations++;
+    for (int i=0; i<spreadingIterations; i++) { // always do a batch according to the number of spreading iterations
+      exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
+      repository.iterate(1,true);
+      meshSetupIterations++;
+      printMeshSetupInfo(repository,meshSetupIterations);
+    }
 
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     printMeshSetupInfo(repository,meshSetupIterations);
     meshUpdate = true;
-  }
-
-  // a few extra iterations for the cell status flag spreading
-  int extraIterations =
-      std::max (
-          exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 5,
-              // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
-          exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell()+1);
-
-  if ( extraIterations > 0 ) {
-    logInfo("createGrid()", "run "<<extraIterations<<" more status spreading iterations");
-
-    exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
-    repository.iterate(extraIterations,false);
-    meshSetupIterations+=extraIterations;
-    printMeshSetupInfo(repository,meshSetupIterations);
   }
 
   logInfo("createGrid(Repository)", "finished grid setup after " << meshSetupIterations << " iterations" );

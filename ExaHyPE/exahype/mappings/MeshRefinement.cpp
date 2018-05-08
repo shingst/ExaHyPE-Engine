@@ -401,7 +401,6 @@ void exahype::mappings::MeshRefinement::enterCell(
               exahype::mappings::MeshRefinement::IsInitialMeshRefinement,
               solverNumber);
 
-
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
           (

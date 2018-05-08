@@ -1426,14 +1426,15 @@ class exahype::solvers::Solver {
   /////////////////////////////////////
   /**
    * Evaluate the refinement criterion after
-   * a solution update has performed.
+   * a solution update has been performed and
+   * the patch has been advanced in time.
    *
-   * We currently only return RefinementType::APrioriRefinement (or
-   * RefinementType::APosterrioriRefinement)
-   * if a cell requested refinement.
+   * We currently only return true if a cell requested refinement.
    * ExaHyPE might then stop the
    * time stepping and update the mesh
    * before continuing. Erasing is here not considered.
+   *
+   * \note Must be called after startNewTimeStep was called
    *
    * \return True if mesh refinement is requested.
    *

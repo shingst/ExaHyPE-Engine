@@ -458,6 +458,19 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& subcellIndex);
 
   /**
+   * Checks if the parent index of a fine grid cell description
+   * was set to RemoteAdjacencyIndex during a previous forking event.
+   *
+   * If so, check if there exists a coarse grid cell description
+   * which must have been also received during a previous fork event.
+   * If so, update the parent index of the fine grid cell description
+   * with the coarse grid cell descriptions index.
+   */
+  void ensureConsistencyOfParentIndex(
+      CellDescription& cellDescription,
+      const int coarseGridCellDescriptionsIndex);
+
+  /**
    * Evaluates if the predictor can be processed as a
    * background task for this cell.
    *
@@ -702,19 +715,6 @@ private:
    * erasing decision.
    */
   void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
-
-  /**
-   * Checks if the parent index of a fine grid cell description
-   * was set to RemoteAdjacencyIndex during a previous forking event.
-   *
-   * If so, check if there exists a coarse grid cell description
-   * which must have been also received during a previous fork event.
-   * If so, update the parent index of the fine grid cell description
-   * with the coarse grid cell descriptions index.
-   */
-  void ensureConsistencyOfParentIndex(
-      CellDescription& cellDescription,
-      const int coarseGridCellDescriptionsIndex);
 
 #endif
 
