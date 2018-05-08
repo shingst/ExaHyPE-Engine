@@ -892,16 +892,6 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
     if ( localCell.isInitialised() && localCell.isEmpty() ) {
       localCell.shutdownMetaData();
     }
-
-//    if ( localCell.isInitialised() && !localCell.isEmpty() ) {
-//      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)",localCell.toString()<<", address="<<&localCell<<": received " <<
-//          solvers::ADERDGSolver::Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
-//          " cell descriptions for cell (centre="<< cellCentre.toString() << ", level="<< level << ")");
-//    } else {
-//      logInfo("mergeWithRemoteDataDueToForkOrJoin(...)",localCell.toString()<<", address="<<&localCell<<": received " <<
-//          0 <<
-//                " cell descriptions for cell (centre="<< cellCentre.toString() << ", level="<< level << ")");
-//    }
   }
 
   logTraceOut( "mergeWithRemoteDataDueToForkOrJoin(...)" );

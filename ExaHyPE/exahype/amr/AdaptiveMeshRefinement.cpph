@@ -5,8 +5,6 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
   // 1. Initialisation.
   static tarch::logging::Log _log("exahype::amr::AdaptiveMeshRefinement");
 
-  logInfo("computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(...)","step 0");
-
   exahype::solvers::Solver::SubcellPosition subcellPosition;
   if (
       (pChild.getType()==CellDescription::Cell || 
@@ -14,8 +12,6 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
       &&
       CellDescriptionHeap::getInstance().isValidIndex(pChild.getParentIndex())
   ) {
-    logInfo("computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(...)","step 1");
-
     CellDescription* pParent = 0;
     int parentElement=0;
     for (auto& p : CellDescriptionHeap::getInstance().getData(pChild.getParentIndex())) {
@@ -31,8 +27,6 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
     // 2. If the current parent is an EmptyAncestor,
     // try to determine iteratively the next parent that holds data.
     if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-      logInfo("computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(...)","step 2");
-
       while (
           pParent->getType()==CellDescription::Ancestor            &&
           pParent->getCommunicationStatus()==0                     &&
@@ -56,8 +50,6 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
       assertion2(pParent->getType()==CellDescription::Ancestor,
                  pChild.toString(),pParent->toString());
 
-      logInfo("computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(...)","step 3");
-
       if (
           pParent->getCommunicationStatus()==0
           #ifdef Parallel
@@ -65,8 +57,6 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
           #endif
       ) {
         subcellPosition.invalidate();
-
-        logInfo("computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(...)","step 4a");
       } else {
         subcellPosition.subcellIndex =
             computeSubcellIndex(
@@ -74,8 +64,6 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
                 pParent->getOffset());
         subcellPosition.levelDifference =
             pChild.getLevel() - pParent->getLevel();
-
-        logInfo("computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(...)","step 4b");
       }
     }
   }

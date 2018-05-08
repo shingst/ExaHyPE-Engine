@@ -2031,10 +2031,6 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     uncompress(cellDescription);
   }
 
-  if ( tarch::parallel::Node::getInstance().getRank()==13 ) {
-    logInfo("performPredictionAndVolumeIntegral(...)","cell="<<cellDescription.getOffset()<<",level="<<cellDescription.getLevel());
-  }
-
   validateCellDescriptionData(cellDescription,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [pre]");
 
   double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -2542,8 +2538,6 @@ void exahype::solvers::ADERDGSolver::restriction(
       fineGridCellDescription.getParentIndex(),fineGridCellDescription.getSolverNumber());
 
   if (parentElement!=exahype::solvers::Solver::NotFound) {
-    logInfo("restriction(...)", "cell at " << fineGridCellDescription.getLevel() << " has direct parent " );
-
     // restrict some flags to direct parent
     restrictToNextParent(fineGridCellDescription,parentElement);
 
@@ -2551,29 +2545,9 @@ void exahype::solvers::ADERDGSolver::restriction(
             exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(
                 fineGridCellDescription);
 
-    // TODO(Dominic): Debug
-    CellDescription& nextParent = getCellDescription(fineGridCellDescription.getParentIndex(),parentElement);
-    const int nextNextParentElement = tryGetElement(
-        nextParent.getParentIndex(),nextParent.getSolverNumber());
-    if ( nextNextParentElement!=exahype::solvers::Solver::NotFound ) {
-        CellDescription& nextNextParent = getCellDescription(nextParent.getParentIndex(),nextNextParentElement);
-        logInfo( "restriction(...)", "cell at " << fineGridCellDescription.getLevel() << " has parent two levels up " << nextNextParent.toString() );
-    }
-
-    if (
-        tarch::parallel::Node::getInstance().getRank()==13 &&
-        subcellPosition.parentElement != exahype::solvers::Solver::NotFound
-    ) {
-      CellDescription& parent = getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-      logInfo("restriction(...)", "cell at " << fineGridCellDescription.getLevel() << " has parent on level "<<parent.getLevel() );
-    }
-
-    logInfo("restriction(...)","on boundary of parent: " << exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference));
-
     // check if we are on the boundary of a parent cell which needs
     // to communicate face data
-    if ( // TODO(Dominic): Potentially bug in here or before why is no top most parent found???
+    if (
         subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
         exahype::amr::onBoundaryOfParent(
             subcellPosition.subcellIndex,subcellPosition.levelDifference)
@@ -2626,7 +2600,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(
 
       const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
 
-      logInfo("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
+      logDebug("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
                ",level=" << cellDescription.getLevel() << ",d=" << d <<
                ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
                " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
@@ -3148,9 +3122,9 @@ void exahype::solvers::ADERDGSolver::receiveCellDescriptions(
   Heap::getInstance().receiveData(
       localCell.getCellDescriptionsIndex(),fromRank,x,level,messageType);
 
-//  logInfo("mergeCellDescriptionsWithRemoteData(...)","received " <<
-//          Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
-//          " cell descriptions for cell (centre="<< x.toString() << ", level="<< level << ")");
+  logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
+          Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).size() <<
+          " cell descriptions for cell (centre="<< x.toString() << ", level="<< level << ")");
 
   for (auto& cellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
     resetIndicesAndFlagsOfReceivedCellDescription(
@@ -4067,7 +4041,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
 
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logInfo("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
+    logDebug("mergeWithWorkerData(...)","Receiving time step data [pre] from rank " << workerRank);
   }
 
   DataHeap::getInstance().receiveData(
@@ -4082,7 +4056,7 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToMaster(
     const int                                     masterRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  logInfo("sendEmptyDataToMaster(...)","empty data for solver sent to rank "<<masterRank<<
+  logDebug("sendEmptyDataToMaster(...)","empty data for solver sent to rank "<<masterRank<<
            ", cell: "<< x << ", level: " << level);
 
   const int numberOfMessages =
@@ -4107,7 +4081,7 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  logInfo(
+  logDebug(
       "sendDataToMaster(...)","send face data for cell description " <<
       cellDescription.toString() << " from rank "<<masterRank<<
       ", cell="<< x << ", level=" << level);
@@ -4155,7 +4129,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if ( cellDescription.getHasToHoldDataForMasterWorkerCommunication() ) {
-    logInfo(
+    logDebug(
         "mergeWithWorkerData(...)","receive face data for cell description " <<
         cellDescription.toString() << " from rank "<<workerRank<<
         ", cell="<< x << ", level=" << level);
@@ -4224,7 +4198,7 @@ void exahype::solvers::ADERDGSolver::dropWorkerData(
     const int                                     workerRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  logInfo(
+  logDebug(
       "dropWorkerData(...)",
       "dropping worker data from rank "<<workerRank<<
       ", cell: "<< x << ", level: " << level);
