@@ -100,23 +100,23 @@ void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
 
 void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("beginIteration(State)", state);
+  logTraceInWith1Argument("beginIteration(State)", solverState);
 
   exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
       exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
   exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
       exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
 
-  logTraceOutWith1Argument("beginIteration(State)", state);
+  logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("endIteration(State)", state);
+  logTraceInWith1Argument("endIteration(State)", solverState);
 
   peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
-  logTraceOutWith1Argument("endIteration(State)", state);
+  logTraceOutWith1Argument("endIteration(State)", solverState);
 }
 
 void exahype::mappings::PredictionRerun::enterCell(

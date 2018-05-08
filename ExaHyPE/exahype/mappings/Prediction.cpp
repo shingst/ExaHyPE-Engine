@@ -103,22 +103,22 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("endIteration(State)", state);
+  logTraceInWith1Argument("endIteration(State)", solverState);
 
   #ifdef USE_ITAC
   VT_traceon();
   #endif
 
-  logTraceOutWith1Argument("endIteration(State)", state);
+  logTraceOutWith1Argument("endIteration(State)", solverState);
 }
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("endIteration(State)", state);
+  logTraceInWith1Argument("endIteration(State)", solverState);
 
   peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
-  logTraceOutWith1Argument("endIteration(State)", state);
+  logTraceOutWith1Argument("endIteration(State)", solverState);
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(
