@@ -339,7 +339,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
           fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()
           ==exahype::Vertex::Records::RefinementControl::Refined;
       noInnerVertexIsRefined &=
-          !fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
+          fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
           fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()
           ==exahype::Vertex::Records::RefinementControl::Unrefined;
     enddforx

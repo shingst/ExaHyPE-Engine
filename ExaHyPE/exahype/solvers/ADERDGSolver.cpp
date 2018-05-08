@@ -1378,16 +1378,6 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
-    bool stable =
-        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-                &&
-                (cellDescription.getType()!=CellDescription::Cell ||
-                cellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Pending);
-
-    if (!stable) {
-      logInfo("attainedStableState(...)",cellDescription.toString());
-    }
-
     return
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
