@@ -121,8 +121,9 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
-  _localState(masterThread._localState),
-  _stableIterationsInARow(masterThread._stableIterationsInARow) {
+  _stableIterationsInARow(masterThread._stableIterationsInARow),
+  _localState(masterThread._localState)
+ {
   initialiseLocalVariables();
 }
 
