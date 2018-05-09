@@ -1885,12 +1885,13 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
 
   if ( vetoSpawnPredictionAsBackgroundJob ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
-    performPredictionAndVolumeIntegralBody( cellDescription,
+    performPredictionAndVolumeIntegralBody(
+          cellDescriptionsIndex, element,
           predictorTimeStamp,predictorTimeStepSize,
           false,vetoSpawnCompressionAsBackgroundJob,isAtRemoteBoundary);
   } else {
     int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
-    PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,
+    PredictionJob predictionJob( *this, cellDescriptionsIndex, element, predictorTimeStamp,predictorTimeStepSize,
         false/*already uncompressed*/, jobCounter );
     if (isAtRemoteBoundary) {
       peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
@@ -1998,12 +1999,12 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 
   if (aderdgSolver!=nullptr) {
-    CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-
+    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
     if (cellDescription.getType()==CellDescription::Type::Cell) {
       aderdgSolver->synchroniseTimeStepping(cellDescription);
       aderdgSolver->performPredictionAndVolumeIntegral(
-          cellDescription,cellDescription.getPredictorTimeStamp(),
+          cellDescriptionsIndex,element,
+          cellDescription.getPredictorTimeStamp(),
           cellDescription.getPredictorTimeStepSize(),
           true,isAtRemoteBoundary);
     }
@@ -2053,12 +2054,15 @@ bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrRestriction(
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
-    CellDescription& cellDescription,
+    const int    cellDescriptionsIndex,
+    const int    element,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
     const bool   uncompressBefore,
     const bool   vetoSpawnAnyBackgroundJob,
     const bool   isAtRemoteBoundary) {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
   if (uncompressBefore) {
     uncompress(cellDescription);
   }
@@ -2094,11 +2098,14 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-    CellDescription& cellDescription,
+    const int    cellDescriptionsIndex,
+    const int    element,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
-    const bool uncompressBefore,
-    const bool isAtRemoteBoundary) {
+    const bool   uncompressBefore,
+    const bool   isAtRemoteBoundary) {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const bool vetoSpawnAnyBackgroundJob =
         #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
@@ -2110,13 +2117,14 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         !SpawnPredictionAsBackgroundJob
     ) {
       performPredictionAndVolumeIntegralBody(
-          cellDescription,predictorTimeStamp,predictorTimeStepSize,
+          cellDescriptionsIndex,element,
+          predictorTimeStamp,predictorTimeStepSize,
           uncompressBefore,vetoSpawnAnyBackgroundJob,
           isAtRemoteBoundary);
     }
     else {
-      PredictionJob predictionJob( *this,cellDescription,predictorTimeStamp,predictorTimeStepSize,
-          uncompressBefore, isAtRemoteBoundary );
+      PredictionJob predictionJob( *this,cellDescriptionsIndex,element,predictorTimeStamp,predictorTimeStepSize,
+          uncompressBefore,isAtRemoteBoundary );
       if (isAtRemoteBoundary) {
         peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
       } else {
@@ -4534,13 +4542,15 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 
 exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   ADERDGSolver&     solver,
-  CellDescription&  cellDescription,
+  const int         cellDescriptionsIndex,
+  const int         element,
   const double      predictorTimeStamp,
   const double      predictorTimeStepSize,
   const bool        uncompressBefore,
   const bool        isAtRemoteBoundary):
   _solver(solver),
-  _cellDescription(cellDescription),
+  _cellDescriptionsIndex(cellDescriptionsIndex),
+  _element(element),
   _predictorTimeStamp(predictorTimeStamp),
   _predictorTimeStepSize(predictorTimeStepSize),
   _uncompressBefore(uncompressBefore),
@@ -4556,7 +4566,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegralBody(
-      _cellDescription,
+      _cellDescriptionsIndex,_element,
       _predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,false /*existence of job means there is no veto*/,_isAtRemoteBoundary); // ignore return value
 

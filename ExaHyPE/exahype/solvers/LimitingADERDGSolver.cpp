@@ -757,7 +757,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
 
   if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
-    _solver->performPredictionAndVolumeIntegral( solverPatch,
+    _solver->performPredictionAndVolumeIntegral(
+        cellDescriptionsIndex, element,
         memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
         false/*already uncompressed*/,vetoSpawnPredictionJob);
   } else { // just perform a restriction of the limiter status to the next parent
@@ -1418,7 +1419,8 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
          solverPatch.getPreviousLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell())
     ) {
       _solver->performPredictionAndVolumeIntegral(
-          solverPatch,
+          cellDescriptionsIndex,
+          element,
           solverPatch.getPredictorTimeStamp(),
           solverPatch.getPredictorTimeStepSize(),
           false/*already uncompressed*/,isAtRemoteBoundary);

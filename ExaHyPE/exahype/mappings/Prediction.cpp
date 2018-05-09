@@ -126,7 +126,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     const exahype::State::AlgorithmSection& algorithmSection) {
-  if (fineGridCell.isInitialised()) {
+  if ( fineGridCell.isInitialised() ) {
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetFaceDataExchangeCounters(

@@ -793,8 +793,9 @@ private:
 
   class PredictionJob {
     private:
-      ADERDGSolver&    _solver;
-      CellDescription& _cellDescription;
+      ADERDGSolver&    _solver; // TODO not const because of kernels
+      const int        _cellDescriptionsIndex;
+      const int        _element;
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
@@ -802,7 +803,8 @@ private:
     public:
       PredictionJob(
           ADERDGSolver&     solver,
-          CellDescription&  cellDescription,
+          const int         cellDescriptionsIndex,
+          const int         element,
           const double      predictorTimeStamp,
           const double      predictorTimeStepSize,
           const bool        uncompressBefore,
@@ -824,16 +826,16 @@ private:
    */
   class FusedTimeStepJob {
     private:
-      ADERDGSolver&    _solver;
+      ADERDGSolver&    _solver; // TODO not const because of kernels
       const int        _cellDescriptionsIndex;
       const int        _element;
       int&             _jobCounter;
     public:
       FusedTimeStepJob(
-          ADERDGSolver& solver,
-          const int     cellDescriptionsIndex,
-          const int     element,
-          int&          jobCounter);
+        ADERDGSolver& solver,
+        const int     cellDescriptionsIndex,
+        const int     element,
+        int&          jobCounter);
 
       bool operator()();
   };
@@ -1645,7 +1647,8 @@ public:
    * \note If this job is called by
    */
   void performPredictionAndVolumeIntegralBody(
-      CellDescription& cellDescription,
+      const int    cellDescriptionsIndex,
+      const int    element,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
@@ -1665,7 +1668,8 @@ public:
    *                               start backgroudn tasks.
    */
   void performPredictionAndVolumeIntegral(
-      CellDescription& cellDescription,
+      const int cellDescriptionsIndex,
+      const int element,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompress,
