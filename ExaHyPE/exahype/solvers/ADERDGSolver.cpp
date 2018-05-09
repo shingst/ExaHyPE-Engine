@@ -34,6 +34,8 @@
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 #include "peano/datatraversal/TaskSet.h"
 
+#include "peano/grid/aspects/VertexStateAnalysis.h"
+
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "kernels/KernelUtils.h"
@@ -1378,11 +1380,30 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
+    // compute flagging gradients in inside cells
+    bool flaggingHasNotConverged = false;
+    if (
+        (cellDescription.getType()==CellDescription::Type::Cell ||
+        cellDescription.getType()==CellDescription::Type::Ancestor)
+        &&
+        !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) {
+      for (int d=0; d<DIMENSIONS; d++) {
+        flaggingHasNotConverged |=
+            std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) > 2;
+        flaggingHasNotConverged |=
+            std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) > 2;
+        flaggingHasNotConverged |=
+            std::abs(cellDescription.getFacewiseLimiterStatus(2*d+1)       - cellDescription.getFacewiseLimiterStatus(2*d+0)) > 2;
+      }
+    }
+
     return
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
         (cellDescription.getType()!=CellDescription::Cell ||
-        cellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Pending);
+        cellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Pending)
+        &&
+        !flaggingHasNotConverged;
   } else {
     return true;
   }
@@ -1440,6 +1461,7 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
 
     bool refineAdjacentVertices =
         cellDescription.getType()==CellDescription::Type::Ancestor ||
+        cellDescription.getHasVirtualChildren() ||
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested ||
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren ||
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested ||
@@ -1467,9 +1489,9 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
         &&
         !cellDescription.getHasVirtualChildren()
         &&
-        cellDescription.getAugmentationStatus()==0
+        cellDescription.getAugmentationStatus()==0 // TODO(Dominic): Probably can tune here. This is chosen to large
         &&
-        cellDescription.getPreviousAugmentationStatus()==0; // TODO(Dominic): Might not be necessary
+        cellDescription.getLimiterStatus()==0;
 
     if (refineAdjacentVertices) {
       return RefinementControl::Refine;

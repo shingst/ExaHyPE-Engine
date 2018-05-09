@@ -68,16 +68,32 @@ private:
   std::vector<bool> _attainedStableState;
 
   /**
+   * The number of iterations in a row where
+   * all solvers attained a stable state.
+   * This counter is used for delaying erasing
+   * iterations till all solvers
+   * have finished their flagging.
+   */
+  int _stableIterationsInARow = 0;
+
+  /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
    * for any of the registered solvers.
    */
-  bool _verticalExchangeOfSolverDataRequired = false;
+  bool _verticalExchangeOfSolverDataRequired = false; // TODO(Dominic): Is Parallel
 
   /**
    * Prepare all local variables.
    */
   void initialiseLocalVariables();
+
+  /**
+   * Returns false if a solvers is still progressing
+   * its mesh refinement automaton or if
+   * the rank is involved in a join or fork.
+   */
+  bool allSolversAttainedStableState() const;
 
   /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
@@ -112,17 +128,6 @@ private:
   void ensureRegularityAlongBoundary(
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
-
-  /**
-   * Call erase on an inside fine grid vertex as long as it does not
-   * harm the regularity at the remote boundary.
-   *
-   * \note Only erasing inside vertices ensures that we do not compete
-   * with routine eraseButPreserveRegularityAlongRemoteBoundary(...).
-   */
-  void eraseIfInside(
-      exahype::Vertex& fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const;
 
 public:
 

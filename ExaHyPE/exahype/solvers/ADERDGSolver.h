@@ -1579,6 +1579,17 @@ public:
         const int& solverNumber,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
+  /**\copydoc Solver::attainedStableState
+   *
+   * Compute flagging gradients in inside cells.
+   * If the facewise flags on two opposite sides differ
+   * by more than 2, then the flagging has not converged.
+   *
+   * If this is the case or if the refinement events
+   * of a cell are none or the refinement criterion was not
+   * evaluated yet, we say the solver has not attained
+   * a stable state yet.
+   */
   bool attainedStableState(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
