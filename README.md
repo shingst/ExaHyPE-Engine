@@ -95,7 +95,7 @@ Recommendation: create a release separate from your working copy, e.g. in a ExaH
 
 2) Run `Peano/checkout-update-peano.sh`
 
-3) Clone/pull the ExaHyPE-Documentation
+3) Clone/pull the ExaHyPE-Documentation repository
 
 4) Run `make release` in ExaHyPE-Documentation
 
