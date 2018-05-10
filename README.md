@@ -95,18 +95,16 @@ Recommendation: create a release separate from your working copy, e.g. in a ExaH
 
 2) Run `Peano/checkout-update-peano.sh`
 
-2) Clone/pull the ExaHyPE-Documentation
+3) Clone/pull the ExaHyPE-Documentation
 
-3) Run `make release` in ExaHyPE-Documentation
+4) Run `make release` in ExaHyPE-Documentation
 
-4) Run `upload.sh` in ExaHyPE-Documentation
+5) Run `upload.sh` in ExaHyPE-Documentation
     - This uploads a copy of the guidebook to http://dev.exahype.eu/guidebook.pdf
 
-5) Run `Miscellaneous/create-release.sh` and pass the application folder(s) you would like to add to the release
+6) Run `Miscellaneous/create-release.sh` and pass the application folder(s) you would like to add to the release
 
-6) This will create a tar.gz archive containing the ExaHyPE+Peano source and your application(s)
-
-I assume that the ExaHyPE release repository is checked out to ~/git/ExaHyPE-Release.
+7) This will create a tar.gz archive containing the ExaHyPE+Peano source and your application(s)
 
 
 
