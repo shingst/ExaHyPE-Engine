@@ -7,10 +7,8 @@ fi
 
 
 
-folders=(ExaHyPE Toolkit CodeGenerator Peano)
-folders=(${folders[*]/#/../} $@)
+folders=(ExaHyPE Toolkit CodeGenerator Peano $@)
 files=(LICENSE.txt)
-files=(${files[*]/#/../})
 for i in ${folders[@]}; do
 	if [ ! -d "$i" ]; then
 		>&2 echo "Cannot find folder: $i"
@@ -26,7 +24,7 @@ for i in ${files[@]}; do
 done
 
 
-peanoVersion="Peano-$(svnversion ../Peano/peano)"
+peanoVersion="Peano-$(svnversion /Peano/peano)"
 exaVersion="ExaHyPE-$(git log --format="%h" -n 1)"
 tarName="$exaVersion-$peanoVersion.tar.gz"
 
