@@ -30,4 +30,4 @@ tarName="$exaVersion.tar.gz"
 
 echo $tarName 
 
-tar --exclude-vcs -czvf  $tarName ${folders[*]} ${files[*]}
+tar --exclude-vcs --exclude=*.o -czvf  $tarName ${folders[*]} ${files[*]}
