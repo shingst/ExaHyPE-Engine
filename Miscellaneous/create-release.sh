@@ -6,8 +6,13 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
+if [ "$#" -eq 1 ]; then
+        >&2 echo "Please provide name of release build"
+        exit 1
+fi
 
-folders=(ExaHyPE Toolkit CodeGenerator Peano $@)
+
+folders=(ExaHyPE Toolkit CodeGenerator Peano $1)
 files=(LICENSE.txt)
 for i in ${folders[@]}; do
 	if [ ! -d "$i" ]; then
@@ -25,7 +30,7 @@ done
 
 
 #peanoVersion="Peano-$(git log --format="%h" -n 1 Peano/peano)"
-exaVersion="ExaHyPE-$(git log --format="%h" -n 1)"
+exaVersion="ExaHyPE-"$2"-$(git log --format="%h" -n 1)"
 tarName="$exaVersion.tar.gz"
 
 echo $tarName 
