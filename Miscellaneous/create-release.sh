@@ -24,9 +24,9 @@ for i in ${files[@]}; do
 done
 
 
-peanoVersion="Peano-$(svnversion /Peano/peano)"
+#peanoVersion="Peano-$(git log --format="%h" -n 1 Peano/peano)"
 exaVersion="ExaHyPE-$(git log --format="%h" -n 1)"
-tarName="$exaVersion-$peanoVersion.tar.gz"
+tarName="$exaVersion.tar.gz"
 
 echo $tarName 
 
