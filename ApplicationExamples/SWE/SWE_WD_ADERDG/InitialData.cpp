@@ -1,6 +1,6 @@
 #include "InitialData.h"
-#include "MySWESolver_ADERDG_Variables.h"
-#include "MySWESolver_ADERDG.h"
+#include "MySWESolver_Variables.h"
+#include "MySWESolver.h"
 
 #include <cmath>
 
@@ -14,7 +14,7 @@ const double grav=9.81;
 * Constant water height with both sides smashing together
 */
 void SWE::ShockShockProblem(const double * const x, double* Q){
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   if(x[0] < 5) {
       vars.h() = 4.0;
@@ -33,7 +33,7 @@ void SWE::ShockShockProblem(const double * const x, double* Q){
 * Constant water height with both sides moving away from each other
 */
 void SWE::RareRareProblem(const double * const x, double* Q){
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   if(x[0] < 5) {
       vars.h() = 4.0;
@@ -52,7 +52,7 @@ void SWE::RareRareProblem(const double * const x, double* Q){
 * Gaussfunktion
 */
 void SWE::GaussFunctionProblem(const double* const x, double* Q){
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   vars.h() = exp(-pow(x[0] - 5, 2)) + 1;
   vars.hu() = 0.0;
@@ -65,7 +65,7 @@ void SWE::GaussFunctionProblem(const double* const x, double* Q){
  * Constant water height with "exponential" hump in bathymetry.  
  */
 void SWE::ExpBreakProblem(const double* const x,double* Q) {
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
     vars.h() = 4.0;
@@ -84,7 +84,7 @@ void SWE::ExpBreakProblem(const double* const x,double* Q) {
  * Constant water height with discontinuous jump in bathymetry.  
  */
 void SWE::DamBreakProblem(const double* const x,double* Q) {
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
     vars.h() = 4.0;
@@ -103,7 +103,7 @@ void SWE::DamBreakProblem(const double* const x,double* Q) {
  * Sea at rest (steady state).  
  */
 void SWE::SeaAtRestProblem(const double* const x,double* Q) {
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
     vars.h() = 3.0;
@@ -123,7 +123,7 @@ void SWE::SeaAtRestProblem(const double* const x,double* Q) {
 * To be used with WALL boundaries.
 */
 void SWE::SteadyRunUpLinear(const double* const x, double* Q) {
-   MySWESolver_ADERDG::Variables vars(Q);
+   MySWESolver::Variables vars(Q);
 
    const double d =1;
    const double xr=19.85;
@@ -140,7 +140,7 @@ void SWE::SteadyRunUpLinear(const double* const x, double* Q) {
 * To be used with WALL boundaries.
 */
 void SWE::RunUpLinear(const double* const x, double* Q) {
-   MySWESolver_ADERDG::Variables vars(Q);
+   MySWESolver::Variables vars(Q);
 
    const double as=0.3;
    const double d =1;
@@ -160,7 +160,7 @@ void SWE::RunUpLinear(const double* const x, double* Q) {
 * Steady-state test case for artificial continental shelf.
 */
 void SWE::SteadyRunUpShelf(const double* const x, double* Q) {
-   MySWESolver_ADERDG::Variables vars(Q);
+   MySWESolver::Variables vars(Q);
 
    const double d1 = 200.0;
    const double d2 = 2000.0;
@@ -191,7 +191,7 @@ void SWE::SteadyRunUpShelf(const double* const x, double* Q) {
 * Run-up on artificial continental shelf.
 */
 void SWE::RunUpShelf(const double* const x, double* Q) {
-   MySWESolver_ADERDG::Variables vars(Q);
+   MySWESolver::Variables vars(Q);
 
    const double d1 = 200.0;
    const double d2 = 2000.0;
@@ -228,7 +228,7 @@ void SWE::RunUpShelf(const double* const x, double* Q) {
 // width = 10.0,10.0
 // offset = 0.0, 0.0
 void SWE::WettingDryingProblem(const double* const x, double* Q){
-  MySWESolver_ADERDG::Variables vars(Q);
+  MySWESolver::Variables vars(Q);
 
   if(x[0] < -5) {
       vars.h() = 2.0;
@@ -240,10 +240,8 @@ void SWE::WettingDryingProblem(const double* const x, double* Q){
   vars.b() = -0.1*x[0] + exp((-x[0]*x[0])/(0.1*0.1));
 }
 
-// width = 4.0, 4.0
-// offset = -2.0, -2.0
 void SWE::OscillatingLake(const double* const x, double* Q){
-    MySWESolver_ADERDG::Variables vars(Q);
+    MySWESolver::Variables vars(Q);
 
     double omega = sqrt(0.2*grav);
 
@@ -256,7 +254,7 @@ void SWE::OscillatingLake(const double* const x, double* Q){
 // width = 10.0,10.0
 // offset = 0.0, 0.0
 void SWE::RunUpTest(const double* const x, double* Q){
-    MySWESolver_ADERDG::Variables vars(Q);
+    MySWESolver::Variables vars(Q);
 
     if(x[0] < 7){
         vars.h() = 0.5*exp(-pow(x[0] - 3.5, 2)) + 0.5;
@@ -271,6 +269,37 @@ void SWE::RunUpTest(const double* const x, double* Q){
     vars.hv() = 0.0;
 }
 
+//width = 70.0,10.0
+//offset = -10.0,0.0
+void SWE::SolitaryWaveOnASimpleBeach(const double*const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  const double d = 0.3;
+  const double H = 0.0185 * d;
+  const double beta = std::atan(1/19.85);
+  const double g = 1.0;
+
+  double gamma = std::sqrt((3*H)/(4*d));
+  double x0 = d * cos(beta)/sin(beta);
+  double L = std::log(std::sqrt(20) + std::sqrt(20 - 1)) / gamma;
+  double eta = H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d)));
+
+  if (x[0] < 0){
+      vars.h() = 0;
+      vars.b() = -x[0] * std::sin(beta)/std::cos(beta) + d;
+  }
+  else if (x[0] <= x0){
+      vars.h() = x[0] * std::sin(beta)/std::cos(beta);
+      vars.b() = d - vars.h();
+  }
+  else{
+       vars.h() =  H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) + d;
+       vars.b() = 0;
+  }
+  vars.hu() = -eta * std::sqrt(g/d) * vars.h();
+  vars.hv() = 0.0;
+}
+
 
 
 #endif
@@ -278,7 +307,7 @@ void SWE::RunUpTest(const double* const x, double* Q){
 void SWE::initialData(const double* const x,double* Q) {
   //ShockShockProblem(x, Q);
   //RareRareProblem(x, Q);
-  //GaussFunctionProblem(x, Q);
+  GaussFunctionProblem(x, Q);
   //ExpBreakProblem(x,Q);
   //DamBreakProblem(x,Q);
   //SeaAtRestProblem(x,Q);
@@ -288,5 +317,6 @@ void SWE::initialData(const double* const x,double* Q) {
   //RunUpShelf(x, Q);
   //WettingDryingProblem(x, Q);
   //OscillatingLake(x, Q);
-  RunUpTest(x, Q);
+  //RunUpTest(x, Q);
+  //SolitaryWaveOnASimpleBeach(x, Q);
 }
