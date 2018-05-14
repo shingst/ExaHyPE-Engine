@@ -37,6 +37,8 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
     eigs.hu() = 0.0;
     eigs.hv() = 0.0;
     eigs.b() = 0.0;
+      std::cout << "FV: " << std::endl;
+      std::cout << "ev: " << 0 << std::endl;
   }
   else {
     const double c = std::sqrt(grav * vars.h());
@@ -47,6 +49,9 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
     eigs.hu() = u_n - c;
     eigs.hv() = u_n;
     eigs.b() = 0.0;
+
+      std::cout << "FV: " << std::endl;
+      std::cout << "ev: " << std::abs(u_n + c) << std::endl;
   }
 }
 
@@ -112,6 +117,7 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
 }
 
 double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+    //std::cout << qL[0] << ", " << qR[0] << std::endl;
   double LL[NumberOfVariables] = {0.0};
   double LR[NumberOfVariables] = {0.0};
 

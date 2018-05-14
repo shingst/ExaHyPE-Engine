@@ -269,6 +269,37 @@ void SWE::RunUpTest(const double* const x, double* Q){
     vars.hv() = 0.0;
 }
 
+//width = 70.0,10.0
+//offset = -10.0,0.0
+void SWE::SolitaryWaveOnASimpleBeach(const double*const x, double* Q){
+  MySWESolver::Variables vars(Q);
+
+  const double d = 0.3;
+  const double H = 0.0185 * d;
+  const double beta = std::atan(1/19.85);
+  const double g = 1.0;
+
+  double gamma = std::sqrt((3*H)/(4*d));
+  double x0 = d * cos(beta)/sin(beta);
+  double L = std::log(std::sqrt(20) + std::sqrt(20 - 1)) / gamma;
+  double eta = H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d)));
+
+  if (x[0] < 0){
+      vars.h() = 0;
+      vars.b() = -x[0] * std::sin(beta)/std::cos(beta) + d;
+  }
+  else if (x[0] <= x0){
+      vars.h() = x[0] * std::sin(beta)/std::cos(beta);
+      vars.b() = d - vars.h();
+  }
+  else{
+       vars.h() =  H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) + d;
+       vars.b() = 0;
+  }
+  vars.hu() = -eta * std::sqrt(g/d) * vars.h();
+  vars.hv() = 0.0;
+}
+
 
 
 #endif
@@ -276,7 +307,7 @@ void SWE::RunUpTest(const double* const x, double* Q){
 void SWE::initialData(const double* const x,double* Q) {
   //ShockShockProblem(x, Q);
   //RareRareProblem(x, Q);
-  //GaussFunctionProblem(x, Q);
+  GaussFunctionProblem(x, Q);
   //ExpBreakProblem(x,Q);
   //DamBreakProblem(x,Q);
   //SeaAtRestProblem(x,Q);
@@ -285,6 +316,7 @@ void SWE::initialData(const double* const x,double* Q) {
   //SteadyRunUpShelf(x,Q);
   //RunUpShelf(x, Q);
   //WettingDryingProblem(x, Q);
-  OscillatingLake(x, Q);
+  //OscillatingLake(x, Q);
   //RunUpTest(x, Q);
+  //SolitaryWaveOnASimpleBeach(x, Q);
 }

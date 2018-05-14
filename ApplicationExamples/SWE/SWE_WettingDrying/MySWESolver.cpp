@@ -8,7 +8,7 @@ using namespace kernels;
 
 const double grav = 9.81;
 
-const double epsilon = 1e-3;
+const double epsilon = 1e-5;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
@@ -41,7 +41,7 @@ void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, doub
   else {
       const double c = std::sqrt(grav * vars.h());
       const double ih = 1. / vars.h();
-      double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(Q[0]*Q[0]*Q[0]*Q[0] + std::max(vars.h(), epsilon)*std::max(vars.h(), epsilon)*std::max(vars.h(), epsilon)*std::max(vars.h(), epsilon));
+      double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(std::pow(Q[0], 4) + std::pow(std::max(vars.h(), epsilon), 4));
 
       eigs.h() = u_n + c;
       eigs.hu() = u_n - c;
