@@ -2965,8 +2965,10 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     CellDescription& pRight,
     const int faceIndexLeft,
     const int faceIndexRight) {
-  if (pLeft.getType()==CellDescription::Type::Cell ||
-      pRight.getType()==CellDescription::Type::Cell) {
+  if (
+      pLeft.getType()==CellDescription::Type::Cell  ||
+      pRight.getType()==CellDescription::Type::Cell
+  ) {
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pRight.getExtrapolatedPredictor()),pRight.toString());
@@ -3018,7 +3020,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     }
     #endif
     
-    riemannSolver(
+    riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
+                   // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
         FL,FR,QL,QR,
         std::min(pLeft.getCorrectorTimeStepSize(),
             pRight.getCorrectorTimeStepSize()),
@@ -3031,10 +3034,23 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     }  
     #endif
 
-    assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
-    assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
-    assertion1(DataHeap::getInstance().isValidIndex(pRight.getExtrapolatedPredictor()),pRight.toString());
-    assertion1(DataHeap::getInstance().isValidIndex(pRight.getFluctuation()),pRight.toString());
+    // directly perform the face integral afterwards
+    int levelDeltaLeft  = 0;
+    int levelDeltaRight = 0;
+    if ( pLeft.getType()==CellDescription::Type::Descendant ) {
+      levelDeltaLeft = pLeft.getLevel() - pLeft.getParentCellLevel();
+    }
+    else if (  pRight.getType()==CellDescription::Type::Descendant ) {
+      levelDeltaRight = pRight.getLevel() - pRight.getParentCellLevel();
+    }
+    const int orientationLeft  = faceIndexLeft % 2;
+    const int orientationRight = 1-orientationLeft;
+    const int direction        = (faceIndexLeft-orientationLeft)/2;
+    double* updateLeft  = DataHeap::getInstance() getData(pLeft.getUpdate()).data();
+    double* updateRight = DataHeap::getInstance().getData(pRight.getUpdate()).data();
+
+    faceIntegral(updateLeft,FL,direction,orientationLeft,levelDeltaLeft,pLeft.getSize());
+    faceIntegral(updateRight,FR,direction,orientationRight,levelDeltaRight,pRight.getSize());
   }
 }
 
@@ -3897,7 +3913,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
         receivedlFhbndIndex,
         fromRank);
 
-    DataHeap::getInstance().deleteData(receivedlQhbndIndex,true);
+    DataHeap::getInstance().deleteData(receivedlQhbndIndex,true); // TODO(Dominic): Replace Peano heap allocation by
+                                                                  // normal heap allocation?
     DataHeap::getInstance().deleteData(receivedlFhbndIndex,true);
   } else  {
     dropNeighbourData(fromRank,src,dest,x,level);
@@ -3928,7 +3945,9 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
       static_cast<unsigned int>(dofPerFace),cellDescription.toString());
 
   // @todo Doku im Header warum wir das hier brauchen,
-  if (faceIndex % 2 == 0) {
+  const int orientation = faceIndex % 2;
+  const int direction   = (faceIndex-orientation)/2;
+  if ( orientation==0 ) {
     QL = DataHeap::getInstance().getData(indexOfQValues).data();
     QR = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
         (faceIndex * dataPerFace);
@@ -3952,11 +3971,10 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
                fromRank,tarch::parallel::Node::getInstance().getRank());
   }
 
-  const int direction = (faceIndex - faceIndex%2)/2; // faceIndex=2*normalNonZero+f, f=0,1
   assertion2(direction<DIMENSIONS,faceIndex,direction);
   riemannSolver(
       FL, FR, QL, QR,
-      cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex);
+      cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex); // TODO(Dominic): Change interface to have direction and orientation
 
   #if defined(Debug) || defined(Asserts)
   for (int ii = 0; ii<dataPerFace; ii++) {
@@ -3977,6 +3995,18 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
   }
   #endif
+
+
+  // directly perform the face integral
+  int levelDelta= 0;
+  if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
+    levelDelta = cellDescription.getLevel() - cellDescription.getParentCellLevel();
+  }
+  double* update = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+  const double* const boundaryFlux =
+      DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+      (faceIndex * dofPerFace);
+  faceIntegral(update,boundaryFlux,direction,orientation,levelDelta,cellDescription.getSize());
 }
 
 void exahype::solvers::ADERDGSolver::dropNeighbourData(

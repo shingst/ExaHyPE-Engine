@@ -1185,10 +1185,39 @@ public:
    * \param[inout] lduh   Cell-local update DoF.
    * \param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
    * \param[in]    cellSize     Extent of the cell in each coordinate direction.
+   *
+   * \deprecated
    */
   virtual void surfaceIntegral(
       double* lduh, const double* const lFhbnd,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
+
+
+  /**
+   * @brief Computes a face integral contributions
+   * to the cell update.
+   *
+   * In case of \p levelDelta > 0, the kernel needs to
+   * restrict the given boundary-extrapolated flux DoF
+   * \p levelDelta levels up before performing the face integral.
+   *
+   * \param[inout] lduh         Cell-local update DoF.
+   * \param[in]    lFhbnd       Cell-local DoF of the boundary extrapolated fluxes for the face
+   *                            with the given direction and the given geometry.
+   * \param[in]    direction    Coordinate direction the normal vector is aligned with.
+   * \param[in]    orientation  Orientation of the normal vector (0: negative sign, 1: positive sign).
+   * \param[in[    levelDelta   The difference in levels up to a cell description of type Cell.
+   *                            Must be set to zero if we are already performing a face integral for a cell description
+   *                            of type Cell. Is greater zero if lFbhnd stems from a Descendant cell description.
+   * \param[in]    cellSize     Extent of the cell in each coordinate direction.
+   */
+  virtual void faceIntegral(
+      double* lduh,
+      const double* const lFhbnd,
+      const int direction, const int orientation,
+      const int levelDelta,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
+
 
   /**
    * @brief Computes the normal fluxes (or fluctuations) at the interface of two
