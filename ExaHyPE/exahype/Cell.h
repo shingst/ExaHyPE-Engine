@@ -273,9 +273,10 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   bool isEmpty() const;
 
   /**
-   * todo docu
+   * Add a new ADER-DG cell description to the heap array maintained
+   * by this cell.
    *
-   * setupMetaData() is called if cell hasn't been properly initialised before.
+   * \note setupMetaData() is called if cell hasn't been properly initialised before.
    *
    * \note Operation is thread-safe.
    */

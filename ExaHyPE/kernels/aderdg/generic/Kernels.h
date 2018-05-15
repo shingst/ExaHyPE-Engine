@@ -97,6 +97,13 @@ template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfV
 void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
+// TODO(Dominic): Replace the surface integral with this one
+template <int numberOfVariables, int basisSize>
+void faceIntegralNonlinear(
+    double *lduh, const double *const lFhbnd,
+    const int direction, const int orientation,
+    const tarch::la::Vector<DIMENSIONS, double> &dx);
+
 // todo 10/02/16: Dominic
 // Keep only one surfaceIntegral.
 template <int numberOfVariables, int basisSize>
@@ -131,7 +138,7 @@ void riemannSolverNonlinear(
     double* FL, double* FR, const double* const QL,
     const double* const QR,
     const double dt,
-    const int normalNonZero);
+    const int direction);
 
 template <typename SolverType>
 void boundaryConditions(
@@ -141,7 +148,7 @@ void boundaryConditions(
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
     const double t, const double dt, const int faceIndex,
-    const int normalNonZero);
+    const int direction);
 
 
 template <typename SolverType>
@@ -346,7 +353,7 @@ void riemannSolverNonlinear(
     double* FL, double* FR, const double* const QL,
     const double* const QR,
     const double dt,
-    const int normalNonZero);
+    const int direction);
 
 template <typename SolverType>
 void riemannSolverLinear(
@@ -354,7 +361,7 @@ void riemannSolverLinear(
     double* FL, double* FR,
     const double* const QL, const double* const QR,
     const double dt,
-    const int normalNonZero);
+    const int direction);
 
 
 template <typename SolverType>

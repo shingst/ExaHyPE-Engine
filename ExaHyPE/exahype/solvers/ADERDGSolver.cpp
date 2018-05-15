@@ -209,8 +209,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
   if (
       (cellDescription.getType()==CellDescription::Erased ||
-      cellDescription.getType()==CellDescription::Type::Descendant ||
-      cellDescription.getType()==CellDescription::Type::Ancestor)
+      cellDescription.getType()==CellDescription::Type::Descendant)
       &&
       DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
@@ -328,25 +327,21 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
   ) {
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
-    assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
+    assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+
     // Allocate volume DoF for limiter
     const int dataPerNode     = getNumberOfVariables()+getNumberOfParameters();
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
     cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
 
-    cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
-
     assertionEquals(DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).size(),static_cast<unsigned int>(dataPerCell));
-    //assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(getUnknownsPerCell())); //TODO JMG adapt to padded lduh
 
-    cellDescription.setUpdateCompressed(-1);
     cellDescription.setSolutionCompressed(-1);
     cellDescription.setPreviousSolutionCompressed(-1);
 
     cellDescription.setPreviousSolutionAverages( DataHeap::getInstance().createData( dataPerNode, dataPerNode ) );
     cellDescription.setSolutionAverages(         DataHeap::getInstance().createData( dataPerNode, dataPerNode ) );
-    cellDescription.setUpdateAverages(           DataHeap::getInstance().createData( getNumberOfVariables(), getNumberOfVariables() ) );
 
     assertionEquals3(
         DataHeap::getInstance().getData(cellDescription.getPreviousSolutionAverages()).size(),static_cast<unsigned int>(dataPerNode),
@@ -357,11 +352,6 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
         DataHeap::getInstance().getData(cellDescription.getSolutionAverages()).size(),static_cast<unsigned int>(dataPerNode),
         DataHeap::getInstance().getData(cellDescription.getSolutionAverages()).size(),static_cast<unsigned int>(dataPerNode),
         dataPerNode
-    );
-    assertionEquals3(
-        DataHeap::getInstance().getData(cellDescription.getUpdateAverages()).size(),static_cast<unsigned int>(getNumberOfVariables()),
-        DataHeap::getInstance().getData(cellDescription.getUpdateAverages()).size(),static_cast<unsigned int>(getNumberOfVariables()),
-        getNumberOfVariables()
     );
 
     cellDescription.setCompressionState(CellDescription::Uncompressed);
@@ -375,7 +365,11 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
       tarch::parallel::Node::getInstance().getRank());
 
   if(
-      (cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+      (cellDescription.getType()==CellDescription::Type::Cell ||
+      cellDescription.getType()==CellDescription::Type::Descendant)
+      &&
+      (
+      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
       #ifdef Parallel
       || cellDescription.getHasToHoldDataForMasterWorkerCommunication()
       #endif
@@ -391,31 +385,37 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     const int dataPerBnd = getBndTotalSize();
     const int dofPerBnd  = getBndFluxTotalSize();
 
-    cellDescription.setExtrapolatedPredictor(DataHeap::getInstance().createData(dataPerBnd, dataPerBnd ));
-    cellDescription.setFluctuation(          DataHeap::getInstance().createData(dofPerBnd,  dofPerBnd ));
+    cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(dataPerBnd, dataPerBnd) );
+    cellDescription.setFluctuation( DataHeap::getInstance().createData(dofPerBnd,  dofPerBnd) );
+    cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
+    //assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(getUnknownsPerCell())); //TODO JMG adapt to padded lduh
 
-    assertionEquals3(
+    assertionEquals1(
         DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).size(),static_cast<unsigned int>(dataPerBnd),
-        cellDescription.getExtrapolatedPredictor(),
-        cellDescription.toString(),
-        toString()
-    );
-    assertionEquals3(
+        cellDescription.getExtrapolatedPredictor());
+    assertionEquals1(
         DataHeap::getInstance().getData(cellDescription.getFluctuation()).size(),static_cast<unsigned int>(dofPerBnd),
-        cellDescription.getExtrapolatedPredictor(),
-        cellDescription.toString(),
-        toString()
-    );
+        cellDescription.toString());
+    assertionEquals1(
+        DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(getUpdateSize()),
+        cellDescription.toString());
 
     cellDescription.setExtrapolatedPredictorCompressed(-1);
     cellDescription.setFluctuationCompressed(-1);
+    cellDescription.setUpdateCompressed(-1);
 
     //TODO JMG / Dominic adapt for padding with optimized kernels
     //TODO Tobias: Does it make sense to pad these arrays.
-    const int dataPerFace     = (getNumberOfParameters()+getNumberOfVariables()) * DIMENSIONS_TIMES_TWO;
-    const int unknownsPerFace = getNumberOfVariables() * DIMENSIONS_TIMES_TWO;
-    cellDescription.setExtrapolatedPredictorAverages( DataHeap::getInstance().createData( dataPerFace,     dataPerFace  ) );
-    cellDescription.setFluctuationAverages(           DataHeap::getInstance().createData( unknownsPerFace, unknownsPerFace ) );
+    const int boundaryData     = (getNumberOfParameters()+getNumberOfVariables()) * DIMENSIONS_TIMES_TWO;
+    const int boundaryUnknowns = getNumberOfVariables() * DIMENSIONS_TIMES_TWO;
+    cellDescription.setExtrapolatedPredictorAverages( DataHeap::getInstance().createData( boundaryData,  boundaryData  ) );
+    cellDescription.setFluctuationAverages( DataHeap::getInstance().createData( boundaryUnknowns, boundaryUnknowns ) );
+    cellDescription.setUpdateAverages( DataHeap::getInstance().createData( getNumberOfVariables(), getNumberOfVariables() ) );
+    assertionEquals3(
+        DataHeap::getInstance().getData(cellDescription.getUpdateAverages()).size(),static_cast<unsigned int>(getNumberOfVariables()),
+        DataHeap::getInstance().getData(cellDescription.getUpdateAverages()).size(),static_cast<unsigned int>(getNumberOfVariables()),
+        getNumberOfVariables()
+    );
 
     // Allocate volume DoF for limiter (we need for every of the 2*DIMENSIONS faces an array of min values
     // and array of max values of the neighbour at this face).
@@ -1252,6 +1252,17 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
         coarseGridCellDescriptionsIndex,
         fineGridVerticesEnumerator.getCellSize(),
         fineGridVerticesEnumerator.getVertexPosition());
+
+    const int fineGridElement = tryGetElement(
+        fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
+    assertion(fineGridElement!=exahype::solvers::Solver::NotFound);
+    CellDescription& fineGridCellDescription =
+        getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+    if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
+      fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getLevel());
+    } else {
+      fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getParentCellLevel());
+    }
   }
 }
 
