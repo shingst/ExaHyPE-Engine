@@ -1167,11 +1167,11 @@ public:
       const int element,
       const bool isAtRemoteBoundary);
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) final override;
 
-  void restriction(
+  void restrictSubfaceIntegralUpdates(
         const int cellDescriptionsIndex,
         const int element) final override;
 

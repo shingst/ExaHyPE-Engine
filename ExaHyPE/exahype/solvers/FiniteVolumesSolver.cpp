@@ -823,7 +823,7 @@ void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::prolongateAndPrepareRestriction(
+void exahype::solvers::FiniteVolumesSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
     const int element) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
@@ -834,7 +834,7 @@ void exahype::solvers::FiniteVolumesSolver::prolongateAndPrepareRestriction(
   assertionMsg(false,"Please implement!");
 }
 
-void exahype::solvers::FiniteVolumesSolver::restriction(
+void exahype::solvers::FiniteVolumesSolver::restrictSubfaceIntegralUpdates(
       const int cellDescriptionsIndex,
       const int element) {
   // do nothing

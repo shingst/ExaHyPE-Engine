@@ -2539,7 +2539,7 @@ void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
   }
 }
 
-void exahype::solvers::ADERDGSolver::prolongateAndPrepareRestriction(
+void exahype::solvers::ADERDGSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
     const int element) {
   CellDescription& cellDescription =
@@ -2570,13 +2570,12 @@ void exahype::solvers::ADERDGSolver::prolongateAndPrepareRestriction(
           cellDescription.toString());
 }
 
-void exahype::solvers::ADERDGSolver::restriction(
+void exahype::solvers::ADERDGSolver::restrictSubfaceIntegralUpdates(
     const int fineGridCellDescriptionsIndex,
     const int fineGridElement) {
   CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
 
   if (
-      fineGridCellDescription.getType()==CellDescription::Type::Ancestor ||
       fineGridCellDescription.getType()==CellDescription::Type::Descendant
   ) {
     restriction(fineGridCellDescription);
@@ -2637,50 +2636,58 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(
   CellDescription& parentCellDescription =
       getCellDescription(parentCellDescriptionsIndex,parentElement);
   assertion(parentCellDescription.getSolverNumber()==cellDescription.getSolverNumber());
-  assertion1(parentCellDescription.getType()==CellDescription::Type::Ancestor,
-            parentCellDescription.toString());
+  assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
+             (parentCellDescription.getType()==CellDescription::Type::Descendant &&
+             (parentCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication ||
+             parentCellDescription.getHasToHoldDataForMasterWorkerCommunication())),
+             parentCellDescription.toString());
 
-  const int levelFine   = cellDescription.getLevel();
-  const int levelCoarse = parentCellDescription.getLevel();
-  assertion(levelCoarse < levelFine);
-  const int levelDelta  = levelFine - levelCoarse;
+  // TODO(Dominic): Simply add the fine grid updates to the coarse grid ones
 
-  for (int d = 0; d < DIMENSIONS; d++) {
-    if (subcellIndex[d]==0 ||
-        subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1) {
+  std::transform(a.begin(), a.end(), b.begin(), std::back_inserter(result), std::plus<T>());
 
-      const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
-
-      logDebug("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
-               ",level=" << cellDescription.getLevel() << ",d=" << d <<
-               ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
-               " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
-               " level="<<parentCellDescription.getLevel());
-
-      const int numberOfFaceDof = getBndFaceSize();
-      const int numberOfFluxDof = getBndFluxSize();
-
-      const double* lQhbndFine = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
-          (faceIndex * numberOfFaceDof);
-      double* lQhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getExtrapolatedPredictor()).data() +
-          (faceIndex * numberOfFaceDof);
-
-      const double* lFhbndFine = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
-          (faceIndex * numberOfFluxDof);
-      double* lFhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getFluctuation()).data() +
-          (faceIndex * numberOfFluxDof);
-
-      // TODO(Dominic): Consider to have a separate lock per face direction or to move lock inside
-      // of kernels
-      tarch::multicore::Lock lock(RestrictionSemaphore);
-      faceUnknownsRestriction(lQhbndCoarse,lFhbndCoarse,lQhbndFine,lFhbndFine,
-                              levelCoarse, levelFine,
-                              exahype::amr::getSubfaceIndex(subcellIndex,d));
-
-      restrictObservablesMinAndMax(parentCellDescription,cellDescription,faceIndex);
-      lock.free();
-    }
-  }
+// TODO(Dominic): Old code; keep a while for reference
+//  const int levelFine   = cellDescription.getLevel();
+//  const int levelCoarse = parentCellDescription.getLevel();
+//  assertion(levelCoarse < levelFine);
+//  const int levelDelta  = levelFine - levelCoarse;
+//
+//  for (int d = 0; d < DIMENSIONS; d++) {
+//    if (subcellIndex[d]==0 ||
+//        subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1) {
+//
+//      const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
+//
+//      logDebug("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
+//               ",level=" << cellDescription.getLevel() << ",d=" << d <<
+//               ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
+//               " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
+//               " level="<<parentCellDescription.getLevel());
+//
+//      const int numberOfFaceDof = getBndFaceSize();
+//      const int numberOfFluxDof = getBndFluxSize();
+//
+//      const double* lQhbndFine = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
+//          (faceIndex * numberOfFaceDof);
+//      double* lQhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getExtrapolatedPredictor()).data() +
+//          (faceIndex * numberOfFaceDof);
+//
+//      const double* lFhbndFine = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+//          (faceIndex * numberOfFluxDof);
+//      double* lFhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getFluctuation()).data() +
+//          (faceIndex * numberOfFluxDof);
+//
+//      // TODO(Dominic): Consider to have a separate lock per face direction or to move lock inside
+//      // of kernels
+//      tarch::multicore::Lock lock(RestrictionSemaphore);
+//      faceUnknownsRestriction(lQhbndCoarse,lFhbndCoarse,lQhbndFine,lFhbndFine,
+//                              levelCoarse, levelFine,
+//                              exahype::amr::getSubfaceIndex(subcellIndex,d));
+//
+//      restrictObservablesMinAndMax(parentCellDescription,cellDescription,faceIndex);
+//      lock.free();
+//    }
+//  }
 }
 
 void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(

@@ -267,7 +267,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
                   fineGridVertices,fineGridVerticesEnumerator)
           );
 
-          solver->prolongateAndPrepareRestriction(
+          solver->prolongateFaceData(
               cellDescriptionsIndex,element);
         }
 

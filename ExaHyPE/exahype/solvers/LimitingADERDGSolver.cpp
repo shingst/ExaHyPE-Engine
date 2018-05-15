@@ -1428,10 +1428,10 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::prolongateAndPrepareRestriction(
+void exahype::solvers::LimitingADERDGSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
     const int element) {
-  _solver->prolongateAndPrepareRestriction(cellDescriptionsIndex,element);
+  _solver->prolongateFaceData(cellDescriptionsIndex,element);
 
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
   if (
@@ -1442,10 +1442,10 @@ void exahype::solvers::LimitingADERDGSolver::prolongateAndPrepareRestriction(
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::restriction(
+void exahype::solvers::LimitingADERDGSolver::restrictSubfaceIntegralUpdates(
         const int cellDescriptionsIndex,
         const int element) {
-  _solver->restriction(cellDescriptionsIndex,element);
+  _solver->restrictSubfaceIntegralUpdates(cellDescriptionsIndex,element);
 }
 
 

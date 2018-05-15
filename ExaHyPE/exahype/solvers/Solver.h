@@ -1666,7 +1666,7 @@ class exahype::solvers::Solver {
     *
     * \note Has no const modifier since kernels are not const functions yet.
     */
-  virtual void prolongateAndPrepareRestriction(
+  virtual void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
@@ -1682,7 +1682,7 @@ class exahype::solvers::Solver {
    * \note Has no const modifier yet since kernels are not
    * const yet.
    */
-  virtual void restriction(
+  virtual void restrictSubfaceIntegralUpdates(
       const int cellDescriptionsIndex,
       const int element) = 0;
 

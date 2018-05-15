@@ -697,11 +697,11 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void restriction(
+  void restrictSubfaceIntegralUpdates(
         const int cellDescriptionsIndex,
         const int element) override;
 

@@ -150,7 +150,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
       );
 
       // this operates only on helper cells
-      solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+      solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
     }
     }
     grainSize.parallelSectionHasTerminated();
@@ -191,7 +191,7 @@ void exahype::mappings::Prediction::restriction(
           solver->isPerformingPrediction(algorithmSection) &&
           fineGridElement!=exahype::solvers::Solver::NotFound
       ) {
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+        solver->restrictSubfaceIntegralUpdates(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       }
     }
   }

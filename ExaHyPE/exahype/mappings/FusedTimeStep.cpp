@@ -203,50 +203,17 @@ void exahype::mappings::FusedTimeStep::enterCell(
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if (
-      issuePredictionJobsInThisIteration() &&
+      sendOutRiemannDataInThisIteration() &&
       fineGridCell.isInitialised()
   ) {
-    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVerticesEnumerator);
-
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+    for (int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
-        exahype::plotters::plotPatchIfAPlotterIsActive(
-            solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
-
-        // this operates only on compute cells
-        exahype::solvers::Solver::UpdateResult result =
-            solver->fusedTimeStep(
-                fineGridCell.getCellDescriptionsIndex(),element,
-                exahype::State::isFirstIterationOfBatchOrNoBatch(),
-                exahype::State::isLastIterationOfBatchOrNoBatch(),
-                exahype::Cell::isAtRemoteBoundary(
-                    fineGridVertices,fineGridVerticesEnumerator)
-            );
-
         // this operates only on virtual helper cells (pull from below)
-        solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
-
-        _meshUpdateRequests    [solverNumber]  =
-            _meshUpdateRequests[solverNumber] || result._refinementRequested;
-        _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
-        assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-            _meshUpdateRequests[solverNumber]);
-        _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
-        _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
+        solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
       }
     }
-
-    // Must be performed for all cell descriptions
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -296,9 +263,52 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if ( issuePredictionJobsInThisIteration() ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  if (
+      issuePredictionJobsInThisIteration() &&
+      fineGridCell.isInitialised()
+  ) {
+    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVerticesEnumerator);
+
+    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+      if ( element!=exahype::solvers::Solver::NotFound ) {
+        exahype::plotters::plotPatchIfAPlotterIsActive(
+            solverNumber,cellDescriptionsIndex,element);
+
+        // this operates only on compute cells
+        exahype::solvers::Solver::UpdateResult result =
+            solver->fusedTimeStep(
+                cellDescriptionsIndex,element,
+                exahype::State::isFirstIterationOfBatchOrNoBatch(),
+                exahype::State::isLastIterationOfBatchOrNoBatch(),
+                exahype::Cell::isAtRemoteBoundary(
+                    fineGridVertices,fineGridVerticesEnumerator));
+
+        _meshUpdateRequests    [solverNumber]  =
+            _meshUpdateRequests[solverNumber] || result._refinementRequested;
+        _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
+        assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
+                  _meshUpdateRequests[solverNumber]);
+        _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
+        _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
+
+
+        // only works on virtual helper cells
+        solver->restrictSubfaceIntegralUpdates(cellDescriptionsIndex,element);
+      }
+    }
+
+    // Must be performed for all cell descriptions
+    exahype::Cell::resetNeighbourMergeFlags(
+        fineGridCell.getCellDescriptionsIndex());
+    exahype::Cell::resetFaceDataExchangeCounters(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

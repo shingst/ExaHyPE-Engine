@@ -1865,7 +1865,7 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) override;
 
@@ -1875,7 +1875,7 @@ public:
    * parent and restrict data to the
    * top most parent.
    */
-  void restriction(
+  void restrictSubfaceIntegralUpdates(
       const int cellDescriptionsIndex,
       const int element) override;
 
