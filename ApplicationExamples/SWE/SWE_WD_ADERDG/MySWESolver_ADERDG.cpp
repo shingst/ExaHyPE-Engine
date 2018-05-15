@@ -71,7 +71,6 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver_ADERDG::refinementC
 void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
   /// Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
-
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -83,6 +82,9 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
   eigs.hu() = u_n - c;
   eigs.hv() = u_n;
   eigs.b() = 0.0;
+
+    std::cout << "ADERDG: " << std::endl;
+    std::cout << "ev: " << std::abs(u_n + c) << std::endl;
 }
 
 
@@ -134,7 +136,8 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
         const tarch::la::Vector<DIMENSIONS,double>& dx,
         const double t, const double dt) const {
 
-    if (observablesMin[0] <= epsilon * 20){
+    if (observablesMin[0] <= 1000){
+        std::cout << "FALSE" << std::endl;
         return false;
     }
     else {

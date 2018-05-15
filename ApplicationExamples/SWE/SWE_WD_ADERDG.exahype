@@ -33,7 +33,7 @@ exahype-project  SWE
     /* for dam breaks */
     width = 10.0, 10.0
     offset = 0.0, 0.0
-    end-time                 = 10.0
+    end-time                 = 5.0
   end computational-domain
 
   shared-memory
@@ -60,7 +60,7 @@ exahype-project  SWE
     variables const = h:1,hu:1,hv:1,b:1
     //parameters const = b:1
     order const = 3
-    maximum-mesh-size = 0.15
+    maximum-mesh-size = 3
     time-stepping = global
     type const = nonlinear
     terms const = flux,ncp
@@ -70,12 +70,12 @@ exahype-project  SWE
     limiter-optimisation const = generic, usestack
     limiter-language const = C
     dmp-observables const = 1
-    dmp-relaxation-parameter = 1e-4
-    dmp-difference-scaling = 1e-3
+    dmp-relaxation-parameter = 100000000.0
+    dmp-difference-scaling = 100000000.0
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
-      time            = 0.0
-      repeat          = 0.1
+      time            = 10.0
+      repeat          = 0.00001
       output          = ./conserved
     end plot
   end solver
