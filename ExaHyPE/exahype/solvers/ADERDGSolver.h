@@ -110,18 +110,23 @@ public:
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
 private:
-  /**
-   * TODO(WORKAROUND): We store these fields in order
-   * to use the symmetric boundary exchanger of Peano
-   * which does not yet support asymmetric send buffers.
-   */
-  DataHeap::HeapEntries _invalidExtrapolatedPredictor;
-  DataHeap::HeapEntries _invalidFluctuations;
 
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
+
+  #ifdef Parallel
+  std::vector<double> _receivedExtrapolatedPredictor;
+  std::vector<double> _receivedFluctuations;
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  std::vector<double> _invalidExtrapolatedPredictor;
+  std::vector<double> _invalidFluctuations;
+  #endif
 
   /**
    * Minimum corrector time stamp of all cell descriptions.
@@ -658,8 +663,8 @@ private:
   void solveRiemannProblemAtInterface(
       records::ADERDGCellDescription& cellDescription,
       const int faceIndex,
-      const int indexOfQValues,
-      const int indexOfFValues,
+      double* lQhbnd,
+      double* lFhbnd,
       const int fromRank);
 
   /**
