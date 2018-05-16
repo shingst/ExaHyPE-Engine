@@ -128,12 +128,17 @@ private:
    */
   static tarch::logging::Log _log;
 
+
+  #ifdef Parallel
+  std::vector<double> _receivedMax;
+  std::vector<double> _receivedMin;
   /**
    * TODO(WORKAROUND): We store these fields in order
    * to use the symmetric boundary exchanger of Peano
    * which does not yet support asymmetric send buffers.
    */
-  DataHeap::HeapEntries _invalidObservables;
+  std::vector<double> _invalidObservables;
+  #endif
 
   /**
    * A flag indicating that the limiter domain has changed.

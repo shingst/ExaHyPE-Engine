@@ -880,19 +880,21 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
     assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
     assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
 
-    peano::datatraversal::TaskSet uncompression(
-      [&] () -> bool {
-        uncompress(cellDescription1);
-        return false;
-      },
-      [&] () -> bool {
-        uncompress(cellDescription2);
-        return false;
-      },
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-      true
-    );
+    if ( CompressionAccuracy > 0.0 ) {
+      peano::datatraversal::TaskSet uncompression(
+        [&] () -> bool {
+          uncompress(cellDescription1);
+          return false;
+        },
+        [&] () -> bool {
+          uncompress(cellDescription2);
+          return false;
+        },
+        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+        true
+      );
+    }
 
     double* solution1 = DataHeap::getInstance().getData(cellDescription1.getSolution()).data();
     double* solution2 = DataHeap::getInstance().getData(cellDescription2.getSolution()).data();
