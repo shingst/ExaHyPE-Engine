@@ -250,20 +250,23 @@ namespace exahype {
    * third the helper status and the fourth the
    * limiter status.
    */
-  static constexpr int NeighbourCommunicationMetadataPerSolver    = 4;
+  static constexpr int NeighbourCommunicationMetadataPerSolver           = 4;
 
-  static constexpr int NeighbourCommunicationMetadataCellType           = 0;
-  static constexpr int NeighbourCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int NeighbourCommunicationMetadataCommunicationStatus       = 2;
-  static constexpr int NeighbourCommunicationMetadataLimiterStatus      = 3;
+  static constexpr int NeighbourCommunicationMetadataCellType            = 0;
+  static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
+  static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
+  static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
 
-  static constexpr int MasterWorkerCommunicationMetadataPerSolver       = 5;
+  static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
 
-  static constexpr int MasterWorkerCommunicationMetadataCellType           = 0;
-  static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus       = 2;
-  static constexpr int MasterWorkerCommunicationMetadataLimiterStatus      = 3;
-  static constexpr int MasterWorkerCommunicationMetadataSendReceiveData    = 4;
+  static constexpr int MasterWorkerCommunicationMetadataCellType            = 0;
+  static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus  = 1;
+  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus = 2;
+  static constexpr int MasterWorkerCommunicationMetadataLimiterStatus       = 3;
+  static constexpr int MasterWorkerCommunicationMetadataSendReceiveData     = 4;
+
+  /** Some storage for receiving metadata messages. */
+  extern int ReceivedMetadataMessageIndex;
 
   /**
    * TODO(Dominic): Docu is outdated
