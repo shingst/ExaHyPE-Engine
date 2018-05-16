@@ -2932,19 +2932,21 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
   synchroniseTimeStepping(cellDescriptionLeft);
   synchroniseTimeStepping(cellDescriptionRight);
 
-  peano::datatraversal::TaskSet uncompression(
-    [&] () -> bool {
-      uncompress(cellDescriptionLeft);
-      return false;
-    },
-    [&] () -> bool {
-      uncompress(cellDescriptionRight);
-      return false;
-    },
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    true
-  );
+  if ( CompressionAccuracy > 0.0 ) {
+    peano::datatraversal::TaskSet uncompression(
+      [&] () -> bool {
+        uncompress(cellDescriptionLeft);
+        return false;
+      },
+      [&] () -> bool {
+        uncompress(cellDescriptionRight);
+        return false;
+      },
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+      true
+    );
+  }
 
   solveRiemannProblemAtInterface(
       cellDescriptionLeft,cellDescriptionRight,indexOfRightFaceOfLeftCell,indexOfLeftFaceOfRightCell);
