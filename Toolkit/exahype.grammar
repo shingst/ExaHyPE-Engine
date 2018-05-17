@@ -123,7 +123,6 @@ Tokens
   token_profiling                   = 'profiling';
   token_profiler                    = 'profiler';
   token_metrics                     = 'metrics';
-  token_deep_profiling              = 'deep-profiling';
   token_profiling_output            = 'profiling-output';
   token_likwid_inc                  = 'likwid_inc';
   token_likwid_lib                  = 'likwid_lib';
@@ -333,42 +332,35 @@ Productions
        { -> New optimisation(fuse_algorithm_steps, fuse_algorithm_steps_factor, spawn_predictor, spawn_amr, disable_vertex, batch_timesteps, disable_metadata, double_compression, spawn_double_compression) }
      ;
 
-  profiling_deep_profiling {->token_on_off} =
-    token_deep_profiling [deep_profiling_const]:token_const [deep_profiling_equals]:token_equals [deep_profiling]:token_on_off
-	  { -> deep_profiling }
-	;
 
   profiling {->profiling} =
      {with_likwid}
       [begin_token]:token_profiling
         token_profiler   [profiler_const]:token_const [token_profiler_equals]:token_equals [profiler]:identifier
         token_metrics    [metrics_const]:token_const [token_metrics_equals]:token_equals [metrics]:item_list
-		profiling_deep_profiling?
         token_profiling_output [properties_equals]:token_equals [profiling_output]:filename
         token_likwid_inc [likwid_inc_const]:token_const [token_likwid_inc_equals]:token_equals [likwid_inc]:filename
         token_likwid_lib [likwid_lib_const]:token_const [token_likwid_lib_equals]:token_equals [likwid_lib]:filename
       token_end [end_token]:token_profiling
-       { -> New profiling(profiler,[metrics.item],likwid_inc,likwid_lib,Null,Null,profiling_deep_profiling.token_on_off) }
+       { -> New profiling(profiler,[metrics.item],likwid_inc,likwid_lib,Null,Null) }
      |
      {with_ipcm}
       [begin_token]:token_profiling
         token_profiler   [profiler_const]:token_const [token_profiler_equals]:token_equals [profiler]:identifier
         token_metrics    [metrics_const]:token_const [token_metrics_equals]:token_equals [metrics]:item_list
-		profiling_deep_profiling?
         token_profiling_output [properties_equals]:token_equals [profiling_output]:filename
         token_ipcm_inc [ipcm_inc_const]:token_const [token_ipcm_inc_equals]:token_equals [ipcm_inc]:filename
         token_ipcm_lib [ipcm_lib_const]:token_const [token_ipcm_lib_equals]:token_equals [ipcm_lib]:filename
       token_end [end_token]:token_profiling
-       { -> New profiling(profiler,[metrics.item],Null,Null,ipcm_inc,ipcm_lib,profiling_deep_profiling.token_on_off)}
+       { -> New profiling(profiler,[metrics.item],Null,Null,ipcm_inc,ipcm_lib)}
      |
      {default}
       [begin_token]:token_profiling
         token_profiler   [profiler_const]:token_const [token_profiler_equals]:token_equals [profiler]:identifier
         token_metrics    [metrics_const]:token_const [token_metrics_equals]:token_equals [metrics]:item_list
-		profiling_deep_profiling?
         token_profiling_output [properties_equals]:token_equals [profiling_output]:filename
       token_end [end_token]:token_profiling
-       { -> New profiling(profiler,[metrics.item],Null,Null,Null,Null,profiling_deep_profiling.token_on_off) }
+       { -> New profiling(profiler,[metrics.item],Null,Null,Null,Null) }
      ;
 
   select_list {->constants} =
@@ -649,7 +641,7 @@ Abstract Syntax Tree
     ;
 
   profiling =
-    [profiler]:identifier [metrics]:item+ [likwid_inc]:filename? [likwid_lib]:filename? [ipcm_inc]:filename? [ipcm_lib]:filename? [deep_profiling]:token_on_off?;
+    [profiler]:identifier [metrics]:item+ [likwid_inc]:filename? [likwid_lib]:filename? [ipcm_inc]:filename? [ipcm_lib]:filename?;
  
   naming_schemes =
     naming_scheme+;

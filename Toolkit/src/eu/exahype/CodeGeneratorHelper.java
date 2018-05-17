@@ -25,7 +25,6 @@ public class CodeGeneratorHelper {
   private static String useLimiterOptionFlag         = "--useLimiter";
   private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
-  private static String enableDeepProfilerOptionFlag = "--enableDeepProfiler";
   
   
   //Internal states
@@ -90,7 +89,7 @@ public class CodeGeneratorHelper {
   
   //Generate code
   //-------------
-  public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order, int dimensions, String microarchitecture, boolean enableDeepProfiler, ADERDGKernel kernel)
+  public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order, int dimensions, String microarchitecture, ADERDGKernel kernel)
       throws IOException {
     
     //check and defines paths       
@@ -111,8 +110,7 @@ public class CodeGeneratorHelper {
     //define the CodeGenerator arguments
     String namespace = defineNamespace(projectName, solverName);    
     String numericsParameter = kernel.isLinear() ? "linear" : "nonlinear";
-    String options =  (enableDeepProfiler ? enableDeepProfiler+" " : "") 
-                    + (kernel.useFlux() ? useFluxOptionFlag+" " : "") 
+    String options =  (kernel.useFlux() ? useFluxOptionFlag+" " : "") 
                     + (kernel.useSource() ? useSourceOptionFlag+" " : "") 
                     + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
