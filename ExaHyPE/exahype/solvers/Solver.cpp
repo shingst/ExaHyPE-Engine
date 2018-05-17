@@ -119,7 +119,8 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
     #endif
 
     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
-
+    // Probe for incoming messages while we wait for background jobs
+    tarch::parallel::Node::getInstance().receiveDanglingMessages();
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
     lock.free();
