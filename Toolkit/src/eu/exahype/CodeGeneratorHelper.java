@@ -23,6 +23,7 @@ public class CodeGeneratorHelper {
   private static String useMaterialParamOptionFlag   = "--useMaterialParam";
   private static String usePointSourcesOptionFlag    = "--usePointSources";
   private static String useLimiterOptionFlag         = "--useLimiter";
+  private static String useGaussLobattoOptionFlag    = "--useGaussLobatto";
   private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
   
@@ -116,6 +117,7 @@ public class CodeGeneratorHelper {
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
                     + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
+                    + (kernel.useGaussLobatto() ? useGaussLobattoOptionFlag+" " : "")
                     + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")
                     + (kernel.useLimiter() ?  ghostLayerWidthOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "")
                     ;

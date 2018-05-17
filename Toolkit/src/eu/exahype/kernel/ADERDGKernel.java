@@ -147,6 +147,10 @@ public class ADERDGKernel {
     }
     return  KernelType.Unknown;
   }
+  
+  public boolean useGaussLobatto() {
+    return type.containsKey(TYPE_OPTION_ID.get("LOBATTO_OPTION_ID"));
+  }
 
   public boolean usesOptimisedKernels() {
     // assert: !optimization.containsKey(GENERIC_OPTION_ID)

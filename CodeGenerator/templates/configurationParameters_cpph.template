@@ -83,7 +83,6 @@ namespace {{namespaceName}} {
 
   // Array sizes
   constexpr int getlQiSize()   {return {{lQiSize}};}
-{# //TODO JMG check useFlux and fix for linear #}
   constexpr int getlFiSize()   {return {{lFiSize}};} 
   constexpr int getlSiSize()   {return {{lSiSize}};}
   constexpr int getgradQSize() {return {{gradQSize}};}
@@ -170,7 +169,7 @@ namespace {{namespaceName}} {
   constexpr unsigned long surfaceIntegral_flops = {{(nDof*nDof3D + (nDof**nDim)*nVarPad*5)*nDim}};
   
 {% if isLinear %}
-  constexpr unsigned long fusedSTPVI_flops = {{nDof*nDofPad+nDof*(useFluxFactor*(nDof**(nDim+1)*nVarPad*2*nDim)+useNCPFactor*(nDof**(nDim+1)*nVar*2*nDim+nDof**nDim*nDim*nVar)+nDof**nDim*nVarPad*(nDim+useSourceFactor))+(nDof-1)*nDof**nDim*nVar*2+(nDof-1)*nDof**nDim*nVarPad*(nDim+useSourceFactor)*2+nDof**nDim*(nVarPad+nDataPad)*4*nDim+nDof**nDim*nVarPad*(1+nDim+useSourceFactor)}}; //TODO JMG
+  constexpr unsigned long fusedSTPVI_flops = {{nDof*nDofPad+nDof*(useFluxFactor*(nDof**(nDim+1)*nVarPad*2*nDim)+useNCPFactor*(nDof**(nDim+1)*nVar*2*nDim+nDof**nDim*nDim*nVar)+nDof**nDim*nVarPad*(nDim+useSourceFactor))+(nDof-1)*nDof**nDim*nVar*2+(nDof-1)*nDof**nDim*nVarPad*(nDim+useSourceFactor)*2+nDof**nDim*(nVarPad+nDataPad)*4*nDim+nDof**nDim*nVarPad*(1+nDim+useSourceFactor)}};
   constexpr unsigned long fusedSTPVI_ps_flops = {{(nDof+1)*(2+nDof3D*(3+nDof*(3+nDof*3)))+(nDof**(nDim+1))*nVar*3+(nDof**nDim)*nVar+(nDof-2)*((nDof**(nDim+2))*nVarPad*3+(nDof**(nDim+1))*nVarPad*2)+(nDof**(nDim+1))*(1+nVarPad*2)+(nDof**nDim)*nVarPad*nDim}}; //other point source flops
   constexpr unsigned long fusedSTPVI_ps_nPS_flops = {{(nDof+1)*nDof**nDim*(nDim*(3*nDof-3)+2+nVarPad*2)}}; // * nbPointSource
   constexpr unsigned long fusedSTPVI_ps_PDE_factor = {{(nDof+1)*nDof**nDim}}; // * nbPointSource * cost of PS PDE

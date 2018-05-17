@@ -31,10 +31,15 @@ from utils import MathsUtils #matrix operation and build functions
 class QuadratureModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        QuadratureWeights, QuadratureNodes = MathsUtils.getGaussLegendre(self.context["nDof"])
-        OtherQuadratureWeights, OtherQuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
+        if self.context["quadratureType"] == "Gauss-Legendre":
+            QuadratureWeights, QuadratureNodes = MathsUtils.getGaussLegendre(self.context["nDof"])
+            OtherQuadratureWeights, OtherQuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
+        elif self.context["quadratureType"] == "Gauss-Lobatto":
+            raise ValueError("Quadrature type "+self.context["quadratureType"]+" not supported." ) #TODO JMG
+        else:
+            raise ValueError("Quadrature type "+self.context["quadratureType"]+" not supported." )
         
-        self.context["quadratureType"] = "Gauss-Legendre"
+        
         weightsVector = MathsUtils.vectorPad(QuadratureWeights, self.context["nDofPad"] - self.context["nDof"])
         self.context["weights1"] = weightsVector
         self.context["w1Size"] = len(self.context["weights1"])

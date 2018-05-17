@@ -92,6 +92,9 @@ class Controller:
                               default=-1,
                               metavar='useLimiter',
                               help="enable limiter with the given number of observable")
+        parser.add_argument("--useGaussLobatto",
+                              action="store_true",
+                              help="use Gauss Lobatto Quadrature instead of Gauss Legendre")
         parser.add_argument("--ghostLayerWidth",
                               type=int,
                               default=0,
@@ -124,7 +127,7 @@ class Controller:
                    "nObs"                  : commandLineArguments.useLimiter,
                    "ghostLayerWidth"       : commandLineArguments.ghostLayerWidth,
                    "pathToLibxsmmGemmGenerator"  : absolutePathToLibxsmm,
-                   "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
+                   "quadratureType"        : ("Gauss-Lobatto" if commandLineArguments.useGaussLobatto else "Gauss-Legendre"),
                    "useLibxsmm"            : True,
                    "runtimeDebug"          : False #for debug
                   }
