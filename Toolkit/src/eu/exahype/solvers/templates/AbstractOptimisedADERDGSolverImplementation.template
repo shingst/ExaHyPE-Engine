@@ -272,11 +272,11 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {%- endif %}
-  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, dt, normalNonZeroIndex {%- if enableDeepProfiler %}, _profiler.get(){% endif %});
+  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, dt, normalNonZeroIndex);
 {%- if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
 {%- if isLinear %}
-  const unsigned long f = 0; //TODO JMG
+  const unsigned long f = {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor_NCP * (ncpPDEFlops + matparamPDEFlops) + {{optNamespace}}::riemannSolver_factor_Flux * (fluxPDEFlops + matparamPDEFlops) + 2*eigenvaluesFlops;
 {%- else %}
   const unsigned long f = {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor * ncpPDEFlops + 2*eigenvaluesFlops;
 {%- endif %}

@@ -175,7 +175,11 @@ namespace {{namespaceName}} {
   constexpr unsigned long fusedSTPVI_ps_nPS_flops = {{(nDof+1)*nDof**nDim*(nDim*(3*nDof-3)+2+nVarPad*2)}}; // * nbPointSource
   constexpr unsigned long fusedSTPVI_ps_PDE_factor = {{(nDof+1)*nDof**nDim}}; // * nbPointSource * cost of PS PDE
   constexpr unsigned long fusedSTPVI_PDE_factor = {{nDof**(nDim+1)}}; // flops of used PDE * this factor
-  constexpr unsigned long riemannSolver_flops = 0; //TODO JMG
+  
+  // RiemannSolver, also 2 eigenvalues cost + this factor * (optionally flux (+MatParam) + optionally NCP (+MatParam))
+  constexpr unsigned long riemannSolver_flops = {{nDof*nDof3D*(nDataPad*4+nVar*6)+nDataPad*2+useNCPFactor*(nDof*nDof3D*(nVar))+useFluxFactor*(nDof*nDof3D*(nVar))}};
+  constexpr unsigned long riemannSolver_factor_NCP  = {{nDof*nDof3D*useNCPFactor}}; // flops of NCP (+opt. matParam) * this factor
+  constexpr unsigned long riemannSolver_factor_Flux = {{nDof*nDof3D*useFluxFactor}}; // flops of Flux (+opt. matParam) * this factor
 {% else %}
   // fusedSTPVI, multiply by factor and sum
   constexpr unsigned long fusedSTPVI_picard_flops = {{(nDof**(nDim+1))*(1+nVar)+useFluxFactor*nDim*((nDof**nDim)*(1+nDof*nDofPad+nDof*nDof*nVarPad*2))+useNCPFactor*nDim*((nDof**(nDim+2))*nVar*2)+useSourceOrNCPFactor*((nDof**(nDim+1))*(2+useNCPFactor*nVarPad+2*nVarPad))+(nDof**nDim)*(1+nDof*nDofPad+2*nDof*nDof*nVar+4*nVar*nDof)}}; // time picardIteration
