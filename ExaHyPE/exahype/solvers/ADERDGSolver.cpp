@@ -14,7 +14,6 @@
  **/
 #include "exahype/solvers/ADERDGSolver.h"
 
-
 #include <limits>
 #include <iomanip>
 
@@ -492,13 +491,17 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag); //TODO JMG only if using deepProfiling
   }
 
-  // TODO(WORKAROUND)
+  #ifdef Parallel
   const int dofPerFace  = getBndFluxSize();
   const int dataPerFace = getBndFaceSize();
   _invalidExtrapolatedPredictor.resize(dataPerFace);
   _invalidFluctuations.resize(dofPerFace);
   std::fill_n(_invalidExtrapolatedPredictor.data(),_invalidExtrapolatedPredictor.size(),-1);
   std::fill_n(_invalidFluctuations.data(),_invalidFluctuations.size(),-1);
+
+  _receivedExtrapolatedPredictor.resize(dataPerFace);
+  _receivedFluctuations.resize(dofPerFace);
+  #endif
 }
 
 int exahype::solvers::ADERDGSolver::getUnknownsPerFace() const {
@@ -2929,19 +2932,21 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
   synchroniseTimeStepping(cellDescriptionLeft);
   synchroniseTimeStepping(cellDescriptionRight);
 
-  peano::datatraversal::TaskSet uncompression(
-    [&] () -> bool {
-      uncompress(cellDescriptionLeft);
-      return false;
-    },
-    [&] () -> bool {
-      uncompress(cellDescriptionRight);
-      return false;
-    },
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-    true
-  );
+  if ( CompressionAccuracy > 0.0 ) {
+    peano::datatraversal::TaskSet uncompression(
+      [&] () -> bool {
+        uncompress(cellDescriptionLeft);
+        return false;
+      },
+      [&] () -> bool {
+        uncompress(cellDescriptionRight);
+        return false;
+      },
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+      peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+      true
+    );
+  }
 
   solveRiemannProblemAtInterface(
       cellDescriptionLeft,cellDescriptionRight,indexOfRightFaceOfLeftCell,indexOfLeftFaceOfRightCell);
@@ -3857,37 +3862,24 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
         fromRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
     #endif
 */
-
-    const int dataPerFace = getBndFaceSize();
-    const int dofPerFace  = getBndFluxSize();
-
-    const int receivedlQhbndIndex = DataHeap::getInstance().createData(dataPerFace, dataPerFace);
-    const int receivedlFhbndIndex = DataHeap::getInstance().createData(dofPerFace,  dofPerFace);
-    assertion(!DataHeap::getInstance().getData(receivedlQhbndIndex).empty());
-    assertion(!DataHeap::getInstance().getData(receivedlFhbndIndex).empty());
-
-    double* lQhbnd = DataHeap::getInstance().getData(receivedlQhbndIndex).data();
-    double* lFhbnd = DataHeap::getInstance().getData(receivedlFhbndIndex).data();
-
     // Send order: lQhbnd,lFhbnd
     // Receive order: lFhbnd,lQhbnd
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
+    const int dofPerFace  = getBndFluxSize();
+    const int dataPerFace = getBndFaceSize();
     DataHeap::getInstance().receiveData(
-        lFhbnd,dofPerFace,
+        const_cast<double*>(_receivedFluctuations.data()),dofPerFace,
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
     DataHeap::getInstance().receiveData(
-        lQhbnd,dataPerFace,
+        const_cast<double*>(_receivedExtrapolatedPredictor.data()),dataPerFace,
         fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
 
     solveRiemannProblemAtInterface(
         cellDescription,
         faceIndex,
-        receivedlQhbndIndex,
-        receivedlFhbndIndex,
+        const_cast<double*>(_receivedExtrapolatedPredictor.data()),
+        const_cast<double*>(_receivedFluctuations.data()),
         fromRank);
-
-    DataHeap::getInstance().deleteData(receivedlQhbndIndex,true);
-    DataHeap::getInstance().deleteData(receivedlFhbndIndex,true);
   } else  {
     dropNeighbourData(fromRank,src,dest,x,level);
   }
@@ -3896,8 +3888,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     records::ADERDGCellDescription& cellDescription,
     const int faceIndex,
-    const int indexOfQValues,
-    const int indexOfFValues,
+    double* lFhbnd,
+    double* lQhbnd,
     const int fromRank) {
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
@@ -3911,17 +3903,12 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   double* QL = 0; double* QR = 0;
   double* FL = 0; double* FR = 0;
 
-  assertion1(DataHeap::getInstance().getData(indexOfQValues).size()>=
-      static_cast<unsigned int>(dataPerFace),cellDescription.toString());
-  assertion1(DataHeap::getInstance().getData(indexOfFValues).size()>=
-      static_cast<unsigned int>(dofPerFace),cellDescription.toString());
-
   // @todo Doku im Header warum wir das hier brauchen,
   if (faceIndex % 2 == 0) {
-    QL = DataHeap::getInstance().getData(indexOfQValues).data();
+    QL = lQhbnd;
     QR = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
         (faceIndex * dataPerFace);
-    FL = DataHeap::getInstance().getData(indexOfFValues).data();
+    FL = lFhbnd;
     FR = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
         (faceIndex * dofPerFace);
 
@@ -3929,10 +3916,10 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
                *std::max_element(QL,QL+dataPerFace),*std::min_element(QL,QL+dataPerFace),
                fromRank,tarch::parallel::Node::getInstance().getRank());
   } else {
-    QR = DataHeap::getInstance().getData(indexOfQValues).data();
+    QR = lQhbnd;
     QL = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
         (faceIndex * dataPerFace);
-    FR = DataHeap::getInstance().getData(indexOfFValues).data();
+    FR = lFhbnd;
     FL = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
         (faceIndex * dofPerFace);
 
@@ -3949,21 +3936,17 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
   #if defined(Debug) || defined(Asserts)
   for (int ii = 0; ii<dataPerFace; ii++) {
-    assertion10(std::isfinite(QR[ii]), cellDescription.toString(),
-        faceIndex, direction, indexOfQValues, indexOfFValues,
-        ii, QR[ii], QL[ii], FR[ii], FL[ii]);
-    assertion10(std::isfinite(QL[ii]), cellDescription.toString(),
-        faceIndex, direction, indexOfQValues, indexOfFValues,
-        ii, QR[ii], QL[ii], FR[ii], FL[ii]);
+    assertion8(std::isfinite(QR[ii]), cellDescription.toString(),
+        faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
+    assertion8(std::isfinite(QL[ii]), cellDescription.toString(),
+        faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
   }
 
   for (int ii = 0; ii<dofPerFace; ii++) {
-    assertion10(std::isfinite(FL[ii]), cellDescription.toString(),
-        faceIndex, indexOfQValues, indexOfFValues,
-        ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
-    assertion10(std::isfinite(FR[ii]), cellDescription.toString(),
-        faceIndex, indexOfQValues, indexOfFValues,
-        ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+    assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
+        faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+    assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
+        faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
   }
   #endif
 }

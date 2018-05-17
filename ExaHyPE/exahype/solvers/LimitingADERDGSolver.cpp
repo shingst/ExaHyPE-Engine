@@ -118,10 +118,17 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
   assertion(_solver->getNumberOfParameters() == 0);
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
 
-  // TODO(WORKAROUND)
+  #ifdef Parallel
+  // TODO(WORKAROUND): Not sure for what anymore
   const int numberOfObservables = _solver->getDMPObservables();
   _invalidObservables.resize(numberOfObservables);
   std::fill_n(_invalidObservables.data(),_invalidObservables.size(),-1);
+
+  _receivedMax.resize(numberOfObservables);
+  _receivedMin.resize(numberOfObservables);
+  assertion(!_receivedMax.empty());
+  assertion(!_receivedMin.empty());
+  #endif
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateNextMeshUpdateRequest(const bool& meshUpdateRequest)  {
@@ -1925,28 +1932,18 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourMinAndMax(
       const int orientation = (1 + src(direction) - dest(direction))/2;
       const int faceIndex   = 2*direction+orientation;
 
-      const int receivedMaxIndex = DataHeap::getInstance().createData(numberOfObservables, numberOfObservables);
-      const int receivedMinIndex = DataHeap::getInstance().createData(numberOfObservables, numberOfObservables);
-      DataHeap::HeapEntries& receivedMax = DataHeap::getInstance().getData(receivedMaxIndex);
-      DataHeap::HeapEntries& receivedMin = DataHeap::getInstance().getData(receivedMinIndex);
-      assertionEquals(DataHeap::getInstance().getData(receivedMaxIndex).size(),static_cast<size_t>(numberOfObservables));
-      assertionEquals(DataHeap::getInstance().getData(receivedMinIndex).size(),static_cast<size_t>(numberOfObservables));
-
       // Inverted send-receive order: TODO(Dominic): Add to docu
       // Send order:    min,max
       // Receive order; max,min
       DataHeap::getInstance().receiveData(
-          receivedMax.data(), numberOfObservables, fromRank, x, level,
+          const_cast<double*>(_receivedMax.data()), numberOfObservables, fromRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
       DataHeap::getInstance().receiveData(
-          receivedMin.data(), numberOfObservables, fromRank, x, level,
+          const_cast<double*>(_receivedMin.data()), numberOfObservables, fromRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
 
       mergeSolutionMinMaxOnFace(
-          solverPatch,faceIndex,receivedMin.data(),receivedMax.data());
-
-      DataHeap::getInstance().deleteData(receivedMinIndex,true);
-      DataHeap::getInstance().deleteData(receivedMaxIndex,true);
+          solverPatch,faceIndex,_receivedMin.data(),_receivedMax.data());
     } else {
       for(int receives=0; receives<2; ++receives)
         DataHeap::getInstance().receiveData(
