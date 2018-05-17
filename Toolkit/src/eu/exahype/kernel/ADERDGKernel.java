@@ -49,6 +49,7 @@ public class ADERDGKernel {
     OPTIMIZATION_OPTION_ID.put("PATCHWISE_ADJUST_OPTION_ID",   "patchwiseadjust");
     OPTIMIZATION_OPTION_ID.put("TEMP_VARS_ON_STACK_OPTION_ID", "usestack");
     OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_OPTION_ID",    "maxpicarditer");
+    OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_OPTION_ID",        "fusedsource");
     OPTIMIZATION_OPTION_ID.put("CONVERTER_OPTION_ID",          "converter"); //for debug only, not in guidebook
     OPTIMIZATION_OPTION_ID.put("FLOPS_OPTION_ID",              "flops");     //for debug only, not in guidebook
   }
@@ -115,7 +116,7 @@ public class ADERDGKernel {
     }
     for(String parsedId : optimization.keySet()) {
       if(!OPTIMIZATION_OPTION_ID.containsValue(parsedId)) {
-        throw new IllegalArgumentException("Optimisation key \""+parsedId+"\" not recognized");
+        throw new IllegalArgumentException("Optimization key \""+parsedId+"\" not recognized");
       }
     }
     //Must be linear xor nonlinear
@@ -125,6 +126,14 @@ public class ADERDGKernel {
     //Pointsource requires an associated int value
     if(usePointSources() && getNumberOfPointSources() < 0) {
       throw new IllegalArgumentException("point sources used but number not specified! In the specification file, use "+TERMS_OPTION_ID.get("POINTSOURCES_OPTION_ID")+":X, with X the number of point sources.");
+    }
+    //fusedsource requires optimized kernels
+    if(useFusedSource() && !(getKernelType() ==  KernelType.OptimisedADERDG)) {
+      throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"' requires the used of optimized kernels");
+    }
+    //Can't used fusedSource without source
+    if(useFusedSource() && !useSource()) {
+      throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"' requires the PDE term '"+TERMS_OPTION_ID.get("SOURCE_OPTION_ID")+"'");
     }
   }
 
@@ -194,6 +203,10 @@ public class ADERDGKernel {
       return optimization.get(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_OPTION_ID"));
     }
     return -1;
+  }
+  
+  public boolean useFusedSource() {
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID"));
   }
   
   public boolean useMaxPicardIterations() {

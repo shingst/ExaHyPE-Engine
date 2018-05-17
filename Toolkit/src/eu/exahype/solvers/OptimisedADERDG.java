@@ -35,6 +35,7 @@ public class OptimisedADERDG implements Solver {
     final boolean isLinear               = kernel.isLinear();
     final boolean useFlux                = kernel.useFlux();
     final boolean useSource              = kernel.useSource();
+    final boolean useFusedSource         = kernel.useFusedSource();
     final boolean useNCP                 = kernel.useNCP();
     final boolean usePointSources        = kernel.usePointSources();
     final boolean useMaterialParam       = kernel.useMaterialParameterMatrix();
@@ -76,6 +77,7 @@ public class OptimisedADERDG implements Solver {
     context.put("isLinear"              , isLinear);
     context.put("useFlux"               , useFlux);
     context.put("useSource"             , useSource);
+    context.put("useFusedSource"        , useFusedSource);
     context.put("useNCP"                , useNCP);
     context.put("usePointSources"       , usePointSources);
     context.put("useMaterialParam"      , useMaterialParam);
