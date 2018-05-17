@@ -276,7 +276,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
 {%- if isLinear %}
-  const unsigned long f = 0; //TODO JMG
+  const unsigned long f = {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor_NCP * (ncpPDEFlops + matparamPDEFlops) + {{optNamespace}}::riemannSolver_factor_Flux * (fluxPDEFlops + matparamPDEFlops) + 2*eigenvaluesFlops;
 {%- else %}
   const unsigned long f = {{optNamespace}}::riemannSolver_flops + {{optNamespace}}::riemannSolver_factor * ncpPDEFlops + 2*eigenvaluesFlops;
 {%- endif %}
