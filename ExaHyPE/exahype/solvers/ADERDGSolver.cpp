@@ -240,12 +240,18 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     lock.free();
   }
 
-if (
-      cellDescription.getType()!=CellDescription::Cell       &&
-      cellDescription.getType()!=CellDescription::Descendant
-      ||
-      cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-      DataHeap::getInstance().isValidIndex(cellDescription.getUpdate())
+// deallocate update
+  if (
+      (
+        cellDescription.getType()!=CellDescription::Cell
+        &&
+        (cellDescription.getType()!=CellDescription::Descendant
+#ifdef Parallel
+            || !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+#endif)
+      )
+      &&
+      DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()
   ) {
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
     if (cellDescription.getUpdate()>=0) {
@@ -264,12 +270,16 @@ if (
     cellDescription.setUpdateCompressed(-1);
   }
 
+  // deallocate boundary arrays
   if (
-      (cellDescription.getType()==CellDescription::Erased ||
-      (cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication
-      #ifdef Parallel
-      && !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-      #endif
+      cellDescription.getType()!=CellDescription::Cell
+      &&
+      (cellDescription.getType()!=CellDescription::Descendant || // if-then
+      (
+          cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication
+          #ifdef Parallel
+          && !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+          #endif
       ))
       &&
       DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
@@ -326,6 +336,7 @@ if (
 
 void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
+  // allocate solution
   if (
       cellDescription.getType()==CellDescription::Type::Cell
       &&
@@ -352,15 +363,14 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     lock.free();
   }
 
-  assertion2(cellDescription.getType()!=CellDescription::Type::Cell ||
-      cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
-      cellDescription.toString(),
-      tarch::parallel::Node::getInstance().getRank());
-
+  // allocate update
   if (
-      cellDescription.getType()==CellDescription::Type::Descendant
-      &&
-      cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+      (
+        cellDescription.getType()==CellDescription::Type::Cell
+        ||
+        (cellDescription.getType()==CellDescription::Type::Descendant &&
+        cellDescription.getHasToHoldDataForMasterWorkerCommunication())
+      )
       &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getUpdate())
   ) {
@@ -369,17 +379,22 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     cellDescription.setUpdateCompressed(-1);
   }
 
+  assertion2(cellDescription.getType()!=CellDescription::Type::Cell ||
+      cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
+      cellDescription.toString(),
+      tarch::parallel::Node::getInstance().getRank());
 
+  // allocate boundary arrays
   if(
-      cellDescription.getType()==CellDescription::Type::Cell
-      ||
-      cellDescription.getType()==CellDescription::Type::Descendant)
-      &&
       (
-      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
-      #ifdef Parallel
-      || cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-      #endif
+        cellDescription.getType()==CellDescription::Type::Cell
+        ||
+        (cellDescription.getType()==CellDescription::Type::Descendant &&
+        (cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+        #ifdef Parallel
+        || cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+        #endif
+        ))
       )
       &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
