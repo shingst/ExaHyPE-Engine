@@ -31,7 +31,7 @@ public class CodeGeneratorHelper {
   //---------------
   private Map<String,String> _optKernelsPaths;      //stores the paths to the generated code (used for imports in the KernelRegistration and in the Makefile)
   private Map<String,String> _optKernelsNamespaces; //stores the namespace used. The specific namespace depend on the solvername (assume projectname is constant)
-  private String _pathToApplication = null;
+  private static String _pathToApplication = null;  //static to not initialize the whole CodeGeneratorHelper when not required
   
   
   //Singleton pattern (to be able to access the instance everywhere)
@@ -62,7 +62,7 @@ public class CodeGeneratorHelper {
   
   //Setter
   //------
-  public void setPaths(DirectoryAndPathChecker directoryAndPathChecker) {
+  public static void setPaths(DirectoryAndPathChecker directoryAndPathChecker) {
     _pathToApplication = directoryAndPathChecker.outputDirectory.getPath();
   }
   
