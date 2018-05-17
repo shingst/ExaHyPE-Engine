@@ -704,9 +704,6 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
               }
             }
           }
-
-          // Clean up
-          MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
         }
       enddforx
     enddforx
@@ -1083,10 +1080,6 @@ void exahype::Vertex::receiveNeighbourData(
                 getCellDescriptionsIndex()[destScalar],
                 src,dest,
                 x,level);
-          }
-          // Clean up
-          if ( receivedMetadataIndex != InvalidMetadataIndex ) {
-            MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
           }
         }
       enddforx

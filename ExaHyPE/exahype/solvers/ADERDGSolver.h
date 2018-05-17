@@ -110,18 +110,23 @@ public:
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
 private:
-  /**
-   * TODO(WORKAROUND): We store these fields in order
-   * to use the symmetric boundary exchanger of Peano
-   * which does not yet support asymmetric send buffers.
-   */
-  DataHeap::HeapEntries _invalidExtrapolatedPredictor;
-  DataHeap::HeapEntries _invalidFluctuations;
 
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
+
+  #ifdef Parallel
+  std::vector<double> _receivedExtrapolatedPredictor;
+  std::vector<double> _receivedFluctuations;
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  std::vector<double> _invalidExtrapolatedPredictor;
+  std::vector<double> _invalidFluctuations;
+  #endif
 
   /**
    * Minimum corrector time stamp of all cell descriptions.
@@ -658,8 +663,8 @@ private:
   void solveRiemannProblemAtInterface(
       records::ADERDGCellDescription& cellDescription,
       const int faceIndex,
-      const int indexOfQValues,
-      const int indexOfFValues,
+      double* lQhbnd,
+      double* lFhbnd,
       const int fromRank);
 
   /**
@@ -793,8 +798,9 @@ private:
 
   class PredictionJob {
     private:
-      ADERDGSolver&    _solver;
-      CellDescription& _cellDescription;
+      ADERDGSolver&    _solver; // TODO not const because of kernels
+      const int        _cellDescriptionsIndex;
+      const int        _element;
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
@@ -802,7 +808,8 @@ private:
     public:
       PredictionJob(
           ADERDGSolver&     solver,
-          CellDescription&  cellDescription,
+          const int         cellDescriptionsIndex,
+          const int         element,
           const double      predictorTimeStamp,
           const double      predictorTimeStepSize,
           const bool        uncompressBefore,
@@ -824,16 +831,16 @@ private:
    */
   class FusedTimeStepJob {
     private:
-      ADERDGSolver&    _solver;
+      ADERDGSolver&    _solver; // TODO not const because of kernels
       const int        _cellDescriptionsIndex;
       const int        _element;
       int&             _jobCounter;
     public:
       FusedTimeStepJob(
-          ADERDGSolver& solver,
-          const int     cellDescriptionsIndex,
-          const int     element,
-          int&          jobCounter);
+        ADERDGSolver& solver,
+        const int     cellDescriptionsIndex,
+        const int     element,
+        int&          jobCounter);
 
       bool operator()();
   };
@@ -1579,6 +1586,17 @@ public:
         const int& solverNumber,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
+  /**\copydoc Solver::attainedStableState
+   *
+   * Compute flagging gradients in inside cells.
+   * If the facewise flags on two opposite sides differ
+   * by more than 2, then the flagging has not converged.
+   *
+   * If this is the case or if the refinement events
+   * of a cell are none or the refinement criterion was not
+   * evaluated yet, we say the solver has not attained
+   * a stable state yet.
+   */
   bool attainedStableState(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
@@ -1634,7 +1652,8 @@ public:
    * \note If this job is called by
    */
   void performPredictionAndVolumeIntegralBody(
-      CellDescription& cellDescription,
+      const int    cellDescriptionsIndex,
+      const int    element,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
@@ -1654,7 +1673,8 @@ public:
    *                               start backgroudn tasks.
    */
   void performPredictionAndVolumeIntegral(
-      CellDescription& cellDescription,
+      const int cellDescriptionsIndex,
+      const int element,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompress,

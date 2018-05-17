@@ -36,6 +36,8 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 
 #ifdef Parallel
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
+
+int exahype::ReceivedMetadataMessageIndex(-1);
 #endif
 
 tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
@@ -825,25 +827,27 @@ int exahype::receiveNeighbourCommunicationMetadata(
     const int                                   level) {
   const unsigned int length =
       exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
-
-  const int receivedMetadataIndex = MetadataHeap::getInstance().createData(0,length);
-
-  MetadataHeap::HeapEntries& metadata =
-      MetadataHeap::getInstance().getData(receivedMetadataIndex);
-  assertion(metadata.size()==0);
-  assertion(metadata.capacity()==length);
+  if ( ReceivedMetadataMessageIndex < 0 ) {
+    ReceivedMetadataMessageIndex = exahype::MetadataHeap::getInstance().createData(0,length);
+  }
+  MetadataHeap::HeapEntries& receivedMetadataMessage =
+      MetadataHeap::getInstance().getData(ReceivedMetadataMessageIndex);
+  receivedMetadataMessage.reserve(length);
+  receivedMetadataMessage.clear();
+  assertion(receivedMetadataMessage.size()==0);
+  assertion(receivedMetadataMessage.capacity()==length);
 
   MetadataHeap::getInstance().receiveData(
-      receivedMetadataIndex,
+      ReceivedMetadataMessageIndex,
       fromRank, x, level,
       peano::heap::MessageType::NeighbourCommunication);
-  assertion(metadata.size()==0 || metadata.size()==length);
-  assertion(metadata.capacity()==length);
+  assertion(receivedMetadataMessage.size()==0 || receivedMetadataMessage.size()==length);
+  assertion(receivedMetadataMessage.capacity()==length);
 
-  if (metadata.size()==0) {
-    metadata.assign(length, InvalidMetadataEntry);
+  if (receivedMetadataMessage.size()==0) {
+    receivedMetadataMessage.assign(length, InvalidMetadataEntry);
   }
-  return receivedMetadataIndex;
+  return ReceivedMetadataMessageIndex;
 }
 
 // Master<=>Worker  TODO(Dominic): Move in exahype::Cell

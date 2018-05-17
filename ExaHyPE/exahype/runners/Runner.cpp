@@ -741,34 +741,21 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
-  // a few extra iterations for the cell status flag spreading
-  const int spreadingIterations =
-      std::max (
-          exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  1 : 5,
-              // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
-              exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell()+1);
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
-  bool oneSolverHasNotAttainedStableStateInOneIteration = true;
   while (
     (
-      oneSolverHasNotAttainedStableStateInOneIteration ||
       repository.getState().continueToConstructGrid() ||
       exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
     )
   ) {
-    oneSolverHasNotAttainedStableStateInOneIteration = false;
-    for (int i=0; i<spreadingIterations; i++) { // always do a batch according to the number of spreading iterations
-      exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
-      repository.iterate(1,true);
-      meshSetupIterations++;
-      printMeshSetupInfo(repository,meshSetupIterations);
-
-      oneSolverHasNotAttainedStableStateInOneIteration |= exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
-    }
+    exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
+    repository.iterate(1,true);
+    meshSetupIterations++;
 
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     printMeshSetupInfo(repository,meshSetupIterations);
+
     meshUpdate = true;
   }
 
