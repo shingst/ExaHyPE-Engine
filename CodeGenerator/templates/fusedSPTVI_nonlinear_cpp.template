@@ -311,8 +311,21 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         const double updateSize = weights1[i] * weights3[jkl] * dt;
         const int shift = {{nVarPad}}*(jkl+{{nDof**nDim}}*i);
         const int it = i+{{nDof}}*jkl;        
-        // Old code (for reference): solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], &gradQNoPad[0], &lSi[shift]);
+{% if useFusedSource %}
+        // Fusedsource (source and ncp)
+        double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
+        std::copy_n(&gradQ[{{nVarPad*nDim}}*it]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
+        std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{1*nVarPad}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
+{% if nDim==3 %}
+        std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{2*nVarPad}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
+{% endif %}
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+        solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], gradQNoPad, &lSi[shift]);
+{% else %}{# useFusedSource #}
 {% if useSource %}
+        // Source
 #ifdef USE_IPO
         #pragma forceinline recursive
 #endif
@@ -321,6 +334,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         std::memset(&lSi[shift], 0, {{nVarPad}} * sizeof(double));
 {% endif %}
 {% if useNCP %}
+        // NCP
         double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
         std::copy_n(&gradQ[{{nVarPad*nDim}}*it]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
         std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{1*nVarPad}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
@@ -335,8 +349,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         #pragma simd
         for(int n = 0; n<{{nVarPad}}; n++) {
           lSi[n+shift] -= ncp[n];
-        }
-{% endif %}
+        }      
+{% endif %} 
+{% endif %}{# useFusedSource #}
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
           rhs[n+shift] += updateSize * lSi[n+shift];

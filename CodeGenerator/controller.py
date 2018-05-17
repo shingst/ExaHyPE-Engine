@@ -76,6 +76,9 @@ class Controller:
         parser.add_argument("--useSource",
                               action="store_true",
                               help="enable source terms")
+        parser.add_argument("--useFusedSource",
+                              action="store_true",
+                              help="enable fused source terms (includes useSource)")
         parser.add_argument("--useMaterialParam",
                               action="store_true",
                               help="enable material parameters")
@@ -113,7 +116,8 @@ class Controller:
                    "nDim"                  : commandLineArguments.dimension,
                    "useFlux"               : commandLineArguments.useFlux,
                    "useNCP"                : commandLineArguments.useNCP,
-                   "useSource"             : commandLineArguments.useSource,
+                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
+                   "useFusedSource"        : commandLineArguments.useFusedSource,
                    "useSourceOrNCP"        : (commandLineArguments.useSource or commandLineArguments.useNCP),
                    "nPointSources"         : commandLineArguments.usePointSources,
                    "usePointSources"       : commandLineArguments.usePointSources >= 0,
