@@ -122,7 +122,6 @@ class Controller:
                    "codeNamespace"         : commandLineArguments.namespace,
                    "pathToOutputDirectory" : os.path.join(absolutePathToRoot,commandLineArguments.pathToApplication,commandLineArguments.pathToOptKernel),
                    "architecture"          : commandLineArguments.architecture,
-                   "simdSize"              : simdWidth[commandLineArguments.architecture],
                    "useLimiter"            : commandLineArguments.useLimiter >= 0,
                    "nObs"                  : commandLineArguments.useLimiter,
                    "ghostLayerWidth"       : commandLineArguments.ghostLayerWidth,
@@ -132,12 +131,24 @@ class Controller:
                    "runtimeDebug"          : False #for debug
                   }
 
-        self.validateConfig()
+        self.validateConfig(simdWidth.keys())
+        self.config["simdSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
 
-    def validateConfig(self):
-        #TODO JMG
-        pass
+        
+    def validateConfig(self, validArchitectures):
+        if not (self.config["architecture"] in validArchitectures):
+           raise ValueError("Architecture not recognized. Available architecture: "+str(validArchitectures))
+        if not (self.config["numerics"] == "linear" or self.config["numerics"] == "nonlinear"):
+            raise ValueError("Nnumerics has to be linear or nonlinear")
+        if self.config["nVar"] < 0:
+           raise ValueError("Number of variables must be >=0 ")
+        if self.config["nPar"] < 0:
+           raise ValueError("Number of parameters must be >= 0")
+        if self.config["nDim"] < 2 or self.config["nDim"] > 3:
+           raise ValueError("Number of dimensions must be 2 or 3")
+        if self.config["nDof"] < 0 or self.config["nDof"] > 9:
+           raise ValueError("Order has to be between 0 and 9")
 
 
     def printConfig(self):
