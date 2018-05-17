@@ -48,7 +48,7 @@ public class ADERDGKernel {
     OPTIMIZATION_OPTION_ID.put("NO_TIME_AVG_OPTION_ID",        "notimeavg");
     OPTIMIZATION_OPTION_ID.put("PATCHWISE_ADJUST_OPTION_ID",   "patchwiseadjust");
     OPTIMIZATION_OPTION_ID.put("TEMP_VARS_ON_STACK_OPTION_ID", "usestack");
-    OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_ID",           "maxpicarditer");
+    OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_OPTION_ID",    "maxpicarditer");
     OPTIMIZATION_OPTION_ID.put("CONVERTER_OPTION_ID",          "converter"); //for debug only, not in guidebook
     OPTIMIZATION_OPTION_ID.put("FLOPS_OPTION_ID",              "flops");     //for debug only, not in guidebook
   }
@@ -191,14 +191,14 @@ public class ADERDGKernel {
   
   public int maxPicardIterations() {
     if(useMaxPicardIterations()) {
-      return optimization.get(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_ID"));
+      return optimization.get(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_OPTION_ID"));
     }
     return -1;
   }
   
   public boolean useMaxPicardIterations() {
-    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_ID")) &&
-           optimization.get(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_ID"))!=-1;
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_OPTION_ID")) &&
+           optimization.get(OPTIMIZATION_OPTION_ID.get("MAX_PICARD_ITER_OPTION_ID"))!=-1;
   }
   
   public boolean useConverterDebug() {
