@@ -307,7 +307,7 @@ void SWE::SolitaryWaveOnASimpleBeach(const double*const x, double* Q){
 void SWE::initialData(const double* const x,double* Q) {
   //ShockShockProblem(x, Q);
   //RareRareProblem(x, Q);
-  GaussFunctionProblem(x, Q);
+  //GaussFunctionProblem(x, Q);
   //ExpBreakProblem(x,Q);
   //DamBreakProblem(x,Q);
   //SeaAtRestProblem(x,Q);
@@ -318,5 +318,5 @@ void SWE::initialData(const double* const x,double* Q) {
   //WettingDryingProblem(x, Q);
   //OscillatingLake(x, Q);
   //RunUpTest(x, Q);
-  //SolitaryWaveOnASimpleBeach(x, Q);
+  SolitaryWaveOnASimpleBeach(x, Q);
 }

@@ -38,8 +38,8 @@ exahype-project  SWE
 
   shared-memory
       identifier = dummy
-      configure = {background-tasks:8}
-      cores = 8
+      configure = {background-tasks:4}
+      cores = 4
       properties-file = sharedmemory.properties
   end shared-memory
 
@@ -60,7 +60,7 @@ exahype-project  SWE
     variables const   = h:1,hu:1,hv:1,b:1
     //parameters const  = b:1
     patch-size const   = 3
-    maximum-mesh-size = 0.5
+    maximum-mesh-size = 0.15
     time-stepping     = global
     type const      = godunov
     terms const = flux
@@ -68,7 +68,7 @@ exahype-project  SWE
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
-      time            = 0.0
+      time            = 25.0
       repeat          = 0.1
       output          = ./conserved
     end plot

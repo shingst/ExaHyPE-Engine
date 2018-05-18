@@ -8,7 +8,7 @@ using namespace kernels;
 
 const double grav = 9.81;
 
-const double epsilon = 1e-5;
+const double epsilon = 1e-7;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
