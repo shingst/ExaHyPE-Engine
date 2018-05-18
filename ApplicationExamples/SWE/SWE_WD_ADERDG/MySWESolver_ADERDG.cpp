@@ -14,15 +14,23 @@
 
 using namespace kernels;
 
-const double grav = 9.81;
-
-const double epsilon = 1e-1;
+double grav_DG;
+double epsilon_DG;
+int scenario_DG;
 
 tarch::logging::Log SWE::MySWESolver_ADERDG::_log( "SWE::MySWESolver_ADERDG" );
 
 
 void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // @todo Please implement/augment if required
+  if (constants.isValueValidDouble( "grav" )) {
+    grav_DG = constants.getValueAsDouble("grav");
+  }
+  if (constants.isValueValidDouble( "epsilon" )) {
+    epsilon_DG = constants.getValueAsDouble( "epsilon" );
+  }
+  if (constants.isValueValidInt( "scenario" )) {
+    scenario_DG = constants.getValueAsInt( "scenario" );
+  }
 
 }
 
@@ -31,7 +39,7 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
   // Number of variables + parameters  = 4 + 0
 
   if (tarch::la::equals(t,0.0)) {
-    initialData(x, Q);
+    initialData(x, Q, scenario_DG);
   }
 }
 
@@ -74,7 +82,7 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  const double c = std::sqrt(grav*vars.h());
+  const double c = std::sqrt(grav_DG*vars.h());
   const double ih = 1./vars.h();
   double u_n = Q[d + 1] * ih;
 
@@ -82,9 +90,6 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
   eigs.hu() = u_n - c;
   eigs.hv() = u_n;
   eigs.b() = 0.0;
-
-    std::cout << "ADERDG: " << std::endl;
-    std::cout << "ev: " << std::abs(u_n + c) << std::endl;
 }
 
 
@@ -100,13 +105,13 @@ void SWE::MySWESolver_ADERDG::flux(const double* const Q,double** F) {
   double* g = F[1];
 
   f[0] = vars.hu();
-  f[1] = vars.hu()*vars.hu()*ih + 0.5*grav*vars.h()*vars.h();
+  f[1] = vars.hu()*vars.hu()*ih + 0.5*grav_DG*vars.h()*vars.h();
   f[2] = vars.hu()*vars.hv()*ih;
   f[3] = 0.0;
 
   g[0] = vars.hv();
   g[1] = vars.hu()*vars.hv()*ih;
-  g[2] = vars.hv()*vars.hv()*ih + 0.5*grav*vars.h()*vars.h();
+  g[2] = vars.hv()*vars.hv()*ih + 0.5*grav_DG*vars.h()*vars.h();
   g[3] = 0.0;
   
 }
@@ -117,8 +122,8 @@ void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,cons
   idx2 idx_gradQ(DIMENSIONS,NumberOfVariables);
 
   BgradQ[0] = 0.0;
-  BgradQ[1] = grav*Q[0]*gradQ[idx_gradQ(0,3)];
-  BgradQ[2] = grav*Q[0]*gradQ[idx_gradQ(1,3)];
+  BgradQ[1] = grav_DG*Q[0]*gradQ[idx_gradQ(0,3)];
+  BgradQ[2] = grav_DG*Q[0]*gradQ[idx_gradQ(1,3)];
   BgradQ[3] = 0.0;
 }
 
@@ -137,7 +142,6 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
         const double t, const double dt) const {
 
     if (observablesMin[0] <= 1000){
-        std::cout << "FALSE" << std::endl;
         return false;
     }
     else {
