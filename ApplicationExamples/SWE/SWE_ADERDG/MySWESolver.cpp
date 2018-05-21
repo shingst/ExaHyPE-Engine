@@ -14,14 +14,19 @@
 
 using namespace kernels;
 
-const double grav = 9.81;
+double grav;
+int scenario;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
 
 void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // @todo Please implement/augment if required
-
+    if (constants.isValueValidDouble( "grav" )) {
+        grav = constants.getValueAsDouble("grav");
+    }
+    if (constants.isValueValidInt( "scenario" )) {
+        scenario = constants.getValueAsInt( "scenario" );
+    }
 }
 
 void SWE::MySWESolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -29,7 +34,7 @@ void SWE::MySWESolver::adjustPointSolution(const double* const x,const double t,
     // Number of variables + parameters  = 4 + 0
 
     if (tarch::la::equals(t,0.0)) {
-      initialData(x, Q);
+      initialData(x, Q, scenario);
     }
 }
 

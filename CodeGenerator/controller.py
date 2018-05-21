@@ -76,6 +76,9 @@ class Controller:
         parser.add_argument("--useSource",
                               action="store_true",
                               help="enable source terms")
+        parser.add_argument("--useFusedSource",
+                              action="store_true",
+                              help="enable fused source terms (includes useSource)")
         parser.add_argument("--useMaterialParam",
                               action="store_true",
                               help="enable material parameters")
@@ -92,6 +95,9 @@ class Controller:
                               default=-1,
                               metavar='useLimiter',
                               help="enable limiter with the given number of observable")
+        parser.add_argument("--useGaussLobatto",
+                              action="store_true",
+                              help="use Gauss Lobatto Quadrature instead of Gauss Legendre")
         parser.add_argument("--ghostLayerWidth",
                               type=int,
                               default=0,
@@ -110,7 +116,8 @@ class Controller:
                    "nDim"                  : commandLineArguments.dimension,
                    "useFlux"               : commandLineArguments.useFlux,
                    "useNCP"                : commandLineArguments.useNCP,
-                   "useSource"             : commandLineArguments.useSource,
+                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
+                   "useFusedSource"        : commandLineArguments.useFusedSource,
                    "useSourceOrNCP"        : (commandLineArguments.useSource or commandLineArguments.useNCP),
                    "nPointSources"         : commandLineArguments.usePointSources,
                    "usePointSources"       : commandLineArguments.usePointSources >= 0,
@@ -119,22 +126,33 @@ class Controller:
                    "codeNamespace"         : commandLineArguments.namespace,
                    "pathToOutputDirectory" : os.path.join(absolutePathToRoot,commandLineArguments.pathToApplication,commandLineArguments.pathToOptKernel),
                    "architecture"          : commandLineArguments.architecture,
-                   "simdSize"              : simdWidth[commandLineArguments.architecture],
                    "useLimiter"            : commandLineArguments.useLimiter >= 0,
                    "nObs"                  : commandLineArguments.useLimiter,
                    "ghostLayerWidth"       : commandLineArguments.ghostLayerWidth,
                    "pathToLibxsmmGemmGenerator"  : absolutePathToLibxsmm,
-                   "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
+                   "quadratureType"        : ("Gauss-Lobatto" if commandLineArguments.useGaussLobatto else "Gauss-Legendre"),
                    "useLibxsmm"            : True,
                    "runtimeDebug"          : False #for debug
                   }
 
-        self.validateConfig()
+        self.validateConfig(simdWidth.keys())
+        self.config["simdSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
 
-    def validateConfig(self):
-        #TODO JMG
-        pass
+        
+    def validateConfig(self, validArchitectures):
+        if not (self.config["architecture"] in validArchitectures):
+           raise ValueError("Architecture not recognized. Available architecture: "+str(validArchitectures))
+        if not (self.config["numerics"] == "linear" or self.config["numerics"] == "nonlinear"):
+            raise ValueError("Nnumerics has to be linear or nonlinear")
+        if self.config["nVar"] < 0:
+           raise ValueError("Number of variables must be >=0 ")
+        if self.config["nPar"] < 0:
+           raise ValueError("Number of parameters must be >= 0")
+        if self.config["nDim"] < 2 or self.config["nDim"] > 3:
+           raise ValueError("Number of dimensions must be 2 or 3")
+        if self.config["nDof"] < 0 or self.config["nDof"] > 9:
+           raise ValueError("Order has to be between 0 and 9")
 
 
     def printConfig(self):

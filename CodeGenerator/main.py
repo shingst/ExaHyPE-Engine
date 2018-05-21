@@ -34,7 +34,7 @@ def main():
     pathFromHereToExaHyPERoot = "../" #path to the root of ExaHyPe from this file
     pathToLibxsmmGemmGenerator = os.path.join("dependencies", "libxsmm", "bin", "libxsmm_gemm_generator") #path to the gemm generator from this file
 
-    simdWidth = {  "noarch" : 1,
+    simdWidth = { "noarch" : 1,
                   "wsm"    : 2,
                   "snb"    : 4,
                   "hsw"    : 4,

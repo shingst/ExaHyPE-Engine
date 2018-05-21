@@ -56,14 +56,6 @@ namespace {
                              "boundaryConditions",
                              "deltaDistribution"
                              };
-  constexpr const char* deepProfilingTags[]{
-                             "spaceTimePredictor_PDEflux",
-                             "spaceTimePredictor_PDEsource",
-                             "spaceTimePredictor_overhead",
-                             "spaceTimePredictor_PDEncp",
-                             "riemannSolver_PDEmatrixb",
-                             "riemannSolver_overhead"
-  };
 }
 
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
@@ -351,7 +343,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
     cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
-
+    
     cellDescription.setSolutionCompressed(-1);
     cellDescription.setPreviousSolutionCompressed(-1);
 
@@ -492,10 +484,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
-  }
-  
-  for (const char* tag : deepProfilingTags) {
-    _profiler->registerTag(tag); //TODO JMG only if using deepProfiling
   }
 
   #ifdef Parallel
@@ -1829,13 +1817,13 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
     assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()),cellDescription.toString());
 
     double* luh = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data(); // TODO JMG adapt to padding
+    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
 
     double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
     double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
 
     int dataPerCell             = getDataPerCell();
-    int unknownsPerCell         = getUnknownsPerCell();
+    int updateSize              = getUpdateSize();
 
     int dataPerCellBoundary     = getBndTotalSize();
     int unknownsPerCellBoundary = getBndFluxTotalSize();
@@ -1845,11 +1833,10 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
           cellDescription.toString(),toString(),methodTraceOfCaller,i);
     }
 
-    //TODO JMG adapt to padding
-    //for (int i=0; i<unknownsPerCell; i++) {
-    //  assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lduh[i]),
-    //      cellDescription.toString(),toString(),methodTraceOfCaller,i);
-    //}
+    for (int i=0; i<updateSize; i++) {
+     assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lduh[i]),
+         cellDescription.toString(),toString(),methodTraceOfCaller,i);
+    }
 
     for (int i=0; i<dataPerCellBoundary; i++) {
       assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lQhbnd[i]),
