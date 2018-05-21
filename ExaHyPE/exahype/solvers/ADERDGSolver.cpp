@@ -246,9 +246,9 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
         cellDescription.getType()!=CellDescription::Cell
         &&
         (cellDescription.getType()!=CellDescription::Descendant
-#ifdef Parallel
-            || !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-#endif)
+        #ifdef Parallel
+        || !cellDescription.getHasToHoldDataForMasterWorkerCommunication() )
+        #endif
       )
       &&
       DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()
@@ -276,10 +276,10 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
       &&
       (cellDescription.getType()!=CellDescription::Descendant || // if-then
       (
-          cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication
-          #ifdef Parallel
-          && !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-          #endif
+        cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication
+        #ifdef Parallel
+        && !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+        #endif
       ))
       &&
       DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
@@ -368,8 +368,11 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
       (
         cellDescription.getType()==CellDescription::Type::Cell
         ||
-        (cellDescription.getType()==CellDescription::Type::Descendant &&
-        cellDescription.getHasToHoldDataForMasterWorkerCommunication())
+        (cellDescription.getType()==CellDescription::Type::Descendant
+        #ifdef Parallel
+        && cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+        #endif
+        )
       )
       &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getUpdate())
