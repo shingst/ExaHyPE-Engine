@@ -69,11 +69,20 @@ def parseResultFile(filePath):
     stats["unrefined_inner_cells_min"] = 10**20
     stats["unrefined_inner_cells_max"] = 0
     stats["unrefined_inner_cells_avg"] = 0.0
+    stats["communication_time_total"] = 0.0
+    stats["communication_occurences"] = 0
+    stats["communication_time_avg"] = 0.0
     occurrences = 0   
  
     adapters      = {}
     cputimeIndex  = 3
     usertimeIndex = 5
+    
+    isPassedGridSetup = False
+    
+    # Simulating scanf functionality
+    # https://docs.python.org/3/library/re.html#simulating-scanf
+    commTimeRegex = re.compile("time required for data exchange=(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
 
     try:
         fileHandle=codecs.open(filePath,'r','UTF_8')
@@ -99,7 +108,13 @@ def parseResultFile(filePath):
             # 154.448      [i22r02c02s11],rank:0 info         exahype::runners::Runner::startNewTimeStep(...)         step 20	t_min          =0.0015145
             m = re.search("step(\s*)([0-9]+)(\s*)t_min",line)
             if m:
+                isPassedGridSetup = True
                 stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
+                
+            #  42.4034      [cn7027.hpc.dur.ac.uk],rank:1 info         peano::grid::Grid::iterate()                            time required for data exchange=1.5131e-05  (time does not comprise any data exchange happening in the background)
+            if isPassedGridSetup and "peano::grid::Grid::iterate()" in line:
+                stats["communication_occurences"] += 1
+                stats["communication_time_total"] += float(commTimeRegex.search(line).group(0).split("=")[1])
    
             anchor = '|'
             header = '||'
@@ -118,6 +133,9 @@ def parseResultFile(filePath):
     if occurrences>0:
         stats["inner_cells_avg"]           = stats["inner_cells_avg"] / occurrences
         stats["unrefined_inner_cells_avg"] = stats["unrefined_inner_cells_avg"] / occurrences
+    
+    if stats["communication_occurences"] > 0:
+        stats["communication_time_avg"] =  stats["communication_time_total"] / stats["communication_occurences"]
 
     return environmentDict,parameterDict,adapters,stats
 
@@ -185,6 +203,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         header.append("inner_cells_max")
                         header.append("inner_cells_avg")
                         header.append("run_time_steps")
+                        header.append("communication_time_total")
                         header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
@@ -220,6 +239,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(str( int(stats["inner_cells_max"]) ))
                         row.append(str( stats["inner_cells_avg"] ))
                         row.append(str( stats["run_time_steps"] ))
+                        row.append(str( stats["communication_time_total"] ))
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
@@ -342,6 +362,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             row.append("normalised_usertime_max")
             row.append("normalised_usertime_mean")
             row.append("normalised_usertime_stdev")
+            row.append("communication_time_total")
             csvwriter.writerow(row)
             
             # init
