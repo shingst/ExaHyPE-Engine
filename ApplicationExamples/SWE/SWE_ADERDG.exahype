@@ -28,7 +28,7 @@ exahype-project  SWE
     dimension const          = 2
     width                    = 10.0, 10.0
     offset                   = 0.0, 0.0
-    end-time                 = 20.0
+    end-time                 = 5.0
   end computational-domain
 
   shared-memory
@@ -56,6 +56,7 @@ exahype-project  SWE
     //parameters const  = b:1
     order const       = 3
     maximum-mesh-size = 0.5
+    maximum-mesh-depth = 2
     time-stepping     = global
     type const = nonlinear
 	terms const = flux,ncp

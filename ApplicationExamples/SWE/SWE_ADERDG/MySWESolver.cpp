@@ -9,6 +9,8 @@
 #include "MySWESolver.h"
 #include "InitialData.h"
 #include "MySWESolver_Variables.h"
+#include "peano/utils/Loop.h"
+
 
 #include "kernels/KernelUtils.h"
 
@@ -60,8 +62,35 @@ void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const
 }
 
 exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+    double largestH = -std::numeric_limits<double>::max();
+    double smallestH = std::numeric_limits<double>::max();
+
+    kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
+    dfor(i,Order+1) {
+        ReadOnlyVariables vars(luh + idx_luh(i(1),i(0),0));
+        largestH = std::max (largestH, vars.h());
+        smallestH = std::min(smallestH, vars.h());
+    }
+    
+    //gradient
+    if (largestH - smallestH > 5e-2){
+        return exahype::solvers::Solver::RefinementControl::Refine;
+    }
+
+    //height
+//    if (largestH > 1.8 && level > getCoarsestMeshLevel() + 1) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//    if (largestH > 1.5 && level > getCoarsestMeshLevel()) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//    if (largestH > 1.2 && level == getCoarsestMeshLevel()) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+
+    if (level > getCoarsestMeshLevel())
+        return exahype::solvers::Solver::RefinementControl::Erase;
+    return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************

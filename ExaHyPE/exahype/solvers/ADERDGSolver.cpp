@@ -3896,17 +3896,17 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
     const int dofPerFace  = getBndFluxSize();
     const int dataPerFace = getBndFaceSize();
     DataHeap::getInstance().receiveData(
-        const_cast<double*>(_receivedFluctuations.data()),dofPerFace,
+        const_cast<double*>(_receivedFluctuations.data()),dofPerFace, // TODO const-correct peano
         fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
-    DataHeap::getInstance().receiveData(
+    DataHeap::getInstance().receiveData(                              // TODO const-correct peano
         const_cast<double*>(_receivedExtrapolatedPredictor.data()),dataPerFace,
         fromRank, x, level, peano::heap::MessageType::NeighbourCommunication);
 
     solveRiemannProblemAtInterface(
         cellDescription,
         faceIndex,
-        const_cast<double*>(_receivedExtrapolatedPredictor.data()),
-        const_cast<double*>(_receivedFluctuations.data()),
+        _receivedExtrapolatedPredictor.data(),
+        _receivedFluctuations.data(),
         fromRank);
   } else  {
     dropNeighbourData(fromRank,src,dest,x,level);
@@ -3916,8 +3916,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
 void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     records::ADERDGCellDescription& cellDescription,
     const int faceIndex,
-    double* lFhbnd,
-    double* lQhbnd,
+    const double* const lQhbnd,
+    const double* lFhbnd,
     const int fromRank) {
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
@@ -3928,57 +3928,65 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   logDebug("solveRiemannProblemAtInterface(...)",
       "cell-description=" << cellDescription.toString());
 
-  double* QL = 0; double* QR = 0;
-  double* FL = 0; double* FR = 0;
-
   // @todo Doku im Header warum wir das hier brauchen,
   const int orientation = faceIndex % 2;
   const int direction   = (faceIndex-orientation)/2;
   if ( orientation==0 ) {
-    QL = lQhbnd;
-    QR = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
+    const double* const QL = lQhbnd;
+    const double* const QR = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
         (faceIndex * dataPerFace);
-    FL = lFhbnd;
-    FR = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
-        (faceIndex * dofPerFace);
-
-    assertion4(*std::max_element(QL,QL+dataPerFace)!=*std::min_element(QL,QL+dataPerFace),
-               *std::max_element(QL,QL+dataPerFace),*std::min_element(QL,QL+dataPerFace),
-               fromRank,tarch::parallel::Node::getInstance().getRank());
+    double* FL = const_cast<double*>(lFhbnd); // TODO const-correct kernels
+    double* FR = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+        (faceIndex * dofPerFace); // TODO const-correct kernels
+    
+    riemannSolver(
+        FL, FR, QL, QR,
+        cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex);
+    
+    #if defined(Debug) || defined(Asserts)
+    for (int ii = 0; ii<dataPerFace; ii++) {
+      assertion8(std::isfinite(QR[ii]), cellDescription.toString(),
+          faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
+      assertion8(std::isfinite(QL[ii]), cellDescription.toString(),
+          faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
+    }
+    
+    for (int ii = 0; ii<dofPerFace; ii++) {
+      assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
+          faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+      assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
+          faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+    }
+    #endif
   } else {
-    QR = lQhbnd;
-    QL = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
+    const double* const QR = lQhbnd;
+    const double* const QL = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
         (faceIndex * dataPerFace);
-    FR = lFhbnd;
-    FL = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
-        (faceIndex * dofPerFace);
+    double* FR = const_cast<double*>(lFhbnd); // TODO const-correct kernels
+    double* FL = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
+        (faceIndex * dofPerFace); // TODO const-correct kernels
+    
+    riemannSolver(
+        FL, FR, QL, QR,
+        cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex);
+    
+    #if defined(Debug) || defined(Asserts)
+    for (int ii = 0; ii<dataPerFace; ii++) {
+      assertion8(std::isfinite(QR[ii]), cellDescription.toString(),
+          faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
+      assertion8(std::isfinite(QL[ii]), cellDescription.toString(),
+          faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
+    }
 
-    assertion4(*std::max_element(QR,QR+dataPerFace)!=*std::min_element(QR,QR+dataPerFace),
-               *std::max_element(QR,QR+dataPerFace),*std::min_element(QR,QR+dataPerFace),
-               fromRank,tarch::parallel::Node::getInstance().getRank());
+    for (int ii = 0; ii<dofPerFace; ii++) {
+      assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
+          faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+      assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
+          faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
+    }
+    #endif
   }
-
-  assertion2(direction<DIMENSIONS,faceIndex,direction);
-  riemannSolver(
-      FL, FR, QL, QR,
-      cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex); // TODO(Dominic): Change interface to have direction and orientation
-
-  #if defined(Debug) || defined(Asserts)
-  for (int ii = 0; ii<dataPerFace; ii++) {
-    assertion8(std::isfinite(QR[ii]), cellDescription.toString(),
-        faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
-    assertion8(std::isfinite(QL[ii]), cellDescription.toString(),
-        faceIndex, direction, ii, QR[ii], QL[ii], FR[ii], FL[ii]);
-  }
-
-  for (int ii = 0; ii<dofPerFace; ii++) {
-    assertion8(std::isfinite(FL[ii]), cellDescription.toString(),
-        faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
-    assertion8(std::isfinite(FR[ii]), cellDescription.toString(),
-        faceIndex, ii, QR[ii], QL[ii], FR[ii], FL[ii],fromRank);
-  }
-  #endif
-
+  
   // directly perform the face integral
   int levelDelta= 0;
   if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
