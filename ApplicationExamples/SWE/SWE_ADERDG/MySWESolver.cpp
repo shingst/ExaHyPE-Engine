@@ -72,15 +72,12 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterio
         largestH = std::max (largestH, vars.h());
         smallestH = std::min(smallestH, vars.h());
     }
-    //std::cout << "Level: " << level << " largestH: " << largestH << " smallesH: " << smallestH << std::endl;
+    
     //gradient
-    if (level > currentLevel){
-    	std::cout << "LEVEL: " << level << std::endl;
-	currentLevel = level;
-    }
     if (largestH - smallestH > 5e-2){
         return exahype::solvers::Solver::RefinementControl::Refine;
     }
+
     //height
 //    if (largestH > 1.8 && level > getCoarsestMeshLevel() + 1) {
 //        return exahype::solvers::Solver::RefinementControl::Refine;
@@ -91,7 +88,8 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterio
 //    if (largestH > 1.2 && level == getCoarsestMeshLevel()) {
 //        return exahype::solvers::Solver::RefinementControl::Refine;
 //    }
-//    if (level > getCoarsestMeshLevel())
+
+    if (level > getCoarsestMeshLevel())
         return exahype::solvers::Solver::RefinementControl::Erase;
     return exahype::solvers::Solver::RefinementControl::Keep;
 }
