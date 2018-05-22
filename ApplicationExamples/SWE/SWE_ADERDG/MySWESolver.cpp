@@ -63,26 +63,31 @@ void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const
 
 exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
     double largestH = -std::numeric_limits<double>::max();
-    //double smallestH = std::numeric_limits<double>::min();
+    double smallestH = std::numeric_limits<double>::min();
 
     kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
     dfor(i,Order+1) {
         ReadOnlyVariables vars(luh + idx_luh(i(1),i(0),0));
         largestH = std::max (largestH, vars.h());
-        //smallesH = std::min(smallestH, vars.h());
+        smallestH = std::min(smallestH, vars.h());
     }
-    if (largestH > 1.8 && level > getCoarsestMeshLevel() + 1) {
+    //gradient
+    if (largestH - smallestH > 1e-3){
         return exahype::solvers::Solver::RefinementControl::Refine;
     }
-    if (largestH > 1.5 && level > getCoarsestMeshLevel()) {
-        return exahype::solvers::Solver::RefinementControl::Refine;
-    }
-    if (largestH > 1.2 && level == getCoarsestMeshLevel()) {
-        return exahype::solvers::Solver::RefinementControl::Refine;
-    }
-    if (level > getCoarsestMeshLevel())
-        return exahype::solvers::Solver::RefinementControl::Erase;
-    return exahype::solvers::Solver::RefinementControl::Keep;
+    //height
+//    if (largestH > 1.8 && level > getCoarsestMeshLevel() + 1) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//    if (largestH > 1.5 && level > getCoarsestMeshLevel()) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//    if (largestH > 1.2 && level == getCoarsestMeshLevel()) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//    if (level > getCoarsestMeshLevel())
+//        return exahype::solvers::Solver::RefinementControl::Erase;
+//    return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
