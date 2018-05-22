@@ -18,6 +18,7 @@ using namespace kernels;
 
 double grav;
 int scenario;
+int currentLevel = 0;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
@@ -63,7 +64,7 @@ void SWE::MySWESolver::boundaryValues(const double* const x,const double t,const
 
 exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
     double largestH = -std::numeric_limits<double>::max();
-    double smallestH = std::numeric_limits<double>::min();
+    double smallestH = std::numeric_limits<double>::max();
 
     kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
     dfor(i,Order+1) {
@@ -71,8 +72,13 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterio
         largestH = std::max (largestH, vars.h());
         smallestH = std::min(smallestH, vars.h());
     }
+    //std::cout << "Level: " << level << " largestH: " << largestH << " smallesH: " << smallestH << std::endl;
     //gradient
-    if (largestH - smallestH > 1e-3){
+    if (level > currentLevel){
+    	std::cout << "LEVEL: " << level << std::endl;
+	currentLevel = level;
+    }
+    if (largestH - smallestH > 5e-2){
         return exahype::solvers::Solver::RefinementControl::Refine;
     }
     //height
@@ -86,8 +92,8 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver::refinementCriterio
 //        return exahype::solvers::Solver::RefinementControl::Refine;
 //    }
 //    if (level > getCoarsestMeshLevel())
-//        return exahype::solvers::Solver::RefinementControl::Erase;
-//    return exahype::solvers::Solver::RefinementControl::Keep;
+        return exahype::solvers::Solver::RefinementControl::Erase;
+    return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
