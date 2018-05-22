@@ -70,6 +70,9 @@ class Controller:
         parser.add_argument("--useFlux",
                               action="store_true",
                               help="enable flux")
+        parser.add_argument("--useFluxVect",
+                              action="store_true",
+                              help="enable vectorized flux (include useFlux)")
         parser.add_argument("--useNCP",
                               action="store_true",
                               help="enable non conservative product")
@@ -114,7 +117,8 @@ class Controller:
                    "nData"                 : commandLineArguments.numberOfVariables + commandLineArguments.numberOfParameters,
                    "nDof"                  : (commandLineArguments.order)+1,
                    "nDim"                  : commandLineArguments.dimension,
-                   "useFlux"               : commandLineArguments.useFlux,
+                   "useFlux"               : (commandLineArguments.useFlux or commandLineArguments.useFluxVect),
+                   "useFluxVect"           : commandLineArguments.useFluxVect,
                    "useNCP"                : commandLineArguments.useNCP,
                    "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
                    "useFusedSource"        : commandLineArguments.useFusedSource,
@@ -174,6 +178,8 @@ class Controller:
         context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
         context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
         context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
+        context["useVectPDEs"] = context["useFluxVect"] #TODO JMG add other vect
+        context["vectSize"] = self.config["simdSize"]
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
@@ -255,6 +261,11 @@ class Controller:
         limiter = limiterModel.LimiterModel(self.baseContext, self)
         limiter.generateCode()
         runtimes["limiter"] = time.perf_counter() - start
+        
+        start = time.perf_counter()
+        matrixUtils = matrixUtilsModel.MatrixUtilsModel(self.baseContext)
+        matrixUtils.generateCode()
+        runtimes["matrixUtils"] = time.perf_counter() - start
         
         start = time.perf_counter()
         quadrature = quadratureModel.QuadratureModel(self.baseContext, self)
