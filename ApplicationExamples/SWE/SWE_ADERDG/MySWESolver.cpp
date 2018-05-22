@@ -18,7 +18,6 @@ using namespace kernels;
 
 double grav;
 int scenario;
-int currentLevel = 0;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
