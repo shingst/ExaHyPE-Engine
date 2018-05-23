@@ -39,6 +39,31 @@ counters = [
             ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
             ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
            ]
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+def removeEmptyColumns(table,header):
+    emptyColumns = []
+    for col in range(0,len(header)):
+        
+        if all(item.strip()=="-1.0" for item in column(table,col)):
+            emptyColumns.append(col)
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in emptyColumns:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in emptyColumns:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader 
+
 
 def parseResultFile(filePath):
     '''
@@ -298,10 +323,6 @@ def parseAdapterTimes(resultsFolderPath,projectName):
 
     except IOError as err:
         print ("ERROR: could not write file "+tablePath+". Error message: " + str(err))
-
-
-def column(matrix, i):
-    return [row[i] for row in matrix]
 
 def linesAreIdenticalUpToIndex(line,previousLine,index):
     result=True
@@ -601,7 +622,7 @@ def parseMetrics(resultsFolderPath,projectName):
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=";")
+            csvwriter = csv.writer(csvfile, delimiter=",",quotechar="\"")
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out.likwid")]
             
             print("processed files:")
@@ -622,7 +643,7 @@ def parseMetrics(resultsFolderPath,projectName):
 
                 # TODO(Dominic): workaround. parameters
                 if len(environmentDict) is 0:
-                   environmentDict,parameterDict,adapters = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
+                   environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
 
                 if len(measurements):
                     # write header
@@ -672,15 +693,17 @@ def parseMetrics(resultsFolderPath,projectName):
           # reopen the table and sort it
           tableFile   = open(tablePath, 'r')
           header      = next(tableFile)
-          header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=";")
+          header      = header.strip().split(",")
+          reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
 
           sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
           tableFile.close()
 
+          sortedData,header = removeEmptyColumns(sortedData,header)
+
           with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=";")
-              writer.writerow(header.split(";"))
+              writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
+              writer.writerow(header)
               writer.writerows(sortedData)
           print("created table:")
           print(tablePath)
