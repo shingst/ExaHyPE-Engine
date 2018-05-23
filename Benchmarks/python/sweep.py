@@ -301,13 +301,16 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     if "build of ExaHyPE successful" in str(output):
                                         print(" [OK]")
                                     else:
-                                        print(" [FAILED]")
+                                        print(" [FAILED]",file=sys.stderr)
                                         print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                                         sys.exit()
 
-                                    moveCommand   = "mv "+oldExecutable+" "+executable
-                                    print(moveCommand)
-                                    subprocess.call(moveCommand,shell=True)
+                                    if not os.path.exists(oldExecutable):
+                                        print("ERROR: could not find built executable '"+oldExecutable+"'. The parameter 'project' in your configuration file is probably wrong." ,file=sys.stderr)
+                                        sys.exit()
+                                    os.rename(oldExecutable,executable)
+                                    print("created executable:"+executable)
+                                     
                                     print("SUCCESS!")
                                     print("--------------------------------------------------------------------------------")
                                     print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
