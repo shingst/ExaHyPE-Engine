@@ -659,7 +659,11 @@ def verifyAllSpecFilesExist():
     if not os.path.exists(scriptsFolderPath):
         print("ERROR: job script folder '"+scriptsFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
-    
+   
+    myCoreCounts = coreCounts
+    if coreCounts[0]=="+":
+        myCoreCounts = coreCountsGrouped
+ 
     allSpecFilesExist = True
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashDictionary(parameterDict)
@@ -667,11 +671,12 @@ def verifyAllSpecFilesExist():
         for ranks in rankCounts:
             for nodes in nodeCounts:
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
-                for parsedCores in coreCounts:
+                for parsedCores in myCoreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
-                     
+                        cores=cores+":"+cores
+
                     specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
                 if not os.path.exists(specFilePath):
