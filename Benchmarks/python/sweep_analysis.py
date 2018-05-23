@@ -71,9 +71,12 @@ def removeInvariantColumns(table,header):
     invariantColumns        = {}
     invariantColumnsIndices = []
 
+    blackList = ["run","run_time_steps"]
+
     for col in range(0,len(header)):
         current = column(table,col) 
-        if all(item.strip()==current[0].strip() for item in current):
+        if header[col].strip() not in blackList\
+            and all(item.strip()==current[0].strip() for item in current):
             invariantColumnsIndices.append(col)
             invariantColumns[header[col]]=current[0]
     
