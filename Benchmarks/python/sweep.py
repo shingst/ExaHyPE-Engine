@@ -363,11 +363,6 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
         print("ERROR: subprogram aborted as job script template and sweep options file are inconsistent.",file=sys.stderr)
         sys.exit()
     
-    if "preamble" in jobs:
-        renderedPreamble = jobs["preamble"]
-        for key,value in context.items():
-            renderedPreamble = renderedPreamble.replace("{{"+key+"}}", value)
-        jobScriptBody = renderedPreamble + "\n\n" + jobScriptBody 
     context["body"] = jobScriptBody 
  
     for key,value in context.items():
@@ -557,6 +552,19 @@ def generateScripts():
                                         outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                                          "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+myCores+"-r"+myRun+".out"
                                         outputFilePath = resultsFolderPath + "/" + outputFileName 
+    
+                                        if "preamble" in jobs:
+                                            renderedPreamble = jobs["preamble"]
+                                            context = dict(parameterDict)
+                                            context["ranks"]=ranks
+                                            context["nodes"]=nodes
+                                            context["tasks"]=tasks
+                                            context["cores"]=myCores.split(":")[0]
+                                            context["backgroundTasks"]=myCores.split(":")[1]
+                                            context["run"]=myRun
+                                            for key,value in context.items():
+                                                renderedPreamble = renderedPreamble.replace("{{"+key+"}}", value)
+                                            jobScriptBody += "\n\n" + renderedPreamble + "\n\n"
                                         
                                         # pipe some information into output file
                                         jobScriptBody += "echo \"Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`\" > "+outputFilePath+"\n"
