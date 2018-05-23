@@ -108,11 +108,30 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
         jobClass = jobs["class"].strip();
     if configParser.has_option("jobs","islands"):
         islands = jobs["islands"].strip();
+
     rankCounts = [x.strip() for x in jobs["ranks"].split(",")]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-    runNumbers = [x.strip() for x in jobs["run"].split(",")]
-    
+    # cores
+    coreCounts       =["+"]
+    coreCountsGrouped=[None]
+    if configParser.has_option("jobs","cores"):
+        coreCounts = [x.strip() for x in jobs["cores"].split(",")]
+    elif configParser.has_option("jobs","cores_grouped"):
+        coreCountsGrouped = [x.strip() for x in jobs["cores_grouped"].split(",")]
+    if configParser.has_option("jobs","cores") == configParser.has_option("jobs","cores_grouped"):
+        print("ERROR: please either specify 'cores' or 'cores_grouped'!",file=sys.stderr)
+        sys.exit()
+    # runs
+    runNumbers       =["+"]
+    runNumbersGrouped=[None]
+    if configParser.has_option("jobs","run"):
+        runNumbers = [x.strip() for x in jobs["run"].split(",")]
+    elif configParser.has_option("jobs","run_grouped"):
+        runNumbersGrouped = [x.strip() for x in jobs["run_grouped"].split(",")]
+    if configParser.has_option("jobs","run") == configParser.has_option("jobs","run_grouped"):
+        print("ERROR: please either specify 'run' or 'run_grouped'!",file=sys.stderr)
+        sys.exit()
+   
     Options = collections.namedtuple("options", \
            ("general jobs "
             "environmentSpace "
@@ -122,7 +141,9 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "buildFolderPath scriptsFolderPath "
             "resultsFolderPath historyFolderPath "
             "jobClass islands "
-            "rankCounts nodeCounts coreCounts runNumbers"))
+            "rankCounts nodeCounts "
+            "coreCounts coreCountsGrouped "
+            "runNumbers runNumbersGrouped"))
     
     options = Options(
       general                 = general,
@@ -143,12 +164,14 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
       resultsFolderPath = resultsFolderPath,\
       historyFolderPath = historyFolderPath,\
       \
-      jobClass   = jobClass,\
-      islands    = islands,\
-      rankCounts = rankCounts,\
-      nodeCounts = nodeCounts,\
-      coreCounts = coreCounts,\
-      runNumbers = runNumbers\
+      jobClass          = jobClass,\
+      islands           = islands,\
+      rankCounts        = rankCounts,\
+      nodeCounts        = nodeCounts,\
+      coreCounts        = coreCounts,\
+      coreCountsGrouped = coreCountsGrouped,\
+      runNumbers        = runNumbers,\
+      runNumbersGrouped = runNumbersGrouped\
     )
     
     return options
