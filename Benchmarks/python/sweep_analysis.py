@@ -39,6 +39,62 @@ counters = [
             ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
             ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
            ]
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+def removeEmptyColumns(table,header):
+    emptyColumns = []
+    for col in range(0,len(header)):
+        if all(item.strip()=="-1.0" for item in column(table,col)):
+            emptyColumns.append(col)
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in emptyColumns:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in emptyColumns:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader 
+
+def removeInvariantColumns(table,header):
+    '''
+    Remove all columns containing the same value in every row
+    of the given table.
+    '''  
+    invariantColumns        = {}
+    invariantColumnsIndices = []
+
+    blackList = ["run","run_time_steps"]
+
+    for col in range(0,len(header)):
+        current = column(table,col) 
+        if header[col].strip() not in blackList\
+            and all(item.strip()==current[0].strip() for item in current):
+            invariantColumnsIndices.append(col)
+            invariantColumns[header[col]]=current[0]
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in invariantColumnsIndices:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in invariantColumnsIndices:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader,invariantColumns
+
 
 def parseResultFile(filePath):
     '''
@@ -149,7 +205,7 @@ def getAdapterTimesSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseAdapterTimes(resultsFolderPath,projectName):
+def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out" files in the results section and create a table.
     """
@@ -164,7 +220,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
             firstFile = True
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -172,7 +228,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
-                run                 = match.group(8)
+                run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
                 if len(adapters):
@@ -268,6 +324,8 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                     row.append("missing")
                     row.append("missing")
                     row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
                     row.append(fileName)
                     csvwriter.writerow(row)
 
@@ -283,25 +341,29 @@ def parseAdapterTimes(resultsFolderPath,projectName):
             # reopen the file and sort it
             tableFile   = open(tablePath, 'r')
             header      = next(tableFile)
-            header      = header.strip()
+            header      = header.strip().split(",")
             reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
 
             sortedData = sorted(reader,key=getAdapterTimesSortingKey)
             tableFile.close()
+          
+            if compressTable:
+                print("") 
+                sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+                print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+                for column in invariantColumns:
+                    print(column+": "+ invariantColumns[column])
+                print("") 
 
             with open(tablePath, 'w') as sortedTableFile:
                 writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
-                writer.writerow(header.split(','))
+                writer.writerow(header)
                 writer.writerows(sortedData)
             print("created table:")
             print(tablePath)
 
     except IOError as err:
         print ("ERROR: could not write file "+tablePath+". Error message: " + str(err))
-
-
-def column(matrix, i):
-    return [row[i] for row in matrix]
 
 def linesAreIdenticalUpToIndex(line,previousLine,index):
     result=True
@@ -534,51 +596,48 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                 parameterDict=json.loads(value)
 
             for metric in metrics:
-                if singlecore:
-                    if metric[0] in line:
-                        segments = line.split('|')
+                if metric[0]+" STAT" in line:
+                    segments = line.split('|')
+                    #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
+                    values = {}
+                    values["Sum"] = float(segments[2].strip());
+                    values["Min"] = float(segments[3].strip());
+                    values["Max"] = float(segments[4].strip());
+                    values["Avg"] = float(segments[5].strip());
+                    result[metric[0]][metric[1]]=values[metric[1]]
+                elif metric[0] in line:
+                    segments = line.split('|')
 
-                        #    |     Runtime (RDTSC) [s]    |    6.5219    |
-                        value  = float(segments[2].strip());
-                        values = {}
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[metric[0]][metric[1]]=values[metric[1]]
-                else:
-                    if metric[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
-                        values = {}
-                        values["Sum"] = float(segments[2].strip());
-                        values["Min"] = float(segments[3].strip());
-                        values["Max"] = float(segments[4].strip());
-                        values["Avg"] = float(segments[5].strip());
-                        result[metric[0]][metric[1]]=values[metric[1]]
+                    #    |     Runtime (RDTSC) [s]    |    6.5219    |
+                    value  = float(segments[2].strip());
+                    values = {}
+                    values["Sum"] = value
+                    values["Min"] = value
+                    values["Max"] = value
+                    values["Avg"] = value
+                    result[metric[0]][metric[1]]=values[metric[1]]
 
             for counter in counters:
-                if singlecore:
-                    if counter[0] in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
-                        value  = float(segments[3].strip());
-                        values = {}
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[counter[0]][counter[1]]=values[metric[1]]
-                else:
-                    if counter[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
-                        values = {}
-                        values["Sum"] = float(segments[3].strip());
-                        values["Min"] = float(segments[4].strip());
-                        values["Max"] = float(segments[5].strip());
-                        values["Avg"] = float(segments[6].strip());
-                        result[counter[0]][counter[1]]=values[counter[1]]
+                if counter[0]+" STAT" in line:
+                    segments = line.split('|')
+                    #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
+                    values = {}
+                    values["Sum"] = float(segments[3].strip());
+                    values["Min"] = float(segments[4].strip());
+                    values["Max"] = float(segments[5].strip());
+                    values["Avg"] = float(segments[6].strip());
+                    result[counter[0]][counter[1]]=values[counter[1]]
+                elif counter[0] in line:
+                    segments = line.split('|')
+                    #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
+                    value  = float(segments[3].strip());
+                    values = {}
+                    values["Sum"] = value
+                    values["Min"] = value
+                    values["Max"] = value
+                    values["Avg"] = value
+                    result[counter[0]][counter[1]]=values[metric[1]]
+
     except IOError as err:
         print ("ERROR: could not parse likwid metrics for file "+filePath+"! Reason: "+str(err))
     return environmentDict,parameterDict,result
@@ -593,7 +652,7 @@ def getLikwidMetricsSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseMetrics(resultsFolderPath,projectName):
+def parseMetrics(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
@@ -601,14 +660,14 @@ def parseMetrics(resultsFolderPath,projectName):
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=";")
+            csvwriter = csv.writer(csvfile, delimiter=",",quotechar="\"")
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out.likwid")]
             
             print("processed files:")
             firstFile = True
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-N1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out.likwid$',fileName)
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out.likwid$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -616,13 +675,13 @@ def parseMetrics(resultsFolderPath,projectName):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
-                run                 = match.group(8)
+                run                 = match.group(9)
 
-                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores=="1")
+                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores.startswith("1:"))
 
                 # TODO(Dominic): workaround. parameters
                 if len(environmentDict) is 0:
-                   environmentDict,parameterDict,adapters = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
+                   environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
 
                 if len(measurements):
                     # write header
@@ -672,15 +731,25 @@ def parseMetrics(resultsFolderPath,projectName):
           # reopen the table and sort it
           tableFile   = open(tablePath, 'r')
           header      = next(tableFile)
-          header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=";")
+          header      = header.strip().split(",")
+          reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
 
           sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
           tableFile.close()
 
+          if compressTable:
+             print("") 
+             sortedData,header = removeEmptyColumns(sortedData,header)
+             print("stripped table from columns containing value \"-1.0\" in every row.") 
+             sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+             print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+             for column in invariantColumns:
+                 print(column+": "+ invariantColumns[column])
+             print("") 
+
           with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=";")
-              writer.writerow(header.split(";"))
+              writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
+              writer.writerow(header)
               writer.writerows(sortedData)
           print("created table:")
           print(tablePath)
