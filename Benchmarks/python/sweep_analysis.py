@@ -45,7 +45,6 @@ def column(matrix, i):
 def removeEmptyColumns(table,header):
     emptyColumns = []
     for col in range(0,len(header)):
-        
         if all(item.strip()=="-1.0" for item in column(table,col)):
             emptyColumns.append(col)
     
@@ -63,6 +62,35 @@ def removeEmptyColumns(table,header):
             filteredHeader.append(header[col])
    
     return filteredTable,filteredHeader 
+
+def removeInvariantColumns(table,header):
+    '''
+    Remove all columns containing the same value in every row
+    of the given table.
+    '''  
+    invariantColumns        = {}
+    invariantColumnsIndices = []
+
+    for col in range(0,len(header)):
+        current = column(table,col) 
+        if all(item.strip()==current[0].strip() for item in current):
+            invariantColumnsIndices.append(col)
+            invariantColumns[header[col]]=current[0]
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in invariantColumnsIndices:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in invariantColumnsIndices:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader,invariantColumns
 
 
 def parseResultFile(filePath):
@@ -174,7 +202,7 @@ def getAdapterTimesSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseAdapterTimes(resultsFolderPath,projectName):
+def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out" files in the results section and create a table.
     """
@@ -293,6 +321,8 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                     row.append("missing")
                     row.append("missing")
                     row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
                     row.append(fileName)
                     csvwriter.writerow(row)
 
@@ -308,15 +338,23 @@ def parseAdapterTimes(resultsFolderPath,projectName):
             # reopen the file and sort it
             tableFile   = open(tablePath, 'r')
             header      = next(tableFile)
-            header      = header.strip()
+            header      = header.strip().split(",")
             reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
 
             sortedData = sorted(reader,key=getAdapterTimesSortingKey)
             tableFile.close()
+          
+            if compressTable:
+                print("") 
+                sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+                print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+                for column in invariantColumns:
+                    print(column+": "+ invariantColumns[column])
+                print("") 
 
             with open(tablePath, 'w') as sortedTableFile:
                 writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
-                writer.writerow(header.split(','))
+                writer.writerow(header)
                 writer.writerows(sortedData)
             print("created table:")
             print(tablePath)
@@ -614,7 +652,7 @@ def getLikwidMetricsSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseMetrics(resultsFolderPath,projectName):
+def parseMetrics(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
@@ -699,7 +737,15 @@ def parseMetrics(resultsFolderPath,projectName):
           sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
           tableFile.close()
 
-          sortedData,header = removeEmptyColumns(sortedData,header)
+          if compressTable:
+             print("") 
+             sortedData,header = removeEmptyColumns(sortedData,header)
+             print("stripped table from columns containing value \"-1.0\" in every row.") 
+             sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+             print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+             for column in invariantColumns:
+                 print(column+": "+ invariantColumns[column])
+             print("") 
 
           with open(tablePath, 'w') as sortedTableFile:
               writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")

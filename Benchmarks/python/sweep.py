@@ -830,9 +830,16 @@ typical workflow:
 
 (after jobs have finished)
 
-./sweep.py myoptions.ini parseAdapters
+./sweep.py myoptions.ini parseAdapters [--compress]
 ./sweep.py myoptions.ini parseTotalTimes
 ./sweep.py myoptions.ini parseTimeStepTimes
+
+note: with --compress you remove table columns containing the
+same value in every row.
+
+(if likwid measurements have been performed)
+
+./sweep.py myoptions.ini parseMetrics [--compress]
 
 """
         print(info) # correctly indented
@@ -840,6 +847,8 @@ typical workflow:
     
     optionsFile = parseArgument(sys.argv,1)
     subprogram  = parseArgument(sys.argv,2)
+    
+    compressTable = parseArgument(sys.argv,3)=="--compress"
     
     options = sweep_options.parseOptionsFile(optionsFile)
     
@@ -914,10 +923,10 @@ typical workflow:
     elif subprogram == "cancel":
         cancelJobs()
     elif subprogram == "parseAdapters":
-        sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName)
+        sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName,compressTable)
     elif subprogram == "parseTotalTimes":
         sweep_analysis.parseSummedTimes(resultsFolderPath,projectName)
     elif subprogram == "parseTimeStepTimes":
         sweep_analysis.parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=True)
     elif subprogram == "parseMetrics":
-        sweep_analysis.parseMetrics(resultsFolderPath,projectName)
+        sweep_analysis.parseMetrics(resultsFolderPath,projectName,compressTable)
