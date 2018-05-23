@@ -217,7 +217,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
             firstFile = True
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -225,7 +225,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
-                run                 = match.group(8)
+                run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
                 if len(adapters):
@@ -593,51 +593,48 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                 parameterDict=json.loads(value)
 
             for metric in metrics:
-                if singlecore:
-                    if metric[0] in line:
-                        segments = line.split('|')
+                if metric[0]+" STAT" in line:
+                    segments = line.split('|')
+                    #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
+                    values = {}
+                    values["Sum"] = float(segments[2].strip());
+                    values["Min"] = float(segments[3].strip());
+                    values["Max"] = float(segments[4].strip());
+                    values["Avg"] = float(segments[5].strip());
+                    result[metric[0]][metric[1]]=values[metric[1]]
+                elif metric[0] in line:
+                    segments = line.split('|')
 
-                        #    |     Runtime (RDTSC) [s]    |    6.5219    |
-                        value  = float(segments[2].strip());
-                        values = {}
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[metric[0]][metric[1]]=values[metric[1]]
-                else:
-                    if metric[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
-                        values = {}
-                        values["Sum"] = float(segments[2].strip());
-                        values["Min"] = float(segments[3].strip());
-                        values["Max"] = float(segments[4].strip());
-                        values["Avg"] = float(segments[5].strip());
-                        result[metric[0]][metric[1]]=values[metric[1]]
+                    #    |     Runtime (RDTSC) [s]    |    6.5219    |
+                    value  = float(segments[2].strip());
+                    values = {}
+                    values["Sum"] = value
+                    values["Min"] = value
+                    values["Max"] = value
+                    values["Avg"] = value
+                    result[metric[0]][metric[1]]=values[metric[1]]
 
             for counter in counters:
-                if singlecore:
-                    if counter[0] in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
-                        value  = float(segments[3].strip());
-                        values = {}
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[counter[0]][counter[1]]=values[metric[1]]
-                else:
-                    if counter[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
-                        values = {}
-                        values["Sum"] = float(segments[3].strip());
-                        values["Min"] = float(segments[4].strip());
-                        values["Max"] = float(segments[5].strip());
-                        values["Avg"] = float(segments[6].strip());
-                        result[counter[0]][counter[1]]=values[counter[1]]
+                if counter[0]+" STAT" in line:
+                    segments = line.split('|')
+                    #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
+                    values = {}
+                    values["Sum"] = float(segments[3].strip());
+                    values["Min"] = float(segments[4].strip());
+                    values["Max"] = float(segments[5].strip());
+                    values["Avg"] = float(segments[6].strip());
+                    result[counter[0]][counter[1]]=values[counter[1]]
+                elif counter[0] in line:
+                    segments = line.split('|')
+                    #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
+                    value  = float(segments[3].strip());
+                    values = {}
+                    values["Sum"] = value
+                    values["Min"] = value
+                    values["Max"] = value
+                    values["Avg"] = value
+                    result[counter[0]][counter[1]]=values[metric[1]]
+
     except IOError as err:
         print ("ERROR: could not parse likwid metrics for file "+filePath+"! Reason: "+str(err))
     return environmentDict,parameterDict,result
@@ -667,7 +664,7 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
             firstFile = True
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-N1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out.likwid$',fileName)
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out.likwid$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -675,9 +672,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
-                run                 = match.group(8)
+                run                 = match.group(9)
 
-                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores=="1")
+                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores.startswith("1:"))
 
                 # TODO(Dominic): workaround. parameters
                 if len(environmentDict) is 0:

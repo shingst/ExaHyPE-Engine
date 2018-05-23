@@ -79,8 +79,10 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
     # optional parameters
-    context["tasks"] = tasks
-    context["cores"] = cores
+    context["tasks"]           = tasks
+    context["cores"]           = cores.split(":")[0] 
+    context["backgroundTasks"] = cores.split(":")[1]
+
     for key in context:
         if key not in keysInTemplate:
             print("WARNING: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
@@ -244,7 +246,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     buildParameterDict["dimension"]   =dimension
                                     buildParameterDict["order"]       =order
                                         
-                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1")
+                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1:1")
                                         
                                     buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+suffix+".exahype"
                                         
@@ -350,7 +352,7 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     context["time"]    = jobs["time"]
     context["class"]   = jobClass
     context["islands"] = islands
-    context["cores"]   = cores
+    context["cores"]   = cores.split(":")[0]
     
     # now verify template parameters are defined in options file
     for key in keysInTemplate:
@@ -475,16 +477,17 @@ def generateScripts():
             for nodes in nodeCounts:
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in myCoreCounts:
-                  cores = parsedCores
-                  if parsedCores=="auto":
-                       cores=str(int(int(cpus) / int(tasks)))
-                  specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
-                  
-                  specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
-                  
-                  with open(specFilePath, "w") as specFile:
-                      specFile.write(specFileBody)
-                  specFiles+=1
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
+                    specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
+                    
+                    specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                    
+                    with open(specFilePath, "w") as specFile:
+                        specFile.write(specFileBody)
+                    specFiles+=1
     
     print("generated specification files: "+str(specFiles))
     
@@ -503,6 +506,7 @@ def generateScripts():
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         for ungroupedParameterDict in dictProduct(ungroupedParameterSpace):
@@ -520,6 +524,9 @@ def generateScripts():
                                 myCores = cores
                                 if cores=="+":
                                     myCores = coresGrouped
+                                    if myCores=="auto":
+                                        myCores=str(int(int(cpus) / int(tasks)))
+                                        myCores=myCores+":"+myCores
                                 for runGrouped in runNumbersGrouped:
                                     myRun = run
                                     if run=="+":
@@ -738,6 +745,7 @@ def submitJobs():
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
