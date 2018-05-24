@@ -271,7 +271,7 @@ void SWE::RunUpTest(const double* const x, double* Q){
 
 //width = 70.0,10.0
 //offset = -10.0,0.0
-void SWE::SolitaryWaveOnASimpleBeach(const double*const x, double* Q){
+void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
   MySWESolver::Variables vars(Q);
 
   const double d = 0.3;
@@ -304,19 +304,52 @@ void SWE::SolitaryWaveOnASimpleBeach(const double*const x, double* Q){
 
 #endif
 
-void SWE::initialData(const double* const x,double* Q) {
-  //ShockShockProblem(x, Q);
-  //RareRareProblem(x, Q);
-  GaussFunctionProblem(x, Q);
-  //ExpBreakProblem(x,Q);
-  //DamBreakProblem(x,Q);
-  //SeaAtRestProblem(x,Q);
-  //SteadyRunUpLinear(x,Q);
-  //RunUpLinear(x,Q);
-  //SteadyRunUpShelf(x,Q);
-  //RunUpShelf(x, Q);
-  //WettingDryingProblem(x, Q);
-  //OscillatingLake(x, Q);
-  //RunUpTest(x, Q);
-  //SolitaryWaveOnASimpleBeach(x, Q);
+void SWE::initialData(const double* const x,double* Q, int scenario) {
+  switch (scenario)
+  {
+    case 0:
+      ShockShockProblem(x, Q);
+          break;
+    case 1:
+      RareRareProblem(x, Q);
+          break;
+    case 2:
+      GaussFunctionProblem(x, Q);
+          break;
+    case 3:
+      ExpBreakProblem(x, Q);
+          break;
+    case 4:
+      DamBreakProblem(x, Q);
+          break;
+    case 5:
+      SeaAtRestProblem(x, Q);
+          break;
+    case 6:
+      SteadyRunUpLinear(x, Q);
+          break;
+    case 7:
+      RunUpLinear(x, Q);
+          break;
+    case 8:
+      SteadyRunUpShelf(x, Q);
+          break;
+    case 9:
+      RunUpShelf(x, Q);
+          break;
+    case 10:
+      WettingDryingProblem(x, Q);
+          break;
+    case 11:
+      OscillatingLake(x, Q);
+          break;
+    case 12:
+      RunUpTest(x, Q);
+          break;
+    case 13:
+      SolitaryWaveOnSimpleBeach(x, Q);
+          break;
+    default:
+      GaussFunctionProblem(x, Q);
+  }
 }

@@ -20,19 +20,20 @@ public class CodeGeneratorHelper {
   private static String useFluxOptionFlag            = "--useFlux";
   private static String useNCPOptionFlag             = "--useNCP";
   private static String useSourceOptionFlag          = "--useSource";
+  private static String useFusedSourceOptionFlag     = "--useFusedSource";
   private static String useMaterialParamOptionFlag   = "--useMaterialParam";
   private static String usePointSourcesOptionFlag    = "--usePointSources";
   private static String useLimiterOptionFlag         = "--useLimiter";
+  private static String useGaussLobattoOptionFlag    = "--useGaussLobatto";
   private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
   private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
-  private static String enableDeepProfilerOptionFlag = "--enableDeepProfiler";
   
   
   //Internal states
   //---------------
   private Map<String,String> _optKernelsPaths;      //stores the paths to the generated code (used for imports in the KernelRegistration and in the Makefile)
   private Map<String,String> _optKernelsNamespaces; //stores the namespace used. The specific namespace depend on the solvername (assume projectname is constant)
-  private String _pathToApplication = null;
+  private static String _pathToApplication = null;  //static to not initialize the whole CodeGeneratorHelper when not required
   
   
   //Singleton pattern (to be able to access the instance everywhere)
@@ -63,7 +64,7 @@ public class CodeGeneratorHelper {
   
   //Setter
   //------
-  public void setPaths(DirectoryAndPathChecker directoryAndPathChecker) {
+  public static void setPaths(DirectoryAndPathChecker directoryAndPathChecker) {
     _pathToApplication = directoryAndPathChecker.outputDirectory.getPath();
   }
   
@@ -90,7 +91,7 @@ public class CodeGeneratorHelper {
   
   //Generate code
   //-------------
-  public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order, int dimensions, String microarchitecture, boolean enableDeepProfiler, ADERDGKernel kernel)
+  public String invokeCodeGenerator(String projectName, String solverName, int numberOfUnknowns, int numberOfParameters, int order, int dimensions, String microarchitecture, ADERDGKernel kernel)
       throws IOException {
     
     //check and defines paths       
@@ -111,13 +112,13 @@ public class CodeGeneratorHelper {
     //define the CodeGenerator arguments
     String namespace = defineNamespace(projectName, solverName);    
     String numericsParameter = kernel.isLinear() ? "linear" : "nonlinear";
-    String options =  (enableDeepProfiler ? enableDeepProfiler+" " : "") 
-                    + (kernel.useFlux() ? useFluxOptionFlag+" " : "") 
-                    + (kernel.useSource() ? useSourceOptionFlag+" " : "") 
+    String options =  (kernel.useFlux() ? useFluxOptionFlag+" " : "") 
+                    + (kernel.useSource() ? (kernel.useFusedSource() ? useFusedSourceOptionFlag : useSourceOptionFlag)+" " : "") 
                     + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
                     + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
+                    + (kernel.useGaussLobatto() ? useGaussLobattoOptionFlag+" " : "")
                     + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")
                     + (kernel.useLimiter() ?  ghostLayerWidthOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "")
                     ;

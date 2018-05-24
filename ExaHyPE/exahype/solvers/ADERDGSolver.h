@@ -663,8 +663,8 @@ private:
   void solveRiemannProblemAtInterface(
       records::ADERDGCellDescription& cellDescription,
       const int faceIndex,
-      double* lQhbnd,
-      double* lFhbnd,
+      const double* const lQhbnd,
+      const double* lFhbnd,
       const int fromRank);
 
   /**

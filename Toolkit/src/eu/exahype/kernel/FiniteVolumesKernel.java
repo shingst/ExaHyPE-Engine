@@ -147,6 +147,10 @@ public class FiniteVolumesKernel {
     }
     throw new IllegalArgumentException("Kerneltype not recognized");
   }
+  
+  public boolean useGaussLobatto() {
+    return type.containsKey(TYPE_OPTION_ID.get("LOBATTO_OPTION_ID"));
+  }
 
   public boolean usesOptimisedKernels() {
     return false;

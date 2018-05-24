@@ -275,5 +275,8 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
 {% endfor %}
 
 #include "{{pathToOptKernel}}/ConfigurationParameters.cpph"
+{% if useVectPDEs %}
+#include "{{pathToOptKernel}}/matrixUtils.cpph"
+{% endif %}
 
 #endif // _EXAHYPE_{{guardNamespace}}_KERNELS_H_
