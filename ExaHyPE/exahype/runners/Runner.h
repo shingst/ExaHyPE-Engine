@@ -38,7 +38,7 @@ class exahype::runners::Runner {
  private:
   static tarch::logging::Log _log;
 
-  #if defined(Parallel) && defined(SharedMemoryParallelisation)
+  #if defined(Parallel)
   static constexpr int PredictionSweeps = 2;
   #else
   static constexpr int PredictionSweeps = 1;

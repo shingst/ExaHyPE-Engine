@@ -41,6 +41,8 @@
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
+#include <functional>
+
 #if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
@@ -849,6 +851,21 @@ class exahype::solvers::Solver {
   * \param[in] backgroundJobCounter A reference to a background job counter.
   */
  static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
+
+ /**
+  * Submit a Prediction- or FusedTimeStepJob.
+  *
+  * \param[in] function the job
+  * \param[in[ isSkeletonJob the class of this job.
+  */
+ template <typename Job>
+ static void submitPredictionJob(Job& job,const bool isSkeletonJob) {
+   if ( isSkeletonJob ) {
+     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+   } else {
+     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+   }
+ }
 
  protected:
 

@@ -184,7 +184,7 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
         _stableIterationsInARow = 0;
       }
 
-      solver->updateNextAttainedStableState( _stableIterationsInARow > 4 );
+      solver->updateNextAttainedStableState( _stableIterationsInARow > 4 ); // Found experimentally
       solver->setNextAttainedStableState();
     }
   }
@@ -228,7 +228,11 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
   exahype::solvers::Solver::RefinementControl refinementControl =
       fineGridVertex.evaluateRefinementCriterion(fineGridH);
 
-  if ( refinementControl==exahype::solvers::Solver::RefinementControl::Refine ) {
+  if (
+      _stableIterationsInARow <= 3 // Found experimentally
+      &&
+      refinementControl==exahype::solvers::Solver::RefinementControl::Refine
+  ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
   } else if (
       refinementControl==exahype::solvers::Solver::RefinementControl::Erase
@@ -240,7 +244,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
       &&
-      _stableIterationsInARow > 2
+      _stableIterationsInARow > 3 // Found experimentally
   ) {
     fineGridVertex.erase(); // TODO(Dominic): vertex erasing is not well understood yet
   }
@@ -365,6 +369,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
+            _stableIterationsInARow <= 3 // Found experimentally
+            &&
             fineGridVertices[fineGridVerticesEnumerator(v)].isBoundary()
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()==
@@ -383,12 +389,12 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
+            _stableIterationsInARow > 3 // Found experimentally
+            &&
             fineGridVertices[fineGridVerticesEnumerator(v)].isBoundary()
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()==
                 exahype::Vertex::Records::RefinementControl::Refined
-            &&
-            _stableIterationsInARow > 2
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].evaluateRefinementCriterion(
                 fineGridVerticesEnumerator.getCellSize())==exahype::solvers::Solver::RefinementControl::Erase

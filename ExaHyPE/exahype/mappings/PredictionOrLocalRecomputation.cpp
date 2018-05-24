@@ -137,6 +137,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     initialiseLocalVariables();
   }
 
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+  }
+
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
   _boundaryFaceMerges = 0;
