@@ -105,6 +105,11 @@ void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("endIteration(State)", solverState);
 
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
+        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+  }
+
   #ifdef USE_ITAC
   VT_traceon();
   #endif

@@ -75,6 +75,19 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
   const bool nodePoolHasGivenOutRankSizeLastQuery =
       tarch::parallel::NodePool::getInstance().hasGivenOutRankSizeLastQuery();
 
+  #ifdef Debug
+  std::cout <<  "!getHasChangedVertexOrCellState=" << !_stateData.getHasChangedVertexOrCellState() << std::endl;
+  std::cout <<  "!getHasRefined=" << !_stateData.getHasRefined() << std::endl;
+  std::cout <<  "!getHasErased=" << !_stateData.getHasErased()  << std::endl;
+  std::cout <<  "!getHasTriggeredRefinementForNextIteration=" << !_stateData.getHasTriggeredRefinementForNextIteration() << std::endl;
+  std::cout <<  "!getHasTriggeredEraseForNextIteration=" << !_stateData.getHasTriggeredEraseForNextIteration() << std::endl;
+  #ifdef Parallel
+  std::cout <<  "!getCouldNotEraseDueToDecompositionFlag=" << !_stateData.getCouldNotEraseDueToDecompositionFlag() << std::endl;
+  #endif
+  std::cout << "isGridStationary()=" << isGridStationary() << std::endl;
+  std::cout << "getMaxRefinementLevelAllowed()=" << _stateData.getMaxRefinementLevelAllowed() << std::endl;
+  #endif
+
   // No more nodes left. Start to enforce refinement
   if ( !idleNodesLeft
       && _stateData.getMaxRefinementLevelAllowed()>=0

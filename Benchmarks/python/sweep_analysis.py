@@ -138,7 +138,7 @@ def parseResultFile(filePath):
     
     # Simulating scanf functionality
     # https://docs.python.org/3/library/re.html#simulating-scanf
-    commTimeRegex = re.compile("time required for data exchange=(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
+    commTimeRegex = re.compile("time=(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
 
     try:
         fileHandle=codecs.open(filePath,'r','UTF_8')
@@ -167,8 +167,8 @@ def parseResultFile(filePath):
                 isPassedGridSetup = True
                 stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
                 
-            #  42.4034      [cn7027.hpc.dur.ac.uk],rank:1 info         peano::grid::Grid::iterate()                            time required for data exchange=1.5131e-05  (time does not comprise any data exchange happening in the background)
-            if isPassedGridSetup and "peano::grid::Grid::iterate()" in line:
+            # 51.4252      [cn6073.hpc.dur.ac.uk],rank:11 info         peano::performanceanalysis::DefaultAnalyser::endToPrepareAsynchronousHeapDataExchange() time=8.35e-07, cpu time=0
+            if isPassedGridSetup and "endToPrepareAsynchronousHeapDataExchange()" in line:
                 stats["communication_occurences"] += 1
                 stats["communication_time_total"] += float(commTimeRegex.search(line).group(0).split("=")[1])
    
@@ -424,7 +424,6 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             row.append("normalised_usertime_max")
             row.append("normalised_usertime_mean")
             row.append("normalised_usertime_stdev")
-            row.append("communication_time_total")
             csvwriter.writerow(row)
             
             # init

@@ -50,36 +50,36 @@ def parseParameters(config):
     multipleListings = False
     ungroupedParameterSpace = {}
     groupedParameterSpace  = {}
-    if "parameters" in config and len(config["parameters"].keys()):
+    if config.has_section("parameters"):
         for key, value in config["parameters"].items():
             if key in ungroupedParameterSpace:
                print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
                multipleListings = True
             ungroupedParameterSpace[key] = parseList(value)
         
-        if config.has_section("parameters_grouped"):
-            for key, value in config["parameters_grouped"].items():
-                if key in groupedParameterSpace:
-                   print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
-                   multipleListings = True
-                if key in ungroupedParameterSpace:
-                   print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
-                   multipleListings = True
-                groupedParameterSpace[key] = parseList(value) 
-        if multipleListings:
-            print("ERROR: Some parameters have been found multiple times. Program aborted.",file=sys.stderr)
-            sys.exit()
+    if config.has_section("parameters_grouped"):
+        for key, value in config["parameters_grouped"].items():
+            if key in groupedParameterSpace:
+               print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
+               multipleListings = True
+            if key in ungroupedParameterSpace:
+               print("ERROR: Parameter '"+key+"' found multiple times.",file=sys.stderr)
+               multipleListings = True
+            groupedParameterSpace[key] = parseList(value) 
+    if multipleListings:
+        print("ERROR: Some parameters have been found multiple times. Program aborted.",file=sys.stderr)
+        sys.exit()
 
-        parameterSpace = {}
-        parameterSpace.update(ungroupedParameterSpace)
-        parameterSpace.update(groupedParameterSpace)
-        
-        # always put None in order to have at least one element
-        groupedParameterSpace[None] = [None] 
-    else:
+    if len(groupedParameterSpace)==0 and len(ungroupedParameterSpace)==0:
         print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
         sys.exit()
     
+    parameterSpace = {}
+    parameterSpace.update(ungroupedParameterSpace)
+    parameterSpace.update(groupedParameterSpace)
+    
+    # always put None in order to have at least one element
+    groupedParameterSpace[None] = [None] 
 
     blackList = ["tasks","cores","backgroundTasks"]
     for key in blackList:

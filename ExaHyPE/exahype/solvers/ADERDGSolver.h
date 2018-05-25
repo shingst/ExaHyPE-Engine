@@ -508,8 +508,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool isInvolvedInProlongationOrRestriction(
-      CellDescription& cellDescription);
+  static bool belongsToSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
 
   /**
    * Sets the face unknowns of a cell description of type Ancestor to zero.
@@ -786,12 +785,12 @@ private:
     private:
       const ADERDGSolver& _solver;
       CellDescription&    _cellDescription;
-      int&                _jobCounter;
+      const bool          _isSkeletonJob;
     public:
       CompressionJob(
         const ADERDGSolver& solver,
         CellDescription&    cellDescription,
-        int&                jobCounter);
+        const bool          isSkeletonJob);
 
       bool operator()();
   };
@@ -804,7 +803,7 @@ private:
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
-      const bool       _isAtRemoteBoundary;
+      const bool       _isSkeletonJob;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
@@ -834,13 +833,13 @@ private:
       ADERDGSolver&    _solver; // TODO not const because of kernels
       const int        _cellDescriptionsIndex;
       const int        _element;
-      int&             _jobCounter;
+      const bool       _isSkeletonJob;
     public:
       FusedTimeStepJob(
         ADERDGSolver& solver,
         const int     cellDescriptionsIndex,
         const int     element,
-        int&          jobCounter);
+        const bool    isAtRemoteBoundary);
 
       bool operator()();
   };
@@ -1657,8 +1656,7 @@ public:
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
-      const bool   vetoCompressionBackgroundJob,
-      const bool   isAtRemoteBoundary);
+      const bool   isSkeletonCell );
 
   /**
    *
@@ -1757,9 +1755,8 @@ public:
         const int element,
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
-        const bool isAtRemoteBoundary,
-        const bool vetoSpawnPredictionAsBackgroundJob,
-        const bool vetoSpawnAnyBackgroundJobs);
+        const bool isSkeletonCell,
+        const bool mustBeDoneImmediately);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -2444,11 +2441,9 @@ public:
    * However, we have to take care about the interplay of compression and
    * uncompression.
    *
-   * \param[in] isAtRemoteBoundary
+   * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
    */
-  void compress(CellDescription& cellDescription,
-      const bool vetoSpawnBackgroundJob,
-      const bool isAtRemoteBoundary) const;
+  void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
 };
 
 #endif

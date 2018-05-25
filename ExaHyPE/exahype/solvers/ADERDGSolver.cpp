@@ -1858,9 +1858,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool vetoSpawnPredictionAsBackgroundJob,
-    const bool vetoSpawnCompressionAsBackgroundJob,
-    const bool isAtRemoteBoundary) {
+    const bool isSkeletonCell,
+    const bool mustBeDoneImmediately ) {
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
@@ -1874,20 +1873,19 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
   result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
 
-  if ( vetoSpawnPredictionAsBackgroundJob ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+  if (
+      !SpawnPredictionAsBackgroundJob ||
+      mustBeDoneImmediately
+  ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
     performPredictionAndVolumeIntegralBody(
           cellDescriptionsIndex, element,
           predictorTimeStamp,predictorTimeStepSize,
-          false,vetoSpawnCompressionAsBackgroundJob,isAtRemoteBoundary);
+          false, isSkeletonCell );
   } else {
-    int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
-    PredictionJob predictionJob( *this, cellDescriptionsIndex, element, predictorTimeStamp,predictorTimeStepSize,
-        false/*already uncompressed*/, jobCounter );
-    if (isAtRemoteBoundary) {
-      peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
-    } else {
-      peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
-    }
+    PredictionJob predictionJob(
+        *this, cellDescriptionsIndex, element, predictorTimeStamp,predictorTimeStepSize,
+        false/*is uncompressed*/, isSkeletonCell );
+    Solver::submitPredictionJob(predictionJob,isSkeletonCell);
   }
   return result;
 }
@@ -1900,30 +1898,22 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool vetoSpawnBackgroundJobs =
-        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
-        isAtRemoteBoundary ||
-        #endif
-        isInvolvedInProlongationOrRestriction(cellDescription);
-    const bool vetoSpawnPredictionAsBackgroundJob =
-        vetoSpawnBackgroundJobs || !SpawnPredictionAsBackgroundJob;
+    const bool isSkeletonCell        = belongsToSkeleton(cellDescription,isAtRemoteBoundary);
+    const bool mustBeDoneImmediately = isSkeletonCell && !isAtRemoteBoundary; // TODO Not necessary with two loops
 
     if (
+        !SpawnPredictionAsBackgroundJob ||
         isFirstIterationOfBatch ||
         isLastIterationOfBatch  ||
-        vetoSpawnPredictionAsBackgroundJob
+        mustBeDoneImmediately
     ) {
-      return fusedTimeStepBody(
-          cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch,
-          vetoSpawnPredictionAsBackgroundJob,vetoSpawnBackgroundJobs,isAtRemoteBoundary);
+      return
+          fusedTimeStepBody(
+              cellDescriptionsIndex,element,
+              isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately );
     } else {
-      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, jobCounter );
-      if (isAtRemoteBoundary) {
-        peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
-      } else {
-        peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background  );
-      }
+      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell );
+      Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
   } else {
@@ -1959,12 +1949,8 @@ void exahype::solvers::ADERDGSolver::compress(
       const bool isAtRemoteBoundary) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool vetoSpawnAnyBackgroundJob =
-        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
-        isAtRemoteBoundary ||
-        #endif
-        isInvolvedInProlongationOrRestriction(cellDescription);
-    compress(cellDescription,vetoSpawnAnyBackgroundJob,isAtRemoteBoundary);
+    const bool isSkeletonCell = belongsToSkeleton(cellDescription,isAtRemoteBoundary);
+    compress(cellDescription,isSkeletonCell);
   }
 }
 
@@ -2001,46 +1987,52 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::isInvolvedInProlongationOrRestriction(
-    CellDescription& cellDescription) {
-  bool isInvolvedInProlongationRestriction = cellDescription.getHasVirtualChildren();
-//
-//  // this might be the expensive part (mostly integer stuff though)
-//  SubcellPosition subcellPosition =
-//      exahype::amr::computeSubcellPositionOfCellOrAncestor
-//      <CellDescription,Heap>(cellDescription);
-//  if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-//    isInvolvedInProlongationRestriction |=
-//        exahype::amr::onBoundaryOfParent(
-//            subcellPosition.subcellIndex,subcellPosition.levelDifference);
-//  }
+bool exahype::solvers::ADERDGSolver::belongsToSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary) {
+  bool belongsToSkeleton =
+      #if defined(Parallel)
+      isAtRemoteBoundary ||
+      #endif
+      cellDescription.getHasVirtualChildren();
 
-  // TODO(Dominic): Restored old behaviour; keep for now until we have LTS program flow
-  // this might be the expensive part (mostly integer stuff though)
-  SubcellPosition subcellPosition =
-      exahype::amr::computeSubcellPositionOfCellOrAncestor
-      <CellDescription,Heap>(cellDescription);
-  if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& parentCellDescription =
+  if ( !belongsToSkeleton ) {
+
+//      // this might be the expensive part (mostly integer stuff though)
+//      SubcellPosition subcellPosition =
+//          exahype::amr::computeSubcellPositionOfCellOrAncestor
+//          <CellDescription,Heap>(cellDescription);
+//      if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
+//        belongsToSkeleton |=
+//            exahype::amr::onBoundaryOfParent(
+//                subcellPosition.subcellIndex,subcellPosition.levelDifference);
+//      }
+
+    // TODO(Dominic): Restored old behaviour; keep for now until we have LTS program flow
+    // this might be the expensive part (mostly integer stuff though)
+    SubcellPosition subcellPosition =
+        exahype::amr::computeSubcellPositionOfCellOrAncestor
+        <CellDescription,Heap>(cellDescription);
+    if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
+      CellDescription& parentCellDescription =
           exahype::solvers::ADERDGSolver::getCellDescription(
               subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-    if (
-        exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference)
-    ) {
-      // check if the parent needs to restrict to its parent too
-      SubcellPosition parentSubcellPosition =
-          exahype::amr::computeSubcellPositionOfCellOrAncestor
-          <CellDescription,Heap>(parentCellDescription);
-
-      isInvolvedInProlongationRestriction |=
-          parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+      if (
           exahype::amr::onBoundaryOfParent(
-              parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
+              subcellPosition.subcellIndex,subcellPosition.levelDifference)
+      ) {
+        // check if the parent needs to restrict to its parent too
+        SubcellPosition parentSubcellPosition =
+            exahype::amr::computeSubcellPositionOfCellOrAncestor
+            <CellDescription,Heap>(parentCellDescription);
+
+        belongsToSkeleton |=
+            parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+            exahype::amr::onBoundaryOfParent(
+                parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
+      }
     }
   }
 
-  return isInvolvedInProlongationRestriction;
+  return belongsToSkeleton;
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
@@ -2049,8 +2041,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
     const bool   uncompressBefore,
-    const bool   vetoSpawnAnyBackgroundJob,
-    const bool   isAtRemoteBoundary) {
+    const bool   isSkeletonCell ) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if (uncompressBefore) {
@@ -2082,7 +2073,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   // if the parent of this cell does not need to restrict itself.
   restriction(cellDescription); // TODO(Dominic): These restrictions are not necessary anymore as soon we have LTS workflow
 
-  compress(cellDescription,vetoSpawnAnyBackgroundJob,isAtRemoteBoundary);
+  compress(cellDescription,isSkeletonCell);
 
   validateCellDescriptionData(cellDescription,true,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 }
@@ -2097,29 +2088,22 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool vetoSpawnAnyBackgroundJob =
-        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
-        isAtRemoteBoundary ||
-        #endif
-        isInvolvedInProlongationOrRestriction(cellDescription);
+    const bool isSkeletonCell        = belongsToSkeleton(cellDescription,isAtRemoteBoundary);
+    const bool mustBeDoneImmediately = isSkeletonCell && !isAtRemoteBoundary; // TODO Not necessary with two loops
+
     if (
-        vetoSpawnAnyBackgroundJob ||
-        !SpawnPredictionAsBackgroundJob
+        !SpawnPredictionAsBackgroundJob ||
+        mustBeDoneImmediately
     ) {
       performPredictionAndVolumeIntegralBody(
           cellDescriptionsIndex,element,
           predictorTimeStamp,predictorTimeStepSize,
-          uncompressBefore,vetoSpawnAnyBackgroundJob,
-          isAtRemoteBoundary);
+          uncompressBefore,isSkeletonCell);
     }
     else {
       PredictionJob predictionJob( *this,cellDescriptionsIndex,element,predictorTimeStamp,predictorTimeStepSize,
-          uncompressBefore,isAtRemoteBoundary );
-      if (isAtRemoteBoundary) {
-        peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
-      } else {
-        peano::datatraversal::TaskSet spawnedSet( predictionJob, peano::datatraversal::TaskSet::TaskType::Background  );
-      }
+          uncompressBefore,isSkeletonCell );
+      Solver::submitPredictionJob(predictionJob,isSkeletonCell);
     }
   }
 }
@@ -4526,17 +4510,17 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   const double      predictorTimeStamp,
   const double      predictorTimeStepSize,
   const bool        uncompressBefore,
-  const bool        isAtRemoteBoundary):
+  const bool        isSkeletonJob):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
   _predictorTimeStamp(predictorTimeStamp),
   _predictorTimeStepSize(predictorTimeStepSize),
   _uncompressBefore(uncompressBefore),
-  _isAtRemoteBoundary(isAtRemoteBoundary) {
+  _isSkeletonJob(isSkeletonJob) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    int& jobCounter = (_isAtRemoteBoundary) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
     jobCounter++;
   }
   lock.free();
@@ -4547,11 +4531,11 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegralBody(
       _cellDescriptionsIndex,_element,
       _predictorTimeStamp,_predictorTimeStepSize,
-      _uncompressBefore,false /*existence of job means there is no veto*/,_isAtRemoteBoundary); // ignore return value
+      _uncompressBefore,_isSkeletonJob); // ignore return value
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    int& jobCounter = (_isAtRemoteBoundary) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
     jobCounter--;
     assertion( jobCounter>=0 );
   }
@@ -4564,25 +4548,28 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver& solver,
   const int     cellDescriptionsIndex,
   const int     element,
-  int&          jobCounter):
+  const bool    isSkeletonJob):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
-  _jobCounter(jobCounter) {
+  _isSkeletonJob(isSkeletonJob) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _jobCounter++;
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    jobCounter++;
   }
   lock.free();
 }
 
 bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStepBody(
-      _cellDescriptionsIndex,_element,false,false,true,false,_jobCounter);
+      _cellDescriptionsIndex,_element, false, false, _isSkeletonJob, false );
+
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _jobCounter--;
-    assertion( _jobCounter>=0 );
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    jobCounter--;
+    assertion( jobCounter>=0 );
   }
   lock.free();
   return false;
@@ -4592,13 +4579,14 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,
   CellDescription&    cellDescription,
-  int&                jobCounter):
+  const bool          isSkeletonJob):
   _solver(solver),
   _cellDescription(cellDescription),
-  _jobCounter(jobCounter) {
+  _isSkeletonJob(isSkeletonJob) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _jobCounter++;
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    jobCounter++;
   }
   lock.free();
 }
@@ -4611,27 +4599,27 @@ bool exahype::solvers::ADERDGSolver::CompressionJob::operator()() {
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _cellDescription.setCompressionState(CellDescription::Compressed);
-    _jobCounter--;
-    assertion( _jobCounter>=0 );
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    jobCounter--;
+    assertion( jobCounter>=0 );
   }
   lock.free();
   return false;
 }
 
 
-void exahype::solvers::ADERDGSolver::compress(
-    CellDescription& cellDescription,const bool vetoSpawnBackgroundJob,const bool isAtRemoteBoundary) const {
+void exahype::solvers::ADERDGSolver::compress( CellDescription& cellDescription, const bool isSkeletonCell ) const {
   assertion1( cellDescription.getCompressionState() ==  CellDescription::Uncompressed, cellDescription.toString() );
   if (CompressionAccuracy>0.0) {
-    if (
-      !vetoSpawnBackgroundJob &&
-      SpawnCompressionAsBackgroundJob
-    ) {
-      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    if ( SpawnCompressionAsBackgroundJob ) {
+      int& jobCounter = ( isSkeletonCell ) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
       CompressionJob compressionJob( *this, cellDescription, jobCounter );
-      peano::datatraversal::TaskSet spawnedSet( compressionJob, peano::datatraversal::TaskSet::TaskType::Background );
+      if ( isSkeletonCell ) {
+        peano::datatraversal::TaskSet spawnedSet( compressionJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+      } else {
+        peano::datatraversal::TaskSet spawnedSet( compressionJob, peano::datatraversal::TaskSet::TaskType::Background  );
+      }
     }
     else {
       determineUnknownAverages(cellDescription);

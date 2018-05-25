@@ -417,8 +417,9 @@ private:
       const int   element,
       const bool  isFirstIterationOfBatch,
       const bool  isLastIterationOfBatch,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-      const bool  vetoSpawnPredictionJob);
+      const bool  isSkeletonJob,
+      const bool  mustBeDoneImmediately,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
@@ -506,14 +507,14 @@ private:
     const int                         _cellDescriptionsIndex;
     const int                         _element;
     std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
-    int&                              _jobCounter;
+    const bool                        _isSkeletonJob;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
         const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-        int&                                     jobCounter);
+        const bool                               isSkeletonJob);
 
     bool operator()();
   };
