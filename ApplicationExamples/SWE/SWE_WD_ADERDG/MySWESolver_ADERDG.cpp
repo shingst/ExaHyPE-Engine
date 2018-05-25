@@ -39,7 +39,7 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
   // Number of variables + parameters  = 4 + 0
 
   if (tarch::la::equals(t,0.0)) {
-    initialData(x, Q, scenario_DG);
+    initialData(x, Q);
   }
 }
 
@@ -86,10 +86,19 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
   const double ih = 1./vars.h();
   double u_n = Q[d + 1] * ih;
 
-  eigs.h() = u_n + c;
-  eigs.hu() = u_n - c;
-  eigs.hv() = u_n;
-  eigs.b() = 0.0;
+
+  if (vars.h() < epsilon_DG){
+    eigs.h() = 0.0;
+    eigs.hu() = 0.0;
+    eigs.hv() = 0.0;
+    eigs.b() = 0.0;
+  }
+  else {
+    eigs.h() = u_n + c;
+    eigs.hu() = u_n - c;
+    eigs.hv() = u_n;
+    eigs.b() = 0.0;
+  }
 }
 
 
@@ -104,16 +113,28 @@ void SWE::MySWESolver_ADERDG::flux(const double* const Q,double** F) {
   double* f = F[0];
   double* g = F[1];
 
-  f[0] = vars.hu();
-  f[1] = vars.hu()*vars.hu()*ih + 0.5*grav_DG*vars.h()*vars.h();
-  f[2] = vars.hu()*vars.hv()*ih;
-  f[3] = 0.0;
+  if (Q[0] < epsilon_DG){
+    f[0] = 0.0;
+    f[1] = 0.0;
+    f[2] = 0.0;
+    f[3] = 0.0;
 
-  g[0] = vars.hv();
-  g[1] = vars.hu()*vars.hv()*ih;
-  g[2] = vars.hv()*vars.hv()*ih + 0.5*grav_DG*vars.h()*vars.h();
-  g[3] = 0.0;
-  
+    g[0] = 0.0;
+    g[1] = 0.0;
+    g[2] = 0.0;
+    g[3] = 0.0;
+  }
+  else {
+    f[0] = vars.hu();
+    f[1] = vars.hu() * vars.hu() * ih + 0.5 * grav_DG * vars.h() * vars.h();
+    f[2] = vars.hu() * vars.hv() * ih;
+    f[3] = 0.0;
+
+    g[0] = vars.hv();
+    g[1] = vars.hu() * vars.hv() * ih;
+    g[2] = vars.hv() * vars.hv() * ih + 0.5 * grav_DG * vars.h() * vars.h();
+    g[3] = 0.0;
+  }
 }
 
 
@@ -141,7 +162,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
         const tarch::la::Vector<DIMENSIONS,double>& dx,
         const double t, const double dt) const {
 
-    if (observablesMin[0] <= 1000){
+    if (observablesMin[0] <= epsilon_DG * 20){
         return false;
     }
     else {

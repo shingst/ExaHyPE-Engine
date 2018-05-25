@@ -36,7 +36,7 @@ void SWE::MySWESolver::adjustPointSolution(const double* const x,const double t,
     // Number of variables + parameters  = 4 + 0
 
     if (tarch::la::equals(t,0.0)) {
-      initialData(x, Q, scenario);
+      initialData(x, Q);
     }
 }
 

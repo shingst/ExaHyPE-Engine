@@ -25,7 +25,7 @@ void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const
   // Number of variables    = 4 + #parameters
 
   if (tarch::la::equals(t,0.0)) {
-    initialData(x, Q, scenario);
+    initialData(x, Q);
   }
 }
 
