@@ -1372,19 +1372,19 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
     // compute flagging gradients in inside cells
-    bool flaggingHasNotConverged = false;
+    bool flaggingHasConverged = false;
     if (
         (cellDescription.getType()==CellDescription::Type::Cell ||
         cellDescription.getType()==CellDescription::Type::Ancestor)
         &&
         !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) {
       for (int d=0; d<DIMENSIONS; d++) {
-        flaggingHasNotConverged |=
-            std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) > 2;
-        flaggingHasNotConverged |=
-            std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) > 2;
-        flaggingHasNotConverged |=
-            std::abs(cellDescription.getFacewiseLimiterStatus(2*d+1)       - cellDescription.getFacewiseLimiterStatus(2*d+0)) > 2;
+        flaggingHasConverged |=
+            std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
+        flaggingHasConverged |=
+            std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
+        flaggingHasConverged |=
+            std::abs(cellDescription.getFacewiseLimiterStatus(2*d+1)       - cellDescription.getFacewiseLimiterStatus(2*d+0)) <= 2;
       }
     }
 
@@ -1394,7 +1394,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         (cellDescription.getType()!=CellDescription::Cell ||
         cellDescription.getRefinementRequest()!=CellDescription::RefinementRequest::Pending)
         &&
-        !flaggingHasNotConverged;
+        flaggingHasConverged;
   } else {
     return true;
   }
@@ -2555,8 +2555,7 @@ void exahype::solvers::ADERDGSolver::restriction(
   CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
 
   if (
-      fineGridCellDescription.getType()==CellDescription::Type::Ancestor ||
-      fineGridCellDescription.getType()==CellDescription::Type::Descendant
+      fineGridCellDescription.getType()==CellDescription::Type::Ancestor
   ) {
     restriction(fineGridCellDescription);
   }

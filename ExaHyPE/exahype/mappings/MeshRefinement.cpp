@@ -123,10 +123,10 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _stableIterationsInARow(masterThread._stableIterationsInARow),
   _localState(masterThread._localState)
- {
+{
   initialiseLocalVariables();
 }
-
+#endif
 
 #if defined(SharedMemoryParallelisation)
 void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
@@ -139,7 +139,6 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
     }
   }
 }
-#endif
 #endif
 
 void exahype::mappings::MeshRefinement::beginIteration(
