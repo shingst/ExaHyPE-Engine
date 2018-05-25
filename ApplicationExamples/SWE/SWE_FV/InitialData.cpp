@@ -5,9 +5,10 @@
 #include <cmath>
 
 using namespace std;
-
-const double grav=9.81;
 ///// 2D /////
+
+extern double grav;
+extern int scenario;
 
 #ifdef Dim2
 /*
@@ -277,11 +278,10 @@ void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
   const double d = 0.3;
   const double H = 0.0185 * d;
   const double beta = std::atan(1/19.85);
-  const double g = 1.0;
 
   double gamma = std::sqrt((3*H)/(4*d));
   double x0 = d * cos(beta)/sin(beta);
-  double L = std::log(std::sqrt(20) + std::sqrt(20 - 1)) / gamma;
+  double L = d * std::log(std::sqrt(20) + std::sqrt(20 - 1)) / gamma;
   double eta = H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d)));
 
   if (x[0] < 0){
@@ -296,7 +296,7 @@ void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
        vars.h() =  H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) + d;
        vars.b() = 0;
   }
-  vars.hu() = -eta * std::sqrt(g/d) * vars.h();
+  vars.hu() = -eta * std::sqrt(grav/d) * vars.h();
   vars.hv() = 0.0;
 }
 
@@ -304,7 +304,7 @@ void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
 
 #endif
 
-void SWE::initialData(const double* const x,double* Q, int scenario) {
+void SWE::initialData(const double* const x,double* Q) {
   switch (scenario)
   {
     case 0:
