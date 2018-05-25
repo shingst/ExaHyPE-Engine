@@ -1991,41 +1991,14 @@ bool exahype::solvers::ADERDGSolver::belongsToAMRSkeleton(const CellDescription&
   bool belongsToAMRSkeleton = cellDescription.getHasVirtualChildren();
 
   if ( !belongsToAMRSkeleton ) {
-
-//      // this might be the expensive part (mostly integer stuff though)
-//      SubcellPosition subcellPosition =
-//          exahype::amr::computeSubcellPositionOfCellOrAncestor
-//          <CellDescription,Heap>(cellDescription);
-//      if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-//        belongsToSkeleton |=
-//            exahype::amr::onBoundaryOfParent(
-//                subcellPosition.subcellIndex,subcellPosition.levelDifference);
-//      }
-
-    // TODO(Dominic): Restored old behaviour; keep for now until we have LTS program flow
-    // this might be the expensive part (mostly integer stuff though)
-    SubcellPosition subcellPosition =
-        exahype::amr::computeSubcellPositionOfCellOrAncestor
-        <CellDescription,Heap>(cellDescription);
-    if ( subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ) {
-      CellDescription& parentCellDescription =
-          exahype::solvers::ADERDGSolver::getCellDescription(
-              subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-      if (
+      SubcellPosition subcellPosition = // TODO this will not be necessary anymore with the LTS workflow
+          exahype::amr::computeSubcellPositionOfCellOrAncestor
+          <CellDescription,Heap>(cellDescription);
+      
+      belongsToAMRSkeleton =
+          subcellPosition.parentElement!=exahype::solvers::Solver::NotFound ||
           exahype::amr::onBoundaryOfParent(
-              subcellPosition.subcellIndex,subcellPosition.levelDifference)
-      ) {
-        // check if the parent needs to restrict to its parent too
-        SubcellPosition parentSubcellPosition =
-            exahype::amr::computeSubcellPositionOfCellOrAncestor
-            <CellDescription,Heap>(parentCellDescription);
-
-        belongsToAMRSkeleton |=
-            parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-            exahype::amr::onBoundaryOfParent(
-                parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
-      }
-    }
+              subcellPosition.subcellIndex,subcellPosition.levelDifference);
   }
 
   return belongsToAMRSkeleton;
@@ -2064,10 +2037,6 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
       cellDescription.getSize(),
       predictorTimeStamp,
       predictorTimeStepSize);
-
-  // If a PredictionJob is launched, this operation will only perform a restriction
-  // if the parent of this cell does not need to restrict itself.
-  restriction(cellDescription); // TODO(Dominic): These restrictions are not necessary anymore as soon we have LTS workflow
 
   compress(cellDescription,isSkeletonCell);
 
@@ -2536,6 +2505,7 @@ void exahype::solvers::ADERDGSolver::restriction(
   CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
 
   if (
+      fineGridCellDescription.getType()==CellDescription::Type::Cell     ||
       fineGridCellDescription.getType()==CellDescription::Type::Ancestor
   ) {
     restriction(fineGridCellDescription);

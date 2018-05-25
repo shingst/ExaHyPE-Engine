@@ -476,37 +476,17 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
-   * Evaluates if the predictor can be processed as a
-   * background task for this cell.
+   * Checks if a cell description is next to an 
+   * adaptivity boundary.
    *
    * This is the case if the following conditions hold:
-   *
-   * - The cell's (inside) faces are not adjacent to a remote boundary,
-   *   i.e. no data has to be send to a neighbouring rank.
    *
    * - A cell description is not augmented. Otherwise it
    *   needs to prolongate face data such that its
    *   children can perform their prolongation.
    *
    * - A cell description is not at the boundary
-   *   of a parent Ancestor which needs needs to restrict data
-   *   to a coarser level Ancestor itself. If the Ancestor doesn't
-   *   have a coarser level Ancestor, the restriction operation
-   *   does not need to wait for data from finer levels first.
-   *   (Problem could be circumevented by restricting directly
-   *   to all parents in the tree and not waiting for the hira
-   *
-   * The (later) goal of this method will be too prioritise
-   * certain cells --- especially the ones at the remote boundary --
-   * over other cells which do not need to finish computation before
-   * the next local neighbour merge.
-   * Cells at the remote boundary have to directly send out
-   * data such that their neighbours can receive the new boundary
-   * values in the next iteration.
-   *
-   * TODO(Dominic): If this method appears to be too expensive then
-   * it might make sense to precompute the flag after the grid setup and
-   * store it persistently on the patches.
+   *   of a parent Ancestor.
    */
   static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
 
