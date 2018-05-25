@@ -16,6 +16,7 @@ import os
 import re
 import codecs
 
+import collections
 import statistics
 
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
@@ -68,7 +69,7 @@ def removeInvariantColumns(table,header):
     Remove all columns containing the same value in every row
     of the given table.
     '''  
-    invariantColumns        = {}
+    invariantColumns        = collections.OrderedDict()
     invariantColumnsIndices = []
 
     blackList = ["run","run_time_steps"]
