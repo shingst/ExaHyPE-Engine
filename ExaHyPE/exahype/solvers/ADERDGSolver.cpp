@@ -1372,23 +1372,23 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
     // compute flagging gradients in inside cells
-    bool flaggingHasConverged = false;
+    bool flaggingHasConverged = true;
     if (
         (cellDescription.getType()==CellDescription::Type::Cell ||
         cellDescription.getType()==CellDescription::Type::Ancestor)
         &&
         !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) {
       for (int d=0; d<DIMENSIONS; d++) {
-        flaggingHasConverged |=
+        flaggingHasConverged &=
             std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
-        flaggingHasConverged |=
+        flaggingHasConverged &=
             std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
-        flaggingHasConverged |=
+        flaggingHasConverged &=
             std::abs(cellDescription.getFacewiseLimiterStatus(2*d+1)       - cellDescription.getFacewiseLimiterStatus(2*d+0)) <= 2;
       }
     }
 
-    return
+    return 
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
         (cellDescription.getType()!=CellDescription::Cell ||
