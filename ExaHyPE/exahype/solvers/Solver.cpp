@@ -86,8 +86,6 @@ bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
 int exahype::solvers::Solver::PredictionSweeps                = 1;
-bool exahype::solvers::Solver::SpawnSkeletonJobs              = false;
-bool exahype::solvers::Solver::SpawnEnclaveJobs               = false;
 
 bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
