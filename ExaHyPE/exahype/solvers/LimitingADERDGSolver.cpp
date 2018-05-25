@@ -788,8 +788,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    const bool isSkeletonCell        = ADERDGSolver::belongsToSkeleton(solverPatch,isAtRemoteBoundary);
-    const bool mustBeDoneImmediately = isSkeletonCell && !isAtRemoteBoundary; // TODO(Dominic): Theoretically not necessary with two loops
+    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(solverPatch,isAtRemoteBoundary);
+    const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
+    const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if (
         !SpawnPredictionAsBackgroundJob ||

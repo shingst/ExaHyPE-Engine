@@ -703,16 +703,12 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
-  bool isSkeletonCell =
-      #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
-      isAtRemoteBoundary ||
-      #endif
-      false;
+  bool isSkeletonCell = isAtRemoteBoundary;
 
   if (
+      !SpawnPredictionAsBackgroundJob ||
       isFirstIterationOfBatch ||
-      isLastIterationOfBatch  ||
-      !SpawnPredictionAsBackgroundJob
+      isLastIterationOfBatch
   ) {
     updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
     UpdateResult result;

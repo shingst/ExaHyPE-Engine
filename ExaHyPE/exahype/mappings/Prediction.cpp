@@ -141,24 +141,27 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-    if (
-        solver->isPerformingPrediction(algorithmSection) &&
-        element!=exahype::solvers::Solver::NotFound
-    ) {
-      // this operates only on compute cells
-      exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-          solver,fineGridCell.getCellDescriptionsIndex(),element,
-          exahype::Cell::isAtRemoteBoundary(
-              fineGridVertices,fineGridVerticesEnumerator)
-      );
-
-      // this operates only on helper cells
-      solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      if (
+          solver->isPerformingPrediction(algorithmSection) &&
+          element!=exahype::solvers::Solver::NotFound
+      ) {
+        if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+          // this operates only on compute cells
+          exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
+              solver,fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::Cell::isAtRemoteBoundary(
+                  fineGridVertices,fineGridVerticesEnumerator)
+          );
+        }
+        if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) { // we are sure here that the skeleton STPs have finished
+          // this operates only on helper cells
+          solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+        }
+      }
+      grainSize.parallelSectionHasTerminated();
     }
-    }
-    grainSize.parallelSectionHasTerminated();
   }
 }
 
@@ -174,12 +177,10 @@ void exahype::mappings::Prediction::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::mappings::Prediction::performPredictionOrProlongate(
-        fineGridCell,
-        fineGridVertices,fineGridVerticesEnumerator,
-        exahype::State::AlgorithmSection::TimeStepping);
-  }
+  exahype::mappings::Prediction::performPredictionOrProlongate(
+      fineGridCell,
+      fineGridVertices,fineGridVerticesEnumerator,
+      exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -213,7 +214,7 @@ void exahype::mappings::Prediction::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::mappings::Prediction::restriction(
         fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
   }

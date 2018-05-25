@@ -1898,14 +1898,14 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool isSkeletonCell        = belongsToSkeleton(cellDescription,isAtRemoteBoundary);
-    const bool mustBeDoneImmediately = isSkeletonCell && !isAtRemoteBoundary; // TODO Not necessary with two loops
+    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+    const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
+    const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if (
         !SpawnPredictionAsBackgroundJob ||
         isFirstIterationOfBatch ||
-        isLastIterationOfBatch  ||
-        mustBeDoneImmediately
+        isLastIterationOfBatch
     ) {
       return
           fusedTimeStepBody(
@@ -1949,7 +1949,7 @@ void exahype::solvers::ADERDGSolver::compress(
       const bool isAtRemoteBoundary) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool isSkeletonCell = belongsToSkeleton(cellDescription,isAtRemoteBoundary);
+    const bool isSkeletonCell = belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
     compress(cellDescription,isSkeletonCell);
   }
 }
@@ -1987,14 +1987,10 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
-bool exahype::solvers::ADERDGSolver::belongsToSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary) {
-  bool belongsToSkeleton =
-      #if defined(Parallel)
-      isAtRemoteBoundary ||
-      #endif
-      cellDescription.getHasVirtualChildren();
+bool exahype::solvers::ADERDGSolver::belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary) {
+  bool belongsToAMRSkeleton = cellDescription.getHasVirtualChildren();
 
-  if ( !belongsToSkeleton ) {
+  if ( !belongsToAMRSkeleton ) {
 
 //      // this might be the expensive part (mostly integer stuff though)
 //      SubcellPosition subcellPosition =
@@ -2024,7 +2020,7 @@ bool exahype::solvers::ADERDGSolver::belongsToSkeleton(const CellDescription& ce
             exahype::amr::computeSubcellPositionOfCellOrAncestor
             <CellDescription,Heap>(parentCellDescription);
 
-        belongsToSkeleton |=
+        belongsToAMRSkeleton |=
             parentSubcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
             exahype::amr::onBoundaryOfParent(
                 parentSubcellPosition.subcellIndex,parentSubcellPosition.levelDifference);
@@ -2032,7 +2028,7 @@ bool exahype::solvers::ADERDGSolver::belongsToSkeleton(const CellDescription& ce
     }
   }
 
-  return belongsToSkeleton;
+  return belongsToAMRSkeleton;
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
@@ -2088,8 +2084,9 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
-    const bool isSkeletonCell        = belongsToSkeleton(cellDescription,isAtRemoteBoundary);
-    const bool mustBeDoneImmediately = isSkeletonCell && !isAtRemoteBoundary; // TODO Not necessary with two loops
+    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
+    const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
+    const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if (
         !SpawnPredictionAsBackgroundJob ||

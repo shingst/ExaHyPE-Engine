@@ -508,7 +508,7 @@ private:
    * it might make sense to precompute the flag after the grid setup and
    * store it persistently on the patches.
    */
-  static bool belongsToSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
+  static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
 
   /**
    * Sets the face unknowns of a cell description of type Ancestor to zero.
