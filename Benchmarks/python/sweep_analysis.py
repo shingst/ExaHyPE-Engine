@@ -232,7 +232,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                 run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
-                if len(adapters):
+                if len(environmentDict):
                     # write header
                     if firstFile:
                         header = []
@@ -264,6 +264,8 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
+
+                if len(adapters): 
                     print(resultsFolderPath+"/"+fileName)
 
                     # write rows
@@ -337,8 +339,8 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
             for job in unfinishedRuns:
                 print(job)
 
-        success = not firstFile
-        if success:
+        foundFiles = not firstFile
+        if foundFiles:
             # reopen the file and sort it
             tableFile   = open(tablePath, 'r')
             header      = next(tableFile)
