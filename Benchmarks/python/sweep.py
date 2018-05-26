@@ -350,12 +350,12 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
             print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
     
     # put optional sweep options in context
-    context["mail"]    = jobs["mail"]
-    context["tasks"]   = tasks
-    context["time"]    = jobs["time"]
-    context["class"]   = jobClass
-    context["islands"] = islands
-    context["cores"]   = cores.split(":")[0]
+    context["mail"]         = jobs["mail"]
+    context["tasks"]        = tasks
+    context["time"]         = jobs["time"]
+    context["class"]        = jobClass
+    context["islands"]      = islands
+    context["coresPerTask"] = str( int ( int(jobs["num_cpus"]) / int(tasks) ) )
     
     # now verify template parameters are defined in options file
     for key in keysInTemplate:
@@ -920,8 +920,8 @@ same value in every row.
     coreCounts        = options.coreCounts
     coreCountsGrouped = options.coreCountsGrouped
     runNumbers        = options.runNumbers
-    runNumbersGrouped = options.runNumbersGrouped
-    
+    runNumbersGrouped = options.runNumbersGrouped   
+ 
     verifySweepAgreesWithHistoricalExperiments()
     
     specFileTemplatePath = exahypeRoot+"/"+general["spec_template"]

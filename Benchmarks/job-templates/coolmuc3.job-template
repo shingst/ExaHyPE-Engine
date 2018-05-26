@@ -5,7 +5,7 @@
 # body
 # 
 # Optional parameters are:
-# tasks, cores, mail
+# tasks, coresPerTask, mail
 
 #SBATCH --job-name={{job_name}}
 #SBATCH -o {{output_file}}
@@ -17,7 +17,7 @@
 #SBATCH --mem=MaxMemPerNode
 #SBATCH --ntasks={{ranks}}
 #SBATCH --nodes={{nodes}}
-#SBATCH --cpus-per-task={{cores}}
+#SBATCH --cpus-per-task={{coresPerTask}}
 #SBATCH --mail-user={{mail}}
 #SBATCH --mail-type=END
 
