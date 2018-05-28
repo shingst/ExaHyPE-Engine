@@ -34,10 +34,23 @@
 
 peano::CommunicationSpecification
 exahype::mappings::PredictionRerun::communicationSpecification() const {
-  return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can be masked out with LTS program flow
-      true);
+  // master->worker
+  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    exchangeMasterWorkerData =
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
+  }
+
+  // worker->master
+  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    exchangeWorkerMasterData =
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime; // TODO(Dominic): Can be masked out with LTS program flow
+  }
+
+  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
 
 peano::MappingSpecification
@@ -105,10 +118,11 @@ void exahype::mappings::PredictionRerun::beginIteration(
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
-  }
+  } // this is a rerun; enclave jobs have been spawned before
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -116,11 +130,7 @@ void exahype::mappings::PredictionRerun::beginIteration(
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
-  logTraceInWith1Argument("endIteration(State)", solverState);
-
-  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-
-  logTraceOutWith1Argument("endIteration(State)", solverState);
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::enterCell(

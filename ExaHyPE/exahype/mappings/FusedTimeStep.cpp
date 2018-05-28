@@ -169,8 +169,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
   _backgroundJobsHaveTerminated = false;
 
-  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
@@ -277,6 +275,7 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
     if ( sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
           exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
     _backgroundJobsHaveTerminated = true;
   }
