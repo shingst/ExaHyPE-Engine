@@ -322,6 +322,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     if ( sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
           exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
     _backgroundJobsHaveTerminated = true;
   }
