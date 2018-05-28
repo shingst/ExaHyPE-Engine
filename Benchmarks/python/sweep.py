@@ -139,8 +139,10 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
-                    if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(cores)>1:
-                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to "+cores+" > 1",file=sys.stderr)
+                        cores=cores+":"+cores
+                    myCores = cores.split(":")[0]
+                    if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(myCores)>1:
+                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to "+myCores+" > 1",file=sys.stderr)
                         environmentIsCorrect = False
                         
     if not justWarn and not environmentIsCorrect:
