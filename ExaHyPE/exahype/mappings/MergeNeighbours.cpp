@@ -116,10 +116,8 @@ void exahype::mappings::MergeNeighbours::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( !_backgroundJobsHaveTerminated ) {
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     _backgroundJobsHaveTerminated = true;
   }
 
@@ -176,10 +174,8 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
       !_backgroundJobsHaveTerminated
   ) {
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     _backgroundJobsHaveTerminated = true;
   }
 

@@ -79,10 +79,8 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
 
   if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
     // background threads
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);

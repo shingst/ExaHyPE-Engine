@@ -96,35 +96,56 @@ int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
-void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-    int& jobCounter,std::string counterTag) {
+std::string exahype::solvers::Solver::toString(const JobType& jobType) {
+  switch (jobType) {
+    case JobType::AMRJob:      return "AMRJob";
+    case JobType::EnclaveJob:  return "EnclaveJob";
+    case JobType::SkeletonJob: return "SkeletonJob";
+    default:
+      logError("toString(const JobType&)","Job type not supported.");
+      std::abort();
+      return 0;
+  }
+}
+
+int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
+  switch (jobType) {
+    case JobType::AMRJob:     return NumberOfAMRBackgroundJobs;
+    case JobType::EnclaveJob: return NumberOfEnclaveJobs;
+    case JobType::SkeletonJob:return NumberOfSkeletonJobs;
+    default:
+      logError("getNumberOfQueuedJobs(const JobType&)","Job type not supported.");
+      std::abort();
+      return 0;
+  }
+}
+
+void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  finishedWait = jobCounter == 0;
+  const int queuedJobs = getNumberOfQueuedJobs(jobType);
   lock.free();
+  finishedWait = queuedJobs == 0;
 
-  if ( 
-    !finishedWait && 
-    &jobCounter != &NumberOfSkeletonJobs 
-  ) { 
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-
+  if ( !finishedWait ) {
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-      "waiting for background jobs to complete (counter: "<<counterTag.c_str()<< ") where "
-      << jobCounter << " job(s) were spawned by ExaHyPE"
-    );
+      "waiting for " << queuedJobs << " job(s) background jobs to complete (type=" << toString(jobType) << ").");
+    if ( jobType != JobType::SkeletonJob ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    }
   }
 
   while ( !finishedWait ) {
-    if ( &jobCounter != &NumberOfSkeletonJobs ) { 
+    if ( jobType != JobType::SkeletonJob ) {
       peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
     }
     // Probe for incoming messages while we wait for background jobs
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    finishedWait = jobCounter == 0;
+    const int queuedJobs = getNumberOfQueuedJobs(jobType);
     lock.free();
+    finishedWait = queuedJobs == 0;
   }
 }
 

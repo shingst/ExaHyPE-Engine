@@ -116,15 +116,13 @@ void exahype::mappings::PredictionRerun::beginIteration(
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   } // this is a rerun; enclave jobs have been spawned before
   if (
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
       exahype::State::isLastIterationOfBatchOrNoBatch()
   ) {
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-        exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
