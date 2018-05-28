@@ -122,7 +122,10 @@ void exahype::mappings::Prediction::beginIteration(
   VT_traceon();
   #endif
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      exahype::State::isLastIterationOfBatchOrNoBatch()
+  ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();

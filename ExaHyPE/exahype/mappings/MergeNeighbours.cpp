@@ -172,7 +172,10 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if ( !_backgroundJobsHaveTerminated ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      !_backgroundJobsHaveTerminated
+  ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(

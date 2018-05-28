@@ -119,7 +119,10 @@ void exahype::mappings::PredictionRerun::beginIteration(
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
   } // this is a rerun; enclave jobs have been spawned before
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      exahype::State::isLastIterationOfBatchOrNoBatch()
+  ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();

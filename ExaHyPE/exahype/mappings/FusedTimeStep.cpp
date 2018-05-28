@@ -266,7 +266,10 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  if ( !_backgroundJobsHaveTerminated ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      !_backgroundJobsHaveTerminated
+  ) {
     updateBatchIterationCounter();
     if ( issuePredictionJobsInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
@@ -313,7 +316,10 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if ( !_backgroundJobsHaveTerminated ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      !_backgroundJobsHaveTerminated
+  ) {
     updateBatchIterationCounter();
     if ( issuePredictionJobsInThisIteration() ) {
       exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(

@@ -137,9 +137,13 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     initialiseLocalVariables();
   }
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      exahype::State::isLastIterationOfBatchOrNoBatch()
+  ) {
     exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
         exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
@@ -203,8 +207,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
       }
     }
-
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
     #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
     logInfo("endIteration(...)","interiorFaceSolves: " << _interiorFaceMerges);
