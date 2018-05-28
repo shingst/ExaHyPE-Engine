@@ -97,44 +97,34 @@ int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
 void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-    const int& backgroundJobCounter,std::string counterTag) {
+    int& jobCounter,std::string counterTag) {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  int numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
+  finishedWait = jobCounter == 0;
   lock.free();
-  finishedWait = numberOfExaHyPEBackgroundJobs == 0;
 
-  #ifdef Asserts
-  int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-  int reported               = numberOfExaHyPEBackgroundJobs;
-  #endif
-  while (!finishedWait) {
-    #ifdef Asserts
-    if (numberOfExaHyPEBackgroundJobs < reported) {
-      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-          "waiting for roughly "
-          << numberOfBackgroundJobs
-          << " background tasks to complete (counter: "<<counterTag.c_str()<< ") while "
-          << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
-      );
-      reported = numberOfExaHyPEBackgroundJobs;
-    }
-    #endif
+  if ( 
+    !finishedWait && 
+    &jobCounter != &NumberOfSkeletonJobs 
+  ) { 
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
-    if ( &backgroundJobCounter != &NumberOfSkeletonJobs ) {
+    logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+      "waiting for background jobs to complete (counter: "<<counterTag.c_str()<< ") where "
+      << jobCounter << " job(s) were spawned by ExaHyPE"
+    );
+  }
+
+  while ( !finishedWait ) {
+    if ( &jobCounter != &NumberOfSkeletonJobs ) { 
       peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
     }
     // Probe for incoming messages while we wait for background jobs
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
+    finishedWait = jobCounter == 0;
     lock.free();
-    finishedWait = numberOfExaHyPEBackgroundJobs == 0;
-
-    #ifdef Asserts
-    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-    #endif
   }
 }
 
