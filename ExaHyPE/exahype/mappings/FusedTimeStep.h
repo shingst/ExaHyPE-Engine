@@ -103,7 +103,7 @@ private:
    * We process background jobs in touchVertexFirstTime(...)
    * and set this flag here as well.
    */
-  bool _backgroundJobsHaveTerminated = false;
+  bool _batchIterationCounterUpdated = false;
 
 
   int _batchIteration = 0;

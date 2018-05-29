@@ -37,14 +37,18 @@ void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
   } else {
     _batchIteration++;
   }
+  _batchIterationCounterUpdated = true;
 }
 
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() {
-  return _batchIteration % 2 == 0;
+  return
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      _batchIteration % 2 == 0;
 }
 
 bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() {
   return
+      exahype::solvers::Solver::PredictionSweeps==1     ||
       exahype::State::isLastIterationOfBatchOrNoBatch() || // covers the NoBatch case
       _batchIteration % 2 != 0;
 }
@@ -167,7 +171,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
         true);
   }
 
-  _backgroundJobsHaveTerminated = false;
+  _batchIterationCounterUpdated = false;
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -175,7 +179,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FusedTimeStep::FusedTimeStep(
     const FusedTimeStep& masterThread) {
-  _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
+  _batchIterationCounterUpdated=masterThread._batchIterationCounterUpdated;
   _batchIteration=masterThread._batchIteration;
   initialiseLocalVariables();
 }
@@ -266,19 +270,17 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  if (
-      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      !_backgroundJobsHaveTerminated
-  ) {
+  if ( !_batchIterationCounterUpdated ) {
     updateBatchIterationCounter();
-    if ( issuePredictionJobsInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+      if ( issuePredictionJobsInThisIteration() ) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+      }
+      if ( sendOutRiemannDataInThisIteration() ) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+      }
     }
-    if ( sendOutRiemannDataInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-    }
-    _backgroundJobsHaveTerminated = true;
   }
 
   if ( issuePredictionJobsInThisIteration() ) {
@@ -314,19 +316,17 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if (
-      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      !_backgroundJobsHaveTerminated
-  ) {
+  if ( !_batchIterationCounterUpdated ) {
     updateBatchIterationCounter();
-    if ( issuePredictionJobsInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+      if ( issuePredictionJobsInThisIteration() ) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+      }
+      if ( sendOutRiemannDataInThisIteration() ) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+      }
     }
-    if ( sendOutRiemannDataInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-    }
-    _backgroundJobsHaveTerminated = true;
   }
 
   if ( issuePredictionJobsInThisIteration() ) {
