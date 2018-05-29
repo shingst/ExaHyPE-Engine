@@ -149,10 +149,13 @@ private:
   /**
    * There are no prolongations and restrictions
    * for the Finite Volums Solver in ExaHyPE
+   *
+   * \param[in] isSkeletonCell indicates that the cell is adjacent to a remote boundary.
+   *            (There is currently no AMR for the pure FVM solver.)
    */
   void compress(
       CellDescription& cellDescription,
-      const bool isAtRemoteBoundary) const;
+      const bool isSkeletonCell) const;
   /**
    * \copydoc ADERDGSolver::computeHierarchicalTransform()
    *
@@ -173,16 +176,16 @@ private:
   void putUnknownsIntoByteStream(CellDescription& cellDescription) const;
   void uncompress(CellDescription& cellDescription) const;
 
-  class CompressionTask {
+  class CompressionJob {
     private:
-      const FiniteVolumesSolver&                       _solver;
-      exahype::records::FiniteVolumesCellDescription&  _cellDescription;
-      int&                                             _jobCounter;
+      const FiniteVolumesSolver& _solver;
+      CellDescription&           _cellDescription;
+      const bool                 _isSkeletonJob;
     public:
-      CompressionTask(
-        const FiniteVolumesSolver&                      solver,
-        exahype::records::FiniteVolumesCellDescription& cellDescription,
-        int&                                            jobCounter);
+      CompressionJob(
+        const FiniteVolumesSolver& solver,
+        CellDescription&           cellDescription,
+        const bool                 isSkeletonJob);
 
       bool operator()();
   };
@@ -201,13 +204,13 @@ private:
     FiniteVolumesSolver&  _solver;
     const int             _cellDescriptionsIndex;
     const int             _element;
-    int&                  _jobCounter;
+    const bool            _isSkeletonJob;
   public:
     FusedTimeStepJob(
         FiniteVolumesSolver& solver,
         const int            cellDescriptionsIndex,
         const int            element,
-        int&                 jobCounter
+        const bool           isSkeletonJob
     );
 
     bool operator()();

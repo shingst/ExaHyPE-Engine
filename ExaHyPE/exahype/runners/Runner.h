@@ -38,13 +38,6 @@ class exahype::runners::Runner {
  private:
   static tarch::logging::Log _log;
 
-  #if defined(Parallel) && defined(SharedMemoryParallelisation)
-  static constexpr int PredictionSweeps = 2;
-  #else
-  static constexpr int PredictionSweeps = 1;
-  #endif
-
-
   exahype::parser::Parser& _parser;
   std::vector<std::string>& _cmdlineargs;
 

@@ -50,6 +50,7 @@ public class ADERDGKernel {
     OPTIMIZATION_OPTION_ID.put("TEMP_VARS_ON_STACK_OPTION_ID", "usestack");
     OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_OPTION_ID",    "maxpicarditer");
     OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_OPTION_ID",        "fusedsource");
+    OPTIMIZATION_OPTION_ID.put("FLUX_VECT_OPTION_ID",          "fluxvect");
     OPTIMIZATION_OPTION_ID.put("CONVERTER_OPTION_ID",          "converter"); //for debug only, not in guidebook
     OPTIMIZATION_OPTION_ID.put("FLOPS_OPTION_ID",              "flops");     //for debug only, not in guidebook
   }
@@ -103,7 +104,7 @@ public class ADERDGKernel {
   }
   
   private void validate() throws IllegalArgumentException {
-    //check if all parsed arguments are recognized
+    // check if all parsed arguments are recognized
     for(String parsedId : type.keySet()) {
       if(!TYPE_OPTION_ID.containsValue(parsedId)) {
         throw new IllegalArgumentException("Type key \""+parsedId+"\" not recognized");
@@ -119,22 +120,31 @@ public class ADERDGKernel {
         throw new IllegalArgumentException("Optimization key \""+parsedId+"\" not recognized");
       }
     }
-    //Must be linear xor nonlinear
+    // must be linear xor nonlinear
     if(!type.containsKey(TYPE_OPTION_ID.get("LINEAR_OPTION_ID")) ^ type.containsKey(TYPE_OPTION_ID.get("NONLINEAR_OPTION_ID"))) {//should be only one
       throw new IllegalArgumentException("nonlinear or linear not specified or both specified in the kernel type");
     }
-    //Pointsource requires an associated int value
+    // pointsource requires an associated int value
     if(usePointSources() && getNumberOfPointSources() < 0) {
       throw new IllegalArgumentException("point sources used but number not specified! In the specification file, use "+TERMS_OPTION_ID.get("POINTSOURCES_OPTION_ID")+":X, with X the number of point sources.");
     }
-    //fusedsource requires optimized kernels
+    // fusedsource requires optimized kernels
     if(useFusedSource() && !(getKernelType() ==  KernelType.OptimisedADERDG)) {
       throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"' requires the used of optimized kernels");
     }
-    //Can't used fusedSource without source
+    // can't used fusedSource without source
     if(useFusedSource() && !useSource()) {
       throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"' requires the PDE term '"+TERMS_OPTION_ID.get("SOURCE_OPTION_ID")+"'");
     }
+    // vect PDEs only with otptimized kernels
+    if(!(getKernelType() ==  KernelType.OptimisedADERDG) && (useFluxVect())) {//TODO JMG extend with other vect PDE
+      throw new IllegalArgumentException("The vectorized PDE optimizations require the optimized kernel term (use '"+OPTIMIZATION_OPTION_ID.get("OPTIMIZED_OPTION_ID")+"')");
+    }
+    // can't use opt fluxvect without term flux
+    if(useFluxVect() && !useFlux()) {
+      throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FLUX_VECT_OPTION_ID")+"' requires the PDE term '"+TERMS_OPTION_ID.get("FLUX_OPTION_ID")+"'");
+    }
+    
   }
 
   public enum KernelType {
@@ -207,6 +217,10 @@ public class ADERDGKernel {
   
   public boolean useFusedSource() {
     return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID"));
+  }
+  
+  public boolean useFluxVect() {
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FLUX_VECT_OPTION_ID"));
   }
   
   public boolean useMaxPicardIterations() {

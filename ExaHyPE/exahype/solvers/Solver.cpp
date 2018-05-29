@@ -84,7 +84,9 @@ double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
-bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
+int exahype::solvers::Solver::PredictionSweeps                = 1;
+
 bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
@@ -132,6 +134,17 @@ void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
     numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
     #endif
   }
+}
+
+void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJobs) {
+  SpawnPredictionAsBackgroundJob = useBackgroundJobs;
+  #if defined(Parallel)
+  PredictionSweeps  = useBackgroundJobs ? 2 : 1;
+  #elif !defined(Parallel) && defined(SharedMemoryParallelisation)
+  PredictionSweeps  = ( useBackgroundJobs && !allSolversPerformOnlyUniformRefinement() )  ? 2 : 1;
+  #else // serial
+  PredictionSweeps = 1;
+  #endif
 }
 
 

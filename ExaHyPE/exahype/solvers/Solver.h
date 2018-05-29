@@ -41,6 +41,8 @@
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
+#include <functional>
+
 #if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
@@ -547,10 +549,14 @@ class exahype::solvers::Solver {
   /**
    * Set to true if the prediction and/or the fused time step
    * should be launched as background job whenever possible.
-   *
-   * TODO(Dominic): Rename as we start other background jobs as well
    */
   static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
+   * and FusedTimeStep iterations we need to run per time step.
+   */
+  static int  PredictionSweeps;
 
   /**
    * Set to true if the mesh refinement iterations
@@ -558,7 +564,26 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
- public:
+
+  /**
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfAMRBackgroundJobs;
+  /**
+   * Number of background jobs spawned
+   * from enclave cells.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfEnclaveJobs;
+  /**
+   * Number of background jobs spawned
+   * from skeleton cells, i.e. cells at parallel
+   * or adaptivity boundaries.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfSkeletonJobs;
 
   /**
    * The type of a solver.
@@ -757,6 +782,10 @@ class exahype::solvers::Solver {
    */
   static bool allSolversPerformOnlyUniformRefinement();
 
+
+
+
+
   /**
    * Loop over the solver registry and check if one
    * of the solvers has requested a mesh update.
@@ -818,26 +847,7 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
-  /**
-   * \see ensureAllBackgroundJobsHaveTerminated
-   */
-  static int NumberOfAMRBackgroundJobs;
-
-  /**
-   * Number of background jobs spawned
-   * from enclave cells.
-   *
-   * \see ensureAllBackgroundJobsHaveTerminated
-   */
-  static int NumberOfEnclaveJobs;
-  /**
-   * Number of background jobs spawned
-   * from skeleton cells, i.e. cells at parallel
-   * or adaptivity boundaries.
-   *
-   * \see ensureAllBackgroundJobsHaveTerminated
-   */
-  static int NumberOfSkeletonJobs;
+  static void configureEnclaveTasking(const bool useBackgroundJobs);
 
  /**
   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
@@ -849,6 +859,21 @@ class exahype::solvers::Solver {
   * \param[in] backgroundJobCounter A reference to a background job counter.
   */
  static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
+
+ /**
+  * Submit a Prediction- or FusedTimeStepJob.
+  *
+  * \param[in] function the job
+  * \param[in[ isSkeletonJob the class of this job.
+  */
+ template <typename Job>
+ static void submitPredictionJob(Job& job,const bool isSkeletonJob) {
+   if ( isSkeletonJob ) {
+     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+   } else {
+     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+   }
+ }
 
  protected:
 
