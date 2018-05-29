@@ -169,8 +169,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
   _backgroundJobsHaveTerminated = false;
 
-  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
@@ -268,15 +266,17 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  if ( !_backgroundJobsHaveTerminated ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      !_backgroundJobsHaveTerminated
+  ) {
     updateBatchIterationCounter();
     if ( issuePredictionJobsInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     }
     if ( sendOutRiemannDataInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
     _backgroundJobsHaveTerminated = true;
   }
@@ -314,15 +314,17 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if ( !_backgroundJobsHaveTerminated ) {
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      !_backgroundJobsHaveTerminated
+  ) {
     updateBatchIterationCounter();
     if ( issuePredictionJobsInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     }
     if ( sendOutRiemannDataInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
     _backgroundJobsHaveTerminated = true;
   }

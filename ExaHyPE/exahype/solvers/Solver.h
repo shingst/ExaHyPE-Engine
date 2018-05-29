@@ -565,6 +565,8 @@ class exahype::solvers::Solver {
   static bool SpawnAMRBackgroundJobs;
 
 
+  enum class JobType { AMRJob, EnclaveJob, SkeletonJob };
+
   /**
    * \see ensureAllBackgroundJobsHaveTerminated
    */
@@ -849,6 +851,11 @@ class exahype::solvers::Solver {
 
   static void configureEnclaveTasking(const bool useBackgroundJobs);
 
+
+  static std::string toString(const JobType& jobType);
+
+  static int getNumberOfQueuedJobs(const JobType& jobType);
+
  /**
   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
   * further. We have to wait until all tasks have terminated if we want to modify the heap,
@@ -858,7 +865,7 @@ class exahype::solvers::Solver {
   *
   * \param[in] backgroundJobCounter A reference to a background job counter.
   */
- static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
+ static void ensureAllJobsHaveTerminated(JobType jobType);
 
  /**
   * Submit a Prediction- or FusedTimeStepJob.
