@@ -135,7 +135,10 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                     environmentIsCorrect = False
                 
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
-                for parsedCores in coreCounts:
+                myCoreCounts = coreCounts
+                if coreCounts[0]=="+":
+                    myCoreCounts = coreCountsGrouped
+                for parsedCores in myCoreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
