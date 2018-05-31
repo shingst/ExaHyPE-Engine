@@ -140,7 +140,7 @@ class Controller:
                   }
 
         self.validateConfig(simdWidth.keys())
-        self.config["simdSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
+        self.config["vectSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
 
         
@@ -179,11 +179,10 @@ class Controller:
         context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
         context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
         context["useVectPDEs"] = context["useFluxVect"] #TODO JMG add other vect
-        context["vectSize"] = self.config["simdSize"]
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
-        return self.config["simdSize"] * int((sizeWithoutPadding+(self.config["simdSize"]-1))/self.config["simdSize"])
+        return self.config["vectSize"] * int((sizeWithoutPadding+(self.config["vectSize"]-1))/self.config["vectSize"])
 
 
     def getPadSize(self, sizeWithoutPadding):
