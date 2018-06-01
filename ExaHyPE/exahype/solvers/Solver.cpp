@@ -129,11 +129,13 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   finishedWait = queuedJobs == 0;
 
   if ( !finishedWait ) {
+    #if defined(Asserts) || defined(TrackGridStatistics)
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-      "waiting for " << queuedJobs << " job(s) background jobs to complete (type=" << toString(jobType) << ").");
+      "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").");
     if ( jobType != JobType::SkeletonJob ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
+    #endif
   }
 
   while ( !finishedWait ) {
