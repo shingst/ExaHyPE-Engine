@@ -27,7 +27,7 @@ public class CodeGeneratorHelper {
   private static String useLimiterOptionFlag         = "--useLimiter";
   private static String useGaussLobattoOptionFlag    = "--useGaussLobatto";
   private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
-  private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
+  private static String useCERKGuessOptionFlag       = "--useCERKGuess";
   
   
   //Internal states
@@ -117,7 +117,7 @@ public class CodeGeneratorHelper {
                     + (kernel.useSource() ? (kernel.useFusedSource() ? useFusedSourceOptionFlag : useSourceOptionFlag)+" " : "") 
                     + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
-                    + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
+                    + (kernel.useCERKGuess() ? useCERKGuessOptionFlag+" " : "") 
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
                     + (kernel.useGaussLobatto() ? useGaussLobattoOptionFlag+" " : "")
                     + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")

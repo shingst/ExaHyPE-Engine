@@ -92,7 +92,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
-{% if useNCP %}
+{% if useNCP or useFlux %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
@@ -107,19 +107,158 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
 
+{% if not useCERKGuess %}{# fallback trivial guess #}
   // 1. Trivial initial guess
   for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
     for (int l = 0; l < {{nDof}}; l++) {
       std::copy_n(&luh[{{nData}}*ijk], {{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
     }
   }
+{% else %} {# useCERKGuess #}
+  //1. Optimized initial guess, Continuous Extension Runga-Kutta.
+  {
+{% if useFlux %}
+{% if useFluxVect %}
+        std::memset(lFi, 0, {{(nDim+1)*(nDof**nDim)*nVarPad}} * sizeof(double)); //use lFi for local memory, must be set to 0
+        double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
+        double* const lF_div = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // lF_div[z?][y][x][n]
+        
+        // Compute the fluxes
+        for (int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}}) {
+          //transpose to SoA
+          AoS2SoA<{{nVar}},{{nData}}>(luh+{{nData}}*jkl, Qt_block);
+          
+          // Call PDE fluxes
+#ifdef USE_IPO
+          #pragma forceinline recursive
+#endif
+          solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
+          //transpose back to AoS
+          SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, lF_guess+{{nVarPad}}*jkl+{{0*(nDof**nDim)*nVarPad}}); // no time
+          SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, lF_guess+{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}); // no time
+{% if nDim == 3 %}
+          SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, lF_guess+{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}); // no time
+{% endif %}        
+        }
+{% if (nDof**nDim)%vectSize != 0 %}
+        // rest
+        {
+          AoS2SoA_rest<{{nVar}},{{nData}}>(luh+{{nData}}*jkl, Qt_block);
+          // Call PDE fluxes
+  #ifdef USE_IPO
+          #pragma forceinline recursive
+  #endif
+          solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
+          
+          //transpose back to AoS
+          SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_x_block, lF_guess+{{nVarPad}}*jkl+{{0*(nDof**nDim)*nVarPad}}); // no time
+          SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_y_block, lF_guess+{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}); // no time
+{% if nDim == 3 %}
+          SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_z_block, lF_guess+{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}); // no time
+{% endif %}
+        }
+{% endif %}{# perform rest #}
+{% else %}{# useFluxVect #}
+        // Compute the fluxes
+        for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
+          // Call PDE fluxes
+          const double* Q = &luh[{{nData}}*{{nDof}}*jkl];
+          double* F[{{nDim}}];
+          F[0] = &lF_guess[{{nVarPad}}*jkl];
+          F[1] = &lF_guess[{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}];
+{% if nDim == 3 %}
+          F[2] = &lF_guess[{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}];
+{% endif %}
+#ifdef USE_IPO
+          #pragma forceinline recursive
+#endif
+          solver.{{solverName}}::flux(Q, F);
+        }
+{% endif %}{# useFluxVect#}
 
+
+    // x direction
+    for (int j = 0; j < {{nDof3D}}; j++) {
+      for (int k = 0; k < {{nDof}}; k++) {
+
+{% if useLibxsmm %}
+#ifdef USE_IPO
+        #pragma forceinline
+#endif
+        {{gemm_gradF_x}}(&lF_guess[{{nVarPad}}*(0+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &lF_div[{{nVarPad*nDof}}*(k+{{nDof}}*j)]);
+{% else %}
+        for (int l = 0; l < {{nDof}}; l++) {
+          for (int m = 0; m < {{nDof}}; m++) {
+            #pragma simd
+            for (int n = 0; n < {{nVar}}; n++) {
+              lF_div[n+{{nVarPad}}*(l+{{nDof}}*(k+{{nDof}}*j))] += inverseDx[0] * lF_guess[n+{{nVarPad}}*(m+{{nDof}}*(k+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
+            }
+          }
+        }
+{% endif %}
+      }
+    }
+    // y direction
+    for (int j = 0; j < {{nDof3D}}; j++) {
+      for (int k = 0; k < {{nDof}}; k++) {
+{% if useLibxsmm %}
+#ifdef USE_IPO
+        #pragma forceinline
+#endif
+        {{gemm_gradF_y}}(&lF_guess[{{1*(nDof**nDim)*nVarPad}}+{{nVarPad}}*(k+{{nDof*nDof}}*j)], &dudxT_by_dx[0], &lF_div[{{nVarPad}}*(k+{{nDof*nDof}}*j)]);
+{% else %}
+        for (int l = 0; l < {{nDof}}; l++) {
+          for (int m = 0; m < {{nDof}}; m++) {
+            #pragma simd
+            for (int n = 0; n < {{nVar}}; n++) {
+              lF_div[n+{{nVarPad}}*(k+{{nDof}}*(l+{{nDof}}*j))] += inverseDx[0] * lF_guess[{{1*(nDof**nDim)*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(m+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
+            }
+          }
+        }
+{% endif %}
+      }
+    }
+         
+{% if nDim==3 %}
+      // z direction
+      for (int j = 0; j < {{nDof}}; j++) {
+        for (int k = 0; k < {{nDof}}; k++) {
+{% if useLibxsmm %}
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_gradF_z}}(&lF_guess[{{2*(nDof**nDim)*nVarPad}}+{{nVarPad}}*(k+{{nDof}}*j)], &dudxT_by_dx[0], &lF_div[{{nVarPad}}*(k+{{nDof}}*j)]);
+{% else %}
+          for (int l = 0; l < {{nDof}}; l++) {
+            for (int m = 0; m < {{nDof}}; m++) {
+              #pragma simd
+              for (int n = 0; n < {{nVar}}; n++) {
+                lF_div[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*l))] += inverseDx[0] * lF_guess[{{2*(nDof**nDim)*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*m))] * dudx[l+{{nDofPad}}*m];
+              }
+            }
+          }
+{% endif %}
+        }
+      }
+{% endif %}
+{% endif %}{# useFlux #}
+
+    for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
+      for (int l = 0; l < {{nDof}}; l++) {
+        for (int n = 0; n < {{nVar}}; n++) {
+          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = luh[n+{{nData}}*ijk] - (dt * nodes[l] *{% if useFlux %} lF_div[n+{{nVarPad}}*ijk]{% else %} 0.{% endif %});
+        }
+      }
+    } 
+    
+  } // end initial guess
+{% endif %} {# useCERKGuess #}
 
   // 2. Compute the contribution of the initial condition uh to the time update
   // we compute rhs on the fly, TODO JMG clean legacy
   
   // 3. Discrete Picard iterations
-  constexpr int MaxIterations = {{2 * nDof}};
+  constexpr int MaxIterations = {{2*nDof+1}};
   int iter = 0;
 
   for (iter; iter < MaxIterations; iter++) {
@@ -130,7 +269,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // Compute the fluxes
       for (int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}}) {
         //transpose to SoA
-        AoS2SoA<{{nVar}},{{nVarPad*nDof}}>(lQi+{{nDataPad}}*(i+{{nDof}}*jkl), Qt_block); //time dimension is in between
+        AoS2SoA<{{nVar}}, {{nVarPad*nDof}}>(lQi+{{nDataPad}}*(i+{{nDof}}*jkl), Qt_block); //time dimension is in between
         
         // Call PDE fluxes
 #ifdef USE_IPO
@@ -138,10 +277,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
         solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
         //transpose back to AoS
-        SoA2AoS<{{nVar}},{{nVarPad}}>(Ft_x_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{0*(nDof**nDim)*nDof*nVarPad}});
-        SoA2AoS<{{nVar}},{{nVarPad}}>(Ft_y_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}});
+        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{0*(nDof**nDim)*nDof*nVarPad}});
+        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}});
 {% if nDim == 3 %}
-        SoA2AoS<{{nVar}},{{nVarPad}}>(Ft_z_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}});
+        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}});
 {% endif %}        
       }
 {% if (nDof**nDim)%vectSize != 0 %}
@@ -155,10 +294,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
         
         //transpose back to AoS
-        SoA2AoS_rest<{{nVar}},{{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_x_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{0*(nDof**nDim)*nDof*nVarPad}});
-        SoA2AoS_rest<{{nVar}},{{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_y_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}});
+        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_x_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{0*(nDof**nDim)*nDof*nVarPad}});
+        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_y_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}});
 {% if nDim == 3 %}
-        SoA2AoS<{{nVar}},{{nVarPad}}>(Ft_z_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}});
+        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_z_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}});
 {% endif %}
       }
 {% endif %}{# perform rest #}
