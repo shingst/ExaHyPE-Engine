@@ -244,7 +244,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       &&
       _stableIterationsInARow > 3 // Found experimentally
   ) {
-    fineGridVertex.erase(); // TODO(Dominic): vertex erasing is not well understood yet
+  // TODO  fineGridVertex.erase(); // TODO(Dominic): vertex erasing is not well understood yet
   }
 }
 
@@ -398,7 +398,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 fineGridVerticesEnumerator.getCellSize())==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
-          fineGridVertices[fineGridVerticesEnumerator(v)].erase(); // TODO(Dominic): vertex erasing is not well understood yet
+          // TODO
+          // fineGridVertices[fineGridVerticesEnumerator(v)].erase(); // TODO(Dominic): vertex erasing is not well understood yet
         }
         lock.free();
       enddforx
