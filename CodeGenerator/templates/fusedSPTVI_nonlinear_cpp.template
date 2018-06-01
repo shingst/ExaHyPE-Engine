@@ -262,7 +262,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
       }
     }
-
+{% endif %}
 
 // K2
 
@@ -276,7 +276,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
 {% endif %}
     } 
-        
+    
+{% if useFluxVect %}    
     // Compute the fluxes
     for (int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}}) {
       //transpose to SoA
