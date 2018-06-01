@@ -126,8 +126,8 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
 
   _receivedMax.resize(numberOfObservables);
   _receivedMin.resize(numberOfObservables);
-  assertion(!_receivedMax.empty());
-  assertion(!_receivedMin.empty());
+  assertion( numberOfObservables==0 || !_receivedMax.empty());
+  assertion( numberOfObservables==0 || !_receivedMin.empty());
   #endif
 }
 
