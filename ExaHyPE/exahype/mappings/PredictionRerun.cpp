@@ -55,9 +55,7 @@ exahype::mappings::PredictionRerun::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  return exahype::mappings::Prediction::determineEnterCellSpecification(level);
 }
 
 peano::MappingSpecification

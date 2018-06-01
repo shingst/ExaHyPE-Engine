@@ -88,6 +88,16 @@ private:
  public:
 
   /**
+   * Determine the enter cell specification depending
+   * on if background threads are used or not.
+   *
+   * The mappings FusedTimeStep, PredictionRerun, and
+   * PredictionOrLocalRecomputation use the same
+   * enter cell specification.
+   */
+  static peano::MappingSpecification determineEnterCellSpecification(int level);
+
+  /**
    * This method first synchronises the time step sizes and time stamps, and
    * then resets the Riemann solve flags and the face data exchange counter for all
    * solvers for which a valid cell description was registered on this cell.
