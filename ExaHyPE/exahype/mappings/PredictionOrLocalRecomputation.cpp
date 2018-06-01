@@ -46,9 +46,16 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
 
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  if (
+      exahype::solvers::Solver::FuseADERDGPhases &&
+      exahype::solvers::Solver::oneSolverRequestedMeshUpdate()
+  ) {
+    return exahype::mappings::Prediction::determineEnterCellSpecification(level);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  }
 }
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {

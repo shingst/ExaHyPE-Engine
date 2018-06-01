@@ -51,6 +51,7 @@ public class ADERDGKernel {
     OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_OPTION_ID",    "maxpicarditer");
     OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_OPTION_ID",        "fusedsource");
     OPTIMIZATION_OPTION_ID.put("FLUX_VECT_OPTION_ID",          "fluxvect");
+    OPTIMIZATION_OPTION_ID.put("CERK_GUESS_OPTION_ID",         "cerkguess");
     OPTIMIZATION_OPTION_ID.put("CONVERTER_OPTION_ID",          "converter"); //for debug only, not in guidebook
     OPTIMIZATION_OPTION_ID.put("FLOPS_OPTION_ID",              "flops");     //for debug only, not in guidebook
   }
@@ -221,6 +222,10 @@ public class ADERDGKernel {
   
   public boolean useFluxVect() {
     return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FLUX_VECT_OPTION_ID"));
+  }
+  
+  public boolean useCERKGuess() {
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("CERK_GUESS_OPTION_ID"));
   }
   
   public boolean useMaxPicardIterations() {
