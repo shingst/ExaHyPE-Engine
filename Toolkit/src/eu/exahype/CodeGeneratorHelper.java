@@ -22,7 +22,6 @@ public class CodeGeneratorHelper {
   private static String useNCPOptionFlag             = "--useNCP";
   private static String useSourceOptionFlag          = "--useSource";
   private static String useFusedSourceOptionFlag     = "--useFusedSource";
-  private static String useFusedSourceVectOptionFlag = "--useFusedSourceVect";
   private static String useMaterialParamOptionFlag   = "--useMaterialParam";
   private static String usePointSourcesOptionFlag    = "--usePointSources";
   private static String useLimiterOptionFlag         = "--useLimiter";
@@ -115,7 +114,7 @@ public class CodeGeneratorHelper {
     String namespace = defineNamespace(projectName, solverName);    
     String numericsParameter = kernel.isLinear() ? "linear" : "nonlinear";
     String options =  (kernel.useFlux() ? (kernel.useFluxVect() ? useFluxVectOptionFlag : useFluxOptionFlag)+" " : "")
-                    + (kernel.useSource() ? (kernel.useFusedSourceVect() ? useFusedSourceVectOptionFlag : (kernel.useFusedSource() ? useFusedSourceOptionFlag : useSourceOptionFlag))+" " : "") 
+                    + (kernel.useSource() ? (kernel.useFusedSource() ? useFusedSourceOptionFlag : useSourceOptionFlag)+" " : "") 
                     + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
                     + (kernel.useCERKGuess() ? useCERKGuessOptionFlag+" " : "") 
