@@ -433,7 +433,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # LDB
                                             self.context["nDofPad"], \
                                             # LDC
-                                            self.context["nVarPad"] * self.context["nDim"] * self.context["nDof"], \
+                                            self.context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -460,7 +460,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # LDB
                                             self.context["nDofPad"], \
                                             # LDC
-                                            self.context["nVarPad"] * self.context["nDim"] * (self.context["nDof"] ** 2), \
+                                            self.context["nVarPad"] * self.context["nDof"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -488,7 +488,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # LDB
                                                 self.context["nDofPad"], \
                                                 # LDC
-                                                self.context["nVarPad"] * self.context["nDim"] * (self.context["nDof"] ** 3), \
+                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
                                                 # alpha
                                                 1,                         \
                                                 # beta
