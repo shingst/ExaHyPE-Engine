@@ -70,21 +70,40 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   // 0. Allocate local variable
   double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1_T
+
+{% if useFluxVect or useFusedSourceVect %}  
+  double Qt_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))); //transposed Q
+  double* Qt[{{nVar}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Qt_block+{{n*vectSize}}, {% endfor %}Qt_block+{{(nVar-1)*vectSize}} };
+{% endif %}
 {% if useFluxVect %}
   // transpose matrix for vect flux
-  double Qt_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))); //transposed Q
   double Ft_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_x
   double Ft_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_y
 {% if nDim==3 %}
   double Ft_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_z
 {% endif %}
-  double* Qt[{{nVar}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Qt_block+{{n*vectSize}}, {% endfor %}Qt_block+{{(nVar-1)*vectSize}} };
   double* Ft_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_x_block+{{n*vectSize}}, {% endfor %}Ft_x_block+{{(nVar-1)*vectSize}} };
   double* Ft_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_y_block+{{n*vectSize}}, {% endfor %}Ft_y_block+{{(nVar-1)*vectSize}} };
   {% if nDim==3 %}
   double* Ft_z[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_z_block+{{n*vectSize}}, {% endfor %}Ft_z_block+{{(nVar-1)*vectSize}} };
 {% endif %}
   double** Ft[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { Ft_x, Ft_y{{', Ft_z' if nDim==3 else ''}} };
+{% endif %}
+{% if useFusedSourceVect %}
+  double St_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed S (source)
+  double* St[{{nVar}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}St_block+{{n*vectSize}}, {% endfor %}St_block+{{(nVar-1)*vectSize}} };
+   // transpose matrix for vect gradQ
+  double gradQt_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))); //transposed gradQ_x
+  double gradQt_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))); //transposed gradQ_y
+{% if nDim==3 %}
+  double gradQt_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))); //transposed gradQ_z
+{% endif %}
+  double* gradQt_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_x_block+{{n*vectSize}}, {% endfor %}gradQt_x_block+{{(nVar-1)*vectSize}} };
+  double* gradQt_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_y_block+{{n*vectSize}}, {% endfor %}gradQt_y_block+{{(nVar-1)*vectSize}} };
+  {% if nDim==3 %}
+  double* gradQt_z[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_z_block+{{n*vectSize}}, {% endfor %}gradQt_z_block+{{(nVar-1)*vectSize}} };
+{% endif %}
+  double** gradQt[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { gradQt_x, gradQt_y{{', gradQt_z' if nDim==3 else ''}} };
 {% endif %}
 {% if useNCP %}
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -642,11 +661,52 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
      
 {% if useSourceOrNCP %}
       // Compute the Nonconservative part NCP + Source
-      for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
-        const double updateSize = weights1[i] * weights3[jkl] * dt;
+{% if useFusedSourceVect %}
+      for(int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}})
+{% else %}
+      for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++)
+{% endif %} { //zyx
         const int shift = {{nVarPad}}*(jkl+{{nDof**nDim}}*i);
         const int it = i+{{nDof}}*jkl;        
 {% if useFusedSource %}
+{% if useFusedSourceVect %}
+        // Fusedsource (source and ncp)
+        //transpose to SoA
+        AoS2SoA<{{nVar}}, {{nVarPad*nDof}}>(lQi+{{nDataPad}}*it, Qt_block); //time dimension is in between
+        AoS2SoA<{{nVar}}, {{nVarPad*nDim*nDof}}>(gradQ+{{nVarPad*nDim}}*it+{{0*nVarPad*nDim}}, gradQt_x_block); //x,y,z are interleaved + time dimension is in between
+        AoS2SoA<{{nVar}}, {{nVarPad*nDim*nDof}}>(gradQ+{{nVarPad*nDim}}*it+{{1*nVarPad*nDim}}, gradQt_y_block); //x,y,z are interleaved + time dimension is in between
+        AoS2SoA<{{nVar}}, {{nVarPad*nDim*nDof}}>(gradQ+{{nVarPad*nDim}}*it+{{2*nVarPad*nDim}}, gradQt_z_block); //x,y,z are interleaved + time dimension is in between
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+         // void fusedSourceVect(const double* const * const restrict Q, const double* const * const * const restrict gradQ, double* const * const restrict S, const int size);
+        solver.{{solverName}}::fusedSourceVect(Qt, gradQt, St, {{vectSize}});
+        
+        //transpose back to AoS
+        SoA2AoS<{{nVar}}, {{nVarPad}}>(St_block, lSi+shift);
+      }
+{% if (nDof**nDim)%vectSize != 0 %}
+      //rest
+      {
+        const int shift = {{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i);
+        const int it = i+{{nDof}}*{{(nDof**nDim)-((nDof**nDim)%vectSize)}};        
+        //transpose to SoA
+        AoS2SoA_rest<{{nVar}}, {{nVarPad*nDof}}, {{(nDof**nDim)%vectSize}}>(lQi+{{nDataPad}}*it, Qt_block); //time dimension is in between
+        AoS2SoA_rest<{{nVar}}, {{nVarPad*nDim*nDof}}, {{(nDof**nDim)%vectSize}}>(gradQ+{{nVarPad*nDim}}*it+{{0*nVarPad*nDim}}, gradQt_x_block); //x,y,z are interleaved + time dimension is in between
+        AoS2SoA_rest<{{nVar}}, {{nVarPad*nDim*nDof}}, {{(nDof**nDim)%vectSize}}>(gradQ+{{nVarPad*nDim}}*it+{{1*nVarPad*nDim}}, gradQt_y_block); //x,y,z are interleaved + time dimension is in between
+        AoS2SoA_rest<{{nVar}}, {{nVarPad*nDim*nDof}}, {{(nDof**nDim)%vectSize}}>(gradQ+{{nVarPad*nDim}}*it+{{2*nVarPad*nDim}}, gradQt_z_block); //x,y,z are interleaved + time dimension is in between
+#ifdef USE_IPO
+        #pragma forceinline recursive
+#endif
+        solver.{{solverName}}::fusedSourceVect(Qt, gradQt, St, {{(nDof**nDim)%vectSize}});
+        
+        //transpose back to AoS
+        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(St_block, lSi+shift);
+      }
+{% endif %}
+      for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //rest operations on AoS
+        const int shift = {{nVarPad}}*(jkl+{{nDof**nDim}}*i);
+{% else %}{# useFusedSourceVect #}
         // Fusedsource (source and ncp)
         double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
         std::copy_n(&gradQ[{{nVarPad*nDim}}*it]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
@@ -658,6 +718,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         #pragma forceinline recursive
 #endif
         solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], gradQNoPad, &lSi[shift]);
+{% endif %}{# useFusedSourceVect #}
 {% else %}{# useFusedSource #}
 {% if useSource %}
         // Source
@@ -687,6 +748,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         }      
 {% endif %} 
 {% endif %}{# useFusedSource #}
+        const double updateSize = weights1[i] * weights3[jkl] * dt;
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
           rhs[n+shift] += updateSize * lSi[n+shift];

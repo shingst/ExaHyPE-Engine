@@ -82,6 +82,9 @@ class Controller:
         parser.add_argument("--useFusedSource",
                               action="store_true",
                               help="enable fused source terms (includes useSource)")
+        parser.add_argument("--useFusedSourceVect",
+                              action="store_true",
+                              help="enable vectorized fused source terms (includes useFusedSource)")
         parser.add_argument("--useMaterialParam",
                               action="store_true",
                               help="enable material parameters")
@@ -120,8 +123,9 @@ class Controller:
                    "useFlux"               : (commandLineArguments.useFlux or commandLineArguments.useFluxVect),
                    "useFluxVect"           : commandLineArguments.useFluxVect,
                    "useNCP"                : commandLineArguments.useNCP,
-                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
-                   "useFusedSource"        : commandLineArguments.useFusedSource,
+                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource or commandLineArguments.useFusedSourceVect),
+                   "useFusedSource"        : (commandLineArguments.useFusedSource or commandLineArguments.useFusedSourceVect),
+                   "useFusedSourceVect"    : commandLineArguments.useFusedSourceVect,
                    "useSourceOrNCP"        : (commandLineArguments.useSource or commandLineArguments.useNCP),
                    "nPointSources"         : commandLineArguments.usePointSources,
                    "usePointSources"       : commandLineArguments.usePointSources >= 0,
