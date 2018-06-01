@@ -199,7 +199,7 @@ std::string exahype::solvers::Solver::getIdentifier() const {
 
 std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::Type& param) {
   switch (param) {
-    case Type::ADERDG:        return "ADER-DG";
+    case Type::ADERDG:         return "ADER-DG";
     case Type::FiniteVolumes:  return "Finite Volumes";
     case Type::LimitingADERDG: return "Limiting ADER-DG";
   }

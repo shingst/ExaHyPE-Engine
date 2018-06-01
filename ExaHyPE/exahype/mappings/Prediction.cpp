@@ -56,11 +56,22 @@ exahype::mappings::Prediction::communicationSpecification() const {
   return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
 
+
+peano::MappingSpecification exahype::mappings::Prediction::determineEnterCellSpecification(int level) {
+  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::Serial,false);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+}
+
 peano::MappingSpecification
 exahype::mappings::Prediction::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  return determineEnterCellSpecification(level);
 }
 
 peano::MappingSpecification
