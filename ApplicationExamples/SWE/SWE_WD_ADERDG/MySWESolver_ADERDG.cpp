@@ -9,6 +9,7 @@
 #include "MySWESolver_ADERDG.h"
 #include "InitialData.h"
 #include "MySWESolver_ADERDG_Variables.h"
+#include "peano/utils/Loop.h"
 
 #include "kernels/KernelUtils.h"
 
@@ -65,8 +66,36 @@ void SWE::MySWESolver_ADERDG::boundaryValues(const double* const x,const double 
 }
 
 exahype::solvers::Solver::RefinementControl SWE::MySWESolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+    double largestH = -std::numeric_limits<double>::max();
+    double smallestH = std::numeric_limits<double>::max();
+
+    kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
+    dfor(i,Order+1) {
+        ReadOnlyVariables vars(luh + idx_luh(i(1),i(0),0));
+        largestH = std::max (largestH, vars.h());
+        smallestH = std::min(smallestH, vars.h());
+    }
+
+    //gradient
+//    if (largestH - smallestH > 5e-2){
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+
+    //height
+//    if (smallestH < 3.5 && level > getCoarsestMeshLevel() + 1) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//    if (smallestH < 3.7 && level > getCoarsestMeshLevel()) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//
+//    if (smallestH < 3.9 && level == getCoarsestMeshLevel()) {
+//        return exahype::solvers::Solver::RefinementControl::Refine;
+//    }
+//
+//    if (level > getCoarsestMeshLevel())
+//        return exahype::solvers::Solver::RefinementControl::Erase;
+    return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
@@ -161,8 +190,10 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
         const tarch::la::Vector<DIMENSIONS,double>& center,
         const tarch::la::Vector<DIMENSIONS,double>& dx,
         const double t, const double dt) const {
-
-    if (observablesMin[0] <= epsilon_DG * 20){
+    if (observablesMin[0] == 0 && observablesMax[0] == 0){
+        return true;
+    }
+    else if (observablesMin[0] <= 20 * epsilon_DG){
         return false;
     }
     else {
