@@ -92,7 +92,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
-  exahype::mappings::Prediction::determineEnterCellSpecification(level);
+  return exahype::mappings::Prediction::determineEnterCellSpecification(level);
 }
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
