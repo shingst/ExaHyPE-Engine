@@ -149,13 +149,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     const int queuedJobs = getNumberOfQueuedJobs(jobType);
     lock.free();     
     finishedWait = queuedJobs == 0;
-
-    // start up some new worker threads if there is still work to do
-    if ( !finishedWait ) {
-       if ( jobType != JobType::SkeletonJob ) {  // TODO(Dominic): Use BJ as well 
-         peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-       }
-    }
   }
 }
 
