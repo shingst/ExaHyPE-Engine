@@ -44,7 +44,10 @@ namespace exahype {
  * thus be found in this class.
  */
 class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
- private:
+public:
+  enum class InterfaceType { None, Interior, Boundary };
+
+private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
   friend class VertexOperations;
@@ -61,6 +64,60 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   static bool equalUpToRelativeTolerance(
       const tarch::la::Vector<DIMENSIONS,double>& first,
       const tarch::la::Vector<DIMENSIONS,double>& second);
+
+
+  /**
+   * Validate that a compute cell is not next to
+   * an invalid cell description index as long as their
+   * interface is an interior face.
+   */
+  void validateNeighbourhood(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
+
+  /**
+   * Checks if the cell descriptions at the indices corresponding
+   * to \p pos1 and \p pos2 need to be merged with each other.
+   *
+   * Therefore, we check if
+   *
+   * - the cell descriptions are valid and different and
+   * - no merge has yet been performed at the given face
+   *   on both cell descriptions.
+   *
+   * <h2>MPI</h2>
+   *
+   * During the mesh refinement iterations in a MPI-context, we have further
+   * observed that the adjacency information might not be up-to-date / are mixed up
+   * on a newly introduced rank after a fork was performed.
+   *
+   * We then further check if
+   *
+   *  - the geometry information of the two cell descriptions clarifies
+   *    that they are neighbours.
+   *    We compare the barycentres for this purpose.
+   */
+  bool hasToMergeNeighbours(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
+   * Checks if the cell descriptions at the indices corresponding
+   * to \p pos1 and \p pos2 need to be merged with each other.
+   */
+  bool hasToMergeWithBoundaryData(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /*! Helper routine for mergeNeighbours.
    *
@@ -236,57 +293,11 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
-  /**
-   * Validate that a compute cell is not next to
-   * an invalid cell description index as long as their
-   * interface is an interior face.
-   */
-  void validateNeighbourhood(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar) const;
 
   /**
-   * Checks if the cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 need to be merged with each other.
-   *
-   * Therefore, we check if
-   *
-   * - the cell descriptions are valid and different and
-   * - no merge has yet been performed at the given face
-   *   on both cell descriptions.
-   *
-   * <h2>MPI</h2>
-   *
-   * During the mesh refinement iterations in a MPI-context, we have further
-   * observed that the adjacency information might not be up-to-date / are mixed up
-   * on a newly introduced rank after a fork was performed.
-   *
-   * We then further check if
-   *
-   *  - the geometry information of the two cell descriptions clarifies
-   *    that they are neighbours.
-   *    We compare the barycentres for this purpose.
+   * \return the type of the interface between two cells.
    */
-  bool hasToMergeNeighbours(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
-  /**
-   * Checks if the cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 need to be merged with each other.
-   *
-   * TODO(Dominic): The idea is to store purely geometry based information
-   * (offset,size,riemannSolvePerfomed,..) on a separate heap.
-   * That's why I have not merged the loops in this method
-   * into the solvers. I need to discuss this with Tobias.
-   */
-  bool hasToMergeWithBoundaryData(
+  InterfaceType determineInterfaceType(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,

@@ -34,6 +34,17 @@
 #include "VT.h"
 #endif
 
+peano::MappingSpecification exahype::mappings::Prediction::determineEnterCellSpecification(int level) {
+  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::Serial,false);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  }
+}
 
 peano::CommunicationSpecification
 exahype::mappings::Prediction::communicationSpecification() const {
@@ -54,19 +65,6 @@ exahype::mappings::Prediction::communicationSpecification() const {
   }
 
   return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
-}
-
-
-peano::MappingSpecification exahype::mappings::Prediction::determineEnterCellSpecification(int level) {
-  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::Serial,false);
-  } else {
-    return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-  }
 }
 
 peano::MappingSpecification

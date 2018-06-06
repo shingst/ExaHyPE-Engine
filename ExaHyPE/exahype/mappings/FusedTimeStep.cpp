@@ -40,13 +40,13 @@ void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
   _batchIterationCounterUpdated = true;
 }
 
-bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() {
+bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() const {
   return
       exahype::solvers::Solver::PredictionSweeps==1 ||
       _batchIteration % 2 == 0;
 }
 
-bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() {
+bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() const {
   return
       exahype::solvers::Solver::PredictionSweeps==1     ||
       exahype::State::isLastIterationOfBatchOrNoBatch() || // covers the NoBatch case
@@ -94,12 +94,20 @@ peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
   return exahype::mappings::Prediction::determineEnterCellSpecification(level);
 }
+
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+  if ( sendOutRiemannDataInThisIteration() ) {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::Nop,
+          peano::MappingSpecification::AvoidFineGridRaces,true);
+  } else {
+    return peano::MappingSpecification(
+          peano::MappingSpecification::WholeTree,
+          peano::MappingSpecification::AvoidFineGridRaces,true);
+  }
 }
+
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(

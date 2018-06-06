@@ -124,7 +124,7 @@ private:
    *
    * \see updatePredictionIterationTag(...)
    */
-  bool sendOutRiemannDataInThisIteration();
+  bool sendOutRiemannDataInThisIteration() const;
 
   /**
    * \return if the mappings/adapters
@@ -133,7 +133,7 @@ private:
    *
    * \see updatePredictionIterationTag(...)
    */
-  bool issuePredictionJobsInThisIteration();
+  bool issuePredictionJobsInThisIteration() const;
 
  public:
   /**

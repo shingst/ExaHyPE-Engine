@@ -340,7 +340,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
   ) {
     dfor2(pos1)
       dfor2(pos2)
-        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
+        exahype::Vertex::InterfaceType interfaceType =
+            fineGridVertex.determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH);
+
+        if ( interfaceType==exahype::Vertex::InterfaceType::Interior ) { // Assumes that we have two valid indices
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             if ( performLocalRecomputation(solver) ) {
@@ -365,7 +368,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
-        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
+        if ( interfaceType==exahype::Vertex::InterfaceType::Boundary ) {
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
