@@ -531,10 +531,7 @@ public:
 
   double getMinNextTimeStepSize() const override;
 
-  bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const override {
-    return Heap::getInstance().isValidIndex(cellDescriptionsIndex);
-  }
+  bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
 
   int tryGetElement(
       const int cellDescriptionsIndex,

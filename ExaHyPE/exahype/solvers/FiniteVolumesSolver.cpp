@@ -287,10 +287,17 @@ double exahype::solvers::FiniteVolumesSolver::getMinNextTimeStepSize() const {
   return _minNextTimeStepSize;
 }
 
+bool exahype::solvers::FiniteVolumesSolver::isValidCellDescriptionIndex(
+    const int cellDescriptionsIndex) const {
+  bool result = cellDescriptionsIndex>=0;
+  assertion1(!result || Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
+  return result;
+}
+
 int exahype::solvers::FiniteVolumesSolver::tryGetElement(
     const int cellDescriptionsIndex,
     const int solverNumber) const {
-  if (Heap::getInstance().isValidIndex(cellDescriptionsIndex)) {
+  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     int element=0;
     for (auto& p : Heap::getInstance().getData(cellDescriptionsIndex)) {
       if (p.getSolverNumber()==solverNumber) {
@@ -933,7 +940,7 @@ void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
+  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     Heap::getInstance().sendData(cellDescriptionsIndex,toRank,x,level,messageType);
   } else {
     sendEmptyCellDescriptions(toRank,messageType,x,level);

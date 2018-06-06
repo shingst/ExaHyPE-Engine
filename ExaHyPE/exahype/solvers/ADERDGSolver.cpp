@@ -892,14 +892,16 @@ bool exahype::solvers::ADERDGSolver::getStabilityConditionWasViolated() const {
 }
 
 bool exahype::solvers::ADERDGSolver::isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const {
-    return Heap::getInstance().isValidIndex(cellDescriptionsIndex);
-  }
+    const int cellDescriptionsIndex) const {
+  bool result = cellDescriptionsIndex>=0;
+  assertion1(!result || Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
+  return result;
+}
 
 int exahype::solvers::ADERDGSolver::tryGetElement(
     const int cellDescriptionsIndex,
     const int solverNumber) const {
-  if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
+  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     int element=0;
     for (auto& p : Heap::getInstance().getData(cellDescriptionsIndex)) {
       if (p.getSolverNumber()==solverNumber) {
@@ -2399,7 +2401,7 @@ void exahype::solvers::ADERDGSolver::prepareFaceDataOfAncestor(CellDescription& 
 void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     CellDescription& cellDescription,
     SubcellPosition& subcellPosition) {
-  assertion2(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(
+  Heap::getInstance().isValidIndex(
       subcellPosition.parentCellDescriptionsIndex),
       subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
 
@@ -3059,7 +3061,7 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  if ( Heap::getInstance().isValidIndex(cellDescriptionsIndex) ) {
+  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     logDebug("sendCellDescriptions(...)","send "<< Heap::getInstance().getData(cellDescriptionsIndex).size()<<
         " cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
     bool oneSolverRequiresVerticalCommunication = false;

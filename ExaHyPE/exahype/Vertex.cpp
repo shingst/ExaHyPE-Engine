@@ -354,13 +354,13 @@ exahype::Vertex::InterfaceType exahype::Vertex::determineInterfaceType(
 
   bool validIndex1 =
       isFace &&
-      cellDescriptionsIndex1 >= 0 &&
-      exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1);
+      cellDescriptionsIndex1 >= 0;
+  assertion(cellDescriptionsIndex1 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1));
 
   bool validIndex2 =
       isFace &&
-      cellDescriptionsIndex2 >= 0 &&
-      exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2);
+      cellDescriptionsIndex2 >= 0;
+  assertion(cellDescriptionsIndex2 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2));
 
   if (
       validIndex1 && validIndex2
