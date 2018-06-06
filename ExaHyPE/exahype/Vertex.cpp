@@ -380,8 +380,8 @@ exahype::Vertex::InterfaceType exahype::Vertex::determineInterfaceType(
   } else if  (
       validIndex1 != validIndex2
       &&
-      cellDescriptionsIndex!!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
-      cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
+      cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
+      cellDescriptionsIndex2!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
   ) {
     validateNeighbourhood(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2);
     return InterfaceType::None;
