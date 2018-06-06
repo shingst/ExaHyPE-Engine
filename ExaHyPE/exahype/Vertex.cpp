@@ -369,15 +369,20 @@ exahype::Vertex::InterfaceType exahype::Vertex::determineInterfaceType(
     return InterfaceType::Interior;
   } else if (
       ((validIndex1 && !validIndex2 &&
-      cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex)
+      cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex)
       ||
       (validIndex2 && !validIndex1 &&
-      cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex))
+      cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex))
       &&
       hasToMergeWithBoundaryData(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2,x,h)
   ) {
     return InterfaceType::Boundary;
-  } else if  ( validIndex1 != validIndex2 ) {
+  } else if  (
+      validIndex1 != validIndex2
+      &&
+      cellDescriptionsIndex!!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
+      cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
+  ) {
     validateNeighbourhood(cellDescriptionsIndex1,cellDescriptionsIndex2,pos1,pos2);
     return InterfaceType::None;
   } else {
