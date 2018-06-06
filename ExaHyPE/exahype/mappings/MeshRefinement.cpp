@@ -97,11 +97,11 @@ exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
     return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::Serial,false);
+        peano::MappingSpecification::Serial,true);
   } else {
     return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,false);
+        peano::MappingSpecification::AvoidFineGridRaces,true);
   }
 }
 peano::MappingSpecification
@@ -109,11 +109,11 @@ exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
     return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::Serial,false);
+        peano::MappingSpecification::Serial,true);
   } else {
     return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,false);
+        peano::MappingSpecification::AvoidFineGridRaces,true);
   }
 }
 
