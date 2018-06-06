@@ -97,15 +97,9 @@ exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
-  if ( sendOutRiemannDataInThisIteration() ) {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::Nop,
-          peano::MappingSpecification::AvoidFineGridRaces,true);
-  } else {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::AvoidFineGridRaces,true);
-  }
+  return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 
 peano::MappingSpecification

@@ -284,9 +284,9 @@ void exahype::Vertex::validateNeighbourhood(
         auto& p1 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
         if (
             (p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-                p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
-                &&
-                cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+            p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+            &&
+            cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
         ) {
           logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
           std::terminate();
@@ -298,9 +298,9 @@ void exahype::Vertex::validateNeighbourhood(
         auto& p2 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
         if (
             (p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-                p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
-                &&
-                cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+            p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+            &&
+            cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
         ) {
           logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
           std::terminate();
