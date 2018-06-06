@@ -137,77 +137,84 @@ void exahype::Vertex::validateNeighbourhood(
     const int cellDescriptionsIndex1 = _vertexData.getCellDescriptionsIndex(pos1Scalar);
     const int cellDescriptionsIndex2 = _vertexData.getCellDescriptionsIndex(pos2Scalar);
 
-    const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
-    const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
-    const int orientation2 = 1-orientation1;
+    if (
+         (cellDescriptionsIndex1 >= 0 &&
+         exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1))
+         ||
+         (cellDescriptionsIndex2 >= 0 &&
+         exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2))
+    ) {
+      const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
+      const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
+      const int orientation2 = 1-orientation1;
 
-    const int faceIndex1 = 2*direction+orientation1;
-    const int faceIndex2 = 2*direction+orientation2;
+      const int faceIndex1 = 2*direction+orientation1;
+      const int faceIndex2 = 2*direction+orientation2;
 
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      switch (solver->getType()) {
-        case exahype::solvers::Solver::Type::LimitingADERDG:
-        case exahype::solvers::Solver::Type::ADERDG: {
-          // Cell 1
-          const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
-          if (element1!=exahype::solvers::Solver::NotFound) {
-            auto& p1 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
-            if (
-                (p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-                    p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
-                    &&
-                    cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-            ) {
-              logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
-              std::terminate();
+        switch (solver->getType()) {
+          case exahype::solvers::Solver::Type::LimitingADERDG:
+          case exahype::solvers::Solver::Type::ADERDG: {
+            // Cell 1
+            const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
+            if (element1!=exahype::solvers::Solver::NotFound) {
+              auto& p1 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
+              if (
+                  (p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+                      p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+                      &&
+                      cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+              ) {
+                logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
+                std::terminate();
+              }
             }
-          }
-          // Cell 2
-          const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
-          if (element2!=exahype::solvers::Solver::NotFound) {
-            auto& p2 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
-            if (
-                (p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-                    p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
-                    &&
-                    cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-            ) {
-              logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
-              std::terminate();
+            // Cell 2
+            const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
+            if (element2!=exahype::solvers::Solver::NotFound) {
+              auto& p2 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
+              if (
+                  (p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+                      p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+                      &&
+                      cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+              ) {
+                logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
+                std::terminate();
+              }
             }
-          }
-        } break;
-        case exahype::solvers::Solver::Type::FiniteVolumes: {
-          // Cell 1
-          const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
-          if (element1!=exahype::solvers::Solver::NotFound) {
-            auto& p1 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex1,element1);
-            if (
-                p1.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
-                &&
-                cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-            ) {
-              logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
-              std::terminate();
+          } break;
+          case exahype::solvers::Solver::Type::FiniteVolumes: {
+            // Cell 1
+            const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
+            if (element1!=exahype::solvers::Solver::NotFound) {
+              auto& p1 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex1,element1);
+              if (
+                  p1.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
+                  &&
+                  cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+              ) {
+                logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
+                std::terminate();
+              }
             }
-          }
-          // Cell 2
-          const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
-          if (element2!=exahype::solvers::Solver::NotFound) {
-            auto& p2 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex2,element2);
-            if (
-                p2.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
-                &&
-                cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
-            ) {
-              logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
-              std::terminate();
+            // Cell 2
+            const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
+            if (element2!=exahype::solvers::Solver::NotFound) {
+              auto& p2 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex2,element2);
+              if (
+                  p2.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
+                  &&
+                  cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+              ) {
+                logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
+                std::terminate();
+              }
             }
-          }
-        } break;
+          } break;
+        }
       }
     }
   }
@@ -471,17 +478,22 @@ void exahype::Vertex::mergeNeighbours(
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
     dfor2(pos1)
       dfor2(pos2)
-        validateNeighbourhood(pos1,pos1Scalar,pos2,pos2Scalar);
-
+        bool anyMergePerformed = false;
         if (hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) { // Assumes that we have two valid indices
           mergeNeighboursDataAndMetadata(pos1,pos1Scalar,pos2,pos2Scalar);
 
           setMergePerformed(pos1,pos2,true);
+          anyMergePerformed=true;
         }
         if (hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) {
           mergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar);
 
           setMergePerformed(pos1,pos2,true);
+          anyMergePerformed=true;
+        }
+
+        if ( !anyMergePerformed ) {
+          validateNeighbourhood(pos1,pos1Scalar,pos2,pos2Scalar);
         }
       enddforx
     enddforx
