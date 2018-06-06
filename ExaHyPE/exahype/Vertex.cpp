@@ -106,7 +106,7 @@ void exahype::Vertex::mergeOnlyNeighboursMetadata(
 
   dfor2(pos1)
     dfor2(pos2)
-      if ( determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,x,h)==InterfaceType::Interior ) { // Implies that we have two valid indices on the correct level
+      if ( determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,x,h,false)==InterfaceType::Interior ) { // Implies that we have two valid indices on the correct level
         for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
           auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
           if (solver->isMergingMetadata(section)) {
@@ -345,7 +345,8 @@ exahype::Vertex::InterfaceType exahype::Vertex::determineInterfaceType(
     const tarch::la::Vector<DIMENSIONS,int>& pos2,
     const int pos2Scalar,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+    const tarch::la::Vector<DIMENSIONS, double>& h,
+    const bool validate) const {
   const int cellDescriptionsIndex1 = _vertexData.getCellDescriptionsIndex(pos1Scalar);
   const int cellDescriptionsIndex2 = _vertexData.getCellDescriptionsIndex(pos2Scalar);
 
@@ -378,6 +379,8 @@ exahype::Vertex::InterfaceType exahype::Vertex::determineInterfaceType(
   ) {
     return InterfaceType::Boundary;
   } else if  (
+      validate
+      &&
       validIndex1 != validIndex2
       &&
       cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
@@ -487,7 +490,7 @@ void exahype::Vertex::mergeNeighbours(
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
     dfor2(pos1)
       dfor2(pos2)
-        InterfaceType interfaceType = determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,x,h);
+        InterfaceType interfaceType = determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,x,h,true);
 
         if ( interfaceType==InterfaceType::Interior ) { // Assumes that we have two valid indices
           mergeNeighboursDataAndMetadata(pos1,pos1Scalar,pos2,pos2Scalar);

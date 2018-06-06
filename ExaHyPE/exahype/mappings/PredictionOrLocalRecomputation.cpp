@@ -341,7 +341,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
     dfor2(pos1)
       dfor2(pos2)
         exahype::Vertex::InterfaceType interfaceType =
-            fineGridVertex.determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH);
+            fineGridVertex.determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH,true);
 
         if ( interfaceType==exahype::Vertex::InterfaceType::Interior ) { // Assumes that we have two valid indices
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {

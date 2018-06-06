@@ -303,7 +303,8 @@ private:
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const int pos2Scalar,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const bool validate) const;
 
   /**
    * Sets a flag on the cell descriptions at the indices corresponding
