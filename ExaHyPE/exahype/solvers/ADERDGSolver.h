@@ -947,19 +947,6 @@ public:
       const CellDescription& cellDescription,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
-  /**
-   * TODO(Dominic): Can later be replaced
-   * by ADERDGSolver::mergeNeighboursMetadata function.
-   */
-  void mergeNeighboursLimiterStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
-
-
 
   /**
    * Construct an ADERDGSolver.
@@ -1881,30 +1868,14 @@ public:
   // helper status
   void mergeWithCommunicationStatus(
       CellDescription& cellDescription,
-      const int direction,
+      const int faceIndex,
       const int otherCommunicationStatus) const;
-
-  void mergeNeighboursCommunicationStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
 
   // augmentation status
   void mergeWithAugmentationStatus(
       CellDescription& cellDescription,
-      const int direction,
+      const int faceIndex,
       const int otherAugmentationStatus) const;
-
-  void mergeNeighboursAugmentationStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
 
   void mergeNeighboursMetadata(
       const int                                 cellDescriptionsIndex1,

@@ -2679,30 +2679,6 @@ exahype::solvers::ADERDGSolver::determineLimiterStatus(
   return max;
 }
 
-void exahype::solvers::ADERDGSolver::mergeNeighboursLimiterStatus(
-    const int                                 cellDescriptionsIndex1,
-    const int                                 element1,
-    const int                                 cellDescriptionsIndex2,
-    const int                                 element2,
-    const tarch::la::Vector<DIMENSIONS, int>& pos1,
-    const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
-  CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
-
-  const int direction    = tarch::la::equalsReturnIndex(pos1,pos2);
-  const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
-  const int orientation2 = 1-orientation1;
-
-  const int faceIndex1 = 2*direction+orientation1;
-  const int faceIndex2 = 2*direction+orientation2;
-
-  const int limiterStatus1 = cellDescription1.getLimiterStatus(); // TODO(Dominic): Add to docu: Is merged multiple times; no counters
-  const int limiterStatus2 = cellDescription2.getLimiterStatus();
-
-  mergeWithLimiterStatus(cellDescription1,faceIndex1,limiterStatus2);
-  mergeWithLimiterStatus(cellDescription2,faceIndex2,limiterStatus1);
-}
-
 void
 exahype::solvers::ADERDGSolver::updateCommunicationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
@@ -2740,30 +2716,6 @@ void exahype::solvers::ADERDGSolver::mergeWithCommunicationStatus(
   cellDescription.setFacewiseCommunicationStatus(
       faceIndex, std::max( cellDescription.getCommunicationStatus(), otherCommunicationStatus )
   );
-}
-
-void exahype::solvers::ADERDGSolver::mergeNeighboursCommunicationStatus(
-    const int                                 cellDescriptionsIndex1,
-    const int                                 element1,
-    const int                                 cellDescriptionsIndex2,
-    const int                                 element2,
-    const tarch::la::Vector<DIMENSIONS, int>& pos1,
-    const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
-  CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
-
-  const int direction    = tarch::la::equalsReturnIndex(pos1,pos2);
-  const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
-  const int orientation2 = 1-orientation1;
-
-  const int faceIndex1 = 2*direction+orientation1;
-  const int faceIndex2 = 2*direction+orientation2;
-
-  const int communicationStatus1 = cellDescription1.getCommunicationStatus(); // TODO(Dominic): Add to docu: Is merged multiple times; no counters
-  const int communicationStatus2 = cellDescription2.getCommunicationStatus();
-
-  mergeWithCommunicationStatus(cellDescription1,faceIndex1,communicationStatus2);
-  mergeWithCommunicationStatus(cellDescription2,faceIndex2,communicationStatus1);
 }
 
 void
@@ -2805,14 +2757,16 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
   );
 }
 
-void exahype::solvers::ADERDGSolver::mergeNeighboursAugmentationStatus(
+// merge metadata
+void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     const int                                 cellDescriptionsIndex1,
     const int                                 element1,
     const int                                 cellDescriptionsIndex2,
     const int                                 element2,
     const tarch::la::Vector<DIMENSIONS, int>& pos1,
     const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
+
+  CellDescription& cellDescription1  = getCellDescription(cellDescriptionsIndex1,element1);
   CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
 
   const int direction    = tarch::la::equalsReturnIndex(pos1,pos2);
@@ -2822,24 +2776,13 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursAugmentationStatus(
   const int faceIndex1 = 2*direction+orientation1;
   const int faceIndex2 = 2*direction+orientation2;
 
-  const int augmentationStatus1 = cellDescription1.getAugmentationStatus(); // TODO(Dominic): Add to docu: Is merged multiple times; no counters
-  const int augmentationStatus2 = cellDescription2.getAugmentationStatus(); // TODO(Dominic): Add to docu: Is merged multiple times; no counters
+  mergeWithCommunicationStatus(cellDescription1,faceIndex1,cellDescription2.getCommunicationStatus());
+  mergeWithAugmentationStatus(cellDescription1,faceIndex1,cellDescription2.getAugmentationStatus());
+  mergeWithLimiterStatus(cellDescription1,faceIndex1,cellDescription2.getLimiterStatus());
 
-  mergeWithAugmentationStatus(cellDescription1,faceIndex1,augmentationStatus2);
-  mergeWithAugmentationStatus(cellDescription2,faceIndex2,augmentationStatus1);
-}
-
-// merge metadata
-void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
-    const int                                 cellDescriptionsIndex1,
-    const int                                 element1,
-    const int                                 cellDescriptionsIndex2,
-    const int                                 element2,
-    const tarch::la::Vector<DIMENSIONS, int>& pos1,
-    const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
-  mergeNeighboursCommunicationStatus(cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
-  mergeNeighboursAugmentationStatus (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
-  mergeNeighboursLimiterStatus      (cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
+  mergeWithCommunicationStatus(cellDescription2,faceIndex2,cellDescription1.getCommunicationStatus());
+  mergeWithAugmentationStatus(cellDescription2,faceIndex2,cellDescription1.getAugmentationStatus());
+  mergeWithLimiterStatus(cellDescription2,faceIndex2,cellDescription1.getLimiterStatus());
 }
 
 // merge compute data
