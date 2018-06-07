@@ -2401,7 +2401,7 @@ void exahype::solvers::ADERDGSolver::prepareFaceDataOfAncestor(CellDescription& 
 void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     CellDescription& cellDescription,
     SubcellPosition& subcellPosition) {
-  Heap::getInstance().isValidIndex(
+  assertion2(Heap::getInstance().isValidIndex(
       subcellPosition.parentCellDescriptionsIndex),
       subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
 
