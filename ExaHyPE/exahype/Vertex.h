@@ -274,7 +274,7 @@ private:
   static tarch::la::Vector<DIMENSIONS,double> computeFaceBarycentre(
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const tarch::la::Vector<DIMENSIONS,double>& h,
-      const int&                                  normalDirection,
+      const int                                   normalDirection,
       const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
 
   /**

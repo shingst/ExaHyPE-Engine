@@ -414,8 +414,8 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
-      const int& cellDescriptionsIndex,
-      const int& solverNumber,
+      const int cellDescriptionsIndex,
+      const int solverNumber,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
   return _solver->eraseOrRefineAdjacentVertices(
              cellDescriptionsIndex,solverNumber,cellSize);

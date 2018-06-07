@@ -1409,8 +1409,8 @@ class exahype::solvers::Solver {
    * or refined.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-      const int& cellDescriptionsIndex,
-      const int& solverNumber,
+      const int cellDescriptionsIndex,
+      const int solverNumber,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
 
   /**

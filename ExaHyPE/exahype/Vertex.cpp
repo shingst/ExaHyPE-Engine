@@ -63,7 +63,7 @@ exahype::Vertex::getCellDescriptionsIndex() const {
 tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const tarch::la::Vector<DIMENSIONS,double>& h,
-    const int&                                  normalDirection,
+    const int                                   normalDirection,
     const tarch::la::Vector<DIMENSIONS,int>&    cellPosition) {
   tarch::la::Vector<DIMENSIONS,double> barycentre;
   for (int d=0; d<DIMENSIONS; d++) {
@@ -80,9 +80,9 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
   dfor2(pos)
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int& cellDescriptionsIndex = getCellDescriptionsIndex()[posScalar];
+
       exahype::solvers::Solver::RefinementControl control =
-          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,h);
+          solver->eraseOrRefineAdjacentVertices(getCellDescriptionsIndex()[posScalar],solverNumber,h);
       canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
       mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
     }
@@ -135,7 +135,6 @@ bool exahype::Vertex::hasToMergeNeighbours(
   assertion(!isHangingNode());
 
   if ( cellDescriptionsIndex1!=cellDescriptionsIndex2 ) { // happened once
-    assertion1(pos1Scalar!=pos2Scalar,pos1Scalar);
     assertion1(cellDescriptionsIndex1!=cellDescriptionsIndex2,cellDescriptionsIndex1);
     assertion1(exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1),
         cellDescriptionsIndex1);

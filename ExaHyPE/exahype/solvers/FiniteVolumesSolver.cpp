@@ -535,8 +535,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
-     const int& cellDescriptionsIndex,
-     const int& solverNumber,
+     const int cellDescriptionsIndex,
+     const int solverNumber,
      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
   if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
     return RefinementControl::Refine;
