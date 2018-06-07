@@ -786,7 +786,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
 
-    repository.switchToPrediction();
+    repository.switchToInitialPrediction();
     repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor");
 
