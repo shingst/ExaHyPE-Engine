@@ -154,8 +154,6 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::State::AlgorithmSection& algorithmSection) {
   if ( fineGridCell.isInitialised() ) {
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
 

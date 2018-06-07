@@ -468,7 +468,8 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   if ( fineGridCell.isInitialised() ) {
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);

@@ -293,9 +293,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           cellDescriptionsIndex,fineGridVerticesEnumerator);
     }
     exahype::Cell::resetNeighbourMergeFlags(
-        cellDescriptionsIndex);
-    exahype::Cell::resetFaceDataExchangeCounters(
-        cellDescriptionsIndex,fineGridVertices,fineGridVerticesEnumerator);
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -365,8 +364,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
             _interiorFaceMerges++;
             #endif
           }
-
-          fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
         if ( interfaceType==exahype::Vertex::InterfaceType::Boundary ) {
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
@@ -416,8 +413,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               #endif
             }
           }
-
-          fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
       enddforx
     enddforx
@@ -465,9 +460,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
             vertex.getCellDescriptionsIndex()[destScalar],
             fineGridX,level,
             receivedMetadata);
-
-        vertex.setFaceDataExchangeCountersOfDestination(src,dest,TWO_POWER_D); // !!! Do not forget this
-        vertex.setMergePerformed(src,dest,true);
       } else {
         dropNeighbourData(
             fromRank,

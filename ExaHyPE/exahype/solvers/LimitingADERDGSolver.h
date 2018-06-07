@@ -721,9 +721,6 @@ public:
   int getNextMaxLevel() const final override;
   int getMaxLevel() const final override;
 
-  bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const final override;
-
   /**
    * Returns the index of the solver patch registered for the solver with
    * index \p solverNumber in exahype::solvers::RegisteredSolvers.

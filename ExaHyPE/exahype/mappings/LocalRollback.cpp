@@ -173,8 +173,6 @@ void exahype::mappings::LocalRollback::enterCell(
     // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }
@@ -192,8 +190,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
   ) {
     dfor2(dest)
       dfor2(src)
-        if (vertex.hasToSendMetadata(toRank,src,dest)) {
-          vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
+        if ( vertex.hasToSendMetadata(toRank,src,dest) ) {
           if (vertex.hasToSendDataToNeighbour(src,dest)) {
             sendDataToNeighbour(
                 toRank,src,dest,

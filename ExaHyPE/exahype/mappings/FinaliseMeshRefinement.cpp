@@ -190,10 +190,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
     }
 
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-            fineGridCell.getCellDescriptionsIndex(),
-            fineGridVertices,fineGridVerticesEnumerator);
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

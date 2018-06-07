@@ -108,17 +108,17 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * Here we reset helper variables that play a role in
    * the neighbour merge methods.
    * These are the cell description attributes
-   * riemannSolvePerformed[DIMENSIONS_TIMES_TWO], and
+   * neighbourMergePerformed[DIMENSIONS_TIMES_TWO], and
    * faceDataExchangeCounter[DIMENSIONS_TIMES_TWO].
    *
    * <h2>Shared Memory</h2>
-   * The flag riemannSolvePerformed
+   * The flag neighbourMergePerformed
    * indicates for every thread that touches a
    * face of a cell description if a Riemann Solve
    * was already performed for this face.
    *
    * <h2>MPI</h2>
-   * This method resets Face data exchange counters:
+   * This method resets face data exchange counters:
    * To this end, we count the listings of a remote rank on each
    * of the faces surrounding a cell description.
    *
@@ -130,34 +130,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * send at time of 2^{d-2}-th touch of face.
    */
   static void resetNeighbourMergeFlags(
-      const int cellDescriptionsIndex);
-
-  /**
-   * Here we reset helper variables that play a role in
-   * the neighbour merge methods.
-   * These are the cell description attributes
-   * riemannSolvePerformed[DIMENSIONS_TIMES_TWO], and
-   * faceDataExchangeCounter[DIMENSIONS_TIMES_TWO].
-   *
-   * <h2>Shared Memory</h2>
-   * The flag riemannSolvePerformed
-   * indicates for every thread that touches a
-   * face of a cell description if a Riemann Solve
-   * was already performed for this face.
-   *
-   * <h2>MPI</h2>
-   * This method resets Face data exchange counters:
-   * To this end, we count the listings of a remote rank on each
-   * of the faces surrounding a cell description.
-   *
-   * We perform the following actions depending on the counter value:
-   * 0 - no connection: no send. Set to unreachable value.
-   * 2^{d-2} - full face connection where cell is inside but half of face vertices are outside:
-   * send at time of 2^{d-2}-th touch of face.
-   * 4^{d-2} - full face connection where cell is inside and face vertices are all inside:
-   * send at time of 2^{d-2}-th touch of face.
-   */
-  static void resetFaceDataExchangeCounters(
       const int cellDescriptionsIndex,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);

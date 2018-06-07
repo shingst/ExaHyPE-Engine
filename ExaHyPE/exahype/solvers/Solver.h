@@ -1356,13 +1356,6 @@ class exahype::solvers::Solver {
   virtual double getMinNextTimeStepSize() const=0;
 
   /**
-   * Returns true if the index \p cellDescriptionsIndex
-   * is a valid heap index.
-   */
-  virtual bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const = 0;
-
-  /**
    * If an entry for this solver exists,
    * return the element index of the cell description
    * in the array at address \p cellDescriptionsIndex.

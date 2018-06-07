@@ -531,7 +531,7 @@ public:
 
   double getMinNextTimeStepSize() const override;
 
-  bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
+  static bool isValidCellDescriptionIndex(const int cellDescriptionsIndex);
 
   int tryGetElement(
       const int cellDescriptionsIndex,

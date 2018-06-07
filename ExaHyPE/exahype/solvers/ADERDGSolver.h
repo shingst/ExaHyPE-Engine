@@ -1533,7 +1533,7 @@ public:
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
 
-  bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
+  static bool isValidCellDescriptionIndex(const int cellDescriptionsIndex);
 
   int tryGetElement(
       const int cellDescriptionsIndex,

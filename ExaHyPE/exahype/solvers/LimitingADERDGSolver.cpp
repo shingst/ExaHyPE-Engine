@@ -90,11 +90,6 @@ bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputati
   return result;
 }
 
-bool exahype::solvers::LimitingADERDGSolver::isValidCellDescriptionIndex(
-    const int cellDescriptionsIndex) const  {
-  return _solver->isValidCellDescriptionIndex(cellDescriptionsIndex);
-}
-
 exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const std::string& identifier,
     std::unique_ptr<exahype::solvers::ADERDGSolver> solver,

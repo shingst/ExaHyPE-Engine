@@ -288,7 +288,7 @@ double exahype::solvers::FiniteVolumesSolver::getMinNextTimeStepSize() const {
 }
 
 bool exahype::solvers::FiniteVolumesSolver::isValidCellDescriptionIndex(
-    const int cellDescriptionsIndex) const {
+    const int cellDescriptionsIndex) {
   bool result = cellDescriptionsIndex>=0;
   assertion1(!result || Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
   return result;

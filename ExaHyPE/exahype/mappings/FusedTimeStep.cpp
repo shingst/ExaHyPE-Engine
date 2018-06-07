@@ -248,8 +248,6 @@ void exahype::mappings::FusedTimeStep::enterCell(
 
     // Must be performed for all cell descriptions
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }

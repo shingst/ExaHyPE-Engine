@@ -892,7 +892,7 @@ bool exahype::solvers::ADERDGSolver::getStabilityConditionWasViolated() const {
 }
 
 bool exahype::solvers::ADERDGSolver::isValidCellDescriptionIndex(
-    const int cellDescriptionsIndex) const {
+    const int cellDescriptionsIndex) {
   bool result = cellDescriptionsIndex>=0;
   assertion1(!result || Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
   return result;
@@ -2401,7 +2401,7 @@ void exahype::solvers::ADERDGSolver::prepareFaceDataOfAncestor(CellDescription& 
 void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     CellDescription& cellDescription,
     SubcellPosition& subcellPosition) {
-  Heap::getInstance().isValidIndex(
+  assertion2(Heap::getInstance().isValidIndex(
       subcellPosition.parentCellDescriptionsIndex),
       subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
 
