@@ -288,14 +288,13 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                         print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                         sys.exit()
                                     
-                                    if firstIteration:
+                                    if firstIteration and not skipMakeClean:
                                         command = "make clean"
                                         print(command)
                                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                                         (output, err) = process.communicate()
                                         process.wait()
-                                        firstIteration = False
-
+                                    
                                     # call make
                                     make_threads=general["make_threads"]
                                     makeCommand="make -j"+make_threads
@@ -322,6 +321,8 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                                     print("--------------------------------------------------------------------------------")
                                     executables+=1
+                                    
+                                    firstIteration = False
                                 else:
                                     print("skipped building of '"+executable+"' as it already exists.")
 
@@ -965,11 +966,11 @@ same value in every row.
     elif subprogram == "cleanHistory":
         clean("history")
     elif subprogram == "build":
-        build()
+        build(buildOnlyMissing=False, skipMakeClean=False)
     elif subprogram == "buildMissing":
-        build(True)
+        build(buildOnlyMissing=True, skipMakeClean=False)
     elif subprogram == "buildLocally":
-        build(False,True)
+        build(buildOnlyMissing=False, skipMakeClean=True)
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
