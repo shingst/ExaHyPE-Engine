@@ -135,12 +135,17 @@ def verifyEnvironmentIsCorrect(justWarn=False):
                     environmentIsCorrect = False
                 
                 tasks = str( math.ceil(float(ranks)/float(nodes)) )
-                for parsedCores in coreCounts:
+                myCoreCounts = coreCounts
+                if coreCounts[0]=="+":
+                    myCoreCounts = coreCountsGrouped
+                for parsedCores in myCoreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
-                    if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(cores)>1:
-                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to "+cores+" > 1",file=sys.stderr)
+                        cores=cores+":"+cores
+                    myCores = cores.split(":")[0]
+                    if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(myCores)>1:
+                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to "+myCores+" > 1",file=sys.stderr)
                         environmentIsCorrect = False
                         
     if not justWarn and not environmentIsCorrect:
@@ -283,14 +288,13 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                         print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                         sys.exit()
                                     
-                                    if firstIteration:
+                                    if firstIteration and not skipMakeClean:
                                         command = "make clean"
                                         print(command)
                                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                                         (output, err) = process.communicate()
                                         process.wait()
-                                        firstIteration = False
-
+                                    
                                     # call make
                                     make_threads=general["make_threads"]
                                     makeCommand="make -j"+make_threads
@@ -317,6 +321,8 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                                     print("--------------------------------------------------------------------------------")
                                     executables+=1
+                                    
+                                    firstIteration = False
                                 else:
                                     print("skipped building of '"+executable+"' as it already exists.")
 
@@ -350,12 +356,12 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
             print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
     
     # put optional sweep options in context
-    context["mail"]    = jobs["mail"]
-    context["tasks"]   = tasks
-    context["time"]    = jobs["time"]
-    context["class"]   = jobClass
-    context["islands"] = islands
-    context["cores"]   = cores.split(":")[0]
+    context["mail"]         = jobs["mail"]
+    context["tasks"]        = tasks
+    context["time"]         = jobs["time"]
+    context["class"]        = jobClass
+    context["islands"]      = islands
+    context["coresPerTask"] = str( int ( int(jobs["num_cpus"]) / int(tasks) ) )
     
     # now verify template parameters are defined in options file
     for key in keysInTemplate:
@@ -726,10 +732,14 @@ def extractJobId(processOutput):
     lines = processOutput.split("\n")
     for line in lines:
         # SLURM
-        # hamilton: "Submitted batch job 67586"
-        # coolmuc:  "Submitted batch job 67586 on cluster mpp3"
+        # hamilton: 'Submitted batch job 67586'
+        # coolmuc:  'Submitted batch job 67586 on cluster mpp3'
+        # LOAD-LEVELER:
+        # supermuc: 'llsubmit: The job "srv24ib.840220" has been submitted.'
         if "Submitted batch job " in line:
             jobId = line.strip().split(" ")[3]
+        if "llsubmit: The job " in line:
+            jobId = line.strip().split("\"")[1]
     return jobId
 
 def submitJobs():
@@ -920,8 +930,8 @@ same value in every row.
     coreCounts        = options.coreCounts
     coreCountsGrouped = options.coreCountsGrouped
     runNumbers        = options.runNumbers
-    runNumbersGrouped = options.runNumbersGrouped
-    
+    runNumbersGrouped = options.runNumbersGrouped   
+ 
     verifySweepAgreesWithHistoricalExperiments()
     
     specFileTemplatePath = exahypeRoot+"/"+general["spec_template"]
@@ -956,11 +966,11 @@ same value in every row.
     elif subprogram == "cleanHistory":
         clean("history")
     elif subprogram == "build":
-        build()
+        build(buildOnlyMissing=False, skipMakeClean=False)
     elif subprogram == "buildMissing":
-        build(True)
+        build(buildOnlyMissing=True, skipMakeClean=False)
     elif subprogram == "buildLocally":
-        build(False,True)
+        build(buildOnlyMissing=False, skipMakeClean=True)
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":

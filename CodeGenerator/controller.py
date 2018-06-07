@@ -90,9 +90,9 @@ class Controller:
                               default=-1,
                               metavar='nPointSources',
                               help="enable nPointSources point sources")
-        parser.add_argument("--noTimeAveraging",
+        parser.add_argument("--useCERKGuess",
                               action="store_true",
-                              help="disable time averaging in the spacetimepredictor (less memory usage, more computation)")
+                              help="use CERK for SpaceTimePredictor inital guess (nonlinear only)")
         parser.add_argument("--useLimiter",
                               type=int,
                               default=-1,
@@ -126,7 +126,6 @@ class Controller:
                    "nPointSources"         : commandLineArguments.usePointSources,
                    "usePointSources"       : commandLineArguments.usePointSources >= 0,
                    "useMaterialParam"      : commandLineArguments.useMaterialParam,
-                   "noTimeAveraging"       : commandLineArguments.noTimeAveraging,
                    "codeNamespace"         : commandLineArguments.namespace,
                    "pathToOutputDirectory" : os.path.join(absolutePathToRoot,commandLineArguments.pathToApplication,commandLineArguments.pathToOptKernel),
                    "architecture"          : commandLineArguments.architecture,
@@ -135,12 +134,13 @@ class Controller:
                    "ghostLayerWidth"       : commandLineArguments.ghostLayerWidth,
                    "pathToLibxsmmGemmGenerator"  : absolutePathToLibxsmm,
                    "quadratureType"        : ("Gauss-Lobatto" if commandLineArguments.useGaussLobatto else "Gauss-Legendre"),
+                   "useCERKGuess"          : commandLineArguments.useCERKGuess,
                    "useLibxsmm"            : True,
                    "runtimeDebug"          : False #for debug
                   }
 
         self.validateConfig(simdWidth.keys())
-        self.config["simdSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
+        self.config["vectSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
 
         
@@ -178,12 +178,11 @@ class Controller:
         context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
         context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
         context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
-        context["useVectPDEs"] = context["useFluxVect"] #TODO JMG add other vect
-        context["vectSize"] = self.config["simdSize"]
+        context["useVectPDEs"] = context["useFluxVect"] or True #TODO JMG add other vect
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
-        return self.config["simdSize"] * int((sizeWithoutPadding+(self.config["simdSize"]-1))/self.config["simdSize"])
+        return self.config["vectSize"] * int((sizeWithoutPadding+(self.config["vectSize"]-1))/self.config["vectSize"])
 
 
     def getPadSize(self, sizeWithoutPadding):

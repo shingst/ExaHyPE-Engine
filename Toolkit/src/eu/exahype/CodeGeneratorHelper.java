@@ -18,6 +18,7 @@ public class CodeGeneratorHelper {
   
   //options flags
   private static String useFluxOptionFlag            = "--useFlux";
+  private static String useFluxVectOptionFlag        = "--useFluxVect";
   private static String useNCPOptionFlag             = "--useNCP";
   private static String useSourceOptionFlag          = "--useSource";
   private static String useFusedSourceOptionFlag     = "--useFusedSource";
@@ -26,7 +27,7 @@ public class CodeGeneratorHelper {
   private static String useLimiterOptionFlag         = "--useLimiter";
   private static String useGaussLobattoOptionFlag    = "--useGaussLobatto";
   private static String ghostLayerWidthOptionFlag    = "--ghostLayerWidth";
-  private static String noTimeAveragingOptionFlag    = "--noTimeAveraging";
+  private static String useCERKGuessOptionFlag       = "--useCERKGuess";
   
   
   //Internal states
@@ -112,11 +113,11 @@ public class CodeGeneratorHelper {
     //define the CodeGenerator arguments
     String namespace = defineNamespace(projectName, solverName);    
     String numericsParameter = kernel.isLinear() ? "linear" : "nonlinear";
-    String options =  (kernel.useFlux() ? useFluxOptionFlag+" " : "") 
+    String options =  (kernel.useFlux() ? (kernel.useFluxVect() ? useFluxVectOptionFlag : useFluxOptionFlag)+" " : "")
                     + (kernel.useSource() ? (kernel.useFusedSource() ? useFusedSourceOptionFlag : useSourceOptionFlag)+" " : "") 
                     + (kernel.useNCP() ?  useNCPOptionFlag+" " : "") 
                     + (kernel.usePointSources() ?  usePointSourcesOptionFlag+" "+kernel.getNumberOfPointSources()+" " : "") 
-                    + (kernel.noTimeAveraging() ? noTimeAveragingOptionFlag+" " : "") 
+                    + (kernel.useCERKGuess() ? useCERKGuessOptionFlag+" " : "") 
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
                     + (kernel.useGaussLobatto() ? useGaussLobattoOptionFlag+" " : "")
                     + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")

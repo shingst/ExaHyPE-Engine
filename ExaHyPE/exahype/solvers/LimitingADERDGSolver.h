@@ -417,8 +417,9 @@ private:
       const int   element,
       const bool  isFirstIterationOfBatch,
       const bool  isLastIterationOfBatch,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-      const bool  vetoSpawnPredictionJob);
+      const bool  isSkeletonJob,
+      const bool  mustBeDoneImmediately,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
@@ -506,14 +507,14 @@ private:
     const int                         _cellDescriptionsIndex;
     const int                         _element;
     std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
-    int&                              _jobCounter;
+    const bool                        _isSkeletonJob;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
         const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-        int&                                     jobCounter);
+        const bool                               isSkeletonJob);
 
     bool operator()();
   };
@@ -720,9 +721,6 @@ public:
   int getNextMaxLevel() const final override;
   int getMaxLevel() const final override;
 
-  bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const final override;
-
   /**
    * Returns the index of the solver patch registered for the solver with
    * index \p solverNumber in exahype::solvers::RegisteredSolvers.
@@ -878,8 +876,8 @@ public:
      const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int& cellDescriptionsIndex,
-        const int& solverNumber,
+        const int cellDescriptionsIndex,
+        const int solverNumber,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
   bool attainedStableState(

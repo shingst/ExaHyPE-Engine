@@ -31,7 +31,7 @@ namespace exahype {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   02/05/2018 19:41
+ * @date   07/06/2018 19:07
  */
 class exahype::records::RepositoryState { 
    
@@ -40,7 +40,7 @@ class exahype::records::RepositoryState {
       typedef exahype::records::RepositoryStatePacked Packed;
       
       enum Action {
-         WriteCheckpoint = 0, ReadCheckpoint = 1, Terminate = 2, RunOnAllNodes = 3, UseAdapterMeshRefinement = 4, UseAdapterMeshRefinementAndPlotTree = 5, UseAdapterFinaliseMeshRefinement = 6, UseAdapterFinaliseMeshRefinementOrLocalRollback = 7, UseAdapterFusedTimeStep = 8, UseAdapterPredictionRerun = 9, UseAdapterBroadcastAndDropNeighbourMessages = 10, UseAdapterLimiterStatusSpreading = 11, UseAdapterPredictionOrLocalRecomputation = 12, UseAdapterGlobalRollback = 13, UseAdapterMergeNeighbours = 14, UseAdapterUpdateAndReduce = 15, UseAdapterPrediction = 16, NumberOfAdapters = 17
+         WriteCheckpoint = 0, ReadCheckpoint = 1, Terminate = 2, RunOnAllNodes = 3, UseAdapterMeshRefinement = 4, UseAdapterMeshRefinementAndPlotTree = 5, UseAdapterFinaliseMeshRefinement = 6, UseAdapterFinaliseMeshRefinementOrLocalRollback = 7, UseAdapterInitialPrediction = 8, UseAdapterFusedTimeStep = 9, UseAdapterPredictionRerun = 10, UseAdapterBroadcastAndDropNeighbourMessages = 11, UseAdapterLimiterStatusSpreading = 12, UseAdapterPredictionOrLocalRecomputation = 13, UseAdapterGlobalRollback = 14, UseAdapterMergeNeighbours = 15, UseAdapterUpdateAndReduce = 16, UseAdapterPrediction = 17, NumberOfAdapters = 18
       };
       
       struct PersistentRecords {
@@ -286,7 +286,7 @@ class exahype::records::RepositoryState {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   02/05/2018 19:41
+ * @date   07/06/2018 19:07
  */
 class exahype::records::RepositoryStatePacked { 
    

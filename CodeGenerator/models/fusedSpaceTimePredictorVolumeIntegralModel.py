@@ -65,6 +65,9 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
             self.context["gemm_rhs_x"] = gemmNamePad+"_rhs_x"
             self.context["gemm_rhs_y"] = gemmNamePad+"_rhs_y"
             self.context["gemm_rhs_z"] = gemmNamePad+"_rhs_z"
+            self.context["gemm_gradF_x"] = gemmName+"_gradF_x"
+            self.context["gemm_gradF_y"] = gemmName+"_gradF_y"
+            self.context["gemm_gradF_z"] = gemmName+"_gradF_z"
             self.context["gemm_lqi"]   = gemmName+"_lqi"
             self.context["gemm_x"] = gemmNamePad+"_lduh_x"
             self.context["gemm_y"] = gemmNamePad+"_lduh_y"
@@ -419,6 +422,88 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # type
                                                 "gemm")
                     matmulList.append(matmul_z)
+                matmul = MatmulConfig(    # M
+                                            self.context["nVar"],    \
+                                            # N
+                                            self.context["nDof"],    \
+                                            # K
+                                            self.context["nDof"],    \
+                                            # LDA
+                                            self.context["nVarPad"], \
+                                            # LDB
+                                            self.context["nDofPad"], \
+                                            # LDC
+                                            self.context["nVarPad"], \
+                                            # alpha
+                                            1,                         \
+                                            # beta
+                                            1,                         \
+                                            # alignment A
+                                            1,                         \
+                                            # alignment C
+                                            1,                         \
+                                            # name
+                                            "gradF_x",                   \
+                                            # prefetching
+                                            "nopf",                    \
+                                            # type
+                                            "gemm")
+                matmulList.append(matmul)
+                matmul = MatmulConfig(    # M
+                                            self.context["nVar"],    \
+                                            # N
+                                            self.context["nDof"],    \
+                                            # K
+                                            self.context["nDof"],    \
+                                            # LDA
+                                            self.context["nVarPad"] * self.context["nDof"], \
+                                            # LDB
+                                            self.context["nDofPad"], \
+                                            # LDC
+                                            self.context["nVarPad"] * self.context["nDof"], \
+                                            # alpha
+                                            1,                         \
+                                            # beta
+                                            1,                         \
+                                            # alignment A
+                                            1,                         \
+                                            # alignment C
+                                            1,                         \
+                                            # name
+                                            "gradF_y",                   \
+                                            # prefetching
+                                            "nopf",                    \
+                                            # type
+                                            "gemm")
+                matmulList.append(matmul)
+                if(self.context["nDim"]>=3):
+                    matmul = MatmulConfig(    # M
+                                                self.context["nVar"],    \
+                                                # N
+                                                self.context["nDof"],    \
+                                                # K
+                                                self.context["nDof"],    \
+                                                # LDA
+                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                # LDB
+                                                self.context["nDofPad"], \
+                                                # LDC
+                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                # alpha
+                                                1,                         \
+                                                # beta
+                                                1,                         \
+                                                # alignment A
+                                                1,                         \
+                                                # alignment C
+                                                1,                         \
+                                                # name
+                                                "gradF_z",                   \
+                                                # prefetching
+                                                "nopf",                    \
+                                                # type
+                                                "gemm")
+                    matmulList.append(matmul)
             if(self.context["useNCP"]):
                 matmul = MatmulConfig(    # M
                                             self.context["nVar"],    \

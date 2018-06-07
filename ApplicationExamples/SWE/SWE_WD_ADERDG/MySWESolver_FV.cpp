@@ -29,7 +29,7 @@ void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,co
   // Number of variables    = 4 + #parameters
 
   if (tarch::la::equals(t,0.0)) {
-    initialData(x, Q, scenario_FV);
+    initialData(x, Q);
   }
 }
 

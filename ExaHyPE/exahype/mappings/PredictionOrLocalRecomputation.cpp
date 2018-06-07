@@ -46,9 +46,16 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
 
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+  if (
+      exahype::solvers::Solver::FuseADERDGPhases &&
+      exahype::solvers::Solver::oneSolverRequestedMeshUpdate()
+  ) {
+    return exahype::mappings::Prediction::determineEnterCellSpecification(level);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  }
 }
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
@@ -137,6 +144,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     initialiseLocalVariables();
   }
 
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      exahype::State::isLastIterationOfBatchOrNoBatch()
+  ) {
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+  }
+
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
   _boundaryFaceMerges = 0;
@@ -198,8 +213,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
       }
     }
-
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
 
     #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
     logInfo("endIteration(...)","interiorFaceSolves: " << _interiorFaceMerges);
@@ -280,9 +293,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           cellDescriptionsIndex,fineGridVerticesEnumerator);
     }
     exahype::Cell::resetNeighbourMergeFlags(
-        cellDescriptionsIndex);
-    exahype::Cell::resetFaceDataExchangeCounters(
-        cellDescriptionsIndex,fineGridVertices,fineGridVerticesEnumerator);
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -327,7 +339,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
   ) {
     dfor2(pos1)
       dfor2(pos2)
-        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
+        exahype::Vertex::InterfaceType interfaceType =
+            fineGridVertex.determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH,true);
+
+        if ( interfaceType==exahype::Vertex::InterfaceType::Interior ) { // Assumes that we have two valid indices
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             if ( performLocalRecomputation(solver) ) {
@@ -349,10 +364,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
             _interiorFaceMerges++;
             #endif
           }
-
-          fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
-        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
+        if ( interfaceType==exahype::Vertex::InterfaceType::Boundary ) {
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
@@ -400,8 +413,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               #endif
             }
           }
-
-          fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
       enddforx
     enddforx
@@ -449,9 +460,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
             vertex.getCellDescriptionsIndex()[destScalar],
             fineGridX,level,
             receivedMetadata);
-
-        vertex.setFaceDataExchangeCountersOfDestination(src,dest,TWO_POWER_D); // !!! Do not forget this
-        vertex.setMergePerformed(src,dest,true);
       } else {
         dropNeighbourData(
             fromRank,

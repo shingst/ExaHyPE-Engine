@@ -90,11 +90,6 @@ bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputati
   return result;
 }
 
-bool exahype::solvers::LimitingADERDGSolver::isValidCellDescriptionIndex(
-    const int cellDescriptionsIndex) const  {
-  return _solver->isValidCellDescriptionIndex(cellDescriptionsIndex);
-}
-
 exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const std::string& identifier,
     std::unique_ptr<exahype::solvers::ADERDGSolver> solver,
@@ -126,8 +121,8 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
 
   _receivedMax.resize(numberOfObservables);
   _receivedMin.resize(numberOfObservables);
-  assertion(!_receivedMax.empty());
-  assertion(!_receivedMin.empty());
+  assertion( numberOfObservables==0 || !_receivedMax.empty());
+  assertion( numberOfObservables==0 || !_receivedMin.empty());
   #endif
 }
 
@@ -419,8 +414,8 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
-      const int& cellDescriptionsIndex,
-      const int& solverNumber,
+      const int cellDescriptionsIndex,
+      const int solverNumber,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
   return _solver->eraseOrRefineAdjacentVertices(
              cellDescriptionsIndex,solverNumber,cellSize);
@@ -747,8 +742,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int   element,
     const bool  isFirstIterationOfBatch,
     const bool  isLastIterationOfBatch,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-    const bool  vetoSpawnPredictionJob) {
+    const bool  isSkeletonJob,
+    const bool  mustBeDoneImmediately,
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
   // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
   updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
   UpdateResult result;
@@ -767,7 +763,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     _solver->performPredictionAndVolumeIntegral(
         cellDescriptionsIndex, element,
         memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
-        false/*already uncompressed*/,vetoSpawnPredictionJob);
+        false/*already uncompressed*/,isSkeletonJob);
   } else { // just perform a restriction of the limiter status to the next parent
     const int parentElement = tryGetElement(
         solverPatch.getParentIndex(),solverPatch.getSolverNumber());
@@ -786,28 +782,28 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool isAtRemoteBoundary) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
-  if (solverPatch.getType()==SolverPatch::Type::Cell) {
-    bool vetoSpawnBackgroundJobs =
-        !SpawnPredictionAsBackgroundJob ||
-        #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
-        isAtRemoteBoundary ||
-        #endif
-        ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
+    const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(solverPatch,isAtRemoteBoundary);
+    const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
+    const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if (
+        !SpawnPredictionAsBackgroundJob ||
         isFirstIterationOfBatch ||
         isLastIterationOfBatch  ||
-        vetoSpawnBackgroundJobs
+        mustBeDoneImmediately
     ) {
-      return fusedTimeStepBody(
-          cellDescriptionsIndex,element,
-          isFirstIterationOfBatch,isLastIterationOfBatch,
-          solverPatch.getNeighbourMergePerformed(),vetoSpawnBackgroundJobs);
+      return
+          fusedTimeStepBody(
+              cellDescriptionsIndex,element,
+              isFirstIterationOfBatch,isLastIterationOfBatch,
+              isSkeletonCell,
+              mustBeDoneImmediately,
+              solverPatch.getNeighbourMergePerformed());
     } else {
-      int& jobCounter = (isAtRemoteBoundary) ? NumberOfSkeletonJobs: NumberOfEnclaveJobs;
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
-          solverPatch.getNeighbourMergePerformed(), jobCounter );
-      peano::datatraversal::TaskSet spawnedSet( fusedTimeStepJob, peano::datatraversal::TaskSet::TaskType::Background );
+          solverPatch.getNeighbourMergePerformed(), isSkeletonCell );
+      Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
   } else {
@@ -859,13 +855,7 @@ void exahype::solvers::LimitingADERDGSolver::compress(
   SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
-    bool vetoSpawnBackgroundJobs =
-      #if !defined(Parallel) || !defined(SharedMemoryParallelisation)
-      isAtRemoteBoundary ||
-      #endif
-      ADERDGSolver::isInvolvedInProlongationOrRestriction(solverPatch);
-
-    _solver->compress(solverPatch,vetoSpawnBackgroundJobs,isAtRemoteBoundary);
+    _solver->compress(solverPatch,isAtRemoteBoundary);
     const int limiterElement =
         tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
     if (limiterElement!=exahype::solvers::Solver::NotFound) {
@@ -1755,7 +1745,7 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
       for(int sends=0; sends<2; ++sends) {
         #if defined(UsePeanosSymmetricBoundaryExchanger)
         DataHeap::getInstance().sendData(
-            _invalidObservables, toRank, x, level,
+            _invalidObservables.data(), _invalidObservables.size(),toRank, x, level,
             peano::heap::MessageType::NeighbourCommunication);
         #else
         DataHeap::getInstance().sendData(
@@ -1824,7 +1814,7 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
     for(int sends=0; sends<2; ++sends) {
       #if defined(UsePeanosSymmetricBoundaryExchanger)
       DataHeap::getInstance().sendData(
-          _invalidObservables, toRank, x, level,
+          _invalidObservables.data(), _invalidObservables.size(), toRank, x, level,
           peano::heap::MessageType::NeighbourCommunication);
       #else
       DataHeap::getInstance().sendData(
@@ -2358,26 +2348,31 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   const int             cellDescriptionsIndex,
   const int             element,
   const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-  int&                  jobCounter):
+  const bool            isSkeletonJob):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
   _neighbourMergePerformed(neighbourMergePerformed),
-  _jobCounter(jobCounter) {
+  _isSkeletonJob(isSkeletonJob) {
   // copy the neighbour merge performed array
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _jobCounter++;
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    jobCounter++;
   }
   lock.free();
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::operator()() {
-  _solver.fusedTimeStepBody(_cellDescriptionsIndex,_element,false,false,_neighbourMergePerformed,true);
+  _solver.fusedTimeStepBody(
+      _cellDescriptionsIndex,_element,
+      false,false,_isSkeletonJob,false,_neighbourMergePerformed);
+
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
-    _jobCounter--;
-    assertion( _jobCounter>=0 );
+    int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
+    jobCounter--;
+    assertion( jobCounter>=0 );
   }
   lock.free();
   return false;
