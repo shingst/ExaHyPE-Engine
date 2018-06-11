@@ -783,37 +783,37 @@ bool exahype::Vertex::hasToMergeWithNeighbourData(
       exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex).empty())
   ) {
     return false; // !!! Make sure to consider all solver types here
-  }
-
-  const int direction   = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex   = 2*direction+orientation;
-
-  // ADER-DG
-  bool mergeWithNeighbourData = true;
-  for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
-    mergeWithNeighbourData &= p.getFaceDataExchangeCounter(faceIndex)==0;
-    assertion(p.getNeighbourMergePerformed(faceIndex)==false);
-
-    // now we can reset the flags
-    if ( p.getFaceDataExchangeCounter(faceIndex)==0 ) {
-      p.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D); // TODO maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
-      p.setNeighbourMergePerformed(faceIndex,true);
+  } else {
+    const int direction   = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
+  
+    // ADER-DG
+    bool mergeWithNeighbourData = true;
+    for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
+      mergeWithNeighbourData &= p.getFaceDataExchangeCounter(faceIndex)==0;
+      assertion(p.getNeighbourMergePerformed(faceIndex)==false);
+  
+      // now we can reset the flags
+      if ( p.getFaceDataExchangeCounter(faceIndex)==0 ) {
+        p.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D); // TODO maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
+        p.setNeighbourMergePerformed(faceIndex,true);
+      }
     }
-  }
-
-  // FV
-  for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
-    mergeWithNeighbourData &= p.getFaceDataExchangeCounter(faceIndex)==0;
-    assertion(p.getNeighbourMergePerformed(faceIndex)==false);
-
-    // now we can reset the flags
-    if ( p.getFaceDataExchangeCounter(faceIndex)==0 ) {
-      p.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D);
-      p.setNeighbourMergePerformed(faceIndex,true);
+  
+    // FV
+    for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
+      mergeWithNeighbourData &= p.getFaceDataExchangeCounter(faceIndex)==0;
+      assertion(p.getNeighbourMergePerformed(faceIndex)==false);
+  
+      // now we can reset the flags
+      if ( p.getFaceDataExchangeCounter(faceIndex)==0 ) {
+        p.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D);
+        p.setNeighbourMergePerformed(faceIndex,true);
+      }
     }
+    return mergeWithNeighbourData;
   }
-  return true;
 }
 
 void exahype::Vertex::sendEmptySolverDataToNeighbour(
