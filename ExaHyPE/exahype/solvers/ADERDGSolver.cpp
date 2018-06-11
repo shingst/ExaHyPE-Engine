@@ -2521,18 +2521,15 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
           cellDescription.toString());
 }
 
-void exahype::solvers::ADERDGSolver::restrictSubfaceIntegralUpdates(
+void exahype::solvers::ADERDGSolver::restrictSubfaceIntegralUpdates( // TODO(Dominic): Does it still make sense?
     const int fineGridCellDescriptionsIndex,
     const int fineGridElement) {
   CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
 
   if (
-<<<<<<< HEAD
-      fineGridCellDescription.getType()==CellDescription::Type::Descendant
-=======
-      fineGridCellDescription.getType()==CellDescription::Type::Cell     ||
-      fineGridCellDescription.getType()==CellDescription::Type::Ancestor
->>>>>>> master
+      fineGridCellDescription.getType()==CellDescription::Type::Descendant &&
+      (fineGridCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication ||
+      fineGridCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication)
   ) {
     restriction(fineGridCellDescription);
   }
@@ -2584,7 +2581,7 @@ void exahype::solvers::ADERDGSolver::restrictToNextParent(
   lock.free();
 }
 
-void exahype::solvers::ADERDGSolver::restrictToTopMostParent(
+void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be merged with faceIntegral
                   const CellDescription& cellDescription,
                   const int parentCellDescriptionsIndex,
                   const int parentElement,
@@ -2592,15 +2589,26 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(
   CellDescription& parentCellDescription =
       getCellDescription(parentCellDescriptionsIndex,parentElement);
   assertion(parentCellDescription.getSolverNumber()==cellDescription.getSolverNumber());
+  assertion1(cellDescription.getType()==CellDescription::Type::Descendant,cellDescription.toString());
+  assertion1(cellDescription.getHasToHoldDataForMasterWorkerCommunication() ||
+      parentCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+      ,cellDescription.toString());
   assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
              (parentCellDescription.getType()==CellDescription::Type::Descendant &&
-             (parentCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication ||
-             parentCellDescription.getHasToHoldDataForMasterWorkerCommunication())),
+             parentCellDescription.getHasToHoldDataForMasterWorkerCommunication()),
              parentCellDescription.toString());
 
-  // TODO(Dominic): Simply add the fine grid updates to the coarse grid ones
+  // TODO(Dominic): There will only be restrictions in Descendant cells
+  std::vector<double>& updateFine = DataHeap::getInstance().getData(cellDescription.getUpdate());
+  std::vector<double>& updateCoarse = DataHeap::getInstance().getData(cellDescription.getUpdate());
 
-  std::transform(a.begin(), a.end(), b.begin(), std::back_inserter(result), std::plus<T>());
+  tarch::multicore::Lock lock(RestrictionSemaphore);
+  for (int i = 0; i < getDataPerCell(); ++i) {
+      updateCoarse[i] += updateFine;
+  }
+  lock.free();
+  std::updateFine;
+
 
   const int levelFine   = cellDescription.getLevel();
   const int levelCoarse = parentCellDescription.getLevel();
@@ -2610,36 +2618,16 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(
   for (int d = 0; d < DIMENSIONS; d++) {
     if (subcellIndex[d]==0 ||
         subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1) {
+      const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
 
-// TODO(Dominic): Old code; keep a while for reference
-//      const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
-//
-//      logDebug("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
-//               ",level=" << cellDescription.getLevel() << ",d=" << d <<
-//               ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
-//               " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
-//               " level="<<parentCellDescription.getLevel());
-//
-//      const int numberOfFaceDof = getBndFaceSize();
-//      const int numberOfFluxDof = getBndFluxSize();
-//
-//      const double* lQhbndFine = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
-//          (faceIndex * numberOfFaceDof);
-//      double* lQhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getExtrapolatedPredictor()).data() +
-//          (faceIndex * numberOfFaceDof);
-//
-//      const double* lFhbndFine = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
-//          (faceIndex * numberOfFluxDof);
-//      double* lFhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getFluctuation()).data() +
-//          (faceIndex * numberOfFluxDof);
-
+      logDebug("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
+               ",level=" << cellDescription.getLevel() << ",d=" << d <<
+               ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
+               " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
+               " level="<<parentCellDescription.getLevel());
       // TODO(Dominic): Consider to have a separate lock per face direction or to move lock inside
       // of kernels
       tarch::multicore::Lock lock(RestrictionSemaphore);
-//      faceUnknownsRestriction(lQhbndCoarse,lFhbndCoarse,lQhbndFine,lFhbndFine,
-//                              levelCoarse, levelFine,
-//                              exahype::amr::getSubfaceIndex(subcellIndex,d));
-
       restrictObservablesMinAndMax(parentCellDescription,cellDescription,faceIndex);
       lock.free();
     }
