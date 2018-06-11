@@ -792,10 +792,10 @@ bool exahype::Vertex::hasToMergeWithNeighbourData(
     bool mergeWithNeighbourData = true;
     for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
       mergeWithNeighbourData &= p.getFaceDataExchangeCounter(faceIndex)==0;
-      assertion(p.getNeighbourMergePerformed(faceIndex)==false);
   
       // now we can reset the flags
       if ( p.getFaceDataExchangeCounter(faceIndex)==0 ) {
+        assertion(p.getNeighbourMergePerformed(faceIndex)==false);
         p.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D); // TODO maybe do not do that here but in the cell? Can be used to determine which cell belongs to skeleton
         p.setNeighbourMergePerformed(faceIndex,true);
       }
@@ -804,10 +804,10 @@ bool exahype::Vertex::hasToMergeWithNeighbourData(
     // FV
     for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
       mergeWithNeighbourData &= p.getFaceDataExchangeCounter(faceIndex)==0;
-      assertion(p.getNeighbourMergePerformed(faceIndex)==false);
   
       // now we can reset the flags
       if ( p.getFaceDataExchangeCounter(faceIndex)==0 ) {
+        assertion(p.getNeighbourMergePerformed(faceIndex)==false);
         p.setFaceDataExchangeCounter(faceIndex,TWO_POWER_D);
         p.setNeighbourMergePerformed(faceIndex,true);
       }
