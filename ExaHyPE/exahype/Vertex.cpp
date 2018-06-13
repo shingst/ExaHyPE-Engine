@@ -81,8 +81,9 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
+      const int cellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(posScalar);
       exahype::solvers::Solver::RefinementControl control =
-          solver->eraseOrRefineAdjacentVertices(getCellDescriptionsIndex()[posScalar],solverNumber,h);
+          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,h);
       canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
       mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
     }
