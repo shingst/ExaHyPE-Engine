@@ -69,7 +69,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
 
   // 0. Allocate local variable
-  double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1_T
 {% if useFluxVect %}
   // transpose matrix for vect flux
   double Qt_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))); //transposed Q
@@ -118,66 +117,41 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   //1. Optimized initial guess, Continuous Extension Runga-Kutta.
   {
 {% if useFlux %}    
-      double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
-      double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-      double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nVarPad)
-      std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
+    double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
+    double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
+    double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nVarPad)
+    std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
 {% else %}{# no flux so use gradQ hight time as temp array #}
-      double* const K1 = gradQ+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
-      double* const K2 = gradQ+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-      double* const lwh = gradQ+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nVarPad)
-      std::memset(gradQ, 0, {{(nDim+2)*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
+    double* const K1 = gradQ+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
+    double* const K2 = gradQ+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
+    double* const lwh = gradQ+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nVarPad)
+    std::memset(gradQ, 0, {{(nDim+2)*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
 {% endif %}
 
       // K1
 {% if useFlux %}
-      double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
+    double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
 {# ******************************************************
    **** call to flux function over luh into lF_guess ****
    ****************************************************** #}
 {% with inputQ='luh', inputQ_varSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
-{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 
     // x direction
     for (int j = 0; j < {{nDof3D}}; j++) {
       for (int k = 0; k < {{nDof}}; k++) {
-
-{% if useLibxsmm %}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_gradF_x}}(&lF_guess[{{nVarPad}}*(0+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &K1[{{nVarPad*nDof}}*(k+{{nDof}}*j)]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            #pragma simd
-            for (int n = 0; n < {{nVar}}; n++) {
-              K1[n+{{nVarPad}}*(l+{{nDof}}*(k+{{nDof}}*j))] += inverseDx[0] * lF_guess[n+{{nVarPad}}*(m+{{nDof}}*(k+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradF_x', A='lF_guess', B='dudxT_by_dx', C='K1', A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
       }
     }
     // y direction
     for (int j = 0; j < {{nDof3D}}; j++) {
       for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm %}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_gradF_y}}(&lF_guess[{{1*(nDof**nDim)*nVarPad}}+{{nVarPad}}*(k+{{nDof*nDof}}*j)], &dudxT_by_dx[0], &K1[{{nVarPad}}*(k+{{nDof*nDof}}*j)]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            #pragma simd
-            for (int n = 0; n < {{nVar}}; n++) {
-              K1[n+{{nVarPad}}*(k+{{nDof}}*(l+{{nDof}}*j))] += inverseDx[0] * lF_guess[{{1*(nDof**nDim)*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(m+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradF_y', A='lF_guess', B='dudxT_by_dx', C='K1', A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
+{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}        
       }
     }
          
@@ -185,21 +159,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // z direction
     for (int j = 0; j < {{nDof}}; j++) {
       for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm %}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_gradF_z}}(&lF_guess[{{2*(nDof**nDim)*nVarPad}}+{{nVarPad}}*(k+{{nDof}}*j)], &dudxT_by_dx[0], &K1[{{nVarPad}}*(k+{{nDof}}*j)]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            #pragma simd
-            for (int n = 0; n < {{nVar}}; n++) {
-              K1[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*l))] += inverseDx[0] * lF_guess[{{2*(nDof**nDim)*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*m))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradF_z', A='lF_guess', B='dudxT_by_dx', C='K1', A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
+{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
       }
     }
 {% endif %}{# nDim == 3 #}
@@ -314,48 +276,23 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
    **** call to flux function over lwh into lF_guess ****
    ****************************************************** #}
 {% with inputQ='lwh', inputQ_varSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
-{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 
     // x direction
     for (int j = 0; j < {{nDof3D}}; j++) {
       for (int k = 0; k < {{nDof}}; k++) {
-
-{% if useLibxsmm %}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_gradF_x}}(&lF_guess[{{nVarPad}}*(0+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &K2[{{nVarPad*nDof}}*(k+{{nDof}}*j)]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            #pragma simd
-            for (int n = 0; n < {{nVar}}; n++) {
-              K2[n+{{nVarPad}}*(l+{{nDof}}*(k+{{nDof}}*j))] += inverseDx[0] * lF_guess[n+{{nVarPad}}*(m+{{nDof}}*(k+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradF_x', A='lF_guess', B='dudxT_by_dx', C='K1', A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
       }
     }
     // y direction
     for (int j = 0; j < {{nDof3D}}; j++) {
       for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm %}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_gradF_y}}(&lF_guess[{{1*(nDof**nDim)*nVarPad}}+{{nVarPad}}*(k+{{nDof*nDof}}*j)], &dudxT_by_dx[0], &K2[{{nVarPad}}*(k+{{nDof*nDof}}*j)]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            #pragma simd
-            for (int n = 0; n < {{nVar}}; n++) {
-              K2[n+{{nVarPad}}*(k+{{nDof}}*(l+{{nDof}}*j))] += inverseDx[0] * lF_guess[{{1*(nDof**nDim)*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(m+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradF_y', A='lF_guess', B='dudxT_by_dx', C='K1', A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
+{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}        
       }
     }
          
@@ -363,21 +300,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // z direction
     for (int j = 0; j < {{nDof}}; j++) {
       for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm %}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_gradF_z}}(&lF_guess[{{2*(nDof**nDim)*nVarPad}}+{{nVarPad}}*(k+{{nDof}}*j)], &dudxT_by_dx[0], &K2[{{nVarPad}}*(k+{{nDof}}*j)]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            #pragma simd
-            for (int n = 0; n < {{nVar}}; n++) {
-              K2[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*l))] += inverseDx[0] * lF_guess[{{2*(nDof**nDim)*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*m))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradF_z', A='lF_guess', B='dudxT_by_dx', C='K1', A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
+{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
       }
     }
 {% endif %}
@@ -503,7 +428,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
 {% with inputQ='lQi', inputQ_varSize=nDataPad, outputF='lFi',  timeInterleaved=True, time_var='i' %}
-{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}{# useFlux #}
 
@@ -529,48 +454,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% if useLibxsmm %}
-          #pragma vector aligned
-          for(int it=0;it<{{nDof*nDofPad}};it++) {
-            s_m[it] = -updateSize * Kxi[it];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_rhs_x = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_rhs_x}}(&lFi[{{nVarPad*nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i))], &s_m[0], &rhs[{{nVarPad*nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVarPad}}; n++) {
-                rhs[n+{{nVarPad}}*(l+{{nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i)))] -= updateSize *
-                                               lFi[n+{{nVarPad}}*(m+{{nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i)))] *
-                                               Kxi[m+{{nDofPad}}*l];
-              }
-            }
-          }
-{% endif %}
-{% endif %} {# useFlux #}
+{% with gemmKey='rhs_x', A='lFi', B='coeffRhsX', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+{% endif %}{# useFlux #}
 {% if useNCP %}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-          #pragma forceinline
-#endif
-          {{gemm_gradQ_x}}(&lQi[{{nDataPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVarPad}}*(0+{{nDim}}*(i+{{nDof}}*(l+{{nDof}}*(k+{{nDof}}*j))))] += inverseDx[0] *
-                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(m+{{nDof}}*(k+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
-              }
-            }
-          }
-{% endif %}
+{% with gemmKey='gradQ_x', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad, B_shift='0', C_shift='((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad*nDim %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}   
 {% endif %}
           ijk_++;
         }
@@ -582,48 +473,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% if useLibxsmm %}
-          #pragma vector aligned
-          for(int it=0;it<{{nDof*nDofPad}};it++) {
-            s_m[it] = -updateSize * Kxi[it];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_rhs_y = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_rhs_y}}(&lFi[{{1*(nDof**nDim)*nDof*nVarPad}}+{{nVarPad}}*(k+{{nDof*nDof}}*(j+{{nDof3D}}*i))], &s_m[0], &rhs[{{nVarPad}}*(k+{{nDof*nDof}}*(j+{{nDof3D}}*i))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVarPad}}; n++) {
-                rhs[n+{{nVarPad}}*(k+{{nDof}}*(l+{{nDof}}*(j+{{nDof3D}}*i)))] -= updateSize *
-                                               lFi[{{1*(nDof**nDim)*nDof*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(m+{{nDof}}*(j+{{nDof3D}}*i)))] *
-                                               Kxi[m+{{nDofPad}}*l];
-              }
-            }
-          }
-{% endif %}
-{% endif %} {# useFlux #}
+{% with gemmKey='rhs_y', A='lFi', B='coeffRhsY', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+{% endif %}{# useFlux #}
 {% if useNCP %}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-          #pragma forceinline
-#endif
-          {{gemm_gradQ_y}}(&lQi[{{nDataPad}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))+{{nVarPad}}]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVarPad}}*(1+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(l+{{nDof}}*j))))] += inverseDx[0] *
-                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(m+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
-              }
-            }
-          }
-{% endif %}
+{% with gemmKey='gradQ_y', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad*nDim~'+'~nVarPad %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
 {% endif %}
           ijk_++;
         }
@@ -636,48 +493,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% if useLibxsmm %}
-          #pragma vector aligned
-          for(int it=0;it<{{nDof*nDofPad}};it++) {
-            s_m[it] = -updateSize * Kxi[it];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_rhs_z = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_rhs_z}}(&lFi[{{2*(nDof**nDim)*nDof*nVarPad}}+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof*nDof}}*i))], &s_m[0], &rhs[{{nVarPad}}*(k+{{nDof}}*(j+{{nDof*nDof}}*i))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVarPad}}; n++) {
-                rhs[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(l+{{nDof}}*i)))] -= updateSize *
-                                               lFi[{{2*(nDof**nDim)*nDof*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(m+{{nDof}}*i)))] *
-                                               Kxi[m+{{nDofPad}}*l];
-              }
-            }
-          }
-{% endif %}
-{% endif %} {# useFlux #}
+{% with gemmKey='rhs_z', A='lFi', B='coeffRhsZ', C='rhs', A_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+{% endif %}{# useFlux #}
 {% if useNCP %}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-          #pragma forceinline
-#endif
-          {{gemm_gradQ_z}}(&lQi[{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof}}*j))+{{2*nVarPad}}]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVarPad}}*(2+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*l))))] += inverseDx[0] *
-                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*m)))] * dudx[l+{{nDofPad}}*m];
-              }
-            }
-          }
-{% endif %}
+{% with gemmKey='gradQ_z', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad*nDim~'+'~2*nVarPad %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}  
 {% endif %}
           ijk_++;
         }
@@ -744,30 +567,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
-      const double iweight = 1.0 / weights3[ijk];
-      #pragma vector aligned
-      for(int it=0;it<{{nDof*nDofPad}};it++) {
-        s_m[it] = iweight * iK1_T[it];
-      }
-{% if useLibxsmm %}
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-      volatile double doNotOptimizeAway_lqi = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-      #pragma forceinline
-#endif
-      {{gemm_lqi}}(&rhs[{{nVarPad}}*ijk], &s_m[0], &new_lQi_slice[0]); //Note: the gemm performs C = A*B, no need to initialize C to 0
-{% else %}
-      std::memset(new_lQi_slice, 0, {{nDof*nVarPad}} * sizeof(double));
-      for(int l=0;l<{{nDof}};l++) { 
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}};n++) {
-            new_lQi_slice[l*{{nVarPad}}+n] += s_m[l*{{nDof}}+k] * rhs[{{nVarPad}}*ijk+k*{{(nDof**nDim)*nVarPad}}+n];
-          }
-        }
-      }
-{% endif %}
+      const double iweight = 1.0 / weights3[ijk];     
+{% with gemmKey='lqi', A='rhs', B='s_m_QSlice', C='new_lQi_slice', A_shift=nVarPad~'*ijk', B_shift='0', C_shift='0', trueB='iK1_T', trueAlpha='iweight' %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+
       for(int l = 0; l < {{nDof}}; l++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
           sq_res += (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]) * (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]);
@@ -1004,63 +808,23 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
   for (int j=0; j<{{nDof3D}}; j++) {
     for (int i=0; i<{{nDof}}; i++) {
-  
-      #pragma vector aligned
-      for(int it=0; it<{{nDof*nDofPad}}; it++) {
-        s_m[it] = weights2[i+j*{{nDof}}] * inverseDx[0] * Kxi_T[it];
-      }
-{% if useLibxsmm %}
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-      volatile double doNotOptimizeAway_volume = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-      #pragma forceinline
-#endif
-      {{gemm_x}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}]);
-#ifdef USE_IPO
-      #pragma forceinline
-#endif
-      {{gemm_y}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}]);
+      //x, also define coefficient matrix coeffVolume
+{% with gemmKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx[0]', forceCoeffMatrix=True %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+
+      //y, reuse coeffVolume
+{% with gemmKey='lduh_y', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~(nDof*nDof)~'+i)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+
 {% if nDim == 3 %}
-#ifdef USE_IPO
-      #pragma forceinline
-#endif
-      {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad}}]);
+      //z, reuse coeffVolume
+{% with gemmKey='lduh_z', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
 {% endif %}
-{% else %}
-      //x 
-      for(int l=0; l<{{nDof}}; l++) {
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}+l*{{nVarPad}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
-          }
-        }
-      }
-      
-      //y
-      for(int l=0; l<{{nDof}}; l++) {
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}+l*{{nVarPad*nDof}}+n]+= lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
-          }
-        }
-      }
-      
-{% if nDim == 3 %}
-      //z
-      for(int l=0; l<{{nDof}}; l++) {
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof}}+i)*{{nVarPad}}+l*{{nVarPad*nDof**2}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
-          }
-        }
-      }
-  
-{% endif %}{# dim3 #}
-{% endif %}{# useLibxsmm #}
+
     }
   }
 {% endif %}{# useFlux #}

@@ -38,6 +38,11 @@ class AbstractModelBaseClass():
     def __init__(self, baseContext, baseController=None):
         self.context = copy.copy(baseContext) # copy the given baseContext as base for the local context
         self.controller = baseController      # pointer to the controller to generate gemms or get padding size if needed. None by default (if not needed)
+        self.buildGemmsConfig()
+    
+    
+    def buildGemmsConfig(self):
+        pass
     
     
     def generateCode(self):

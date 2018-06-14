@@ -33,60 +33,60 @@ String time_var        : name of the var used in the outer time loop (use '0' is
 {% set spaceTimeCoord_rest=''~rest_start%}
 {% endif %}
 {% if useFluxVect %}{# Vectorized flux, require transposition from AoS to SoA and back #}
-      // Compute the fluxes
-      for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSize}}) {
-        //transpose to SoA
-        AoS2SoA<{{nData}}, {% if timeInterleaved %}{{inputQ_varSize*nDof}}{% else %}{{inputQ_varSize}}{% endif %}>({{inputQ}}+{{inputQ_varSize}}*{{spaceTimeCoord}}, Qt_block);{% if timeInterleaved %} //time dimension is in between{% endif %}
-        
-        // Call PDE fluxes
-        // Expected solver PDE signature: void flux_vect(const double* const * const Q, double* const * const * const F, const int s);
+// Compute the fluxes
+for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSize}}) {
+  //transpose to SoA
+  AoS2SoA<{{nData}}, {% if timeInterleaved %}{{inputQ_varSize*nDof}}{% else %}{{inputQ_varSize}}{% endif %}>({{inputQ}}+{{inputQ_varSize}}*{{spaceTimeCoord}}, Qt_block);{% if timeInterleaved %} //time dimension is in between{% endif %}
+  
+  // Call PDE fluxes
+  // Expected solver PDE signature: void flux_vect(const double* const * const Q, double* const * const * const F, const int s);
 #ifdef USE_IPO
-        #pragma forceinline recursive
+  #pragma forceinline recursive
 #endif
-        solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
-        
-        //transpose back to AoS
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %}));
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{1*outputF_BlockSize}});
+  solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
+  
+  //transpose back to AoS
+  SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %}));
+  SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{1*outputF_BlockSize}});
 {% if nDim == 3 %}
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{2*outputF_BlockSize}});
+  SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{2*outputF_BlockSize}});
 {% endif %}        
-      }
+}
 {% if (nDof**nDim)%vectSize != 0 %}
-      // rest
-      {
-        AoS2SoA_rest<{{nVar}},{% if timeInterleaved %}{{inputQ_varSize*nDof}}{% else %}{{inputQ_varSize}}{% endif %}, {{rest_size}}>({{inputQ}}+{{inputQ_varSize}}*{{spaceTimeCoord_rest}}, Qt_block);{% if timeInterleaved %} //time dimension is in between{% endif %}
-        
-        // Call PDE fluxes
-        // Expected solver PDE signature: void flux_vect(const double* const * const Q, double* const * const * const F, const int s);
+// rest
+{
+  AoS2SoA_rest<{{nVar}},{% if timeInterleaved %}{{inputQ_varSize*nDof}}{% else %}{{inputQ_varSize}}{% endif %}, {{rest_size}}>({{inputQ}}+{{inputQ_varSize}}*{{spaceTimeCoord_rest}}, Qt_block);{% if timeInterleaved %} //time dimension is in between{% endif %}
+  
+  // Call PDE fluxes
+  // Expected solver PDE signature: void flux_vect(const double* const * const Q, double* const * const * const F, const int s);
 #ifdef USE_IPO
-        #pragma forceinline recursive
+  #pragma forceinline recursive
 #endif
-        solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
-        
-        //transpose back to AoS
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(Ft_x_block, {{outputF}}+{{nVarPad}}*({{rest_start}}{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %}));
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(Ft_y_block, {{outputF}}+{{nVarPad}}*({{rest_start}}{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{1*outputF_BlockSize}});
+  solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
+  
+  //transpose back to AoS
+  SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(Ft_x_block, {{outputF}}+{{nVarPad}}*({{rest_start}}{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %}));
+  SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(Ft_y_block, {{outputF}}+{{nVarPad}}*({{rest_start}}{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{1*outputF_BlockSize}});
 {% if nDim == 3 %}
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(Ft_z_block, {{outputF}}+{{nVarPad}}*({{rest_start}}{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{2*outputF_BlockSize}});
+  SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(Ft_z_block, {{outputF}}+{{nVarPad}}*({{rest_start}}{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{2*outputF_BlockSize}});
 {% endif %}
-      }
+}
 {% endif %}{# perform rest #}
 {% else %}{# useFluxVect #}
-      { // Compute the fluxes
-        double* F[{{nDim}}];
-        for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-          // Call PDE fluxes
-          F[0] = &{{outputF}}[({% if useTime %}{{time_var}}*{{nDof**nDim}}+{% endif %}xyz)*{{nVarPad}}];
-          F[1] = &{{outputF}}[({% if useTime %}{{time_var}}*{{nDof**nDim}}+{% endif %}xyz)*{{nVarPad}}+{{1*outputF_BlockSize}}];
+{ // Compute the fluxes
+  double* F[{{nDim}}];
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+    // Call PDE fluxes
+    F[0] = &{{outputF}}[({% if useTime %}{{time_var}}*{{nDof**nDim}}+{% endif %}xyz)*{{nVarPad}}];
+    F[1] = &{{outputF}}[({% if useTime %}{{time_var}}*{{nDof**nDim}}+{% endif %}xyz)*{{nVarPad}}+{{1*outputF_BlockSize}}];
 {% if nDim == 3 %}
-          F[2] = &{{outputF}}[({% if useTime %}{{time_var}}*{{nDof**nDim}}+{% endif %}xyz)*{{nVarPad}}+{{2*outputF_BlockSize}}];
+    F[2] = &{{outputF}}[({% if useTime %}{{time_var}}*{{nDof**nDim}}+{% endif %}xyz)*{{nVarPad}}+{{2*outputF_BlockSize}}];
 {% endif %}
 #ifdef USE_IPO
-          #pragma forceinline recursive
+    #pragma forceinline recursive
 #endif
-          solver.{{solverName}}::flux({{inputQ}}+{{spaceTimeCoord}}*{{inputQ_varSize}}, F);
-        }
-      }
+    solver.{{solverName}}::flux({{inputQ}}+{{spaceTimeCoord}}*{{inputQ_varSize}}, F);
+  }
+}
 {% endif %}{# useFluxVect#}
 {% endwith %}
