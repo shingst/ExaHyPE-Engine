@@ -128,64 +128,16 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       double* const lwh = gradQ+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nVarPad)
       std::memset(gradQ, 0, {{(nDim+2)*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
 {% endif %}
+
+      // K1
 {% if useFlux %}
       double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
-{% if useFluxVect %}
-      // K1
-      
-      // Compute the fluxes
-      for (int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}}) {
-        //transpose to SoA
-        AoS2SoA<{{nVar}},{{nData}}>(luh+{{nData}}*jkl, Qt_block);
-        
-        // Call PDE fluxes
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
-        //transpose back to AoS
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, lF_guess+{{nVarPad}}*jkl+{{0*(nDof**nDim)*nVarPad}}); // no time
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, lF_guess+{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}); // no time
-{% if nDim == 3 %}
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, lF_guess+{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}); // no time
-{% endif %}        
-      }
-{% if (nDof**nDim)%vectSize != 0 %}
-      // rest
-      {
-        AoS2SoA_rest<{{nVar}},{{nData}}>(luh+{{nData}}*jkl, Qt_block);
-        // Call PDE fluxes
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
-        
-        //transpose back to AoS
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_x_block, lF_guess+{{nVarPad}}*jkl+{{0*(nDof**nDim)*nVarPad}}); // no time
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_y_block, lF_guess+{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}); // no time
-{% if nDim == 3 %}
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_z_block, lF_guess+{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}); // no time
-{% endif %}
-      }
-{% endif %}{# perform rest #}
-{% else %}{# useFluxVect #}
-      // Compute the fluxes
-      for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
-        // Call PDE fluxes
-        const double* Q = &luh[{{nData}}*{{nDof}}*jkl];
-        double* F[{{nDim}}];
-        F[0] = &lF_guess[{{nVarPad}}*jkl];
-        F[1] = &lF_guess[{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}];
-{% if nDim == 3 %}
-        F[2] = &lF_guess[{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}];
-{% endif %}
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux(Q, F);
-      }
-{% endif %}{# useFluxVect#}
-
+{# ******************************************************
+   **** call to flux function over luh into lF_guess ****
+   ****************************************************** #}
+{% with inputQ='luh', inputQ_varSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
+{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% endwith %}
 
     // x direction
     for (int j = 0; j < {{nDof3D}}; j++) {
@@ -321,7 +273,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 
     for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
-// Fusedsource (source and ncp)
+      // Fusedsource (source and ncp)
       double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
       std::copy_n(&gradQ_guess[{{nVarPad}}*jkl]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
       std::copy_n(&gradQ[{{nVarPad}}*jkl+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
@@ -345,7 +297,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
 
 
-// K2
+    // K2
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
       for (int n = 0; n < {{nVar}}; n++) {
         lwh[n+{{nData}}*ijk] = luh[n+{{nData}}*ijk] - dt * K1[n+{{nVarPad}}*ijk];
@@ -358,60 +310,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     } 
     
 {% if useFlux %}
-{% if useFluxVect %}    
-    // Compute the fluxes
-    for (int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}}) {
-      //transpose to SoA
-      AoS2SoA<{{nVar}},{{nData}}>(lwh+{{nData}}*jkl, Qt_block);
-      
-      // Call PDE fluxes
-#ifdef USE_IPO
-      #pragma forceinline recursive
-#endif
-      solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
-      //transpose back to AoS
-      SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, lF_guess+{{nVarPad}}*jkl+{{0*(nDof**nDim)*nVarPad}}); // no time
-      SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, lF_guess+{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}); // no time
-{% if nDim == 3 %}
-      SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, lF_guess+{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}); // no time
-{% endif %}        
-    }
-{% if (nDof**nDim)%vectSize != 0 %}
-    // rest
-    {
-      AoS2SoA_rest<{{nVar}},{{nData}}>(lwh+{{nData}}*jkl, Qt_block);
-      // Call PDE fluxes
-#ifdef USE_IPO
-      #pragma forceinline recursive
-#endif
-      solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
-      
-      //transpose back to AoS
-      SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_x_block, lF_guess+{{nVarPad}}*jkl+{{0*(nDof**nDim)*nVarPad}}); // no time
-      SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_y_block, lF_guess+{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}); // no time
-{% if nDim == 3 %}
-      SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_z_block, lF_guess+{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}); // no time
-{% endif %}
-    }
-{% endif %}{# perform rest #}
-{% else %}{# useFluxVect #}
-    // Compute the fluxes
-    for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
-      // Call PDE fluxes
-      const double* Q = &lwh[{{nData}}*{{nDof}}*jkl];
-      double* F[{{nDim}}];
-      F[0] = &lF_guess[{{nVarPad}}*jkl];
-      F[1] = &lF_guess[{{nVarPad}}*jkl+{{1*(nDof**nDim)*nVarPad}}];
-{% if nDim == 3 %}
-      F[2] = &lF_guess[{{nVarPad}}*jkl+{{2*(nDof**nDim)*nVarPad}}];
-{% endif %}
-#ifdef USE_IPO
-      #pragma forceinline recursive
-#endif
-      solver.{{solverName}}::flux(Q, F);
-    }
-{% endif %}{# useFluxVect#}
-
+{# ******************************************************
+   **** call to flux function over lwh into lF_guess ****
+   ****************************************************** #}
+{% with inputQ='lwh', inputQ_varSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
+{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% endwith %}
 
     // x direction
     for (int j = 0; j < {{nDof3D}}; j++) {
@@ -594,60 +498,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (iter; iter < MaxIterations; iter++) {
     for (int i = 0; i < {{nDof}}; i++) {  // time DOF
 
-{% if useFlux %}  
-{% if useFluxVect %}
-      // Compute the fluxes
-      for (int jkl = 0; jkl < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; jkl+={{vectSize}}) {
-        //transpose to SoA
-        AoS2SoA<{{nVar}}, {{nVarPad*nDof}}>(lQi+{{nDataPad}}*(i+{{nDof}}*jkl), Qt_block); //time dimension is in between
-        
-        // Call PDE fluxes
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux_vect(Qt, Ft, {{vectSize}});
-        //transpose back to AoS
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_x_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{0*(nDof**nDim)*nDof*nVarPad}});
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}});
-{% if nDim == 3 %}
-        SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, lFi+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}});
-{% endif %}        
-      }
-{% if (nDof**nDim)%vectSize != 0 %}
-      // rest
-      {
-        AoS2SoA_rest<{{nVar}},{{nVarPad*nDof}}, {{(nDof**nDim)%vectSize}}>(lQi+{{nDataPad}}*(i+{{nDof}}*{{(nDof**nDim)-((nDof**nDim)%vectSize)}}), Qt_block); //time dimension is in between      
-        // Call PDE fluxes
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux_vect(Qt, Ft, {{(nDof**nDim)%vectSize}});
-        
-        //transpose back to AoS
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_x_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{0*(nDof**nDim)*nDof*nVarPad}});
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_y_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}});
-{% if nDim == 3 %}
-        SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{(nDof**nDim)%vectSize}}>(Ft_z_block, lFi+{{nVarPad}}*({{(nDof**nDim)-((nDof**nDim)%vectSize)}}+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}});
-{% endif %}
-      }
-{% endif %}{# perform rest #}
-{% else %}{# useFluxVect #}
-      // Compute the fluxes
-      for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
-        // Call PDE fluxes
-        const double* Q = &lQi[{{nDataPad}}*(i+{{nDof}}*jkl)];
-        double* F[{{nDim}}];
-        F[0] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)];
-        F[1] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}}];
-{% if nDim == 3 %}
-        F[2] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}}];
-{% endif %}
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux(Q, F);
-      }
-{% endif %}{# useFluxVect#}
+{% if useFlux %}
+{# *************************************************
+   **** call to flux function over lQi into lFi ****
+   ************************************************* #}
+{% with inputQ='lQi', inputQ_varSize=nDataPad, outputF='lFi',  timeInterleaved=True, time_var='i' %}
+{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% endwith %}
 {% endif %}{# useFlux #}
 
       // Compute the contribution of the initial condition uh to the right-hand side (rhs)

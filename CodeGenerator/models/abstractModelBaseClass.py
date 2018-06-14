@@ -30,7 +30,7 @@ import sys
 import os
 
 sys.path.append("../dependencies/jinja2")
-from jinja2 import Template
+import jinja2
 
 
 class AbstractModelBaseClass():
@@ -45,12 +45,13 @@ class AbstractModelBaseClass():
     
     
     # render a template to outputFilename using the given context (default = local context)
-    def render(self, template, outputFilename, context=None):
+    def render(self, templateName, outputFilename, context=None):
         # set default context to local context if none given
         if context == None:
             context = self.context
         
-        with open(os.path.join(os.path.dirname(__file__),'..','templates',template), 'r') as input:
-            template = Template(input.read(), trim_blocks=True)                
-            with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
-                output.write(template.render(context))
+        loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),'..','templates')))
+        env = jinja2.Environment(loader=loader, trim_blocks=True)
+        template = env.get_template(templateName)                
+        with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
+            output.write(template.render(context))
