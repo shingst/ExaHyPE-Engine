@@ -836,7 +836,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
       postProcessTimeStepInSharedMemoryEnvironment();
 
-      #if !defined(Parallel) || defined(PrintMemoryUsage)
+      #if !defined(Parallel)
       logInfo("runAsMaster(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
       #else
       if (tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
