@@ -1,27 +1,32 @@
 #!/bin/bash
-#
-# Use this script as a loose coupling of the ExaHyPE-Engine git
-# repository to the Peano svn repository.
-#
 
-# cd to the Peano basedir. Thus script can be executed from anywhere.
-cd $(dirname "$0")
+# Make sure the script can be called from anywhere.
+cd "$(dirname "$0")"
 
-SVN_URL="svn://svn.code.sf.net/p/peano/code/trunk/src"
+# Download page
+URL=http://csdemo.ddns.net/download/peano/
 
-# if you experience the svn protocol blocked or not working, try this.
-# Source: https://sourceforge.net/p/peano/code/HEAD/tree/
-SVN_ALT_URL="https://svn.code.sf.net/p/peano/code/trunk/src"
+# Regex to match snapshoot
+re="\"(Peano-.{7}\.tar\.gz)\""
 
-if test -e .svn
+# Get HTML
+content=$(curl -L $URL)
+# Find snapshoot name
+if [[ $content =~ $re ]]; 
 then
-	echo "Updating peano"
-	exec svn update
+	FILE_NAME=${BASH_REMATCH[1]} 
+	echo "Snapshoot found"
+	DOWNLOAD_URL=$URL''$FILE_NAME
+	echo "Download snapshoot"
+	wget $DOWNLOAD_URL
+	echo "Remove existing installation"
+	rm -rf doxygen-html peano tarch toolboxes
+	echo "Extract snapshoot"
+	tar -xf $FILE_NAME src/
+	mv src/* .
+	echo "Cleanup"
+	rm -rf *tar.gz
+	rm -rf src
 else
-	echo "Checking out peano from $SVN_URL"
-	if ! svn checkout $SVN_URL .
-	then
-		echo "URL not working, trying the alternative one $SVN_ALT_URL"
-		exec svn checkout $SVN_ALT_URL .
-	fi
+	echo "Couldn't find the source, check $URL"
 fi

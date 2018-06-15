@@ -82,6 +82,8 @@ Peano/.gitignore
 Peano/peano.doxygen-configuration
 Peano/src.doxys
 Peano/sharedmemoryoracles.tar.gz
+Peano/doxygen-html/
+Peano/toolboxes/
 # the Dilbert patch for peano, https://github.com/svenk/dilbert
 Peano/dilbert
 
