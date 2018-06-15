@@ -519,7 +519,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // Matrix-Vector Products
     for (int z = 0; z < {{nDof}}; z++) {
       #pragma simd
-      for (int n = 0; n < {{nVarPad}}; n++) {
+      for (int n = 0; n < {{nDataPad}}; n++) {
         // Fortran: lQhbnd(:,j,i,5) = lQhi(:,j,i,:) * FLCoeff(:)
         lQhbnd[n+{{nDataPad}}*xy+{{4*nDataPad*nDof*nDof3D}}] +=
             lQhi[n+{{nDataPad}}*(xy+{{nDof*nDof}}*z)] * FLCoeff[z];
