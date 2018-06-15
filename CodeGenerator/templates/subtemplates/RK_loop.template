@@ -10,33 +10,34 @@
    **** call to flux function over {{inputLuh}} into lF_guess ****
    ****************************************************** #}
 {% with inputQ=inputLuh, inputQ_varSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
-{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
-{% endwith %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %} 
 
   // x direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradF_x', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
-{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
+{% with gemmKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
     }
   }
+  
   // y direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradF_y', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
-{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}        
+{% with gemmKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
     }
   }
-       
+  
 {% if nDim==3 %}
   // z direction
   for (int j = 0; j < {{nDof}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradF_z', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
-{% filter indent(width=8, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
+{% with gemmKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
     }
   }
 {% endif %}{# nDim == 3 #}
@@ -48,42 +49,18 @@
   // x direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm and False %}{# TODO JMG add libxsmm gemm #}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        //{{gemm_gradQ_x}}(&lQi[{{nDataPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            for (int n = 0; n < {{nVar}}; n++) {
-              gradQ_guess[n+{{nVarPad}}*(l+{{nDof}}*(k+{{nDof}}*j))+{{0*nVarPad*(nDof**nDim)}}] += inverseDx[0] *
-                  {{inputLuh}}[n+{{nData}}*(m+{{nDof}}*(k+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
     }
   }
   
   // y direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm and False %}{# TODO JMG add libxsmm gemm #}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        //{{gemm_gradQ_x}}(&lQi[{{nDataPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            for (int n = 0; n < {{nVar}}; n++) {
-              gradQ_guess[n+{{nVarPad}}*(k+{{nDof}}*(l+{{nDof}}*j))+{{1*nVarPad*(nDof**nDim)}}] += inverseDx[0] *
-                  {{inputLuh}}[n+{{nData}}*(k+{{nDof}}*(m+{{nDof}}*j))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
     }
   }
   
@@ -91,25 +68,13 @@
   // z direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% if useLibxsmm and False %}{# TODO JMG add libxsmm gemm #}
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        //{{gemm_gradQ_x}}(&lQi[{{nDataPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
-{% else %}
-        for (int l = 0; l < {{nDof}}; l++) {
-          for (int m = 0; m < {{nDof}}; m++) {
-            for (int n = 0; n < {{nVar}}; n++) {
-              gradQ_guess[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*l))+{{2*nVarPad*(nDof**nDim)}}] += inverseDx[0] *
-                  {{inputLuh}}[n+{{nData}}*(k+{{nDof}}*(j+{{nDof}}*m))] * dudx[l+{{nDofPad}}*m];
-            }
-          }
-        }
-{% endif %}
+{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
     }
   }
 {% endif %}
-
+  
   for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
     // Fusedsource (source and ncp)
     double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
@@ -118,9 +83,9 @@
 {% if nDim==3 %}
     std::copy_n(&gradQ[{{nVarPad}}*jkl+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
 {% endif %}
-#ifdef USE_IPO
-    #pragma forceinline recursive
-#endif
+    #ifdef USE_IPO
+        #pragma forceinline recursive
+    #endif
     solver.{{solverName}}::fusedSource(&{{inputLuh}}[{{nData}}*jkl], gradQNoPad, lSi);
     
     #pragma simd

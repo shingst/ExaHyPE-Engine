@@ -418,62 +418,8 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 "nopf",                                             \
                                                 # type
                                                 "gemm")
-                self.context["gemmList"]["gradF_x"] = MatmulConfig(    
-                                            # M
-                                            self.context["nVar"],    \
-                                            # N
-                                            self.context["nDof"],    \
-                                            # K
-                                            self.context["nDof"],    \
-                                            # LDA
-                                            self.context["nVarPad"], \
-                                            # LDB
-                                            self.context["nDofPad"], \
-                                            # LDC
-                                            self.context["nVarPad"], \
-                                            # alpha
-                                            1,                         \
-                                            # beta
-                                            1,                         \
-                                            # alignment A
-                                            1,                         \
-                                            # alignment C
-                                            1,                         \
-                                            # name
-                                            "gradF_x",                   \
-                                            # prefetching
-                                            "nopf",                    \
-                                            # type
-                                            "gemm")
-                self.context["gemmList"]["gradF_y"] = MatmulConfig(    
-                                            # M
-                                            self.context["nVar"],    \
-                                            # N
-                                            self.context["nDof"],    \
-                                            # K
-                                            self.context["nDof"],    \
-                                            # LDA
-                                            self.context["nVarPad"] * self.context["nDof"], \
-                                            # LDB
-                                            self.context["nDofPad"], \
-                                            # LDC
-                                            self.context["nVarPad"] * self.context["nDof"], \
-                                            # alpha
-                                            1,                         \
-                                            # beta
-                                            1,                         \
-                                            # alignment A
-                                            1,                         \
-                                            # alignment C
-                                            1,                         \
-                                            # name
-                                            "gradF_y",                   \
-                                            # prefetching
-                                            "nopf",                    \
-                                            # type
-                                            "gemm")
-                if(self.context["nDim"]>=3):
-                    self.context["gemmList"]["gradF_z"] = MatmulConfig(    
+                if(self.context["useCERKGuess"]):
+                    self.context["gemmList"]["gradF_x_RKLoop"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -481,11 +427,11 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # K
                                                 self.context["nDof"],    \
                                                 # LDA
-                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                self.context["nVarPad"], \
                                                 # LDB
                                                 self.context["nDofPad"], \
                                                 # LDC
-                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                self.context["nVarPad"], \
                                                 # alpha
                                                 1,                         \
                                                 # beta
@@ -495,11 +441,66 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # alignment C
                                                 1,                         \
                                                 # name
-                                                "gradF_z",                   \
+                                                "gradF_x_RKLoop",                   \
                                                 # prefetching
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
+                    self.context["gemmList"]["gradF_y_RKLoop"] = MatmulConfig(    
+                                                # M
+                                                self.context["nVar"],    \
+                                                # N
+                                                self.context["nDof"],    \
+                                                # K
+                                                self.context["nDof"],    \
+                                                # LDA
+                                                self.context["nVarPad"] * self.context["nDof"], \
+                                                # LDB
+                                                self.context["nDofPad"], \
+                                                # LDC
+                                                self.context["nVarPad"] * self.context["nDof"], \
+                                                # alpha
+                                                1,                         \
+                                                # beta
+                                                1,                         \
+                                                # alignment A
+                                                1,                         \
+                                                # alignment C
+                                                1,                         \
+                                                # name
+                                                "gradF_y_RKLoop",                   \
+                                                # prefetching
+                                                "nopf",                    \
+                                                # type
+                                                "gemm")
+                    if(self.context["nDim"]>=3):
+                        self.context["gemmList"]["gradF_z_RKLoop"] = MatmulConfig(    
+                                                    # M
+                                                    self.context["nVar"],    \
+                                                    # N
+                                                    self.context["nDof"],    \
+                                                    # K
+                                                    self.context["nDof"],    \
+                                                    # LDA
+                                                    self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                    # LDB
+                                                    self.context["nDofPad"], \
+                                                    # LDC
+                                                    self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                    # alpha
+                                                    1,                         \
+                                                    # beta
+                                                    1,                         \
+                                                    # alignment A
+                                                    1,                         \
+                                                    # alignment C
+                                                    1,                         \
+                                                    # name
+                                                    "gradF_z_RKLoop",                   \
+                                                    # prefetching
+                                                    "nopf",                    \
+                                                    # type
+                                                    "gemm")
             if(self.context["useNCP"]):
                 self.context["gemmList"]["gradQ_x"] = MatmulConfig(    
                                             # M
@@ -583,6 +584,89 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
+                if(self.context["useCERKGuess"]):
+                    self.context["gemmList"]["gradQ_x_RKLoop"] = MatmulConfig(    
+                                                # M
+                                                self.context["nVar"],    \
+                                                # N
+                                                self.context["nDof"],    \
+                                                # K
+                                                self.context["nDof"],    \
+                                                # LDA
+                                                self.context["nData"], \
+                                                # LDB
+                                                self.context["nDofPad"], \
+                                                # LDC
+                                                self.context["nVarPad"], \
+                                                # alpha
+                                                1,                         \
+                                                # beta
+                                                1,                         \
+                                                # alignment A
+                                                0,                         \
+                                                # alignment C
+                                                1,                         \
+                                                # name
+                                                "gradQ_x_RKLoop",                   \
+                                                # prefetching
+                                                "nopf",                    \
+                                                # type
+                                                "gemm")
+                    self.context["gemmList"]["gradQ_y_RKLoop"] = MatmulConfig(    
+                                                # M
+                                                self.context["nVar"],    \
+                                                # N
+                                                self.context["nDof"],    \
+                                                # K
+                                                self.context["nDof"],    \
+                                                # LDA
+                                                self.context["nData"] * self.context["nDof"], \
+                                                # LDB
+                                                self.context["nDofPad"], \
+                                                # LDC
+                                                self.context["nVarPad"] * self.context["nDof"], \
+                                                # alpha
+                                                1,                         \
+                                                # beta
+                                                1,                         \
+                                                # alignment A
+                                                0,                         \
+                                                # alignment C
+                                                1,                         \
+                                                # name
+                                                "gradQ_y_RKLoop",                   \
+                                                # prefetching
+                                                "nopf",                    \
+                                                # type
+                                                "gemm")
+                    if(self.context["nDim"]>=3):
+                        self.context["gemmList"]["gradQ_z_RKLoop"] = MatmulConfig(    
+                                                    # M
+                                                    self.context["nVar"],    \
+                                                    # N
+                                                    self.context["nDof"],    \
+                                                    # K
+                                                    self.context["nDof"],    \
+                                                    # LDA
+                                                    self.context["nData"] * (self.context["nDof"] ** 2), \
+                                                    # LDB
+                                                    self.context["nDofPad"], \
+                                                    # LDC
+                                                    self.context["nVarPad"] * (self.context["nDof"] ** 2), \
+                                                    # alpha
+                                                    1,                         \
+                                                    # beta
+                                                    1,                         \
+                                                    # alignment A
+                                                    0,                         \
+                                                    # alignment C
+                                                    1,                         \
+                                                    # name
+                                                    "gradQ_z_RKLoop",                   \
+                                                    # prefetching
+                                                    "nopf",                    \
+                                                    # type
+                                                    "gemm")
             self.context["gemmList"]["lqi"] = MatmulConfig(    
                                         # M
                                         self.context["nVar"],                             \
