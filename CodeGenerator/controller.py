@@ -142,6 +142,7 @@ class Controller:
         self.validateConfig(simdWidth.keys())
         self.config["vectSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
+        self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
 
         
     def validateConfig(self, validArchitectures):
@@ -247,11 +248,6 @@ class Controller:
         runtimes["fusedSpaceTimePredictorVolumeIntegral"] = time.perf_counter() - start
         
         start = time.perf_counter()
-        gemmsCPP = gemmsCPPModel.GemmsCPPModel(self.baseContext)
-        gemmsCPP.generateCode()
-        runtimes["gemmsCPP"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
         kernelsHeader = kernelsHeaderModel.KernelsHeaderModel(self.baseContext)
         kernelsHeader.generateCode()
         runtimes["kernelsHeader"] = time.perf_counter() - start
@@ -291,6 +287,14 @@ class Controller:
         surfaceIntegral.generateCode()
         runtimes["surfaceIntegral"] = time.perf_counter() - start
         
+        # must be run only after all gemm have been generated
+        start = time.perf_counter()
+        gemmsContext = copy.copy(self.baseContext)
+        gemmsContext["gemmList"] = self.gemmList
+        gemmsCPP = gemmsCPPModel.GemmsCPPModel(gemmsContext)
+        gemmsCPP.generateCode()
+        runtimes["gemmsCPP"] = time.perf_counter() - start
+        
         if self.config['runtimeDebug']:
             for key, value in runtimes.items():
                 print(key+": "+str(value))
@@ -298,6 +302,8 @@ class Controller:
 
     def generateGemms(self, outputFileName, matmulConfigList):
         for matmul in matmulConfigList:
+            # add the gemm name to the list of generated gemm
+            self.gemmList.append(matmul.baseroutinename)
             # for plain assembly code (rather than inline assembly) choose dense_asm
             commandLineArguments = " " + "dense"  + \
                                  " " + os.path.join(self.config["pathToOutputDirectory"], outputFileName) + \

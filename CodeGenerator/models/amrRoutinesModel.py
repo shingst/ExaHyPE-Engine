@@ -37,17 +37,18 @@ class AMRRoutinesModel(AbstractModelBaseClass):
         self.render("amrRoutines_cpp.template", "amrRoutines.cpp")
         # generates gemms
         if(self.context["useLibxsmm"]):
-            self.controller.generateGemms("asm_amrRoutines.c", self.buildGemmsConfig())
+            self.controller.generateGemms("asm_amrRoutines.c", self.context["gemmList"].values())
     
     
     def buildGemmsConfig(self):
         # define a sequence of matmul configs
-        matmulList = []
+        self.context["gemmList"] = {}
 
         #-----------------------------
         # implementation file
         #-----------------------------
-        face_Q = MatmulConfig(  # M
+        self.context["gemmList"]["face_Q"] = MatmulConfig(  
+                                    # M
                                     self.context["nDataPad"],      \
                                     # N
                                     self.context["nDof"],       \
@@ -73,8 +74,8 @@ class AMRRoutinesModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        matmulList.append(face_Q)
-        face_F = MatmulConfig(  # M
+        self.context["gemmList"]["face_F"] = MatmulConfig(  
+                                    # M
                                     self.context["nVarPad"],       \
                                     # N
                                     self.context["nDof"],       \
@@ -100,8 +101,8 @@ class AMRRoutinesModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        matmulList.append(face_F)
-        volume = MatmulConfig(  # M
+        self.context["gemmList"]["volume"] = MatmulConfig(  
+                                    # M
                                     self.context["nData"],       \
                                     # N
                                     self.context["nDof"],       \
@@ -127,6 +128,3 @@ class AMRRoutinesModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        matmulList.append(volume)
-
-        return matmulList
