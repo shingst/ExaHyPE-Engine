@@ -1819,11 +1819,6 @@ public:
       const int element) override;
 
   /**
-   * Body of the restrict function.
-   */
-  void restriction(const CellDescription& fineGridCellDescription);
-
-  /**
    * Restrict the Troubled limiter status of a cell
    * up to the parent if the parent exists.
    *

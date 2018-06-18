@@ -2292,8 +2292,10 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
 void exahype::solvers::ADERDGSolver::updateSolution(
     CellDescription& cellDescription,
     const bool backupPreviousSolution) {
-  if (cellDescription.getType()==CellDescription::Type::Cell &&
-      cellDescription.getRefinementEvent()==CellDescription::None) {
+  if (
+    cellDescription.getType()==CellDescription::Type::Cell &&
+    cellDescription.getRefinementEvent()==CellDescription::None
+  ) {
     double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     if (backupPreviousSolution) {
       double* solution  = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
@@ -2317,7 +2319,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(fluctuations[i]),cellDescription.toString(),"updateSolution",i);
     } 
     #endif
-    surfaceIntegral(update,fluctuations,cellDescription.getSize());
 
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
@@ -2432,7 +2433,8 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       const int numberOfFaceDof = getBndFaceSize();
       const int numberOfFluxDof = getBndFluxSize();
 
-      // Q
+      // extrapolated predictor and flux interpolation
+      // extrapolated predictor
       assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()),cellDescription.toString());
       double* lQhbndFine = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
           (faceIndex * numberOfFaceDof);
@@ -2447,7 +2449,9 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,
                                lFhbndCoarse, levelCoarse, levelFine,
                                exahype::amr::getSubfaceIndex(subcellPosition.subcellIndex,d));
-
+      // time step data TODO(LTS), still need veto
+      cellDescription.setPredictorTimeStamp(cellDescriptionParent.getPredictorTimeStamp());
+      cellDescription.setPredictorTimeStepSize(cellDescriptionParent.getPredictorTimeStepSize());
 
       prolongateObservablesMinAndMax(cellDescription,cellDescriptionParent,faceIndex);
     }
@@ -2510,48 +2514,30 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
 void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it still make sense?
     const int fineGridCellDescriptionsIndex,
     const int fineGridElement) {
-  CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
+  CellDescription& cellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
 
-  if (
-      fineGridCellDescription.getType()==CellDescription::Type::Descendant &&
-      (fineGridCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication ||
-      fineGridCellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication)
-  ) {
-    restriction(fineGridCellDescription);
-  }
-
-  // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
-}
-
-void exahype::solvers::ADERDGSolver::restriction(
-    const CellDescription& fineGridCellDescription) {
   const int parentElement = tryGetElement(
-      fineGridCellDescription.getParentIndex(),fineGridCellDescription.getSolverNumber());
-
-  if (parentElement!=exahype::solvers::Solver::NotFound) {
+      cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+  if ( parentElement!=exahype::solvers::Solver::NotFound ) {
     // restrict some flags to direct parent
-    restrictToNextParent(fineGridCellDescription,parentElement);
+    restrictToNextParent(cellDescription,parentElement);
 
-    if ( fineGridCellDescription.getType()==CellDescription::Type::Descendant ) {
+    if (
+        cellDescription.getType()==CellDescription::Type::Descendant &&
+        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+    ) {
       exahype::solvers::Solver::SubcellPosition subcellPosition =
-              exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(
-                  fineGridCellDescription);
+          exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(cellDescription);
+      assertion(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
 
-      // check if we are on the boundary of a parent cell which needs
-      // to communicate face data
-      if (
-          subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-          exahype::amr::onBoundaryOfParent(
-              subcellPosition.subcellIndex,subcellPosition.levelDifference)
-      ) {
-        // restrict actual face DoF
-        restrictToTopMostParent(fineGridCellDescription,
-            subcellPosition.parentCellDescriptionsIndex,
-            subcellPosition.parentElement,
-            subcellPosition.subcellIndex);
-      }
+      // restrict update and minMax
+      restrictToTopMostParent(cellDescription,
+          subcellPosition.parentCellDescriptionsIndex,
+          subcellPosition.parentElement,
+          subcellPosition.subcellIndex);
     }
   }
+  // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
 }
 
 void exahype::solvers::ADERDGSolver::restrictToNextParent(
@@ -2850,16 +2836,20 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     CellDescription& pRight,
     const int faceIndexLeft,
     const int faceIndexRight) {
-  if (
-      pLeft.getType()==CellDescription::Type::Cell  ||
-      pRight.getType()==CellDescription::Type::Cell
-  ) {
+  const bool cellNextToCellOrDescendant =
+      (pLeft.getType()==CellDescription::Type::Cell || pLeft.getType()==CellDescription::Type::Descendant)   &&
+      (pRight.getType()==CellDescription::Type::Cell || pRight.getType()==CellDescription::Type::Descendant) &&
+      (pLeft.getType()!=CellDescription::Type::Descendant || pRight.getType()!=CellDescription::Type::Descendant));
+  //  const bool cellNextToAncestor =
+  //      (pLeft.getType()==CellDescription::Type::Cell || pRight.getType()==CellDescription::Type::Cell) &&
+  //      (pLeft.getType()==CellDescription::Type::Ancestor || pRight.getType()==CellDescription::Type::Ancestor);
+  // TODO Riemann merge performed flag will be set in Vertex routine. Children have to veto based on
+  // time step size and time stamp
+  if ( cellNextToCellOrDescendant ) {
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pRight.getExtrapolatedPredictor()),pRight.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pRight.getFluctuation()),pRight.toString());
-    assertion1(holdsFaceData(pLeft),pLeft.toString());
-    assertion1(holdsFaceData(pRight),pRight.toString());
     assertion1(pLeft.getRefinementEvent()==CellDescription::None,pLeft.toString());
     assertion1(pRight.getRefinementEvent()==CellDescription::None,pRight.toString());
     assertionEquals4(pLeft.getNeighbourMergePerformed(faceIndexLeft),pRight.getNeighbourMergePerformed(faceIndexRight),faceIndexLeft,faceIndexRight,pLeft.toString(),pRight.toString());
@@ -4287,6 +4277,8 @@ void exahype::solvers::ADERDGSolver::sendDataToWorker(
     exahype::solvers::Solver::SubcellPosition subcellPosition =
         exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,false>(cellDescription);
     prolongateFaceDataToDescendant(cellDescription,subcellPosition);
+
+    // TODO(LTS): Send time step data as well
 
     // No inverted message order since we do synchronous data exchange.
     // Order: extraplolatedPredictor,fluctuations,observablesMin,observablesMax
