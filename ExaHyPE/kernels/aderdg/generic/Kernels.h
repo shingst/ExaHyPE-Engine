@@ -98,11 +98,18 @@ void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
 // TODO(Dominic): Replace the surface integral with this one
-template <int numberOfVariables, int basisSize>
+/*template <int numberOfVariables, int basisSize>
 void faceIntegralNonlinear(
     double *lduh, const double *const lFhbnd,
     const int direction, const int orientation,
+    const tarch::la::Vector<DIMENSIONS, double> &dx);*/
+
+template <int numberOfVariables, int basisSize>
+void faceIntegralLinear(
+    double *lduh, const double *const lFhbnd,
+    const int direction, const int orientation,
     const tarch::la::Vector<DIMENSIONS, double> &dx);
+
 
 // todo 10/02/16: Dominic
 // Keep only one surfaceIntegral.
@@ -334,9 +341,9 @@ template <int numberOfVariables, int basisSize>
 void surfaceIntegralNonlinear(double* lduh, const double* const lFbnd,
                               const tarch::la::Vector<DIMENSIONS, double>& dx);
 
-template <int numberOfVariables, int basisSize>
-void surfaceIntegralLinear(double* lduh, const double* const lFbnd,
-                           const tarch::la::Vector<DIMENSIONS, double>& dx);
+/* template <int numberOfVariables, int basisSize> */
+/* void surfaceIntegralLinear(double* lduh, const double* const lFbnd, */
+/*                            const tarch::la::Vector<DIMENSIONS, double>& dx); */
 
 /*void surfaceIntegral2(
     double* lduh,
