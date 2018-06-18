@@ -23,46 +23,41 @@ exahype-project  Elastic
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/Linear/ElasticWave3D
-  architecture const      = noarch
-  log-file                = mylogfile.log
+  architecture const      = hsw
 
   computational-domain
     dimension const          = 3
-//    width                    = 58.0, 58.0, 58.0
-//    offset                   = -26.0, 0.0, -26.0
-    width                    = 4.0, 4.0, 4.0
-    offset                   = -0.5, -0.5, -0.5
-
-    end-time                 = 10.0
+//    width                  =  58.0, 58.0,  58.0
+//    offset                 = -26.0,  0.0, -26.0
+    width                    =  24.0, 24.0,  24.0
+    offset                   = -12.0,  0.0, -12.0
+    end-time                 =  10.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:1}	
-    cores                    = 1
+    configure                = {background-tasks:14,manual-pinning}	
+    cores                    = 14
     properties-file          = sharedmemory.properties
   end shared-memory
  
-
-//   distributed-memory
-//     identifier               = static_load_balancing
-//     configure                = {greedy-naive,FCFS}
-// //    configure                = {hotspot,fair,ranks-per-node:4}
-//     buffer-size              = 64
-//     timeout                  = 60
-//   end distributed-memory
+  distributed-memory	
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:2}
+    buffer-size              = 1600
+    timeout                  = 6000
+  end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
-    fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = off
-    spawn-amr-background-threads         = off
-    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    disable-vertex-exchange-in-time-steps = on
-    time-step-batch-factor           = 0.0
-    disable-metadata-exchange-in-batched-time-steps = off
-    double-compression = 0.0
-    spawn-double-compression-as-background-thread = off
+    fuse-algorithmic-steps                          = on
+    fuse-algorithmic-steps-factor                   = 0.99
+    spawn-predictor-as-background-thread            = on
+    spawn-amr-background-threads                    = on
+    disable-vertex-exchange-in-time-steps           = on
+    time-step-batch-factor                          = 1.0
+    disable-metadata-exchange-in-batched-time-steps = on
+    double-compression                              = 0.0
+    spawn-double-compression-as-background-thread   = on
   end global-optimisation
 
   solver ADER-DG MyElasticWaveSolver
@@ -70,19 +65,19 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1
     order const        = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 1.0
-    maximum-mesh-depth = 1
+    maximum-mesh-size  = 3.0
+    maximum-mesh-depth = 3
     time-stepping      = global
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,pointsources:1
-    optimisation const = generic,patchwiseadjust
+    optimisation const = generic,patchwiseadjust,usestack
     language const     = C
 
-    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
+    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12
       time            = 0.0
       repeat          = 0.05
-      output          = ./conserved
+      output          = ./ExaHyPE-output/cuboid_conserved
     end plot
 
     /* Do not need the time series for a point in the moment*/
@@ -91,8 +86,8 @@ exahype-project  Elastic
       time            = 0.0
       repeat          = 0.005
       output          = ./seismogram
-//      select          = x:3.919,y:0.0,z:3.919
-      select          = x:3.0,y:0.0,z:3.0
+      select          = x:3.919,y:0.0,z:3.919
+//      select          = x:3.0,y:0.0,z:3.0
     end plot
     
   end solver
