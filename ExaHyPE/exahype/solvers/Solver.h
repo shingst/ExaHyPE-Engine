@@ -1710,7 +1710,7 @@ class exahype::solvers::Solver {
    * \note Has no const modifier yet since kernels are not
    * const yet.
    */
-  virtual void restrictSubfaceIntegralUpdates(
+  virtual void restriction(
       const int cellDescriptionsIndex,
       const int element) = 0;
 

@@ -1174,7 +1174,7 @@ public:
       const int cellDescriptionsIndex,
       const int element) final override;
 
-  void restrictSubfaceIntegralUpdates(
+  void restriction(
         const int cellDescriptionsIndex,
         const int element) final override;
 

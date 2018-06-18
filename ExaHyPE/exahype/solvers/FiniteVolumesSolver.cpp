@@ -832,7 +832,7 @@ void exahype::solvers::FiniteVolumesSolver::prolongateFaceData(
   assertionMsg(false,"Please implement!");
 }
 
-void exahype::solvers::FiniteVolumesSolver::restrictSubfaceIntegralUpdates(
+void exahype::solvers::FiniteVolumesSolver::restriction(
       const int cellDescriptionsIndex,
       const int element) {
   // do nothing

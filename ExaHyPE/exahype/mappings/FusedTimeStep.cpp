@@ -241,7 +241,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
 
         if ( sendOutRiemannDataInThisIteration() ) {
           // this operates only on virtual helper cells (pull from below)
-          solver->prolongateAndPrepareRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+          solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
     }

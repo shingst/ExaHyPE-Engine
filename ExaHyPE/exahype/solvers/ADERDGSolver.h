@@ -1814,7 +1814,7 @@ public:
    * parent and restrict data to the
    * top most parent.
    */
-  void restrictSubfaceIntegralUpdates(
+  void restriction(
       const int cellDescriptionsIndex,
       const int element) override;
 

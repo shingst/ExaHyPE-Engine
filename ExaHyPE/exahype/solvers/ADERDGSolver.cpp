@@ -2507,7 +2507,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
           cellDescription.toString());
 }
 
-void exahype::solvers::ADERDGSolver::restrictSubfaceIntegralUpdates( // TODO(Dominic): Does it still make sense?
+void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it still make sense?
     const int fineGridCellDescriptionsIndex,
     const int fineGridElement) {
   CellDescription& fineGridCellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
@@ -2519,6 +2519,8 @@ void exahype::solvers::ADERDGSolver::restrictSubfaceIntegralUpdates( // TODO(Dom
   ) {
     restriction(fineGridCellDescription);
   }
+
+  // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
 }
 
 void exahype::solvers::ADERDGSolver::restriction(
@@ -2530,22 +2532,24 @@ void exahype::solvers::ADERDGSolver::restriction(
     // restrict some flags to direct parent
     restrictToNextParent(fineGridCellDescription,parentElement);
 
-    exahype::solvers::Solver::SubcellPosition subcellPosition =
-            exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(
-                fineGridCellDescription);
+    if ( fineGridCellDescription.getType()==CellDescription::Type::Descendant ) {
+      exahype::solvers::Solver::SubcellPosition subcellPosition =
+              exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(
+                  fineGridCellDescription);
 
-    // check if we are on the boundary of a parent cell which needs
-    // to communicate face data
-    if (
-        subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-        exahype::amr::onBoundaryOfParent(
-            subcellPosition.subcellIndex,subcellPosition.levelDifference)
-    ) {
-      // restrict actual face DoF
-      restrictToTopMostParent(fineGridCellDescription,
-          subcellPosition.parentCellDescriptionsIndex,
-          subcellPosition.parentElement,
-          subcellPosition.subcellIndex);
+      // check if we are on the boundary of a parent cell which needs
+      // to communicate face data
+      if (
+          subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+          exahype::amr::onBoundaryOfParent(
+              subcellPosition.subcellIndex,subcellPosition.levelDifference)
+      ) {
+        // restrict actual face DoF
+        restrictToTopMostParent(fineGridCellDescription,
+            subcellPosition.parentCellDescriptionsIndex,
+            subcellPosition.parentElement,
+            subcellPosition.subcellIndex);
+      }
     }
   }
 }
@@ -2585,7 +2589,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
              parentCellDescription.toString());
 
   // TODO(Dominic): There will only be restrictions in Descendant cells
-  std::vector<double>& updateFine = DataHeap::getInstance().getData(cellDescription.getUpdate());
+  std::vector<double>& updateFine   = DataHeap::getInstance().getData(cellDescription.getUpdate());
   std::vector<double>& updateCoarse = DataHeap::getInstance().getData(cellDescription.getUpdate());
 
   tarch::multicore::Lock lock(RestrictionSemaphore);
@@ -2612,9 +2616,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
                " level="<<parentCellDescription.getLevel());
       // TODO(Dominic): Consider to have a separate lock per face direction or to move lock inside
       // of kernels
-      tarch::multicore::Lock lock(RestrictionSemaphore);
       restrictObservablesMinAndMax(parentCellDescription,cellDescription,faceIndex);
-      lock.free();
     }
   }
 }
@@ -2636,10 +2638,12 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
     double* maxCoarse = DataHeap::getInstance().getData(parentCellDescription.getSolutionMax()).data() +
         (faceIndex * numberOfObservables);
 
+    tarch::multicore::Lock lock(RestrictionSemaphore);
     for (int i=0; i<numberOfObservables; i++) {
       *(minCoarse+i) = std::min( *(minFine+i), *(minCoarse+i) );
       *(maxCoarse+i) = std::max( *(maxFine+i), *(maxCoarse+i) );
     }
+    lock.free();
   }
 }
 

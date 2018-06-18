@@ -701,7 +701,7 @@ public:
       const int cellDescriptionsIndex,
       const int element) override;
 
-  void restrictSubfaceIntegralUpdates(
+  void restriction(
         const int cellDescriptionsIndex,
         const int element) override;
 

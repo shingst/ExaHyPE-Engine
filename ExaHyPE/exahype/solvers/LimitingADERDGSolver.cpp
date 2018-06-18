@@ -1439,10 +1439,10 @@ void exahype::solvers::LimitingADERDGSolver::prolongateFaceData(
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::restrictSubfaceIntegralUpdates(
+void exahype::solvers::LimitingADERDGSolver::restriction(
         const int cellDescriptionsIndex,
         const int element) {
-  _solver->restrictSubfaceIntegralUpdates(cellDescriptionsIndex,element);
+  _solver->restriction(cellDescriptionsIndex,element);
 }
 
 
