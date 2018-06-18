@@ -77,11 +77,11 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  // background threads
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-      exahype::solvers::Solver::NumberOfSkeletonJobs,"skeleton-jobs");
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-      exahype::solvers::Solver::NumberOfEnclaveJobs,"enclave-jobs");
+  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+    // background threads
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+  }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -95,8 +95,6 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }

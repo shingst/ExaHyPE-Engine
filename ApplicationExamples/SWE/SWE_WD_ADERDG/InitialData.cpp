@@ -6,7 +6,8 @@
 
 using namespace std;
 
-const double grav=9.81;
+extern double grav_DG;
+extern int scenario_DG;
 ///// 2D /////
 
 #ifdef Dim2
@@ -151,7 +152,7 @@ void SWE::RunUpLinear(const double* const x, double* Q) {
    vars.b()  = (x[0]>xr) ? 0 : (-d/xr)*x[0] +d;
    vars.h()  = (x[0]>xr) ? d : (d/xr)*x[0]; 
    vars.h()  += as*(1.0/pow(cosh(sqrt(3.0*as/4.0)*(x[0]-xs)),2));
-   vars.hu() = -vars.h()* as*(1.0/pow(cosh(sqrt(3*as/4)*(x[0]-xs)),2))*sqrt(grav/d);
+   vars.hu() = -vars.h()* as*(1.0/pow(cosh(sqrt(3*as/4)*(x[0]-xs)),2))*sqrt(grav_DG/d);
    vars.hv() = 0.0;
 
 }
@@ -220,9 +221,9 @@ void SWE::RunUpShelf(const double* const x, double* Q) {
    }
 
    vars.h()  += aw*(1.0/pow(cosh(x[0]-xw),2));
-   vars.hu() +=-vars.h()*aw*(1.0/pow(cosh(x[0]-xw),2))*sqrt(grav/d2);
-   //vars.hu() = -vars.h()* aw*(1.0/pow(cosh(sqrt(x[0]-xw),2))*sqrt(grav/d);
-   //vars.hu() = -vars.h()* sqrt(grav*vars.h());
+   vars.hu() +=-vars.h()*aw*(1.0/pow(cosh(x[0]-xw),2))*sqrt(grav_DG/d2);
+   //vars.hu() = -vars.h()* aw*(1.0/pow(cosh(sqrt(x[0]-xw),2))*sqrt(grav_DG/d);
+   //vars.hu() = -vars.h()* sqrt(grav_DG*vars.h());
 }
 
 // width = 10.0,10.0
@@ -240,12 +241,10 @@ void SWE::WettingDryingProblem(const double* const x, double* Q){
   vars.b() = -0.1*x[0] + exp((-x[0]*x[0])/(0.1*0.1));
 }
 
-// width = 4.0, 4.0
-// offset = -2.0, -2.0
 void SWE::OscillatingLake(const double* const x, double* Q){
     MySWESolver_ADERDG::Variables vars(Q);
 
-    double omega = sqrt(0.2*grav);
+    double omega = sqrt(0.2*grav_DG);
 
     vars.b() = 0.1 * (pow(x[0], 2) + pow(x[1], 2));
     vars.h() = max(0.0, 0.05 * (2 * x[0] * cos(omega * 0) + 2 * x[1] * sin(omega * 0)) + 0.075 - vars.b());
@@ -271,22 +270,86 @@ void SWE::RunUpTest(const double* const x, double* Q){
     vars.hv() = 0.0;
 }
 
+//width = 70.0,1.0
+//offset = -10.0,0.0
+void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
+  MySWESolver_ADERDG::Variables vars(Q);
+
+ const double d = 0.3;
+  const double H = 0.0185 * d;
+  const double beta = std::atan(1/19.85);
+
+  double gamma = std::sqrt((3*H)/(4*d));
+  double x0 = d * cos(beta)/sin(beta);
+  double L = d * std::log(std::sqrt(20) + std::sqrt(20 - 1)) / gamma;
+  double eta = H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d)));
+
+  if (x[0] < 0){
+      vars.h() = 0;
+      vars.b() = -x[0] * std::sin(beta)/std::cos(beta) + d;
+  }
+  else if (x[0] <= x0){
+      vars.h() = x[0] * std::sin(beta)/std::cos(beta);
+      vars.b() = d - vars.h();
+  }
+  else{
+       vars.h() =  H * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) * (1/(std::cosh(gamma*(x[0]-(x0 + L))/d))) + d;
+       vars.b() = 0;
+  }
+  vars.hu() = -eta * std::sqrt(grav_DG/d) * vars.h();
+  vars.hv() = 0.0;
+}
+
 
 
 #endif
 
 void SWE::initialData(const double* const x,double* Q) {
-  //ShockShockProblem(x, Q);
-  //RareRareProblem(x, Q);
-  //GaussFunctionProblem(x, Q);
-  //ExpBreakProblem(x,Q);
-  //DamBreakProblem(x,Q);
-  //SeaAtRestProblem(x,Q);
-  //SteadyRunUpLinear(x,Q);
-  //RunUpLinear(x,Q);
-  //SteadyRunUpShelf(x,Q);
-  //RunUpShelf(x, Q);
-  //WettingDryingProblem(x, Q);
-  //OscillatingLake(x, Q);
-  RunUpTest(x, Q);
+  switch (scenario_DG)
+  {
+      case 0:
+        ShockShockProblem(x, Q);
+        break;
+    case 1:
+      RareRareProblem(x, Q);
+          break;
+    case 2:
+      GaussFunctionProblem(x, Q);
+          break;
+    case 3:
+      ExpBreakProblem(x, Q);
+          break;
+    case 4:
+      DamBreakProblem(x, Q);
+          break;
+    case 5:
+      SeaAtRestProblem(x, Q);
+          break;
+    case 6:
+      SteadyRunUpLinear(x, Q);
+          break;
+    case 7:
+      RunUpLinear(x, Q);
+          break;
+    case 8:
+      SteadyRunUpShelf(x, Q);
+          break;
+    case 9:
+      RunUpShelf(x, Q);
+          break;
+    case 10:
+      WettingDryingProblem(x, Q);
+          break;
+    case 11:
+      OscillatingLake(x, Q);
+          break;
+    case 12:
+      RunUpTest(x, Q);
+          break;
+    case 13:
+      SolitaryWaveOnSimpleBeach(x, Q);
+          break;
+    default:
+      GaussFunctionProblem(x, Q);
+  }
 }

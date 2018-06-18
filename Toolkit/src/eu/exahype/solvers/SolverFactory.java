@@ -27,7 +27,6 @@ public class SolverFactory {
   private String _projectName;
   private int _dimensions;
   private boolean _enableProfiler;
-  private boolean _enableDeepProfiler;
   private String _microarchitecture;
   private String _pathToLibxsmm;
 
@@ -36,12 +35,10 @@ public class SolverFactory {
       String projectName,
       int dimensions,
       boolean enableProfiler,
-      boolean enableDeepProfiler,
       String microarchitecture) {
     _projectName = projectName;  
     _dimensions = dimensions;
     _enableProfiler = enableProfiler;
-    _enableDeepProfiler = enableDeepProfiler;
     _microarchitecture = microarchitecture;
   }
   
@@ -59,7 +56,7 @@ public class SolverFactory {
         case OptimisedADERDG:
           return new eu.exahype.solvers.OptimisedADERDG(_projectName, solverName, _dimensions,
             numberOfVariables, numberOfParameters, namingSchemeNames, order, _microarchitecture,
-            _enableProfiler, _enableDeepProfiler, hasConstants, kernel);
+            _enableProfiler, hasConstants, kernel);
       }
       System.err.println("ERROR: solver configuration is not supported: "+kernel.toString() );
       return null;

@@ -362,6 +362,14 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyCell(
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
+  // Write invalid index into adjacent vertices
+  dfor2(k)
+    if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
+      VertexOperations::writeCellDescriptionsIndex(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,
+              multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+    }
+  enddforx
 }
 
 

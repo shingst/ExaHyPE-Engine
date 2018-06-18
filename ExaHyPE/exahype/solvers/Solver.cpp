@@ -36,6 +36,8 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 
 #ifdef Parallel
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
+
+int exahype::ReceivedMetadataMessageIndex(-1);
 #endif
 
 tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
@@ -82,7 +84,9 @@ double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 bool exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps = false;
 bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
-bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob  = false;
+bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
+int exahype::solvers::Solver::PredictionSweeps                = 1;
+
 bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
@@ -92,43 +96,71 @@ int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
-void exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-    const int& backgroundJobCounter,std::string counterTag) {
+std::string exahype::solvers::Solver::toString(const JobType& jobType) {
+  switch (jobType) {
+    case JobType::AMRJob:      return "AMRJob";
+    case JobType::EnclaveJob:  return "EnclaveJob";
+    case JobType::SkeletonJob: return "SkeletonJob";
+    default:
+      logError("toString(const JobType&)","Job type not supported.");
+      std::abort();
+      return 0;
+  }
+}
+
+int exahype::solvers::Solver::getNumberOfQueuedJobs(const JobType& jobType) {
+  switch (jobType) {
+    case JobType::AMRJob:     return NumberOfAMRBackgroundJobs;
+    case JobType::EnclaveJob: return NumberOfEnclaveJobs;
+    case JobType::SkeletonJob:return NumberOfSkeletonJobs;
+    default:
+      logError("getNumberOfQueuedJobs(const JobType&)","Job type not supported.");
+      std::abort();
+      return 0;
+  }
+}
+
+void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   bool finishedWait = false;
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  int numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
+  const int queuedJobs = getNumberOfQueuedJobs(jobType);
   lock.free();
-  finishedWait = numberOfExaHyPEBackgroundJobs == 0;
+  finishedWait = queuedJobs == 0;
 
-  #ifdef Asserts
-  int numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-  int reported               = numberOfExaHyPEBackgroundJobs;
-  #endif
-  while (!finishedWait) {
-    #ifdef Asserts
-    if (numberOfExaHyPEBackgroundJobs < reported) {
-      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
-          "waiting for roughly "
-          << numberOfBackgroundJobs
-          << " background tasks to complete (counter: "<<counterTag.c_str()<< ") while "
-          << numberOfExaHyPEBackgroundJobs << " job(s) were spawned by ExaHyPE"
-      );
-      reported = numberOfExaHyPEBackgroundJobs;
+  if ( !finishedWait ) {
+    #if defined(Asserts)
+    logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+      "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").");
+    #endif
+    if ( jobType != JobType::SkeletonJob ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
-    #endif
-
-    peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
-
-    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-    numberOfExaHyPEBackgroundJobs = backgroundJobCounter;
-    lock.free();
-    finishedWait = numberOfExaHyPEBackgroundJobs == 0;
-
-    #ifdef Asserts
-    numberOfBackgroundJobs = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-    #endif
   }
+
+  while ( !finishedWait ) {
+    // do some work myself
+    tarch::parallel::Node::getInstance().receiveDanglingMessages();
+    if ( jobType != JobType::SkeletonJob ) { // TODO(Dominic): Use background job queue here as well
+       peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+    } 
+    
+    tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+    const int queuedJobs = getNumberOfQueuedJobs(jobType);
+    lock.free();     
+    finishedWait = queuedJobs == 0;
+  }
+}
+
+void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJobs) {
+  SpawnPredictionAsBackgroundJob = useBackgroundJobs;
+  #if defined(Parallel)
+  PredictionSweeps  = useBackgroundJobs ? 2 : 1;
+  #elif !defined(Parallel) && defined(SharedMemoryParallelisation)
+  PredictionSweeps  = ( useBackgroundJobs && !allSolversPerformOnlyUniformRefinement() )  ? 2 : 1;
+  #else // serial
+  PredictionSweeps = 1;
+  #endif
 }
 
 
@@ -168,7 +200,7 @@ std::string exahype::solvers::Solver::getIdentifier() const {
 
 std::string exahype::solvers::Solver::toString(const exahype::solvers::Solver::Type& param) {
   switch (param) {
-    case Type::ADERDG:        return "ADER-DG";
+    case Type::ADERDG:         return "ADER-DG";
     case Type::FiniteVolumes:  return "Finite Volumes";
     case Type::LimitingADERDG: return "Limiting ADER-DG";
   }
@@ -824,25 +856,27 @@ int exahype::receiveNeighbourCommunicationMetadata(
     const int                                   level) {
   const unsigned int length =
       exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
-
-  const int receivedMetadataIndex = MetadataHeap::getInstance().createData(0,length);
-
-  MetadataHeap::HeapEntries& metadata =
-      MetadataHeap::getInstance().getData(receivedMetadataIndex);
-  assertion(metadata.size()==0);
-  assertion(metadata.capacity()==length);
+  if ( ReceivedMetadataMessageIndex < 0 ) {
+    ReceivedMetadataMessageIndex = exahype::MetadataHeap::getInstance().createData(0,length);
+  }
+  MetadataHeap::HeapEntries& receivedMetadataMessage =
+      MetadataHeap::getInstance().getData(ReceivedMetadataMessageIndex);
+  receivedMetadataMessage.reserve(length);
+  receivedMetadataMessage.clear();
+  assertion(receivedMetadataMessage.size()==0);
+  assertion(receivedMetadataMessage.capacity()==length);
 
   MetadataHeap::getInstance().receiveData(
-      receivedMetadataIndex,
+      ReceivedMetadataMessageIndex,
       fromRank, x, level,
       peano::heap::MessageType::NeighbourCommunication);
-  assertion(metadata.size()==0 || metadata.size()==length);
-  assertion(metadata.capacity()==length);
+  assertion(receivedMetadataMessage.size()==0 || receivedMetadataMessage.size()==length);
+  assertion(receivedMetadataMessage.capacity()==length);
 
-  if (metadata.size()==0) {
-    metadata.assign(length, InvalidMetadataEntry);
+  if (receivedMetadataMessage.size()==0) {
+    receivedMetadataMessage.assign(length, InvalidMetadataEntry);
   }
-  return receivedMetadataIndex;
+  return ReceivedMetadataMessageIndex;
 }
 
 // Master<=>Worker  TODO(Dominic): Move in exahype::Cell

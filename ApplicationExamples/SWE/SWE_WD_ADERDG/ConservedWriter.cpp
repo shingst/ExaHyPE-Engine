@@ -7,6 +7,9 @@
 // ========================
 #include "ConservedWriter.h"
 
+using namespace std;
+
+extern double grav_DG;
 
 SWE::ConservedWriter::ConservedWriter(exahype::solvers::LimitingADERDGSolver&  solver) {
   // @TODO Please insert your code here.
@@ -33,9 +36,13 @@ void SWE::ConservedWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 5;
-  for (int i=0; i<writtenUnknowns - 1; i++){
+  const int writtenUnknowns = 6;
+  for (int i=0; i<writtenUnknowns - 2; i++){
     outputQuantities[i] = Q[i];
   }
   outputQuantities[4] = Q[3] + Q[0];
+
+  //calculate error for OscillationLake
+  double omega = sqrt(0.2*grav_DG);
+  outputQuantities[5] = std::abs(Q[0] - max(0.0, 0.05 * (2 * x[0] * cos(omega * 0) + 2 * x[1] * sin(omega * 0)) + 0.075 - Q[3]));
 }

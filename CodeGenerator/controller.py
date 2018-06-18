@@ -70,12 +70,18 @@ class Controller:
         parser.add_argument("--useFlux",
                               action="store_true",
                               help="enable flux")
+        parser.add_argument("--useFluxVect",
+                              action="store_true",
+                              help="enable vectorized flux (include useFlux)")
         parser.add_argument("--useNCP",
                               action="store_true",
                               help="enable non conservative product")
         parser.add_argument("--useSource",
                               action="store_true",
                               help="enable source terms")
+        parser.add_argument("--useFusedSource",
+                              action="store_true",
+                              help="enable fused source terms (includes useSource)")
         parser.add_argument("--useMaterialParam",
                               action="store_true",
                               help="enable material parameters")
@@ -84,14 +90,17 @@ class Controller:
                               default=-1,
                               metavar='nPointSources',
                               help="enable nPointSources point sources")
-        parser.add_argument("--noTimeAveraging",
+        parser.add_argument("--useCERKGuess",
                               action="store_true",
-                              help="disable time averaging in the spacetimepredictor (less memory usage, more computation)")
+                              help="use CERK for SpaceTimePredictor inital guess (nonlinear only)")
         parser.add_argument("--useLimiter",
                               type=int,
                               default=-1,
                               metavar='useLimiter',
                               help="enable limiter with the given number of observable")
+        parser.add_argument("--useGaussLobatto",
+                              action="store_true",
+                              help="use Gauss Lobatto Quadrature instead of Gauss Legendre")
         parser.add_argument("--ghostLayerWidth",
                               type=int,
                               default=0,
@@ -108,33 +117,47 @@ class Controller:
                    "nData"                 : commandLineArguments.numberOfVariables + commandLineArguments.numberOfParameters,
                    "nDof"                  : (commandLineArguments.order)+1,
                    "nDim"                  : commandLineArguments.dimension,
-                   "useFlux"               : commandLineArguments.useFlux,
+                   "useFlux"               : (commandLineArguments.useFlux or commandLineArguments.useFluxVect),
+                   "useFluxVect"           : commandLineArguments.useFluxVect,
                    "useNCP"                : commandLineArguments.useNCP,
-                   "useSource"             : commandLineArguments.useSource,
+                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
+                   "useFusedSource"        : commandLineArguments.useFusedSource,
                    "useSourceOrNCP"        : (commandLineArguments.useSource or commandLineArguments.useNCP),
                    "nPointSources"         : commandLineArguments.usePointSources,
                    "usePointSources"       : commandLineArguments.usePointSources >= 0,
                    "useMaterialParam"      : commandLineArguments.useMaterialParam,
-                   "noTimeAveraging"       : commandLineArguments.noTimeAveraging,
                    "codeNamespace"         : commandLineArguments.namespace,
                    "pathToOutputDirectory" : os.path.join(absolutePathToRoot,commandLineArguments.pathToApplication,commandLineArguments.pathToOptKernel),
                    "architecture"          : commandLineArguments.architecture,
-                   "simdSize"              : simdWidth[commandLineArguments.architecture],
                    "useLimiter"            : commandLineArguments.useLimiter >= 0,
                    "nObs"                  : commandLineArguments.useLimiter,
                    "ghostLayerWidth"       : commandLineArguments.ghostLayerWidth,
                    "pathToLibxsmmGemmGenerator"  : absolutePathToLibxsmm,
-                   "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
+                   "quadratureType"        : ("Gauss-Lobatto" if commandLineArguments.useGaussLobatto else "Gauss-Legendre"),
+                   "useCERKGuess"          : commandLineArguments.useCERKGuess,
                    "useLibxsmm"            : True,
                    "runtimeDebug"          : False #for debug
                   }
 
-        self.validateConfig()
+        self.validateConfig(simdWidth.keys())
+        self.config["vectSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
+        self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
 
-    def validateConfig(self):
-        #TODO JMG
-        pass
+        
+    def validateConfig(self, validArchitectures):
+        if not (self.config["architecture"] in validArchitectures):
+           raise ValueError("Architecture not recognized. Available architecture: "+str(validArchitectures))
+        if not (self.config["numerics"] == "linear" or self.config["numerics"] == "nonlinear"):
+            raise ValueError("Nnumerics has to be linear or nonlinear")
+        if self.config["nVar"] < 0:
+           raise ValueError("Number of variables must be >=0 ")
+        if self.config["nPar"] < 0:
+           raise ValueError("Number of parameters must be >= 0")
+        if self.config["nDim"] < 2 or self.config["nDim"] > 3:
+           raise ValueError("Number of dimensions must be 2 or 3")
+        if self.config["nDof"] < 0 or self.config["nDof"] > 9:
+           raise ValueError("Order has to be between 0 and 9")
 
 
     def printConfig(self):
@@ -156,10 +179,11 @@ class Controller:
         context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
         context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
         context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
+        context["useVectPDEs"] = context["useFluxVect"] or True #TODO JMG add other vect
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
-        return self.config["simdSize"] * int((sizeWithoutPadding+(self.config["simdSize"]-1))/self.config["simdSize"])
+        return self.config["vectSize"] * int((sizeWithoutPadding+(self.config["vectSize"]-1))/self.config["vectSize"])
 
 
     def getPadSize(self, sizeWithoutPadding):
@@ -224,11 +248,6 @@ class Controller:
         runtimes["fusedSpaceTimePredictorVolumeIntegral"] = time.perf_counter() - start
         
         start = time.perf_counter()
-        gemmsCPP = gemmsCPPModel.GemmsCPPModel(self.baseContext)
-        gemmsCPP.generateCode()
-        runtimes["gemmsCPP"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
         kernelsHeader = kernelsHeaderModel.KernelsHeaderModel(self.baseContext)
         kernelsHeader.generateCode()
         runtimes["kernelsHeader"] = time.perf_counter() - start
@@ -237,6 +256,11 @@ class Controller:
         limiter = limiterModel.LimiterModel(self.baseContext, self)
         limiter.generateCode()
         runtimes["limiter"] = time.perf_counter() - start
+        
+        start = time.perf_counter()
+        matrixUtils = matrixUtilsModel.MatrixUtilsModel(self.baseContext)
+        matrixUtils.generateCode()
+        runtimes["matrixUtils"] = time.perf_counter() - start
         
         start = time.perf_counter()
         quadrature = quadratureModel.QuadratureModel(self.baseContext, self)
@@ -263,6 +287,14 @@ class Controller:
         surfaceIntegral.generateCode()
         runtimes["surfaceIntegral"] = time.perf_counter() - start
         
+        # must be run only after all gemm have been generated
+        start = time.perf_counter()
+        gemmsContext = copy.copy(self.baseContext)
+        gemmsContext["gemmList"] = self.gemmList
+        gemmsCPP = gemmsCPPModel.GemmsCPPModel(gemmsContext)
+        gemmsCPP.generateCode()
+        runtimes["gemmsCPP"] = time.perf_counter() - start
+        
         if self.config['runtimeDebug']:
             for key, value in runtimes.items():
                 print(key+": "+str(value))
@@ -270,6 +302,8 @@ class Controller:
 
     def generateGemms(self, outputFileName, matmulConfigList):
         for matmul in matmulConfigList:
+            # add the gemm name to the list of generated gemm
+            self.gemmList.append(matmul.baseroutinename)
             # for plain assembly code (rather than inline assembly) choose dense_asm
             commandLineArguments = " " + "dense"  + \
                                  " " + os.path.join(self.config["pathToOutputDirectory"], outputFileName) + \

@@ -209,19 +209,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int i = 0; i < {{nDof}}; i++) {  // time DOFs
 
 {% if useFlux %}
-    // Flux, tmpArray is used to store the flux derivative (require size = nDof*nVarPad = {{nDof*nVarPad}})
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      double* F[{{nDim}}];
-      F[0] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}];
-      F[1] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}];
-{% if nDim == 3 %}
-      F[2] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}];
-{% endif %}
-#ifdef USE_IPO
-      #pragma forceinline recursive
-#endif
-      solver.{{solverName}}::flux(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
-    }
+    // Flux, tmpArray is used to store the flux derivative (require size = nDof*nVarPad = {{nDof*nVarPad}})  
+{# *************************************************
+   **** call to flux function over lQi into lFi ****
+   ************************************************* #}
+{% with inputQ='lQi', inputQ_varSize=nDataPad, outputF='lFi',  timeInterleaved=False, time_var='i' %}
+{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% endwith %}
 
     //dflux1 dx
     for (int yz = 0; yz < {{nDof3D*nDof}}; yz++) {

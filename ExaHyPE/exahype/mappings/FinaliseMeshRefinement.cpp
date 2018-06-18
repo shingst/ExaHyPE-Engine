@@ -143,8 +143,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     if ( !_backgroundJobsHaveTerminated ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated(
-          exahype::solvers::Solver::NumberOfAMRBackgroundJobs,"amr-jobs");
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
       _backgroundJobsHaveTerminated = true;
     }
 
@@ -191,10 +190,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
     }
 
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-            fineGridCell.getCellDescriptionsIndex(),
-            fineGridVertices,fineGridVerticesEnumerator);
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

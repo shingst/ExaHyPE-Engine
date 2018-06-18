@@ -41,6 +41,8 @@
 #include "exahype/profilers/Profiler.h"
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
+#include <functional>
+
 #if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
@@ -250,20 +252,23 @@ namespace exahype {
    * third the helper status and the fourth the
    * limiter status.
    */
-  static constexpr int NeighbourCommunicationMetadataPerSolver    = 4;
+  static constexpr int NeighbourCommunicationMetadataPerSolver           = 4;
 
-  static constexpr int NeighbourCommunicationMetadataCellType           = 0;
-  static constexpr int NeighbourCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int NeighbourCommunicationMetadataCommunicationStatus       = 2;
-  static constexpr int NeighbourCommunicationMetadataLimiterStatus      = 3;
+  static constexpr int NeighbourCommunicationMetadataCellType            = 0;
+  static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
+  static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
+  static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
 
-  static constexpr int MasterWorkerCommunicationMetadataPerSolver       = 5;
+  static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
 
-  static constexpr int MasterWorkerCommunicationMetadataCellType           = 0;
-  static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus = 1;
-  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus       = 2;
-  static constexpr int MasterWorkerCommunicationMetadataLimiterStatus      = 3;
-  static constexpr int MasterWorkerCommunicationMetadataSendReceiveData    = 4;
+  static constexpr int MasterWorkerCommunicationMetadataCellType            = 0;
+  static constexpr int MasterWorkerCommunicationMetadataAugmentationStatus  = 1;
+  static constexpr int MasterWorkerCommunicationMetadataCommunicationStatus = 2;
+  static constexpr int MasterWorkerCommunicationMetadataLimiterStatus       = 3;
+  static constexpr int MasterWorkerCommunicationMetadataSendReceiveData     = 4;
+
+  /** Some storage for receiving metadata messages. */
+  extern int ReceivedMetadataMessageIndex;
 
   /**
    * TODO(Dominic): Docu is outdated
@@ -544,10 +549,14 @@ class exahype::solvers::Solver {
   /**
    * Set to true if the prediction and/or the fused time step
    * should be launched as background job whenever possible.
-   *
-   * TODO(Dominic): Rename as we start other background jobs as well
    */
   static bool SpawnPredictionAsBackgroundJob;
+
+  /**
+   * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
+   * and FusedTimeStep iterations we need to run per time step.
+   */
+  static int  PredictionSweeps;
 
   /**
    * Set to true if the mesh refinement iterations
@@ -555,7 +564,28 @@ class exahype::solvers::Solver {
    */
   static bool SpawnAMRBackgroundJobs;
 
- public:
+
+  enum class JobType { AMRJob, EnclaveJob, SkeletonJob };
+
+  /**
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfAMRBackgroundJobs;
+  /**
+   * Number of background jobs spawned
+   * from enclave cells.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfEnclaveJobs;
+  /**
+   * Number of background jobs spawned
+   * from skeleton cells, i.e. cells at parallel
+   * or adaptivity boundaries.
+   *
+   * \see ensureAllBackgroundJobsHaveTerminated
+   */
+  static int NumberOfSkeletonJobs;
 
   /**
    * The type of a solver.
@@ -754,6 +784,10 @@ class exahype::solvers::Solver {
    */
   static bool allSolversPerformOnlyUniformRefinement();
 
+
+
+
+
   /**
    * Loop over the solver registry and check if one
    * of the solvers has requested a mesh update.
@@ -815,26 +849,12 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
-  /**
-   * \see ensureAllBackgroundJobsHaveTerminated
-   */
-  static int NumberOfAMRBackgroundJobs;
+  static void configureEnclaveTasking(const bool useBackgroundJobs);
 
-  /**
-   * Number of background jobs spawned
-   * from enclave cells.
-   *
-   * \see ensureAllBackgroundJobsHaveTerminated
-   */
-  static int NumberOfEnclaveJobs;
-  /**
-   * Number of background jobs spawned
-   * from skeleton cells, i.e. cells at parallel
-   * or adaptivity boundaries.
-   *
-   * \see ensureAllBackgroundJobsHaveTerminated
-   */
-  static int NumberOfSkeletonJobs;
+
+  static std::string toString(const JobType& jobType);
+
+  static int getNumberOfQueuedJobs(const JobType& jobType);
 
  /**
   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
@@ -845,7 +865,22 @@ class exahype::solvers::Solver {
   *
   * \param[in] backgroundJobCounter A reference to a background job counter.
   */
- static void ensureAllBackgroundJobsHaveTerminated(const int& backgroundJobCounter,std::string counterTag);
+ static void ensureAllJobsHaveTerminated(JobType jobType);
+
+ /**
+  * Submit a Prediction- or FusedTimeStepJob.
+  *
+  * \param[in] function the job
+  * \param[in[ isSkeletonJob the class of this job.
+  */
+ template <typename Job>
+ static void submitPredictionJob(Job& job,const bool isSkeletonJob) {
+   if ( isSkeletonJob ) {
+     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible  );
+   } else {
+     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+   }
+ }
 
  protected:
 
@@ -1321,13 +1356,6 @@ class exahype::solvers::Solver {
   virtual double getMinNextTimeStepSize() const=0;
 
   /**
-   * Returns true if the index \p cellDescriptionsIndex
-   * is a valid heap index.
-   */
-  virtual bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const = 0;
-
-  /**
    * If an entry for this solver exists,
    * return the element index of the cell description
    * in the array at address \p cellDescriptionsIndex.
@@ -1381,8 +1409,8 @@ class exahype::solvers::Solver {
    * or refined.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-      const int& cellDescriptionsIndex,
-      const int& solverNumber,
+      const int cellDescriptionsIndex,
+      const int solverNumber,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
 
   /**

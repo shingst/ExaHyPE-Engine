@@ -15,6 +15,7 @@ void RunUpShelf(const double* const x,double* Q);
 void WettingDryingProblem(const double* const x, double* Q);
 void RunUpTest(const double* const x, double* Q);
 void OscillatingLake(const double* const x, double* Q);
+void SolitaryWaveOnSimpleBeach(const double*const x, double* Q);
 void initialData(const double* const x,double* Q);
 
 }

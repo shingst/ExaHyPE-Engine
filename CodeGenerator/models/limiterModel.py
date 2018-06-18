@@ -39,17 +39,18 @@ class LimiterModel(AbstractModelBaseClass):
         self.render("limiter_cpp.template", "limiter.cpp")
         # generates gemms
         if(self.context["useLibxsmm"]):
-            self.controller.generateGemms("asm_limiter.c", self.buildGemmsConfig())
+            self.controller.generateGemms("asm_limiter.c", self.context["gemmList"].values())
     
     
     def buildGemmsConfig(self):
-       # define a sequence of matmul configs
-        matmulList = []
+        # define a sequence of matmul configs
+        self.context["gemmList"] = {}
 
         #-----------------------------
         # implementation file
         #-----------------------------        
-        dg2fv = MatmulConfig(  # M
+        self.context["gemmList"]["dg2fv"] = MatmulConfig(  
+                                    # M
                                     self.context["nVar"],      \
                                     # N
                                     self.context["nDofLim"],       \
@@ -75,8 +76,8 @@ class LimiterModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        matmulList.append(dg2fv)
-        fv2dg = MatmulConfig(  # M
+        self.context["gemmList"]["fv2dg"] = MatmulConfig(  
+                                    # M
                                     self.context["nVar"],      \
                                     # N
                                     self.context["nDof"],       \
@@ -102,8 +103,8 @@ class LimiterModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        matmulList.append(fv2dg)
-        uh2lob = MatmulConfig(  # M
+        self.context["gemmList"]["uh2lob"] = MatmulConfig(  
+                                    # M
                                     self.context["nVar"],      \
                                     # N
                                     self.context["nDof"],       \
@@ -129,6 +130,3 @@ class LimiterModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        matmulList.append(uh2lob)
-
-        return matmulList

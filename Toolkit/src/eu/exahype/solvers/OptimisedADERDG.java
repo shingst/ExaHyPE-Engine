@@ -26,7 +26,7 @@ public class OptimisedADERDG implements Solver {
   private boolean        useConverterDebug;
   
   public OptimisedADERDG(String projectName, String solverName, int dimensions, int numberOfVariables, int numberOfParameters, Set<String> namingSchemeNames,
-      int order,String microarchitecture, boolean enableProfiler, boolean enableDeepProfiler, boolean hasConstants, ADERDGKernel kernel) 
+      int order,String microarchitecture, boolean enableProfiler, boolean hasConstants, ADERDGKernel kernel) 
       throws IOException, IllegalArgumentException {    
     
     this.solverName                 = solverName;
@@ -35,6 +35,7 @@ public class OptimisedADERDG implements Solver {
     final boolean isLinear               = kernel.isLinear();
     final boolean useFlux                = kernel.useFlux();
     final boolean useSource              = kernel.useSource();
+    final boolean useFusedSource         = kernel.useFusedSource();
     final boolean useNCP                 = kernel.useNCP();
     final boolean usePointSources        = kernel.usePointSources();
     final boolean useMaterialParam       = kernel.useMaterialParameterMatrix();
@@ -49,7 +50,7 @@ public class OptimisedADERDG implements Solver {
     
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, dimensions,
-        microarchitecture, enableDeepProfiler, kernel);
+        microarchitecture, kernel);
     final String optNamespace = CodeGeneratorHelper.getInstance().getNamespace(projectName, solverName);
     
     templateEngine = new TemplateEngine();
@@ -72,11 +73,11 @@ public class OptimisedADERDG implements Solver {
     
     //boolean
     context.put("enableProfiler"        , enableProfiler);
-    context.put("enableDeepProfiler"    , enableDeepProfiler);
     // context.put("hasConstants"          , hasConstants);
     context.put("isLinear"              , isLinear);
     context.put("useFlux"               , useFlux);
     context.put("useSource"             , useSource);
+    context.put("useFusedSource"        , useFusedSource);
     context.put("useNCP"                , useNCP);
     context.put("usePointSources"       , usePointSources);
     context.put("useMaterialParam"      , useMaterialParam);

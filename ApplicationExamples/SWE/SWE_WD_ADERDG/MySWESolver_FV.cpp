@@ -6,14 +6,22 @@
 
 using namespace kernels;
 
-const double grav = 9.81;
-
-const double epsilon = 1e-1;
+double grav_FV;
+double epsilon_FV;
+int scenario_FV;
 
 tarch::logging::Log SWE::MySWESolver_FV::_log( "SWE::MySWESolver_FV" );
 
 void SWE::MySWESolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // @todo Please implement/augment if required
+  if (constants.isValueValidDouble( "grav" )) {
+    grav_FV = constants.getValueAsDouble( "grav" );
+  }
+  if (constants.isValueValidDouble( "epsilon" )) {
+    epsilon_FV = constants.getValueAsDouble( "epsilon" );
+  }
+  if (constants.isValueValidInt( "scenario" )) {
+    scenario_FV = constants.getValueAsInt( "scenario" );
+  }
 }
 
 void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -32,16 +40,16 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  if (vars.h() < epsilon){
+  if (vars.h() < epsilon_FV){
     eigs.h() = 0.0;
     eigs.hu() = 0.0;
     eigs.hv() = 0.0;
     eigs.b() = 0.0;
   }
   else {
-    const double c = std::sqrt(grav * vars.h());
+    const double c = std::sqrt(grav_FV * vars.h());
     const double ih = 1. / vars.h();
-    double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(std::pow(Q[0], 4) + std::pow(std::max(vars.h(), epsilon), 4));
+    double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(std::pow(Q[0], 4) + std::pow(std::max(vars.h(), epsilon_FV), 4));
 
     eigs.h() = u_n + c;
     eigs.hu() = u_n - c;
@@ -85,7 +93,7 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
   double* f = F[0];
   double* g = F[1];
 
-  if (Q[0] < epsilon){
+  if (Q[0] < epsilon_FV){
     f[0] = 0.0;
     f[1] = 0.0;
     f[2] = 0.0;
@@ -100,18 +108,19 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
     const double ih = 1. / vars.h();
 
     f[0] = vars.hu();
-    f[1] = vars.hu() * vars.hu() * ih; // 0.5 * grav * vars.h() * vars.h();
+    f[1] = vars.hu() * vars.hu() * ih; // 0.5 * grav_FV * vars.h() * vars.h();
     f[2] = vars.hu() * vars.hv() * ih;
     f[3] = 0.0;
 
     g[0] = vars.hv();
     g[1] = vars.hu() * vars.hv() * ih;
-    g[2] = vars.hv() * vars.hv() * ih; // 0.5 * grav * vars.h() * vars.h();
+    g[2] = vars.hv() * vars.hv() * ih; // 0.5 * grav_FV * vars.h() * vars.h();
     g[3] = 0.0;
   }
 }
 
 double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+    //std::cout << qL[0] << ", " << qR[0] << std::endl;
   double LL[NumberOfVariables] = {0.0};
   double LR[NumberOfVariables] = {0.0};
 
@@ -149,7 +158,7 @@ double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* 
 
   double djump[NumberOfVariables] = {0.0};
 
-  djump[direction + 1] = 0.5*grav*hRoe*Deta;
+  djump[direction + 1] = 0.5*grav_FV*hRoe*Deta;
 
 
   flux[0] = 0.5 * (FL[direction][0] + FR[direction][0]) - 0.5*smax*Deta;

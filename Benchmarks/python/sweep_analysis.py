@@ -16,6 +16,7 @@ import os
 import re
 import codecs
 
+import collections
 import statistics
 
 knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
@@ -39,6 +40,62 @@ counters = [
             ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
             ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
            ]
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+def removeEmptyColumns(table,header):
+    emptyColumns = []
+    for col in range(0,len(header)):
+        if all(item.strip()=="-1.0" for item in column(table,col)):
+            emptyColumns.append(col)
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in emptyColumns:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in emptyColumns:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader 
+
+def removeInvariantColumns(table,header):
+    '''
+    Remove all columns containing the same value in every row
+    of the given table.
+    '''  
+    invariantColumns        = collections.OrderedDict()
+    invariantColumnsIndices = []
+
+    blackList = ["run","run_time_steps"]
+
+    for col in range(0,len(header)):
+        current = column(table,col) 
+        if header[col].strip() not in blackList\
+            and all(item.strip()==current[0].strip() for item in current):
+            invariantColumnsIndices.append(col)
+            invariantColumns[header[col]]=current[0]
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in invariantColumnsIndices:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in invariantColumnsIndices:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader,invariantColumns
+
 
 def parseResultFile(filePath):
     '''
@@ -69,11 +126,20 @@ def parseResultFile(filePath):
     stats["unrefined_inner_cells_min"] = 10**20
     stats["unrefined_inner_cells_max"] = 0
     stats["unrefined_inner_cells_avg"] = 0.0
+    stats["communication_time_total"] = 0.0
+    stats["communication_occurences"] = 0
+    stats["communication_time_avg"] = 0.0
     occurrences = 0   
  
     adapters      = {}
     cputimeIndex  = 3
     usertimeIndex = 5
+    
+    isPassedGridSetup = False
+    
+    # Simulating scanf functionality
+    # https://docs.python.org/3/library/re.html#simulating-scanf
+    commTimeRegex = re.compile("time=(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
 
     try:
         fileHandle=codecs.open(filePath,'r','UTF_8')
@@ -99,7 +165,13 @@ def parseResultFile(filePath):
             # 154.448      [i22r02c02s11],rank:0 info         exahype::runners::Runner::startNewTimeStep(...)         step 20	t_min          =0.0015145
             m = re.search("step(\s*)([0-9]+)(\s*)t_min",line)
             if m:
+                isPassedGridSetup = True
                 stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
+                
+            # 51.4252      [cn6073.hpc.dur.ac.uk],rank:11 info         peano::performanceanalysis::DefaultAnalyser::endToPrepareAsynchronousHeapDataExchange() time=8.35e-07, cpu time=0
+            if isPassedGridSetup and "endToPrepareAsynchronousHeapDataExchange()" in line:
+                stats["communication_occurences"] += 1
+                stats["communication_time_total"] += float(commTimeRegex.search(line).group(0).split("=")[1])
    
             anchor = '|'
             header = '||'
@@ -118,6 +190,9 @@ def parseResultFile(filePath):
     if occurrences>0:
         stats["inner_cells_avg"]           = stats["inner_cells_avg"] / occurrences
         stats["unrefined_inner_cells_avg"] = stats["unrefined_inner_cells_avg"] / occurrences
+    
+    if stats["communication_occurences"] > 0:
+        stats["communication_time_avg"] =  stats["communication_time_total"] / stats["communication_occurences"]
 
     return environmentDict,parameterDict,adapters,stats
 
@@ -131,7 +206,7 @@ def getAdapterTimesSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseAdapterTimes(resultsFolderPath,projectName):
+def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out" files in the results section and create a table.
     """
@@ -146,7 +221,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
             firstFile = True
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -154,10 +229,10 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
-                run                 = match.group(8)
+                run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
-                if len(adapters):
+                if len(environmentDict):
                     # write header
                     if firstFile:
                         header = []
@@ -185,9 +260,12 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         header.append("inner_cells_max")
                         header.append("inner_cells_avg")
                         header.append("run_time_steps")
+                        header.append("communication_time_total")
                         header.append("file")
                         csvwriter.writerow(header)
                         firstFile=False
+
+                if len(adapters): 
                     print(resultsFolderPath+"/"+fileName)
 
                     # write rows
@@ -220,6 +298,7 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                         row.append(str( int(stats["inner_cells_max"]) ))
                         row.append(str( stats["inner_cells_avg"] ))
                         row.append(str( stats["run_time_steps"] ))
+                        row.append(str( stats["communication_time_total"] ))
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
@@ -248,6 +327,8 @@ def parseAdapterTimes(resultsFolderPath,projectName):
                     row.append("missing")
                     row.append("missing")
                     row.append("missing")
+                    row.append("missing")
+                    row.append("missing")
                     row.append(fileName)
                     csvwriter.writerow(row)
 
@@ -258,30 +339,34 @@ def parseAdapterTimes(resultsFolderPath,projectName):
             for job in unfinishedRuns:
                 print(job)
 
-        success = not firstFile
-        if success:
+        foundFiles = not firstFile
+        if foundFiles:
             # reopen the file and sort it
             tableFile   = open(tablePath, 'r')
             header      = next(tableFile)
-            header      = header.strip()
+            header      = header.strip().split(",")
             reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
 
             sortedData = sorted(reader,key=getAdapterTimesSortingKey)
             tableFile.close()
+          
+            if compressTable:
+                print("") 
+                sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+                print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+                for column in invariantColumns:
+                    print(column+": "+ invariantColumns[column])
+                print("") 
 
             with open(tablePath, 'w') as sortedTableFile:
                 writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
-                writer.writerow(header.split(','))
+                writer.writerow(header)
                 writer.writerows(sortedData)
             print("created table:")
             print(tablePath)
 
     except IOError as err:
         print ("ERROR: could not write file "+tablePath+". Error message: " + str(err))
-
-
-def column(matrix, i):
-    return [row[i] for row in matrix]
 
 def linesAreIdenticalUpToIndex(line,previousLine,index):
     result=True
@@ -295,10 +380,6 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
     extract the time per time step for the fused
     and nonfused scheme.
     """
-    fusedAdapters        = ["FusedTimeStep"]
-    firstFusedAdapter    = "BroadcastAndDropNeighbourMessages"
-    nonfusedAdapters     = ["MergeNeighbours", "Prediction", "UpdateAndReduce"]
-
     adaptersTablePath = resultsFolderPath+"/"+projectName+'.csv'
     outputTablePath   = resultsFolderPath+"/"+projectName+'-total-times.csv'
     if timePerTimeStep:
@@ -321,6 +402,43 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         if runColumn >= adapterColumn:
             print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
         
+        def appendMoments(row,measurements):
+            row.append(str(min(measurements)))
+            row.append(str(max(measurements)))
+            row.append(str(statistics.mean(measurements)))
+            if len(measurements)>1:
+                row.append(str(statistics.stdev(measurements)))
+            else:
+                row.append("0.0")
+        
+        fused = True
+        
+        def sumUpTimes(line):
+            nonlocal fused
+        
+            fusedAdapters        = ["FusedTimeStep"]
+            firstFusedAdapter    = fusedAdapters[0] # alphabetically
+            nonfusedAdapters     = ["MergeNeighbours", "Prediction", "UpdateAndReduce"]
+            firstNonfusedAdapter = nonfusedAdapters[0] # alphabetically 
+            
+            adapter = line[adapterColumn]
+            if adapter==firstFusedAdapter:
+              fused = True
+            elif adapter==firstNonfusedAdapter:
+              fused = False
+            
+            if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
+                summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[runTimeStepsColumn])
+                summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[runTimeStepsColumn])
+                summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[runTimeStepsColumn])
+                summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[runTimeStepsColumn])
+            elif not timePerTimeStep:
+                summedCPUTimes[-1]            += float(line[cpuTimeColumn])
+                summedUserTimes[-1]           += float(line[userTimeColumn])
+                summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn])
+                summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn])
+       
+        # open file 
         with open(outputTablePath, 'w') as timeStepTimesTableFile:
             csvwriter = csv.writer(timeStepTimesTableFile, delimiter=",",quotechar="\"")
             # write header
@@ -350,30 +468,8 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             summedNormalisedCPUTimes  = [0.0]
             summedNormalisedUserTimes = [0.0]
             
-            def appendMoments(row,measurements):
-                row.append(str(min(measurements)))
-                row.append(str(max(measurements)))
-                row.append(str(statistics.mean(measurements)))
-                if len(measurements)>1:
-                    row.append(str(statistics.stdev(measurements)))
-                else:
-                    row.append("0.0")
-
-            def sumUpTimes(line,fused):
-                adapter = line[adapterColumn]
-                if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                    summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[runTimeStepsColumn])
-                    summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[runTimeStepsColumn])
-                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[runTimeStepsColumn])
-                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[runTimeStepsColumn])
-                elif not timePerTimeStep:
-                    summedCPUTimes[-1]            += float(line[cpuTimeColumn])
-                    summedUserTimes[-1]           += float(line[userTimeColumn])
-                    summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn])
-                    summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn])
             
             previousLine      = None
-            fused             = True
             # write intermediate rows
             for line in csvreader:
                 if previousLine==None:
@@ -384,11 +480,10 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     adapter = line[adapterColumn]
                     #print("new adapter: "+adapter)
                     if adapter!="missing":
-                        sumUpTimes(line,fused)
+                        sumUpTimes(line)
                 # new run  
                 elif linesAreIdenticalUpToIndex(line,previousLine,runColumn): 
                     adapter = line[adapterColumn]
-                    fused = (adapter==firstFusedAdapter) # only do this here
                     #print("new run: "+adapter)
                     if adapter!="missing":
                         summedCPUTimes.append(0.0)
@@ -396,7 +491,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                         summedNormalisedCPUTimes.append(0.0)
                         summedNormalisedUserTimes.append(0.0)
  
-                        sumUpTimes(line,fused)
+                        sumUpTimes(line)
                 # new experiment
                 else:
                     row = previousLine[0:runColumn]
@@ -426,14 +521,13 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                     
                     adapter = line[adapterColumn]
                     # print("new experiment: "+adapter)
-                    fused = (adapter==firstFusedAdapter) # only do this here
                     if adapter!="missing":
                         summedCPUTimes            = [0.0]
                         summedUserTimes           = [0.0]
                         summedNormalisedCPUTimes  = [0.0]
                         summedNormalisedUserTimes = [0.0]
                    
-                        sumUpTimes(line,fused)
+                        sumUpTimes(line)
                     else:
                         summedCPUTimes            = []
                         summedUserTimes           = []
@@ -513,51 +607,48 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                 parameterDict=json.loads(value)
 
             for metric in metrics:
-                if singlecore:
-                    if metric[0] in line:
-                        segments = line.split('|')
+                if metric[0]+" STAT" in line:
+                    segments = line.split('|')
+                    #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
+                    values = {}
+                    values["Sum"] = float(segments[2].strip());
+                    values["Min"] = float(segments[3].strip());
+                    values["Max"] = float(segments[4].strip());
+                    values["Avg"] = float(segments[5].strip());
+                    result[metric[0]][metric[1]]=values[metric[1]]
+                elif metric[0] in line:
+                    segments = line.split('|')
 
-                        #    |     Runtime (RDTSC) [s]    |    6.5219    |
-                        value  = float(segments[2].strip());
-                        values = {}
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[metric[0]][metric[1]]=values[metric[1]]
-                else:
-                    if metric[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
-                        values = {}
-                        values["Sum"] = float(segments[2].strip());
-                        values["Min"] = float(segments[3].strip());
-                        values["Max"] = float(segments[4].strip());
-                        values["Avg"] = float(segments[5].strip());
-                        result[metric[0]][metric[1]]=values[metric[1]]
+                    #    |     Runtime (RDTSC) [s]    |    6.5219    |
+                    value  = float(segments[2].strip());
+                    values = {}
+                    values["Sum"] = value
+                    values["Min"] = value
+                    values["Max"] = value
+                    values["Avg"] = value
+                    result[metric[0]][metric[1]]=values[metric[1]]
 
             for counter in counters:
-                if singlecore:
-                    if counter[0] in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
-                        value  = float(segments[3].strip());
-                        values = {}
-                        values["Sum"] = value
-                        values["Min"] = value
-                        values["Max"] = value
-                        values["Avg"] = value
-                        result[counter[0]][counter[1]]=values[metric[1]]
-                else:
-                    if counter[0]+" STAT" in line:
-                        segments = line.split('|')
-                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
-                        values = {}
-                        values["Sum"] = float(segments[3].strip());
-                        values["Min"] = float(segments[4].strip());
-                        values["Max"] = float(segments[5].strip());
-                        values["Avg"] = float(segments[6].strip());
-                        result[counter[0]][counter[1]]=values[counter[1]]
+                if counter[0]+" STAT" in line:
+                    segments = line.split('|')
+                    #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
+                    values = {}
+                    values["Sum"] = float(segments[3].strip());
+                    values["Min"] = float(segments[4].strip());
+                    values["Max"] = float(segments[5].strip());
+                    values["Avg"] = float(segments[6].strip());
+                    result[counter[0]][counter[1]]=values[counter[1]]
+                elif counter[0] in line:
+                    segments = line.split('|')
+                    #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
+                    value  = float(segments[3].strip());
+                    values = {}
+                    values["Sum"] = value
+                    values["Min"] = value
+                    values["Max"] = value
+                    values["Avg"] = value
+                    result[counter[0]][counter[1]]=values[metric[1]]
+
     except IOError as err:
         print ("ERROR: could not parse likwid metrics for file "+filePath+"! Reason: "+str(err))
     return environmentDict,parameterDict,result
@@ -572,7 +663,7 @@ def getLikwidMetricsSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseMetrics(resultsFolderPath,projectName):
+def parseMetrics(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
@@ -580,14 +671,14 @@ def parseMetrics(resultsFolderPath,projectName):
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=";")
+            csvwriter = csv.writer(csvfile, delimiter=",",quotechar="\"")
             files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out.likwid")]
             
             print("processed files:")
             firstFile = True
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-N1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out.likwid$',fileName)
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out.likwid$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -595,13 +686,13 @@ def parseMetrics(resultsFolderPath,projectName):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
-                run                 = match.group(8)
+                run                 = match.group(9)
 
-                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores=="1")
+                environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores.startswith("1:"))
 
                 # TODO(Dominic): workaround. parameters
                 if len(environmentDict) is 0:
-                   environmentDict,parameterDict,adapters = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
+                   environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName.replace(".likwid",""))
 
                 if len(measurements):
                     # write header
@@ -651,15 +742,25 @@ def parseMetrics(resultsFolderPath,projectName):
           # reopen the table and sort it
           tableFile   = open(tablePath, 'r')
           header      = next(tableFile)
-          header      = header.strip()
-          reader      = csv.reader(tableFile,delimiter=";")
+          header      = header.strip().split(",")
+          reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
 
           sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
           tableFile.close()
 
+          if compressTable:
+             print("") 
+             sortedData,header = removeEmptyColumns(sortedData,header)
+             print("stripped table from columns containing value \"-1.0\" in every row.") 
+             sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+             print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+             for column in invariantColumns:
+                 print(column+": "+ invariantColumns[column])
+             print("") 
+
           with open(tablePath, 'w') as sortedTableFile:
-              writer = csv.writer(sortedTableFile, delimiter=";")
-              writer.writerow(header.split(";"))
+              writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
+              writer.writerow(header)
               writer.writerows(sortedData)
           print("created table:")
           print(tablePath)

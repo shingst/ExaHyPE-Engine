@@ -10,8 +10,10 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
       (pChild.getType()==CellDescription::Cell || 
       pChild.getType()==CellDescription::Ancestor)
       &&
-      CellDescriptionHeap::getInstance().isValidIndex(pChild.getParentIndex())
+      pChild.getParentIndex()>=0
   ) {
+    assertion1(CellDescriptionHeap::getInstance().isValidIndex(pChild.getParentIndex()),pChild.getParentIndex());
+    
     CellDescription* pParent = 0;
     int parentElement=0;
     for (auto& p : CellDescriptionHeap::getInstance().getData(pChild.getParentIndex())) {
@@ -33,8 +35,10 @@ exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
           #ifdef Parallel
           !pParent->getHasToHoldDataForMasterWorkerCommunication() &&
           #endif
-          CellDescriptionHeap::getInstance().isValidIndex(pParent->getParentIndex())
+          pChild.getParentIndex()>=0
       ) {
+        assertion1(CellDescriptionHeap::getInstance().isValidIndex(pChild.getParentIndex()),pChild.getParentIndex());
+        
         const int currentParentIndex = pParent->getParentIndex();
         int parentElement=0;
         for (auto& p : CellDescriptionHeap::getInstance().getData(currentParentIndex)) {  // Loop over cell descriptions

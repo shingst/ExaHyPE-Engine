@@ -110,18 +110,23 @@ public:
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
 private:
-  /**
-   * TODO(WORKAROUND): We store these fields in order
-   * to use the symmetric boundary exchanger of Peano
-   * which does not yet support asymmetric send buffers.
-   */
-  DataHeap::HeapEntries _invalidExtrapolatedPredictor;
-  DataHeap::HeapEntries _invalidFluctuations;
 
   /**
    * Log device.
    */
   static tarch::logging::Log _log;
+
+  #ifdef Parallel
+  std::vector<double> _receivedExtrapolatedPredictor;
+  std::vector<double> _receivedFluctuations;
+  /**
+   * TODO(WORKAROUND): We store these fields in order
+   * to use the symmetric boundary exchanger of Peano
+   * which does not yet support asymmetric send buffers.
+   */
+  std::vector<double> _invalidExtrapolatedPredictor;
+  std::vector<double> _invalidFluctuations;
+  #endif
 
   /**
    * Minimum corrector time stamp of all cell descriptions.
@@ -471,40 +476,19 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
-   * Evaluates if the predictor can be processed as a
-   * background task for this cell.
+   * Checks if a cell description is next to an 
+   * adaptivity boundary.
    *
    * This is the case if the following conditions hold:
-   *
-   * - The cell's (inside) faces are not adjacent to a remote boundary,
-   *   i.e. no data has to be send to a neighbouring rank.
    *
    * - A cell description is not augmented. Otherwise it
    *   needs to prolongate face data such that its
    *   children can perform their prolongation.
    *
    * - A cell description is not at the boundary
-   *   of a parent Ancestor which needs needs to restrict data
-   *   to a coarser level Ancestor itself. If the Ancestor doesn't
-   *   have a coarser level Ancestor, the restriction operation
-   *   does not need to wait for data from finer levels first.
-   *   (Problem could be circumevented by restricting directly
-   *   to all parents in the tree and not waiting for the hira
-   *
-   * The (later) goal of this method will be too prioritise
-   * certain cells --- especially the ones at the remote boundary --
-   * over other cells which do not need to finish computation before
-   * the next local neighbour merge.
-   * Cells at the remote boundary have to directly send out
-   * data such that their neighbours can receive the new boundary
-   * values in the next iteration.
-   *
-   * TODO(Dominic): If this method appears to be too expensive then
-   * it might make sense to precompute the flag after the grid setup and
-   * store it persistently on the patches.
+   *   of a parent Ancestor.
    */
-  static bool isInvolvedInProlongationOrRestriction(
-      CellDescription& cellDescription);
+  static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
 
   /**
    * Sets the face unknowns of a cell description of type Ancestor to zero.
@@ -658,8 +642,8 @@ private:
   void solveRiemannProblemAtInterface(
       records::ADERDGCellDescription& cellDescription,
       const int faceIndex,
-      const int indexOfQValues,
-      const int indexOfFValues,
+      const double* const lQhbnd,
+      const double* lFhbnd,
       const int fromRank);
 
   /**
@@ -781,12 +765,12 @@ private:
     private:
       const ADERDGSolver& _solver;
       CellDescription&    _cellDescription;
-      int&                _jobCounter;
+      const bool          _isSkeletonJob;
     public:
       CompressionJob(
         const ADERDGSolver& solver,
         CellDescription&    cellDescription,
-        int&                jobCounter);
+        const bool          isSkeletonJob);
 
       bool operator()();
   };
@@ -799,7 +783,7 @@ private:
       const double     _predictorTimeStamp;
       const double     _predictorTimeStepSize;
       const bool       _uncompressBefore;
-      const bool       _isAtRemoteBoundary;
+      const bool       _isSkeletonJob;
     public:
       PredictionJob(
           ADERDGSolver&     solver,
@@ -829,13 +813,13 @@ private:
       ADERDGSolver&    _solver; // TODO not const because of kernels
       const int        _cellDescriptionsIndex;
       const int        _element;
-      int&             _jobCounter;
+      const bool       _isSkeletonJob;
     public:
       FusedTimeStepJob(
         ADERDGSolver& solver,
         const int     cellDescriptionsIndex,
         const int     element,
-        int&          jobCounter);
+        const bool    isAtRemoteBoundary);
 
       bool operator()();
   };
@@ -962,19 +946,6 @@ public:
   static int determineLimiterStatus(
       const CellDescription& cellDescription,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
-
-  /**
-   * TODO(Dominic): Can later be replaced
-   * by ADERDGSolver::mergeNeighboursMetadata function.
-   */
-  void mergeNeighboursLimiterStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
-
 
 
   /**
@@ -1549,7 +1520,7 @@ public:
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
 
-  bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
+  static bool isValidCellDescriptionIndex(const int cellDescriptionsIndex);
 
   int tryGetElement(
       const int cellDescriptionsIndex,
@@ -1577,8 +1548,8 @@ public:
       const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int& cellDescriptionsIndex,
-        const int& solverNumber,
+        const int cellDescriptionsIndex,
+        const int solverNumber,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
 
   /**\copydoc Solver::attainedStableState
@@ -1652,8 +1623,7 @@ public:
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
-      const bool   vetoCompressionBackgroundJob,
-      const bool   isAtRemoteBoundary);
+      const bool   isSkeletonCell );
 
   /**
    *
@@ -1752,9 +1722,8 @@ public:
         const int element,
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
-        const bool isAtRemoteBoundary,
-        const bool vetoSpawnPredictionAsBackgroundJob,
-        const bool vetoSpawnAnyBackgroundJobs);
+        const bool isSkeletonCell,
+        const bool mustBeDoneImmediately);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -1899,30 +1868,14 @@ public:
   // helper status
   void mergeWithCommunicationStatus(
       CellDescription& cellDescription,
-      const int direction,
+      const int faceIndex,
       const int otherCommunicationStatus) const;
-
-  void mergeNeighboursCommunicationStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
 
   // augmentation status
   void mergeWithAugmentationStatus(
       CellDescription& cellDescription,
-      const int direction,
+      const int faceIndex,
       const int otherAugmentationStatus) const;
-
-  void mergeNeighboursAugmentationStatus(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
 
   void mergeNeighboursMetadata(
       const int                                 cellDescriptionsIndex1,
@@ -2439,11 +2392,9 @@ public:
    * However, we have to take care about the interplay of compression and
    * uncompression.
    *
-   * \param[in] isAtRemoteBoundary
+   * \param[in] isSkeletonJob decides to which queue we spawn the job if we spawn any
    */
-  void compress(CellDescription& cellDescription,
-      const bool vetoSpawnBackgroundJob,
-      const bool isAtRemoteBoundary) const;
+  void compress( CellDescription& cellDescription, const bool isSkeletonCell ) const;
 };
 
 #endif

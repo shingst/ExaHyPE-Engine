@@ -262,9 +262,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
-  // EnterLeaveCell should be done in parallel iff we spawn prediction as background job
-  const int grainSizeForEnterLeaveCell = exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ? 0 : 1;
-
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
@@ -286,7 +283,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
-         grainSizeForEnterLeaveCell, //   int  grainSizeForEnterLeaveCell         = 2,
+         1, //   int  grainSizeForEnterLeaveCell         = 2,
          1, //   int  smallestProblemSizeForTouchFirstLast = tarch::la::aPowI(DIMENSIONS,3*3*3*3+1),
          1, //   int  grainSizeForTouchFirstLast         = 64,
          1, //   int  smallestProblemSizeForSplitLoadStore = tarch::la::aPowI(DIMENSIONS,3*3*3),
@@ -586,8 +583,9 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob =
-      _parser.getSpawnPredictionAsBackgroundThread();
+  exahype::solvers::Solver::configureEnclaveTasking(
+      _parser.getSpawnPredictionAsBackgroundThread());
+
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
       _parser.getSpawnAMRBackgroundThreads();
 
@@ -788,8 +786,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
 
-    repository.switchToPrediction();
-    repository.iterate( PredictionSweeps, communicatePeanoVertices );
+    repository.switchToInitialPrediction();
+    repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
     logInfo("runAsMaster(...)","computed first predictor");
 
     printTimeStepInfo(-1,repository);
@@ -1154,7 +1152,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
-    const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? PredictionSweeps : 1;
+    const int sweeps = (exahype::solvers::Solver::FuseADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
     repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
   }
 }
@@ -1280,9 +1278,9 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToFusedTimeStep();
   if (numberOfStepsToRun==0) {
-    repository.iterate( 1,communicatePeanoVertices );
+    repository.iterate( exahype::solvers::Solver::PredictionSweeps,communicatePeanoVertices );
   } else {
-    repository.iterate( PredictionSweeps*numberOfStepsToRun,false/*Always disable during batching*/ );
+    repository.iterate( exahype::solvers::Solver::PredictionSweeps*numberOfStepsToRun,false/*Always disable during batching*/ );
   }
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
@@ -1305,7 +1303,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionRerun();
-    repository.iterate( PredictionSweeps, communicatePeanoVertices );
+    repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
   }
 
   updateStatistics();
@@ -1346,7 +1344,7 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   repository.switchToPrediction(); // Cell onto faces
-  repository.iterate( PredictionSweeps, communicatePeanoVertices );
+  repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
 
   updateStatistics();
 }
