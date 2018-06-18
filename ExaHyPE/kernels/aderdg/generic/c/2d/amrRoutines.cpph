@@ -167,6 +167,71 @@ void accumulate( // TODO(Dominic): Use std:: equivalent
 
 template <int numberOfVariables,int numberOfParameters,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsRestriction(
+                             double* lFhbndCoarse,
+                             const double* lFhbndFine,
+                             const int levelDelta,
+                             const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex) {
+  constexpr int numberOfData = numberOfVariables+numberOfParameters;
+
+  double lFhbndCoarseTemp1[basisSize*numberOfVariables];
+  double lFhbndCoarseTemp2[basisSize*numberOfVariables];
+
+  double * pointerFhbnd1 = 0;
+  double * pointerFhbnd2 = 0;
+
+  pointerFhbnd1 = lFhbndCoarseTemp1;
+
+  tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexCurrent(subfaceIndex);
+
+  tarch::la::Vector<DIMENSIONS-1,int> subintervalIndex;
+  
+  // This loop decodes subfaceIndex[0] into a tertiary basis
+  // starting with the lowest significance 3^0 (in contrast to the prolongation loop).
+  //
+  // Per iteration, the digit corresponding to the current significance then determines
+  // the subinterval for the single level restriction.
+  for (int l = 1; l < levelDelta+1; ++l) {
+    subintervalIndex[0]    = subfaceIndexCurrent[0] % 3;
+    subfaceIndexCurrent[0] = (subfaceIndexCurrent[0] - subintervalIndex[0])/3;
+    assertion(subintervalIndex[0] < 3);
+
+    // Zero the values of of the first pair of pointers.
+    std::fill_n(pointerFhbnd1,numberOfVariables*basisSize, 0.0);
+
+    // Apply the single level restriction operator.
+    // 
+    // In the first iteration use the fine level
+    // unknowns as input. In he subsequent ones
+    // use the second pair of pointers.
+    if (l==1) {
+      singleLevelFaceUnknownsRestriction<numberOfVariables,basisSize>(
+          pointerFhbnd1,
+          lFhbndFine,
+          subintervalIndex);
+    } else {
+      singleLevelFaceUnknownsRestriction<numberOfVariables,basisSize>(
+          pointerFhbnd1,
+          pointerFhbnd2,
+          subintervalIndex);
+    }
+
+    // Prepare next iteration.
+    pointerFhbnd2 = pointerFhbnd1;
+    // Toggle pointer pairs.
+    if (pointerFhbnd1 == lFhbndCoarseTemp1) {
+      pointerFhbnd1 = lFhbndCoarseTemp2;
+    } else {
+      pointerFhbnd1 = lFhbndCoarseTemp1;
+    }
+  }
+
+  // Add restricted fine level unknowns to coarse level unknowns.
+  accumulate<numberOfVariables*basisSize>(lFhbndCoarse,pointerFhbnd2);
+}
+
+
+template <int numberOfVariables,int numberOfParameters,int basisSize>
+void kernels::aderdg::generic::c::faceUnknownsRestriction(
                              double* lQhbndCoarse,
                              double* lFhbndCoarse,
                              const double* lQhbndFine,
@@ -194,7 +259,7 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
   tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexCurrent(subfaceIndex);
 
   tarch::la::Vector<DIMENSIONS-1,int> subintervalIndex;
-  
+
   // This loop decodes subfaceIndex[0] into a tertiary basis
   // starting with the lowest significance 3^0 (in contrast to the prolongation loop).
   //
@@ -210,7 +275,7 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
     std::fill_n(pointerFhbnd1,numberOfVariables*basisSize, 0.0);
 
     // Apply the single level restriction operator.
-    // 
+    //
     // In the first iteration use the fine level
     // unknowns as input. In he subsequent ones
     // use the second pair of pointers.

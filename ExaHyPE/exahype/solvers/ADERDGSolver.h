@@ -1146,22 +1146,7 @@ public:
    * \param[in]    lduh Cell-local update DoF.
    * \param[dt]    dt   Time step size.
    */
-  virtual void solutionUpdate(double* luh, const double* const lduh,
-                              const double dt) = 0;
-
-  /**
-   * @brief Computes the surface integral contributions
-   * to the cell update.
-   *
-   * \param[inout] lduh   Cell-local update DoF.
-   * \param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
-   * \param[in]    cellSize     Extent of the cell in each coordinate direction.
-   *
-   * \deprecated
-   */
-  virtual void surfaceIntegral(
-      double* lduh, const double* const lFhbnd,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
+  virtual void solutionUpdate(double* luh, const double* const lduh,const double dt) = 0;
 
 
   /**
@@ -1316,21 +1301,6 @@ public:
   virtual void faceUnknownsProlongation(
       double* lQhbndFine, double* lFhbndFine, const double* lQhbndCoarse,
       const double* lFhbndCoarse, const int coarseGridLevel,
-      const int fineGridLevel,
-      const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) = 0;
-
-  /**
-   * Restricts fine grid face unknowns on level \p fineGridLevel
-   * up to level \p coarseGridLevel and adds them to the coarse grid unknowns.
-   *
-   * \note For the considered AMR concept, the difference in levels can
-   * be larger than one. Let \f$l\f$ be the level difference. The
-   * vector \p subfaceIndex does contain values in the range
-   * \f$0,1,\ldots,3^l-1\f$.
-   */
-  virtual void faceUnknownsRestriction(
-      double* lQhbndCoarse, double* lFhbndCoarse, const double* lQhbndFine,
-      const double* lFhbndFine, const int coarseGridLevel,
       const int fineGridLevel,
       const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) = 0;
 

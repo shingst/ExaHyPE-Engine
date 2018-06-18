@@ -2593,7 +2593,6 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
       updateCoarse[i] += updateFine;
   }
   lock.free();
-  std::updateFine;
 
 
   const int levelFine   = cellDescription.getLevel();

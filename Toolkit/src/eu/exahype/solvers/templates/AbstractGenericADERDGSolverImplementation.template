@@ -158,13 +158,20 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* lduh,const double* const lFhbnd,const int direction, const int orientation,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
 {%- if enableProfiler %}
-  _profiler->start("surfaceIntegral");
+  _profiler->start("faceIntegral");
 {%- endif %}
-  kernels::aderdg::generic::{{language}}::surfaceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbnd,dx);
+  faceUnknownsRestriction(double* lFhbndCoarse,
+                          const double* lQhbndFine,
+                          const double* lFhbnd,
+                             0,
+                             levelDelta,
+                             const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex){
+
+  kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbnd,dx);
 {%- if enableProfiler %}
-  _profiler->stop("surfaceIntegral");
+  _profiler->stop("faceIntegral");
 {%- endif %}
 }
 
@@ -263,16 +270,6 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
   kernels::aderdg::generic::c::faceUnknownsProlongation<NumberOfVariables,NumberOfParameters,Order+1>(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse,coarseGridLevel,fineGridLevel,subfaceIndex);
 {%- if enableProfiler %}
   _profiler->start("false");
-{%- endif %}
-}
-
-void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
-{%- if enableProfiler %}
-  _profiler->start("faceUnknownsRestriction");
-{%- endif %}
-  kernels::aderdg::generic::c::faceUnknownsRestriction<NumberOfVariables,NumberOfParameters,Order+1>(lQhbndCoarse,lFhbndCoarse,lQhbndFine,lFhbndFine,coarseGridLevel,fineGridLevel,subfaceIndex);
-{%- if enableProfiler %}
-  _profiler->stop("faceUnknownsRestriction");
 {%- endif %}
 }
 
