@@ -53,9 +53,6 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
     double width_y=dx[1];
     double width_z=dx[2];
 
-
-    
-
     for (int k=0; k< num_nodes; k++){
       for (int j=0; j< num_nodes; j++){
 	for (int i=0; i< num_nodes; i++){
@@ -298,6 +295,8 @@ void  Elastic::MyElasticWaveSolver::initPointSourceLocations(const std::vector<s
 
 }
 
+
+//Point source taken from: http://www.sismowine.org/model/WP2_LOH1.pdf
 void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector, int n) {
   constexpr double t0 = 0.1;
   constexpr double M0 = 1000.0;
