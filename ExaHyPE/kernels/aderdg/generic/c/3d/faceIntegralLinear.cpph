@@ -7,7 +7,7 @@
 
 template <int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::faceIntegralLinear(double *lduh, const double *const lFhbnd,
-						     int direction, int orientation, int levelDelta,
+						     int direction, int orientation,
 						     const tarch::la::Vector<DIMENSIONS, double> &dx) 
 const double invDx =  1.0/dx[direction];
   idx4 idx_lduh(basisSize, basisSize, basisSize, numberOfVariables); // (z,y,x,var/par)
