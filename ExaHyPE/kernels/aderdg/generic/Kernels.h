@@ -166,9 +166,19 @@ void faceUnknownsProlongation(
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex);
 
+
+template <int numberOfVariables,int numberOfParameters,int basisSize>
+void faceUnknownsRestriction(
+    double* lFhbndCoarse,
+    const double* lFhbndFine,
+    const int levelDelta,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex);
+
 /**
  * \note We need to consider material parameters in
  * lQhbndFine and lQhbndCoarse.
+ *
+ * @\deprecated
  */
 template <int numberOfVariables,int numberOfParameters,int basisSize>
 void faceUnknownsRestriction(
