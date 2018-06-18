@@ -355,31 +355,12 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     lock.free();
   }
 
-  // allocate update
-  if (
-      (
-        cellDescription.getType()==CellDescription::Type::Cell
-        ||
-        (cellDescription.getType()==CellDescription::Type::Descendant
-        #ifdef Parallel
-        && cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-        #endif
-        )
-      )
-      &&
-      !DataHeap::getInstance().isValidIndex(cellDescription.getUpdate())
-  ) {
-    cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
-    cellDescription.setUpdateAverages( DataHeap::getInstance().createData( getNumberOfVariables(), getNumberOfVariables() ) );
-    cellDescription.setUpdateCompressed(-1);
-  }
-
   assertion2(cellDescription.getType()!=CellDescription::Type::Cell ||
       cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
       cellDescription.toString(),
       tarch::parallel::Node::getInstance().getRank());
 
-  // allocate boundary arrays
+  // allocate update and boundary arrays
   if(
       (
         cellDescription.getType()==CellDescription::Type::Cell
@@ -398,7 +379,12 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
 
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
-    // Allocate face DoF
+    // allocate update dof
+    cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
+    cellDescription.setUpdateAverages( DataHeap::getInstance().createData( getNumberOfVariables(), getNumberOfVariables() ) );
+    cellDescription.setUpdateCompressed(-1);
+
+    // allocate boundary arrays
     const int dataPerBnd = getBndTotalSize();
     const int dofPerBnd  = getBndFluxTotalSize();
 
@@ -418,7 +404,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     // Allocate volume DoF for limiter (we need for every of the 2*DIMENSIONS faces an array of min values
     // and array of max values of the neighbour at this face).
     const int numberOfObservables = getDMPObservables();
-    if (numberOfObservables>0) {
+    if ( numberOfObservables>0 ) {
       cellDescription.setSolutionMin(DataHeap::getInstance().createData(
           numberOfObservables * DIMENSIONS_TIMES_TWO, numberOfObservables * DIMENSIONS_TIMES_TWO ));
       cellDescription.setSolutionMax(DataHeap::getInstance().createData(
