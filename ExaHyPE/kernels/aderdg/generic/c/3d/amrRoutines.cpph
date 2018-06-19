@@ -177,8 +177,8 @@ void singleLevelFaceUnknownsRestriction(
 
 template <int length>
 void accumulate(
-    double * inOutArray,
-    const double * inArray) {
+    double* const       inOutArray,
+    const double* const inArray) {
   for (int i = 0; i < length; ++i) {
     inOutArray[i] += inArray[i];
   }
@@ -186,13 +186,11 @@ void accumulate(
 
 template <int numberOfVariables,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsRestriction(
-                             const double*       lFhbndCoarse,
+                             double* const       lFhbndCoarse,
                              const double* const lFhbndFine,
                              const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
                              const int levelDelta) {
   constexpr int basisSize2 = basisSize*basisSize;
-
-  const int levelDelta     = fineGridLevel - coarseGridLevel;
 
   double lFhbndCoarseTemp1[basisSize2*numberOfVariables];
   double lFhbndCoarseTemp2[basisSize2*numberOfVariables];
@@ -200,7 +198,6 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
   double * pointerFhbnd1 = 0;
   double * pointerFhbnd2 = 0;
 
-  pointerQhbnd1 = lQhbndCoarseTemp1;
   pointerFhbnd1 = lFhbndCoarseTemp1;
 
   tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexCurrent(subfaceIndex);

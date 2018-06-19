@@ -176,7 +176,7 @@ void faceUnknownsProlongation(
 
 template <int numberOfVariables,int basisSize>
 void faceUnknownsRestriction(
-    const double*       lFhbndCoarse,
+    double* const       lFhbndCoarse,
     const double* const lFhbndFine,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
     const int levelDelta);
@@ -247,8 +247,8 @@ void deltaDistribution(
 #include "kernels/aderdg/generic/c/2d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/stableTimeStepSize.cpph"
 #include "kernels/aderdg/generic/c/2d/deltaDistribution.cpph"
-#include "kernels/aderdg/generic/c/2d/surfaceIntegralLinear.cpph"
-#include "kernels/aderdg/generic/c/2d/surfaceIntegralNonlinear.cpph"
+#include "kernels/aderdg/generic/c/2d/faceIntegralLinear.cpph"
+#include "kernels/aderdg/generic/c/2d/faceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/amrRoutines.cpph"
@@ -262,8 +262,8 @@ void deltaDistribution(
 #include "kernels/aderdg/generic/c/3d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/stableTimeStepSize.cpph"
 #include "kernels/aderdg/generic/c/3d/deltaDistribution.cpph"
-#include "kernels/aderdg/generic/c/3d/surfaceIntegralLinear.cpph"
-#include "kernels/aderdg/generic/c/3d/surfaceIntegralNonlinear.cpph"
+#include "kernels/aderdg/generic/c/3d/faceIntegralLinear.cpph"
+#include "kernels/aderdg/generic/c/3d/faceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/amrRoutines.cpph"
