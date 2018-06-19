@@ -120,6 +120,7 @@ class Controller:
                    "useFlux"               : (commandLineArguments.useFlux or commandLineArguments.useFluxVect),
                    "useFluxVect"           : commandLineArguments.useFluxVect,
                    "useNCP"                : commandLineArguments.useNCP,
+                   "useNCPVect"            : False, #TODO JMG
                    "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
                    "useFusedSource"        : commandLineArguments.useFusedSource,
                    "useSourceOrNCP"        : (commandLineArguments.useSource or commandLineArguments.useNCP),

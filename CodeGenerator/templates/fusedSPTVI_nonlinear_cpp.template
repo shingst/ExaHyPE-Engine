@@ -85,9 +85,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
   double** Ft[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { Ft_x, Ft_y{{', Ft_z' if nDim==3 else ''}} };
 {% endif %}
-{% if useNCP %}
-  double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
-{% endif %}
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
@@ -269,8 +266,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         }
       }
 {% endif %}
-     
+
 {% if useSourceOrNCP %}
+{# ***********************************************************
+   **** call to Source and NCP (or FusedSource) functions ****
+   *********************************************************** #}
+{% with time_var='i', input_gradQ='gradQ', output='rhs' %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %} 
+{% endif %}
+/*     
+{% if useSourceOrNCP %}
+      double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
       // Compute the Nonconservative part NCP + Source
       for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
         const double updateSize = weights1[i] * weights3[jkl] * dt;
@@ -323,6 +330,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         }
       }
 {% endif %}
+*/
    
     }  // end time dof
 
