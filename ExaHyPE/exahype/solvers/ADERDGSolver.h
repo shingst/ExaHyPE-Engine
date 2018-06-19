@@ -880,7 +880,13 @@ public:
   void updateCommunicationStatus(
         exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
   /**
-   * TODO(Dominic): Add docu.
+   * Determine the communication status of this cell
+   * description based on the face wise communication status flags
+   * if the cell is of type Descendant.
+   *
+   * If the cell description is of type Ancestor, return 0.
+   * If the cell description of type Cell, return the maximum
+   * commmunication status.
    */
   int determineCommunicationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;

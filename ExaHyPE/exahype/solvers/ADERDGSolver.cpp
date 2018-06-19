@@ -191,6 +191,8 @@ exahype::solvers::ADERDGSolver::CellDescription& exahype::solvers::ADERDGSolver:
 bool exahype::solvers::ADERDGSolver::holdsFaceData(const CellDescription& cellDescription) {
   assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
             cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,cellDescription.toString());
+  assertion1(cellDescription.getType()!=CellDescription::Type::Ancestor ||
+             cellDescription.getCommunicationStatus()==0,cellDescription.toString());
   return
       cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication;
 }
@@ -232,81 +234,67 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     lock.free();
   }
 
-// deallocate update
+  // deallocate update and boundary arrays
   if (
-      (
-        cellDescription.getType()!=CellDescription::Cell
-        &&
-        (cellDescription.getType()!=CellDescription::Descendant
-        #ifdef Parallel
-        || !cellDescription.getHasToHoldDataForMasterWorkerCommunication() )
-        #endif
-      )
-      &&
+      !holdsFaceData(cellDescription) &&
       DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()
   ) {
+    // update
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
-    if (cellDescription.getUpdate()>=0) {
-      DataHeap::getInstance().deleteData(cellDescription.getUpdate());
+    if ( cellDescription.getUpdate()>=0 ) {
       assertion(cellDescription.getUpdateCompressed()==-1);
+
+      DataHeap::getInstance().deleteData(cellDescription.getUpdate());
+      cellDescription.setUpdate(-1);
     }
     else {
       assertion(CompressionAccuracy>0.0);
       assertion(cellDescription.getUpdate()==-1);
+
       CompressedDataHeap::getInstance().deleteData(cellDescription.getUpdateCompressed());
+      cellDescription.setUpdateCompressed(-1);
     }
     DataHeap::getInstance().deleteData(cellDescription.getUpdateAverages());
-
-    cellDescription.setUpdate(-1);
     cellDescription.setUpdateAverages(-1);
-    cellDescription.setUpdateCompressed(-1);
-  }
 
-  // deallocate boundary arrays
-  if (
-      cellDescription.getType()!=CellDescription::Cell
-      &&
-      (cellDescription.getType()!=CellDescription::Descendant || // if-then
-      (
-        cellDescription.getCommunicationStatus()<MinimumCommunicationStatusForNeighbourCommunication
-        #ifdef Parallel
-        && !cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-        #endif
-      ))
-      &&
-      DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
-  ) {
-    assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
-               cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
-               cellDescription.toString());
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
-
+    // extrapolated predictor
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
     if (cellDescription.getExtrapolatedPredictor()>=0) {
-      DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictor());
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
       assertion(cellDescription.getExtrapolatedPredictorCompressed()==-1);
+
+      DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictor());
+      cellDescription.setExtrapolatedPredictor(-1);
     }
     else {
       assertion(CompressionAccuracy>0.0);
       assertion(cellDescription.getExtrapolatedPredictor()==-1);
-      CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorCompressed());
-    }
 
-    if (cellDescription.getFluctuation()>=0) {
-      DataHeap::getInstance().deleteData(cellDescription.getFluctuation());
+      CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorCompressed());
+      cellDescription.setExtrapolatedPredictorCompressed(-1);
+    }
+    DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorAverages());
+    cellDescription.setExtrapolatedPredictorAverages(-1);
+
+    // fluctuations
+    if ( cellDescription.getFluctuation()>=0 ) {
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
       assertion(cellDescription.getFluctuationCompressed()==-1);
+
+      DataHeap::getInstance().deleteData(cellDescription.getFluctuation());
+      cellDescription.setFluctuation(-1);
     }
     else {
       assertion(CompressionAccuracy>0.0);
       assertion(cellDescription.getFluctuation()==-1);
+
       CompressedDataHeap::getInstance().deleteData(cellDescription.getFluctuationCompressed());
+      cellDescription.setFluctuationCompressed(-1);
     }
-
-    DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorAverages());
     DataHeap::getInstance().deleteData(cellDescription.getFluctuationAverages());
+    cellDescription.setFluctuationAverages(-1);
 
-    if (getDMPObservables()>0) {
+    if ( getDMPObservables()>0 ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMin()));
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMax()));
       DataHeap::getInstance().deleteData(cellDescription.getSolutionMin());
@@ -316,12 +304,6 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
       cellDescription.setSolutionMax(-1);
     }
 
-    cellDescription.setExtrapolatedPredictor(-1);
-    cellDescription.setFluctuation(-1);
-
-    cellDescription.setExtrapolatedPredictorCompressed(-1);
-    cellDescription.setFluctuationCompressed(-1);
-
     lock.free();
   }
 }
@@ -330,8 +312,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
   // allocate solution
   if (
-      cellDescription.getType()==CellDescription::Type::Cell
-      &&
+      cellDescription.getType()==CellDescription::Type::Cell &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
@@ -355,24 +336,9 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     lock.free();
   }
 
-  assertion2(cellDescription.getType()!=CellDescription::Type::Cell ||
-      cellDescription.getCommunicationStatus()==MaximumCommunicationStatus,
-      cellDescription.toString(),
-      tarch::parallel::Node::getInstance().getRank());
-
   // allocate update and boundary arrays
-  if(
-      (
-        cellDescription.getType()==CellDescription::Type::Cell
-        ||
-        (cellDescription.getType()==CellDescription::Type::Descendant &&
-        (cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
-        #ifdef Parallel
-        || cellDescription.getHasToHoldDataForMasterWorkerCommunication()
-        #endif
-        ))
-      )
-      &&
+  if (
+      holdsFaceData(cellDescription) &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
   ) {
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
@@ -384,21 +350,18 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     cellDescription.setUpdateAverages( DataHeap::getInstance().createData( getNumberOfVariables(), getNumberOfVariables() ) );
     cellDescription.setUpdateCompressed(-1);
 
-    // allocate boundary arrays
+    // extrapolated predictor
     const int dataPerBnd = getBndTotalSize();
-    const int dofPerBnd  = getBndFluxTotalSize();
-
     cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(dataPerBnd, dataPerBnd) );
-    cellDescription.setFluctuation( DataHeap::getInstance().createData(dofPerBnd,  dofPerBnd) );
-
     cellDescription.setExtrapolatedPredictorCompressed(-1);
-    cellDescription.setFluctuationCompressed(-1);
-
-    //TODO JMG / Dominic adapt for padding with optimized kernels
-    //TODO Tobias: Does it make sense to pad these arrays.
-    const int boundaryData     = (getNumberOfParameters()+getNumberOfVariables()) * DIMENSIONS_TIMES_TWO;
-    const int boundaryUnknowns = getNumberOfVariables() * DIMENSIONS_TIMES_TWO;
+    const int boundaryData     = (getNumberOfParameters()+getNumberOfVariables()) * DIMENSIONS_TIMES_TWO; //TODO JMG / Dominic adapt for padding with optimized kernels //TODO Tobias: Does it make sense to pad these arrays.
     cellDescription.setExtrapolatedPredictorAverages( DataHeap::getInstance().createData( boundaryData,  boundaryData  ) );
+
+    // fluctuations
+    const int dofPerBnd  = getBndFluxTotalSize();
+    cellDescription.setFluctuation( DataHeap::getInstance().createData(dofPerBnd,  dofPerBnd) );
+    cellDescription.setFluctuationCompressed(-1);
+    const int boundaryUnknowns = getNumberOfVariables() * DIMENSIONS_TIMES_TWO;     //TODO JMG / Dominic adapt for padding with optimized kernels //TODO Tobias: Does it make sense to pad these arrays.
     cellDescription.setFluctuationAverages( DataHeap::getInstance().createData( boundaryUnknowns, boundaryUnknowns ) );
 
     // Allocate volume DoF for limiter (we need for every of the 2*DIMENSIONS faces an array of min values
@@ -2686,10 +2649,10 @@ exahype::solvers::ADERDGSolver::updateCommunicationStatus(
 int
 exahype::solvers::ADERDGSolver::determineCommunicationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     return MaximumCommunicationStatus;
   }
-  else {
+  else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
     int max = 0;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( cellDescription.getNeighbourMergePerformed(i) ) {
@@ -2697,6 +2660,8 @@ exahype::solvers::ADERDGSolver::determineCommunicationStatus(
       }
     }
     return max;
+  } else {
+    return 0;
   }
 }
 
@@ -3747,8 +3712,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
       (cellDescription.getFacewiseCommunicationStatus(faceIndex)==MaximumCommunicationStatus &&
       cellDescription.getCommunicationStatus()                  >=MinimumCommunicationStatusForNeighbourCommunication)
   ){
-    assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
-
     assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
         faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
 /*
