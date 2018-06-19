@@ -2449,6 +2449,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,
                                lFhbndCoarse, levelCoarse, levelFine,
                                exahype::amr::getSubfaceIndex(subcellPosition.subcellIndex,d));
+
       // time step data TODO(LTS), still need veto
       cellDescription.setPredictorTimeStamp(cellDescriptionParent.getPredictorTimeStamp());
       cellDescription.setPredictorTimeStepSize(cellDescriptionParent.getPredictorTimeStepSize());
