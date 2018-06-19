@@ -237,7 +237,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
   // deallocate update and boundary arrays
   if (
       !holdsFaceData(cellDescription) &&
-      DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()
+      DataHeap::getInstance().isValidIndex(cellDescription.getUpdate())
   ) {
     // update
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
@@ -2492,7 +2492,7 @@ void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it stil
     ) {
       exahype::solvers::Solver::SubcellPosition subcellPosition =
           exahype::amr::computeSubcellPositionOfCellOrAncestor<CellDescription,Heap>(cellDescription);
-      assertion(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
+      assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
 
       // restrict update and minMax
       restrictToTopMostParent(cellDescription,
@@ -2544,7 +2544,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
 
   tarch::multicore::Lock lock(RestrictionSemaphore);
   for (int i = 0; i < getDataPerCell(); ++i) {
-      updateCoarse[i] += updateFine;
+      updateCoarse[i] += updateFine[i];
   }
   lock.free();
 
@@ -2805,7 +2805,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   const bool cellNextToCellOrDescendant =
       (pLeft.getType()==CellDescription::Type::Cell || pLeft.getType()==CellDescription::Type::Descendant)   &&
       (pRight.getType()==CellDescription::Type::Cell || pRight.getType()==CellDescription::Type::Descendant) &&
-      (pLeft.getType()!=CellDescription::Type::Descendant || pRight.getType()!=CellDescription::Type::Descendant));
+      (pLeft.getType()!=CellDescription::Type::Descendant || pRight.getType()!=CellDescription::Type::Descendant);
   //  const bool cellNextToAncestor =
   //      (pLeft.getType()==CellDescription::Type::Cell || pRight.getType()==CellDescription::Type::Cell) &&
   //      (pLeft.getType()==CellDescription::Type::Ancestor || pRight.getType()==CellDescription::Type::Ancestor);
@@ -2887,7 +2887,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int orientationLeft  = faceIndexLeft % 2;
     const int orientationRight = 1-orientationLeft;
     const int direction        = (faceIndexLeft-orientationLeft)/2;
-    double* updateLeft  = DataHeap::getInstance() getData(pLeft.getUpdate()).data();
+    double* updateLeft  = DataHeap::getInstance().getData(pLeft.getUpdate()).data();
     double* updateRight = DataHeap::getInstance().getData(pRight.getUpdate()).data();
 
     faceIntegral(updateLeft,FL,direction,orientationLeft,levelDeltaLeft,pLeft.getSize());
