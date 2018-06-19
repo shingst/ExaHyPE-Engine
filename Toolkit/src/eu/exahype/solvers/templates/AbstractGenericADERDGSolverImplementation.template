@@ -158,7 +158,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* lduh,const double* const lFhbnd,const int direction, const int orientation,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
 {%- if enableProfiler %}
   _profiler->start("faceIntegral");
 {%- endif %}

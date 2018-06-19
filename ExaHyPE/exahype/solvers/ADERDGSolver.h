@@ -1179,7 +1179,6 @@ public:
       const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
 
-
   /**
    * @brief Computes the normal fluxes (or fluctuations) at the interface of two
    *cells.
