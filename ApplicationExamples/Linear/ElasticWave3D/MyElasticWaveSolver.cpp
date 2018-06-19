@@ -124,7 +124,7 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
     pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
   }
 
-  bool elementOnSurface = std::min(left_vertex[1],right_vertex[1]) < 1.0;
+  bool elementOnSurface = left_vertex[1] < dx * 0.5;
   
   if (tarch::la::equals(t,0.0)) {
     if(pointSourceInElement || elementOnSurface){
