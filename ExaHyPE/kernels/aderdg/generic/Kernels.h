@@ -248,6 +248,8 @@ void deltaDistribution(
 #include "kernels/aderdg/generic/c/2d/deltaDistribution.cpph"
 #include "kernels/aderdg/generic/c/2d/faceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/faceIntegralNonlinear.cpph"
+#include "kernels/aderdg/generic/c/2d/surfaceIntegralLinear.cpph"
+#include "kernels/aderdg/generic/c/2d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/amrRoutines.cpph"
@@ -263,6 +265,8 @@ void deltaDistribution(
 #include "kernels/aderdg/generic/c/3d/deltaDistribution.cpph"
 #include "kernels/aderdg/generic/c/3d/faceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/faceIntegralNonlinear.cpph"
+#include "kernels/aderdg/generic/c/3d/surfaceIntegralLinear.cpph"
+#include "kernels/aderdg/generic/c/3d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/amrRoutines.cpph"
@@ -340,9 +344,9 @@ template <int numberOfVariables, int basisSize>
 void surfaceIntegralNonlinear(double* lduh, const double* const lFbnd,
                               const tarch::la::Vector<DIMENSIONS, double>& dx);
 
-/* template <int numberOfVariables, int basisSize> */
-/* void surfaceIntegralLinear(double* lduh, const double* const lFbnd, */
-/*                            const tarch::la::Vector<DIMENSIONS, double>& dx); */
+template <int numberOfVariables, int basisSize>
+void surfaceIntegralLinear(double* lduh, const double* const lFbnd,
+                            const tarch::la::Vector<DIMENSIONS, double>& dx); 
 
 /*void surfaceIntegral2(
     double* lduh,

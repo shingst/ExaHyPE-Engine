@@ -37,7 +37,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(double *lduh, const doub
       for (int i = 0; i < basisSize; i++) { // z
         for (int j = 0; j < basisSize; j++) { // y
           for (int k = 0; k < basisSize; k++) { // x
-            const double scaledweight =
+            const double scaledWeight =
               kernels::gaussLegendreWeights[order][i] *
               kernels::gaussLegendreWeights[order][j] *
               scaling;
@@ -57,7 +57,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(double *lduh, const doub
       for (int i = 0; i < basisSize; i++) { // z
         for (int j = 0; j < basisSize; j++) { // y
           for (int k = 0; k < basisSize; k++) { // x
-            const double scaledweight =
+            const double scaledWeight =
                 kernels::gaussLegendreWeights[order][i] *
                 kernels::gaussLegendreWeights[order][k] *
                 scaling;
