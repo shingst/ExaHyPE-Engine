@@ -195,66 +195,6 @@ void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
 }
 #endif
 
-void exahype::mappings::FusedTimeStep::enterCell(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
-
-  if ( fineGridCell.isInitialised() ) {
-    if ( issuePredictionJobsInThisIteration() ) {
-      exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-          fineGridCell.getCellDescriptionsIndex(),
-          fineGridVerticesEnumerator);
-    }
-
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (element!=exahype::solvers::Solver::NotFound) {
-        if ( issuePredictionJobsInThisIteration() ) {
-          // this operates only on compute cells
-          exahype::plotters::plotPatchIfAPlotterIsActive(
-              solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
-
-          exahype::solvers::Solver::UpdateResult result =
-              solver->fusedTimeStep(
-                  fineGridCell.getCellDescriptionsIndex(),element,
-                  exahype::State::isFirstIterationOfBatchOrNoBatch(),
-                  exahype::State::isLastIterationOfBatchOrNoBatch(),
-                  exahype::Cell::isAtRemoteBoundary(
-                      fineGridVertices,fineGridVerticesEnumerator)
-          );
-
-          _meshUpdateRequests    [solverNumber]  =
-              _meshUpdateRequests[solverNumber] || result._refinementRequested;
-          _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
-          assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-                    _meshUpdateRequests[solverNumber]);
-          _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
-          _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
-        }
-
-        if ( sendOutRiemannDataInThisIteration() ) {
-          // this operates only on virtual helper cells (pull from below)
-          solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
-        }
-      }
-    }
-
-    // Must be performed for all cell descriptions
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
-  }
-  logTraceOutWith1Argument("enterCell(...)", fineGridCell);
-}
-
-
 void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
@@ -288,6 +228,34 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
 
+void exahype::mappings::FusedTimeStep::enterCell(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
+
+  if (
+      fineGridCell.isInitialised() &&
+      sendOutRiemannDataInThisIteration()
+   ) {
+     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
+     for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+       if (element!=exahype::solvers::Solver::NotFound) {
+         solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element); // this operates only on virtual helper cells (pull from below)
+       }
+     }
+  }
+
+  logTraceOutWith1Argument("enterCell(...)", fineGridCell);
+}
+
+
+
 void exahype::mappings::FusedTimeStep::leaveCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -295,13 +263,52 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,
-                           fineGridVerticesEnumerator.toString(),
-                           coarseGridCell, fineGridPositionOfCell);
+  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
-  if ( sendOutRiemannDataInThisIteration() ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+  if (
+      fineGridCell.isInitialised() &&
+      issuePredictionJobsInThisIteration()
+  ) {
+    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVerticesEnumerator);
+
+    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
+    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      if (element!=exahype::solvers::Solver::NotFound) {
+        // this operates only on compute cells
+        exahype::plotters::plotPatchIfAPlotterIsActive(
+            solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
+
+        exahype::solvers::Solver::UpdateResult result =
+            solver->fusedTimeStep(
+                fineGridCell.getCellDescriptionsIndex(),element,
+                exahype::State::isFirstIterationOfBatchOrNoBatch(),
+                exahype::State::isLastIterationOfBatchOrNoBatch(),
+                exahype::Cell::isAtRemoteBoundary(
+                    fineGridVertices,fineGridVerticesEnumerator)
+            );
+        // TODO(LTS): Merge these too
+        exahype::mappings::Prediction::restriction(
+            fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+
+
+        _meshUpdateRequests    [solverNumber]  =
+            _meshUpdateRequests[solverNumber] || result._refinementRequested;
+        _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
+        assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
+                  _meshUpdateRequests[solverNumber]);
+        _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
+        _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
+      }
+    }
+
+    // Must be performed for all cell descriptions
+    exahype::Cell::resetNeighbourMergeFlags(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

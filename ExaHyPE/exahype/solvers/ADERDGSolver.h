@@ -1809,6 +1809,7 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
+  // TODO(LTS): Add docu
   void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) override;
@@ -1858,8 +1859,7 @@ public:
   void restrictToTopMostParent(
         const CellDescription& cellDescription,
         const int parentCellDescriptionsIndex,
-        const int parentElement,
-        const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
+        const int parentElement);
 
   ///////////////////////////////////
   // NEIGHBOUR

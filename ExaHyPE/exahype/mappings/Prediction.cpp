@@ -72,13 +72,13 @@ exahype::mappings::Prediction::enterCellSpecification(int level) const {
   return determineEnterCellSpecification(level);
 }
 
+// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::Prediction::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
-// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::Prediction::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
@@ -220,25 +220,6 @@ void exahype::mappings::Prediction::restriction(
       }
     }
   }
-}
-
-void exahype::mappings::Prediction::leaveCell(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,
-                           fineGridVerticesEnumerator.toString(),
-                           coarseGridCell, fineGridPositionOfCell);
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
-  }
-
-  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
 
 #ifdef Parallel
@@ -474,6 +455,15 @@ void exahype::mappings::Prediction::destroyCell(
   // do nothing
 }
 
+void exahype::mappings::Prediction::leaveCell(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  // do nothing
+}
 
 void exahype::mappings::Prediction::touchVertexFirstTime(
     exahype::Vertex& fineGridVertex,

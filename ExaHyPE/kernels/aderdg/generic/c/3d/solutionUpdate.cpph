@@ -41,14 +41,12 @@ void solutionUpdate(SolverType& solver, double* luh, const double* const lduh, c
       for (int k = 0; k < basisSize; k++) {
       #if defined(_GLL)
       const double weight = kernels::gaussLobattoWeights[order][i] *
-                              kernels::gaussLobattoWeights[order][j] *
-                              kernels::gaussLobattoWeights[order][k];
-
+                            kernels::gaussLobattoWeights[order][j] *
+                            kernels::gaussLobattoWeights[order][k];
       #else
       const double weight = kernels::gaussLegendreWeights[order][i] *
-                              kernels::gaussLegendreWeights[order][j] *
-                              kernels::gaussLegendreWeights[order][k];
-
+                            kernels::gaussLegendreWeights[order][j] *
+                            kernels::gaussLegendreWeights[order][k];
       #endif
         
         const double updateSize = dt / weight;
