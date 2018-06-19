@@ -204,7 +204,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       
 {% if useNCP %}
       //set gradQ to 0
-      std::memset(gradQ, 0, {{(nDof**nDim)*nDof*nVarPad*nDim}} * sizeof(double));
+      std::memset(gradQ, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
 {% endif %}
       
 
@@ -272,7 +272,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {# ***********************************************************
    **** call to Source and NCP (or FusedSource) functions ****
    *********************************************************** #}
-{% with time_var='i', input_gradQ='gradQ', output='rhs' %}
+{% with time_var='i', output='rhs' %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %} 
 {% endif %}
