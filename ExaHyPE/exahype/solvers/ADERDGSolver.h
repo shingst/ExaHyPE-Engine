@@ -1174,10 +1174,9 @@ public:
    * \param[in]    cellSize     Extent of the cell in each coordinate direction.
    */
   virtual void faceIntegral(
-      double* lduh,
-      const double* const lFhbnd,
+      double* lduh,const double* const lFhbnd,
       const int direction, const int orientation,
-      const int levelDelta,
+      const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
 
 

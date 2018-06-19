@@ -1209,8 +1209,17 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
     if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
       fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getLevel());
+      tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+          exahype::amr::computeSubcellIndex(
+              fineGridCellDescription.getOffset(),
+              fineGridCellDescription.getSize(),coarseGridCellDescription.getOffset());
+
+      fineGridCellDescription.setSubcellIndex(subcellIndex);
     } else {
+      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
+
       fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getParentCellLevel());
+      fineGridCellDescription.setSubcellIndex(coarseGridCellDescription.getSubcellIndex());
     }
   }
 }
@@ -2878,20 +2887,25 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     // directly perform the face integral afterwards
     int levelDeltaLeft  = 0;
     int levelDeltaRight = 0;
-    if ( pLeft.getType()==CellDescription::Type::Descendant ) {
-      levelDeltaLeft = pLeft.getLevel() - pLeft.getParentCellLevel();
-    }
-    else if (  pRight.getType()==CellDescription::Type::Descendant ) {
-      levelDeltaRight = pRight.getLevel() - pRight.getParentCellLevel();
-    }
+    tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexLeft(0);
+    tarch::la::Vector<DIMENSIONS-1,int> subfaceIndexRight(0);
+
     const int orientationLeft  = faceIndexLeft % 2;
     const int orientationRight = 1-orientationLeft;
     const int direction        = (faceIndexLeft-orientationLeft)/2;
+    if ( pLeft.getType()==CellDescription::Type::Descendant ) {
+      levelDeltaLeft = pLeft.getLevel() - pLeft.getParentCellLevel();
+      subfaceIndexLeft = exahype::amr::getSubfaceIndex(pLeft.getSubcellIndex(),direction));
+    }
+    else if (  pRight.getType()==CellDescription::Type::Descendant ) {
+      levelDeltaRight = pRight.getLevel() - pRight.getParentCellLevel();
+      subfaceIndexRight = exahype::amr::getSubfaceIndex(pRight.getSubcellIndex(),direction));
+    }
     double* updateLeft  = DataHeap::getInstance().getData(pLeft.getUpdate()).data();
     double* updateRight = DataHeap::getInstance().getData(pRight.getUpdate()).data();
 
-    faceIntegral(updateLeft,FL,direction,orientationLeft,levelDeltaLeft,pLeft.getSize());
-    faceIntegral(updateRight,FR,direction,orientationRight,levelDeltaRight,pRight.getSize());
+    faceIntegral(updateLeft,FL,direction,orientationLeft,subfaceIndexLeft,levelDeltaLeft,pLeft.getSize());
+    faceIntegral(updateRight,FR,direction,orientationRight,subfaceIndexRight,levelDeltaRight,pRight.getSize());
   }
 }
 
@@ -3822,14 +3836,17 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   
   // directly perform the face integral
   int levelDelta= 0;
+  tarch::la::Vector<DIMENSIONS-1,int> subfaceIndex(0);
+
   if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
-    levelDelta = cellDescription.getLevel() - cellDescription.getParentCellLevel();
+    levelDelta   = cellDescription.getLevel() - cellDescription.getParentCellLevel();
+    subfaceIndex = exahype::amr::getSubfaceIndex(cellDescription.getSubcellIndex(),direction);
   }
   double* update = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
   const double* const boundaryFlux =
       DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
       (faceIndex * dofPerFace);
-  faceIntegral(update,boundaryFlux,direction,orientation,levelDelta,cellDescription.getSize());
+  faceIntegral(update,boundaryFlux,direction,orientation,subfaceIndex,levelDelta,cellDescription.getSize());
 }
 
 void exahype::solvers::ADERDGSolver::dropNeighbourData(
