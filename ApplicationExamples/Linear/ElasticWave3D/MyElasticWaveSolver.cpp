@@ -123,15 +123,17 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   for(int i = 0 ; i<DIMENSIONS; i++){
     pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
   }
-  
- if (tarch::la::equals(t,0.0)) {
-   if(pointSourceInElement){
-     return exahype::solvers::Solver::RefinementControl::Refine;
-   }else{
-     return exahype::solvers::Solver::RefinementControl::Keep;
-   }
- }
 
+  bool elementOnSurface = left_vertex[1] < dx[1] * 0.5;
+  
+  if (tarch::la::equals(t,0.0)) {
+    if(pointSourceInElement || elementOnSurface){
+      return exahype::solvers::Solver::RefinementControl::Refine;
+    }else{
+      return exahype::solvers::Solver::RefinementControl::Keep;
+    }
+  }
+  
 
  if(pointSourceInElement){
    if(t <2.25){
@@ -139,24 +141,26 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
    }
  }
 
+
+
  //compute velocity vector length
- kernels::idx4 id((Order+1),(Order+1),(Order+1),(NumberOfParameters+NumberOfVariables));
- double max_velocity=0;
- double min_velocity=std::numeric_limits<double>::max();
- for(int k = 0 ; k<(Order+1); k++){
-   for(int j = 0 ; j<(Order+1); j++){
-     for(int i = 0 ; i<(Order+1); i++){
-       double u=luh[id(k,j,i,0)];
-       double v=luh[id(k,j,i,1)];
-       double w=luh[id(k,j,i,2)];
-       double velocity=sqrt(u*u+v*v+w*w);
-       max_velocity=std::max(max_velocity,velocity);
-       min_velocity=std::min(min_velocity,velocity);
-     }
-   }
- }
+//  kernels::idx4 id((Order+1),(Order+1),(Order+1),(NumberOfParameters+NumberOfVariables));
+//  double max_velocity=0;
+//  double min_velocity=std::numeric_limits<double>::max();
+//  for(int k = 0 ; k<(Order+1); k++){
+//    for(int j = 0 ; j<(Order+1); j++){
+//      for(int i = 0 ; i<(Order+1); i++){
+//        double u=luh[id(k,j,i,0)];
+//        double v=luh[id(k,j,i,1)];
+//        double w=luh[id(k,j,i,2)];
+//        double velocity=sqrt(u*u+v*v+w*w);
+//        max_velocity=std::max(max_velocity,velocity);
+//        min_velocity=std::min(min_velocity,velocity);
+//      }
+//    }
+//  }
  
- constexpr double wave_threshold=0.5;
+ /* constexpr double wave_threshold=0.5;
  // double wave_threshold= std::sqrt(center[0]*center[0]+center[1]*center[1]) * 10.0;
      
  if(max_velocity > wave_threshold){
@@ -165,7 +169,7 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
 
  if(max_velocity < wave_threshold*0.1){
    return exahype::solvers::Solver::RefinementControl::Erase;
- }
+   }*/
  
  return exahype::solvers::Solver::RefinementControl::Keep;
 }

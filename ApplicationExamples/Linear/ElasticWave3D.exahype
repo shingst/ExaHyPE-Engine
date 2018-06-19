@@ -67,7 +67,7 @@ exahype-project  Elastic
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 3.0
     maximum-mesh-depth = 3
-    time-stepping      = global
+    time-stepping      = globalfixed
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,pointsources:1
     optimisation const = generic,patchwiseadjust,usestack
