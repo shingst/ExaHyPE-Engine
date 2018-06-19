@@ -184,14 +184,13 @@ void accumulate(
   }
 }
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <int numberOfVariables,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsRestriction(
                              const double*       lFhbndCoarse,
                              const double* const lFhbndFine,
                              const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
                              const int levelDelta) {
-  constexpr int numberOfData = numberOfVariables+numberOfParameters;
-  constexpr int basisSize2   = basisSize*basisSize;
+  constexpr int basisSize2 = basisSize*basisSize;
 
   const int levelDelta     = fineGridLevel - coarseGridLevel;
 

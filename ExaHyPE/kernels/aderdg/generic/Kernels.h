@@ -174,7 +174,7 @@ void faceUnknownsProlongation(
     const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex);
 
 
-template <int numberOfVariables,int numberOfParameters,int basisSize>
+template <int numberOfVariables,int basisSize>
 void faceUnknownsRestriction(
     const double*       lFhbndCoarse,
     const double* const lFhbndFine,
