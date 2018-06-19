@@ -2895,11 +2895,11 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int direction        = (faceIndexLeft-orientationLeft)/2;
     if ( pLeft.getType()==CellDescription::Type::Descendant ) {
       levelDeltaLeft = pLeft.getLevel() - pLeft.getParentCellLevel();
-      subfaceIndexLeft = exahype::amr::getSubfaceIndex(pLeft.getSubcellIndex(),direction));
+      subfaceIndexLeft = exahype::amr::getSubfaceIndex(pLeft.getSubcellIndex(),direction);
     }
     else if (  pRight.getType()==CellDescription::Type::Descendant ) {
       levelDeltaRight = pRight.getLevel() - pRight.getParentCellLevel();
-      subfaceIndexRight = exahype::amr::getSubfaceIndex(pRight.getSubcellIndex(),direction));
+      subfaceIndexRight = exahype::amr::getSubfaceIndex(pRight.getSubcellIndex(),direction);
     }
     double* updateLeft  = DataHeap::getInstance().getData(pLeft.getUpdate()).data();
     double* updateRight = DataHeap::getInstance().getData(pRight.getUpdate()).data();
