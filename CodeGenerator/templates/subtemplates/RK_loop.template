@@ -49,7 +49,7 @@
   // x direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
 {% endwith %} 
     }
@@ -58,7 +58,7 @@
   // y direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
 {% endwith %} 
     }
@@ -68,7 +68,7 @@
   // z direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
 {% endwith %} 
     }
@@ -79,10 +79,10 @@
     for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
       // Fusedsource (source and ncp)
       double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
-      std::copy_n(&gradQ_guess[{{nVarPad}}*jkl]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
-      std::copy_n(&gradQ_guess[{{nVarPad}}*jkl+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
+      std::copy_n(&gradQ[{{nVarPad}}*jkl]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
+      std::copy_n(&gradQ[{{nVarPad}}*jkl+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
 {% if nDim==3 %}
-      std::copy_n(&gradQ_guess[{{nVarPad}}*jkl+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
+      std::copy_n(&gradQ[{{nVarPad}}*jkl+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
 {% endif %}
       #ifdef USE_IPO
           #pragma forceinline recursive

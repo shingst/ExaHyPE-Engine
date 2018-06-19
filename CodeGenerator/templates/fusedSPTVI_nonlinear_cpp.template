@@ -113,30 +113,31 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% else %} {# useCERKGuess #}
   //1. Optimized initial guess, Continuous Extension Runga-Kutta.
   {
-{% if useFlux %}    
-    double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
-{% endif %}
 {% if useNCP %}
-    double* const gradQ_guess = gradQ; // lQ[0-2][z?][y][x][n]
+    
 {% endif %}
-{% if useFlux %}
+{% if useFlux %}{# use lFi as temp array, lFi total size = nVarPad*(nDof**(nDim+1))*nDim #}
+    // use lFi as temporary storage for CERK's temporary arrays
+    double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
     double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
     double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
     double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
     std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
-{% else %}{# no flux so use gradQ hight time as temp array #}
-    double* const K1 = gradQ+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
-    double* const K2 = gradQ+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = gradQ+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
-    std::memset(gradQ, 0, {{(nDim+2)*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
+{% else %}{# no flux so use lSi instead, lSi total size = nVarPad*(nDof**(nDim+1)) #}
+    // use lSi as temporary storage for CERK's temporary arrays
+    double* const K1 = lSi; // K1[z?][y][x][n]
+    double* const K2 = lSi+{{(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
+    double* const lwh = lSi+{{2*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
+    std::memset(lSi, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
 {% endif %}
+    //Note: temporary storage will be overwritten by user functions later, no need to reset them to 0
 
     // K1
 {% with inputLuh='luh', outputKi='K1' %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
 {% endwith %} 
 {% if useNCP %}
-    std::memset(gradQ_guess, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ_guess to 0 for next loop
+    std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0 for next loop
 {% endif %}
     
     // K2
@@ -155,7 +156,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
 {% endwith %} 
 
-    //compute
+    // Set initial guess using CERK
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
       for (int l = 0; l < {{nDof}}; l++) {
         for (int n = 0; n < {{nVar}}; n++) {
