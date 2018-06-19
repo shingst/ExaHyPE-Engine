@@ -74,23 +74,25 @@
     }
   }
 {% endif %}
-  
-  for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
-    // Fusedsource (source and ncp)
-    double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
-    std::copy_n(&gradQ_guess[{{nVarPad}}*jkl]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
-    std::copy_n(&gradQ_guess[{{nVarPad}}*jkl+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
+  {
+    double tmp_fusedSource_output[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+    for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
+      // Fusedsource (source and ncp)
+      double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
+      std::copy_n(&gradQ_guess[{{nVarPad}}*jkl]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
+      std::copy_n(&gradQ_guess[{{nVarPad}}*jkl+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
 {% if nDim==3 %}
-    std::copy_n(&gradQ_guess[{{nVarPad}}*jkl+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
+      std::copy_n(&gradQ_guess[{{nVarPad}}*jkl+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
 {% endif %}
-    #ifdef USE_IPO
-        #pragma forceinline recursive
-    #endif
-    solver.{{solverName}}::fusedSource(&{{inputLuh}}[{{nData}}*jkl], gradQNoPad, lSi);
-    
-    #pragma simd
-    for (int n = 0; n < {{nVarPad}}; n++) {
-      {{outputKi}}[n+{{nVarPad}}*jkl] -= lSi[n];
+      #ifdef USE_IPO
+          #pragma forceinline recursive
+      #endif
+      solver.{{solverName}}::fusedSource(&{{inputLuh}}[{{nData}}*jkl], gradQNoPad, tmp_fusedSource_output);
+      
+      #pragma simd
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        {{outputKi}}[n+{{nVarPad}}*jkl] -= tmp_fusedSource_output[n];
+      }
     }
   }
 {% endif %}
