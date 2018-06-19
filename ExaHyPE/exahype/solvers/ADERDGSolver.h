@@ -117,15 +117,16 @@ private:
   static tarch::logging::Log _log;
 
   #ifdef Parallel
-  std::vector<double> _receivedExtrapolatedPredictor;
-  std::vector<double> _receivedFluctuations;
+  DataHeap::HeapEntries _receivedExtrapolatedPredictor;
+  DataHeap::HeapEntries _receivedFluctuations;
+  DataHeap::HeapEntries _receivedUpdate;
   /**
    * TODO(WORKAROUND): We store these fields in order
    * to use the symmetric boundary exchanger of Peano
    * which does not yet support asymmetric send buffers.
    */
-  std::vector<double> _invalidExtrapolatedPredictor;
-  std::vector<double> _invalidFluctuations;
+  DataHeap::HeapEntries _invalidExtrapolatedPredictor;
+  DataHeap::HeapEntries _invalidFluctuations;
   #endif
 
   /**
@@ -657,28 +658,6 @@ private:
    * Allocate necessary memory and deallocate unnecessary memory.
    */
   static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
-
-  /**
-   * If the cell description is of type Ancestor, we look up
-   * if its top-most parent stores face data during the time stepping
-   * iterations. That's the case if the parent Ancestor is next
-   * to a Cell type cell description (compute cell), or if
-   * itself has to store data for master worker communication.
-   *
-   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
-   * on the cell description to true and allocate the required memory.
-   *
-   * Similarly, we check if a cell description of type Cell has such
-   * a top-most parent (of type Ancestor). In this case,
-   * we still need to set the flag but we do not need to allocate additional memory.
-   *
-   * \return if we need to master-worker communication for this cell description.
-   *
-   * TODO(Dominic): Restrictions of face data should not be necessary
-   * anymore as soon as we follow the LTS workflow.
-   */
-  static bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      CellDescription& cellDescription);
 
   /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
    *
@@ -2125,8 +2104,6 @@ public:
    * the master knows.
    *
    * \note This function sends out MPI messages.
-   *
-   * \see prepareMasterCellDescriptionAtMasterWorkerBoundary
    */
   void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
