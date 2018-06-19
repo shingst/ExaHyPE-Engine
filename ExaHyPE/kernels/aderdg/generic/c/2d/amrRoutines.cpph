@@ -167,10 +167,10 @@ void accumulate( // TODO(Dominic): Use std:: equivalent
 
 template <int numberOfVariables,int numberOfParameters,int basisSize>
 void kernels::aderdg::generic::c::faceUnknownsRestriction(
-                             double* lFhbndCoarse,
-                             const double* lFhbndFine,
-                             const int levelDelta,
-                             const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex) {
+                             const double*       lFhbndCoarse,
+                             const double* const lFhbndFine,
+                             const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+                             const int levelDelta) {
   constexpr int numberOfData = numberOfVariables+numberOfParameters;
 
   double lFhbndCoarseTemp1[basisSize*numberOfVariables];

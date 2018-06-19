@@ -176,10 +176,10 @@ void faceUnknownsProlongation(
 
 template <int numberOfVariables,int numberOfParameters,int basisSize>
 void faceUnknownsRestriction(
-    double* lFhbndCoarse,
-    const double* lFhbndFine,
-    const int levelDelta,
-    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex);
+    const double*       lFhbndCoarse,
+    const double* const lFhbndFine,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+    const int levelDelta);
 
 /**
  * \note We need to consider material parameters in

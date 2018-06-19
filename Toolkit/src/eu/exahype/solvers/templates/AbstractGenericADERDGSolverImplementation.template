@@ -158,7 +158,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::faceIntegral(double* lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
+void {{project}}::{{abstractSolver}}::faceIntegral(const double* lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
 {%- if enableProfiler %}
   _profiler->start("faceIntegral");
 {%- endif %}
@@ -176,7 +176,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* lduh,const double* co
 {%- else %}  
     double* lFhbndCoarse = new double[sizeFlux];
 {%- endif %}
-    kernels::aderdg::generic::{{language}}::faceUnknownsRestriction(lFhbndCoarse,lFhbnd,levelDelta,subfaceIndex);
+    kernels::aderdg::generic::{{language}}::faceUnknownsRestriction(lFhbndCoarse,lFhbnd,subfaceIndex,levelDelta);
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,dx);  
 {%- if tempVarsOnStack %}
 {%- else %}  
