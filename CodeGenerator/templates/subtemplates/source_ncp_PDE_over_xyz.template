@@ -23,10 +23,10 @@ for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //zyx
 {% else %}
   //remove padding to use the same user function as generic kernel
   double gradQ_PDE[{{nVar*nDim}}]; 
-  std::copy_n(&{{input_gradQ}}[{{nVarPad*nDim}}*it]              , {{nVar}}, &gradQ_PDE[{{0*nVar}}]); //x
-  std::copy_n(&{{input_gradQ}}[{{nVarPad*nDim}}*it+{{1*nVarPad}}], {{nVar}}, &gradQ_PDE[{{1*nVar}}]); //y
+  std::copy_n(&{{input_gradQ}}[{{nVarPad}}*xyz], {{nVar}}, &gradQ_PDE[{{0*nVar}}]); //x
+  std::copy_n(&{{input_gradQ}}[{{nVarPad}}*xyz+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQ_PDE[{{1*nVar}}]); //y
 {% if nDim==3 %}
-  std::copy_n(&{{input_gradQ}}[{{nVarPad*nDim}}*it+{{2*nVarPad}}], {{nVar}}, &gradQ_PDE[{{2*nVar}}]); //z
+  std::copy_n(&{{input_gradQ}}[{{nVarPad}}*xyz+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQ_PDE[{{2*nVar}}]); //z
 {% endif %}
 {% endif %}{# useNCPVect #}
 {% endif %}{# useNCP #}
