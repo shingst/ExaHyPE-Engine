@@ -2,6 +2,9 @@
   String inputLuh : name of the inputTensor (e.g. luh or lwh)
   String outputKi : name of the output tensor (e.g. K1 or K2)
 #}
+{# /********************
+   **** Subtemplate ****
+   *********************/ #}
 {% if useFlux %}
 
   // Flux component
@@ -18,7 +21,7 @@
     for (int k = 0; k < {{nDof}}; k++) {
 {% with gemmKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %} 
+{% endwith %}
     }
   }
   
@@ -27,7 +30,7 @@
     for (int k = 0; k < {{nDof}}; k++) {
 {% with gemmKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %} 
+{% endwith %}
     }
   }
   
@@ -37,7 +40,7 @@
     for (int k = 0; k < {{nDof}}; k++) {
 {% with gemmKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %} 
+{% endwith %}
     }
   }
 {% endif %}{# nDim == 3 #}
@@ -51,7 +54,7 @@
     for (int k = 0; k < {{nDof}}; k++) {
 {% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %} 
+{% endwith %}
     }
   }
   
@@ -60,7 +63,7 @@
     for (int k = 0; k < {{nDof}}; k++) {
 {% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %} 
+{% endwith %}
     }
   }
   
@@ -70,11 +73,20 @@
     for (int k = 0; k < {{nDof}}; k++) {
 {% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %} 
+{% endwith %}
     }
   }
 {% endif %}
+
+
   {
+{# ***********************************************************
+   **** call to Source and NCP (or FusedSource) functions ****
+   *********************************************************** #}
+{% with time_var='0', inputQ=inputLuh, output=outputKi, writeSource=False, multiplyByWeights=False, substractToOutput=True, isInputQPadded=False %}
+{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %} 
+/*
     double tmp_fusedSource_output[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.};
     for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
       // Fusedsource (source and ncp)
@@ -94,5 +106,6 @@
         {{outputKi}}[n+{{nVarPad}}*jkl] -= tmp_fusedSource_output[n];
       }
     }
+    */
   }
 {% endif %}

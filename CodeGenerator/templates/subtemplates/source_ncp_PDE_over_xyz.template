@@ -1,21 +1,73 @@
 {#
 
 String time_var        : name of the var used in the outer time loop (use '0' is no time loop)
+String inputQ          : name of ythe input state tensor (e.g. lQi)
 String output          : name of the output array
 
+Optional
+
+bool substractToOutput (default false): substract to output instead of adding
+bool writeSource       (default true) : if true use lSi, otherwise use a tmp array
+bool multiplyByWeights (default true) : multiply the output by the quadrature weigths
+bool inputQPadded      (default true) : is inputQ a padded matrix (nDataPad vs nData)
+
 #}
+{% with %}
+{# /**************************************
+   **** Set up helper template values ****
+   **************************************/ #}
+{% if substractToOutput is not defined %}
+{% set substractToOutput=False %}
+{% endif %}
+{% if writeSource is not defined %}
+{% set writeSource=True %}
+{% endif %}
+{% if multiplyByWeights is not defined %}
+{% set multiplyByWeights=True %}
+{% endif %}
+{% if isInputQPadded is not defined %}
+{% set isInputQPadded=True %}
+{% endif %}
+{% if writeSource %}
+{% set sourceArray='lSi'%}
+{% set addShift='+shift'%}
+{% else %}
+{% set sourceArray='tmp_source'%}
+{% set addShift=''%}
+{% endif %}
+{% if time_var=='0' %}
+{% set useTime=False %}
+{% if isInputQPadded %}
+{% set inputQ_iterator=nDataPad~'*xyz'%}
+{% else %}
+{% set inputQ_iterator=nData~'*xyz'%}
+{% endif %}
+{% else %}
+{% set useTime=True %}
+{% if isInputQPadded %}
+{% set inputQ_iterator=nDataPad~'*('~time_var~'+'~nDof~'*xyz)'%}
+{% else %}
+{% set inputQ_iterator=nData~'*('~time_var~'+'~nDof~'*xyz)'%}
+{% endif %}
+{% endif %}
+{# /********************
+   **** Subtemplate ****
+   *********************/ #}
 {% if useSourceOrNCP %}
 // Compute the Nonconservative part NCP + Source
 {% if useNCP %}
-{% if not useNCPVect%}
+{% if not useNCPVect %}
 double gradQ_PDE[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT)));
-double ncp_tmp_output[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+{% if not useFusedSource %}
+double tmp_ncp_output[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //initialize for padding
 {% endif %}
+{% endif %}
+{% endif %}
+{% if not writeSource %}
+double {{sourceArray}}[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
 for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //zyx
-  const double updateSize = weights1[{{time_var}}] * weights3[xyz] * dt;
-  const int shift = {{nVarPad}}*(xyz+{{nDof**nDim}}*{{time_var}});
-  const int it = {{time_var}}+{{nDof}}*xyz;
+  const int shift = {{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %});
   
 {% if useNCP %}
 {% if useNCPVect %}
@@ -35,33 +87,36 @@ for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //zyx
   #ifdef USE_IPO
     #pragma forceinline recursive
   #endif
-  solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], gradQ_PDE, &lSi[shift]);
+  solver.{{solverName}}::fusedSource({{inputQ}}+{{inputQ_iterator}}, gradQ_PDE, {{sourceArray}}{{addShift}});
 {% else %}{# useFusedSource #}
+{% if useNCP %}
+  // NCP
+  #ifdef USE_IPO
+    #pragma forceinline recursive
+  #endif
+  solver.{{solverName}}::nonConservativeProduct({{inputQ}}+{{inputQ_iterator}}, gradQ_PDE, tmp_ncp_output);
+{% endif %}
 {% if useSource %}
   // Source
   #ifdef USE_IPO
     #pragma forceinline recursive
   #endif
-  solver.{{solverName}}::algebraicSource(&lQi[{{nDataPad}}*it], &lSi[shift]);
-{% else %}
-  std::memset(&lSi[shift], 0, {{nVarPad}} * sizeof(double)); // set source terms to 0
+  solver.{{solverName}}::algebraicSource({{inputQ}}+{{inputQ_iterator}}, {{sourceArray}}{{addShift}});
 {% endif %}
 {% if useNCP %}
-  // NCP
-  //std::memset(&ncp_tmp_output[0], 0, {{nVarPad}} * sizeof(double));
-#ifdef USE_IPO
-  #pragma forceinline recursive
-#endif
-  solver.{{solverName}}::nonConservativeProduct(&lQi[{{nDataPad}}*it], &gradQ_PDE[0], ncp_tmp_output);
   #pragma simd
   for(int n = 0; n<{{nVarPad}}; n++) {
-    lSi[n+shift] -= ncp_tmp_output[n];
+    {{sourceArray}}[n{{addShift}}] {{ '-=' if useSource else '= -'}} tmp_ncp_output[n];{# if not useSource set and update lSi #} 
   }      
 {% endif %} 
 {% endif %}{# useFusedSource #}
+{% if multiplyByWeights %}
+  const double updateSize = weights1[{{time_var}}] * weights3[xyz] * dt;
+{% endif %}
   #pragma simd
   for (int n = 0; n < {{nVarPad}}; n++) {
-    {{output}}[n+shift] += updateSize * lSi[n+shift];
+    {{output}}[n+shift] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}{{sourceArray}}[n{{addShift}}];
   }
 }
 {% endif %}
+{% endwith %} 

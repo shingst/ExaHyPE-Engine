@@ -8,9 +8,9 @@ String time_var        : name of the var used in the outer time loop (use '0' is
 
 #}
 {% with %}
-{#
-  Set locally a few help variable
-#}
+{# /**************************************
+   **** Set up helper template values ****
+   **************************************/ #}
 {% set rest_size=((nDof**nDim)%vectSize) %}
 {% set rest_start=(nDof**nDim)-rest_size %}
 {% if time_var=='0' %}
@@ -32,6 +32,9 @@ String time_var        : name of the var used in the outer time loop (use '0' is
 {% set spaceTimeCoord='xyz'%}
 {% set spaceTimeCoord_rest=''~rest_start%}
 {% endif %}
+{# /********************
+   **** Subtemplate ****
+   *********************/ #}
 {% if useFluxVect %}{# Vectorized flux, require transposition from AoS to SoA and back #}
 // Compute the fluxes
 for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSize}}) {
@@ -89,4 +92,4 @@ for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSiz
   }
 }
 {% endif %}{# useFluxVect#}
-{% endwith %}
+{% endwith %} 
