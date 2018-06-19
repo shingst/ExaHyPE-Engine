@@ -4022,6 +4022,8 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
         DataHeap::getInstance().getData(cellDescription.getFluctuation()), masterRank, x, level,
         peano::heap::MessageType::MasterWorkerCommunication);
 
+    // TODO(LTS): Do only send update up to master
+
     if (getDMPObservables()>0) {
       DataHeap::getInstance().sendData(
           DataHeap::getInstance().getData(cellDescription.getSolutionMin()), masterRank, x, level,
@@ -4074,6 +4076,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     DataHeap::getInstance().receiveData(
         cellDescription.getFluctuation(), workerRank, x, level,
         peano::heap::MessageType::MasterWorkerCommunication);
+
+    // TODO(LTS): Do only send update up to master
 
     if (getDMPObservables()>0) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMin()));
@@ -4346,6 +4350,8 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
       (cellDescription.getType()==CellDescription::Type::Descendant &&
       cellDescription.getHasToHoldDataForMasterWorkerCommunication())
   ) {
+    // TODO(LTS): Send time step data as well
+
     // No inverted send and receives order since we do synchronous data exchange.
     // Order: extraplolatedPredictor,fluctuations
     moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getExtrapolatedPredictor(),true);
