@@ -1,3 +1,0 @@
-[submodule "submodules/Peano"]
-	path = submodules/Peano
-	url = git@gitlab.lrz.de:gi26det/Peano.git
