@@ -97,12 +97,11 @@ template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfV
 void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
-// TODO(Dominic): Replace the surface integral with this one
-/*template <int numberOfVariables, int basisSize>
+template <int numberOfVariables, int basisSize>
 void faceIntegralNonlinear(
     double *lduh, const double *const lFhbnd,
     const int direction, const int orientation,
-    const tarch::la::Vector<DIMENSIONS, double> &dx);*/
+    const tarch::la::Vector<DIMENSIONS, double> &dx);
 
 template <int numberOfVariables, int basisSize>
 void faceIntegralLinear(
