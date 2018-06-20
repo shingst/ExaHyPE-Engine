@@ -320,7 +320,7 @@ std::pair<double,int> exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(
     peanoLevel++;
   }
   peanoLevel--; // currenthMax was computed with peanoLevel-1 and we start to count at 1
-  return std::pair<double,int> pair(currenthMax,peanoLevel);
+  return std::pair<double,int>(currenthMax,peanoLevel);
 }
 
 exahype::solvers::Solver::Type exahype::solvers::Solver::getType() const {
