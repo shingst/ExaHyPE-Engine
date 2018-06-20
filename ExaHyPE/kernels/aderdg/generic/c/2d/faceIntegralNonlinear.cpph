@@ -34,26 +34,38 @@ void faceIntegralNonlinear(double *lduh, const double *const lFhbnd,
   idx3 idx_lduh(basisSize, basisSize, numberOfVariables);
   idx2 idx_lFhbnd(basisSize, numberOfVariables);
 
-  switch (direciton) {
+  switch (direction) {
     case 0:
       for (int j = 0; j < basisSize; j++) { // y
-        const double scaledWeight = kernels::gaussLegendreWeights[order][j] * scaling;
+        const double scaledWeight =
+             kernels::gaussLegendreWeights[order][j] *
+             scaling;
+
         for (int k = 0; k < basisSize; k++) { // x
           for (int l = 0; l < numberOfVariables; l++) {
-            lduh[idx_lduh(j, k, l)] += scaledWeight * kernels::FCoeff[order][orientation][k] * lFhbnd[idx_lFhbnd(j, l)];
+            lduh[idx_lduh(j, k, l)] -=
+                scaledWeight *
+                kernels::FCoeff[order][orientation][k] *
+                lFhbnd[idx_lFhbnd(j, l)];
           }
         }
       }
       break;
     case 1:
-      for (int j = 0; j < basisSize; j++) { // x
-        const double scaledWeight = kernels::gaussLegendreWeights[order][j] * scaling;
-          for (int k = 0; k < basisSize; k++) { // y
-            for (int l = 0; l < numberOfVariables; l++) {
-              lduh[idx_lduh(k, j, l)] += scaledWeight * kernels::FCoeff[order][orientation][k] * lFhbnd[idx_lFhbnd(j, l)];
-            }
+      for (int k = 0; k < basisSize; k++) { // x
+        const double scaledWeight =
+             kernels::gaussLegendreWeights[order][k] *
+             scaling;
+
+        for (int j = 0; j < basisSize; j++) { // y
+          for (int l = 0; l < numberOfVariables; l++) {
+            lduh[idx_lduh(j, k, l)] -=
+                scaledWeight *
+                kernels::FCoeff[order][orientation][j] *
+                lFhbnd[idx_lFhbnd(k, l)];
           }
         }
+      }
       break;
     default:
       static tarch::logging::Log _log("kernels::aderdg::generic::c");
