@@ -236,17 +236,22 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
 
   kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
   
-  if (faceIndex % 2 == 0) {
+  const int orientation = faceIndex % 2; 
+  if ( orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+  
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,fluxIn,direction,orientation,cellSize);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,fluxIn,direction,orientation,cellSize);
   }
 {%- if !tempVarsOnStack %}
   delete[] block;
