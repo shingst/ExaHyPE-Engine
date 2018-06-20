@@ -2930,7 +2930,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
       (faceIndex * dofPerFace);
 
-  double* update = DataHeap::getInstance().getData(p.getUpdate()).data()
+  double* update = DataHeap::getInstance().getData(p.getUpdate()).data();
 
   const int orientation = faceIndex % 2;
   const int direction   = (faceIndex - orientation)/2;
