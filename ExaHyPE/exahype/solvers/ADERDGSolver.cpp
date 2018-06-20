@@ -2930,8 +2930,10 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
       (faceIndex * dofPerFace);
 
-  const int direction = (faceIndex - faceIndex % 2)/2;
-  
+  double* update = DataHeap::getInstance().getData(p.getUpdate()).data();
+
+  const int orientation = faceIndex % 2;
+  const int direction   = (faceIndex - orientation)/2;
   #if defined(Debug) || defined(Asserts)
   assertion2(direction<DIMENSIONS,faceIndex,direction);
   for(int i=0; i<dataPerFace; ++i) {
@@ -2944,13 +2946,13 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
   boundaryConditions(
+      update,
       FIn,QIn,
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
       p.getCorrectorTimeStamp(),
       p.getCorrectorTimeStepSize(),
-      faceIndex,
-      direction);
+      direction,orientation);
 
   #if defined(Debug) || defined(Asserts)
   assertion4(std::isfinite(p.getCorrectorTimeStamp()),p.toString(),faceIndex,direction,p.getCorrectorTimeStamp());

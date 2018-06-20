@@ -1183,24 +1183,30 @@ public:
    * Impose boundary conditions on the fluxes (or fluctuations).
    * The state is only read.
    *
-   * \param[in]    fluxIn        boundary-extrapolated (space-time) volume flux
+   * \param[inout] update        the update vector we want to write to
+   * \param[inout] fluxIn        boundary-extrapolated (space-time) volume flux.
+   *                             Can be overwritten/reused as it is updated anyway after
+   *                             the next predictor computation.
    * \param[in]    stateIn       boundary-extraplolated (space-time) predictor
    * \param[in]    cellCentre    cell centre.
    * \param[in]    cellSize      cell size.
    * \param[in]    t             The time.
    * \param[in]    dt            a time step size.
-   * \param[in]    faceIndex     Index of the face under consideration.
    * \param[in]    direction     index of the nonzero component of the normal vector
    *                             i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * \param[in]    orientation   orientation of the normal vector where 0 means negative and
+   *                             1 means positive.
+   *
+   *
    */
-  virtual void boundaryConditions(double* fluxIn,
+  virtual void boundaryConditions(double* const update,
+                                  double* const fluxIn,
                                   const double* const stateIn,
                                   const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-                                  const tarch::la::Vector<DIMENSIONS,
-                                  double>& cellSize,
+                                  const tarch::la::Vector<DIMENSIONS,double>& cellSize,
                                   const double t,const double dt,
-                                  const int faceIndex,
-                                  const int direction) = 0;
+                                  const int direction,
+                                  const int orientation) = 0;
 
   /**
    * @brief Computes cell-local space-time predictor, volume, and face DoF

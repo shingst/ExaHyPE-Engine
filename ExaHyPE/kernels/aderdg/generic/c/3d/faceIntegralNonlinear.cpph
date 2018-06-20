@@ -38,13 +38,13 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(double *lduh, const doub
         for (int j = 0; j < basisSize; j++) { // y
           for (int k = 0; k < basisSize; k++) { // x
             const double scaledWeight =
-              kernels::gaussLegendreWeights[order][i] *
-              kernels::gaussLegendreWeights[order][j] *
-              scaling;
+                kernels::gaussLegendreWeights[order][i] *
+                kernels::gaussLegendreWeights[order][j] *
+                scaling;
 
             // left flux minus right flux
             for (int l = 0; l < numberOfVariables; l++) {
-              lduh[idx_lduh(i, j, k, l)] +=
+              lduh[idx_lduh(i, j, k, l)] -=
                   scaledWeight *
                   kernels::FCoeff[order][orientation][k] *
                   lFhbnd[idx_lFhbnd(i, j, l)];
@@ -64,7 +64,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(double *lduh, const doub
 
             // back flux minus front flux
             for (int l = 0; l < numberOfVariables; l++) {
-              lduh[idx_lduh(i, j, k, l)] +=
+              lduh[idx_lduh(i, j, k, l)] -=
                       scaledWeight *
                       kernels::FCoeff[order][orientation][j] *
                       lFhbnd[idx_lFhbnd(i, k, l)];
@@ -84,7 +84,7 @@ void kernels::aderdg::generic::c::faceIntegralNonlinear(double *lduh, const doub
 
             // bottom flux minus top flux
             for (int l = 0; l < numberOfVariables; l++) {
-              lduh[idx_lduh(i, j, k, l)] +=
+              lduh[idx_lduh(i, j, k, l)] -=
                   scaledWeight *
                   kernels::FCoeff[order][orientation][i] *
                   lFhbnd[idx_lFhbnd(j, k, l)];
