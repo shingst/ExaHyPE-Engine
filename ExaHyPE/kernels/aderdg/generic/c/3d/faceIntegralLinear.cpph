@@ -11,6 +11,8 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
                  const tarch::la::Vector<DIMENSIONS, double>& dx) { 
   const double scaling = 1.0/dx[direction] * (2.0*orientation-1.0);
 
+  constexpr int order = basisSize -1;
+
   idx4 idx_lduh(basisSize, basisSize, basisSize, numberOfVariables); // (z,y,x,var/par)
   idx3 idx_lFhbnd(basisSize, basisSize, numberOfVariables);
   // idx4 idx_lFhbnd(basisSize,basisSize, basisSize, numberOfVariables); // when we add time later
@@ -37,7 +39,7 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
     for (int i = 0; i < basisSize; i++) { // z
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x
-          const double scaledweight = 
+          const double scaledWeight = 
                kernels::gaussLegendreWeights[order][i] *
                kernels::gaussLegendreWeights[order][k] *
                scaling;
@@ -55,7 +57,7 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
     for (int i = 0; i < basisSize; i++) { // z 
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x
-          const double weight = 
+          const double scaledWeight = 
                kernels::gaussLegendreWeights[order][j] *
                kernels::gaussLegendreWeights[order][k] *
                scaling;
