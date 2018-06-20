@@ -140,9 +140,10 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
     const exahype::parser::ParserView& parserView) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
-  std::cout << "initSolver" << std::endl;
-  _coarsestMeshLevel =
-      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,boundingBoxSize[0]);
+  std::pair<double,int> coarsestMeshInfo =
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
+  _coarsestMeshSize  = coarsestMeshInfo.first;
+  _coarsestMeshLevel = coarsestMeshInfo.second;
 
   _previousMinTimeStepSize = 0.0;
   _previousMinTimeStamp = timeStamp;

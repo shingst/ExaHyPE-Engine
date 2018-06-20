@@ -22,7 +22,6 @@
 
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
-
 #include <algorithm>
 #include <mm_malloc.h> //g++
 #include <cstring> //memset
@@ -312,7 +311,7 @@ void exahype::solvers::Solver::glueTogether(
 }
 
 
-int exahype::solvers::Solver::computeMeshLevel(double meshSize, double domainSize) {
+std::pair<double,int> exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize) {
   int    peanoLevel      = 1; // The domain root cell is actually at Peano level 1
   double currenthMax = std::numeric_limits<double>::max();
   while (currenthMax>meshSize) {
@@ -320,7 +319,7 @@ int exahype::solvers::Solver::computeMeshLevel(double meshSize, double domainSiz
     peanoLevel++;
   }
   peanoLevel--; // currenthMax was computed with peanoLevel-1 and we start to count at 1
-  return peanoLevel;
+  return std::pair<double,int> pair(currenthMax,peanoLevel);
 }
 
 exahype::solvers::Solver::Type exahype::solvers::Solver::getType() const {
@@ -349,6 +348,10 @@ double exahype::solvers::Solver::getMaximumMeshSize() const {
 
 int exahype::solvers::Solver::getCoarsestMeshLevel() const {
   return _coarsestMeshLevel;
+}
+
+double exahype::solvers::Solver::getCoarsestMeshSize() const {
+  return _coarsestMeshSize;
 }
 
 int exahype::solvers::Solver::getMaximumAdaptiveMeshDepth() const {
