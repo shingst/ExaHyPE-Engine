@@ -7,8 +7,8 @@
 
 template <int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const double *const lFhbnd,
-                 const int direction, const int orientation,
-                 const tarch::la::Vector<DIMENSIONS, double>& dx) { 
+                                                     const int direction, const int orientation,
+                                                     const tarch::la::Vector<DIMENSIONS, double>& dx) {
   const double scaling = 1.0/dx[direction];
 
   constexpr int order = basisSize -1;
@@ -20,31 +20,31 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
   if( direction == 0 ){   // x-face
     for (int j = 0; j < basisSize; j++) { // y
       const double scaledWeight = 
-	kernels::gaussLegendreWeights[order][j] *
-	scaling;
-      
+          kernels::gaussLegendreWeights[order][j] *
+          scaling;
+
       for (int k = 0; k < basisSize; k++) { // x
-	for (int l = 0; l < numberOfVariables; l++) {
-	  lduh[idx_lduh(j, k, l)] -= 
-	    scaledWeight *
-	    kernels::FCoeff[order][orientation][k] *
-	    lFhbnd[idx_lFhbnd(j, l)];
-	}
+        for (int l = 0; l < numberOfVariables; l++) {
+          lduh[idx_lduh(j, k, l)] -=
+              scaledWeight *
+              kernels::FCoeff[order][orientation][k] *
+              lFhbnd[idx_lFhbnd(j, l)];
+        }
       }
     }
   } else if( direction == 1 ){ // y-face
     for (int j = 0; j < basisSize; j++) { // y
       for (int k = 0; k < basisSize; k++) { // x
-	const double scaledWeight = 
-	  kernels::gaussLegendreWeights[order][k] *
-	  scaling;
-	
-	for (int l = 0; l < numberOfVariables; l++) {
-	  lduh[idx_lduh(j, k, l)] -=
-	    scaledWeight * 
-	    kernels::FCoeff[order][orientation][j] *
-	    lFhbnd[idx_lFhbnd(k, l)];  
-	}
+        const double scaledWeight =
+            kernels::gaussLegendreWeights[order][k] *
+            scaling;
+
+        for (int l = 0; l < numberOfVariables; l++) {
+          lduh[idx_lduh(j, k, l)] -=
+              scaledWeight *
+              kernels::FCoeff[order][orientation][j] *
+              lFhbnd[idx_lFhbnd(k, l)];
+        }
       }
     }
   }

@@ -19,7 +19,8 @@
 #if DIMENSIONS == 3
 
 template <int numberOfVariables, int basisSize>
-void kernels::aderdg::generic::c::faceIntegralNonlinear(double *lduh, const double *const lFhbnd,
+void kernels::aderdg::generic::c::faceIntegralNonlinear(
+                              double *lduh, const double *const lFhbnd,
                               const int direction, const int orientation,
                               const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;

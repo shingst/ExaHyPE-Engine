@@ -24,9 +24,10 @@ namespace generic {
 namespace c {
 
 template <int numberOfVariables, int basisSize>
-void faceIntegralNonlinear(double *lduh, const double *const lFhbnd,
-                           const int direction, const int orientation,
-                           const tarch::la::Vector<DIMENSIONS, double> &dx) {
+void kernels::aderdg::generic::c::faceIntegralNonlinear(
+                             double *lduh, const double *const lFhbnd,
+                             const int direction, const int orientation,
+                             const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;
 
   const double scaling = 1.0/dx[direction] * (2.0*orientation-1.0); // orientation \in {0,1}
