@@ -406,7 +406,7 @@ int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
   double hMax = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
 
-  const int peanoLevel = exahype::solvers::Solver::computeMeshLevel(hMax,boundingBoxSize[0]);
+  const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
 
   logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
   return peanoLevel;
@@ -421,7 +421,7 @@ int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
   double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
 
-  const int peanoLevel = exahype::solvers::Solver::computeMeshLevel(hMax,boundingBoxSize[0]);
+  const int peanoLevel = exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(hMax,boundingBoxSize[0]).second;
 
   logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
   return peanoLevel;
@@ -439,7 +439,7 @@ exahype::runners::Runner::determineCoarsestMeshSize(
   const double maxBoundingBoxExtent = tarch::la::max(boundingBoxSize);
 
   const int coarsestMeshLevel =
-      exahype::solvers::Solver::computeMeshLevel(coarsestUserMeshSize,maxBoundingBoxExtent);
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(coarsestUserMeshSize,maxBoundingBoxExtent).second;
   return maxBoundingBoxExtent / threePowI(coarsestMeshLevel-1);
 }
 
