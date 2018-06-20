@@ -2535,7 +2535,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
   #endif
 
   std::vector<double>& updateFine   = DataHeap::getInstance().getData(cellDescription.getUpdate());
-  std::vector<double>& updateCoarse = DataHeap::getInstance().getData(cellDescription.getUpdate());
+  std::vector<double>& updateCoarse = DataHeap::getInstance().getData(parentCellDescription.getUpdate());
   tarch::multicore::Lock lock(RestrictionSemaphore);
   for (int i = 0; i < getDataPerCell(); ++i) {
       updateCoarse[i] += updateFine[i];
