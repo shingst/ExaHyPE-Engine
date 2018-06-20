@@ -234,16 +234,16 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
   double* stateOut = memory; memory+=sizeStateOut;
   double* fluxOut  = memory; memory+=sizeFluxOut;
 
-  kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
+  const int faceIndex = 2*direction+orientation;
   
-  const int faceIndex = 2*direction+orientation; 
+  kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
   if ( orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
   
-    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,fluxIn,direction,orientation,cellSize);
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
@@ -251,7 +251,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
 
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
     
-    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,fluxIn,direction,orientation,cellSize);
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
 {%- if !tempVarsOnStack %}
   delete[] block;
