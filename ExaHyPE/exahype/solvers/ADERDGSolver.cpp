@@ -2801,11 +2801,12 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int faceIndexLeft,
     const int faceIndexRight) {
   if (
-      pLeft.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
-      pRight.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+      (pLeft.getCommunicationStatus()==MaximumCommunicationStatus &&
+      pLeft.getFacewiseCommunicationStatus(faceIndexLeft)>=MinimumCommunicationStatusForNeighbourCommunication)
+      ||
+      (pRight.getCommunicationStatus()==MaximumCommunicationStatus &&
+      pRight.getFacewiseCommunicationStatus(faceIndexRight)>=MinimumCommunicationStatusForNeighbourCommunication)
   ) {
-    assertion1(pLeft.getFacewiseCommunicationStatus(faceIndexLeft)  >=MinimumCommunicationStatusForNeighbourCommunication,pLeft.toString());
-    assertion1(pRight.getFacewiseCommunicationStatus(faceIndexRight)>=MinimumCommunicationStatusForNeighbourCommunication,pRight.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pRight.getExtrapolatedPredictor()),pRight.toString());
