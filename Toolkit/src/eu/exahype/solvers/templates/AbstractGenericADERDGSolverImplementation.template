@@ -211,7 +211,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
 {%- endif %}
@@ -236,7 +236,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
 
   kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
   
-  const int orientation = faceIndex % 2; 
+  const int faceIndex = 2*direction+orientation; 
   if ( orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
