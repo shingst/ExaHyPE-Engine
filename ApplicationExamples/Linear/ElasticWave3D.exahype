@@ -36,14 +36,14 @@ exahype-project  Elastic
 
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:14,manual-pinning}	
-    cores                    = 14
+    configure                = {background-tasks:1,manual-pinning}	
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory
  
   distributed-memory	
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:2}
+    configure                = {hotspot,fair,ranks-per-node:1}
     buffer-size              = 1600
     timeout                  = 6000
   end distributed-memory
@@ -72,6 +72,7 @@ exahype-project  Elastic
     terms const        = flux,ncp,materialparameters,pointsources:1
     optimisation const = generic,patchwiseadjust,usestack
     language const     = C
+    constants          = amr_balanced:1, amr_distance_from_surface:1.0
 
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12

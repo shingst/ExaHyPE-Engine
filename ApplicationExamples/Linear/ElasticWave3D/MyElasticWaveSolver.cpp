@@ -127,7 +127,7 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
 
   double refined_domain;
   if(amr_balanced){
-    refined_domain = amr_distance_from_surface * getCoarsestMeshSize() +dx[1] * 0.5;
+    refined_domain = amr_distance_from_surface * getCoarsestMeshSize() + dx[1] * 0.5;
   }else{
     refined_domain = amr_distance_from_surface * getCoarsestMeshSize();
   }
