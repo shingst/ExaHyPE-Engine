@@ -213,7 +213,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
 
   if (
-      cellDescription.getType()!=CellDescription::Cell &&
+      cellDescription.getType()!=CellDescription::Type::Cell &&
       DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
@@ -271,7 +271,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
 
     // extrapolated predictor
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
-    if (cellDescription.getExtrapolatedPredictor()>=0) {
+    if ( cellDescription.getExtrapolatedPredictor()>=0 ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
       assertion(cellDescription.getExtrapolatedPredictorCompressed()==-1);
 
@@ -2800,16 +2800,12 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     CellDescription& pRight,
     const int faceIndexLeft,
     const int faceIndexRight) {
-  const bool cellNextToCellOrDescendant =
-      (pLeft.getType()==CellDescription::Type::Cell || pLeft.getType()==CellDescription::Type::Descendant)   &&
-      (pRight.getType()==CellDescription::Type::Cell || pRight.getType()==CellDescription::Type::Descendant) &&
-      (pLeft.getType()!=CellDescription::Type::Descendant || pRight.getType()!=CellDescription::Type::Descendant);
-  //  const bool cellNextToAncestor =
-  //      (pLeft.getType()==CellDescription::Type::Cell || pRight.getType()==CellDescription::Type::Cell) &&
-  //      (pLeft.getType()==CellDescription::Type::Ancestor || pRight.getType()==CellDescription::Type::Ancestor);
-  // TODO Riemann merge performed flag will be set in Vertex routine. Children have to veto based on
-  // time step size and time stamp
-  if ( cellNextToCellOrDescendant ) {
+  if (
+      pLeft.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
+      pRight.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
+  ) {
+    assertion1(pLeft.getFacewiseCommunicationStatus(faceIndexLeft)  >=MinimumCommunicationStatusForNeighbourCommunication,pLeft.toString());
+    assertion1(pRight.getFacewiseCommunicationStatus(faceIndexRight)>=MinimumCommunicationStatusForNeighbourCommunication,pRight.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pRight.getExtrapolatedPredictor()),pRight.toString());
