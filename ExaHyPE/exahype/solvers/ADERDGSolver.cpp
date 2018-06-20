@@ -2404,6 +2404,12 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
 
       const int numberOfFaceDof = getBndFaceSize();
       const int numberOfFluxDof = getBndFluxSize();
+      
+      logInfo("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
+               ",level=" << cellDescription.getLevel() << ",d=" << d <<
+               ",face=" << faceIndex << ",subcellIndex" << subcellPosition.subcellIndex.toString() << " to " <<
+               " cell="<<cellDescriptionParent.getOffset()+0.5*cellDescriptionParent.getSize()<<
+               " level="<<cellDescriptionParent.getLevel());
 
       // extrapolated predictor and flux interpolation
       // extrapolated predictor
@@ -2559,7 +2565,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
          subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1 ) {
       const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
 
-      logDebug("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
+      logInfo("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
                ",level=" << cellDescription.getLevel() << ",d=" << d <<
                ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
                " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
@@ -2799,12 +2805,12 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int faceIndexRight) {
   if (
       (pLeft.getCommunicationStatus()==CellCommunicationStatus &&
-      pLeft.getFacewiseCommunicationStatus(faceIndexLeft)>=MinimumCommunicationStatusForNeighbourCommunication &&
-      pLeft.getFacewiseAugmentationStatus(faceIndexLeft)<MaximumAugmentationStatus) // excludes Ancestors
+      pLeft.getFacewiseCommunicationStatus(faceIndexLeft) >= MinimumCommunicationStatusForNeighbourCommunication &&
+      pLeft.getFacewiseAugmentationStatus(faceIndexLeft)  <  MaximumAugmentationStatus) // excludes Ancestors
       ||
       (pRight.getCommunicationStatus()==CellCommunicationStatus &&
-      pRight.getFacewiseCommunicationStatus(faceIndexRight)>=MinimumCommunicationStatusForNeighbourCommunication &&
-      pRight.getFacewiseAugmentationStatus(faceIndexRight)>=MaximumAugmentationStatus) // excludes Ancestors
+      pRight.getFacewiseCommunicationStatus(faceIndexRight)>= MinimumCommunicationStatusForNeighbourCommunication &&
+      pRight.getFacewiseAugmentationStatus(faceIndexRight) <  MaximumAugmentationStatus) // excludes Ancestors
   ) {
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
@@ -2845,14 +2851,31 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion3(pRight.getCorrectorTimeStepSize()>=0.0,pRight.toString(),faceIndexRight,normalDirection);
 
     #if defined(Debug) || defined(Asserts)
+    std::cout << "QL[i]= " << std::endl;
     for(int i=0; i<dataPerFace; ++i) {
+      if ( 
+         pLeft.getParentIndex()==24 || 
+         pRight.getParentIndex()==24
+      ) {
+        std::cout << QL[i] << "," ;
+      }
+
       assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(QL[i]),pLeft.toString(),faceIndexLeft,normalDirection,i,QL[i]);
       assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(QR[i]),pRight.toString(),faceIndexRight,normalDirection,i,QR[i]);
     }
+    std::cout << std::endl;
+    std::cout << "FR[i]= " << std::endl;
     for(int i=0; i<dofPerFace; ++i) {
+      if ( 
+         pLeft.getParentIndex()==24 || 
+         pRight.getParentIndex()==24
+      ) {
+        std::cout << FR[i] << "," ;
+      }
       assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(FL[i]),pLeft.toString(),faceIndexLeft,normalDirection,i,FL[i]);
       assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(FR[i]),pRight.toString(),faceIndexRight,normalDirection,i,FR[i]);
     }
+    std::cout << std::endl;
     #endif
     
     riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
