@@ -54,7 +54,7 @@ public:
    * This value is assigned to cell descriptions
    * of type Cell.
    */
-  static int MaximumCommunicationStatus;
+  static int CellCommunicationStatus;
   /**
    * The minimum helper status a cell description
    * must have for it allocating boundary data.
