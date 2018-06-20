@@ -243,9 +243,7 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
       pointerFhbnd1 = lFhbndCoarseTemp1;
     }
   }
-
-  // Add restricted fine level unknowns to coarse level unknowns.
-  accumulate<basisSize2*numberOfVariables>(lFhbndCoarse, pointerFhbnd2);
+  std::copy_n(pointerFhbnd2,basisSize2*numberOfVariables,lFhbndCoarse)
 }
 
 template <int numberOfVariables,int numberOfParameters,int basisSize>
