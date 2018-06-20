@@ -2524,10 +2524,13 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
   assertion(parentCellDescription.getSolverNumber()==cellDescription.getSolverNumber());
   assertion1(cellDescription.getType()==CellDescription::Type::Descendant &&
              parentCellDescription.getHasToHoldDataForMasterWorkerCommunication(),cellDescription.toString());
-  assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
+  assertion1(parentCellDescription.getType()==CellDescription::Type::Cell
+             #ifdef Parallel
+             ||
              (parentCellDescription.getType()==CellDescription::Type::Descendant &&
-             parentCellDescription.getHasToHoldDataForMasterWorkerCommunication()),
-             parentCellDescription.toString());
+             parentCellDescription.getHasToHoldDataForMasterWorkerCommunication())
+             #endif
+             ,parentCellDescription.toString());
 
   std::vector<double>& updateFine   = DataHeap::getInstance().getData(cellDescription.getUpdate());
   std::vector<double>& updateCoarse = DataHeap::getInstance().getData(cellDescription.getUpdate());
