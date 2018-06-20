@@ -97,6 +97,8 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setType(cellType);
   newCellDescription.setParentIndex(parentIndex);
   newCellDescription.setLevel(level);
+  newCellDescription.setParentCellLevel(-1);
+  newCellDescription.setSubcellIndex(-1);
   newCellDescription.setRefinementEvent(refinementEvent);
   newCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
 
@@ -143,6 +145,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setFacewiseLimiterStatus(0);  // implicit conversion
   newCellDescription.setSolutionMin(-1);
   newCellDescription.setSolutionMax(-1);
+  newCellDescription.setIterationsToCureTroubledCell(0);
 
   // Compression
   newCellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
@@ -157,6 +160,12 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setUpdateCompressed(-1);
   newCellDescription.setExtrapolatedPredictorCompressed(-1);
   newCellDescription.setFluctuationCompressed(-1);
+
+  newCellDescription.setBytesPerDoFInExtrapolatedPredictor(-1);
+  newCellDescription.setBytesPerDoFInFluctuation(-1);
+  newCellDescription.setBytesPerDoFInPreviousSolution(-1);
+  newCellDescription.setBytesPerDoFInSolution(-1);
+  newCellDescription.setBytesPerDoFInUpdate(-1);
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
   ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
@@ -2455,8 +2464,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
       cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
       isValidCellDescriptionIndex(cellDescription.getParentIndex()) // might be at master-worker boundary
   ) {
-    exahype::solvers::Solver::SubcellPosition
-    subcellPosition =
+    exahype::solvers::Solver::SubcellPosition subcellPosition =
         exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,false>(
             cellDescription);
 
@@ -2526,9 +2534,9 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
              cellDescription.toString());
   #ifdef Parallel
   assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
-    (parentCellDescription.getType()==CellDescription::Type::Descendant &&
-    parentCellDescription.getHasToHoldDataForMasterWorkerCommunication()),
-    parentCellDescription.toString());
+      (parentCellDescription.getType()==CellDescription::Type::Descendant &&
+      parentCellDescription.getHasToHoldDataForMasterWorkerCommunication()),
+      parentCellDescription.toString());
   #else
   assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,
              parentCellDescription.toString());

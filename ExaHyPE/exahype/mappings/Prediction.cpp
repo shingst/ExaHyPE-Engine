@@ -204,24 +204,6 @@ void exahype::mappings::Prediction::enterCell(
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
-void exahype::mappings::Prediction::restriction(
-    const exahype::Cell&                             fineGridCell,
-    const exahype::State::AlgorithmSection& algorithmSection) {
-  if (fineGridCell.isInitialised()) {
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    for (int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (
-          solver->isPerformingPrediction(algorithmSection) &&
-          fineGridElement!=exahype::solvers::Solver::NotFound
-      ) {
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-      }
-    }
-  }
-}
-
 #ifdef Parallel
 void exahype::mappings::Prediction::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
