@@ -4887,7 +4887,6 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
   assertion(CompressionAccuracy>0.0);
 
   #if !defined(ValidateCompressedVsUncompressedData)
-  const int unknownsPerCell         = getUnknownsPerCell();
   const int dataPointsPerCell       = getDataPerCell();
   const int unknownsPerCellBoundary = getUnknownsPerCellBoundary();
 
