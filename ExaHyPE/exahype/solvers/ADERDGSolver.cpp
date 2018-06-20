@@ -438,18 +438,15 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   }
 
   #ifdef Parallel
-  const int dofPerFace  = getBndFluxSize();
-  const int dataPerFace = getBndFaceSize();
-  const int dofPerCell  = getUnknownsPerCell();
-  _invalidExtrapolatedPredictor.resize(dataPerFace);
-  _invalidFluctuations.resize(dofPerFace);
+  _invalidExtrapolatedPredictor.resize(getBndFaceSize());
+  _invalidFluctuations.resize(getBndFluxSize());
   std::fill_n(_invalidExtrapolatedPredictor.data(),_invalidExtrapolatedPredictor.size(),-1);
   std::fill_n(_invalidFluctuations.data(),_invalidFluctuations.size(),-1);
 
-  _receivedExtrapolatedPredictor.resize(dataPerFace);
-  _receivedFluctuations.resize(dofPerFace);
+  _receivedExtrapolatedPredictor.resize(getBndFaceSize());
+  _receivedFluctuations.resize(getBndFluxSize());
 
-  _receivedUpdate.reserve(dofPerCell);
+  _receivedUpdate.reserve(getUpdateSize());
   #endif
 }
 
