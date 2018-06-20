@@ -58,13 +58,13 @@ exahype::mappings::PredictionRerun::enterCellSpecification(int level) const {
   return exahype::mappings::Prediction::determineEnterCellSpecification(level);
 }
 
+// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
-// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
@@ -159,16 +159,7 @@ void exahype::mappings::PredictionRerun::leaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,
-                           fineGridVerticesEnumerator.toString(),
-                           coarseGridCell, fineGridPositionOfCell);
-
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::PredictionRerunAllSend);
-  }
-
-  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
+  // do nothing
 }
 
 #ifdef Parallel

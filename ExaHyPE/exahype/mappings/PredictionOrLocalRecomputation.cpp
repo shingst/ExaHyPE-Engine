@@ -58,12 +58,6 @@ exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int le
   }
 }
 peano::MappingSpecification
-exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-}
-peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
@@ -71,6 +65,13 @@ exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecifica
 }
 
 // Below specs are all nop
+peano::MappingSpecification
+exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+}
+
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
@@ -307,19 +308,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,
-                           fineGridVerticesEnumerator.toString(),
-                           coarseGridCell, fineGridPositionOfCell);
-
-  if (
-      exahype::State::isFirstIterationOfBatchOrNoBatch() &&
-      exahype::solvers::Solver::FuseADERDGPhases
-  ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
-  }
-
-  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
+  // do nothing
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(

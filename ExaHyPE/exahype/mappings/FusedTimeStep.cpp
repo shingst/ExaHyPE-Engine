@@ -282,6 +282,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
 
+        // TODO(LTS): Merge these two functions
         exahype::solvers::Solver::UpdateResult result =
             solver->fusedTimeStep(
                 fineGridCell.getCellDescriptionsIndex(),element,
@@ -290,9 +291,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
-        // TODO(LTS): Merge these too
-        exahype::mappings::Prediction::restriction(
-            fineGridCell,exahype::State::AlgorithmSection::TimeStepping);
+        solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
 
         _meshUpdateRequests    [solverNumber]  =
