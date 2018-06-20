@@ -77,7 +77,7 @@ namespace {
       }
     }
 
-    // 3. Discrete Picard iterations
+    // 2. Discrete Picard iterations
     constexpr int MaxIterations = (useMaxPicardIterations) ? maxPicardIterations : 2 * (order + 1);
     // right-hand side
     idx5 idx_rhs(basisSize, basisSize, basisSize, basisSize, numberOfVariables); // idx_rhs(t,z,y,x,nVar)
@@ -261,7 +261,7 @@ namespace {
       }  // end time dof
 
 
-      // 4. Multiply with (K1)^(-1) to get the discrete time integral of the
+      // 3. Multiply with (K1)^(-1) to get the discrete time integral of the
       // discrete Picard iteration
       double sq_res = 0.0;
       for (int i = 0; i < basisSize; i++) {
@@ -294,7 +294,7 @@ namespace {
       }
       
 
-      // 5. Exit condition
+      // 4. Exit condition
       if (!useMaxPicardIterations) {
         constexpr double tol = 1e-7;
         if (sq_res < tol * tol) {
