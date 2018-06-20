@@ -132,6 +132,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   // Default field data indices
   newCellDescription.setSolution(-1);
+  newCellDescription.setPreviousSolution(-1);
   newCellDescription.setUpdate(-1);
   newCellDescription.setExtrapolatedPredictor(-1);
   newCellDescription.setFluctuation(-1);
@@ -146,11 +147,13 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   // Compression
   newCellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
   newCellDescription.setSolutionAverages(-1);
+  newCellDescription.setPreviousSolutionAverages(-1);
   newCellDescription.setUpdateAverages(-1);
   newCellDescription.setExtrapolatedPredictorAverages(-1);
   newCellDescription.setFluctuationAverages(-1);
 
   newCellDescription.setSolutionCompressed(-1);
+  newCellDescription.setPreviousSolutionAverages(-1);
   newCellDescription.setUpdateCompressed(-1);
   newCellDescription.setExtrapolatedPredictorCompressed(-1);
   newCellDescription.setFluctuationCompressed(-1);
@@ -315,10 +318,9 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
       cellDescription.getType()==CellDescription::Type::Cell &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
-    tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
+    tarch::multicore::Lock lock(exahype::HeapSemaphore);
     // Allocate volume DoF for limiter
     const int dataPerNode     = getNumberOfVariables()+getNumberOfParameters();
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters

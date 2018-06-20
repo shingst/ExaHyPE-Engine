@@ -92,6 +92,13 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+}
+
+peano::MappingSpecification
+exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
   return exahype::mappings::Prediction::determineEnterCellSpecification(level);
 }
 
@@ -100,13 +107,6 @@ exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) c
   return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,
         peano::MappingSpecification::AvoidFineGridRaces,true);
-}
-
-peano::MappingSpecification
-exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 /**
