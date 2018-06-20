@@ -72,6 +72,11 @@ exahype-project  Elastic
     terms const        = flux,ncp,materialparameters,pointsources:1
     optimisation const = generic,patchwiseadjust,usestack
     language const     = C
+
+    /* Sets the position below which elements are refined in y direction
+      The position is set to amr_distance_from_surface*coarsestMeshSize
+      amr_balanced:1 enforces a balanced grid by also refining the first layer above the position
+      To get a non balanced grid set amr_distance_from_surface to multiples of 3 and amr_balanced:0*/
     constants          = amr_balanced:1, amr_distance_from_surface:1.0
 
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
