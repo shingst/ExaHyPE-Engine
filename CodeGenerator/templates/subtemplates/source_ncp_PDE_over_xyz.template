@@ -2,20 +2,23 @@
 
 String time_var        : name of the var used in the outer time loop (use '0' is no time loop)
 String inputQ          : name of ythe input state tensor (e.g. lQi)
+int    inputQ_dataSize : size of the padding in inputQ (e.g. nDataPad)
 String output          : name of the output array
 
 Optional
 
+bool timeInterleaved   (default true) : is time betwenn n and xyz in inputQ
 bool substractToOutput (default false): substract to output instead of adding
 bool writeSource       (default true) : if true use lSi, otherwise use a tmp array
 bool multiplyByWeights (default true) : multiply the output by the quadrature weigths
-bool inputQPadded      (default true) : is inputQ a padded matrix (nDataPad vs nData)
+
 
 #}
 {% with %}
 {# /**************************************
    **** Set up helper template values ****
    **************************************/ #}
+{# // Set default parameter if not set #}
 {% if substractToOutput is not defined %}
 {% set substractToOutput=False %}
 {% endif %}
@@ -25,65 +28,119 @@ bool inputQPadded      (default true) : is inputQ a padded matrix (nDataPad vs n
 {% if multiplyByWeights is not defined %}
 {% set multiplyByWeights=True %}
 {% endif %}
-{% if isInputQPadded is not defined %}
-{% set isInputQPadded=True %}
+{% if timeInterleaved is not defined %}
+{% set timeInterleaved=True %}
+{% endif %}
+{# // Set helper values #}
+{% set rest_size=((nDof**nDim)%vectSize) %}
+{% set rest_start=(nDof**nDim)-rest_size %}
+{% if time_var=='0' %}
+{% set useTime=False %}
+{% set inputQ_iterator='xyz*'~inputQ_dataSize %}
+{% set inputQ_iterator_rest=''~rest_start*inputQ_dataSize %}
+{% else %}
+{% set useTime=True %}
+{% if timeInterleaved %}
+{% set inputQ_iterator='(xyz*'~nDof~'+'~time_var~')*'~inputQ_dataSize %}
+{% set inputQ_iterator_rest='('~(rest_start*nDof)~'+'~time_var~')*'~inputQ_dataSize %}
+{% else %}
+{% set inputQ_iterator='('~time_var~'*'~(nDof**nDim)~'+xyz)*'~inputQ_dataSize %}
+{% set inputQ_iterator_rest='('~time_var~'*'~(nDof**nDim)~'+'~rest_start~')*'~inputQ_dataSize %}
+{% endif %}
 {% endif %}
 {% if writeSource %}
 {% set sourceArray='lSi'%}
-{% set addShift='+shift'%}
+{% if useTime %}
+{% set addShift='+('~time_var~'*'~nDof**nDim~'+xyz)*'~nVarPad %}
+{% else %}
+{% set addShift='+xyz*'~nVarPad %}
+{% endif %}
 {% else %}
 {% set sourceArray='tmp_source'%}
 {% set addShift=''%}
 {% endif %}
-{% if time_var=='0' %}
-{% set useTime=False %}
-{% if isInputQPadded %}
-{% set inputQ_iterator=nDataPad~'*xyz'%}
-{% else %}
-{% set inputQ_iterator=nData~'*xyz'%}
-{% endif %}
-{% else %}
-{% set useTime=True %}
-{% if isInputQPadded %}
-{% set inputQ_iterator=nDataPad~'*('~time_var~'+'~nDof~'*xyz)'%}
-{% else %}
-{% set inputQ_iterator=nData~'*('~time_var~'+'~nDof~'*xyz)'%}
-{% endif %}
+{# // Set helper values for vect case #}
+{% if useFusedSourceVect or useSourceVect or useNCPVect %}
+
 {% endif %}
 {# /********************
    **** Subtemplate ****
    *********************/ #}
-{% if useSourceOrNCP %}
 // Compute the Nonconservative part NCP + Source
-{% if useNCP %}
-{% if not useNCPVect %}
-double gradQ_PDE[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT)));
-{% if not useFusedSource %}
-double tmp_ncp_output[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //initialize for padding
+{% if useFusedSourceVect or useSourceVect or useNCPVect %}
+{# /*****************
+   **** vect PDE ****
+   ******************/ #}
+for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSize}}) {
+  //transpose to SoA
+  AoS2SoA<{{nData}}, {% if timeInterleaved %}{{inputQ_dataSize*nDof}}{% else %}{{inputQ_dataSize}}{% endif %}>({{inputQ}}+{{inputQ_iterator}}, Qt_block);
+{% if useNCP or useFusedSource %}
+  AoS2SoA<{{nVar}}, {{nVarPad}}>(gradQ+{{nVarPad}}*xyz, gradQt_x_block); //x
+  AoS2SoA<{{nVar}}, {{nVarPad}}>(gradQ+{{nVarPad}}*xyz+{{1*nVarPad*(nDof**nDim)}}, gradQt_y_block); //y
+  AoS2SoA<{{nVar}}, {{nVarPad}}>(gradQ+{{nVarPad}}*xyz+{{2*nVarPad*(nDof**nDim)}}, gradQt_z_block); //z
 {% endif %}
+{% if useFusedSource %}
+  // FusedSource
+  #ifdef USE_IPO
+    #pragma forceinline recursive
+  #endif
+  solver.{{solverName}}::fusedSource_vect(Qt, gradQt, St, {{vectSize}});
+{% else %}{# useFusedSource #}
+{% endif %}
+{% if writeSource %}
+  // Transpose back the result
+  SoA2AoS<{{nVar}}, {{nVarPad}}>(St_block, {{sourceArray}}{{addShift}});
+{% endif %}
+
+  // Update {{output}}
+  for (int it_vect = 0; it_vect < {{vectSize}}; it_vect++) {
+{% if multiplyByWeights %}
+    const double updateSize = weights1[{{time_var}}] * weights3[xyz+it_vect] * dt;
+{% endif %}
+    #pragma vector aligned
+    for (int n = 0; n < {{nVarPad}}; n++) {
+{% if writeSource %}
+      {{output}}[n{{addShift}}+it_vect*{{nVarPad}}] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}{{sourceArray}}[n{{addShift}}+it_vect*{{nVarPad}}];
+{% else %}{# transpose and update #}
+      {{output}}[n{{addShift}}+it_vect*{{nVarPad}}] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}St_block[n*{{vectSize}}+it_vect];
+{% endif %}
+    }
+  }
+}
+{% if rest_size != 0 %}
+// rest 
+{
+  //TODO JMG
+  printf("fusedsourcevect rest not implemented!!!! \nPlease use fusedsource in the meantime");
+  abort();
+}
+{% endif %}
+{% else %}
+{# /********************
+   **** No vect PDE ****
+   *********************/ #}
+{% if useNCP or useFusedSource %}
+double gradQ_PDE[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT)));
+{% if not useFusedSource%}
+double tmp_ncp_output[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //initialize for padding
 {% endif %}
 {% endif %}
 {% if not writeSource %}
 double {{sourceArray}}[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
-for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //zyx
-  const int shift = {{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %});
-  
-{% if useNCP %}
-{% if useNCPVect %}
-{% else %}
-  //remove padding to use the same user function as generic kernel
+for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+{% if useNCP or useFusedSource %}
+  // Remove padding to use the same user function as generic kernel
   double gradQ_PDE[{{nVar*nDim}}]; 
-  std::copy_n(&gradQ[{{nVarPad}}*xyz], {{nVar}}, &gradQ_PDE[{{0*nVar}}]); //x
-  std::copy_n(&gradQ[{{nVarPad}}*xyz+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQ_PDE[{{1*nVar}}]); //y
+  std::copy_n(gradQ+{{nVarPad}}*xyz, {{nVar}}, gradQ_PDE); //x
+  std::copy_n(gradQ+{{nVarPad}}*xyz+{{1*nVarPad*(nDof**nDim)}}, {{nVar}}, gradQ_PDE+{{1*nVar}}); //y
 {% if nDim==3 %}
-  std::copy_n(&gradQ[{{nVarPad}}*xyz+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQ_PDE[{{2*nVar}}]); //z
+  std::copy_n(gradQ+{{nVarPad}}*xyz+{{2*nVarPad*(nDof**nDim)}}, {{nVar}}, gradQ_PDE+{{2*nVar}}); //z
 {% endif %}
-{% endif %}{# useNCPVect #}
 {% endif %}{# useNCP #}
   
 {% if useFusedSource %}
-  //fusedSource
+  // FusedSource
   #ifdef USE_IPO
     #pragma forceinline recursive
   #endif
@@ -110,13 +167,15 @@ for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) { //zyx
   }      
 {% endif %} 
 {% endif %}{# useFusedSource #}
+
+  // Update {{output}}
 {% if multiplyByWeights %}
   const double updateSize = weights1[{{time_var}}] * weights3[xyz] * dt;
 {% endif %}
   #pragma simd
   for (int n = 0; n < {{nVarPad}}; n++) {
-    {{output}}[n+shift] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}{{sourceArray}}[n{{addShift}}];
+    {{output}}[n{{addShift}}] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}{{sourceArray}}[n{{addShift}}];
   }
 }
-{% endif %}
-{% endwith %} 
+{% endif %}{# non vectorized PDE block#}
+{% endwith %}

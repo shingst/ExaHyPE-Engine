@@ -70,14 +70,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   // 0. Allocate local variable
 {% if useFluxVect %}
-  // transpose matrix for vect flux
-  double Qt_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))); //transposed Q
+  // transposed flux matrix for vect flux
+
   double Ft_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_x
   double Ft_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_y
 {% if nDim==3 %}
   double Ft_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_z
 {% endif %}
-  double* Qt[{{nVar}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Qt_block+{{n*vectSize}}, {% endfor %}Qt_block+{{(nVar-1)*vectSize}} };
+
   double* Ft_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_x_block+{{n*vectSize}}, {% endfor %}Ft_x_block+{{(nVar-1)*vectSize}} };
   double* Ft_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_y_block+{{n*vectSize}}, {% endfor %}Ft_y_block+{{(nVar-1)*vectSize}} };
 {% if nDim==3 %}
@@ -85,6 +85,31 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
   double** Ft[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { Ft_x, Ft_y{{', Ft_z' if nDim==3 else ''}} };
 {% endif %}
+{% if useNCPVect or useFusedSourceVect %}
+  // transposed gradQ matrix for vect {{'fusedSource' if useFusedSourceVect else 'ncp'}}
+  double gradQt_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed gradQ_x
+  double gradQt_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed gradQ_y
+{% if nDim==3 %}
+  double gradQt_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed gradQ_z
+{% endif %}
+  double* gradQt_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_x_block+{{n*vectSize}}, {% endfor %}gradQt_x_block+{{(nVar-1)*vectSize}} };
+  double* gradQt_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_y_block+{{n*vectSize}}, {% endfor %}gradQt_y_block+{{(nVar-1)*vectSize}} };
+{% if nDim==3 %}
+  double* gradQt_z[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_z_block+{{n*vectSize}}, {% endfor %}gradQt_z_block+{{(nVar-1)*vectSize}} };
+{% endif %}
+  double** gradQt[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { gradQt_x, gradQt_y{{', gradQt_z' if nDim==3 else ''}} };
+{% endif %}
+{% if useFluxVect or useNCPVect or useSourceVect or useFusedSourceVect %}
+  //transposed state matrix 
+  double Qt_block[{{nData*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed Q
+  double* Qt[{{nData}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nDataMinusOne_seq %}Qt_block+{{n*vectSize}}, {% endfor %}Qt_block+{{(nData-1)*vectSize}} };
+{% endif %}
+{% if useNCPVect or useSourceVect or useFusedSourceVect %}
+  //transposed source matrix 
+  double St_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed S
+  double* St[{{nVar}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}St_block+{{n*vectSize}}, {% endfor %}St_block+{{(nVar-1)*vectSize}} };
+{% endif %}
+
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
@@ -110,12 +135,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       std::copy_n(&luh[{{nData}}*ijk], {{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
     }
   }
-{% else %} {# useCERKGuess #}
+{% else %}{# useCERKGuess #}
   //1. Optimized initial guess, Continuous Extension Runga-Kutta.
   {
-{% if useNCP %}
-    
-{% endif %}
 {% if useFlux %}{# use lFi as temp array, lFi total size = nVarPad*(nDof**(nDim+1))*nDim #}
     // use lFi as temporary storage for CERK's temporary arrays
     double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
@@ -133,9 +155,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     //Note: temporary storage will be overwritten by user functions later, no need to reset them to 0
 
     // K1
-{% with inputLuh='luh', outputKi='K1' %}
+{% with inputLuh='luh', outputKi='K1', inputLuh_dataSize=nData %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 {% if useNCP %}
     std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0 for next loop
 {% endif %}
@@ -152,9 +174,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
     }
 
-{% with inputLuh='lwh', outputKi='K2' %}
+{% with inputLuh='lwh', outputKi='K2', inputLuh_dataSize=nData %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 
     // Set initial guess using CERK
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
@@ -172,15 +194,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     
   } // end initial guess
 {% endif %} {# useCERKGuess #}
-
-  // 2. Compute the contribution of the initial condition uh to the time update
-  // we compute rhs on the fly, TODO JMG clean legacy
   
-  // 3. Discrete Picard iterations
+  // 2. Discrete Picard iterations
   constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
   
   int iter = 0;
-
   for (iter; iter < MaxIterations; iter++) {
     for (int i = 0; i < {{nDof}}; i++) {  // time DOF
 
@@ -188,9 +206,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {# *************************************************
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
-{% with inputQ='lQi', inputQ_varSize=nDataPad, outputF='lFi',  timeInterleaved=True, time_var='i' %}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi',  timeInterleaved=True, time_var='i' %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 {% endif %}{# useFlux #}
 
       // Compute the contribution of the initial condition uh to the right-hand side (rhs)
@@ -216,14 +234,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
           const double updateSize = weights3[ijk_] * dtBydx;
 {% with gemmKey='rhs_x', A='lFi', B='coeffRhsX', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
 {% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
-
+{% endwith %} 
 {% endif %}{# useFlux #}
 {% if useNCP %}
 {% with gemmKey='gradQ_x', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
 {% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
-
+{% endwith %} 
 {% endif %}
           ijk_++;
         }
@@ -237,14 +253,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
           const double updateSize = weights3[ijk_] * dtBydx;
 {% with gemmKey='rhs_y', A='lFi', B='coeffRhsY', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
 {% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
-
+{% endwith %} 
 {% endif %}{# useFlux #}
 {% if useNCP %}
 {% with gemmKey='gradQ_y', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
 {% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
-
+{% endwith %} 
 {% endif %}
           ijk_++;
         }
@@ -259,14 +273,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
           const double updateSize = weights3[ijk_] * dtBydx;
 {% with gemmKey='rhs_z', A='lFi', B='coeffRhsZ', C='rhs', A_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
 {% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
-
+{% endwith %} 
 {% endif %}{# useFlux #}
 {% if useNCP %}
 {% with gemmKey='gradQ_z', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
 {% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
-
+{% endwith %} 
 {% endif %}
           ijk_++;
         }
@@ -277,21 +289,21 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {# ***********************************************************
    **** call to Source and NCP (or FusedSource) functions ****
    *********************************************************** #}
-{% with time_var='i', inputQ='lQi', output='rhs' %}
+{% with time_var='i', inputQ='lQi', output='rhs', inputQ_dataSize=nDataPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 {% endif %}
 
     }  // end time dof
 
-    // 4. Multiply with (K1)^(-1) to get the discrete time integral of the
+    // 3. Multiply with (K1)^(-1) to get the discrete time integral of the
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
       const double iweight = 1.0 / weights3[ijk];     
 {% with gemmKey='lqi', A='rhs', B='s_m_QSlice', C='new_lQi_slice', A_shift=nVarPad~'*ijk', B_shift='0', C_shift='0', trueB='iK1_T', trueAlpha='iweight' %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
       for(int l = 0; l < {{nDof}}; l++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
           sq_res += (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]) * (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]);
@@ -300,7 +312,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
     }
 
-    // 5. Exit condition
+    // 4. Exit condition
     constexpr double tol2 = 1e-7 * 1e-7;
     if (sq_res < tol2) {
       break;
@@ -532,19 +544,19 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       //x, also define coefficient matrix coeffVolume
 {% with gemmKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx[0]', forceCoeffMatrix=True %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 
       //y, reuse coeffVolume
 {% with gemmKey='lduh_y', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~(nDof*nDof)~'+i)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}
 {% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 {% if nDim == 3 %}
 
       //z, reuse coeffVolume
 {% with gemmKey='lduh_z', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
-{% endwith %}
+{% endwith %} 
 {% endif %}
 
     }
@@ -559,7 +571,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       lduh[xyz*{{nVarPad}}+n] += weights3[xyz] * lShi[xyz*{{nVarPad}}+n];
     }
   }
-  
 {% endif %} 
 
   return std::min(iter+1, MaxIterations); //return number of Picard iterations, min to avoid doing a +1 if the loop wasn't exited early

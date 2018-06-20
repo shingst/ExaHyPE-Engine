@@ -210,7 +210,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {# *************************************************
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
-{% with inputQ='lQi', inputQ_varSize=nDataPad, outputF='lFi',  timeInterleaved=False, time_var='i' %}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi',  timeInterleaved=False, time_var='i' %}
 {% include 'subtemplates/flux_PDE_over_xyz.template' %}
 {% endwith %}
 
