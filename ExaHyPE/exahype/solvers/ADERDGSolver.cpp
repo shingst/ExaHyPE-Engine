@@ -2534,13 +2534,14 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
              parentCellDescription.toString());
   #endif
 
-  std::vector<double>& updateFine   = DataHeap::getInstance().getData(cellDescription.getUpdate());
-  std::vector<double>& updateCoarse = DataHeap::getInstance().getData(parentCellDescription.getUpdate());
+  DataHeap::HeapEntries& updateFine   = DataHeap::getInstance().getData(cellDescription.getUpdate());
+  DataHeap::HeapEntries& updateCoarse = DataHeap::getInstance().getData(parentCellDescription.getUpdate());
   tarch::multicore::Lock lock(RestrictionSemaphore);
   for (int i = 0; i < getDataPerCell(); ++i) {
       updateCoarse[i] += updateFine[i];
   }
   lock.free();
+  std::fill(updateFine.begin(),updateFine.end(),0.0);
 
   const tarch::la::Vector<DIMENSIONS,int>& subcellIndex = cellDescription.getSubcellIndex();
   const int levelDelta = cellDescription.getLevel() - cellDescription.getParentCellLevel();
