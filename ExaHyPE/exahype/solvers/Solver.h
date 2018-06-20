@@ -16,6 +16,8 @@
 #ifndef _EXAHYPE_SOLVERS_SOLVER_H_
 #define _EXAHYPE_SOLVERS_SOLVER_H_
 
+#include <utility>
+
 #include <memory>
 #include <string>
 #include <iostream>
@@ -928,11 +930,22 @@ class exahype::solvers::Solver {
    */
   const double _maximumMeshSize;
 
+
   /**
    * The coarsest level of the adaptive mesh that is
    * occupied by this solver.
+   *
+   * \note Is set by initSolver(...) function
    */
   int _coarsestMeshLevel;
+
+  /**
+   * The coarsest mesh size this solver is using, i.e.
+   * the mesh size chosen for the uniform base grid.
+   *
+   * \note Is set by initSolver(...) function
+   */
+  double _coarsestMeshSize;
 
   /**
    * The maximum depth the adaptive mesh is allowed
@@ -1053,7 +1066,7 @@ class exahype::solvers::Solver {
    * at least 3 (Peano) levels.
    * This is not ensured or checked in this routine.
    */
-  static int computeMeshLevel(double meshSize, double domainSize);
+  static std::pair<double,int> computeCoarsestMeshSizeAndLevel(double meshSize, double domainSize);
 
   /**
    * Returns the maximum extent a mesh cell is allowed to have
@@ -1063,14 +1076,32 @@ class exahype::solvers::Solver {
    * grid. If you return the extent of the computational domain in
    * each coordinate direction or larger values,
    * you indicate that this solver is not active in the domain.
+   *
+   * \note This is just an upper bound on the coarsest mesh
+   * size. For the actual coarsest mesh size, see method
+   * getCoarsestMeshSize().
+   *
+   * TODO(Dominic): Rename to getUserMeshSize()?
    */
   double getMaximumMeshSize() const;
 
   /**
    * The coarsest level of the adaptive mesh that is
    * occupied by this solver.
+   *
+   * \note Only safe to use after initSolver(...) was called.
    */
   int getCoarsestMeshLevel() const;
+
+  /**
+   * The coarsest mesh size this solver is using,
+   * i.e. the size of the cells on the uniform base grid.
+   *
+   * \note Only safe to use after initSolver(...) was called.
+   *
+   * \note This is not not the maximumMeshSize specified by the user.
+   */
+  double getCoarsestMeshSize() const;
 
   /**
    * The maximum depth the adaptive mesh is allowed to
