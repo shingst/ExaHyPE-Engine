@@ -177,7 +177,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
     kernels::aderdg::generic::{{language}}::faceUnknownsRestriction<NumberOfVariables,Order+1>(lFhbndCoarse,lFhbnd,subfaceIndex,levelDelta);
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
-    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,cellSize);  
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,coarseGridCellSize);  
 {%- if tempVarsOnStack %}
 {%- else %}  
     delete[] lFhbndCoarse;
