@@ -86,8 +86,9 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent int parentCellLevel;
   
   /**
-   * This field stores the position of a Descendant
-   * with respect to its top-most parent of type Cell.
+   * This field is used to store the offset of a Descendant's
+   * cell parent.
+   * 
    * This field is specifically for Descendant cell descriptions and plays
    * a role in computing face integrals whenever the Cell parent has refined
    * neighbours.
@@ -96,7 +97,7 @@ class exahype::records::ADERDGCellDescription {
    * It is a parallelised field as the information must not get lost if we send a cell
    * to a new worker.
    */
-  parallelise persistent int subcellIndex[DIMENSIONS];
+  parallelise persistent double parentOffset[DIMENSIONS];
   
   
   /**
