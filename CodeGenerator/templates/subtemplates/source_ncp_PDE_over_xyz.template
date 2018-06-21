@@ -52,8 +52,10 @@ bool multiplyByWeights (default true) : multiply the output by the quadrature we
 {% set sourceArray='lSi'%}
 {% if useTime %}
 {% set addShift='+('~time_var~'*'~nDof**nDim~'+xyz)*'~nVarPad %}
+{% set addShift_rest='+('~time_var~'*'~nDof**nDim~'+'~rest_start~')*'~nVarPad %}
 {% else %}
 {% set addShift='+xyz*'~nVarPad %}
+{% set addShift_rest='+'~rest_start*nVarPad %}
 {% endif %}
 {% else %}
 {% set sourceArray='tmp_source'%}
@@ -110,12 +112,43 @@ for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSiz
 {% if rest_size != 0 %}
 // rest 
 {
-  //TODO JMG
-  printf("fusedsourcevect rest not implemented!!!! \nPlease use fusedsource in the meantime");
-  abort();
-}
+  //transpose to SoA
+  AoS2SoA_rest<{{nData}}, {% if timeInterleaved %}{{inputQ_dataSize*nDof}}{% else %}{{inputQ_dataSize}}{% endif %}, {{rest_size}}>({{inputQ}}+{{inputQ_iterator_rest}}, Qt_block);
+{% if useNCP or useFusedSource %}
+  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad}}*{{rest_start}}, gradQt_x_block); //x
+  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad}}*{{rest_start}}+{{1*nVarPad*(nDof**nDim)}}, gradQt_y_block); //y
+  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad}}*{{rest_start}}+{{2*nVarPad*(nDof**nDim)}}, gradQt_z_block); //z
 {% endif %}
-{% else %}
+{% if useFusedSource %}
+  // FusedSource
+  #ifdef USE_IPO
+    #pragma forceinline recursive
+  #endif
+  solver.{{solverName}}::fusedSource_vect(Qt, gradQt, St, {{vectSize}});
+{% else %}{# useFusedSource #}
+{% endif %}
+{% if writeSource %}
+  // Transpose back the result
+  SoA2AoS_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(St_block, {{sourceArray}}{{addShift_rest}});
+{% endif %}
+
+  // Update {{output}}
+  for (int it_vect = 0; it_vect < {{rest_size}}; it_vect++) {
+{% if multiplyByWeights %}
+    const double updateSize = weights1[{{time_var}}] * weights3[{{rest_start}}+it_vect] * dt;
+{% endif %}
+    #pragma vector aligned
+    for (int n = 0; n < {{nVarPad}}; n++) {
+{% if writeSource %}
+      {{output}}[n{{addShift_rest}}+it_vect*{{nVarPad}}] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}{{sourceArray}}[n{{addShift_rest}}+it_vect*{{nVarPad}}];
+{% else %}{# transpose and update #}
+      {{output}}[n{{addShift_rest}}+it_vect*{{nVarPad}}] {{ '+' if not substractToOutput else '-'}}= {{ 'updateSize * ' if multiplyByWeights }}St_block[n*{{vectSize}}+it_vect];
+{% endif %}
+    }
+  }
+}
+{% endif %}{# rest_size #}
+{% else %}{# useFusedSourceVect or useSourceVect or useNCPVect #}
 {# /********************
    **** No vect PDE ****
    *********************/ #}
