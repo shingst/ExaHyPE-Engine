@@ -471,8 +471,11 @@ private:
    * which must have been also received during a previous fork event.
    * If so, update the parent index of the fine grid cell description
    * with the coarse grid cell descriptions index.
+   *
+   * For cell descriptions of type Descendant, copy offset and
+   * level of the top-most parent cell description, which is of type Cell.
    */
-  void ensureConsistencyOfParentIndex(
+  void ensureConsistencyOfParentInformation(
       CellDescription& cellDescription,
       const int coarseGridCellDescriptionsIndex);
 
