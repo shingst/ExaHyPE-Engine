@@ -1413,8 +1413,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
               fineGridCell.getCellDescriptionsIndex(),
               fineGridCellElement,
               coarseGridCellDescription);
-
-      ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCellDescriptionsIndex);
+      
+      ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
     }
   }
   return newComputeCell;
@@ -2282,7 +2282,6 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     }
 
     double* update       = exahype::DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
-    
     #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
