@@ -115,16 +115,16 @@ for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSiz
   //transpose to SoA
   AoS2SoA_rest<{{nData}}, {% if timeInterleaved %}{{inputQ_dataSize*nDof}}{% else %}{{inputQ_dataSize}}{% endif %}, {{rest_size}}>({{inputQ}}+{{inputQ_iterator_rest}}, Qt_block);
 {% if useNCP or useFusedSource %}
-  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad}}*{{rest_start}}, gradQt_x_block); //x
-  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad}}*{{rest_start}}+{{1*nVarPad*(nDof**nDim)}}, gradQt_y_block); //y
-  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad}}*{{rest_start}}+{{2*nVarPad*(nDof**nDim)}}, gradQt_z_block); //z
+  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad*rest_start}}, gradQt_x_block); //x
+  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad*rest_start+1*nVarPad*(nDof**nDim)}}, gradQt_y_block); //y
+  AoS2SoA_rest<{{nVar}}, {{nVarPad}}, {{rest_size}}>(gradQ+{{nVarPad*rest_start+2*nVarPad*(nDof**nDim)}}, gradQt_z_block); //z
 {% endif %}
 {% if useFusedSource %}
   // FusedSource
   #ifdef USE_IPO
     #pragma forceinline recursive
   #endif
-  solver.{{solverName}}::fusedSource_vect(Qt, gradQt, St, {{vectSize}});
+  solver.{{solverName}}::fusedSource_vect(Qt, gradQt, St, {{rest_size}});
 {% else %}{# useFusedSource #}
 {% endif %}
 {% if writeSource %}
