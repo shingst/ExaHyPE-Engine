@@ -162,21 +162,21 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
 {%- if enableProfiler %}
   _profiler->start("faceIntegral");
 {%- endif %}
-
-{%- if dimensions==3 %}
-  constexpr int basisSize = (Order+1)*(Order+1);
-{%- else %}
-  constexpr int basisSize = (Order+1);
-{%- endif %}
-  constexpr int sizeFlux  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
-
   if ( levelDelta > 0 ) {
+    {%- if dimensions==3 %}
+    constexpr int basisSize = (Order+1)*(Order+1);
+    {%- else %}
+    constexpr int basisSize = (Order+1);
+    {%- endif %}
+    constexpr int sizeFlux  = NumberOfVariables*basisSize;
 {%- if tempVarsOnStack %}
     double lFhbndCoarse[sizeFlux];
 {%- else %}  
     double* lFhbndCoarse = new double[sizeFlux];
 {%- endif %}
     kernels::aderdg::generic::{{language}}::faceUnknownsRestriction<NumberOfVariables,Order+1>(lFhbndCoarse,lFhbnd,subfaceIndex,levelDelta);
+    
+    tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,cellSize);  
 {%- if tempVarsOnStack %}
 {%- else %}  
