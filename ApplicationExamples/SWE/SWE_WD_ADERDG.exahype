@@ -56,7 +56,7 @@ exahype-project  SWE
     //parameters const = b:1
     order const = 3
     maximum-mesh-size = 0.15
-    maximum-mesh-depth = 3
+    maximum-mesh-depth = 1
     time-stepping = global
     type const = nonlinear
     terms const = flux,ncp
@@ -65,14 +65,15 @@ exahype-project  SWE
     limiter-type const = godunov
     limiter-optimisation const = generic, usestack
     limiter-language const = C
-    dmp-observables const = 1
+    dmp-observables const = 0
     dmp-relaxation-parameter = 100000000.0
     dmp-difference-scaling = 100000000.0
-    constants = grav:9.81, epsilon:1e-3, scenario:11
-    plot vtu::Cartesian::cells::ascii ConservedWriter
+    constants = grav:9.81, epsilon:1e-7, scenario:11
+
+    plot vtu::Cartesian::cells::limited::ascii ConservedWriter
       variables const = 6
       time            = 0.0
-      repeat          = 0.1
+      repeat          = 0.00000000001
       output          = ./conserved
     end plot
   end solver

@@ -45,6 +45,7 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
     eigs.hu() = 0.0;
     eigs.hv() = 0.0;
     eigs.b() = 0.0;
+    // std::cout << 0.0 << std::endl;
   }
   else {
     const double c = std::sqrt(grav_FV * vars.h());
@@ -55,7 +56,10 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
     eigs.hu() = u_n - c;
     eigs.hv() = u_n;
     eigs.b() = 0.0;
+    //    std::cout << eigs.h() + std::abs(c) << std::endl;
   }
+
+
 }
 
 void SWE::MySWESolver_FV::boundaryValues(
