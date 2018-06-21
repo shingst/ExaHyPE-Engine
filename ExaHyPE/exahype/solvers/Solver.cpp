@@ -154,10 +154,11 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJobs) {
   SpawnPredictionAsBackgroundJob = useBackgroundJobs;
 
-  PredictionSweeps = !allSolversPerformOnlyUniformRefinement()
+  PredictionSweeps = ( !allSolversPerformOnlyUniformRefinement()
                      #if defined(Parallel)
                      || useBackgroundJobs
                      #endif
+                     )
                      ? 2 : 1;
 }
 
