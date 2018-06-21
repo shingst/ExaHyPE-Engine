@@ -917,9 +917,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
 
     // ensure that the fine grid cell descriptions's parent index is pointing to the
-    // coarse grid cell's cell descriptions room; this is important to re-establish
+    // coarse grid cell's cell descriptions index; this is important to re-establish
     // the parent-child relations on a new worker after a fork.
-    ensureConsistencyOfParentIndex(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
+    // and to ensure
+    ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
 
     #if defined(Asserts) || defined(Debug)
     const int coarseGridCellElement =
@@ -1220,15 +1221,6 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
     assertion(fineGridElement!=exahype::solvers::Solver::NotFound);
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-    if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
-      fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getLevel());
-      fineGridCellDescription.setParentOffset(coarseGridCellDescription.getOffset());
-    } else {
-      assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
-
-      fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getParentCellLevel());
-      fineGridCellDescription.setParentOffset(coarseGridCellDescription.getParentOffset());
-    }
   }
 }
 
@@ -1713,7 +1705,7 @@ void exahype::solvers::ADERDGSolver::restrictVolumeData(
 //  coarseGridCellDescription.setPredictorTimeStepSize(fineGridCellDescription.getPredictorTimeStepSize());
 }
 
-void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentIndex(
+void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentInformation(
     CellDescription& fineGridCellDescription,
     const int coarseGridCellDescriptionsIndex) {
   fineGridCellDescription.setParentIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
@@ -1726,6 +1718,18 @@ void exahype::solvers::ADERDGSolver::ensureConsistencyOfParentIndex(
         coarseGridCellDescriptionsIndex,
         fineGridCellDescription.toString());
     fineGridCellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
+
+    if ( fineGridCellDescription.getType()==CellDescription::Type::Descendant ) {
+      CellDescription& coarseGridCellDescription = getCellDescription(coarseGridCellDescriptionsIndex,coarseGridElement);
+      if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
+        fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getLevel());
+        fineGridCellDescription.setParentOffset(coarseGridCellDescription.getOffset());
+      } else {
+        assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
+        fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getParentCellLevel());
+        fineGridCellDescription.setParentOffset(coarseGridCellDescription.getParentOffset());
+      }
+    }
   }
 }
 
