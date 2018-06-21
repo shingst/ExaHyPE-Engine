@@ -1413,6 +1413,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
               fineGridCell.getCellDescriptionsIndex(),
               fineGridCellElement,
               coarseGridCellDescription);
+
+      ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCellDescriptionsIndex);
     }
   }
   return newComputeCell;
@@ -2550,8 +2552,9 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
   lock.free();
   std::fill(updateFine.begin(),updateFine.end(),0.0);
 
-  const int levelDelta = cellDescription.getLevel() - cellDescription.getParentCellLevel();
-
+  // For restricting the observables min and max, we can go level by level
+  // or directly up to the top-most parent.
+  const int levelDelta = cellDescription.getLevel() - parentCellDescription.getLevel();
   const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
       exahype::amr::computeSubcellIndex(
           cellDescription.getOffset(),cellDescription.getSize(),
