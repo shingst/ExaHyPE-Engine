@@ -1925,11 +1925,19 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourMinAndMax(
   if (numberOfObservables>0) {
     SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
-    if (solverPatch.getType()==SolverPatch::Type::Cell) {
-      const int direction   = tarch::la::equalsReturnIndex(src, dest);
-      const int orientation = (1 + src(direction) - dest(direction))/2;
-      const int faceIndex   = 2*direction+orientation;
 
+    const int direction   = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
+    if(
+        (solverPatch.getCommunicationStatus()                 == ADERDGSolver::CellCommunicationStatus &&
+        solverPatch.getFacewiseCommunicationStatus(faceIndex) >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
+        solverPatch.getFacewiseAugmentationStatus(faceIndex)  <  ADERDGSolver::MaximumAugmentationStatus)
+        ||
+        (solverPatch.getFacewiseCommunicationStatus(faceIndex) == ADERDGSolver::CellCommunicationStatus &&
+        solverPatch.getCommunicationStatus()                   >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
+        solverPatch.getAugmentationStatus()                    <  ADERDGSolver::MaximumAugmentationStatus)
+      ){
       // Inverted send-receive order: TODO(Dominic): Add to docu
       // Send order:    min,max
       // Receive order; max,min
