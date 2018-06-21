@@ -1565,19 +1565,32 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
     const tarch::la::Vector<DIMENSIONS, int>& pos2) const {
   assertion1(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1),tarch::la::countEqualEntries(pos1,pos2));
 
-  SolverPatch& solverPatch1 = ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
-  SolverPatch& solverPatch2 = ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
+  if ( _solver->getDMPObservables() > 0 ) {
+    SolverPatch& solverPatch1 = ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
+    SolverPatch& solverPatch2 = ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
 
-  // 1.2. Merge min/max of both solver patches
-  const int direction    = tarch::la::equalsReturnIndex(pos1,pos2);
-  const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
-  const int orientation2 = 1-orientation1;
+    // 1.2. Merge min/max of both solver patches
+    const int direction    = tarch::la::equalsReturnIndex(pos1,pos2);
+    const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
+    const int orientation2 = 1-orientation1;
 
-  const int faceIndex1 = 2*direction+orientation1;
-  const int faceIndex2 = 2*direction+orientation2;
+    const int faceIndex1 = 2*direction+orientation1;
+    const int faceIndex2 = 2*direction+orientation2;
 
-  mergeSolutionMinMaxOnFace(
-      solverPatch1,solverPatch2,faceIndex1,faceIndex2);
+
+    if (
+        (solverPatch1.getCommunicationStatus()==ADERDGSolver::CellCommunicationStatus &&
+        solverPatch1.getFacewiseCommunicationStatus(faceIndex1) >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
+        solverPatch1.getFacewiseAugmentationStatus(faceIndex1)  <  ADERDGSolver::MaximumAugmentationStatus) // excludes Ancestors
+        ||
+        (solverPatch2.getCommunicationStatus()==ADERDGSolver::CellCommunicationStatus &&
+        solverPatch2.getFacewiseCommunicationStatus(faceIndex2) >= ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication &&
+        solverPatch2.getFacewiseAugmentationStatus(faceIndex2)  <  ADERDGSolver::MaximumAugmentationStatus) // excludes Ancestors
+    ) {
+      mergeSolutionMinMaxOnFace(
+          solverPatch1,solverPatch2,faceIndex1,faceIndex2);
+    }
+  }
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
@@ -1586,36 +1599,29 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
   const int faceIndex1,
   const int faceIndex2
 ) const {
-  if (
-      _solver->getDMPObservables() > 0
-      &&
-      (solverPatch1.getType()==SolverPatch::Cell ||
-      solverPatch2.getType()==SolverPatch::Cell)
-  ) {
-    assertion( solverPatch1.getSolverNumber() == solverPatch2.getSolverNumber() );
-    const int numberOfObservables = _solver->getDMPObservables();
-    double* min1 = DataHeap::getInstance().getData( solverPatch1.getSolutionMin()  ).data() + faceIndex1 * numberOfObservables;
-    double* min2 = DataHeap::getInstance().getData( solverPatch2.getSolutionMin()  ).data() + faceIndex2 * numberOfObservables;
-    double* max1 = DataHeap::getInstance().getData( solverPatch1.getSolutionMax()  ).data() + faceIndex1 * numberOfObservables;
-    double* max2 = DataHeap::getInstance().getData( solverPatch2.getSolutionMax()  ).data() + faceIndex2 * numberOfObservables;
+  assertion( solverPatch1.getSolverNumber() == solverPatch2.getSolverNumber() );
+  const int numberOfObservables = _solver->getDMPObservables();
+  double* min1 = DataHeap::getInstance().getData( solverPatch1.getSolutionMin()  ).data() + faceIndex1 * numberOfObservables;
+  double* min2 = DataHeap::getInstance().getData( solverPatch2.getSolutionMin()  ).data() + faceIndex2 * numberOfObservables;
+  double* max1 = DataHeap::getInstance().getData( solverPatch1.getSolutionMax()  ).data() + faceIndex1 * numberOfObservables;
+  double* max2 = DataHeap::getInstance().getData( solverPatch2.getSolutionMax()  ).data() + faceIndex2 * numberOfObservables;
 
-    for (int i=0; i<numberOfObservables; i++) {
-      const double min = std::min(
-          *(min1+i),
-          *(min2+i)
-      );
-      const double max = std::max(
-          *(max1+i),
-          *(max2+i)
-      );
+  for (int i=0; i<numberOfObservables; i++) {
+    const double min = std::min(
+        *(min1+i),
+        *(min2+i)
+    );
+    const double max = std::max(
+        *(max1+i),
+        *(max2+i)
+    );
 
-      *(min1+i) = min;
-      *(min2+i) = min;
+    *(min1+i) = min;
+    *(min2+i) = min;
 
-      *(max1+i) = max;
-      *(max2+i) = max;
-    }
-  } // else do nothing
+    *(max1+i) = max;
+    *(max2+i) = max;
+  }
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
