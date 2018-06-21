@@ -2897,8 +2897,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
       const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
           exahype::amr::computeSubcellIndex(
-              pLeft.getOffset(),pLeft.getSize(),
-                pLeft.getParentOffset());
+              pRight.getOffset(),pRight.getSize(),
+              pRight.getParentOffset());
 
       subfaceIndexRight = exahype::amr::getSubfaceIndex(subcellIndex,direction);
     }
