@@ -155,14 +155,26 @@ public:
    * \note Must be initialised with true!
    */
   static bool IsFirstIteration;
+   
+  /** 
+    * Master-worker communication before
+    * first touchVertexFirstTime .
+    *
+    * TODO(Dominic): Choose correct worker-master comm spec.
+    *   
+   **/
+  peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * Main plug-in point for triggering refinement ans grid erasing events.
-   */
-  peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
-
-  /**
-   * We merge the limiter status between neighbouring cells.
+   * Main plug-in point for triggering Peano vertex refining
+   * and erasing. At the time touchVertexFirstTime() is called, 
+   * information has been collected from all surrounding cells.
+   * 
+   * Putting these refinement criteria into touchVertexLastTime()
+   * does not work as adjacency map entries might become invalid when
+   * cells are erased in leaveCell.
+   *
+   * We merge the solver status flags between neighbouring cells.
    * We thus avoid fine grid races.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
@@ -186,8 +198,9 @@ public:
    */
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;
+  peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
 
-  peano::CommunicationSpecification communicationSpecification() const;
+
 
 #if defined(SharedMemoryParallelisation)
   /**
@@ -292,6 +305,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
+   * TODO(Dominic): Update the docu
+   *
    * Loop over the solver and update the solver state.
    * If all of the solvers hosted by the cell requested erasing,
    * erase the fine grid cell.
@@ -326,22 +341,16 @@ public:
 
   /**
    * For all solvers, merge the metadata of neighbouring patches.
+   * 
+   * Main plug-in point for triggering Peano vertex refining
+   * and erasing. At the time touchVertexFirstTime() is called, 
+   * information has been collected from all surrounding cells.
+   * 
+   * \note Putting these refinement criteria into touchVertexLastTime()
+   * does not work as adjacency map entries might become invalid when
+   * cells are erased in leaveCell.
    */
   void touchVertexFirstTime(
-      exahype::Vertex& fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * TODO(Tobias): Add docu.
-   *
-   * TODO(Dominic): Update docu.
-   */
-  void touchVertexLastTime(
       exahype::Vertex& fineGridVertex,
       const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
       const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -524,6 +533,18 @@ public:
      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+
+  /**
+   * Nop.
+   */
+  void touchVertexLastTime(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
  /**
   * Nop.
