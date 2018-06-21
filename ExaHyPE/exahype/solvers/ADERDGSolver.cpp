@@ -1222,17 +1222,12 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
     if ( coarseGridCellDescription.getType()==CellDescription::Type::Cell ) {
       fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getLevel());
-      tarch::la::Vector<DIMENSIONS,int> subcellIndex =
-          exahype::amr::computeSubcellIndex(
-              fineGridCellDescription.getOffset(),
-              fineGridCellDescription.getSize(),coarseGridCellDescription.getOffset());
-
-      fineGridCellDescription.setSubcellIndex(subcellIndex);
+      fineGridCellDescription.setParentOffset(coarseGridCellDescription.getOffset());
     } else {
       assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
 
       fineGridCellDescription.setParentCellLevel(coarseGridCellDescription.getParentCellLevel());
-      fineGridCellDescription.setSubcellIndex(coarseGridCellDescription.getSubcellIndex());
+      fineGridCellDescription.setParentOffset(coarseGridCellDescription.getParentOffset());
     }
   }
 }
