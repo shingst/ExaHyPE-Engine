@@ -98,7 +98,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setParentIndex(parentIndex);
   newCellDescription.setLevel(level);
   newCellDescription.setParentCellLevel(-1);
-  newCellDescription.setSubcellIndex(-1);
+  newCellDescription.setParentOffset(-1);
   newCellDescription.setRefinementEvent(refinementEvent);
   newCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
 
@@ -2379,15 +2379,15 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       subcellPosition.parentCellDescriptionsIndex),
       subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
 
-  CellDescription& cellDescriptionParent = Heap::getInstance().getData(
+  CellDescription& parentCellDescription = Heap::getInstance().getData(
       subcellPosition.parentCellDescriptionsIndex)[subcellPosition.parentElement];
 
-  assertion(cellDescriptionParent.getSolverNumber() == cellDescription.getSolverNumber());
-  assertion(cellDescriptionParent.getType() == CellDescription::Type::Cell ||
-            cellDescriptionParent.getType() == CellDescription::Type::Descendant);
+  assertion(parentCellDescription.getSolverNumber() == cellDescription.getSolverNumber());
+  assertion(parentCellDescription.getType() == CellDescription::Type::Cell ||
+            parentCellDescription.getType() == CellDescription::Type::Descendant);
 
   const int levelFine   = cellDescription.getLevel();
-  const int levelCoarse = cellDescriptionParent.getLevel();
+  const int levelCoarse = parentCellDescription.getLevel();
   assertion(levelCoarse < levelFine);
   const int levelDelta = levelFine - levelCoarse;
 
@@ -2403,20 +2403,20 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       logInfo("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
                ",level=" << cellDescription.getLevel() << ",d=" << d <<
                ",face=" << faceIndex << ",subcellIndex" << subcellPosition.subcellIndex.toString() << " to " <<
-               " cell="<<cellDescriptionParent.getOffset()+0.5*cellDescriptionParent.getSize()<<
-               " level="<<cellDescriptionParent.getLevel());
+               " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
+               " level="<<parentCellDescription.getLevel());
 
       // extrapolated predictor and flux interpolation
       // extrapolated predictor
       assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()),cellDescription.toString());
       double* lQhbndFine = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
           (faceIndex * numberOfFaceDof);
-      const double* lQhbndCoarse = DataHeap::getInstance().getData(cellDescriptionParent.getExtrapolatedPredictor()).data() +
+      const double* lQhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getExtrapolatedPredictor()).data() +
           (faceIndex * numberOfFaceDof);
       // flux
       double* lFhbndFine = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
           (faceIndex * numberOfFluxDof);
-      const double* lFhbndCoarse = DataHeap::getInstance().getData(cellDescriptionParent.getFluctuation()).data() +
+      const double* lFhbndCoarse = DataHeap::getInstance().getData(parentCellDescription.getFluctuation()).data() +
           (faceIndex * numberOfFluxDof);
 
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,
@@ -2424,10 +2424,10 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
                                exahype::amr::getSubfaceIndex(subcellPosition.subcellIndex,d));
 
       // time step data TODO(LTS), still need veto
-      cellDescription.setPredictorTimeStamp(cellDescriptionParent.getPredictorTimeStamp());
-      cellDescription.setPredictorTimeStepSize(cellDescriptionParent.getPredictorTimeStepSize());
+      cellDescription.setPredictorTimeStamp(parentCellDescription.getPredictorTimeStamp());
+      cellDescription.setPredictorTimeStepSize(parentCellDescription.getPredictorTimeStepSize());
 
-      prolongateObservablesMinAndMax(cellDescription,cellDescriptionParent,faceIndex);
+      prolongateObservablesMinAndMax(cellDescription,parentCellDescription,faceIndex);
     }
   }
 }
@@ -2552,19 +2552,23 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be me
   lock.free();
   std::fill(updateFine.begin(),updateFine.end(),0.0);
 
-  const tarch::la::Vector<DIMENSIONS,int>& subcellIndex = cellDescription.getSubcellIndex();
   const int levelDelta = cellDescription.getLevel() - cellDescription.getParentCellLevel();
+
+  const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+      exahype::amr::computeSubcellIndex(
+          cellDescription.getOffset(),cellDescription.getSize(),
+            parentCellDescription.getOffset());
+
+  logInfo("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
+           ",level=" << cellDescription.getLevel() << ",d=" <<
+           " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
+           " level="<<parentCellDescription.getLevel());
 
   for (int d = 0; d < DIMENSIONS; d++) {
     if ( subcellIndex[d]==0 ||
          subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1 ) {
       const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
 
-      logInfo("restriction(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
-               ",level=" << cellDescription.getLevel() << ",d=" << d <<
-               ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
-               " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
-               " level="<<parentCellDescription.getLevel());
       restrictObservablesMinAndMax(parentCellDescription,cellDescription,faceIndex);
     }
   }
@@ -2804,8 +2808,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
       pLeft.getFacewiseAugmentationStatus(faceIndexLeft)  <  MaximumAugmentationStatus) // excludes Ancestors
       ||
       (pRight.getCommunicationStatus()==CellCommunicationStatus &&
-      pRight.getFacewiseCommunicationStatus(faceIndexRight)>= MinimumCommunicationStatusForNeighbourCommunication &&
-      pRight.getFacewiseAugmentationStatus(faceIndexRight) <  MaximumAugmentationStatus) // excludes Ancestors
+      pRight.getFacewiseCommunicationStatus(faceIndexRight) >= MinimumCommunicationStatusForNeighbourCommunication &&
+      pRight.getFacewiseAugmentationStatus(faceIndexRight)  <  MaximumAugmentationStatus) // excludes Ancestors
   ) {
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
@@ -2898,11 +2902,23 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const int direction        = (faceIndexLeft-orientationLeft)/2;
     if ( pLeft.getType()==CellDescription::Type::Descendant ) {
       levelDeltaLeft = pLeft.getLevel() - pLeft.getParentCellLevel();
-      subfaceIndexLeft = exahype::amr::getSubfaceIndex(pLeft.getSubcellIndex(),direction);
+
+      const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+          exahype::amr::computeSubcellIndex(
+              pLeft.getOffset(),pLeft.getSize(),
+                pLeft.getParentOffset());
+
+      subfaceIndexLeft = exahype::amr::getSubfaceIndex(subcellIndex,direction);
     }
     else if (  pRight.getType()==CellDescription::Type::Descendant ) {
       levelDeltaRight = pRight.getLevel() - pRight.getParentCellLevel();
-      subfaceIndexRight = exahype::amr::getSubfaceIndex(pRight.getSubcellIndex(),direction);
+
+      const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+          exahype::amr::computeSubcellIndex(
+              pLeft.getOffset(),pLeft.getSize(),
+                pLeft.getParentOffset());
+
+      subfaceIndexRight = exahype::amr::getSubfaceIndex(subcellIndex,direction);
     }
     double* updateLeft  = DataHeap::getInstance().getData(pLeft.getUpdate()).data();
     double* updateRight = DataHeap::getInstance().getData(pRight.getUpdate()).data();
@@ -3808,7 +3824,13 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
   if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
     levelDelta   = cellDescription.getLevel() - cellDescription.getParentCellLevel();
-    subfaceIndex = exahype::amr::getSubfaceIndex(cellDescription.getSubcellIndex(),direction);
+
+    const tarch::la::Vector<DIMENSIONS,int> subcellIndex =
+        exahype::amr::computeSubcellIndex(
+            cellDescription.getOffset(),cellDescription.getSize(),
+              cellDescription.getParentOffset());
+
+    subfaceIndex = exahype::amr::getSubfaceIndex(subcellIndex,direction);
   }
   double* update = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
   const double* const boundaryFlux =
@@ -4050,7 +4072,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
           peano::heap::MessageType::MasterWorkerCommunication);
     }
 
-    restriction(cellDescriptionsIndex);
+    restriction(cellDescriptionsIndex,element);
 
   } else  {
     dropWorkerData(workerRank,x,level);
