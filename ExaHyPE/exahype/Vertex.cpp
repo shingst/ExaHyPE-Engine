@@ -743,8 +743,8 @@ bool exahype::Vertex::hasToSendDataToNeighbour(
   if ( srcCellDescriptionsIndex < 0 ) {
     return false; // !!! Make sure to consider all solver types here
   } else {
-    assertion(!exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex) );
-
+    assertion(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex) );
+     
     const int direction   = tarch::la::equalsReturnIndex(src, dest);
     const int orientation = (1 + dest(direction) - src(direction))/2;
     const int faceIndex   = 2*direction+orientation;

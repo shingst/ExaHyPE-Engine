@@ -2639,17 +2639,13 @@ int
 exahype::solvers::ADERDGSolver::determineLimiterStatus(
     const CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
-  if ( cellDescription.getLimiterStatus()>=_minimumLimiterStatusForTroubledCell ) {
-    return cellDescription.getLimiterStatus();
-  } else {
-    int max = 0;
-    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( neighbourMergePerformed[i] ) {
-        max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
-      }
+  int max = 0;
+  for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
+    if ( neighbourMergePerformed[i] ) {
+      max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
     }
-    return max;
   }
+  return max;
 }
 
 void
@@ -3688,8 +3684,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
       cellDescription.getCommunicationStatus()                  >=MinimumCommunicationStatusForNeighbourCommunication &&
       cellDescription.getAugmentationStatus()                   < MaximumAugmentationStatus)
   ){
-    assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
-        faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+    assertion3(cellDescription.getNeighbourMergePerformed(faceIndex),
+        faceIndex,cellDescriptionsIndex,cellDescription.toString());
 /*
     #ifdef Asserts
     tarch::la::Vector<DIMENSIONS,double> faceBarycentre =

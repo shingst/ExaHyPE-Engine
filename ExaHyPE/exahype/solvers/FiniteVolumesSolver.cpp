@@ -1285,8 +1285,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   const int orientation = (1 + src(direction) - dest(direction))/2;
   const int faceIndex   = 2*direction+orientation;
 
-  assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
-      faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+  assertion3(cellDescription.getNeighbourMergePerformed(faceIndex),
+     faceIndex,cellDescriptionsIndex,cellDescription.toString());
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
