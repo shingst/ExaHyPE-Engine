@@ -245,7 +245,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
       fineGridH,
-      _iterationsSinceLastErasing > 1);
+      _iterationsSinceLastErasing < 1);
 
   if (
       _stableIterationsInARow <= 3 // Found experimentally
@@ -288,7 +288,7 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          _iterationsSinceLastErasing > 1)
+          _iterationsSinceLastErasing < 1)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -314,7 +314,7 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          _iterationsSinceLastErasing > 1)
+          _iterationsSinceLastErasing < 1)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -376,7 +376,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
-      _iterationsSinceLastErasing > 1
+      _iterationsSinceLastErasing < 1
       &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(
           fineGridVertices,fineGridVerticesEnumerator)

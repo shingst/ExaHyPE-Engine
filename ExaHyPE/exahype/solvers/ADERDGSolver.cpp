@@ -1426,7 +1426,7 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
     const int solverNumber,
     const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const bool isThoroughly) const {
+    const bool checkThoroughly) const {
   if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
      return RefinementControl::Refine;
   } else {
@@ -1489,6 +1489,8 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
       } else {
         return RefinementControl::Erase;
       }
+    } else {
+      return RefinementControl::Erase;
     }
   }
 }
