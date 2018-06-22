@@ -88,7 +88,7 @@ exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) 
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 
@@ -235,7 +235,29 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  // Nop.
+  exahype::solvers::Solver::RefinementControl refinementControl =
+      fineGridVertex.evaluateRefinementCriterion(fineGridH);
+
+  if (
+      _stableIterationsInARow <= 3 // Found experimentally
+      &&
+      refinementControl==exahype::solvers::Solver::RefinementControl::Refine
+  ) {
+    refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
+  } else if (
+      refinementControl==exahype::solvers::Solver::RefinementControl::Erase
+      &&
+      !fineGridVertex.isHangingNode()
+      &&
+      fineGridVertex.isInside()
+      && // otherwise, we compete with ensureRegularityAlongBoundary
+      fineGridVertex.getRefinementControl()==
+          Vertex::Records::RefinementControl::Refined
+      &&
+      _stableIterationsInARow > 3 // Found experimentally
+  ) {
+  // TODO  fineGridVertex.erase(); // TODO(Dominic): vertex erasing is not well understood yet
+  }
 }
 
 
@@ -326,30 +348,6 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
                            fineGridX, fineGridH,
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
-  
-  exahype::solvers::Solver::RefinementControl refinementControl =
-      fineGridVertex.evaluateRefinementCriterion(fineGridH);
-
-  if (
-      _stableIterationsInARow <= 3 // Found experimentally
-      &&
-      refinementControl==exahype::solvers::Solver::RefinementControl::Refine
-  ) {
-    refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
-  } else if (
-      refinementControl==exahype::solvers::Solver::RefinementControl::Erase
-      &&
-      !fineGridVertex.isHangingNode()
-      &&
-      fineGridVertex.isInside()
-      && // otherwise, we compete with ensureRegularityAlongBoundary
-      fineGridVertex.getRefinementControl()==
-          Vertex::Records::RefinementControl::Refined
-      &&
-      _stableIterationsInARow > 3 // Found experimentally
-  ) {
-    fineGridVertex.erase(); // TODO(Dominic): vertex erasing is not well understood yet
-  }
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
       exahype::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH);
@@ -412,7 +410,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 fineGridVerticesEnumerator.getCellSize())==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
-          fineGridVertices[fineGridVerticesEnumerator(v)].erase(); // TODO(Dominic): vertex erasing is not well understood yet
+          // TODO
+          // fineGridVertices[fineGridVerticesEnumerator(v)].erase(); // TODO(Dominic): vertex erasing is not well understood yet
         }
         lock.free();
       enddforx
@@ -432,8 +431,6 @@ void exahype::mappings::MeshRefinement::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   assertion(fineGridCell.isInside());
-
-  ensureRegularityAlongBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -473,6 +470,11 @@ void exahype::mappings::MeshRefinement::enterCell(
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
+
+    // shutdown metadata for empty cells (no cell descriptions)
+    if (fineGridCell.isEmpty()) {
+      fineGridCell.shutdownMetaData();
+    }
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -525,11 +527,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
     }
   }
 
-  // shutdown metadata for empty cells (no cell descriptions)
-  if (fineGridCell.isInitialised() &&
-      fineGridCell.isEmpty()) {
-    fineGridCell.shutdownMetaData();
-  }
+  ensureRegularityAlongBoundary(fineGridVertices,fineGridVerticesEnumerator);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
