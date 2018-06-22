@@ -51,6 +51,7 @@ public class ADERDGKernel {
     OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_OPTION_ID",    "maxpicarditer");
     OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_OPTION_ID",        "fusedsource");
     OPTIMIZATION_OPTION_ID.put("FLUX_VECT_OPTION_ID",          "fluxvect");
+    OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_VECT_OPTION_ID",   "fusedsourcevect");
     OPTIMIZATION_OPTION_ID.put("CERK_GUESS_OPTION_ID",         "cerkguess");
     OPTIMIZATION_OPTION_ID.put("CONVERTER_OPTION_ID",          "converter"); //for debug only, not in guidebook
     OPTIMIZATION_OPTION_ID.put("FLOPS_OPTION_ID",              "flops");     //for debug only, not in guidebook
@@ -137,6 +138,10 @@ public class ADERDGKernel {
     if(useFusedSource() && !useSource()) {
       throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"' requires the PDE term '"+TERMS_OPTION_ID.get("SOURCE_OPTION_ID")+"'");
     }
+    // fusedsourcevect include fusedsource
+    if(useFusedSource() && !useSource()) {
+      throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_VECT_OPTION_ID")+"' already includes the optimization '"+TERMS_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"'");
+    }
     // vect PDEs only with otptimized kernels
     if(!(getKernelType() ==  KernelType.OptimisedADERDG) && (useFluxVect())) {//TODO JMG extend with other vect PDE
       throw new IllegalArgumentException("The vectorized PDE optimizations require the optimized kernel term (use '"+OPTIMIZATION_OPTION_ID.get("OPTIMIZED_OPTION_ID")+"')");
@@ -218,6 +223,10 @@ public class ADERDGKernel {
   
   public boolean useFusedSource() {
     return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID"));
+  }
+  
+  public boolean useFusedSourceVect() {
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_VECT_OPTION_ID"));
   }
   
   public boolean useFluxVect() {

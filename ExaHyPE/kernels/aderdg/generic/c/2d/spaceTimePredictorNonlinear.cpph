@@ -73,7 +73,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
     }
   }
   
-  // 3. Discrete Picard iterations
+  // 2. Discrete Picard iterations
   constexpr int MaxIterations = (useMaxPicardIterations) ? maxPicardIterations : 2 * (order + 1);
 
   // right-hand side
@@ -205,7 +205,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
     }  // end time dof
 
 
-    // 4. Multiply with (K1)^(-1) to get the discrete time integral of the
+    // 3. Multiply with (K1)^(-1) to get the discrete time integral of the
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int j = 0; j < basisSize; j++) { // j == y
@@ -255,7 +255,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
     }
      */
 
-    // 5. Exit condition
+    // 4. Exit condition
     if (!useMaxPicardIterations) {
       constexpr double tol = 1e-7;
       if (sq_res < tol * tol) {

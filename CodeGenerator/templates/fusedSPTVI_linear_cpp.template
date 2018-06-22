@@ -63,9 +63,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
   std::memset(lQi, 0, {{(nDof+1)*(nDof**nDim)*nDataPad}}*sizeof(double));
   std::memset(lFi, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
-{% if useNCP %}
-  std::memset(gradQ, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
-{% endif %}
 {% if useSource %}
   std::memset(lSi  , 0, {{nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% endif %}
@@ -213,7 +210,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {# *************************************************
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
-{% with inputQ='lQi', inputQ_varSize=nDataPad, outputF='lFi',  timeInterleaved=False, time_var='i' %}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi',  timeInterleaved=False, time_var='i' %}
 {% include 'subtemplates/flux_PDE_over_xyz.template' %}
 {% endwith %}
 
@@ -288,17 +285,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %} {# useFlux #}
 
 {% if useNCP %}
+{% if useNCP %}
+    std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}}*sizeof(double));
+{% endif %}
     //NCP
     // Compute the derivatives in x direction (independent from the y and z derivatives)
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
 {% if useLibxsmm %}
-      {{gemm_gradQ_x}}(lQi+(i*{{nDof*nDof3D}}+yz)*{{nDof*nDataPad}}, dudxT_by_dx, gradQ+(i*{{nDof*nDof3D}}+yz)*{{nDof*nVarPad}});
+      {{gemm_gradQ_x}}(lQi+(i*{{nDof*nDof3D}}+yz)*{{nDof*nDataPad}}, dudxT_by_dx, gradQ+yz*{{nDof*nVarPad}});
 {% else %}
       for (int x = 0; x < {{nDof}}; x++) {
         for (int l = 0; l < {{nDof}}; l++) {
           #pragma simd
           for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
-            gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudxT_by_dx[x*{{nDofPad}}+l];
+            gradQ[(yz*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudxT_by_dx[x*{{nDofPad}}+l];
           }
         }
       }
@@ -309,13 +309,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
 {% if useLibxsmm %}
-        {{gemm_gradQ_y}}(lQi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nDataPad}}, dudxT_by_dx, gradQ+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}});
+        {{gemm_gradQ_y}}(lQi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nDataPad}}, dudxT_by_dx, gradQ+(z*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}});
 {% else %}
         for (int y = 0; y < {{nDof}}; y++) {
           for (int l = 0; l < {{nDof}}; l++) {
             #pragma simd
             for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
-              gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudxT_by_dx[y*{{nDofPad}}+l];
+              gradQ[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudxT_by_dx[y*{{nDofPad}}+l];
             }
           }
         }
@@ -327,13 +327,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     // z direction (independent from the x and y derivatives)
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
 {% if useLibxsmm %}
-      {{gemm_gradQ_z}}(lQi+(i*{{nDof3D*nDof*nDof}}+xy)*{{nDataPad}}, dudxT_by_dx, gradQ+(i*{{nDof3D*nDof*nDof}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}});
+      {{gemm_gradQ_z}}(lQi+(i*{{nDof3D*nDof*nDof}}+xy)*{{nDataPad}}, dudxT_by_dx, gradQ+xy*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}});
 {% else %}
       for (int z = 0; z < {{nDof}}; z++) {
         for (int l = 0; l < {{nDof}}; l++) {
           #pragma simd
           for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
-            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudxT_by_dx[z*{{nDofPad}}+l];
+            gradQ[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudxT_by_dx[z*{{nDofPad}}+l];
           }
         }
       }
@@ -344,10 +344,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       // use tmpArray for input output since the PDE requires a 1D format with all dimensions after each other without padding
       std::memset(tmpArray+{{ncpOutputShift}}, 0, {{nDim*nVar}}*sizeof(double)); // zero out ncpResult
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, tmpArray); //x
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{1*nVar}}); //y
+      std::copy_n(gradQ+xyz*{{nVarPad}}, {{nVar}}, tmpArray); //x
+      std::copy_n(gradQ+xyz*{{nVarPad}}+{{1*(nDof**nDim)*nVarPad}}, {{nVar}}, tmpArray+{{1*nVar}}); //y
 {% if nDim==3 %}
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
+      std::copy_n(gradQ+xyz*{{nVarPad}}+{{2*(nDof**nDim)*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
 {% endif %}
 #ifdef USE_IPO
       #pragma forceinline recursive

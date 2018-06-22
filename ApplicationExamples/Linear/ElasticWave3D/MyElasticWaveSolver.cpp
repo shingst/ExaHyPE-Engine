@@ -27,8 +27,8 @@ tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveS
 
 void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
-
   initPointSourceLocations(cmdlineargs,constants);
+  amr_regularization = constants.getValueAsBool ("amr_regularization");
 }
 
 void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
@@ -124,8 +124,14 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
     pointSourceInElement &= ((left_vertex[i] <= pointSourceLocation[0][i]) && (right_vertex[i] >= pointSourceLocation[0][i]));
   }
 
-  bool elementOnSurface = left_vertex[1] < dx[1] * 0.5;
-  
+  double refined_domain;
+  if(amr_regularization){
+    refined_domain = getCoarsestMeshSize();
+  }else{
+    refined_domain = std::ceil(pointSourceLocation[0][1]/getCoarsestMeshSize())*getCoarsestMeshSize();
+  }
+
+  bool elementOnSurface = left_vertex[1] < refined_domain;
   if (tarch::la::equals(t,0.0)) {
     if(pointSourceInElement || elementOnSurface){
       return exahype::solvers::Solver::RefinementControl::Refine;
@@ -133,7 +139,6 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
       return exahype::solvers::Solver::RefinementControl::Keep;
     }
   }
-  
 
  if(pointSourceInElement){
    if(t <2.25){

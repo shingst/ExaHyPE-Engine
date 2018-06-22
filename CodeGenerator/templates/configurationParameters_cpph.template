@@ -56,7 +56,7 @@ namespace {{namespaceName}} {
   {% set lSiSize = -1 %}
 {% endif %}
 {% if useNCP %}
-  {% set gradQSize = nVarPad*(nDof**(nDim+1))*(nDim+1) %}
+  {% set gradQSize = nVarPad*(nDof**nDim)*nDim %}
 {% else %}
   {% set gradQSize = -1 %}
 {% endif %}

@@ -76,12 +76,21 @@ class Controller:
         parser.add_argument("--useNCP",
                               action="store_true",
                               help="enable non conservative product")
+        parser.add_argument("--useNCPVect",
+                              action="store_true",
+                              help="enable vectorized non conservative product  (include useNCP)")
         parser.add_argument("--useSource",
                               action="store_true",
                               help="enable source terms")
+        parser.add_argument("--useSourceVect",
+                              action="store_true",
+                              help="enable vectorized source terms (include useSource)")
         parser.add_argument("--useFusedSource",
                               action="store_true",
-                              help="enable fused source terms (includes useSource)")
+                              help="enable fused source terms (include useSource)")
+        parser.add_argument("--useFusedSourceVect",
+                              action="store_true",
+                              help="enable vectorized fused source terms (include useFusedSource and useSourceVect)")
         parser.add_argument("--useMaterialParam",
                               action="store_true",
                               help="enable material parameters")
@@ -119,10 +128,12 @@ class Controller:
                    "nDim"                  : commandLineArguments.dimension,
                    "useFlux"               : (commandLineArguments.useFlux or commandLineArguments.useFluxVect),
                    "useFluxVect"           : commandLineArguments.useFluxVect,
-                   "useNCP"                : commandLineArguments.useNCP,
-                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useFusedSource),
-                   "useFusedSource"        : commandLineArguments.useFusedSource,
-                   "useSourceOrNCP"        : (commandLineArguments.useSource or commandLineArguments.useNCP),
+                   "useNCP"                : (commandLineArguments.useNCP or commandLineArguments.useNCPVect),
+                   "useNCPVect"            : commandLineArguments.useNCPVect,
+                   "useSource"             : (commandLineArguments.useSource or commandLineArguments.useSourceVect or commandLineArguments.useFusedSource or commandLineArguments.useFusedSourceVect),
+                   "useSourceVect"         : commandLineArguments.useSourceVect,
+                   "useFusedSource"        : (commandLineArguments.useFusedSource or commandLineArguments.useFusedSourceVect),
+                   "useFusedSourceVect"    : commandLineArguments.useFusedSourceVect,
                    "nPointSources"         : commandLineArguments.usePointSources,
                    "usePointSources"       : commandLineArguments.usePointSources >= 0,
                    "useMaterialParam"      : commandLineArguments.useMaterialParam,
@@ -138,7 +149,7 @@ class Controller:
                    "useLibxsmm"            : True,
                    "runtimeDebug"          : False #for debug
                   }
-
+        self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
         self.validateConfig(simdWidth.keys())
         self.config["vectSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
@@ -158,6 +169,8 @@ class Controller:
            raise ValueError("Number of dimensions must be 2 or 3")
         if self.config["nDof"] < 0 or self.config["nDof"] > 9:
            raise ValueError("Order has to be between 0 and 9")
+        if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
+            raise ValueError("If using source and NCP, both or neither must be vectorized")
 
 
     def printConfig(self):
