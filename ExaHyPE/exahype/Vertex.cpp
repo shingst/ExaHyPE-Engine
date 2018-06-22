@@ -621,14 +621,14 @@ bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
-  const int destCellDescriptionIndex = _vertexData.getCellDescriptionsIndex(destScalar);
+  const int destCellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(destScalar);
 
   // TODO(Dominic): Also have a thorough and simple version of this method
 
   bool mergeWithNeighbourMetadata =
-      exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionIndex) &&
-      (!exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty() ||
-      !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty());
+      exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionsIndex) &&
+      (!exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionsIndex).empty() ||
+      !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex).empty());
 
   if ( mergeWithNeighbourMetadata ) {
     const int direction   = tarch::la::equalsReturnIndex(src, dest);
