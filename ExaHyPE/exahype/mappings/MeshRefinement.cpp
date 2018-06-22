@@ -134,6 +134,7 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _stableIterationsInARow(masterThread._stableIterationsInARow),
+  _iterationsSinceLastErasing(masterThread._iterationsSinceLastErasing),
   _localState(masterThread._localState)
 {
   initialiseLocalVariables();
@@ -150,6 +151,8 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
           _attainedStableState[solverNumber] && workerThread._attainedStableState[solverNumber];
     }
   }
+
+  _iterationsSinceLastErasing = std::min( _iterationsSinceLastErasing, workerThread._iterationsSinceLastErasing );
 }
 #endif
 
@@ -161,8 +164,10 @@ void exahype::mappings::MeshRefinement::beginIteration(
   initialiseLocalVariables();
 
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
-    _stableIterationsInARow = 0;
+    _stableIterationsInARow     = 0;
+    _iterationsSinceLastErasing = (MeshRefinement::IsInitialMeshRefinement) ? 1 : 0;
   }
+  _iterationsSinceLastErasing++;
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -236,7 +241,11 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
   exahype::solvers::Solver::RefinementControl refinementControl =
-      fineGridVertex.evaluateRefinementCriterion(fineGridH);
+      fineGridVertex.evaluateRefinementCriterion(
+      fineGridX,
+      coarseGridVerticesEnumerator.getLevel()+1,
+      fineGridH,
+      _iterationsSinceLastErasing > 1);
 
   if (
       _stableIterationsInARow <= 3 // Found experimentally
@@ -275,8 +284,12 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if (
-      fineGridVertex.evaluateRefinementCriterion(fineGridH)==
-          exahype::solvers::Solver::RefinementControl::Refine
+      fineGridVertex.evaluateRefinementCriterion(
+          fineGridX,
+          coarseGridVerticesEnumerator.getLevel()+1,
+          fineGridH,
+          _iterationsSinceLastErasing > 1)
+      == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
   }
@@ -297,8 +310,12 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
                            fineGridH, coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
   if (
-      fineGridVertex.evaluateRefinementCriterion(fineGridH)==
-          exahype::solvers::Solver::RefinementControl::Refine
+      fineGridVertex.evaluateRefinementCriterion(
+          fineGridX,
+          coarseGridVerticesEnumerator.getLevel()+1,
+          fineGridH,
+          _iterationsSinceLastErasing > 1)
+      == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
   }
@@ -359,6 +376,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
+      _iterationsSinceLastErasing > 1
+      &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(
           fineGridVertices,fineGridVerticesEnumerator)
   ) {
@@ -387,7 +406,11 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 exahype::Vertex::Records::RefinementControl::Unrefined
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].evaluateRefinementCriterion(
-                fineGridVerticesEnumerator.getCellSize())!=exahype::solvers::Solver::RefinementControl::Erase
+                fineGridVerticesEnumerator.getVertexPosition(vScalar),
+                fineGridVerticesEnumerator.getLevel(),
+                fineGridVerticesEnumerator.getCellSize(),
+                false)
+            !=exahype::solvers::Solver::RefinementControl::Erase
         ) {
           fineGridVertices[fineGridVerticesEnumerator(v)].refine();
         }
@@ -407,7 +430,11 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 exahype::Vertex::Records::RefinementControl::Refined
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].evaluateRefinementCriterion(
-                fineGridVerticesEnumerator.getCellSize())==exahype::solvers::Solver::RefinementControl::Erase
+              fineGridVerticesEnumerator.getVertexPosition(vScalar),
+              fineGridVerticesEnumerator.getLevel(),
+              fineGridVerticesEnumerator.getCellSize(),
+              false)
+            ==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
           // TODO
@@ -474,6 +501,8 @@ void exahype::mappings::MeshRefinement::enterCell(
     // shutdown metadata for empty cells (no cell descriptions)
     if (fineGridCell.isEmpty()) {
       fineGridCell.shutdownMetaData();
+
+      _iterationsSinceLastErasing = 0;
     }
   }
 
@@ -553,6 +582,8 @@ void exahype::mappings::MeshRefinement::destroyCell(
         deleteData(fineGridCell.getCellDescriptionsIndex());
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().
         deleteData(fineGridCell.getCellDescriptionsIndex());
+
+    _iterationsSinceLastErasing = 0;
   }
 }
 

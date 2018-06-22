@@ -74,16 +74,24 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
 }
 
 exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementCriterion(
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+    const tarch::la::Vector<DIMENSIONS, double>& vertexOffset,
+    const tarch::la::Vector<DIMENSIONS, double>& level,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+    const bool checkThoroughly) const {
   bool canErase   = true;
   bool mustRefine = false;
   dfor2(pos)
+    tarch::la::Vector<DIMENSIONS,double> cellOffset(get);
+    for (int d = 0; d < DIMENSIONS; ++d) {
+      cellOffset[d] += ( pos[d]-1 ) * cellSize[d];
+    }
+
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       const int cellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(posScalar);
       exahype::solvers::Solver::RefinementControl control =
-          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,h);
+          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,cellOffset,cellSize,checkThoroughly);
       canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
       mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
     }

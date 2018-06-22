@@ -585,9 +585,11 @@ public:
       const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-      const int cellDescriptionsIndex,
-      const int solverNumber,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+          const int cellDescriptionsIndex,
+          const int solverNumber,
+          const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+          const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+          const bool checkThoroughly) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,

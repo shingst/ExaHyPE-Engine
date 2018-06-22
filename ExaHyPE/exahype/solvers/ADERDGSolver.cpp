@@ -1424,58 +1424,71 @@ exahype::solvers::Solver::RefinementControl
 exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
     const int cellDescriptionsIndex,
     const int solverNumber,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+    const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+    const bool isThoroughly) const {
   if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
      return RefinementControl::Refine;
   } else {
-    const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
-    if (element!=NotFound) {
-      CellDescription& cellDescription = getCellDescription(
-          cellDescriptionsIndex,element);
+    const int isValidIndex =
+        cellDescriptionsIndex > 0 &&
+        (!checkThoroughly ||
+        Heap::getInstance().getInstance().isValidIndex(cellDescriptionsIndex));
 
-      bool refineAdjacentVertices =
-          cellDescription.getType()==CellDescription::Type::Ancestor ||
-          cellDescription.getHasVirtualChildren() ||
-          cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested ||
-          cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren ||
-          cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested ||
-          cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
-          cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Refining ||
-          cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefining;
+    if ( isValidIndex ) {
+      const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
+      if (element!=NotFound) {
+        CellDescription& cellDescription = getCellDescription(
+            cellDescriptionsIndex,element);
 
-      #ifdef Asserts
-      assertion1(
-          cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::RefiningRequested ||
-          cellDescription.getType()==CellDescription::Type::Cell,
-          cellDescription.toString());
-      assertion1(
-          cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::VirtualRefiningRequested ||
-          cellDescription.getType()==CellDescription::Type::Cell ||
-          cellDescription.getType()==CellDescription::Type::Descendant,
-          cellDescription.toString());
-      #endif
+        if ( !checkThoroughly || tarch::la::equals( cellDescription.getOffset(), cellOffset ) )  {
+          bool refineAdjacentVertices =
+              cellDescription.getType()==CellDescription::Type::Ancestor ||
+              cellDescription.getHasVirtualChildren() ||
+              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested ||
+              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildren ||
+              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested ||
+              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
+              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Refining ||
+              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefining;
 
-      bool eraseAdjacentVertices =
-          (cellDescription.getType()==CellDescription::Type::Cell ||
-              cellDescription.getType()==CellDescription::Type::Descendant)
-              &&
-              cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-              &&
-              !cellDescription.getHasVirtualChildren()
-              &&
-              cellDescription.getAugmentationStatus()==0 // TODO(Dominic): Probably can tune here. This is chosen to large
-              &&
-              cellDescription.getLimiterStatus()==0;
+          #ifdef Asserts
+          assertion1(
+              cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::RefiningRequested ||
+              cellDescription.getType()==CellDescription::Type::Cell,
+              cellDescription.toString());
+          assertion1(
+              cellDescription.getRefinementEvent()!=CellDescription::RefinementEvent::VirtualRefiningRequested ||
+              cellDescription.getType()==CellDescription::Type::Cell ||
+              cellDescription.getType()==CellDescription::Type::Descendant,
+              cellDescription.toString());
+          #endif
 
-      if (refineAdjacentVertices) {
-        return RefinementControl::Refine;
-      } else if (eraseAdjacentVertices) {
-        return RefinementControl::Erase;
+          bool eraseAdjacentVertices =
+              (cellDescription.getType()==CellDescription::Type::Cell ||
+                  cellDescription.getType()==CellDescription::Type::Descendant)
+                  &&
+                  cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+                  &&
+                  !cellDescription.getHasVirtualChildren()
+                  &&
+                  cellDescription.getAugmentationStatus()==0 // TODO(Dominic): Probably can tune here. This is chosen to large
+                  &&
+                  cellDescription.getLimiterStatus()==0;
+
+          if (refineAdjacentVertices) {
+            return RefinementControl::Refine;
+          } else if (eraseAdjacentVertices) {
+            return RefinementControl::Erase;
+          } else {
+            return RefinementControl::Keep;
+          }
+        } else {
+          return RefinementControl::Keep; // ?
+        }
       } else {
-        return RefinementControl::Keep;
+        return RefinementControl::Erase;
       }
-    } else {
-      return RefinementControl::Erase;
     }
   }
 }

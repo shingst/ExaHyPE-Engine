@@ -1438,11 +1438,19 @@ class exahype::solvers::Solver {
   /**
    * \return if the vertices around a cell should be erased, kept,
    * or refined.
+   *
+   * \param checkThoroughly If set to true, check that the indices found in the
+   *                        adjacency map are actual heap indices and that the
+   *                        geometry information of the cell descriptions found at
+   *                        the heap index indicates that these cells are adjacent
+   *                        to the vertex.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
       const int cellDescriptionsIndex,
       const int solverNumber,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const bool checkThoroughly) const = 0;
 
   /**
    * Returns true if the solver has attained

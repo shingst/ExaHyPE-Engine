@@ -416,11 +416,13 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
-      const int cellDescriptionsIndex,
-      const int solverNumber,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+        const int cellDescriptionsIndex,
+        const int solverNumber,
+        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+        const bool checkThoroughly) const {
   return _solver->eraseOrRefineAdjacentVertices(
-             cellDescriptionsIndex,solverNumber,cellSize);
+             cellDescriptionsIndex,solverNumber,cellOffset,cellSize,checkThoroughly);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
