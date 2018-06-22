@@ -81,7 +81,7 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
   bool canErase   = true;
   bool mustRefine = false;
   dfor2(pos)
-    tarch::la::Vector<DIMENSIONS,double> cellOffset(get);
+    tarch::la::Vector<DIMENSIONS,double> cellOffset(vertexOffset);
     for (int d = 0; d < DIMENSIONS; ++d) {
       cellOffset[d] += ( pos[d]-1 ) * cellSize[d];
     }
