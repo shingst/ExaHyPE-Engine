@@ -2628,14 +2628,7 @@ void exahype::solvers::ADERDGSolver::mergeWithLimiterStatus(
           otherLimiterStatus,
           _minimumLimiterStatusForTroubledCell );
 
-  const int limiterStatus =
-      std::min(
-        cellDescription.getLimiterStatus(),
-        _minimumLimiterStatusForTroubledCell );
-
-  cellDescription.setFacewiseLimiterStatus(
-      faceIndex, std::max( limiterStatus, croppedOtherLimiterStatus )
-  );
+  cellDescription.setFacewiseLimiterStatus( faceIndex, croppedOtherLimiterStatus );
 }
 
 /**
@@ -2646,13 +2639,17 @@ int
 exahype::solvers::ADERDGSolver::determineLimiterStatus(
     const CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
-  int max = 0;
-  for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if ( neighbourMergePerformed[i] ) {
-      max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
+  if ( cellDescription.getLimiterStatus()>=_minimumLimiterStatusForTroubledCell ) {
+    return cellDescription.getLimiterStatus();
+  } else {
+    int max = 0;
+    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
+      if ( neighbourMergePerformed[i] ) {
+        max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
+      }
     }
+    return max;
   }
-  return max;
 }
 
 void
@@ -2688,9 +2685,7 @@ void exahype::solvers::ADERDGSolver::mergeWithCommunicationStatus(
   assertion3(cellDescription.getCommunicationStatus()<=CellCommunicationStatus,
              cellDescription.getCommunicationStatus(),otherCommunicationStatus,
              cellDescription.getCommunicationStatus());
-  cellDescription.setFacewiseCommunicationStatus(
-      faceIndex, std::max( cellDescription.getCommunicationStatus(), otherCommunicationStatus )
-  );
+  cellDescription.setFacewiseCommunicationStatus( faceIndex, otherCommunicationStatus );
 }
 
 void
@@ -2727,9 +2722,7 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
       cellDescription.getAugmentationStatus()<=MaximumAugmentationStatus,
       cellDescription.getAugmentationStatus(),otherAugmentationStatus,
       cellDescription.getAugmentationStatus());
-  cellDescription.setFacewiseAugmentationStatus(
-      faceIndex, std::max( cellDescription.getAugmentationStatus(), otherAugmentationStatus )
-  );
+  cellDescription.setFacewiseAugmentationStatus( faceIndex, otherAugmentationStatus );
 }
 
 // merge metadata
