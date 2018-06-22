@@ -81,7 +81,7 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
   bool canErase   = true;
   bool mustRefine = false;
   dfor2(pos)
-    tarch::la::Vector<DIMENSIONS,double> cellOffset(get);
+    tarch::la::Vector<DIMENSIONS,double> cellOffset(vertexOffset);
     for (int d = 0; d < DIMENSIONS; ++d) {
       cellOffset[d] += ( pos[d]-1 ) * cellSize[d];
     }
@@ -621,35 +621,33 @@ bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
-  const int destCellDescriptionIndex = getCellDescriptionsIndex()[destScalar];
+  const int destCellDescriptionIndex = _vertexData.getCellDescriptionsIndex(destScalar);
+
+  // TODO(Dominic): Also have a thorough and simple version of this method
 
   bool mergeWithNeighbourMetadata =
       exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionIndex) &&
       (!exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty() ||
       !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty());
 
-  if (mergeWithNeighbourMetadata) {
+  if ( mergeWithNeighbourMetadata ) {
     const int direction   = tarch::la::equalsReturnIndex(src, dest);
     const int orientation = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
 
-    if (!exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty()) {
-      auto& patch = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionIndex)[0];
-      tarch::la::Vector<DIMENSIONS,double> barycentreFromPatch =
-          exahype::Cell::computeFaceBarycentre(patch.getOffset(),patch.getSize(),direction,orientation);
-      tarch::la::Vector<DIMENSIONS,double> barycentreFromVertex =
-          exahype::Vertex::computeFaceBarycentre(x,h,direction,dest);
-      return equalUpToRelativeTolerance(barycentreFromPatch,barycentreFromVertex);
+    // ADER-DG
+    bool mergeWithNeighbourData = true;
+    for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
+      mergeWithNeighbourData &= p.getNeighbourMergePerformed(faceIndex)==false;
+      p.setNeighbourMergePerformed(faceIndex,true);
     }
-    else if (!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty()) {
-      auto& patch = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionIndex)[0];
-      tarch::la::Vector<DIMENSIONS,double> barycentreFromPatch = // copy & paste from here
-          exahype::Cell::computeFaceBarycentre(patch.getOffset(),patch.getSize(),direction,orientation);
-      tarch::la::Vector<DIMENSIONS,double> barycentreFromVertex =
-          exahype::Vertex::computeFaceBarycentre(x,h,direction,dest);
-      return equalUpToRelativeTolerance(barycentreFromPatch,barycentreFromVertex);
-    } else {
-      return false;
+
+    // FV
+    for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionsIndex)) { // lookup is slow
+      mergeWithNeighbourData &= p.getNeighbourMergePerformed(faceIndex)==false;
+      p.setNeighbourMergePerformed(faceIndex,true);
     }
+    return mergeWithNeighbourData;
   } {
     return false;
   }
@@ -784,6 +782,8 @@ bool exahype::Vertex::hasToMergeWithNeighbourData(
   const int destScalar  = peano::utils::dLinearisedWithoutLookup(dest,2);
   const int destCellDescriptionsIndex =
       _vertexData.getCellDescriptionsIndex(destScalar);
+
+  // TODO(Dominic): Not as robust as the metadata variant
 
   if (
       !exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(destCellDescriptionsIndex)
