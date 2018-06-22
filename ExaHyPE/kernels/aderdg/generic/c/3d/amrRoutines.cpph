@@ -243,7 +243,7 @@ void kernels::aderdg::generic::c::faceUnknownsRestriction(
       pointerFhbnd1 = lFhbndCoarseTemp1;
     }
   }
-  std::copy_n(pointerFhbnd2,basisSize2*numberOfVariables,lFhbndCoarse)
+  std::copy_n(pointerFhbnd2,basisSize2*numberOfVariables,lFhbndCoarse);
 }
 
 template <int numberOfVariables,int numberOfParameters,int basisSize>
