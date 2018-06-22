@@ -3319,20 +3319,6 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
     Solver::adjustSolutionDuringMeshRefinement(
         localCellDescriptionsIndex,localElement,initialGrid);
   }
-
-  // check if we will need to restrict data up (TODO(Dominic): With LTS workflow this should not be necessary anymore)
-  assertion2(
-      receivedCellDescription.getType()!=CellDescription::Type::Ancestor ||
-      localCellDescription.getType()==CellDescription::Type::Ancestor,localCellDescription.toString(),receivedCellDescription.toString());
-  if (
-      localCellDescription.getType()==CellDescription::Type::Ancestor ||
-      localCellDescription.getType()==CellDescription::Type::Cell
-  ) {
-    localCellDescription.setHasToHoldDataForMasterWorkerCommunication(
-        receivedCellDescription.getHasToHoldDataForMasterWorkerCommunication());
-    ensureNoUnnecessaryMemoryIsAllocated(localCellDescription);
-    ensureNecessaryMemoryIsAllocated(localCellDescription);
-  }
 }
 
 void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToMaster(
