@@ -209,13 +209,20 @@ void exahype::Cell::setupMetaData() {
   lock.free();
 }
 
-void exahype::Cell::shutdownMetaData() {
+void exahype::Cell::shutdownMetaDataAndResetCellDescriptionsIndex() {
+  shutdownMetaData();
+  _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+}
+
+void exahype::Cell::shutdownMetaData() const {
   assertion1(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),toString());
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
+    exahype::solvers::ADERDGSolver::eraseCellDescriptions(_cellData.getCellDescriptionsIndex());
+    exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(_cellData.getCellDescriptionsIndex());
+
     exahype::solvers::ADERDGSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
-    _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   lock.free();
 }
 

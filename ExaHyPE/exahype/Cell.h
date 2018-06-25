@@ -236,7 +236,12 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   /**
    * @see setupMetaData()
    */
-  void shutdownMetaData();
+  void shutdownMetaDataAndResetCellDescriptionsIndex();
+
+  /**
+   * @see setupMetaData()
+   */
+  void shutdownMetaData() const;
 
   /**
    * \return true if no cell descriptions

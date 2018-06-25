@@ -499,9 +499,8 @@ void exahype::mappings::MeshRefinement::enterCell(
         fineGridVertices,fineGridVerticesEnumerator);
 
     // shutdown metadata for empty cells (no cell descriptions)
-    if (fineGridCell.isEmpty()) {
-      fineGridCell.shutdownMetaData();
-
+    if ( fineGridCell.isEmpty() ) {
+      fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
       _iterationsSinceLastErasing = 0;
     }
   }
@@ -571,18 +570,9 @@ void exahype::mappings::MeshRefinement::destroyCell(
   // TODO(Dominic): introduce some allSolversDoThis allSolversDoThat...  functions
   exahype::State dummyState;
   if (
-      fineGridCell.isInitialised() &&
-      fineGridCell.isRemote(dummyState,true,true) && // Do not delete the deployed root
-      coarseGridCell.isRemote(dummyState,true,true)
+      fineGridCell.isInitialised()
   ) {
-    exahype::solvers::ADERDGSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
-    exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
-
-    exahype::solvers::ADERDGSolver::Heap::getInstance().
-        deleteData(fineGridCell.getCellDescriptionsIndex());
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().
-        deleteData(fineGridCell.getCellDescriptionsIndex());
-
+    fineGridCell.shutdownMetaData();
     _iterationsSinceLastErasing = 0;
   }
 }
@@ -751,7 +741,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
         }
       }
       if ( localCell.isInitialised() && localCell.isEmpty() ) {
-        localCell.shutdownMetaData();
+        localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
       }
     }
 
@@ -901,15 +891,6 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
             peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
       }
     }
-
-    if (
-        exahype::State::isJoiningWithMaster() &&
-        localCell.isInitialised()
-    ) {
-      exahype::solvers::ADERDGSolver::eraseCellDescriptions(cellDescriptionsIndex);
-      exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(cellDescriptionsIndex);
-      localCell.shutdownMetaData();
-    }
   }
 
   logTraceOut( "prepareCopyToRemoteNode(...)" );
@@ -965,9 +946,16 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
       }
     }
 
-    // if no solver was found shut down the metadata again
-    if ( localCell.isInitialised() && localCell.isEmpty() ) {
-      localCell.shutdownMetaData();
+    // if no solver was found or the cell does belong to the master,
+    // shut down the metadata again
+    if (
+        localCell.isInitialised() &&
+        (
+          localCell.isEmpty() ||
+          localCell.getRankOfRemoteNode()==fromRank
+        )
+    ) {
+      localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
     }
   }
 
