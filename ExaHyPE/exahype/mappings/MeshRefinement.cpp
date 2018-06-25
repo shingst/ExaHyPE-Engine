@@ -1,7 +1,7 @@
 /**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
- * All rights reserved.
+ All rights reserved.
  *
  * The project has received funding from the European Union's Horizon 
  * 2020 research and innovation programme under grant agreement
@@ -104,6 +104,7 @@ exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
         peano::MappingSpecification::AvoidFineGridRaces,true);
   }
 }
+
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
@@ -567,11 +568,7 @@ void exahype::mappings::MeshRefinement::destroyCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // TODO(Dominic): introduce some allSolversDoThis allSolversDoThat...  functions
-  exahype::State dummyState;
-  if (
-      fineGridCell.isInitialised()
-  ) {
+  if ( fineGridCell.isInitialised() ) {
     fineGridCell.shutdownMetaData();
     _iterationsSinceLastErasing = 0;
   }
@@ -646,7 +643,7 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
       const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if ( element!=exahype::solvers::Solver::NotFound ) {
         solver->sendDataToWorkerIfProlongating(
-            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            worker, 
             cellDescriptionsIndex,element,
             fineGridVerticesEnumerator.getCellCenter(),
             fineGridVerticesEnumerator.getLevel());
@@ -680,17 +677,17 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
   ) {
     receivedCell.setupMetaData();
     exahype::solvers::ADERDGSolver::receiveCellDescriptions(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      receivedCell,
-      peano::heap::MessageType::MasterWorkerCommunication,
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        receivedCell,
+        peano::heap::MessageType::MasterWorkerCommunication,
+        receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getLevel());
     exahype::solvers::FiniteVolumesSolver::receiveCellDescriptions(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      receivedCell, // Two step approach
-      peano::heap::MessageType::MasterWorkerCommunication,
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        receivedCell, // Two step approach
+        peano::heap::MessageType::MasterWorkerCommunication,
+        receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getLevel());
 
     const int receivedCellDescriptionsIndex = receivedCell.getCellDescriptionsIndex();
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -732,8 +729,10 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
         const int localElement    = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
         const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
         assertion4(receivedElement==exahype::solvers::Solver::NotFound || localElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
-        assertion4(localElement==exahype::solvers::Solver::NotFound    || receivedElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
-        if ( localElement!=exahype::solvers::Solver::NotFound ) {
+        if ( 
+          localElement!=exahype::solvers::Solver::NotFound &&
+          receivedElement!=exahype::solvers::Solver::NotFound 
+        ) {
           solver->progressMeshRefinementInMergeWithWorker(
               localCellDescriptionsIndex,localElement,
               receivedCellDescriptionsIndex,receivedElement,
@@ -746,8 +745,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     }
 
     //  make consistent     // TODO(Dominic): Make collective operations in cell
-    exahype::solvers::ADERDGSolver::eraseCellDescriptions(receivedMasterCell.getCellDescriptionsIndex());
-    exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(receivedMasterCell.getCellDescriptionsIndex());
+    receivedMasterCell.shutdownMetaData();
   }
 
   logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
@@ -798,7 +796,7 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
       }
     }
   }
-
+  
   logTraceOut( "prepareSendToMaster(...)" );
 }
 
@@ -828,7 +826,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
   }
 
   if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getCellSize()) ) {
-    if ( fineGridCell.isInitialised() ) { // worker is boss w.r.t to erasing events
+    if ( fineGridCell.isInitialised() ) {
       exahype::solvers::ADERDGSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
       exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
     } else {
@@ -858,6 +856,10 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
                 fineGridVerticesEnumerator.getCellCenter(),
                 fineGridVerticesEnumerator.getLevel());
       }
+    }
+
+    if ( fineGridCell.isEmpty() ) {
+      fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();  
     }
   }
 
@@ -891,6 +893,11 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
             peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
       }
     }
+
+    if ( localCell.isInitialised() && localCell.getRankOfRemoteNode()==toRank ) { // isAsignedToRemoteRank does not work, remeber the halo sends
+      localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
+      _iterationsSinceLastErasing=0;
+    } 
   }
 
   logTraceOut( "prepareCopyToRemoteNode(...)" );
