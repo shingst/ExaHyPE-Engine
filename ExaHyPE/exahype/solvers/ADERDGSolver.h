@@ -186,6 +186,15 @@ private:
    * is applied to.
    */
   const int _DMPObservables;
+  
+  /**
+   * The minimum limiter status a cell must have
+   * to allocate a passive FV patch.
+   *
+   * All patches with limiter status smaller than this value,
+   * hold no FV patch at all.
+   */
+  const int _minimumLimiterStatusForPassiveFVPatch;
 
   /**
    * The minimum limiter status a cell must have

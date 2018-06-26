@@ -442,8 +442,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minNextTimeStepSize( std::numeric_limits<double>::max() ),
      _stabilityConditionWasViolated( false ),
      _DMPObservables(DMPObservables),
-     _minimumLimiterStatusForActiveFVPatch(limiterHelperLayers+2),
-     _minimumLimiterStatusForTroubledCell (2*limiterHelperLayers+2) {
+     _minimumLimiterStatusForPassiveFVPatch(2),
+     _minimumLimiterStatusForActiveFVPatch(limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch),
+     _minimumLimiterStatusForTroubledCell (2*limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch) {
 
   // register tags with profiler
   for (const char* tag : tags) {
