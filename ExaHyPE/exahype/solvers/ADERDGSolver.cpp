@@ -2538,7 +2538,7 @@ void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it stil
       cellDescription.getParentIndex(),cellDescription.getSolverNumber());
   if ( parentElement!=exahype::solvers::Solver::NotFound ) {
     // restrict some flags to direct parent
-    restrictToNextParent(cellDescription,parentElement);
+    //restrictToNextParent(cellDescription,parentElement);
 
     if (
         cellDescription.getType()==CellDescription::Type::Descendant &&
@@ -2557,6 +2557,8 @@ void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it stil
   // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
 }
 
+
+// TODO(Dominic): Only use for parallel routines; refactor code
 void exahype::solvers::ADERDGSolver::restrictToNextParent(
       const CellDescription& cellDescription,
       const int parentElement) const {
