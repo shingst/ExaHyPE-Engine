@@ -1421,15 +1421,15 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     // start or finish collective operations
     newComputeCell |= progressCollectiveRefinementOperationsInLeaveCell(fineGridCellDescription);
 
-    const int coarseGridCellElement =
+    const int coarseGridElement =
         tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-    if ( coarseGridCellElement!=exahype::solvers::Solver::NotFound ) {
+    if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
       assertion3(fineGridCellDescription.getParentIndex()==coarseGridCell.getCellDescriptionsIndex(),
                  fineGridCellDescription.toString(),fineGridCell.toString(),
                  coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
 
       CellDescription& coarseGridCellDescription = getCellDescription(
-          fineGridCellDescription.getParentIndex(),coarseGridCellElement);
+          fineGridCellDescription.getParentIndex(),coarseGridElement);
       assertion1(fineGridCellDescription.getSolverNumber()==
           coarseGridCellDescription.getSolverNumber(),
                      fineGridCellDescription.toString());
@@ -1443,10 +1443,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
 
       // copy and restrict the limiter status
       if (
-        cellDescription.getType()==CellDescription::Ancestor ||
-        cellDescription.getType()==CellDescription::Type::Cell
+        fineGridCellDescription.getType()==CellDescription::Ancestor ||
+        fineGridCellDescription.getType()==CellDescription::Type::Cell
       ) {
-        restrictToNextParent(cellDescription,coarseGridElement);
+        restrictToNextParent(fineGridCellDescription,coarseGridElement);
       }
     }
   }
