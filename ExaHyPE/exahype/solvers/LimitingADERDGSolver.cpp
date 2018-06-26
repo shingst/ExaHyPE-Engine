@@ -484,7 +484,7 @@ int exahype::solvers::LimitingADERDGSolver::computeMinimumLimiterStatusForRefine
   assertion(levelDelta>=0);
   const int status = _solver->getMinimumLimiterStatusForActiveFVPatch()-1 + (levelDelta-1);
   return (_solver->getMinimumLimiterStatusForTroubledCell()-status>=2) ?
-          status : _solver->getMinimumLimiterStatusForTroubledCell()-2;
+          status - 1 : _solver->getMinimumLimiterStatusForTroubledCell()-2 -1; // 1 due to extra Ok state.
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCriterion(
@@ -2147,13 +2147,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerOrMasterDataDueToFor
 ///////////////////////////////////
 // WORKER->MASTER
 ///////////////////////////////////
-
-void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  _solver->mergeWithWorkerMetadata(receivedMetadata,cellDescriptionsIndex,element);
-}
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(
     const int                                    masterRank,

@@ -269,17 +269,7 @@ void exahype::mappings::Prediction::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    localCell.reduceDataToMasterPerCell(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getCellSize(), // TODO(Dominic): Odd ones
-        verticesEnumerator.getLevel());
-  }
-
-  logTraceOut( "prepareSendToMaster(...)" );
+  // do nothing
 }
 
 void exahype::mappings::Prediction::mergeWithMaster(
@@ -294,17 +284,7 @@ void exahype::mappings::Prediction::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  logTraceIn( "mergeWithMaster(...)" );
-
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    fineGridCell.mergeWithDataFromWorkerPerCell(   // TODO(Dominic): Odd ones
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getCellSize(),
-        fineGridVerticesEnumerator.getLevel());
-  }
-
-  logTraceOut( "mergeWithMaster(...)" );
+  // do nothing
 }
 
 //

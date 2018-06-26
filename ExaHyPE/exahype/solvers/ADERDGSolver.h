@@ -2187,14 +2187,6 @@ public:
       MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-      
-  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
-   * \return if we need to master-worker communication for this cell description.
-   */
-  void mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
@@ -2246,61 +2238,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-  /** \copydoc Solver::sendDataToMaster
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further send here the solution/observables min
-   * and max to the master.
-   */
-  void sendDataToMaster(
-      const int                                    masterRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
-  /** \copydoc Solver::sendDataToMaster
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further send here a empty message for both, the
-   * solution/observables min and max vectors,
-   * to the master.
-   */
-  void sendEmptyDataToMaster(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
-  /** \copydoc Solver::mergeWithWorkerData
-   *
-   * Receive all 2*DIMENSIONS boundary-extrapolated
-   * space-time predictor and space-time flux vectors
-   * from the worker.
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further receive and restrict here the
-   * 2*DIMENSIONS solution/observables min and max
-   * vectors send from the master.
-   */
-  void mergeWithWorkerData(
-      const int                                     workerRank,
-      const MetadataHeap::HeapEntries&              workerMetadata,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  /** \copydoc Solver::dropWorkerData
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further drop here the 2*DIMENSIONS solution/observables min
-   * and max vectors send from the master.
-   */
-  void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
   ///////////////////////////////////
   // MASTER->WORKER
   ///////////////////////////////////
@@ -2333,33 +2270,6 @@ public:
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
-
-  void sendDataToWorker(
-      const int                                    workerRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
-
-  void sendEmptyDataToWorker(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const override;

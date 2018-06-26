@@ -173,12 +173,6 @@ void exahype::mappings::UpdateAndReduce::prepareSendToMaster(
       verticesEnumerator.getCellCenter(),
       verticesEnumerator.getLevel());
 
-  localCell.reduceMetadataToMasterPerCell(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      verticesEnumerator.getCellCenter(),
-      verticesEnumerator.getCellSize(),
-      verticesEnumerator.getLevel());
-
   logTraceOut( "prepareSendToMaster(...)" );
 }
 
@@ -201,13 +195,6 @@ void exahype::mappings::UpdateAndReduce::mergeWithMaster(
       fineGridVerticesEnumerator.getCellCenter(),
       fineGridVerticesEnumerator.getLevel());
 
-  fineGridCell.mergeWithMetadataFromWorkerPerCell(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getCellSize(),
-      fineGridVerticesEnumerator.getLevel(),
-      exahype::State::AlgorithmSection::TimeStepping);
-
   logTraceOut( "mergeWithMaster(...)" );
 }
 
@@ -219,8 +206,6 @@ bool exahype::mappings::UpdateAndReduce::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  logTraceIn( "prepareSendToWorker(...)" );
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
   return true;
 }
 

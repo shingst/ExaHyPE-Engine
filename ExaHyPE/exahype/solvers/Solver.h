@@ -2065,17 +2065,6 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
 
   /**
-   * Merge with the worker's metadata.
-   *
-   * \return if we need to perform vertical communication of solver face data for the
-   * considered cell description during the time stepping.
-   */
-  virtual void mergeWithWorkerMetadata(
-          const MetadataHeap::HeapEntries& receivedMetadata,
-          const int                        cellDescriptionsIndex,
-          const int                        element) = 0;
-
-  /**
    * Send data to the master that is not
    * depending on a particular cell description.
    *
@@ -2150,61 +2139,6 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 
-  /**
-   * Send solver data to master rank. Read the data from
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the heap vector at \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void sendDataToMaster(
-      const int                                    masterRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Send empty solver data to master rank.
-   */
-  virtual void sendEmptyDataToMaster(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Merge with solver data from worker rank.
-   * Write the data to the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void mergeWithWorkerData(
-      const int                                    workerRank,
-      const MetadataHeap::HeapEntries&             workerMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Drop solver data from worker rank.
-   */
-  virtual void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
   ///////////////////////////////////
   // MASTER->WORKER
   ///////////////////////////////////
@@ -2229,71 +2163,6 @@ class exahype::solvers::Solver {
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
-
-  /**
-   * Send solver data to worker rank. Read the data from
-   * the cell description \p element in the cell descriptions
-   * vector stored at \p cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the ADERDGCellDescription
-   *                    holding the data to send out in
-   *                    the heap vector at \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void sendDataToWorker(
-      const int                                    workerRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Send empty solver data to worker rank.
-   */
-  virtual void sendEmptyDataToWorker(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Receive solver data from the master rank.
-   *
-   * \param[inout] heapIndices a queue where the solver
-   *                    needs to add DataHeap indices
-   *                    of received data.
-   */
-  virtual void receiveDataFromMaster(
-        const int                                    masterRank,
-        std::deque<int>&                             receivedDataHeapIndices,
-        const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level) const = 0;
-
-  /**
-   * Pop the heap indices from the double ended
-   * queue and merge the data - or not.
-   * Delete the corresponding heap arrays.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const = 0;
-
-  /**
-   * Drop solver data from master rank.
-   *
-   * Just pop the heap indices from the double ended
-   * queue and delete the corresponding heap arrays.
-   */
-  virtual void dropMasterData(
-      std::deque<int>& heapIndices) const = 0;
   #endif
 };
 

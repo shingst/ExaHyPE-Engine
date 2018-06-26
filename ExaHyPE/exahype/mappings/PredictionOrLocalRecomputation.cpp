@@ -613,14 +613,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
             verticesEnumerator.getLevel());
       }
     }
-
-    if ( exahype::solvers::Solver::FuseADERDGPhases ) {
-      localCell.reduceDataToMasterPerCell(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getCellSize(),
-          verticesEnumerator.getLevel());
-    }
   }
 
   logTraceOut( "prepareSendToMaster(...)" );
@@ -648,14 +640,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
             fineGridVerticesEnumerator.getCellCenter(),
             fineGridVerticesEnumerator.getLevel());
       }
-    }
-
-    if ( exahype::solvers::Solver::FuseADERDGPhases ) {
-      fineGridCell.mergeWithDataFromWorkerPerCell(
-          worker,
-          fineGridVerticesEnumerator.getCellCenter(),
-          fineGridVerticesEnumerator.getCellSize(),
-          fineGridVerticesEnumerator.getLevel());
     }
   }
 

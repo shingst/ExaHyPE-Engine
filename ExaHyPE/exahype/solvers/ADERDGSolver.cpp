@@ -3486,35 +3486,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
   return solverRequiresVerticalCommunication;
 }
 
-void exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  assertion(element!=exahype::solvers::Solver::NotFound);
-  CellDescription& cellDescription =
-      getCellDescription(cellDescriptionsIndex,element);
-
-  #ifdef Asserts
-  const CellDescription::Type receivedType =
-      static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType]);
-  #endif
-  assertion2(receivedType==cellDescription.getType(),cellDescription.toString(),receivedType);
-  const int workerLimiterStatus            =
-      receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus];
-  if (
-      cellDescription.getType()==CellDescription::Type::Ancestor ||
-      cellDescription.getType()==CellDescription::Type::Cell
-  ) {
-    cellDescription.setLimiterStatus(workerLimiterStatus);
-    const int parentElement =
-        tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
-    if (parentElement!=exahype::solvers::Solver::NotFound) {
-      restrictToNextParent(cellDescription,parentElement);
-    }
-  }
-}
-
-
 ///////////////////////////////////
 // FORK OR JOIN
 ///////////////////////////////////

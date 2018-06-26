@@ -232,13 +232,7 @@ void exahype::mappings::PredictionRerun::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    localCell.reduceDataToMasterPerCell(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getCellSize(),
-        verticesEnumerator.getLevel());
-  }
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::mergeWithMaster(
@@ -253,13 +247,7 @@ void exahype::mappings::PredictionRerun::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    fineGridCell.mergeWithDataFromWorkerPerCell(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getCellSize(),
-        fineGridVerticesEnumerator.getLevel());
-  }
+  // do nothing
 }
 
 //
