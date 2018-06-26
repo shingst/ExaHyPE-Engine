@@ -55,7 +55,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {%- if isLinear %}
   constexpr int sizeLQi                = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
   constexpr int sizeLFi                = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
-  constexpr int sizeGradQ              = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
+  constexpr int sizeGradQ              = DIMENSIONS*NumberOfVariables*spaceBasisSize;
   constexpr int sizePSi                = NumberOfVariables*spaceBasisSize*(Order+2);
   constexpr int sizePSderivatives      = NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeTmp_PSderivatives  = sizePSderivatives;
@@ -103,7 +103,7 @@ const int picardIterations = 1;
   constexpr int sizeLQi   = (NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize;
   constexpr int sizeRhs   = sizeLQi;
   constexpr int sizeLFi   = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
-  constexpr int sizeGradQ = DIMENSIONS*NumberOfVariables*spaceTimeBasisSize;
+  constexpr int sizeGradQ = DIMENSIONS*NumberOfVariables*spaceBasisSize;
   
   constexpr int sizeLQhi = (NumberOfVariables+NumberOfParameters)*spaceBasisSize;
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
