@@ -2203,42 +2203,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(
-    const int                                     masterRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->sendDataToMaster(
-      masterRank,cellDescriptionsIndex,element,x,level);
-  // limiter is only active on the finest mesh level
-}
-
-void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToMaster(
-    const int                                     masterRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->sendEmptyDataToMaster(masterRank,x,level);
-}
-
-void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
-    const int                                    workerRank,
-    const exahype::MetadataHeap::HeapEntries&    workerMetadata,
-    const int                                    cellDescriptionsIndex,
-    const int                                    element,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) {
-  _solver->mergeWithWorkerData(
-      workerRank,workerMetadata,cellDescriptionsIndex,element,x,level);
-}
-
-void exahype::solvers::LimitingADERDGSolver::dropWorkerData(
-    const int                                     workerRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->dropWorkerData(workerRank,x,level);
-}
-
 ///////////////////////////////////
 // MASTER->WORKER
 ///////////////////////////////////
@@ -2300,47 +2264,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
              " messageFromMaster[7]=" << messageFromMaster[7]);
     logDebug("mergeWithWorkerData(...)","_limiterDomainChange=" << static_cast<int>(_limiterDomainChange));
   }
-}
-
-void exahype::solvers::LimitingADERDGSolver::sendDataToWorker(
-    const int                                     workerRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) {
-  _solver->sendDataToWorker(
-      workerRank,cellDescriptionsIndex,element,x,level);
-  // limiter is only active on the finest mesh level
-}
-
-void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToWorker(
-    const int                                     workerRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->sendEmptyDataToWorker(workerRank,x,level);
-  // limiter is only active on the finest mesh level
-}
-
-void exahype::solvers::LimitingADERDGSolver::receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedHeapDataIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const {
-  _solver->receiveDataFromMaster(masterRank,receivedHeapDataIndices,x,level);
-}
-
-void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
-    const exahype::MetadataHeap::HeapEntries&     masterMetadata,
-    std::deque<int>&                              receivedDataHeapIndices,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element) const {
-  _solver->mergeWithMasterData(
-      masterMetadata,receivedDataHeapIndices,cellDescriptionsIndex,element);
-}
-
-void exahype::solvers::LimitingADERDGSolver::dropMasterData(
-    std::deque<int>& receivedDataHeapIndices) const {
-  _solver->dropMasterData(receivedDataHeapIndices);
 }
 #endif
 

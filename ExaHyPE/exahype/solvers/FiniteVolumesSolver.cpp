@@ -1061,10 +1061,10 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
       element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
   logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)","solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
       ", cell: "<< x << ", level: " << level);
-
-  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
 
   assertion(cellDescription.getType()==CellDescription::Cell);
   assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()),
@@ -1431,55 +1431,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToMaster(
-    const int                                     masterRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
-    const int                                     masterRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-      element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
-    const int                                     workerRank,
-    const exahype::MetadataHeap::HeapEntries&     workerMetadata,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level){
-  logDebug("mergeWithWorkerData(...)","Merge with worker data from rank "<<workerRank<<
-             ", cell: "<< x << ", level: " << level);
-
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::dropWorkerData(
-    const int                                     workerRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  logDebug("dropWorkerData(...)","Dropping worker data from rank "<<workerRank<<
-               ", cell: "<< x << ", level: " << level);
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
 ///////////////////////////////////
 // MASTER->WORKER
 ///////////////////////////////////
@@ -1538,48 +1489,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
 
   _minTimeStamp    = receivedTimeStepData[0];
   _minTimeStepSize = receivedTimeStepData[1];
-}
-
-void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
-    const int                                     workerRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level){
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToWorker(
-    const int                                     workerRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::receiveDataFromMaster(
-     const int                                    masterRank,
-     std::deque<int>&                             receivedDataHeapIndices,
-     const tarch::la::Vector<DIMENSIONS, double>& x,
-     const int                                    level) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
- void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
-     const MetadataHeap::HeapEntries&             masterMetadata,
-     std::deque<int>&                             receivedDataHeapIndices,
-     const int                                    cellDescriptionsIndex,
-     const int                                    element) const {
-   // do nothing - limiter does not depend on solution from master for any tree cut
- }
-
-void exahype::solvers::FiniteVolumesSolver::dropMasterData(
-     std::deque<int>& heapIndices) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 #endif
 
