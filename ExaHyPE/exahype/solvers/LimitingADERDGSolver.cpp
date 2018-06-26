@@ -489,13 +489,17 @@ int exahype::solvers::LimitingADERDGSolver::computeMinimumLimiterStatusForRefine
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCriterion(
     const SolverPatch& solverPatch) const {
-  return
-      solverPatch.getType()==SolverPatch::Type::Cell
-      &&
-      solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
-      &&
-      solverPatch.getLimiterStatus() >=
-      computeMinimumLimiterStatusForRefinement(solverPatch.getLevel());
+  // TODO(Dominic): old code; keep for reference
+  //return
+  //    solverPatch.getType()==SolverPatch::Type::Cell
+  //    &&
+  //    solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
+  //    &&
+  //    solverPatch.getLimiterStatus() >=
+  //    computeMinimumLimiterStatusForRefinement(solverPatch.getLevel());
+  return solverPatch.getType()==SolverPatch::Type::Descendant  &&
+         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+         solverPatch.getLimiterStatus()>0;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleRefinementCriterion(

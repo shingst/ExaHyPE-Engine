@@ -442,8 +442,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minNextTimeStepSize( std::numeric_limits<double>::max() ),
      _stabilityConditionWasViolated( false ),
      _DMPObservables(DMPObservables),
-     _minimumLimiterStatusForActiveFVPatch(limiterHelperLayers+1),
-     _minimumLimiterStatusForTroubledCell (2*limiterHelperLayers+1) {
+     _minimumLimiterStatusForActiveFVPatch(limiterHelperLayers+2),
+     _minimumLimiterStatusForTroubledCell (2*limiterHelperLayers+2) {
 
   // register tags with profiler
   for (const char* tag : tags) {
@@ -1440,6 +1440,14 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
               coarseGridCellDescription);
       
       ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
+
+      // copy and restrict the limiter status
+      if (
+        cellDescription.getType()==CellDescription::Ancestor ||
+        cellDescription.getType()==CellDescription::Type::Cell
+      ) {
+        restrictToNextParent(cellDescription,coarseGridElement);
+      }
     }
   }
   return newComputeCell;
@@ -3198,13 +3206,12 @@ exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
 
 void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
     CellDescription& cellDescription) {
-  if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
-    cellDescription.setHasToHoldDataForMasterWorkerCommunication(
-        cellDescription.getHasVirtualChildren());
-
-    ensureOnlyNecessaryMemoryIsAllocated(cellDescription);
+  if ( 
+     cellDescription.getType()==CellDescription::Type::Cell ||
+     cellDescription.getType()==CellDescription::Type::Descendant
+  ) {
+    cellDescription.setHasToHoldDataForMasterWorkerCommunication(cellDescription.getHasVirtualChildren());
   }
-  // Ancestors; wait for info from master
 }
 
 void exahype::solvers::ADERDGSolver::deduceChildCellErasingEvents(CellDescription& cellDescription) const {
@@ -3268,7 +3275,10 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
     
     if ( element!=exahype::solvers::Solver::NotFound ) {
       CellDescription& fineGridCellDescription = getCellDescription(cellDescriptionsIndex,element);
-      if ( fineGridCellDescription.getType()==CellDescription::Type::Descendant ) {
+      if ( 
+        fineGridCellDescription.getType()==CellDescription::Type::Descendant &&
+        fineGridCellDescription.getHasToHoldDataForMasterWorkerCommunication()
+      ) {
         exahype::solvers::Solver::SubcellPosition subcellPosition =
             exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,true>(fineGridCellDescription);
         CellDescription& topMostParentCellDescription = 
@@ -3451,21 +3461,16 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
   }
   
 
-  bool newComputeCell = progressCollectiveRefinementOperationsInLeaveCell(cellDescription);
-  // ignore as responsibiliy is still on fine grid.
+  progressCollectiveRefinementOperationsInLeaveCell(cellDescription);
+  // ignore return value as responsibiliy is still on fine grid.
 
   // check if any cell description requires vertical communication
   bool solverRequiresVerticalCommunication = false;
+  
   if (
-      cellDescription.getType()==CellDescription::Type::Descendant     // Master does not modify Descendant's flag
+      cellDescription.getType()==CellDescription::Ancestor ||
+      cellDescription.getType()==CellDescription::Type::Cell
   ) {
-    solverRequiresVerticalCommunication =
-        cellDescription.getHasToHoldDataForMasterWorkerCommunication();
-    ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-    ensureNecessaryMemoryIsAllocated(cellDescription);
-  } else if (
-      cellDescription.getType()==CellDescription::Type::Ancestor ||
-      cellDescription.getType()==CellDescription::Type::Cell) {
     // copy and restrict the limiter status
     const int coarseGridElement = tryGetElement(
         cellDescription.getParentIndex(),cellDescription.getSolverNumber());
@@ -4031,28 +4036,28 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
       cellDescription.toString() << " from rank "<<masterRank<<
       ", cell="<< x << ", level=" << level);
 
-  if ( cellDescription.getHasToHoldDataForMasterWorkerCommunication() ) {
-    assertion1(cellDescription.getType()==CellDescription::Type::Descendant,cellDescription.toString());
-
-    // TODO(LTS): Send time step data / veto coarse grid update as well
-
-    // No inverted message order since we do synchronous data exchange.
-    // Order: update,observablesMin,observablesMax
-    DataHeap::getInstance().sendData(
-        DataHeap::getInstance().getData(cellDescription.getUpdate()), masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
-
-    if ( getDMPObservables()>0 ) {
-      DataHeap::getInstance().sendData(
-          DataHeap::getInstance().getData(cellDescription.getSolutionMin()), masterRank, x, level,
-          peano::heap::MessageType::MasterWorkerCommunication);
-      DataHeap::getInstance().sendData(
-          DataHeap::getInstance().getData(cellDescription.getSolutionMax()), masterRank, x, level,
-          peano::heap::MessageType::MasterWorkerCommunication);
-    }
-  } else {
-    sendEmptyDataToMaster(masterRank,x,level);
-  }
+//  if ( cellDescription.getHasToHoldDataForMasterWorkerCommunication() ) {
+//    assertion1(cellDescription.getType()!=CellDescription::Type::Descendant,cellDescription.toString());
+//
+//    // TODO(LTS): Send time step data / veto coarse grid update as well
+//
+//    // No inverted message order since we do synchronous data exchange.
+//    // Order: update,observablesMin,observablesMax
+//    DataHeap::getInstance().sendData(
+//        DataHeap::getInstance().getData(cellDescription.getUpdate()), masterRank, x, level,
+//        peano::heap::MessageType::MasterWorkerCommunication);
+//
+//    if ( getDMPObservables()>0 ) {
+//      DataHeap::getInstance().sendData(
+//          DataHeap::getInstance().getData(cellDescription.getSolutionMin()), masterRank, x, level,
+//          peano::heap::MessageType::MasterWorkerCommunication);
+//      DataHeap::getInstance().sendData(
+//          DataHeap::getInstance().getData(cellDescription.getSolutionMax()), masterRank, x, level,
+//          peano::heap::MessageType::MasterWorkerCommunication);
+//    }
+//  } else {
+//    sendEmptyDataToMaster(masterRank,x,level);
+//  }
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
@@ -4070,45 +4075,45 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  if ( cellDescription.getHasToHoldDataForMasterWorkerCommunication() ) {
-    logDebug(
-        "mergeWithWorkerData(...)","receive update for cell description " <<
-        cellDescription.toString() << " from rank "<<workerRank<<
-        ", cell="<< x << ", level=" << level);
-
-    assertion1(cellDescription.getType()==CellDescription::Type::Descendant,cellDescription.toString());
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
-    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
-
-    // No inverted message order since we do synchronous data exchange.
-    // Order: extrapolatedPredictor,fluctuations.
-    // Make sure you clear the arrays before you append(!) data via receive!
-    DataHeap::getInstance().getData(cellDescription.getUpdate()).clear();
-    DataHeap::getInstance().receiveData(
-        cellDescription.getUpdate(), workerRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
-
-    // TODO(LTS): Receive veto flags too
-
-    if ( getDMPObservables()>0 ) {
-      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMin()));
-      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMax()));
-
-      DataHeap::getInstance().getData(cellDescription.getSolutionMin()).clear();
-      DataHeap::getInstance().getData(cellDescription.getSolutionMax()).clear();
-      DataHeap::getInstance().receiveData(
-          cellDescription.getSolutionMin(), workerRank, x, level,
-          peano::heap::MessageType::MasterWorkerCommunication);
-      DataHeap::getInstance().receiveData(
-          cellDescription.getSolutionMax(), workerRank, x, level,
-          peano::heap::MessageType::MasterWorkerCommunication);
-    }
-
-    restriction(cellDescriptionsIndex,element);
-  } else  {
-    dropWorkerData(workerRank,x,level);
-  }
+//  if ( cellDescription.getHasToHoldDataForMasterWorkerCommunication() ) {
+//    logDebug(
+//        "mergeWithWorkerData(...)","receive update for cell description " <<
+//        cellDescription.toString() << " from rank "<<workerRank<<
+//        ", cell="<< x << ", level=" << level);
+//
+//    assertion1(cellDescription.getType()!=CellDescription::Type::Descendant,cellDescription.toString());
+//    assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()),cellDescription.toString());
+//    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()));
+//    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
+//
+//    // No inverted message order since we do synchronous data exchange.
+//    // Order: extrapolatedPredictor,fluctuations.
+//    // Make sure you clear the arrays before you append(!) data via receive!
+//    DataHeap::getInstance().getData(cellDescription.getUpdate()).clear();
+//    DataHeap::getInstance().receiveData(
+//        cellDescription.getUpdate(), workerRank, x, level,
+//        peano::heap::MessageType::MasterWorkerCommunication);
+//
+//    // TODO(LTS): Receive veto flags too
+//
+//    if ( getDMPObservables()>0 ) {
+//      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMin()));
+//      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionMax()));
+//
+//      DataHeap::getInstance().getData(cellDescription.getSolutionMin()).clear();
+//      DataHeap::getInstance().getData(cellDescription.getSolutionMax()).clear();
+//      DataHeap::getInstance().receiveData(
+//          cellDescription.getSolutionMin(), workerRank, x, level,
+//          peano::heap::MessageType::MasterWorkerCommunication);
+//      DataHeap::getInstance().receiveData(
+//          cellDescription.getSolutionMax(), workerRank, x, level,
+//          peano::heap::MessageType::MasterWorkerCommunication);
+//    }
+//
+//    //restriction(cellDescriptionsIndex,element);
+//  } else  {
+//    dropWorkerData(workerRank,x,level);
+//  }
 }
 
 void exahype::solvers::ADERDGSolver::dropWorkerData(
