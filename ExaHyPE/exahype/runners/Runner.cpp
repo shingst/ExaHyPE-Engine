@@ -1107,18 +1107,19 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading()) {
+  if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation() ) {
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
     repository.switchToLimiterStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
+  }
+  
+  // 2. Only the solvers requesting global recomputation are doing a global rollback
+  // TODO(Dominic): Merge with BroadcastAndDropNeighbourMessages();
+  if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() ) {
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
 
-    if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-      logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");
-    }
-
-    // TODO(Dominic): Need a broadcast again if global recomputation
     logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToGlobalRollback();
@@ -1126,7 +1127,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   }
 
   // 3. Perform a grid update for those solvers that requested refinement
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
+  if ( exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ) {
     logInfo("updateMeshAndSubdomains(...)","perform mesh refinement");
     createMesh(repository);
   }

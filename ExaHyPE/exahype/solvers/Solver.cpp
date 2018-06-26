@@ -675,7 +675,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
       limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
       if (
-          limitingADERDGSolver->getNextMeshUpdateRequest() &&
+          limitingADERDGSolver->getNextMeshUpdateRequest() && // TODO(Dominic): Reassess
           limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
       ) {
         limitingADERDGSolver->updateNextLimiterDomainChange(

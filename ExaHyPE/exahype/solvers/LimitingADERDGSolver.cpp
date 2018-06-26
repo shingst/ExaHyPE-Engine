@@ -410,11 +410,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     const int parentElement = tryGetElement(
         solverPatch.getParentIndex(),solverPatch.getSolverNumber());
     if ( parentElement!=exahype::solvers::Solver::NotFound ) {
-      if (
-          solverPatch.getType()==SolverPatch::Type::Descendant &&
-          solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-          solverPatch.getLimiterStatus()>=_solver->_minimumLimiterStatusForPassiveFVPatch
-      ) {
+      if ( evaluateLimiterStatusRefinementCriterion(solverPatch) ) {
         exahype::solvers::Solver::SubcellPosition subcellPosition =
             exahype::amr::computeSubcellPositionOfDescendant<SolverPatch,ADERDGSolver::Heap,true>(solverPatch);
         assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,solverPatch.toString());
@@ -511,14 +507,6 @@ int exahype::solvers::LimitingADERDGSolver::computeMinimumLimiterStatusForRefine
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCriterion(
     const SolverPatch& solverPatch) const {
-  // TODO(Dominic): old code; keep for reference
-  //return
-  //    solverPatch.getType()==SolverPatch::Type::Cell
-  //    &&
-  //    solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
-  //    &&
-  //    solverPatch.getLimiterStatus() >=
-  //    computeMinimumLimiterStatusForRefinement(solverPatch.getLevel());
   return solverPatch.getType()==SolverPatch::Type::Descendant  &&
          solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
          solverPatch.getLimiterStatus()>0; // > 0 is correct here; only used during time stepping
@@ -783,7 +771,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
   UpdateResult result;
   result._limiterDomainChange = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
-                                  cellDescriptionsIndex,element,neighbourMergePerformed);
+                                    cellDescriptionsIndex,element,neighbourMergePerformed);
   // This is important to memorise before calling startNewTimeStepFused
   // TODO(Dominic): Add to docu and/or make cleaner
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
@@ -791,7 +779,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const double memorisedPredictorTimeStepSize = solverPatch.getPredictorTimeStepSize();
   result._timeStepSize = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-  result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
+  result._refinementRequested |= result._limiterDomainChange==LimiterDomainChange::IrregularRequiringMeshUpdate ||
+                                   evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
 
   if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
     _solver->performPredictionAndVolumeIntegral(
@@ -861,10 +850,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       updateSolution(cellDescriptionsIndex,element,true);
       result._timeStepSize         = startNewTimeStep(cellDescriptionsIndex,element);
       result._limiterDomainChange  = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
-          cellDescriptionsIndex,element,solverPatch.getNeighbourMergePerformed());  // !!! limiter status must be updated before refinement criterion is evaluated
-      result._refinementRequested |= evaluateRefinementCriterionAfterSolutionUpdate(
-          cellDescriptionsIndex,element);
-
+                                       cellDescriptionsIndex,element,solverPatch.getNeighbourMergePerformed());  // !!! limiter status must be updated before refinement criterion is evaluated
+      result._refinementRequested |= result._limiterDomainChange==LimiterDomainChange::IrregularRequiringMeshUpdate ||
+                                       evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
       // compress again
       if (CompressionAccuracy>0.0) {
         compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
