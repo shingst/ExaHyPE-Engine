@@ -22,7 +22,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <deque>
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "peano/utils/PeanoOptimisations.h"

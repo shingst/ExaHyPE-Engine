@@ -907,7 +907,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())
   ) {
-    logInfo("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel()
+    logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel()
         << "for solver=" << solverNumber);
 
     addNewCell(
@@ -957,7 +957,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
          tarch::parallel::Node::getInstance().getRank()==4 ||
          tarch::parallel::Node::getInstance().getRank()==3
       ) {
-       logInfo("progressMeshRefinementInEnterCell(...)","[rank=3,index="<<fineGridCell.getCellDescriptionsIndex()<<"] touch"<< fineGridCellDescription.toString() );
+       logDebug("progressMeshRefinementInEnterCell(...)","[rank=3,index="<<fineGridCell.getCellDescriptionsIndex()<<"] touch"<< fineGridCellDescription.toString() );
     }
 
     decideOnRefinement(fineGridCellDescription);
@@ -3047,7 +3047,7 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
   if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
-    logInfo("sendCellDescriptions(...)","send "<< Heap::getInstance().getData(cellDescriptionsIndex).size()<<
+    logDebug("sendCellDescriptions(...)","send "<< Heap::getInstance().getData(cellDescriptionsIndex).size()<<
         " cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
     bool oneSolverRequiresVerticalCommunication = false;
     for (auto& cellDescription : Heap::getInstance().getData(cellDescriptionsIndex)) {
@@ -3059,7 +3059,7 @@ bool exahype::solvers::ADERDGSolver::sendCellDescriptions(
     return oneSolverRequiresVerticalCommunication;
   }
   else {
-    logInfo("sendCellDescriptions(...)","send "
+    logDebug("sendCellDescriptions(...)","send "
         " empty cell descriptions to rank "<<toRank<<" (x="<< x.toString() << ",level="<< level << ")");
     
     sendEmptyCellDescriptions(toRank,messageType,x,level);
@@ -3284,7 +3284,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
         CellDescription& topMostParentCellDescription = 
             getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         if ( topMostParentCellDescription.getType()==CellDescription::Type::Cell ) {
-           logInfo( "progressMeshRefinementInPrepareSendToWorker(...)"," try to refine parent " << topMostParentCellDescription.toString());
+           logDebug( "progressMeshRefinementInPrepareSendToWorker(...)"," try to refine parent " << topMostParentCellDescription.toString());
            topMostParentCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Refine);
         }
       }
@@ -3309,7 +3309,7 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerIfProlongating(
 
   // send out the data
   if ( fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
-    logInfo( "sendDataToWorkerIfProlongating(...)","send prolongated solution to rank "<<workerRank<< " at x="<<x.toString()<< ",level="<<level << " cell="<<fineGridCellDescription.toString());
+    logDebug( "sendDataToWorkerIfProlongating(...)","send prolongated solution to rank "<<workerRank<< " at x="<<x.toString()<< ",level="<<level << " cell="<<fineGridCellDescription.toString());
 
     sendDataToWorkerOrMasterDueToForkOrJoin(workerRank,cellDescriptionsIndex,element,
         peano::heap::MessageType::MasterWorkerCommunication,x,level);
@@ -3325,7 +3325,7 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
   CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement);
 
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
-    logInfo( "receiveDataFromMasterIfProlongating(...)","receiving prolongated solution from rank "<<masterRank<< " at x="<<x.toString()<< ",level="<<level);
+    logDebug( "receiveDataFromMasterIfProlongating(...)","receiving prolongated solution from rank "<<masterRank<< " at x="<<x.toString()<< ",level="<<level);
 
     mergeWithWorkerOrMasterDataDueToForkOrJoin(
       masterRank,receivedCellDescriptionsIndex,receivedElement,
@@ -3356,7 +3356,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
 
   // finalise prolongation operation started on master
   if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
-    logInfo( "progressMeshRefinementInMergeWithWorker(...)","merging prolongated solution");
+    logDebug( "progressMeshRefinementInMergeWithWorker(...)","merging prolongated solution");
 
     assertion( localCellDescription.getType()==CellDescription::Type::Cell ||
                localCellDescription.getType()==CellDescription::Type::Descendant);
