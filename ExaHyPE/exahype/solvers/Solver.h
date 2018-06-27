@@ -702,6 +702,12 @@ class exahype::solvers::Solver {
   static constexpr int NotFound = -1;
 
   /**
+   * Checks if one of the solvers is of a certain
+   * type.
+   */
+  static bool oneSolverIsOfType(const Type& type);
+
+  /**
    * Moves a DataHeap array, i.e. copies the found
    * data at "fromIndex" to the array at "toIndex" and
    * deletes the "fromIndex" array afterwards.

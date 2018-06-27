@@ -412,6 +412,14 @@ bool exahype::solvers::Solver::getAttainedStableState() const {
   return _attainedStableState;
 }
 
+bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
+  bool result = false;
+  for (auto* solver : RegisteredSolvers) {
+    result |= solver->getType()==type;
+  }
+  return result;
+}
+
 void exahype::solvers::Solver::moveDataHeapArray(
     const int fromIndex,const int toIndex,bool recycleFromArray) {
   std::copy(
