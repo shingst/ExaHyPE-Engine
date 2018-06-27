@@ -196,6 +196,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
 
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 
+        logDebug("endIteration(state)","[pre] solver="<<solver->toString());
         if (
             exahype::solvers::Solver::FuseADERDGPhases
             #ifdef Parallel
@@ -211,7 +212,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
           solver->startNewTimeStep();
         }
 
-        logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
+        logDebug("endIteration(state)","[post] updatedTimeStepSize="<<solver->getMinTimeStepSize()<<", solver="<<solver->toString());
       }
     }
 
@@ -252,7 +253,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
               cellDescriptionsIndex,element);
 
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
-          if (exahype::solvers::Solver::FuseADERDGPhases) {
+          if ( exahype::solvers::Solver::FuseADERDGPhases ) {
             limitingADERDG->recomputePredictorLocally(
                 cellDescriptionsIndex,element,
                 exahype::Cell::isAtRemoteBoundary(
@@ -290,13 +291,15 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       }
     }
 
-    if ( OneSolverRequestedLocalRecomputation ) {
-      exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-          cellDescriptionsIndex,fineGridVerticesEnumerator);
+    if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+      if ( OneSolverRequestedLocalRecomputation ) {
+        exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+            cellDescriptionsIndex,fineGridVerticesEnumerator);
+      }
+      exahype::Cell::resetNeighbourMergeFlags(
+          fineGridCell.getCellDescriptionsIndex(),
+          fineGridVertices,fineGridVerticesEnumerator);
     }
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

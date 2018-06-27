@@ -703,7 +703,6 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
     case TimeStepping::Global:
       _minNextTimeStepSize                      = std::numeric_limits<double>::max();
 
-//      _minPredictorTimeStamp                    = _minCorrectorTimeStamp;
       _minPredictorTimeStamp                    = _previousMinCorrectorTimeStamp+_previousMinCorrectorTimeStepSize;
       _minPredictorTimeStepSize                 = _minCorrectorTimeStepSize;
 
@@ -714,7 +713,6 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused() {
       _previousMinCorrectorTimeStepSize         = std::numeric_limits<double>::max();
       break;
     case TimeStepping::GlobalFixed:
-//      _minPredictorTimeStamp                    = _minCorrectorTimeStamp;
       _minPredictorTimeStamp                    = _previousMinCorrectorTimeStamp+_previousMinCorrectorTimeStepSize;
       _minPredictorTimeStepSize                 = _minCorrectorTimeStepSize;
 
@@ -4118,6 +4116,8 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out << "_spaceTimeUnknownsPerCell:" << getSpaceTimeUnknownsPerCell();
   out << ",";
   out << "_spaceTimeFluxUnknownsPerCell:" << getSpaceTimeFluxUnknownsPerCell();
+  out << ",";
+  out << "_previousMinCorrectorTimeStamp:" << _previousMinCorrectorTimeStamp;
   out << ",";
   out << "_previousMinCorrectorTimeStepSize:" << _previousMinCorrectorTimeStepSize;
   out << ",";
