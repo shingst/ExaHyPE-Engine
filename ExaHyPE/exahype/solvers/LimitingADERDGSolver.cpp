@@ -354,10 +354,20 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
   if (solverElement!=exahype::solvers::Solver::NotFound) {
     SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
 
-    updateLimiterStatusDuringLimiterStatusSpreading(cellDescriptionsIndex,solverElement);
 
-    if ( solverPatch.getRefinementRequest() != SolverPatch::RefinementRequest::Pending ) { // wait till other refinement crit was evaluated and initial data was imposed
-      markForRefinementBasedOnLimiterStatus(solverPatch);
+
+    // skip remainder if the refinement criterion has not been evaluated yet for a Cell
+    // Reading the refinement request might result into data race but this is accepted at this point
+    // as we only read and not write
+    if (
+      solverPatch.getType()              != SolverPatch::Type::Cell ||
+      solverPatch.getRefinementRequest() != SolverPatch::RefinementRequest::Pending 
+    ) { 
+      updateLimiterStatusDuringLimiterStatusSpreading(cellDescriptionsIndex,solverElement);
+
+      if ( solverPatch.getRefinementRequest() != SolverPatch::RefinementRequest::Pending ) { // wait till other refinement crit was evaluated and initial data was imposed
+        markForRefinementBasedOnLimiterStatus(solverPatch);
+      }
     }
   }
 
