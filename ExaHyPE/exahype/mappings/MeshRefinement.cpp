@@ -178,9 +178,6 @@ void exahype::mappings::MeshRefinement::beginIteration(
     //assertion2(!solver->getNextMeshUpdateRequest(),solver->toString(),tarch::parallel::Node::getInstance().getRank());
   }
 
-  // background threads
-  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
-
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
@@ -210,6 +207,9 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
 
   peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+
+  // background threads
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
 }
