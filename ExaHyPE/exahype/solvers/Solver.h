@@ -772,6 +772,8 @@ class exahype::solvers::Solver {
    */
   static int getFinestUniformMeshLevelOfAllSolvers();
 
+  static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
+
   /**
    * Run over all solvers and identify the maximum depth of adaptive
    * refinement employed.
@@ -790,9 +792,6 @@ class exahype::solvers::Solver {
    * performs adaptive mesh refinement.
    */
   static bool allSolversPerformOnlyUniformRefinement();
-
-
-
 
 
   /**

@@ -2,9 +2,48 @@
 #include "mpibalancing/HotspotBalancing.h"
 #include "peano/utils/UserInterface.h"
 
+#include "tarch/la/ScalarOperations.h"
 
 exahype::mappings::LoadBalancing::LoadBalancingAnalysis  exahype::mappings::LoadBalancing::_loadBalancingAnalysis;
 
+/**
+ * Compute the number of ranks required to populate the given mesh level
+ */
+
+
+#ifdef Parallel
+int exahype::mappings::LoadBalancing::LastLevelToPopulateUniformly = -1;
+
+int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
+  if ( exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ) {
+    return std::numeric_limits<int>::max();
+  } else {
+    tarch::la::Vector<DIMENSIONS,double> domain = exahype::solvers::Solver::getDomainSize();
+    const int uniformMeshLevel                  = exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers(); // TODO(Dominic): Multisolver: Maybe consider to use the finest mesh level instead?
+    const double uniformMeshSize                = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
+
+    tarch::la::Vector<DIMENSIONS,int> numberOfCellsOnUniformGrid(0);
+    for (int d=0; d<DIMENSIONS; d++) {
+      numberOfCellsOnUniformGrid[d] = static_cast<int>( domain[d] / uniformMeshSize );
+    }
+    const int numberOfAvailableRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+    int level     = 1;
+    int usedRanks = 1; // global master rank
+    while( usedRanks <= numberOfAvailableRanks ) {
+      const int levelDelta = uniformMeshLevel - level;
+      const int ranksToDeployOnCurrentLevel = 1;
+      for (int d; d<DIMENSIONS; d++) {
+        ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid[d] / tarch::la::aPowI(levelDelta-1,3);
+      }
+      usedRanks += ranksToDeployOnCurrentLevel;
+      level++;
+    }
+
+    return std::max(2,level-2); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
+  }
+}
+#endif
 
 void exahype::mappings::LoadBalancing::setLoadBalancingAnalysis(LoadBalancingAnalysis loadBalancingAnalysis) {
   _loadBalancingAnalysis = loadBalancingAnalysis;
@@ -77,6 +116,7 @@ void exahype::mappings::LoadBalancing::mergeWithWorkerThread(const LoadBalancing
 void exahype::mappings::LoadBalancing::beginIteration(
   exahype::State&  solverState
 ) {
+  LastLevelToPopulateUniformly = determineLastLevelToPopulateUniformly();
   _numberOfLocalCells = 0;
 }
 
@@ -89,7 +129,12 @@ void exahype::mappings::LoadBalancing::enterCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _numberOfLocalCells++;
+  if ( fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly  ) {
+    _numberOfLocalCells++;
+  } else {
+    _numberOfLocalCells += exahype::solvers::ADERDGSolver::computeWeightOfCell(fineGridCell.getCellDescriptionsIndex());
+    _numberOfLocalCells += exahype::solvers::FiniteVolumesSolver::computeWeightOfCell(fineGridCell.getCellDescriptionsIndex());
+  }
 }
 
 

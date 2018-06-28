@@ -494,13 +494,20 @@ bool exahype::solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::
 }
 
 double exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers() {
-  double result = std::numeric_limits<double>::max();
+  static double result = std::numeric_limits<double>::max();
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::min( result, p->getMaximumMeshSize() );
+  if ( result == std::numeric_limits<double>::max() ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::min( result, p->getMaximumMeshSize() );
+    }
   }
 
   return result;
+}
+
+const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainSize() {
+  assertion(RegisteredSolvers.size()>0);
+  return RegisteredSolvers[0]->_domainSize;
 }
 
 double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
