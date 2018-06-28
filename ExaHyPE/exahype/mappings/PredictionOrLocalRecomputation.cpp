@@ -38,10 +38,29 @@ bool exahype::mappings::PredictionOrLocalRecomputation::OneSolverRequestedLocalR
 
 peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
-  return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-      true);
+  // master->worker
+  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+  if (
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
+  ) { // must be set in previous iteration
+    exchangeMasterWorkerData =
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
+  }
+
+  // worker->master
+  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+  if (
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      exahype::State::ReduceInThisIteration         // must be set in previous iteration
+  ) {
+    exchangeWorkerMasterData =
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
+  }
+
+  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
 
 peano::MappingSpecification
@@ -60,7 +79,7 @@ exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int le
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::OnlyLeaves,
       peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 
@@ -183,14 +202,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
   logTraceInWith1Argument("endIteration(State)", state);
 
   if (
-      _stateCopy.isLastIterationOfBatchOrNoBatch() &&
+      _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation
   ) {
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if (
-          performLocalRecomputation( solver )
-      ) {
+      if ( performLocalRecomputation( solver ) ) {
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
@@ -224,6 +241,24 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     #endif
   }
 
+  // broadcasts
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::BroadcastInThisIteration==true);
+    exahype::State::BroadcastInThisIteration = false;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::BroadcastInThisIteration==false);
+    exahype::State::BroadcastInThisIteration = true;
+  }
+  // reduction
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::ReduceInThisIteration==false);
+    exahype::State::ReduceInThisIteration = true;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::BroadcastInThisIteration==true);
+    exahype::State::BroadcastInThisIteration = false;
+  }
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
@@ -263,8 +298,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
             );
             admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
                 cellDescriptionsIndex,element,
-                _stateCopy.isFirstIterationOfBatchOrNoBatch(),
-                _stateCopy.isLastIterationOfBatchOrNoBatch());
+                true,true);
           } else {
             admissibleTimeStepSize = limitingADERDG->startNewTimeStep(
                 cellDescriptionsIndex,element);

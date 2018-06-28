@@ -92,7 +92,6 @@ private:
    */
   exahype::State _stateCopy;
  public:
-
   /**
    * Determine the enter cell specification depending
    * on if background threads are used or not.
@@ -181,6 +180,7 @@ private:
 
   /**
    * Turns ITAC on if required
+   * Turn the broadcast off at the end of the first iteration.
    */
   void beginIteration(exahype::State& solverState);
 

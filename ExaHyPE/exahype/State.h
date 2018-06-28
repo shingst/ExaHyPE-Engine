@@ -132,6 +132,18 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static bool VirtuallyExpandBoundingBox;
 
+  #ifdef Parallel
+  /**
+   * Toggle switches used by the Prediction* and FusedTimeStep
+   * mappings where we turn broadcasts and reduction on and
+   * off in certain batch iterations.
+   *
+   * \note Use this switches only
+   */
+  static bool BroadcastInThisIteration;
+  static bool ReduceInThisIteration;
+  #endif
+
   /**
    * \return true if we run no batch or if
    * we are in the last iteration of a batch.
@@ -149,6 +161,18 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * within a mapping.
    */
   bool isLastIterationOfBatchOrNoBatch() const;
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second to last iteration of a batch.
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   *
+   * \note This function takes the role of isLastIterationOfBatchOrNoBatch() when we use
+   * two Prediction or FusedTimeStep sweeps.
+   */
+  bool isSecondToLastIterationOfBatchOrNoBatch() const;
 
   /**
    * Default Constructor

@@ -74,7 +74,10 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+  if (
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
+  ) { // must be set in previous iteration
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
@@ -82,7 +85,10 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+  if (
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      exahype::State::ReduceInThisIteration         // must be set in previous iteration
+  ) {
     exchangeWorkerMasterData =
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
   }
@@ -163,14 +169,33 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( sendOutRiemannDataInThisIteration() ) {
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) {
     exahype::plotters::finishedPlotting();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
         _stateCopy.isFirstIterationOfBatchOrNoBatch(),
-        _stateCopy.isLastIterationOfBatchOrNoBatch(),
+        _stateCopy.isSecondToLastIterationOfBatchOrNoBatch(),
         true);
+  }
+
+  // broadcasts
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::BroadcastInThisIteration==true);
+    exahype::State::BroadcastInThisIteration = false;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::BroadcastInThisIteration==false);
+    exahype::State::BroadcastInThisIteration = true;
+  }
+  // reduction
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::ReduceInThisIteration==false);
+    exahype::State::ReduceInThisIteration = true;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::BroadcastInThisIteration==true);
+    exahype::State::BroadcastInThisIteration = false;
   }
 
   _batchIterationCounterUpdated = false;
@@ -289,7 +314,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
             solver->fusedTimeStep(
                 fineGridCell.getCellDescriptionsIndex(),element,
                 _stateCopy.isFirstIterationOfBatchOrNoBatch(),
-                _stateCopy.isLastIterationOfBatchOrNoBatch(),
+                _stateCopy.isSecondToLastIterationOfBatchOrNoBatch(),
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );

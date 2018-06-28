@@ -635,6 +635,8 @@ int exahype::runners::Runner::run() {
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
+    exahype::State::BroadcastInThisIteration = true;
+    exahype::State::ReduceInThisIteration    = false;
     #endif
 
     auto* repository = createRepository();
