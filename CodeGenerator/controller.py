@@ -256,6 +256,11 @@ class Controller:
         runtimes["dgMatrix"] = time.perf_counter() - start
         
         start = time.perf_counter()
+        faceIntegral = faceIntegralModel.FaceIntegralModel(self.baseContext)
+        faceIntegral.generateCode()
+        runtimes["faceIntegral"] = time.perf_counter() - start
+        
+        start = time.perf_counter()
         fusedSpaceTimePredictorVolumeIntegral = fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self)
         fusedSpaceTimePredictorVolumeIntegral.generateCode()
         runtimes["fusedSpaceTimePredictorVolumeIntegral"] = time.perf_counter() - start
