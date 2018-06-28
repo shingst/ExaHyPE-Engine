@@ -20,27 +20,23 @@ int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
   } else {
     tarch::la::Vector<DIMENSIONS,double> domain = exahype::solvers::Solver::getDomainSize();
     const int uniformMeshLevel                  = exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers(); // TODO(Dominic): Multisolver: Maybe consider to use the finest mesh level instead?
-    const double uniformMeshSize                = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
-
-    tarch::la::Vector<DIMENSIONS,int> numberOfCellsOnUniformGrid(0);
-    for (int d=0; d<DIMENSIONS; d++) {
-      numberOfCellsOnUniformGrid[d] = static_cast<int>( domain[d] / uniformMeshSize );
-    }
+    const double uniformMeshSize                = exahype::solvers::Solver::getCoarsestMeshSizeOfAllSolvers();
+    
     const int numberOfAvailableRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
     int level     = 1;
     int usedRanks = 1; // global master rank
-    while( usedRanks <= numberOfAvailableRanks ) {
+    while( level < uniformMeshLevel && usedRanks <= numberOfAvailableRanks ) {
       const int levelDelta = uniformMeshLevel - level;
       
       int ranksToDeployOnCurrentLevel = 1;
       for (int d; d<DIMENSIONS; d++) {
-        ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid[d] / tarch::la::aPowI(levelDelta-1,3);
+        const int numberOfCellsOnUniformGrid = static_cast<int>( std::round ( domain[d] / uniformMeshSize ) );
+        ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid / tarch::la::aPowI(levelDelta-1,3);
       }
       usedRanks += ranksToDeployOnCurrentLevel;
       level++;
     }
-
     return std::max(2,level-2); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
   }
 }
