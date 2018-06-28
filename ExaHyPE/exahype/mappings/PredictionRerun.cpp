@@ -37,7 +37,7 @@ exahype::mappings::PredictionRerun::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
@@ -45,7 +45,7 @@ exahype::mappings::PredictionRerun::communicationSpecification() const {
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     exchangeWorkerMasterData =
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime; // TODO(Dominic): Can be masked out with LTS program flow
   }
@@ -113,12 +113,14 @@ void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  _stateCopy = solverState;
+
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   } // this is a rerun; enclave jobs have been spawned before
   if (
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      exahype::State::isLastIterationOfBatchOrNoBatch()
+      _stateCopy.isLastIterationOfBatchOrNoBatch()
   ) {
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -169,7 +171,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceIn( "mergeWithMaster(...)" );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     vertex.receiveNeighbourData(
         fromRank,false /*no merge*/,true /*no batch*/,
         fineGridX,fineGridH,level);
@@ -183,7 +185,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendToNeighbour(toRank,true,x,h,level);
   }
   logTraceOut( "prepareSendToNeighbour(...)" );
@@ -197,7 +199,7 @@ bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
@@ -217,7 +219,7 @@ void exahype::mappings::PredictionRerun::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),

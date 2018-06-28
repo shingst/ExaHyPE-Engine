@@ -32,7 +32,7 @@ tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
 void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     _batchIteration = 0;
   } else {
     _batchIteration++;
@@ -49,7 +49,7 @@ bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() cons
 bool exahype::mappings::FusedTimeStep::sendOutRiemannDataInThisIteration() const {
   return
       exahype::solvers::Solver::PredictionSweeps==1     ||
-      exahype::State::isLastIterationOfBatchOrNoBatch() || // covers the NoBatch case
+      _stateCopy.isLastIterationOfBatchOrNoBatch() || // covers the NoBatch case
       _batchIteration % 2 != 0;
 }
 
@@ -74,7 +74,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
@@ -82,7 +82,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     exchangeWorkerMasterData =
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
   }
@@ -138,7 +138,9 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  _stateCopy = solverState;
+
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
 
@@ -166,8 +168,8 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
-        exahype::State::isFirstIterationOfBatchOrNoBatch(),
-        exahype::State::isLastIterationOfBatchOrNoBatch(),
+        _stateCopy.isFirstIterationOfBatchOrNoBatch(),
+        _stateCopy.isLastIterationOfBatchOrNoBatch(),
         true);
   }
 
@@ -286,8 +288,8 @@ void exahype::mappings::FusedTimeStep::leaveCell(
         exahype::solvers::Solver::UpdateResult result =
             solver->fusedTimeStep(
                 fineGridCell.getCellDescriptionsIndex(),element,
-                exahype::State::isFirstIterationOfBatchOrNoBatch(),
-                exahype::State::isLastIterationOfBatchOrNoBatch(),
+                _stateCopy.isFirstIterationOfBatchOrNoBatch(),
+                _stateCopy.isLastIterationOfBatchOrNoBatch(),
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
@@ -335,7 +337,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
 
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
-        fromRank, true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
+        fromRank, true/*merge with data*/,_stateCopy.isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
   }
 
@@ -349,7 +351,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( sendOutRiemannDataInThisIteration() ) {
-    vertex.sendToNeighbour(toRank,exahype::State::isLastIterationOfBatchOrNoBatch(),x,h,level);
+    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,h,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
@@ -367,7 +369,7 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
     int worker) {
   logTraceIn( "prepareSendToWorker(...)" );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
@@ -376,8 +378,8 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
 
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
-  return exahype::State::isFirstIterationOfBatchOrNoBatch() ||
-         exahype::State::isLastIterationOfBatchOrNoBatch();
+  return _stateCopy.isFirstIterationOfBatchOrNoBatch() ||
+         _stateCopy.isLastIterationOfBatchOrNoBatch();
 }
 
 void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
@@ -392,7 +394,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceIn( "receiveDataFromMaster(...)" );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
@@ -420,7 +422,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     exahype::Cell::reduceGlobalDataToMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         verticesEnumerator.getCellCenter(),
@@ -444,7 +446,7 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
     exahype::State& masterState) {
   logTraceIn( "mergeWithMaster(...)" );
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),

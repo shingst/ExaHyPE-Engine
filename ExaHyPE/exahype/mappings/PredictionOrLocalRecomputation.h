@@ -71,6 +71,12 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * A local copy of the state set
+   * in beginIteration(...).
+   */
+  exahype::State _stateCopy;
+
   #ifdef Debug // TODO(Dominic): Exclude shared memory etc.
   /*
    *  Counter for the interior face solves for debugging purposes.

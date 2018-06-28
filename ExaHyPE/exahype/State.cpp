@@ -25,11 +25,11 @@
 
 bool exahype::State::VirtuallyExpandBoundingBox = false;
 
-bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
+bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
   return getNumberOfBatchIterations()==1 || getBatchIteration()==0;
 }
 
-bool exahype::State::isLastIterationOfBatchOrNoBatch() {
+bool exahype::State::isLastIterationOfBatchOrNoBatch() const {
   return getNumberOfBatchIterations()==1 || getBatchIteration()==getNumberOfBatchIterations()-1;
 }
 

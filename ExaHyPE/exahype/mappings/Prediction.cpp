@@ -51,7 +51,7 @@ exahype::mappings::Prediction::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
@@ -59,7 +59,7 @@ exahype::mappings::Prediction::communicationSpecification() const {
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     exchangeWorkerMasterData =
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime; // TODO(Dominic): Can be masked out with LTS program flow
   }
@@ -127,13 +127,15 @@ void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  _stateCopy = solverState;
+
   #ifdef USE_ITAC
   VT_traceon();
   #endif
 
   if (
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      exahype::State::isLastIterationOfBatchOrNoBatch()
+      _stateCopy.isLastIterationOfBatchOrNoBatch()
   ) {
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -166,7 +168,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
           solver->isPerformingPrediction(algorithmSection) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
-        if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+        if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
           // this operates only on compute cells
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
               solver,fineGridCell.getCellDescriptionsIndex(),element,
@@ -174,7 +176,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
                   fineGridVertices,fineGridVerticesEnumerator)
           );
         }
-        if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) { // we are sure here that the skeleton STPs have finished
+        if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) { // we are sure here that the skeleton STPs have finished
           // this operates only on helper cells
           solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
         }
@@ -211,7 +213,7 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendToNeighbour(toRank,true,x,h,level);
   }
 
@@ -228,7 +230,7 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
     int worker) {
   logTraceIn( "prepareSendToWorker(...)" );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
@@ -252,7 +254,7 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceIn( "receiveDataFromMaster(...)" );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),

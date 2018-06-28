@@ -133,24 +133,22 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static bool VirtuallyExpandBoundingBox;
 
   /**
-   * \return true if the current batch state is
-   * BatchState::FirstIterationOfBatch or
-   * BatchState::NoBatch.
+   * \return true if we run no batch or if
+   * we are in the last iteration of a batch.
    *
    * \note It makes only sense to query the batch state from
    * within a mapping.
    */
-  static bool isFirstIterationOfBatchOrNoBatch();
+  bool isFirstIterationOfBatchOrNoBatch() const;
 
   /**
-   * \return true if the current batch state is
-   * BatchState::FirstIterationOfBatch or
-   * BatchState::NoBatch.
+   * \return true if we run no batch or if
+   * we are in the first iteration of a batch.
    *
    * \note It makes only sense to query the batch state from
    * within a mapping.
    */
-  static bool isLastIterationOfBatchOrNoBatch();
+  bool isLastIterationOfBatchOrNoBatch() const;
 
   /**
    * Default Constructor
