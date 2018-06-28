@@ -537,9 +537,17 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
+
+  /**
+   * Compute a load balancing weight for a cell in the mesh.
+   */
+  static int computeWeightOfCell(const int cellDescriptionsIndex);
+
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
+
+
   /**
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.

@@ -818,6 +818,11 @@ private:
 public:
 
   /**
+   * Compute a load balancing weight for a cell in the mesh.
+   */
+  static int computeWeightOfCell(const int cellDescriptionsIndex);
+
+  /**
    * Push a new cell description to the back
    * of the heap vector at \p cellDescriptionsIndex.
    *

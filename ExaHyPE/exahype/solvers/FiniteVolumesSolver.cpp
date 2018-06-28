@@ -310,6 +310,13 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
   return NotFound;
 }
 
+int exahype::solvers::FiniteVolumesSolver::computeWeightOfCell(const int cellDescriptionsIndex) {
+  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
+    return getCellDescriptions(cellDescriptionsIndex).size();
+  }
+  else return 0;
+}
+
 ///////////////////////////////////
 // MODIFY CELL DESCRIPTION
 ///////////////////////////////////

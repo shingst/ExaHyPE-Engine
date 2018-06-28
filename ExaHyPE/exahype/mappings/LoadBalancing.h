@@ -22,6 +22,7 @@
 #include "exahype/Cell.h"
 #include "exahype/State.h"
 
+#include <map>
 
 namespace exahype {
 namespace mappings {
@@ -51,7 +52,25 @@ class exahype::mappings::LoadBalancing {
 
     static LoadBalancingAnalysis  _loadBalancingAnalysis;
 
+    /**
+     * Number of local cells. We only count compute cells.
+     */
     int _numberOfLocalCells;
+
+    #ifdef Parallel
+    static int LastLevelToPopulateUniformly
+    /**
+     * Compute the last level of the mesh we want to give deploy
+     * to available ranks in an uniform manner before we
+     * use the remaining ranks for adaptively refined areas.
+     *
+     * The computed level depends on the domain's shape
+     * as we can typically place less workers on the levels
+     * of a non-cubic domain than on the cubic bounding box
+     * of that domain.
+     */
+    static int determineLastLevelToPopulateUniformly();
+    #endif
 
   public:
     static void setLoadBalancingAnalysis(LoadBalancingAnalysis loadBalancingAnalysis);
