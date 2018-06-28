@@ -89,9 +89,14 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static std::atomic_ulong fusedSTPVI_c;
     static std::atomic_ulong fusedSTPVI_picard;
     
-    static std::atomic_ulong surfaceIntegral_f;
-    static std::atomic_ulong surfaceIntegral_t;
-    static std::atomic_ulong surfaceIntegral_c;
+    //TODO JMG clean deprecated
+    //static std::atomic_ulong surfaceIntegral_f;
+    //static std::atomic_ulong surfaceIntegral_t;
+    //static std::atomic_ulong surfaceIntegral_c;  
+    
+    static std::atomic_ulong faceIntegral_f;
+    static std::atomic_ulong faceIntegral_t;
+    static std::atomic_ulong faceIntegral_c;
     
     static std::atomic_ulong solutionUpdate_f;
     static std::atomic_ulong solutionUpdate_t;
@@ -138,7 +143,9 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       
       std::cout << "fusedSTPVI flops: " << fusedSTPVI_f.load() << std::endl << "fusedSTPVI time: " << ((double)fusedSTPVI_t.load()) / 1000000000.0 << std::endl << "fusedSTPVI GFlops: " <<  ((double) fusedSTPVI_f.load()) / ((double) fusedSTPVI_t.load()) << std::endl << "fusedSTPVI calls: " << fusedSTPVI_c.load() << std::endl << "Total picard iterations:" << fusedSTPVI_picard.load() << std::endl << std::endl;
       
-      std::cout << "surfaceIntegral flops: " << surfaceIntegral_f.load() << std::endl << "surfaceIntegral time: " << ((double)surfaceIntegral_t.load()) / 1000000000.0 << std::endl << "surfaceIntegral GFlops: " <<  ((double) surfaceIntegral_f.load()) / ((double) surfaceIntegral_t.load()) << std::endl << "surfaceIntegral calls: " << surfaceIntegral_c.load() << std::endl << std::endl;
+      //std::cout << "surfaceIntegral flops: " << surfaceIntegral_f.load() << std::endl << "surfaceIntegral time: " << ((double)surfaceIntegral_t.load()) / 1000000000.0 << std::endl << "surfaceIntegral GFlops: " <<  ((double) surfaceIntegral_f.load()) / ((double) surfaceIntegral_t.load()) << std::endl << "surfaceIntegral calls: " << surfaceIntegral_c.load() << std::endl << std::endl;
+
+      std::cout << "faceIntegral flops: " << faceIntegral_f.load() << std::endl << "faceIntegral time: " << ((double)faceIntegral_t.load()) / 1000000000.0 << std::endl << "faceIntegral GFlops: " <<  ((double) faceIntegral_f.load()) / ((double) faceIntegral_t.load()) << std::endl << "faceIntegral calls: " << faceIntegral_c.load() << std::endl << std::endl;
       
       std::cout << "solutionUpdate flops: " << solutionUpdate_f.load() << std::endl << "solutionUpdate time: " << ((double)solutionUpdate_t.load()) / 1000000000.0 << std::endl << "solutionUpdate GFlops: " <<  ((double) solutionUpdate_f.load()) / ((double) solutionUpdate_t.load()) << std::endl << "solutionUpdate calls: " << solutionUpdate_c.load() << std::endl << std::endl;
       
@@ -216,7 +223,8 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     // old: void fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt, double** tempPointForceSources) override; 
     int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override; 
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
-    void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
+    // void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override; //deprecated
+    void faceIntegral(double* const lduh, const double* const lFhbnd, const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex, const int levelDelta, const tarch::la::Vector<DIMENSIONS, double>& cellSize) override;    
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
     // old: void boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) override;
     void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;

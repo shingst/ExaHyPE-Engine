@@ -467,6 +467,160 @@ void {{codeNamespace}}::faceUnknownsRestriction(
 }
 
 
+void {{codeNamespace}}::faceFluxRestriction(
+    double* restrict lFhbndCoarse,
+    const double* restrict lFhbndFine,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+    const int levelDelta
+) {
+
+  double lFhbndCoarseTemp1[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
+  double lFhbndCoarseTemp2[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
+  
+{% if nDim == 3 and useLibxsmm %} 
+  double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+{% endif %}
+
+  double * pointerFhbnd1 = 0;
+  double * pointerFhbnd2 = 0;
+
+  pointerFhbnd1 = lFhbndCoarseTemp1;
+  
+  int subfaceIndexCurrent_0 = subfaceIndex[0];
+  int subintervalIndex_0;
+{% if nDim==3 %}
+  int subfaceIndexCurrent_1 = subfaceIndex[1];
+  int subintervalIndex_1;
+{% endif %}
+  
+  // This loop decodes the indices of subfaceIndex into a tertiary basis
+  // starting with the lowest significance 3^0 (in contrast to the prolongation loop).
+  //
+  // Per iteration, the digits corresponding to the current significances then determine
+  // the subintervals for the single level restriction.
+  for (int l = 1; l < levelDelta+1; ++l) {
+    subintervalIndex_0    = subfaceIndexCurrent_0 % 3;  
+    subfaceIndexCurrent_0 = (subfaceIndexCurrent_0 - subintervalIndex_0)/3;
+    assertion(subintervalIndex_0 < 3);
+{% if nDim==3 %}
+    subintervalIndex_1    = subfaceIndexCurrent_1 % 3;
+    subfaceIndexCurrent_1 = (subfaceIndexCurrent_1 - subintervalIndex_1)/3;
+    assertion(subintervalIndex_1 < 3);
+{% endif %}
+
+    // Zero the values of of the first pair of pointers.
+    std::fill_n(pointerFhbnd1, {{nDof*nDof3D*nVarPad }}, 0.0);
+
+    // Apply the single level restriction operator.
+    // Use the fine level unknowns as input in the first iteration.
+    if (l==1) {
+{% if useLibxsmm %}
+{% if nDim==2 %}
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+      {{gemm_face_F}}(&lFhbndFine[0],&{{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+      for(int m2=0; m2<{{nDof}}; m2++) {
+        for(int n2=0; n2<{{nDof}}; n2++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
+          }
+#ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff_0 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+          {{gemm_face_F}}(&lFhbndFine[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
+        }
+      }
+{% endif %}
+{% else %} {# useLibxsmm #}
+      //singleLevelFaceUnknownsRestriction<{{nVarPad }}>(pointerFhbnd1, lFhbndFine, subintervalIndex);
+      for (int m2=0; m2<{{nDof3D}}; m2++) {
+        for (int m1 = 0; m1<{{nDof}}; m1++) {
+          for (int d = 0; d<{{nVarPad}}; d++) {
+            for (int n2=0; n2<{{nDof3D}}; n2++) {
+              for (int n1 = 0; n1<{{nDof}}; n1++) {          
+                pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
+                                 lFhbndFine[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
+{% if nDim==3 %}                             
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
+{% endif %}
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
+              }
+            }
+          }
+        }
+      }
+{% endif %} {# useLibxsmm #}
+    } else { // l!= 1
+{% if useLibxsmm %}
+{% if nDim==2 %}
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+      {{gemm_face_F}}(&pointerFhbnd2[0],&{{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+      for(int m2=0; m2<{{nDof}}; m2++) {
+        for(int n2=0; n2<{{nDof}}; n2++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
+          }
+#ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff_1 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
+        }
+      }
+{% endif %} 
+{% else %} {# useLibxsmm #}  
+      //singleLevelFaceUnknownsRestriction<{{nVarPad }}>(pointerFhbnd1, pointerFhbnd2, subintervalIndex);
+      for (int m2=0; m2<{{nDof3D}}; m2++) {
+        for (int m1 = 0; m1<{{nDof}}; m1++) {
+          for (int d = 0; d<{{nVarPad}}; d++) {
+            for (int n2=0; n2<{{nDof3D}}; n2++) {
+              for (int n1 = 0; n1<{{nDof}}; n1++) {          
+                pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
+                                 pointerFhbnd2[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
+{% if nDim==3 %}                             
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
+{% endif %}
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
+              }
+            }
+          }
+        }
+      }
+{% endif %} {# useLibxsmm #}
+    }
+
+    // Prepare next iteration.
+    pointerFhbnd2 = pointerFhbnd1;
+    // Toggle pointer pairs.
+    if (pointerFhbnd1 == lFhbndCoarseTemp1) {
+      pointerFhbnd1 = lFhbndCoarseTemp2;
+    } else {
+      pointerFhbnd1 = lFhbndCoarseTemp1;
+    }
+  }
+
+  // Add restricted fine level unknowns to coarse level unknowns.
+  #pragma simd
+  for (int it = 0; it < {{nDof*nDof3D*nVarPad }}; it++) {
+    lFhbndCoarse[it] += pointerFhbnd2[it];
+  }
+
+}
+
+
+
 void {{codeNamespace}}::volumeUnknownsProlongation(
     double* restrict luhFine,
     const double* restrict luhCoarse,
