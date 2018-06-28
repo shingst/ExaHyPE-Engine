@@ -47,4 +47,10 @@ class exahype::records::State {
 
   persistent packed parallelise bool             subWorkerIsInvolvedInJoinOrFork;
   #endif
+
+  /**
+   * Is not parallelised as we set it locally in the runner anyway.
+   */
+  persistent packed int  totalNumberOfBatchIterations;
+  persistent packed int  batchIteration;
 };
