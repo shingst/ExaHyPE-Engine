@@ -763,14 +763,14 @@ class exahype::solvers::Solver {
   static int getCoarsestMeshLevelOfAllSolvers();
 
   /**
-   * Returns the finest level which holds a uniform
-   * base grid of a solver.
+   * Returns the coarsest mesh size a solver is actually
+   * using.
    *
    * \note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
    */
-  static int getFinestUniformMeshLevelOfAllSolvers();
+  static double getCoarsestMeshSizeOfAllSolvers();
 
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
 
