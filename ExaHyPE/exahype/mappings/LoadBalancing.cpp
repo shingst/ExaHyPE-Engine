@@ -133,7 +133,7 @@ void exahype::mappings::LoadBalancing::enterCell(
     _numberOfLocalCells++;
   } else {
     _numberOfLocalCells += exahype::solvers::ADERDGSolver::computeWeightOfCell(fineGridCell.getCellDescriptionsIndex());
-    _numberOfLocalCells += exahype::solvers::FiniteVolumesSolver::computeWeightOfCell(fineGridCell.getCellDescriptionsIndex());
+    _numberOfLocalCells += exahype::solvers::FiniteVolumesSolver::computeWeight(fineGridCell.getCellDescriptionsIndex());
   }
 }
 

@@ -74,7 +74,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSe
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
 int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsIndex) {
-  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
+  if ( ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     int result;
     for ( CellDescription& cellDescription : getCellDescriptions(cellDescriptionsIndex) ) {
       result += ( cellDescription.getType()==CellDescription::Type::Cell ) 1 : 0;

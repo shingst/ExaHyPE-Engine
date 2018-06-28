@@ -1,5 +1,5 @@
 /**
-o * This file is part of the ExaHyPE project.
+ * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
  *
@@ -15,7 +15,7 @@ o * This file is part of the ExaHyPE project.
 
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
-#include <iomanip>
+#include <iomanip>c
 #include <string>
 #include <limits>
 #include <algorithm>
@@ -310,7 +310,7 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
   return NotFound;
 }
 
-int exahype::solvers::FiniteVolumesSolver::computeWeightOfCell(const int cellDescriptionsIndex) {
+int exahype::solvers::FiniteVolumesSolver::computeWeight(const int cellDescriptionsIndex) {
   if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     return getCellDescriptions(cellDescriptionsIndex).size();
   }

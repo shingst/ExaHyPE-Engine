@@ -541,7 +541,7 @@ public:
   /**
    * Compute a load balancing weight for a cell in the mesh.
    */
-  static int computeWeightOfCell(const int cellDescriptionsIndex);
+  static int computeWeight(const int cellDescriptionsIndex);
 
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
