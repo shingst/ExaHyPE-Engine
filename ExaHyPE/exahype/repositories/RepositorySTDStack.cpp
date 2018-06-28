@@ -229,18 +229,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   #endif
   
   for (int i=0; i<numberOfIterations; i++) {
-    if (numberOfIterations==1) {
-      _solverState.currentlyRunsMultipleIterations(State::BatchState::NoBatch);
-    }
-    else if (i==0) {
-      _solverState.currentlyRunsMultipleIterations(State::BatchState::FirstIterationOfBatch);
-    }
-    else if (i==numberOfIterations-1) {
-      _solverState.currentlyRunsMultipleIterations(State::BatchState::LastIterationOfBatch);
-    }
-    else {
-      _solverState.currentlyRunsMultipleIterations(State::BatchState::IntermediateIterationOfBatch);
-    }
+    _solverState.setBatchState(numberOfIterations, i );
 
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
