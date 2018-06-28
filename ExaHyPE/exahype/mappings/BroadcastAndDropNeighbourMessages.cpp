@@ -23,7 +23,7 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#import "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/LimiterStatusSpreading.h"
 
 peano::CommunicationSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
