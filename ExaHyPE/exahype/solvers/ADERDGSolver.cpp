@@ -3433,7 +3433,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
-  cellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
+  ensureConsistencyOfParentInformation(cellDescription,coarseGridCellDescriptionsIndex);
 
   // receive the data
   if (
@@ -3470,8 +3470,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
 
   // check if any cell description requires vertical communication
   bool solverRequiresVerticalCommunication = false;
- 
-  ensureConsistencyOfParentInformation(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
  
   if (
       cellDescription.getType()==CellDescription::Ancestor ||
