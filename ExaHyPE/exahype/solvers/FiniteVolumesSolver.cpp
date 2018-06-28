@@ -15,7 +15,7 @@
 
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
-#include <iomanip>c
+#include <iomanip>
 #include <string>
 #include <limits>
 #include <algorithm>

@@ -77,7 +77,7 @@ int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsInde
   if ( ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
     int result;
     for ( CellDescription& cellDescription : getCellDescriptions(cellDescriptionsIndex) ) {
-      result += ( cellDescription.getType()==CellDescription::Type::Cell ) 1 : 0;
+      result += ( cellDescription.getType()==CellDescription::Type::Cell ) ?  1 : 0;
     }
     return result;
   }
