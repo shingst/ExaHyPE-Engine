@@ -32,7 +32,8 @@ int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
     int usedRanks = 1; // global master rank
     while( usedRanks <= numberOfAvailableRanks ) {
       const int levelDelta = uniformMeshLevel - level;
-      const int ranksToDeployOnCurrentLevel = 1;
+      
+      int ranksToDeployOnCurrentLevel = 1;
       for (int d; d<DIMENSIONS; d++) {
         ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid[d] / tarch::la::aPowI(levelDelta-1,3);
       }
@@ -116,8 +117,10 @@ void exahype::mappings::LoadBalancing::mergeWithWorkerThread(const LoadBalancing
 void exahype::mappings::LoadBalancing::beginIteration(
   exahype::State&  solverState
 ) {
+  #ifdef Parallel
   LastLevelToPopulateUniformly = determineLastLevelToPopulateUniformly();
   _numberOfLocalCells = 0;
+  #endif
 }
 
 void exahype::mappings::LoadBalancing::enterCell(
@@ -129,12 +132,14 @@ void exahype::mappings::LoadBalancing::enterCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
+  #ifdef Parallel
   if ( fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly  ) {
     _numberOfLocalCells++;
   } else {
-    _numberOfLocalCells += exahype::solvers::ADERDGSolver::computeWeightOfCell(fineGridCell.getCellDescriptionsIndex());
+    _numberOfLocalCells += exahype::solvers::ADERDGSolver::computeWeight(fineGridCell.getCellDescriptionsIndex());
     _numberOfLocalCells += exahype::solvers::FiniteVolumesSolver::computeWeight(fineGridCell.getCellDescriptionsIndex());
   }
+  #endif
 }
 
 

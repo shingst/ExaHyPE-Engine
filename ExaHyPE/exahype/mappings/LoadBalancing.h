@@ -52,13 +52,15 @@ class exahype::mappings::LoadBalancing {
 
     static LoadBalancingAnalysis  _loadBalancingAnalysis;
 
+
+    #ifdef Parallel
     /**
      * Number of local cells. We only count compute cells.
      */
     int _numberOfLocalCells;
-
-    #ifdef Parallel
-    static int LastLevelToPopulateUniformly
+    
+    /** \see determineLastLevelToPopulateUniformly */
+    static int LastLevelToPopulateUniformly;
     /**
      * Compute the last level of the mesh we want to give deploy
      * to available ranks in an uniform manner before we
