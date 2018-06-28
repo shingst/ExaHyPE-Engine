@@ -75,6 +75,12 @@ private:
 
 public:
   /**
+   * Is set to true in BroadcastAndDropNeighbourMessages::beginIteration(...),
+   * is unset in endIteration(...) of this mapping.
+   */
+  static bool IsFirstIteration;
+
+  /**
    * Reduce data from the worker to the master.
    *
    * \note Make sure that you return true in a

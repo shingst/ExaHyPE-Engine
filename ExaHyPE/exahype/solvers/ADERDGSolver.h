@@ -54,7 +54,7 @@ public:
    * This value is assigned to cell descriptions
    * of type Cell.
    */
-  static int MaximumCommunicationStatus;
+  static int CellCommunicationStatus;
   /**
    * The minimum helper status a cell description
    * must have for it allocating boundary data.
@@ -117,15 +117,16 @@ private:
   static tarch::logging::Log _log;
 
   #ifdef Parallel
-  std::vector<double> _receivedExtrapolatedPredictor;
-  std::vector<double> _receivedFluctuations;
+  DataHeap::HeapEntries _receivedExtrapolatedPredictor;
+  DataHeap::HeapEntries _receivedFluctuations;
+  DataHeap::HeapEntries _receivedUpdate;
   /**
    * TODO(WORKAROUND): We store these fields in order
    * to use the symmetric boundary exchanger of Peano
    * which does not yet support asymmetric send buffers.
    */
-  std::vector<double> _invalidExtrapolatedPredictor;
-  std::vector<double> _invalidFluctuations;
+  DataHeap::HeapEntries _invalidExtrapolatedPredictor;
+  DataHeap::HeapEntries _invalidFluctuations;
   #endif
 
   /**
@@ -185,6 +186,15 @@ private:
    * is applied to.
    */
   const int _DMPObservables;
+  
+  /**
+   * The minimum limiter status a cell must have
+   * to allocate a passive FV patch.
+   *
+   * All patches with limiter status smaller than this value,
+   * hold no FV patch at all.
+   */
+  const int _minimumLimiterStatusForPassiveFVPatch;
 
   /**
    * The minimum limiter status a cell must have
@@ -470,8 +480,11 @@ private:
    * which must have been also received during a previous fork event.
    * If so, update the parent index of the fine grid cell description
    * with the coarse grid cell descriptions index.
+   *
+   * For cell descriptions of type Descendant, copy offset and
+   * level of the top-most parent cell description, which is of type Cell.
    */
-  void ensureConsistencyOfParentIndex(
+  void ensureConsistencyOfParentInformation(
       CellDescription& cellDescription,
       const int coarseGridCellDescriptionsIndex);
 
@@ -657,28 +670,6 @@ private:
    * Allocate necessary memory and deallocate unnecessary memory.
    */
   static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
-
-  /**
-   * If the cell description is of type Ancestor, we look up
-   * if its top-most parent stores face data during the time stepping
-   * iterations. That's the case if the parent Ancestor is next
-   * to a Cell type cell description (compute cell), or if
-   * itself has to store data for master worker communication.
-   *
-   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
-   * on the cell description to true and allocate the required memory.
-   *
-   * Similarly, we check if a cell description of type Cell has such
-   * a top-most parent (of type Ancestor). In this case,
-   * we still need to set the flag but we do not need to allocate additional memory.
-   *
-   * \return if we need to master-worker communication for this cell description.
-   *
-   * TODO(Dominic): Restrictions of face data should not be necessary
-   * anymore as soon as we follow the LTS workflow.
-   */
-  static bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      CellDescription& cellDescription);
 
   /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
    *
@@ -880,7 +871,13 @@ public:
   void updateCommunicationStatus(
         exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
   /**
-   * TODO(Dominic): Add docu.
+   * Determine the communication status of this cell
+   * description based on the face wise communication status flags
+   * if the cell is of type Descendant.
+   *
+   * If the cell description is of type Ancestor, return 0.
+   * If the cell description of type Cell, return the maximum
+   * commmunication status.
    */
   int determineCommunicationStatus(
       exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const;
@@ -1146,19 +1143,32 @@ public:
    * \param[in]    lduh Cell-local update DoF.
    * \param[dt]    dt   Time step size.
    */
-  virtual void solutionUpdate(double* luh, const double* const lduh,
-                              const double dt) = 0;
+  virtual void solutionUpdate(double* luh, const double* const lduh,const double dt) = 0;
+
 
   /**
-   * @brief Computes the surface integral contributions
+   * @brief Computes a face integral contributions
    * to the cell update.
    *
-   * \param[inout] lduh   Cell-local update DoF.
-   * \param[in]    lFhbnd Cell-local DoF of the boundary extrapolated fluxes.
+   * In case of \p levelDelta > 0, the kernel needs to
+   * restrict the given boundary-extrapolated flux DoF
+   * \p levelDelta levels up before performing the face integral.
+   *
+   * \param[inout] lduh         Cell-local update DoF.
+   * \param[in]    lFhbnd       Cell-local DoF of the boundary extrapolated fluxes for the face
+   *                            with the given direction and the given geometry.
+   * \param[in]    direction    Coordinate direction the normal vector is aligned with.
+   * \param[in]    orientation  Orientation of the normal vector (0: negative sign, 1: positive sign).
+   * \param[in[    levelDelta   The difference in levels up to a cell description of type Cell.
+   *                            Must be set to zero if we are already performing a face integral for a cell description
+   *                            of type Cell. Is greater zero if lFbhnd stems from a Descendant cell description.
    * \param[in]    cellSize     Extent of the cell in each coordinate direction.
    */
-  virtual void surfaceIntegral(
-      double* lduh, const double* const lFhbnd,
+  virtual void faceIntegral(
+      double* const       lduh,
+      const double* const lFhbnd,
+      const int direction, const int orientation,
+      const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex, const int levelDelta,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
 
   /**
@@ -1185,24 +1195,30 @@ public:
    * Impose boundary conditions on the fluxes (or fluctuations).
    * The state is only read.
    *
-   * \param[in]    fluxIn        boundary-extrapolated (space-time) volume flux
+   * \param[inout] update        the update vector we want to write to
+   * \param[inout] fluxIn        boundary-extrapolated (space-time) volume flux.
+   *                             Can be overwritten/reused as it is updated anyway after
+   *                             the next predictor computation.
    * \param[in]    stateIn       boundary-extraplolated (space-time) predictor
    * \param[in]    cellCentre    cell centre.
    * \param[in]    cellSize      cell size.
    * \param[in]    t             The time.
    * \param[in]    dt            a time step size.
-   * \param[in]    faceIndex     Index of the face under consideration.
    * \param[in]    direction     index of the nonzero component of the normal vector
    *                             i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
+   * \param[in]    orientation   orientation of the normal vector where 0 means negative and
+   *                             1 means positive.
+   *
+   *
    */
-  virtual void boundaryConditions(double* fluxIn,
+  virtual void boundaryConditions(double* const update,
+                                  double* const fluxIn,
                                   const double* const stateIn,
                                   const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-                                  const tarch::la::Vector<DIMENSIONS,
-                                  double>& cellSize,
+                                  const tarch::la::Vector<DIMENSIONS,double>& cellSize,
                                   const double t,const double dt,
-                                  const int faceIndex,
-                                  const int direction) = 0;
+                                  const int direction,
+                                  const int orientation) = 0;
 
   /**
    * @brief Computes cell-local space-time predictor, volume, and face DoF
@@ -1287,21 +1303,6 @@ public:
   virtual void faceUnknownsProlongation(
       double* lQhbndFine, double* lFhbndFine, const double* lQhbndCoarse,
       const double* lFhbndCoarse, const int coarseGridLevel,
-      const int fineGridLevel,
-      const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) = 0;
-
-  /**
-   * Restricts fine grid face unknowns on level \p fineGridLevel
-   * up to level \p coarseGridLevel and adds them to the coarse grid unknowns.
-   *
-   * \note For the considered AMR concept, the difference in levels can
-   * be larger than one. Let \f$l\f$ be the level difference. The
-   * vector \p subfaceIndex does contain values in the range
-   * \f$0,1,\ldots,3^l-1\f$.
-   */
-  virtual void faceUnknownsRestriction(
-      double* lQhbndCoarse, double* lFhbndCoarse, const double* lQhbndFine,
-      const double* lFhbndFine, const int coarseGridLevel,
       const int fineGridLevel,
       const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex) = 0;
 
@@ -1550,7 +1551,9 @@ public:
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
         const int cellDescriptionsIndex,
         const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+        const bool checkThoroughly) const final override;
 
   /**\copydoc Solver::attainedStableState
    *
@@ -1805,7 +1808,8 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateAndPrepareRestriction(
+  // TODO(LTS): Add docu
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) override;
 
@@ -1818,11 +1822,6 @@ public:
   void restriction(
       const int cellDescriptionsIndex,
       const int element) override;
-
-  /**
-   * Body of the restrict function.
-   */
-  void restriction(const CellDescription& fineGridCellDescription);
 
   /**
    * Restrict the Troubled limiter status of a cell
@@ -1859,8 +1858,7 @@ public:
   void restrictToTopMostParent(
         const CellDescription& cellDescription,
         const int parentCellDescriptionsIndex,
-        const int parentElement,
-        const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
+        const int parentElement);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2126,8 +2124,6 @@ public:
    * the master knows.
    *
    * \note This function sends out MPI messages.
-   *
-   * \see prepareMasterCellDescriptionAtMasterWorkerBoundary
    */
   void progressMeshRefinementInPrepareSendToWorker(
       const int workerRank,
@@ -2200,14 +2196,6 @@ public:
       MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
-      
-  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
-   * \return if we need to master-worker communication for this cell description.
-   */
-  void mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
@@ -2259,61 +2247,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-  /** \copydoc Solver::sendDataToMaster
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further send here the solution/observables min
-   * and max to the master.
-   */
-  void sendDataToMaster(
-      const int                                    masterRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
-  /** \copydoc Solver::sendDataToMaster
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further send here a empty message for both, the
-   * solution/observables min and max vectors,
-   * to the master.
-   */
-  void sendEmptyDataToMaster(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
-  /** \copydoc Solver::mergeWithWorkerData
-   *
-   * Receive all 2*DIMENSIONS boundary-extrapolated
-   * space-time predictor and space-time flux vectors
-   * from the worker.
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further receive and restrict here the
-   * 2*DIMENSIONS solution/observables min and max
-   * vectors send from the master.
-   */
-  void mergeWithWorkerData(
-      const int                                     workerRank,
-      const MetadataHeap::HeapEntries&              workerMetadata,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  /** \copydoc Solver::dropWorkerData
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We further drop here the 2*DIMENSIONS solution/observables min
-   * and max vectors send from the master.
-   */
-  void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
   ///////////////////////////////////
   // MASTER->WORKER
   ///////////////////////////////////
@@ -2346,33 +2279,6 @@ public:
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
-
-  void sendDataToWorker(
-      const int                                    workerRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
-
-  void sendEmptyDataToWorker(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const override;

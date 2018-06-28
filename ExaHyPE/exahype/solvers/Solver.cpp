@@ -153,13 +153,13 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 
 void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJobs) {
   SpawnPredictionAsBackgroundJob = useBackgroundJobs;
-  #if defined(Parallel)
-  PredictionSweeps  = useBackgroundJobs ? 2 : 1;
-  #elif !defined(Parallel) && defined(SharedMemoryParallelisation)
-  PredictionSweeps  = ( useBackgroundJobs && !allSolversPerformOnlyUniformRefinement() )  ? 2 : 1;
-  #else // serial
-  PredictionSweeps = 1;
-  #endif
+
+  PredictionSweeps = ( !allSolversPerformOnlyUniformRefinement()
+                     #if defined(Parallel)
+                     || useBackgroundJobs
+                     #endif
+                     )
+                     ? 2 : 1;
 }
 
 
@@ -410,6 +410,14 @@ void exahype::solvers::Solver::setNextAttainedStableState() {
 }
 bool exahype::solvers::Solver::getAttainedStableState() const {
   return _attainedStableState;
+}
+
+bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
+  bool result = false;
+  for (auto* solver : RegisteredSolvers) {
+    result |= solver->getType()==type;
+  }
+  return result;
 }
 
 void exahype::solvers::Solver::moveDataHeapArray(
@@ -675,7 +683,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
       limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
       if (
-          limitingADERDGSolver->getNextMeshUpdateRequest() &&
+          limitingADERDGSolver->getNextMeshUpdateRequest() && // TODO(Dominic): Reassess
           limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
       ) {
         limitingADERDGSolver->updateNextLimiterDomainChange(

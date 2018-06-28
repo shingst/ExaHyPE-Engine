@@ -123,8 +123,10 @@ void exahype::mappings::LocalRollback::endIteration(
           performLocalRecomputation(solver) &&
           exahype::solvers::Solver::FuseADERDGPhases==true
       ) {
+        logDebug("endIteration(state)","[pre] solver="<<solver->toString());
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->rollbackToPreviousTimeStepFused();
+        logDebug("endIteration(state)","[post] solver="<<solver->toString());
       } else if (
           performLocalRecomputation(solver) &&
           exahype::solvers::Solver::FuseADERDGPhases==false

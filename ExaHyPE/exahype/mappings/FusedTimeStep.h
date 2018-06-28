@@ -70,6 +70,12 @@ private:
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
+   * A local copy of the state set
+   * in beginIteration(...).
+   */
+  exahype::State _stateCopy;
+
+  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -114,6 +120,13 @@ private:
    * \note This routine must only be called once in every batch iteration
    * (exceptions: first batch iteration or if no batch is run)
    * as it toggles a state in intermediate batch iterations.
+   *
+   * \note As the state can only be copied in beginIteration(...) and
+   * we need to know the batch iteration in touchVertexFirstTime(...),
+   * we cannot rely on its batch iteration counter and
+   * have to count ourselves.
+   * touchVertexFirstTime(...) might be invoked before beginIteration(...)
+   * if state broadcasting is turned off.
    */
   void updateBatchIterationCounter();
 

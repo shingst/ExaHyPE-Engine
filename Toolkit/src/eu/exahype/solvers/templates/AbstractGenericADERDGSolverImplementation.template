@@ -158,13 +158,35 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
+void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
 {%- if enableProfiler %}
-  _profiler->start("surfaceIntegral");
+  _profiler->start("faceIntegral");
 {%- endif %}
-  kernels::aderdg::generic::{{language}}::surfaceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbnd,dx);
+  if ( levelDelta > 0 ) {
+    {%- if dimensions==3 %}
+    constexpr int basisSize = (Order+1)*(Order+1);
+    {%- else %}
+    constexpr int basisSize = (Order+1);
+    {%- endif %}
+    constexpr int sizeFlux  = NumberOfVariables*basisSize;
+{%- if tempVarsOnStack %}
+    double lFhbndCoarse[sizeFlux];
+{%- else %}  
+    double* lFhbndCoarse = new double[sizeFlux];
+{%- endif %}
+    kernels::aderdg::generic::{{language}}::faceUnknownsRestriction<NumberOfVariables,Order+1>(lFhbndCoarse,lFhbnd,subfaceIndex,levelDelta);
+    
+    tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,coarseGridCellSize);  
+{%- if !tempVarsOnStack %}
+    delete[] lFhbndCoarse;
+{%- endif %}    
+  } else {
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbnd,direction,orientation,cellSize);
+  }
+  
 {%- if enableProfiler %}
-  _profiler->stop("surfaceIntegral");
+  _profiler->stop("faceIntegral");
 {%- endif %}
 }
 
@@ -188,7 +210,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
 {%- endif %}
@@ -211,19 +233,24 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   double* stateOut = memory; memory+=sizeStateOut;
   double* fluxOut  = memory; memory+=sizeFluxOut;
 
-  kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
+  const int faceIndex = 2*direction+orientation;
   
-  if (faceIndex % 2 == 0) {
+  kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
+  if ( orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+  
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
   else {
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    
+    kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
 {%- if !tempVarsOnStack %}
   delete[] block;
@@ -263,16 +290,6 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
   kernels::aderdg::generic::c::faceUnknownsProlongation<NumberOfVariables,NumberOfParameters,Order+1>(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse,coarseGridLevel,fineGridLevel,subfaceIndex);
 {%- if enableProfiler %}
   _profiler->start("false");
-{%- endif %}
-}
-
-void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
-{%- if enableProfiler %}
-  _profiler->start("faceUnknownsRestriction");
-{%- endif %}
-  kernels::aderdg::generic::c::faceUnknownsRestriction<NumberOfVariables,NumberOfParameters,Order+1>(lQhbndCoarse,lFhbndCoarse,lQhbndFine,lFhbndFine,coarseGridLevel,fineGridLevel,subfaceIndex);
-{%- if enableProfiler %}
-  _profiler->stop("faceUnknownsRestriction");
 {%- endif %}
 }
 
