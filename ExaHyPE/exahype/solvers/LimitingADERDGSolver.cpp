@@ -265,8 +265,8 @@ exahype::solvers::LimitingADERDGSolver::getNextLimiterDomainChange() const {
 }
 
 void exahype::solvers::LimitingADERDGSolver::setNextLimiterDomainChange() {
-  _limiterDomainChange     = _nextLimiterDomainChange;
-  _nextLimiterDomainChange = LimiterDomainChange::Regular;
+  _limiterDomainChange         = _nextLimiterDomainChange;
+  _nextLimiterDomainChange     = LimiterDomainChange::Regular;
 }
 void exahype::solvers::LimitingADERDGSolver::updateNextLimiterDomainChange(
     exahype::solvers::LimiterDomainChange limiterDomainChange) {
@@ -419,17 +419,20 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
  
     const int parentElement = tryGetElement(
         solverPatch.getParentIndex(),solverPatch.getSolverNumber());
-    if ( parentElement!=exahype::solvers::Solver::NotFound ) {
-      if ( evaluateLimiterStatusRefinementCriterion(solverPatch) ) {
-        exahype::solvers::Solver::SubcellPosition subcellPosition =
-            exahype::amr::computeSubcellPositionOfDescendant<SolverPatch,ADERDGSolver::Heap,true>(solverPatch);
-        assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,solverPatch.toString());
-	
-        SolverPatch& parentSolverPatch = _solver->getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-     
-        if ( parentSolverPatch.getType()==SolverPatch::Type::Cell ) {
-           parentSolverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Refine);
-	}
+    if ( 
+      parentElement!=exahype::solvers::Solver::NotFound && 
+      solverPatch.getType()==SolverPatch::Type::Descendant  &&
+      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+      (solverPatch.getLimiterStatus()>0                     ||
+      solverPatch.getPreviousLimiterStatus()>0)
+    ) {
+      exahype::solvers::Solver::SubcellPosition subcellPosition =
+          exahype::amr::computeSubcellPositionOfDescendant<SolverPatch,ADERDGSolver::Heap,true>(solverPatch);
+      assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,solverPatch.toString());
+      
+      SolverPatch& parentSolverPatch = _solver->getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+      if ( parentSolverPatch.getType()==SolverPatch::Type::Cell ) {
+         parentSolverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Refine);
       }
     }
   }
@@ -456,8 +459,23 @@ bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     const int solverNumber) const {
-  return _solver->attainedStableState(
-      fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
+  const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+  const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+  bool limiterRefinementDone = true;
+  if ( solverElement!=exahype::solvers::Solver::NotFound ) {
+    SolverPatch& solverPatch =
+    _solver->getCellDescription(cellDescriptionsIndex,solverElement);
+    limiterRefinementDone = 
+         !(solverPatch.getType()==SolverPatch::Type::Descendant  &&
+           solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+           (solverPatch.getLimiterStatus()>0                     ||
+           solverPatch.getPreviousLimiterStatus()>0));
+  } 
+  if ( limiterRefinementDone )
+    return 
+        _solver->attainedStableState(
+          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
+  else return false;
 }
 
 void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
@@ -519,7 +537,7 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCrit
     const SolverPatch& solverPatch) const {
   return solverPatch.getType()==SolverPatch::Type::Descendant  &&
          solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-         solverPatch.getLimiterStatus()>0; // > 0 is correct here; only used during time stepping
+         solverPatch.getLimiterStatus()>0; // > 0 is correct here; only used during time stepping and limiter status spreading
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleRefinementCriterion(
@@ -833,6 +851,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
+  } else if ( solverPatch.getType()==SolverPatch::Type::Descendant ) {
+    UpdateResult result;
+    result._refinementRequested = evaluateLimiterStatusRefinementCriterion(solverPatch);
+    return result;
   } else {
     return UpdateResult();
   }
@@ -843,7 +865,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       const int element,
       const bool isAtRemoteBoundary){
   SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,element);
-  if (solverPatch.getType()==SolverPatch::Type::Cell) {
+  
+  UpdateResult result;
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
       // uncompress
       if (CompressionAccuracy>0.0) {
         _solver->uncompress(solverPatch);
@@ -856,7 +880,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       }
 
       // the actual computations
-      UpdateResult result;
       updateSolution(cellDescriptionsIndex,element,true);
       result._timeStepSize         = startNewTimeStep(cellDescriptionsIndex,element);
       result._limiterDomainChange  = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
@@ -868,10 +891,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
         compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
       }
       return result;
-  } else {
-    UpdateResult result;
-    return result;
+  } else if ( solverPatch.getType()==SolverPatch::Type::Descendant ) {
+     result._refinementRequested = evaluateLimiterStatusRefinementCriterion(solverPatch);
   }
+  return result;;
 }
 
 void exahype::solvers::LimitingADERDGSolver::compress(
