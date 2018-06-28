@@ -52,7 +52,6 @@ class exahype::mappings::LoadBalancing {
 
     static LoadBalancingAnalysis  _loadBalancingAnalysis;
 
-
     #ifdef Parallel
     /**
      * Number of local cells. We only count compute cells.

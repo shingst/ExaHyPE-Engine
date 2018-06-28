@@ -12,7 +12,7 @@ exahype::mappings::LoadBalancing::LoadBalancingAnalysis  exahype::mappings::Load
 
 
 #ifdef Parallel
-int exahype::mappings::LoadBalancing::LastLevelToPopulateUniformly = -1;
+int exahype::mappings::LoadBalancing::LastLevelToPopulateUniformly  = -1;
 
 int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
   if ( exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ) {
@@ -37,7 +37,7 @@ int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
       usedRanks += ranksToDeployOnCurrentLevel;
       level++;
     }
-    return std::max(2,level-2); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
+    return std::max(uniformMeshLevel-1,level-2); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
   }
 }
 #endif
@@ -114,7 +114,8 @@ void exahype::mappings::LoadBalancing::beginIteration(
   exahype::State&  solverState
 ) {
   #ifdef Parallel
-  LastLevelToPopulateUniformly = determineLastLevelToPopulateUniformly();
+  LastLevelToPopulateUniformly  = 
+      determineLastLevelToPopulateUniformly();
   _numberOfLocalCells = 0;
   #endif
 }
@@ -129,7 +130,9 @@ void exahype::mappings::LoadBalancing::enterCell(
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
   #ifdef Parallel
-  if ( fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly  ) {
+  if ( 
+    fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
+  ) {
     _numberOfLocalCells++;
   } else {
     _numberOfLocalCells += exahype::solvers::ADERDGSolver::computeWeight(fineGridCell.getCellDescriptionsIndex());
@@ -389,6 +392,15 @@ void exahype::mappings::LoadBalancing::prepareSendToMaster(
   const exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
 ) {
+  if ( // do not count the root's work
+    verticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
+  ) {
+    _numberOfLocalCells--;
+  } else { 
+    _numberOfLocalCells -= exahype::solvers::ADERDGSolver::computeWeight(localCell.getCellDescriptionsIndex());
+    _numberOfLocalCells -= exahype::solvers::FiniteVolumesSolver::computeWeight(localCell.getCellDescriptionsIndex());
+  }
+
   if (_loadBalancingAnalysis==LoadBalancingAnalysis::Hotspot) {
     mpibalancing::HotspotBalancing::setLocalWeightAndNotifyMaster(_numberOfLocalCells);
   }

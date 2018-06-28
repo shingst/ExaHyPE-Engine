@@ -75,7 +75,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSem
 
 int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsIndex) {
   if ( ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
-    int result;
+    int result = 0;
     for ( CellDescription& cellDescription : getCellDescriptions(cellDescriptionsIndex) ) {
       result += ( cellDescription.getType()==CellDescription::Type::Cell ) ?  1 : 0;
     }
