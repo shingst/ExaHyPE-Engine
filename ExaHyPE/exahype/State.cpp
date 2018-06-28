@@ -26,13 +26,11 @@
 bool exahype::State::VirtuallyExpandBoundingBox = false;
 
 bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::FirstIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
+  return getNumberOfBatchIterations()==1 || getBatchIteration()==0;
 }
 
 bool exahype::State::isLastIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::LastIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
+  return getNumberOfBatchIterations()==1 || getBatchIteration()==getNumberOfBatchIterations()-1;
 }
 
 exahype::State::State() : Base() {

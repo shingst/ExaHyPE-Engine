@@ -15,6 +15,7 @@
  #include "exahype/adapters/MeshRefinementAndPlotTree.h" 
  #include "exahype/adapters/FinaliseMeshRefinement.h" 
  #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback.h" 
+ #include "exahype/adapters/InitialPrediction.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
