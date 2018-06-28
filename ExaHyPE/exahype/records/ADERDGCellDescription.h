@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   21/06/2018 09:49
+    * @date   28/06/2018 11:16
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -3251,7 +3251,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   21/06/2018 09:49
+    * @date   28/06/2018 11:16
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -6628,7 +6628,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   21/06/2018 09:49
+       * @date   28/06/2018 11:16
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -9617,7 +9617,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   21/06/2018 09:49
+       * @date   28/06/2018 11:16
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
