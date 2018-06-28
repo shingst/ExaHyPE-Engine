@@ -23,6 +23,8 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#import "exahype/mappings/LimiterStatusSpreading.h"
+
 peano::CommunicationSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -82,6 +84,8 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   }
+
+  exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
