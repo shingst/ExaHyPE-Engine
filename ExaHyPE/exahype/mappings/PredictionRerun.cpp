@@ -149,7 +149,8 @@ void exahype::mappings::PredictionRerun::enterCell(
   exahype::mappings::Prediction::performPredictionOrProlongate(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
-      exahype::State::AlgorithmSection::PredictionRerunAllSend);
+      exahype::State::AlgorithmSection::PredictionRerunAllSend,
+      _stateCopy.isFirstIterationOfBatchOrNoBatch());
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

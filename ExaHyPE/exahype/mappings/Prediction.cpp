@@ -153,7 +153,8 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
     const exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    const exahype::State::AlgorithmSection& algorithmSection) {
+    const exahype::State::AlgorithmSection& algorithmSection,
+    const bool performPrediction) {
   if ( fineGridCell.isInitialised() ) {
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex(),
@@ -168,7 +169,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
           solver->isPerformingPrediction(algorithmSection) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
-        if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+        if ( performPrediction ) {
           // this operates only on compute cells
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
               solver,fineGridCell.getCellDescriptionsIndex(),element,
@@ -176,7 +177,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
                   fineGridVertices,fineGridVerticesEnumerator)
           );
         }
-        if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) { // we are sure here that the skeleton STPs have finished
+        else { // we are sure here that the skeleton STPs have finished
           // this operates only on helper cells
           solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
         }
@@ -201,7 +202,8 @@ void exahype::mappings::Prediction::enterCell(
   exahype::mappings::Prediction::performPredictionOrProlongate(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
-      exahype::State::AlgorithmSection::TimeStepping);
+      exahype::State::AlgorithmSection::TimeStepping,
+      _stateCopy.isFirstIterationOfBatchOrNoBatch());
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

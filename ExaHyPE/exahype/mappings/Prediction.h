@@ -130,7 +130,8 @@ private:
       const exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const exahype::State::AlgorithmSection& algorithmSection);
+      const exahype::State::AlgorithmSection& algorithmSection,
+      const bool issuePredictionJobs);
 
   /**
    * Level for which we ask what to do. This value is negative
