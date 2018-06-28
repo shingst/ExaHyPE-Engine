@@ -124,7 +124,7 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const tarch::la::Vector<DIMENSIONS,double> &inverseDx
   );
   
-  void faceIntegralNonlinear(
+  void faceIntegral(
     double *lduh, 
     const double *const lFhbnd,
     const int direction, 

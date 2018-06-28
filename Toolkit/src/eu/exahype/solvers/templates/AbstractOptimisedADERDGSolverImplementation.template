@@ -275,7 +275,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {%- endif %}
   if ( levelDelta > 0 ) {
-    constexpr int sizeFlux  = {{optNamespace}}::BndFluxSize();
+    constexpr int sizeFlux  = {{optNamespace}}::getBndFluxSize();
 {%- if tempVarsOnStack %}
     double lFhbndCoarse[sizeFlux];
 {%- else %}  
@@ -338,7 +338,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 
 
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
 {%- endif %}
@@ -358,6 +358,8 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   double* fluxOut  = memory + {{optNamespace}}::getBndFluxShift();
 {%- endif %}
 
+  const int faceIndex = 2*direction+orientation;
+
   {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, cellCentre, cellSize, t, dt, faceIndex, direction);
 
 {%- if countFlops %}
@@ -371,12 +373,14 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxIn,const do
   boundaryConditions_c += 1;
 {%- endif %}
   
-  if (faceIndex % 2 == 0) {
+  if (orientation == 0) {
     riemannSolver(fluxOut,fluxIn,stateOut,stateIn,dt,direction,true,faceIndex);
   }
   else {
     riemannSolver(fluxIn,fluxOut,stateIn,stateOut,dt,direction,true,faceIndex);
   }
+  
+  faceIntegral(update, fluxIn, direction, orientation, nullptr, 0, cellSize);
   
 {%- if !tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
@@ -472,7 +476,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 }
 
 
-
+/*
 void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {%- if enableProfiler %}
   _profiler->start("faceUnknownsRestriction");
@@ -497,7 +501,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoar
   _profiler->stop("faceUnknownsRestriction");
 {%- endif %}
 }
-
+*/
 
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {

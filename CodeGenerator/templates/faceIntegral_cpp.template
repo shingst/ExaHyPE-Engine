@@ -17,8 +17,8 @@
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
 
-template <int numberOfVariables, int basisSize>
-void {{codeNamespace}}::faceIntegralNonlinear(
+
+void {{codeNamespace}}::faceIntegral(
                               double *lduh, 
                               const double *const lFhbnd,
                               const int direction, 
@@ -33,17 +33,12 @@ void {{codeNamespace}}::faceIntegralNonlinear(
   __assume_aligned(lduh,     ALIGNMENT);
 #endif
 
-  if (orientation == 0) { //left
-    const double* const FCoeff = FLCoeff;
+  const double* const FCoeff = (orientation == 0 ? FLCoeff : FRCoeff);
 {% if isLinear %}
-    const double scaling = inverseDx[direction];
+  const double scaling = inverseDx[direction];
 {% else %}
-    const double scaling = -1.0*inverseDx[direction];
+  const double scaling = (2.0 * orientation - 1.0) * inverseDx[direction];
 {% endif %}
-  } else { //right
-    const double* const FCoeff = FRCoeff;
-    const double scaling = inverseDx[direction];
-  }
   
   switch (direction) {
     case 0:   // x faces, left-right flux
@@ -84,87 +79,3 @@ void {{codeNamespace}}::faceIntegralNonlinear(
       break;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#include <tarch/la/Vector.h>
-
-
-
-
-void {{codeNamespace}}::surfaceIntegral( 
-  double* restrict lduh, 
-  const double* restrict const lFhbnd, 
-  const tarch::la::Vector<DIMENSIONS,double> &inverseDx
-) {
-
-#ifdef __INTEL_COMPILER
-  __assume_aligned(FRCoeff,  ALIGNMENT);
-  __assume_aligned(FLCoeff,  ALIGNMENT);
-  __assume_aligned(weights2, ALIGNMENT);
-  __assume_aligned(lFhbnd,   ALIGNMENT);
-  __assume_aligned(lduh,     ALIGNMENT);
-#endif
-
-  // x faces
-  for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-    const double weight = weights2[yz] * inverseDx[0];
-    for (int x = 0; x < {{nDof}}; x++) {
-      #pragma simd
-      for (int n = 0; n < {{nVarPad}}; n++) {
-        lduh[n+{{nVarPad}}*(x+{{nDof}}*yz)] -= weight *
-            (lFhbnd[n+{{nVarPad}}*yz+{{bndFaceSize*1}}] * FRCoeff[x] {{'+' if isLinear else '-'}} {# only diff between linear and nonlinear #}
-             lFhbnd[n+{{nVarPad}}*yz+{{bndFaceSize*0}}] * FLCoeff[x]);
-      }
-    }
-  }
-
-  // y faces
-  for (int xz = 0; xz < {{nDof*nDof3D}}; xz++) {
-    const double weight = weights2[xz] * inverseDx[1];
-{% if nDim == 3 %} {# // xz in [0..nDof*nDof-1], need to extract x and z to compute the correct shift for luh #}
-    const int xzLuhIndex = ((xz/{{nDof}})*{{nDof*nDof}} + xz % {{nDof}}) *{{nVarPad}};
-{% else %}
-    const int xzLuhIndex = xz*{{nVarPad}};
-{% endif %}
-    for (int y = 0; y < {{nDof}}; y++) {
-      #pragma simd
-      for (int n = 0; n < {{nVarPad}}; n++) {
-        lduh[n+xzLuhIndex+y*{{nDof*nVarPad}}] -= weight *
-            (lFhbnd[n+{{nVarPad}}*xz+{{bndFaceSize*3}}] * FRCoeff[y] {{'+' if isLinear else '-'}}
-             lFhbnd[n+{{nVarPad}}*xz+{{bndFaceSize*2}}] * FLCoeff[y]);
-        }
-      }
-  }
-{% if nDim == 3 %}
-
-  // z faces
-  for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
-    const double weight = weights2[xy] * inverseDx[2];
-    for (int z = 0; z < {{nDof}}; z++) {
-      #pragma simd
-      for (int n = 0; n < {{nVarPad}}; n++) {
-        lduh[n+{{nVarPad}}*(xy+{{nDof*nDof}}*z)] -= weight *
-            (lFhbnd[n+{{nVarPad}}*xy+{{bndFaceSize*5}}] * FRCoeff[z] {{'+' if isLinear else '-'}}
-             lFhbnd[n+{{nVarPad}}*xy+{{bndFaceSize*4}}] * FLCoeff[z]);
-      }
-    }
-  }
-{% endif %}
-}
-

@@ -530,7 +530,7 @@ void {{codeNamespace}}::faceFluxRestriction(
 #ifdef USE_IPO
 #ifndef UNSAFE_IPO
           volatile double doNotOptimizeAway_coeff_0 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#ifdef USE_IPO
+#endif
       #pragma forceinline
 #endif
           {{gemm_face_F}}(&lFhbndFine[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
@@ -573,7 +573,7 @@ void {{codeNamespace}}::faceFluxRestriction(
 #ifdef USE_IPO
 #ifndef UNSAFE_IPO
           volatile double doNotOptimizeAway_coeff_1 = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#ifdef USE_IPO
+#endif
           #pragma forceinline
 #endif
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
