@@ -178,6 +178,17 @@ void compareWithADERDGSolutionAtFVSubcellCenters(
     const exahype::solvers::ADERDGSolver* solver,
     double* min, double* max);
 
+
+/**
+ * Compute the minimum and maximum values of a DG solution expressed with a Gauss Legendre basis
+ * at the nodes of a Lobatto quadrature using the same number of support points (basisSize).
+ */
+template <int basisSize, int numberOfData>
+void computeMinimumAndMaximumValueAtGaussLobattoNodes(
+    const double* const solutionAtGaussLegendreNodes,
+    double* const       minimumAtGaussLobattoNodes, 
+    double* const       maximumAtGaussLobattoNodes);
+
 } // namespace c
 } // namespace generic
 } // namespace limiter

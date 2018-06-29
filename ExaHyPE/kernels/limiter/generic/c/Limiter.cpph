@@ -5,7 +5,7 @@
  * Project to GaussLobatto and modify the min/max if required
  */
 template <int basisSize, int numberOfData>
-void kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<basisSize,numberOfData>(
+void kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes(
     const double* const solutionAtGaussLegendreNodes,
     double* const       minimumAtGaussLobattoNodes, 
     double* const       maximumAtGaussLobattoNodes
