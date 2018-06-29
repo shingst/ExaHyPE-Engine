@@ -366,7 +366,7 @@ endif
 
 
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
-	COMPILER_CFLAGS += -DParallel
+	COMPILER_CFLAGS += -DParallel -DnoPackedRecords
 endif
 
 
