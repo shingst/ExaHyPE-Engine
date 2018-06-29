@@ -52,7 +52,7 @@ class exahype::mappings::LoadBalancing {
 
     static LoadBalancingAnalysis  _loadBalancingAnalysis;
 
-    #ifdef Parallel
+    //#ifdef Parallel //TODO Dominic fix, had to comment for single core to compile (JMG)
     /**
      * Number of local cells. We only count compute cells.
      */
@@ -71,7 +71,7 @@ class exahype::mappings::LoadBalancing {
      * of that domain.
      */
     static int determineLastLevelToPopulateUniformly();
-    #endif
+    //#endif
 
   public:
     static void setLoadBalancingAnalysis(LoadBalancingAnalysis loadBalancingAnalysis);
