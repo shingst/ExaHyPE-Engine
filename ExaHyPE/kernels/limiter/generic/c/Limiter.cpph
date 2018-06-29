@@ -1,0 +1,48 @@
+#include "kernels/KernelUtils.h"
+
+/**
+ * Auxilliary function to findMinMax
+ * Project to GaussLobatto and modify the min/max if required
+ */
+template <int basisSize, int numberOfData>
+void kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<basisSize,numberOfData>(
+    const double* const solutionAtGaussLegendreNodes,
+    double* const       minimumAtGaussLobattoNodes, 
+    double* const       maximumAtGaussLobattoNodes
+) {
+  constexpr int order = basisSize-1;
+
+  #if DIMENSIONS == 2
+  constexpr int basisSize3D = 1;
+  #elif DIMENSIONS == 3
+  constexpr int basisSize3D = basisSize;
+  #endif
+
+  idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
+  idx2 idxConv(basisSize,basisSize);
+
+  double lobValues[numberOfData];
+  for(int z=0; z<basisSize3D; z++) {
+    for(int y=0; y<basisSize; y++) {
+      for(int x=0; x<basisSize; x++) {
+        for(int v=0; v<numberOfData; v++) {
+          lobValues[v] = 0.0;
+          for(int iz=0; iz<basisSize3D; iz++) {
+            for(int iy=0; iy<basisSize; iy++) {
+              for(int ix=0; ix<basisSize;ix++) {
+                lobValues[v] += solutionAtGaussLegendreNodes[idx(iz,iy,ix,v)]
+                                #if DIMENSIONS == 3
+                                * uh2lob[order][idxConv(iz,z)]
+                                #endif
+                                * uh2lob[order][idxConv(iy,y)]
+                                * uh2lob[order][idxConv(ix,x)];
+              }
+            }
+          }
+          minimumAtGaussLobattoNodes[v] = std::min( minimumAtGaussLobattoNodes[v], lobValues[v] );
+          maximumAtGaussLobattoNodes[v] = std::max( maximumAtGaussLobattoNodes[v], lobValues[v] );
+        }
+      }
+    }
+  }
+}

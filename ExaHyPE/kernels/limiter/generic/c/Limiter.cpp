@@ -184,8 +184,8 @@ void kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(
   #endif
 
   double* observables = new double[numberOfObservables];
-  const int numberOfVariables = solver->getNumberOfVariables();
-  idx4 idxLim(basisSizeLim3D+2*ghostLayerWidth3D,basisSizeLim+2*ghostLayerWidth,basisSizeLim+2*ghostLayerWidth,numberOfVariables);
+  const int numberOfData = solver->getNumberOfVariables()+solver->getNumberOfParameters();
+  idx4 idxLim(basisSizeLim3D+2*ghostLayerWidth3D,basisSizeLim+2*ghostLayerWidth,basisSizeLim+2*ghostLayerWidth,numberOfData);
   for (int iz=ghostLayerWidth3D; iz<basisSizeLim3D+ghostLayerWidth3D; ++iz) { // skip the last element
     for (int iy=ghostLayerWidth; iy<basisSizeLim+ghostLayerWidth; ++iy) {
       for (int ix=ghostLayerWidth; ix<basisSizeLim+ghostLayerWidth; ++ix) {
@@ -263,17 +263,17 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtGaussLobattoNodes(
   basisSize3D = basisSize;
   #endif
 
-  const int numberOfVariables = solver->getNumberOfVariables();
-  idx4 idx(basisSize3D,basisSize,basisSize,numberOfVariables);
+  const int numberOfData = solver->getNumberOfVariables()+solver->getNumberOfParameters();
+  idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
   idx2 idxConv(basisSize,basisSize);
 
   const int numberOfObservables = solver->getDMPObservables();
   double* observables = new double[numberOfObservables];
-  double* lobValues   = new double[numberOfVariables];
+  double* lobValues   = new double[numberOfData];
   for(int z=0; z<basisSize3D; z++) {
     for(int y=0; y<basisSize; y++) {
       for(int x=0; x<basisSize; x++) {
-        for(int v=0; v<numberOfVariables; v++) {
+        for(int v=0; v<numberOfData; v++) {
           lobValues[v] = 0.0;
           for(int iz=0; iz<basisSize3D; iz++) {
             for(int iy=0; iy<basisSize; iy++) {
@@ -322,21 +322,21 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtFVSubcellCenters(
   basisSizeLim3D = basisSizeLim;
   #endif
 
-  const int numberOfVariables   = solver->getNumberOfVariables();
-  idx4 idxLuh(basisSize3D,basisSize,basisSize,numberOfVariables);
-  idx4 idxLim(basisSizeLim3D,basisSizeLim,basisSizeLim,numberOfVariables);
+  const int numberOfData  = solver->getNumberOfVariables()+solver->getNumberOfParameters();
+  idx4 idxLuh(basisSize3D,basisSize,basisSize,numberOfData);
+  idx4 idxLim(basisSizeLim3D,basisSizeLim,basisSizeLim,numberOfData);
   idx2 idxConv(basisSize,basisSizeLim);
 
   const int numberOfObservables = solver->getDMPObservables();
 
   double* observables = new double[numberOfObservables];
-  double* limValues   = new double[numberOfVariables];
+  double* limValues   = new double[numberOfData];
 
   //tensor operation
   for(int z=0; z<basisSizeLim3D; z++) {
     for(int y=0; y<basisSizeLim; y++) {
       for(int x=0; x<basisSizeLim; x++) {
-        for(int v=0; v<numberOfVariables; v++) {
+        for(int v=0; v<numberOfData; v++) {
           limValues[v] = 0.0;
           for(int iz=0; iz<basisSize3D; iz++) {
             for(int iy=0; iy<basisSize; iy++) {

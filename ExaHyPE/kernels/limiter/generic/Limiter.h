@@ -183,5 +183,6 @@ void compareWithADERDGSolutionAtFVSubcellCenters(
 } // namespace limiter
 } // namespace kernel
 
+#include "kernels/limiter/generic/c/Limiter.cpph"
 
 #endif //_EXAHYPE_KERNELS_LIMITER_GENERIC_H_
