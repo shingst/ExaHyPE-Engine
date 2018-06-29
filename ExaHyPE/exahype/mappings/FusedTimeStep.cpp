@@ -187,13 +187,19 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( issuePredictionJobsInThisIteration() ) {
+  if ( sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
+    
+
+    const int isFirstTimeStep = 
+          ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
+          _stateCopy.isFirstIterationOfBatchOrNoBatch() : 
+          _stateCopy.isSecondIterationOfBatchOrNoBatch();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
-        _stateCopy.isFirstIterationOfBatchOrNoBatch(),
-        _stateCopy.isSecondToLastIterationOfBatchOrNoBatch(),
+        isFirstTimeStep,
+        _stateCopy.isLastIterationOfBatchOrNoBatch(),    // TODO I have to distinguish here if I use two sweeps or one
         true);
   }
 
@@ -319,12 +325,17 @@ void exahype::mappings::FusedTimeStep::leaveCell(
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element); // TODO(Dominic) potential for IO overlap?
 
+        const int isLastTimeStep = 
+               ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
+               _stateCopy.isLastIterationOfBatchOrNoBatch() : 
+               _stateCopy.isSecondToLastIterationOfBatchOrNoBatch();
+
         // TODO(LTS): Merge these two functions
         exahype::solvers::Solver::UpdateResult result =
             solver->fusedTimeStep(
                 fineGridCell.getCellDescriptionsIndex(),element,
                 _stateCopy.isFirstIterationOfBatchOrNoBatch(),
-                _stateCopy.isSecondToLastIterationOfBatchOrNoBatch(),
+                isLastTimeStep,
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
@@ -371,7 +382,6 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   }
 
   if ( issuePredictionJobsInThisIteration() ) {
-    //logInfo("mergeWithNeighbour(...)","batchIteration="<<_batchIteration<<": receive data");
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,_stateCopy.isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
@@ -412,7 +422,7 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
         fineGridVerticesEnumerator.getLevel());
   }
 
-  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
+  logTraceInWith1Argument( "prepareSendToWorker(...)", localCell );
 
   return _stateCopy.isFirstIterationOfBatchOrNoBatch() ||
          _stateCopy.isLastIterationOfBatchOrNoBatch();
