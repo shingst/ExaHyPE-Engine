@@ -84,8 +84,7 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
 
 
 {{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} ):
-  exahype::solvers::ADERDGSolver("{{solver}}",{{optNamespace}}::getNumberOfVariable(),{{optNamespace}}::getNumberOfParameter(),{{optNamespace}}::getBasisSize(),
-                                 maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler){% endif %}) {
+  exahype::solvers::ADERDGSolver("{{solver}}",{{optNamespace}}::getNumberOfVariable(),{{optNamespace}}::getNumberOfParameter(),{{optNamespace}}::getBasisSize(),maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler){% endif %}) {
 }
 
 
@@ -378,7 +377,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
     riemannSolver(fluxIn,fluxOut,stateIn,stateOut,dt,direction,true,faceIndex);
   }
   
-  faceIntegral(update, fluxIn, direction, orientation, nullptr, 0, cellSize);
+  {{optNamespace}}::faceIntegral(update,fluxIn,direction,orientation,tarch::la::invertEntries(cellSize));
   
 {%- if !tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
