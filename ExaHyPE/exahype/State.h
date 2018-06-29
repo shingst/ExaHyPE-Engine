@@ -132,7 +132,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static bool VirtuallyExpandBoundingBox;
 
-  //#ifdef Parallel //TODO Dominic fix, had to comment for single core to compile (JMG)
+  #ifdef Parallel //TODO Dominic fix, had to comment for single core to compile (JMG)
   /**
    * Toggle switches used by the Prediction* and FusedTimeStep
    * mappings where we turn broadcasts and reduction on and
@@ -142,7 +142,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static bool BroadcastInThisIteration;
   static bool ReduceInThisIteration;
-  //#endif
+  #endif
 
   /**
    * \return true if we run no batch or if

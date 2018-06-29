@@ -51,10 +51,12 @@ exahype::mappings::Prediction::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
+  #ifdef Parallel 
+ if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
+  #endif
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
@@ -140,6 +142,7 @@ void exahype::mappings::Prediction::beginIteration(
 
 void exahype::mappings::Prediction::endIteration(
     exahype::State& solverState) {
+  #ifdef Parallel
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
     assertion(exahype::State::BroadcastInThisIteration==true);
     exahype::State::BroadcastInThisIteration = false;
@@ -148,6 +151,7 @@ void exahype::mappings::Prediction::endIteration(
     assertion(exahype::State::BroadcastInThisIteration==false);
     exahype::State::BroadcastInThisIteration = true;
   }
+  #endif
 }
 
 void exahype::mappings::Prediction::performPredictionOrProlongate(
@@ -204,7 +208,7 @@ void exahype::mappings::Prediction::enterCell(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
       exahype::State::AlgorithmSection::TimeStepping,
-      exahype::State::BroadcastInThisIteration);
+      _stateCopy.isFirstIterationOfBatchOrNoBatch());
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

@@ -41,6 +41,7 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+  #ifdef Parallel
   if (
       exahype::solvers::Solver::PredictionSweeps==1 ||
       exahype::State::BroadcastInThisIteration      // must be set in previous iteration
@@ -48,10 +49,12 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
+  #endif
 
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+  #ifdef Parallel
   if (
       exahype::solvers::Solver::PredictionSweeps==1 ||
       exahype::State::ReduceInThisIteration         // must be set in previous iteration
@@ -59,6 +62,7 @@ exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() 
     exchangeWorkerMasterData =
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
   }
+  #endif
 
   return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
@@ -241,6 +245,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     #endif
   }
 
+  #ifdef Parallel
   // broadcasts
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
     assertion(exahype::State::BroadcastInThisIteration==true);
@@ -259,6 +264,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     assertion(exahype::State::BroadcastInThisIteration==true);
     exahype::State::BroadcastInThisIteration = false;
   }
+  #endif
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 

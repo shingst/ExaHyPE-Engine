@@ -70,6 +70,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+  #ifdef Parallel
   if (
       exahype::solvers::Solver::PredictionSweeps==1 ||
       exahype::State::BroadcastInThisIteration      // must be set in previous iteration
@@ -77,10 +78,12 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
+  #endif
 
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+  #ifdef Parallel
   if (
       exahype::solvers::Solver::PredictionSweeps==1 ||
       exahype::State::ReduceInThisIteration         // must be set in previous iteration
@@ -88,6 +91,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
     exchangeWorkerMasterData =
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
   }
+  #endif
 
   return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
@@ -170,6 +174,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     initialiseLocalVariables();
   }
   
+  #ifdef Parallel
   // reduction (must come here; is before first commSpec evaluation for reduction
   if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
     assertion(exahype::State::ReduceInThisIteration==false);
@@ -179,6 +184,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     assertion(exahype::State::ReduceInThisIteration==true);
     exahype::State::ReduceInThisIteration = false;
   }
+  #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -204,6 +210,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 
   //logInfo("endIteration(State)", _stateCopy.getBatchIteration() << ", "<<state.getBatchIteration() << ", " << _batchIteration);
+  #ifdef Parallel
   // broadcasts - must come after the last commSpec evaluation for beginIteration(...)
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
     assertion1(exahype::State::BroadcastInThisIteration==true,tarch::parallel::Node::getInstance().getRank());
@@ -213,6 +220,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     assertion(exahype::State::BroadcastInThisIteration==false);
     exahype::State::BroadcastInThisIteration = true;
   }
+  #endif
 
   _batchIterationCounterUpdated = false;
 
