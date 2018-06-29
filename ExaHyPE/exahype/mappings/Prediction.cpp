@@ -111,8 +111,8 @@ exahype::mappings::Prediction::~Prediction() {
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::Prediction::Prediction(const Prediction& masterThread) {
-  // do nothing
+exahype::mappings::Prediction::Prediction(const Prediction& masterThread) : 
+  _stateCopy(masterThread._stateCopy) {
 }
 
 void exahype::mappings::Prediction::mergeWithWorkerThread(
@@ -123,6 +123,7 @@ void exahype::mappings::Prediction::mergeWithWorkerThread(
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
+
   _stateCopy = solverState;
 
   #ifdef USE_ITAC

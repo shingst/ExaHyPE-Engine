@@ -229,9 +229,10 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FusedTimeStep::FusedTimeStep(
-    const FusedTimeStep& masterThread) {
-  _batchIterationCounterUpdated=masterThread._batchIterationCounterUpdated;
-  _batchIteration=masterThread._batchIteration;
+    const FusedTimeStep& masterThread) :
+  _stateCopy(masterThread._stateCopy), 
+  _batchIterationCounterUpdated(masterThread._batchIterationCounterUpdated),
+  _batchIteration(masterThread._batchIteration) {
   initialiseLocalVariables();
 }
 // Merge over threads

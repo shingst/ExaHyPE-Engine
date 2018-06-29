@@ -142,7 +142,8 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
-    const PredictionOrLocalRecomputation& masterThread) {
+    const PredictionOrLocalRecomputation& masterThread) :
+  _stateCopy(masterThread._stateCopy) {
   initialiseLocalVariables();
 }
 // Merge over threads

@@ -97,8 +97,8 @@ exahype::mappings::PredictionRerun::~PredictionRerun() {
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) {
-  // do nothing
+exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) :
+  _stateCopy(masterThread._stateCopy) {
 }
 
 void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
