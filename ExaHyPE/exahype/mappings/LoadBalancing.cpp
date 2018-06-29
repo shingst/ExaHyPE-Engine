@@ -30,9 +30,9 @@ int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
       const int levelDelta = uniformMeshLevel - level;
       
       int ranksToDeployOnCurrentLevel = 1;
-      for (int d; d<DIMENSIONS; d++) {
+      for (int d=0; d<DIMENSIONS; d++) {
         const int numberOfCellsOnUniformGrid = static_cast<int>( std::round ( domain[d] / uniformMeshSize ) );
-        ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid / tarch::la::aPowI(levelDelta-1,3);
+        ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid / tarch::la::aPowI(levelDelta,3);
       }
       usedRanks += ranksToDeployOnCurrentLevel;
       level++;
