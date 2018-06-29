@@ -22,7 +22,8 @@ namespace {{namespaceName}} {
 {% endfor %}
 namespace converter {
 
-  constexpr int getLuhArraySize()        { return {{(nDof**nDim)*nVar}};}
+  constexpr int getLduhGenArraySize()    { return {{(nDof**nDim)*nVar}};}
+  constexpr int getLduhOptArraySize()    { return {{(nDof**nDim)*nVarPad}};}
 
   constexpr int getQhbndGenArraySize()   { return {{2 * nDim * nDof * nDof3D * nData}};}
   constexpr int getQhbndOptArraySize()   { return {{2 * nDim * nDof * nDof3D * nDataPad}};}
@@ -66,6 +67,9 @@ namespace converter {
     
   void PSi_optimised2generic(const double* const opt, double* gen);
   void PSi_generic2optimised(const double* const gen, double* opt);
+  
+  void Lduh_optimised2generic(const double* const opt, double* gen);
+  void Lduh_generic2optimised(const double* const gen, double* opt);
 }
 {% for namespaceName in codeNamespaceList %}
 }
