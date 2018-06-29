@@ -31,9 +31,9 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_c = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::fusedSTPVI_picard = 0;
   
-//std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_f = 0;
-//std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_t = 0;
-//std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_c = 0;  
+std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_f = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_t = 0;
+std::atomic_ulong {{project}}::{{abstractSolver}}::surfaceIntegral_c = 0;  
 
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_f = 0;
 std::atomic_ulong {{project}}::{{abstractSolver}}::faceIntegral_t = 0;
@@ -240,8 +240,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 {%- endif %}
 }
 
-// TODO JMG Clean deprecated
-/*
+
 void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {%- if enableProfiler %}
   _profiler->start("surfaceIntegral");
@@ -264,7 +263,6 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double*
   _profiler->stop("surfaceIntegral");
 {%- endif %}
 }
-*/
 
 
 void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {

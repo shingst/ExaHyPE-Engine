@@ -117,7 +117,6 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double dt
   );
   
-  //TODO JMG Remove deprecated
   void surfaceIntegral( 
     double* restrict lduh, 
     const double* restrict const lFhbnd, 
