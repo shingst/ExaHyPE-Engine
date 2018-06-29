@@ -37,7 +37,7 @@ int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
       usedRanks += ranksToDeployOnCurrentLevel;
       level++;
     }
-    return std::max(uniformMeshLevel-1,level-2); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
+    return std::min(uniformMeshLevel-1, std::max(2,level-2)); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
   }
 }
 #endif
