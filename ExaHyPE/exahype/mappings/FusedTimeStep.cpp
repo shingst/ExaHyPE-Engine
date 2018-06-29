@@ -32,11 +32,7 @@ tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
 void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
-  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-    _batchIteration = 0;
-  } else {
-    _batchIteration++;
-  }
+  _batchIteration++;
   _batchIterationCounterUpdated = true;
 }
 
@@ -147,6 +143,18 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   _stateCopy = solverState;
 
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+    _batchIteration = 0;
+    _batchIterationCounterUpdated = true;
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+      if ( issuePredictionJobsInThisIteration() ) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+      }
+      if ( sendOutRiemannDataInThisIteration() ) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+      }
+    }
+
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
 
@@ -161,6 +169,16 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
     initialiseLocalVariables();
   }
+  
+  // reduction (must come here; is before first commSpec evaluation for reduction
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::ReduceInThisIteration==false);
+    exahype::State::ReduceInThisIteration = true;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::ReduceInThisIteration==true);
+    exahype::State::ReduceInThisIteration = false;
+  }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -169,7 +187,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) {
+  if ( issuePredictionJobsInThisIteration() ) {
     exahype::plotters::finishedPlotting();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
@@ -179,23 +197,15 @@ void exahype::mappings::FusedTimeStep::endIteration(
         true);
   }
 
-  // broadcasts
+  //logInfo("endIteration(State)", _stateCopy.getBatchIteration() << ", "<<state.getBatchIteration() << ", " << _batchIteration);
+  // broadcasts - must come after the last commSpec evaluation for beginIteration(...)
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::BroadcastInThisIteration==true);
+    assertion1(exahype::State::BroadcastInThisIteration==true,tarch::parallel::Node::getInstance().getRank());
     exahype::State::BroadcastInThisIteration = false;
   }
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     assertion(exahype::State::BroadcastInThisIteration==false);
     exahype::State::BroadcastInThisIteration = true;
-  }
-  // reduction
-  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::ReduceInThisIteration==false);
-    exahype::State::ReduceInThisIteration = true;
-  }
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    assertion(exahype::State::BroadcastInThisIteration==true);
-    exahype::State::BroadcastInThisIteration = false;
   }
 
   _batchIterationCounterUpdated = false;
@@ -361,6 +371,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   }
 
   if ( issuePredictionJobsInThisIteration() ) {
+    //logInfo("mergeWithNeighbour(...)","batchIteration="<<_batchIteration<<": receive data");
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,_stateCopy.isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
