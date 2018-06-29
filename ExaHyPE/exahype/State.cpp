@@ -34,6 +34,10 @@ bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
   return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==0;
 }
 
+bool exahype::State::isSecondIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==1;
+}
+
 bool exahype::State::isLastIterationOfBatchOrNoBatch() const {
   return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-1;
 }

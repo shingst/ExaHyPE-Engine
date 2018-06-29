@@ -146,16 +146,26 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 
   /**
    * \return true if we run no batch or if
-   * we are in the last iteration of a batch.
+   * we are in the first iteration of a batch (iteration: 0).
    *
    * \note It makes only sense to query the batch state from
    * within a mapping.
    */
   bool isFirstIterationOfBatchOrNoBatch() const;
+  
 
   /**
    * \return true if we run no batch or if
-   * we are in the first iteration of a batch.
+   * we are in the second iteration of a batch (iteration: 1).
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  bool isSecondIterationOfBatchOrNoBatch() const;
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the last iteration of a batch (iteration: #iterations-1)
    *
    * \note It makes only sense to query the batch state from
    * within a mapping.
@@ -164,7 +174,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 
   /**
    * \return true if we run no batch or if
-   * we are in the second to last iteration of a batch.
+   * we are in the second to last iteration of a batch (iteration: #iterations-2)
    *
    * \note It makes only sense to query the batch state from
    * within a mapping.
