@@ -743,8 +743,6 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
         localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
       }
     }
-
-    //  make consistent     // TODO(Dominic): Make collective operations in cell
     receivedMasterCell.shutdownMetaData();
   }
 

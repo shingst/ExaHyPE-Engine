@@ -31,11 +31,6 @@
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
-void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
-  _batchIteration++;
-  _batchIterationCounterUpdated = true;
-}
-
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() const {
   return
       exahype::solvers::Solver::PredictionSweeps==1 ||
@@ -140,6 +135,21 @@ exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
 exahype::mappings::FusedTimeStep::FusedTimeStep() {
 }
 
+void exahype::mappings::FusedTimeStep::ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter) {
+  if (!_batchIterationCounterUpdated) {
+    _batchIteration = ( initialiseBatchIterationCounter) ? 0 : _batchIteration+1;
+    _batchIterationCounterUpdated = true;
+
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && issuePredictionJobsInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+    }
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    }
+  }
+}
+
 void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
@@ -147,17 +157,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   _stateCopy = solverState;
 
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-    _batchIteration = 0;
-    _batchIterationCounterUpdated = true;
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      if ( issuePredictionJobsInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
-      if ( sendOutRiemannDataInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-    }
+    ensureAllBackgroundJobsHaveTerminated(true);
 
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
@@ -173,18 +173,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
     initialiseLocalVariables();
   }
-  
-  #ifdef Parallel
-  // reduction (must come here; is before first commSpec evaluation for reduction
-  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::ReduceInThisIteration==false);
-    exahype::State::ReduceInThisIteration = true;
-  }
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    assertion(exahype::State::ReduceInThisIteration==true);
-    exahype::State::ReduceInThisIteration = false;
-  }
-  #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -205,9 +193,11 @@ void exahype::mappings::FusedTimeStep::endIteration(
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
         _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
         isFirstTimeStep,
-        _stateCopy.isLastIterationOfBatchOrNoBatch(),    // TODO I have to distinguish here if I use two sweeps or one
+        _stateCopy.isLastIterationOfBatchOrNoBatch(),
         true);
   }
+
+  _batchIterationCounterUpdated = false;
 
   //logInfo("endIteration(State)", _stateCopy.getBatchIteration() << ", "<<state.getBatchIteration() << ", " << _batchIteration);
   #ifdef Parallel
@@ -220,9 +210,16 @@ void exahype::mappings::FusedTimeStep::endIteration(
     assertion(exahype::State::BroadcastInThisIteration==false);
     exahype::State::BroadcastInThisIteration = true;
   }
+  // reduction (must come here; is before first commSpec evaluation for reduction
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::ReduceInThisIteration==false);
+    exahype::State::ReduceInThisIteration = true;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::ReduceInThisIteration==true);
+    exahype::State::ReduceInThisIteration = false;
+  }
   #endif
-
-  _batchIterationCounterUpdated = false;
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -260,18 +257,7 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  if ( !_batchIterationCounterUpdated ) {
-    updateBatchIterationCounter();
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      if ( issuePredictionJobsInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
-      if ( sendOutRiemannDataInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-    }
-  }
+  ensureAllBackgroundJobsHaveTerminated(false);
 
   if ( issuePredictionJobsInThisIteration() ) {
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
@@ -377,18 +363,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if ( !_batchIterationCounterUpdated ) {
-    updateBatchIterationCounter();
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      if ( issuePredictionJobsInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
-      if ( sendOutRiemannDataInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-    }
-  }
+  ensureAllBackgroundJobsHaveTerminated(false);
 
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
