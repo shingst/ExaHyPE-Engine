@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_BroadcastAndDropNeighbourMessages_H_
-#define EXAHYPE_ADAPTERS_BroadcastAndDropNeighbourMessages_H_
+#ifndef EXAHYPE_ADAPTERS_BroadcastAndRestrictLimiterStatus_H_
+#define EXAHYPE_ADAPTERS_BroadcastAndRestrictLimiterStatus_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,13 +18,13 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/BroadcastAndDropNeighbourMessages.h"
+ #include "exahype/mappings/BroadcastAndRestrictLimiterStatus.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class BroadcastAndDropNeighbourMessages;
+        class BroadcastAndRestrictLimiterStatus;
       } 
 }
 
@@ -36,11 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::BroadcastAndDropNeighbourMessages {
+class exahype::adapters::BroadcastAndRestrictLimiterStatus {
   private:
-    typedef mappings::BroadcastAndDropNeighbourMessages Mapping0;
+    typedef mappings::BroadcastAndRestrictLimiterStatus Mapping0;
 
-     Mapping0  _map2BroadcastAndDropNeighbourMessages;
+     Mapping0  _map2BroadcastAndRestrictLimiterStatus;
 
 
   public:
@@ -52,16 +52,16 @@ class exahype::adapters::BroadcastAndDropNeighbourMessages {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    BroadcastAndDropNeighbourMessages();
+    BroadcastAndRestrictLimiterStatus();
 
     #if defined(SharedMemoryParallelisation)
-    BroadcastAndDropNeighbourMessages(const BroadcastAndDropNeighbourMessages& masterThread);
+    BroadcastAndRestrictLimiterStatus(const BroadcastAndRestrictLimiterStatus& masterThread);
     #endif
 
-    virtual ~BroadcastAndDropNeighbourMessages();
+    virtual ~BroadcastAndRestrictLimiterStatus();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const BroadcastAndDropNeighbourMessages& workerThread);
+    void mergeWithWorkerThread(const BroadcastAndRestrictLimiterStatus& workerThread);
     #endif
 
     void createInnerVertex(

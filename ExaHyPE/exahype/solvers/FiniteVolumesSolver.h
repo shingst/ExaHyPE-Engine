@@ -887,10 +887,6 @@ public:
   // WORKER->MASTER
   ///////////////////////////////////
 
-  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
-      exahype::Cell& localCell,
-      const exahype::Cell& receivedMasterCell);
-
   /**
    * Nop
    */
@@ -928,7 +924,7 @@ public:
    * Nop
    */
   void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) final override;
 

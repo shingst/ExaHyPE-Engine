@@ -1143,14 +1143,8 @@ void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
-    exahype::Cell& localCell,
-    const exahype::Cell& receivedMasterCell) {
-  // do nothing
-}
-
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
-    const int localCellDescriptionsIndex,    const int localElement,
+    const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement,
     const bool initialGrid) {
   // do nothing

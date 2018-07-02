@@ -45,7 +45,11 @@ namespace c {
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1).
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch
  */
-void projectOnFVLimiterSpace(const double* const luh, const int numberOfVariables, const int basisSize, const int ghostLayerWidth, double* const lim);
+template <int basisSize, int numberOfVariables,int ghostLayerWidth>
+void projectOnFVLimiterSpace(
+    const double* const luh,
+    double* const lim);
+
 /**
  * \brief Projection FV -> ADERDG
  *
@@ -55,7 +59,10 @@ void projectOnFVLimiterSpace(const double* const luh, const int numberOfVariable
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1)
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch.
  */
-void projectOnDGSpace(const double* const lim, const int numberOfVariables, const int basisSize, const int ghostLayerWidth, double* const luh);
+template <int basisSize, int numberOfVariables,int ghostLayerWidth>
+void projectOnDGSpace(
+    const double* const lim,
+    double* const luh);
 
 /**
  * Determine the cell-local minimum and maximum
@@ -63,10 +70,11 @@ void projectOnDGSpace(const double* const lim, const int numberOfVariables, cons
  * Gauss-Legendre nodes, the Gauss-Lobatto nodes as well as at
  * the subcell limiters.
  */
+template <typename SolverType, int numberOfObservables>
 void findCellLocalMinAndMax(
     const double* const luh,
-    const exahype::solvers::ADERDGSolver* solver,
-    double* const localMinPerVariables, double* const localMaxPerVariable);
+    const SolverType& solver,
+    double* const localMinPerVariables, double* const localMaxPerVariables);
 
 /**
  * Find the minimum and maximum per variable in the limiter solution.
@@ -80,11 +88,11 @@ void findCellLocalMinAndMax(
  * \param[in] basisSize The size of the ADER-DG basis per coordinate axis (order+1)
  * \param[in] ghostLayerWidth The ghost layer width in cells of the finite volumes patch.
  */
+template <typename SolverType, int numberOfObservables, int ghostLayerWidth>
 void findCellLocalLimiterMinAndMax(
     const double* const lim,
-    const exahype::solvers::ADERDGSolver* solver,
-    const int ghostLayerWidth,
-    double* const localMinPerObservable, double* const localMaxPerObservable);
+    const SolverType& solver,
+    double* const localMinPerVariables, double* const localMaxPerVariables);
 
 /**
  * Returns true if the nodal solution degrees of freedom
@@ -134,11 +142,13 @@ void findCellLocalLimiterMinAndMax(
  *
  * See doi:10.1016/j.jcp.2014.08.009 for more details.
  */
+template <typename SolverType, int numberOfObservables, int ghostLayerWidth>
 bool discreteMaximumPrincipleAndMinAndMaxSearch(
     const double* const luh,
-    const exahype::solvers::ADERDGSolver* solver,
-    const double relaxationParameter,const double differenceScaling,
-    double* boundaryMinPerVariables, double* boundaryMaxPerVariables);
+    const SolverType& solver,
+    const double relaxationParameter,
+    const double differenceScaling,
+    double* boundaryMinPerObservable, double* boundaryMaxPerObservable);
 
 //************************
 //*** Helper functions ***
@@ -159,9 +169,10 @@ inline int getBasisSizeLim(const int basisSize) {
  * The n Gauss-Lobatto nodes are the support points of
  * the maxima of the Legendre polynomial of order n-1.
  */
+template <typename SolverType, int numberOfObservables>
 void compareWithADERDGSolutionAtGaussLobattoNodes(
     const double* const luh,
-    const exahype::solvers::ADERDGSolver* solver,
+    const SolverType& solver,
     double* min, double* max);
 
 /**
@@ -173,11 +184,11 @@ void compareWithADERDGSolutionAtGaussLobattoNodes(
  * this becomes a problem if we project the DG solution onto the FV
  * subcell.
  */
+template <typename SolverType, int numberOfObservables>
 void compareWithADERDGSolutionAtFVSubcellCenters(
     const double* const luh,
-    const exahype::solvers::ADERDGSolver* solver,
+    const SolverType& solver,
     double* min, double* max);
-
 
 /**
  * Compute the minimum and maximum values of a DG solution expressed with a Gauss Legendre basis

@@ -83,7 +83,7 @@ exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int le
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::OnlyLeaves,
+      peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 
@@ -255,15 +255,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     assertion(exahype::State::BroadcastInThisIteration==false);
     exahype::State::BroadcastInThisIteration = true;
-  }
-  // reduction
-  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::ReduceInThisIteration==false);
-    exahype::State::ReduceInThisIteration = true;
-  }
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    assertion(exahype::State::BroadcastInThisIteration==true);
-    exahype::State::BroadcastInThisIteration = false;
   }
   #endif
   logTraceOutWith1Argument("endIteration(State)", state);

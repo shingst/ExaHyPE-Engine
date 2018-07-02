@@ -13,8 +13,8 @@
  * @author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#ifndef EXAHYPE_MAPPINGS_BroadcastAndDropNeighbourMessages_H_
-#define EXAHYPE_MAPPINGS_BroadcastAndDropNeighbourMessages_H_
+#ifndef EXAHYPE_MAPPINGS_BroadcastAndRestrictLimiterStatus_H_
+#define EXAHYPE_MAPPINGS_BroadcastAndRestrictLimiterStatus_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -31,7 +31,7 @@
 
 namespace exahype {
   namespace mappings {
-    class BroadcastAndDropNeighbourMessages;
+    class BroadcastAndRestrictLimiterStatus;
   }
 }
 
@@ -41,7 +41,7 @@ namespace exahype {
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::BroadcastAndDropNeighbourMessages {
+class exahype::mappings::BroadcastAndRestrictLimiterStatus {
 private:
 
   /**
@@ -49,6 +49,17 @@ private:
    */
   static tarch::logging::Log _log;
 
+  /**
+   * \return if one solver is a LimitingADERDGSolver using
+   * adaptive mesh refinement.
+   */
+  static bool oneSolverIsLimitingADERDGSolverUsingAMR();
+
+  /**
+   * Restricts the limiter status if necessary.
+   */
+  static void restrictLimiterStatus(
+      const int fineGridCellDescriptionsIndex, const int coarseGridCellDescriptionsIndex);
 public:
 
   /**
@@ -226,12 +237,12 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndDropNeighbourMessages(const BroadcastAndDropNeighbourMessages& masterThread);
+  BroadcastAndRestrictLimiterStatus(const BroadcastAndRestrictLimiterStatus& masterThread);
 
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const BroadcastAndDropNeighbourMessages& workerThread);
+  void mergeWithWorkerThread(const BroadcastAndRestrictLimiterStatus& workerThread);
   #endif
 
   /**
@@ -242,12 +253,12 @@ public:
   /**
    * Nop.
    */
-  BroadcastAndDropNeighbourMessages();
+  BroadcastAndRestrictLimiterStatus();
 
   /**
    * Nop.
    */
-  virtual ~BroadcastAndDropNeighbourMessages();
+  virtual ~BroadcastAndRestrictLimiterStatus();
 
   /**
    * Nop.

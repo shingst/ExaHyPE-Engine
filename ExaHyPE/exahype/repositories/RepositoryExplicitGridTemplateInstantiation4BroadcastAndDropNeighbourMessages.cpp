@@ -18,7 +18,7 @@
  #include "exahype/adapters/InitialPrediction.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
- #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
+ #include "exahype/adapters/BroadcastAndRestrictLimiterStatus.h" 
  #include "exahype/adapters/LimiterStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
  #include "exahype/adapters/GlobalRollback.h" 
@@ -29,7 +29,7 @@
 
 namespace peano {
   namespace grid {
-    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexSTDStack<  exahype::Vertex> ,peano::stacks::CellSTDStack<  exahype::Cell> ,exahype::adapters::BroadcastAndDropNeighbourMessages>;
+    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexSTDStack<  exahype::Vertex> ,peano::stacks::CellSTDStack<  exahype::Cell> ,exahype::adapters::BroadcastAndRestrictLimiterStatus>;
   }
 }
 

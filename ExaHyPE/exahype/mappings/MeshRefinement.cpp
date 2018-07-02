@@ -718,23 +718,14 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
       if ( !localCell.isInitialised() ) { // simply copy the index
         localCell.setupMetaData();
       }
-      //  make consistent     // TODO(Dominic): Make collective operations in cell
-      exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
-      exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(localCell,receivedMasterCell);
 
-      const int localCellDescriptionsIndex    = localCell.getCellDescriptionsIndex();
       const int receivedCellDescriptionsIndex = receivedMasterCell.getCellDescriptionsIndex();
       for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        const int localElement    = solver->tryGetElement(localCellDescriptionsIndex,solverNumber);
         const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
-        assertion4(receivedElement==exahype::solvers::Solver::NotFound || localElement!=exahype::solvers::Solver::NotFound,receivedElement,localElement,cellCentre,level);
-        if ( 
-          localElement!=exahype::solvers::Solver::NotFound &&
-          receivedElement!=exahype::solvers::Solver::NotFound 
-        ) {
+        if ( receivedElement!=exahype::solvers::Solver::NotFound  ) {
           solver->progressMeshRefinementInMergeWithWorker(
-              localCellDescriptionsIndex,localElement,
+              localCell.getCellDescriptionsIndex(),
               receivedCellDescriptionsIndex,receivedElement,
               IsInitialMeshRefinement);
         }

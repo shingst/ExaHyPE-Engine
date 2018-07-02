@@ -1242,11 +1242,11 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
         fineGridVerticesEnumerator.getCellSize(),
         fineGridVerticesEnumerator.getVertexPosition());
 
+    #ifdef Asserts
     const int fineGridElement = tryGetElement(
         fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
+    #endif
     assertion(fineGridElement!=exahype::solvers::Solver::NotFound);
-    CellDescription& fineGridCellDescription =
-        getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
   }
 }
 
@@ -3348,58 +3348,55 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
   }
 }
 
-void exahype::solvers::ADERDGSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
-    exahype::Cell& localCell,
-    const exahype::Cell& receivedMasterCell) {
-  for (CellDescription& pReceived : Heap::getInstance().getData(receivedMasterCell.getCellDescriptionsIndex())) {
-    bool found = false;
-    for (CellDescription& pLocal : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
-      found |= pReceived.getSolverNumber()==pLocal.getSolverNumber();
-    }
-    if ( !found ) {
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived); // this copies
-    }
-  }
-}
-
 void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
-    const int localCellDescriptionsIndex,    const int localElement,
+    const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement,
     const bool initialGrid) {
-  CellDescription& localCellDescription    = getCellDescription(localCellDescriptionsIndex,localElement);
-  CellDescription& receivedCellDescription = getCellDescription(receivedCellDescriptionsIndex,receivedElement); // need because of data
+  auto& receivedCellDescriptions = getCellDescriptions(receivedCellDescriptionsIndex);
+  assertion1( isValidCellDescriptionIndex(localCellDescriptionsIndex), localCellDescriptionsIndex );
+  auto& localCellDescriptions = getCellDescriptions(localCellDescriptionsIndex);
 
-  // finalise prolongation operation started on master
-  if ( receivedCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
-    logDebug( "progressMeshRefinementInMergeWithWorker(...)","merging prolongated solution");
+  int localElement = NotFound;
+  for (unsigned int element = 0; element < localCellDescriptions.size(); ++element) {
+    if ( localCellDescriptions[element].getSolverNumber()==receivedCellDescriptions[receivedElement].getSolverNumber() ) {
+      localElement = element;
+    }
+    element++;
+  }
+  if ( localElement==NotFound ) { // We have already received data and allocated all memory in this case
+    localCellDescriptions.push_back(receivedCellDescriptions[receivedElement]);
+    receivedCellDescriptions.erase(receivedCellDescriptions.begin()+receivedElement);
+  } else {
+    CellDescription& receivedCellDescription = receivedCellDescriptions[receivedElement];
+    if ( receivedCellDescriptions[receivedElement].getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
+      CellDescription& localCellDescription = localCellDescriptions[localElement];
 
-    assertion( localCellDescription.getType()==CellDescription::Type::Cell ||
-               localCellDescription.getType()==CellDescription::Type::Descendant);
-    assertion(receivedCellDescription.getType()==CellDescription::Type::Cell);
-    assertion(DataHeap::getInstance().isValidIndex(receivedCellDescription.getSolution()));
-    assertion(DataHeap::getInstance().isValidIndex(receivedCellDescription.getPreviousSolution()));
+      logDebug( "progressMeshRefinementInMergeWithWorker(...)","merging prolongated solution");
 
-    // we know we have received data in this case
-    localCellDescription.setType(CellDescription::Type::Cell);
-    localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::Prolongating);
-    localCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
-    localCellDescription.setCommunicationStatus(CellCommunicationStatus);
-    localCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
+      assertion( localCellDescription.getType()==CellDescription::Type::Cell ||
+          localCellDescription.getType()==CellDescription::Type::Descendant);
+      assertion(receivedCellDescription.getType()==CellDescription::Type::Cell);
+      assertion(DataHeap::getInstance().isValidIndex(receivedCellDescription.getSolution()));
+      assertion(DataHeap::getInstance().isValidIndex(receivedCellDescription.getPreviousSolution()));
 
-    ensureNecessaryMemoryIsAllocated(localCellDescription); // TODO could simply copy index
-    std::copy(
-        DataHeap::getInstance().getData(receivedCellDescription.getSolution()).begin(),
-        DataHeap::getInstance().getData(receivedCellDescription.getSolution()).end(),
-        DataHeap::getInstance().getData(localCellDescription.getSolution()).begin());
-    std::copy(
-        DataHeap::getInstance().getData(receivedCellDescription.getPreviousSolution()).begin(),
-        DataHeap::getInstance().getData(receivedCellDescription.getPreviousSolution()).end(),
-        DataHeap::getInstance().getData(localCellDescription.getPreviousSolution()).begin());
+      // we know we have received data in this case
+      localCellDescription.setType(CellDescription::Type::Cell);
+      localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::Prolongating);
+      localCellDescription.setRefinementRequest(CellDescription::RefinementRequest::Pending);
+      localCellDescription.setCommunicationStatus(CellCommunicationStatus);
+      localCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
 
-    // adjust solution
-    localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-    Solver::adjustSolutionDuringMeshRefinement(
-        localCellDescriptionsIndex,localElement,initialGrid);
+      ensureNecessaryMemoryIsAllocated(localCellDescription); // copy indices
+      localCellDescription.setSolution(receivedCellDescription.getSolution());
+      localCellDescription.setPreviousSolution(receivedCellDescription.getPreviousSolution());
+      receivedCellDescription.setSolution(-1);
+      receivedCellDescription.setPreviousSolution(-1);
+
+      // adjust solution
+      localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+      Solver::adjustSolutionDuringMeshRefinement(
+          localCellDescriptionsIndex,localElement,initialGrid);
+    }
   }
 }
 

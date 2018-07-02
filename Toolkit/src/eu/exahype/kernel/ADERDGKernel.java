@@ -66,10 +66,9 @@ public class ADERDGKernel {
   private Map<String, Integer> optimization;
   
   /**
-   * Ghostlayer paramters, initialized if using the a LimitingSolver
+   * numberOfObservables initialized if using the a LimitingSolver
    */ 
-  private int ghostLayerWidth = -1;
-  private int numberOfObservables = -1;
+  private int numberOfObservables = -1; // TODO This should not be part of this class!
   
   
   
@@ -257,27 +256,18 @@ public class ADERDGKernel {
     return -1;
   }
   
-  //Used set the GhostLayerWidth for LimitingSolver
-  public void setGhostLayerWidth(int glw) {
-    this.ghostLayerWidth = glw;
-  }
-  
-  public int getGhostLayerWidth() {
-    return ghostLayerWidth; // -1 by default
-  }
-  
   //Used set the numberOfObservable for LimitingSolver
-  public void setNumberOfObservables(int obs) {
+  public void setNumberOfObservables(int obs) { // TODO This should not be part of this class!
     this.numberOfObservables = obs;
   }
   
-  public int getNumberOfObservables() {
+  public int getNumberOfObservables() { // TODO This should not be part of this class!
     return numberOfObservables; // -1 by default
   }
   
   // useLimiter only if the two limiter parameter have been set
-  public boolean useLimiter() {
-    return ghostLayerWidth > -1 && numberOfObservables > -1;
+  public boolean useLimiter() { // TODO This should not be part of this class!
+    return numberOfObservables > -1;
   }
 
   //(type: [...], terms: [...], opt: [...])

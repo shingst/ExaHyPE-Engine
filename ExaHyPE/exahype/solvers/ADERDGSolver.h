@@ -1978,21 +1978,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 
-  /**
-   * Ensure that we have the same number of
-   * cell descriptions on the worker as on the
-   * master.
-   *
-   * The master might introduce new cell descriptions
-   * to a cell if a coarse grid cell is refined or
-   * virtually refined.
-   *
-   * \note Should be called from the worker.
-   */
-  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
-      exahype::Cell& localCell,
-      const exahype::Cell& receivedMasterCell);
-
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
@@ -2165,7 +2150,7 @@ public:
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
   void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) final override;
 

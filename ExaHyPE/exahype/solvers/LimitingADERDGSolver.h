@@ -787,17 +787,6 @@ public:
    */
   bool evaluateLimiterStatusRefinementCriterion(const SolverPatch& solverPatch) const;
 
-
-  /**
-   * Evaluate a stricter DMP as an a-priori refinement
-   * criterion.
-   *
-   * TODO(Dominic): It is a little hacked together
-   */
-  bool evaluateDiscreteMaximumPrincipleRefinementCriterion(
-      const int cellDescriptionsIndex,
-      const int element) const;
-
   /**
    * TODO(Dominic): Update docu.
    *
@@ -1498,7 +1487,7 @@ public:
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
   void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) final override;
 

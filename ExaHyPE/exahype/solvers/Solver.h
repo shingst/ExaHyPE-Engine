@@ -1981,7 +1981,7 @@ class exahype::solvers::Solver {
    * Finish prolongation operations started on the master.
    */
   virtual void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) = 0;
 

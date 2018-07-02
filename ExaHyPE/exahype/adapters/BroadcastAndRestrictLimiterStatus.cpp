@@ -1,86 +1,86 @@
-#include "exahype/adapters/BroadcastAndDropNeighbourMessages.h"
+#include "exahype/adapters/BroadcastAndRestrictLimiterStatus.h"
 
 
-peano::CommunicationSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
+peano::CommunicationSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::communicationSpecification() const {
   return peano::CommunicationSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.communicationSpecification()
+    &  _map2BroadcastAndRestrictLimiterStatus.communicationSpecification()
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::touchVertexLastTimeSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.touchVertexLastTimeSpecification(level)
+    &  _map2BroadcastAndRestrictLimiterStatus.touchVertexLastTimeSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::touchVertexFirstTimeSpecification(int level) const { 
+peano::MappingSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::touchVertexFirstTimeSpecification(int level) const { 
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.touchVertexFirstTimeSpecification(level)
+    &  _map2BroadcastAndRestrictLimiterStatus.touchVertexFirstTimeSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::enterCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.enterCellSpecification(level)
+    &  _map2BroadcastAndRestrictLimiterStatus.enterCellSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::leaveCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.leaveCellSpecification(level)
+    &  _map2BroadcastAndRestrictLimiterStatus.leaveCellSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::ascendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::ascendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.ascendSpecification(level)
+    &  _map2BroadcastAndRestrictLimiterStatus.ascendSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::BroadcastAndDropNeighbourMessages::descendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::BroadcastAndRestrictLimiterStatus::descendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
-    &  _map2BroadcastAndDropNeighbourMessages.descendSpecification(level)
+    &  _map2BroadcastAndRestrictLimiterStatus.descendSpecification(level)
 
   ;
 }
 
 
-exahype::adapters::BroadcastAndDropNeighbourMessages::BroadcastAndDropNeighbourMessages() {
+exahype::adapters::BroadcastAndRestrictLimiterStatus::BroadcastAndRestrictLimiterStatus() {
 }
 
 
-exahype::adapters::BroadcastAndDropNeighbourMessages::~BroadcastAndDropNeighbourMessages() {
+exahype::adapters::BroadcastAndRestrictLimiterStatus::~BroadcastAndRestrictLimiterStatus() {
 }
 
 
 #if defined(SharedMemoryParallelisation)
-exahype::adapters::BroadcastAndDropNeighbourMessages::BroadcastAndDropNeighbourMessages(const BroadcastAndDropNeighbourMessages&  masterThread):
-  _map2BroadcastAndDropNeighbourMessages(masterThread._map2BroadcastAndDropNeighbourMessages) 
+exahype::adapters::BroadcastAndRestrictLimiterStatus::BroadcastAndRestrictLimiterStatus(const BroadcastAndRestrictLimiterStatus&  masterThread):
+  _map2BroadcastAndRestrictLimiterStatus(masterThread._map2BroadcastAndRestrictLimiterStatus) 
 
 {
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithWorkerThread(const BroadcastAndDropNeighbourMessages& workerThread) {
-  _map2BroadcastAndDropNeighbourMessages.mergeWithWorkerThread(workerThread._map2BroadcastAndDropNeighbourMessages);
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithWorkerThread(const BroadcastAndRestrictLimiterStatus& workerThread) {
+  _map2BroadcastAndRestrictLimiterStatus.mergeWithWorkerThread(workerThread._map2BroadcastAndRestrictLimiterStatus);
 
 }
 #endif
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::createHangingVertex(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::createHangingVertex(
       exahype::Vertex&     fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridH,
@@ -89,13 +89,13 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::createHangingVertex(
       exahype::Cell&       coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                   fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::destroyHangingVertex(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::destroyHangingVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -104,12 +104,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::destroyHangingVertex(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::createInnerVertex(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::createInnerVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -118,12 +118,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::createInnerVertex(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::createBoundaryVertex(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::createBoundaryVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -132,12 +132,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::createBoundaryVertex(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::destroyVertex(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::destroyVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -146,12 +146,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::destroyVertex(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::createCell(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::createCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -160,12 +160,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::createCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _map2BroadcastAndDropNeighbourMessages.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2BroadcastAndRestrictLimiterStatus.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::destroyCell(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::destroyCell(
       const exahype::Cell&           fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -174,13 +174,13 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::destroyCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _map2BroadcastAndDropNeighbourMessages.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2BroadcastAndRestrictLimiterStatus.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
 #ifdef Parallel
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
   int                                           fromRank,
@@ -188,48 +188,48 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
   const tarch::la::Vector<DIMENSIONS,double>&   fineGridH,
   int                                           level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
+   _map2BroadcastAndRestrictLimiterStatus.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::prepareSendToNeighbour(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::prepareSendToNeighbour(
   exahype::Vertex&  vertex,
   int                                           toRank,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
   const tarch::la::Vector<DIMENSIONS,double>&   h,
   int                                           level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.prepareSendToNeighbour( vertex, toRank, x, h, level );
+   _map2BroadcastAndRestrictLimiterStatus.prepareSendToNeighbour( vertex, toRank, x, h, level );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::prepareCopyToRemoteNode(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::prepareCopyToRemoteNode(
   exahype::Vertex&  localVertex,
   int                                           toRank,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
   const tarch::la::Vector<DIMENSIONS,double>&   h,
   int                                           level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
+   _map2BroadcastAndRestrictLimiterStatus.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::prepareCopyToRemoteNode(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::prepareCopyToRemoteNode(
   exahype::Cell&  localCell,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
       const tarch::la::Vector<DIMENSIONS,double>&   h,
       int                                           level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
+   _map2BroadcastAndRestrictLimiterStatus.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Vertex&  localVertex,
   const exahype::Vertex&  masterOrWorkerVertex,
   int                                       fromRank,
@@ -237,12 +237,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithRemoteDataDu
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
+   _map2BroadcastAndRestrictLimiterStatus.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Cell&  localCell,
   const exahype::Cell&  masterOrWorkerCell,
   int                                       fromRank,
@@ -250,12 +250,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithRemoteDataDu
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
+   _map2BroadcastAndRestrictLimiterStatus.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
 
 }
 
 
-bool exahype::adapters::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
+bool exahype::adapters::BroadcastAndRestrictLimiterStatus::prepareSendToWorker(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -266,13 +266,13 @@ bool exahype::adapters::BroadcastAndDropNeighbourMessages::prepareSendToWorker(
   int                                                                  worker
 ) {
   bool result = false;
-   result |= _map2BroadcastAndDropNeighbourMessages.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
+   result |= _map2BroadcastAndRestrictLimiterStatus.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
 
   return result;
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::prepareSendToMaster(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::prepareSendToMaster(
   exahype::Cell&                       localCell,
   exahype::Vertex *                    vertices,
   const peano::grid::VertexEnumerator&       verticesEnumerator, 
@@ -281,12 +281,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::prepareSendToMaster(
   const exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
 ) {
-   _map2BroadcastAndDropNeighbourMessages.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+   _map2BroadcastAndRestrictLimiterStatus.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithMaster(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithMaster(
   const exahype::Cell&           workerGridCell,
   exahype::Vertex * const        workerGridVertices,
   const peano::grid::VertexEnumerator& workerEnumerator,
@@ -301,12 +301,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithMaster(
     const exahype::State&          workerState,
   exahype::State&                masterState
 ) {
-   _map2BroadcastAndDropNeighbourMessages.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
+   _map2BroadcastAndRestrictLimiterStatus.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::receiveDataFromMaster(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 
       exahype::Vertex *                     receivedVertices,
       const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
@@ -318,37 +318,37 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::receiveDataFromMaster
       exahype::Cell&                        workersCoarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&    fineGridPositionOfCell
 ) {
-   _map2BroadcastAndDropNeighbourMessages.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
+   _map2BroadcastAndRestrictLimiterStatus.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithWorker(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithWorker(
   exahype::Cell&           localCell, 
   const exahype::Cell&     receivedMasterCell,
   const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
   const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
   int                                          level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
+   _map2BroadcastAndRestrictLimiterStatus.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::mergeWithWorker(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::mergeWithWorker(
   exahype::Vertex&        localVertex,
   const exahype::Vertex&  receivedMasterVertex,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
   const tarch::la::Vector<DIMENSIONS,double>&   h,
   int                                           level
 ) {
-   _map2BroadcastAndDropNeighbourMessages.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
+   _map2BroadcastAndRestrictLimiterStatus.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
 
 }
 #endif
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::touchVertexFirstTime(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -357,12 +357,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::touchVertexFirstTime(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::touchVertexLastTime(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::touchVertexLastTime(
       exahype::Vertex&         fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -371,12 +371,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::touchVertexLastTime(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
 ) {
-  _map2BroadcastAndDropNeighbourMessages.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2BroadcastAndRestrictLimiterStatus.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::enterCell(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::enterCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -385,12 +385,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::enterCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _map2BroadcastAndDropNeighbourMessages.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2BroadcastAndRestrictLimiterStatus.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::leaveCell(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::leaveCell(
       exahype::Cell&           fineGridCell,
       exahype::Vertex * const  fineGridVertices,
       const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -399,30 +399,30 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::leaveCell(
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfCell
 ) {
-  _map2BroadcastAndDropNeighbourMessages.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2BroadcastAndRestrictLimiterStatus.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::beginIteration(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::beginIteration(
   exahype::State&  solverState
 ) {
-  _map2BroadcastAndDropNeighbourMessages.beginIteration( solverState );
+  _map2BroadcastAndRestrictLimiterStatus.beginIteration( solverState );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::endIteration(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::endIteration(
   exahype::State&  solverState
 ) {
-  _map2BroadcastAndDropNeighbourMessages.endIteration( solverState );
+  _map2BroadcastAndRestrictLimiterStatus.endIteration( solverState );
 
 }
 
 
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::descend(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::descend(
   exahype::Cell * const          fineGridCells,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -430,12 +430,12 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::descend(
   const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
   exahype::Cell&                 coarseGridCell
 ) {
-  _map2BroadcastAndDropNeighbourMessages.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
+  _map2BroadcastAndRestrictLimiterStatus.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }
 
 
-void exahype::adapters::BroadcastAndDropNeighbourMessages::ascend(
+void exahype::adapters::BroadcastAndRestrictLimiterStatus::ascend(
   exahype::Cell * const    fineGridCells,
   exahype::Vertex * const  fineGridVertices,
   const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -443,6 +443,6 @@ void exahype::adapters::BroadcastAndDropNeighbourMessages::ascend(
   const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
   exahype::Cell&           coarseGridCell
 ) {
-  _map2BroadcastAndDropNeighbourMessages.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
+  _map2BroadcastAndRestrictLimiterStatus.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }
