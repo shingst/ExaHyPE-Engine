@@ -299,6 +299,45 @@ private:
       const int solverElement) const;
 
   /**
+   * \return the internal limiter status which is not
+   * communicated to neighbouring cells.
+   *
+   * The limiter status is computed using a star stencil
+   * on the fine grid but we are using a box stencil on coarser grids
+   * as this leads to a smaller limiter guided refinement stencil.
+   *
+   * We compute the maximum limiter status of all neighbours of the cell.
+   * If there are at least two neighbours at faces pointing in different
+   * coordinate directions which have this limiter status,
+   * e.g. one face points in x direction, the other in y-direction, then
+   * the cell assumes this limiter status as well.
+   * Otherwise, the cell assumes the maximum limiter status minus one.
+   * The above procedure realises a box stencil.
+   *
+   * \note This is not the limiter status that is communicated to neighbouring
+   * cells as the above procedure would result in a ripppling effect.
+   * To this end, we use another external limiter status which is spread
+   * according to a star stencil.
+   *
+   * <h2>FusedTimeStep Background Jobs</h2>
+   * We assume that the limiter status might change locally during batching but
+   * not the adaptive mesh. When we perform Fused Time Stepping, we thus
+   * have to copy the neighbourMergePerformed array as it is potentially
+   * overwritten before the background job has been executed.
+   */
+  int determineLimiterStatus(
+      const SolverPatch& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+
+  /**
+   * \return the external limiter status which is communicated to neighbouring
+   * cells. It is spread according to a star stencil.
+   */
+  int determineExternalLimiterStatus(
+        const SolverPatch& cellDescription,
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+
+  /**
    * Update the limiter status based on the cell-local solution values.
    *
    * If the new limiter status is changed to or remains troubled,

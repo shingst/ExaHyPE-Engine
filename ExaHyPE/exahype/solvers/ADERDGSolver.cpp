@@ -155,6 +155,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   // Limiter meta data (oscillations identificator)
   newCellDescription.setLimiterStatus(0); // 0 is CellDescription::LimiterStatus::Ok
+  newCellDescription.setExternalLimiterStatus(0);
   newCellDescription.setPreviousLimiterStatus(0);
   newCellDescription.setFacewiseLimiterStatus(0);  // implicit conversion
   newCellDescription.setSolutionMin(-1);
@@ -2684,23 +2685,6 @@ void exahype::solvers::ADERDGSolver::mergeWithLimiterStatus(
   cellDescription.setFacewiseLimiterStatus( faceIndex, croppedOtherLimiterStatus );
 }
 
-/**
- * Iterate over the merged limiter statuses per face and
- * determine a unique value.
- */
-int
-exahype::solvers::ADERDGSolver::determineLimiterStatus(
-    const CellDescription& cellDescription,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
-  int max = 0;
-  for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-    if ( neighbourMergePerformed[i] ) {
-      max = std::max( max, cellDescription.getFacewiseLimiterStatus(i)-1 );
-    }
-  }
-  return max;
-}
-
 void
 exahype::solvers::ADERDGSolver::updateCommunicationStatus(
     exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
@@ -2795,11 +2779,11 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
 
   mergeWithCommunicationStatus(cellDescription1,faceIndex1,cellDescription2.getCommunicationStatus());
   mergeWithAugmentationStatus(cellDescription1,faceIndex1,cellDescription2.getAugmentationStatus());
-  mergeWithLimiterStatus(cellDescription1,faceIndex1,cellDescription2.getLimiterStatus());
+  mergeWithLimiterStatus(cellDescription1,faceIndex1,cellDescription2.getExternalLimiterStatus());
 
   mergeWithCommunicationStatus(cellDescription2,faceIndex2,cellDescription1.getCommunicationStatus());
   mergeWithAugmentationStatus(cellDescription2,faceIndex2,cellDescription1.getAugmentationStatus());
-  mergeWithLimiterStatus(cellDescription2,faceIndex2,cellDescription1.getLimiterStatus());
+  mergeWithLimiterStatus(cellDescription2,faceIndex2,cellDescription1.getExternalLimiterStatus());
 }
 
 // merge compute data
@@ -3589,7 +3573,7 @@ exahype::solvers::ADERDGSolver::appendNeighbourCommunicationMetadata(
     metadata.push_back(static_cast<int>(cellDescription.getType()));
     metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
     metadata.push_back(cellDescription.getCommunicationStatus());
-    metadata.push_back(cellDescription.getLimiterStatus());
+    metadata.push_back(cellDescription.getExternalLimiterStatus());
   } else {
     for (int i = 0; i < exahype::NeighbourCommunicationMetadataPerSolver; ++i) {
       metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion

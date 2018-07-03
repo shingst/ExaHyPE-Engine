@@ -896,8 +896,11 @@ int exahype::receiveNeighbourCommunicationMetadata(
   return ReceivedMetadataMessageIndex;
 }
 
-// Master<=>Worker  TODO(Dominic): Move in exahype::Cell
+// Master<=>Worker
 
+/**
+ * \deprecated
+ */
 exahype::MetadataHeap::HeapEntries exahype::gatherMasterWorkerCommunicationMetadata(int cellDescriptionsIndex) {
   const int length =
       exahype::solvers::RegisteredSolvers.size()*exahype::MasterWorkerCommunicationMetadataPerSolver;
@@ -914,6 +917,9 @@ exahype::MetadataHeap::HeapEntries exahype::gatherMasterWorkerCommunicationMetad
   return encodedMetaData;
 }
 
+/**
+ * \deprecated
+ */
 void exahype::sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
     const int                                   toRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
@@ -925,6 +931,9 @@ void exahype::sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
       peano::heap::MessageType::MasterWorkerCommunication);
 }
 
+/**
+ * \deprecated
+ */
 void exahype::sendMasterWorkerCommunicationMetadata(
     const int                                   toRank,
     const int                                   cellDescriptionsIndex,
@@ -937,6 +946,9 @@ void exahype::sendMasterWorkerCommunicationMetadata(
       metadata,toRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
+/**
+ * \deprecated
+ */
 int exahype::receiveMasterWorkerCommunicationMetadata(
     const int                                   fromRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,

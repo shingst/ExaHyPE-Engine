@@ -923,34 +923,6 @@ public:
       const int neighbourLimiterStatus) const;
 
   /**
-   * Determine a unified limiter status of a cell description.
-   *
-   * <h2>Determining the unified value</h2>
-   * If all of the merged limiter status fields
-   * are set to Troubled, the limiter status is Troubled.
-   * (There is either all or none of the statuses set to Troubled.)
-   *
-   * Otherwise, if at least one of the merged statuses is set to NeighbourOfTroubledCell,
-   * the status is set to NeighbourOfTroubledCell.
-   *
-   * Otherwise, if at least one of the merged statuses is set to NeighbourIsNeighbourOfTroubledCell,
-   * the status is set to NeighbourIsNeighbourOfTroubledCell.
-   *
-   * \note The ADERDGSolver needs to know about the limiter status during mesh initialisation and
-   * refinement operations.
-   *
-   * <h2>FusedTimeStep Background Jobs</h2>
-   * We assume that the limiter status might change locally during batching but
-   * not the adaptive mesh. When we perform Fused Time Stepping, we thus
-   * have to copy the neighbourMergePerformed array as it is potentially
-   * overwritten before the background job has been executed.
-   */
-  static int determineLimiterStatus(
-      const CellDescription& cellDescription,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
-
-
-  /**
    * Construct an ADERDGSolver.
    *
    * \param identifier               An identifier for this solver.

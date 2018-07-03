@@ -450,51 +450,28 @@ class exahype::records::ADERDGCellDescription {
    */
   parallelise persistent int communicationStatus;
   
-  enum LimiterStatus {
-    /**
-     * A cell holds a physically admissible ADER-DG solution
-     * that satisfies a discrete maximum principle.
-     * 
-     * This cell's dominant solver is ADER-DG solver
-     */
-    Ok,
-    /** 
-     * This cell's dominant solver is ADER-DG solver.
-     */
-    NeighbourOfTroubled4,
-    /**
-     * This cell's dominant solver is ADER-DG solver.
-     */
-    NeighbourOfTroubled3,
-    /**
-     * This cell's dominant solver is the FV solver. 
-     */
-    NeighbourOfTroubled2,
-    /**
-     * This cell's dominant solver is the FV solver. 
-     */
-    NeighbourOfTroubled1,
-    /**
-     * A cell (still) holds a physically wrong ADER-DG solution.
-     * 
-     * This cell's dominant solver is the FV solver. 
-     */
-    Troubled
-  };
-  
   /**
    * \see limiterStatus
    */
   persistent int facewiseLimiterStatus[DIMENSIONS_TIMES_TWO];
   
   /**
-   * The cell descriptions limiter status which
+   * The cell descriptions internal limiter status which
    * is a reduction of the facewiseLimiterStatus elements.
-   *
-   * This value only corresponds on the finest level to 
-   * a limiter status enum.
+   * It is not communicated to other cells.
    */
   parallelise persistent int limiterStatus;
+  
+  /**
+   * The cell descriptions external limiter status which
+   * is a reduction of the facewiseLimiterStatus elements.
+   * This limiter status is communicated
+   * to other cells.
+   *
+   * It needs to be stored persistently as it
+   * read by neighbouring cells in the next iteration.
+   */
+  parallelise persistent int externalLimiterStatus;
   
   /**
    * The cell descriptions previous limiter status.
@@ -503,9 +480,6 @@ class exahype::records::ADERDGCellDescription {
    * which must be performed after a irregular limiter domain
    * change has occured, i.e. cells outside of the first(!) FV
    * helper cell layer have been marked as troubled.
-   
-   * This value only corresponds on the finest level to 
-   * a limiter status enum.
    */
   parallelise persistent int previousLimiterStatus;
 
