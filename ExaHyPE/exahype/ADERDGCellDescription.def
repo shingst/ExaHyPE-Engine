@@ -451,27 +451,23 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent int communicationStatus;
   
   /**
-   * \see limiterStatus
+   * \see haloStatus
    */
-  persistent int facewiseLimiterStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseHaloStatus[DIMENSIONS_TIMES_TWO];
   
   /**
-   * The cell descriptions internal limiter status which
-   * is a reduction of the facewiseLimiterStatus elements.
+   * The halo status of the cell is used for
+   * halo refinement and is set by the LimitingADERDGSolver
+   * and also by the pure ADER-DG solver if
+   * halo refinement is switched on.
+   * For the limiting ADER-DG solver, 
+   * it only has meaning on the finest grid level. 
+   *
+   * Otherwise, it is computed as
+   * reduction of the facewiseHaloStatus elements.
    * It is not communicated to other cells.
    */
-  parallelise persistent int limiterStatus;
-  
-  /**
-   * The cell descriptions external limiter status which
-   * is a reduction of the facewiseLimiterStatus elements.
-   * This limiter status is communicated
-   * to other cells.
-   *
-   * It needs to be stored persistently as it
-   * read by neighbouring cells in the next iteration.
-   */
-  parallelise persistent int externalLimiterStatus;
+  parallelise persistent int haloStatus;
   
   /**
    * The cell descriptions previous limiter status.
@@ -479,10 +475,11 @@ class exahype::records::ADERDGCellDescription {
    * This field is only need for the troubled cell recomputation
    * which must be performed after a irregular limiter domain
    * change has occured, i.e. cells outside of the first(!) FV
-   * helper cell layer have been marked as troubled.
+   * helper cell layer have been marked as troubled or
+   * the halo status of a cell changed by more than the
+   * helper layer width.
    */
-  parallelise persistent int previousLimiterStatus;
-
+  parallelise persistent int previousHaloStatus;
   
   /**
    * A counter holding the number of iterations to

@@ -30,7 +30,7 @@ event-mapping:
   name: LoadBalancing
  
 event-mapping:
-  name: BroadcastAndRestrictLimiterStatus
+  name: BroadcastAndDropNeighbourMessages
   
 event-mapping:
   name: MergeNeighbours

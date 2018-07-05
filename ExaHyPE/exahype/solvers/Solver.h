@@ -295,11 +295,6 @@ namespace exahype {
       const tarch::la::Vector<DIMENSIONS,int>& dest);
 
   /**
-   * TODO(Dominic): Add docu.
-   */
-  MetadataHeap::HeapEntries gatherMasterWorkerCommunicationMetadata(const int cellDescriptionsIndex);
-
-  /**
    * Send metadata to rank \p toRank.
    */
   void sendNeighbourCommunicationMetadata(
@@ -322,39 +317,10 @@ namespace exahype {
       const int                                   level);
 
   /**
-   * Send metadata to rank \p toRank.
-   */
-  void sendMasterWorkerCommunicationMetadata(
-      const int                                   toRank,
-      const int                                   cellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-
-  /**
-   * Receive metadata to rank \p toRank.
-   *
-   * \return The index of the received metadata message
-   * on the exahype::MetadataHeap.
-   */
-  int receiveMasterWorkerCommunicationMetadata(
-      const int                                   fromRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-
-  /**
    * Send a metadata sequence filled with InvalidMetadataEntry
    * to rank \p toRank.
    */
   void sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
-      const int                                   toRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-
-  /**
-   * Send a metadata sequence filled with InvalidMetadataEntry
-   * to rank \p toRank.
-   */
-  void sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
       const int                                   toRank,
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const int                                   level);

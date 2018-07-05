@@ -188,6 +188,18 @@ private:
   const int _DMPObservables;
   
   /**
+   * Number of halo layers around a
+   * refined cell.
+   */
+  const int _haloLayers;
+
+  /**
+   * Number of limiter helper layers in each
+   * helper cell subdomain around a troubled cell.
+   */
+  const int _limiterHelperLayers;
+
+  /**
    * The minimum limiter status a cell must have
    * to allocate a passive FV patch.
    *
@@ -1799,21 +1811,6 @@ public:
   void restriction(
       const int cellDescriptionsIndex,
       const int element) override;
-
-  /**
-   * Restrict the Troubled limiter status of a cell
-   * up to the parent if the parent exists.
-   *
-   * Any other limiter status is ignored.
-   *
-   * \p This operation ensures thread-safety by using a lock.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) mapping method.
-   */
-  void restrictToNextParent(
-      const CellDescription& cellDescription,
-      const int parentElement) const;
 
   /**
    * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)

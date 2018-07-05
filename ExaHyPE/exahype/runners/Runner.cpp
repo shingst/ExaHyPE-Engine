@@ -753,7 +753,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
-
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while (
     (
@@ -866,7 +865,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
-    repository.switchToBroadcastAndRestrictLimiterStatus();
+    repository.switchToBroadcastAndDropNeighbourMessages();
     repository.iterate( 1, communicatePeanoVertices );
 
     printStatistics();
@@ -1118,7 +1117,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-  repository.switchToBroadcastAndRestrictLimiterStatus();
+  repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.

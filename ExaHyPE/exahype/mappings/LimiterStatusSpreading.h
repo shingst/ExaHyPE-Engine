@@ -75,7 +75,7 @@ private:
 
 public:
   /**
-   * Is set to true in BroadcastAndRestrictLimiterStatus::beginIteration(...),
+   * Is set to true in BroadcastAndDropNeighbourMessages::beginIteration(...),
    * is unset in endIteration(...) of this mapping.
    */
   static bool IsFirstIteration;

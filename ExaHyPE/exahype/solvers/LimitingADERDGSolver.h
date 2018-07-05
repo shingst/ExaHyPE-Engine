@@ -348,8 +348,6 @@ private:
    * If the counter is set to zero, change a troubled cell
    * to NeighbourOfCellIsTroubled1.
    *
-   * Further write back the new value to the boundary.
-   *
    * \param[in] isTroubled A bool indicating if the patch's solution is (still) troubled
    *
    * \return True if the limiter domain changes irregularly in the cell, i.e.,
@@ -375,35 +373,6 @@ private:
    * FV space, overwrites the FV solution on the limiter patch with the projected values.
    */
   void projectDGSolutionOnFVSpace(SolverPatch& solverPatch,LimiterPatch& limiterPatch) const;
-
-  /**
-   * Vetoes an erasing request if the cell is within
-   * or right next to a region which is refined according to
-   * the limiter status.
-   */
-  void vetoErasingChildrenRequestBasedOnLimiterStatus(
-      SolverPatch& solverPatch) const;
-
-  /**
-   * Depending on the finest adaptive mesh level and the given level,
-   * compute the minimum limiter status for which we need to refine
-   * a cell.
-   *
-   * If we have FV layer of width 1, refine if the limiter status is at least 1.
-   * If we have a FV layer of width 2, do some telescoping:
-   * On the second finest level, refine if the limiter status is at least 2.
-   * On coarser levels, refine if the limiter status is at least 3.
-   *
-   * On the finest level, the general rule is
-   *
-   * minStatusForRef = maximumLimiterStatus - helperLayers (+1)
-   *
-   * On coarser levels we have to ensure that
-   *
-   * maximumLimiterStatus - minStatusForRef >= 2
-   *
-   */
-  int computeMinimumLimiterStatusForRefinement(int level) const;
 
   /**
    * Ensure that the time step data of the limiter is
