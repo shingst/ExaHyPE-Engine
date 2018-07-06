@@ -189,9 +189,10 @@ private:
   
   /**
    * Number of halo layers around a
-   * refined cell.
+   * refined cell. This is the minimum as
+   * the next neighbour will then have status=1.
    */
-  const int _haloLayers;
+  static constexpr int MaximumHaloStatus = 2;
 
   /**
    * Number of limiter helper layers in each

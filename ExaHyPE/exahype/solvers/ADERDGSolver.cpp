@@ -456,11 +456,10 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minNextTimeStepSize( std::numeric_limits<double>::max() ),
      _stabilityConditionWasViolated( false ),
      _DMPObservables(DMPObservables),
-     _haloLayers(1),
      _limiterHelperLayers(limiterHelperLayers),
-     _minimumLimiterStatusForPassiveFVPatch(_haloLayers+1),
-     _minimumLimiterStatusForActiveFVPatch (_haloLayers+limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch),
-     _minimumLimiterStatusForTroubledCell  (_haloLayers+2*limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch) {
+     _minimumLimiterStatusForPassiveFVPatch(MaximumHaloStatus+1),
+     _minimumLimiterStatusForActiveFVPatch (limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch),
+     _minimumLimiterStatusForTroubledCell  (limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch) {
 
   // register tags with profiler
   for (const char* tag : tags) {
@@ -1021,7 +1020,6 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   switch (refinementControl) {
   case exahype::solvers::Solver::RefinementControl::Keep:
     cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Keep);
-    cellDescription.setHaloStatus(TODO);
     break;
   case exahype::solvers::Solver::RefinementControl::Erase:
     cellDescription.setRefinementRequest(CellDescription::RefinementRequest::Erase);
@@ -1906,7 +1904,6 @@ bool exahype::solvers::ADERDGSolver::evaluateRefinementCriterionAfterSolutionUpd
                       cellDescription.getSize(),
                       cellDescription.getCorrectorTimeStamp(), // must be called after advancing in time
                       cellDescription.getLevel());
-
     return refinementControl==RefinementControl::Refine;
   }
 
@@ -1932,6 +1929,10 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   result._timeStepSize        = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
   result._refinementRequested = evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
+
+  if ( result._refinementRequested ) {
+    TODO
+  }
 
   if (
       !SpawnPredictionAsBackgroundJob ||
@@ -1994,6 +1995,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
     result._timeStepSize         = startNewTimeStep(cellDescriptionsIndex,element);
     result._refinementRequested |= evaluateRefinementCriterionAfterSolutionUpdate(
                                    cellDescriptionsIndex,element);
+    if ( result._refinementRequested ) {
+      TODO
+    }
+    result._limiterDomainChange
+
 
     compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
  
@@ -2735,6 +2741,24 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
       cellDescription.getAugmentationStatus());
   cellDescription.setFacewiseAugmentationStatus( faceIndex, otherAugmentationStatus );
 }
+
+int
+exahype::solvers::ADERDGSolver::determineHaloStatus(
+    const CellDescription& cellDescription,
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
+  int max = 0;
+
+
+  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
+    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
+      if ( neighbourMergePerformed[i] ) {
+        max = std::max( max, cellDescription.getFacewiseHaloStatus(i)-1 );
+      }
+    }
+  }
+  return max;
+}
+
 
 // merge metadata
 void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(

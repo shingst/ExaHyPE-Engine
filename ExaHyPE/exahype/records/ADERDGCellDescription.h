@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   05/07/2018 15:56
+    * @date   05/07/2018 21:58
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -130,12 +130,12 @@ namespace exahype {
             #endif
             int _communicationStatus;
             #ifdef UseManualAlignment
-            tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseHaloStatus __attribute__((aligned(VectorisationAlignment)));
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus __attribute__((aligned(VectorisationAlignment)));
             #else
-            tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseHaloStatus;
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
             #endif
-            int _haloStatus;
-            int _previousHaloStatus;
+            int _refinementStatus;
+            int _previousRefinementStatus;
             int _iterationsToCureTroubledCell;
             CompressionState _compressionState;
             int _bytesPerDoFInPreviousSolution;
@@ -151,7 +151,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
             
             
             inline int getSolverNumber() const 
@@ -1299,12 +1299,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _facewiseHaloStatus;
+               return _facewiseRefinementStatus;
             }
             
             
@@ -1328,52 +1328,52 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+            inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _facewiseHaloStatus = (facewiseHaloStatus);
+               _facewiseRefinementStatus = (facewiseRefinementStatus);
             }
             
             
             
-            inline int getHaloStatus() const 
+            inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _haloStatus;
+               return _refinementStatus;
             }
             
             
             
-            inline void setHaloStatus(const int& haloStatus) 
+            inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _haloStatus = haloStatus;
+               _refinementStatus = refinementStatus;
             }
             
             
             
-            inline int getPreviousHaloStatus() const 
+            inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _previousHaloStatus;
+               return _previousRefinementStatus;
             }
             
             
             
-            inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+            inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _previousHaloStatus = previousHaloStatus;
+               _previousRefinementStatus = previousRefinementStatus;
             }
             
             
@@ -1536,7 +1536,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+            ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
             
             /**
              * Generated
@@ -2883,12 +2883,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._facewiseHaloStatus;
+               return _persistentRecords._facewiseRefinementStatus;
             }
             
             
@@ -2912,78 +2912,78 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+            inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._facewiseHaloStatus = (facewiseHaloStatus);
+               _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
             }
             
             
             
-            inline int getFacewiseHaloStatus(int elementIndex) const 
+            inline int getFacewiseRefinementStatus(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               return _persistentRecords._facewiseHaloStatus[elementIndex];
+               return _persistentRecords._facewiseRefinementStatus[elementIndex];
                
             }
             
             
             
-            inline void setFacewiseHaloStatus(int elementIndex, const int& facewiseHaloStatus) 
+            inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               _persistentRecords._facewiseHaloStatus[elementIndex]= facewiseHaloStatus;
+               _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
                
             }
             
             
             
-            inline int getHaloStatus() const 
+            inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._haloStatus;
+               return _persistentRecords._refinementStatus;
             }
             
             
             
-            inline void setHaloStatus(const int& haloStatus) 
+            inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._haloStatus = haloStatus;
+               _persistentRecords._refinementStatus = refinementStatus;
             }
             
             
             
-            inline int getPreviousHaloStatus() const 
+            inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._previousHaloStatus;
+               return _persistentRecords._previousRefinementStatus;
             }
             
             
             
-            inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+            inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._previousHaloStatus = previousHaloStatus;
+               _persistentRecords._previousRefinementStatus = previousRefinementStatus;
             }
             
             
@@ -3237,7 +3237,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   05/07/2018 15:56
+    * @date   05/07/2018 21:58
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -3290,9 +3290,9 @@ namespace exahype {
             int _previousAugmentationStatus;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
             int _communicationStatus;
-            tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseHaloStatus;
-            int _haloStatus;
-            int _previousHaloStatus;
+            tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
+            int _refinementStatus;
+            int _previousRefinementStatus;
             int _iterationsToCureTroubledCell;
             
             /** mapping of records:
@@ -3319,7 +3319,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
             
             
             inline int getSolverNumber() const 
@@ -4505,12 +4505,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _facewiseHaloStatus;
+               return _facewiseRefinementStatus;
             }
             
             
@@ -4534,52 +4534,52 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+            inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _facewiseHaloStatus = (facewiseHaloStatus);
+               _facewiseRefinementStatus = (facewiseRefinementStatus);
             }
             
             
             
-            inline int getHaloStatus() const 
+            inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _haloStatus;
+               return _refinementStatus;
             }
             
             
             
-            inline void setHaloStatus(const int& haloStatus) 
+            inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _haloStatus = haloStatus;
+               _refinementStatus = refinementStatus;
             }
             
             
             
-            inline int getPreviousHaloStatus() const 
+            inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _previousHaloStatus;
+               return _previousRefinementStatus;
             }
             
             
             
-            inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+            inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _previousHaloStatus = previousHaloStatus;
+               _previousRefinementStatus = previousRefinementStatus;
             }
             
             
@@ -4801,7 +4801,7 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+            ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
             
             /**
              * Generated
@@ -6193,12 +6193,12 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+            inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._facewiseHaloStatus;
+               return _persistentRecords._facewiseRefinementStatus;
             }
             
             
@@ -6222,78 +6222,78 @@ namespace exahype {
              * 
              * @see convert()
              */
-            inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+            inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._facewiseHaloStatus = (facewiseHaloStatus);
+               _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
             }
             
             
             
-            inline int getFacewiseHaloStatus(int elementIndex) const 
+            inline int getFacewiseRefinementStatus(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               return _persistentRecords._facewiseHaloStatus[elementIndex];
+               return _persistentRecords._facewiseRefinementStatus[elementIndex];
                
             }
             
             
             
-            inline void setFacewiseHaloStatus(int elementIndex, const int& facewiseHaloStatus) 
+            inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-               _persistentRecords._facewiseHaloStatus[elementIndex]= facewiseHaloStatus;
+               _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
                
             }
             
             
             
-            inline int getHaloStatus() const 
+            inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._haloStatus;
+               return _persistentRecords._refinementStatus;
             }
             
             
             
-            inline void setHaloStatus(const int& haloStatus) 
+            inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._haloStatus = haloStatus;
+               _persistentRecords._refinementStatus = refinementStatus;
             }
             
             
             
-            inline int getPreviousHaloStatus() const 
+            inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               return _persistentRecords._previousHaloStatus;
+               return _persistentRecords._previousRefinementStatus;
             }
             
             
             
-            inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+            inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-               _persistentRecords._previousHaloStatus = previousHaloStatus;
+               _persistentRecords._previousRefinementStatus = previousRefinementStatus;
             }
             
             
@@ -6602,7 +6602,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   05/07/2018 15:56
+       * @date   05/07/2018 21:58
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -6692,12 +6692,12 @@ namespace exahype {
                #endif
                int _communicationStatus;
                #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseHaloStatus __attribute__((aligned(VectorisationAlignment)));
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus __attribute__((aligned(VectorisationAlignment)));
                #else
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseHaloStatus;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
                #endif
-               int _haloStatus;
-               int _previousHaloStatus;
+               int _refinementStatus;
+               int _previousRefinementStatus;
                int _iterationsToCureTroubledCell;
                CompressionState _compressionState;
                int _bytesPerDoFInPreviousSolution;
@@ -6713,7 +6713,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -7763,12 +7763,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _facewiseHaloStatus;
+                  return _facewiseRefinementStatus;
                }
                
                
@@ -7792,52 +7792,52 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _facewiseHaloStatus = (facewiseHaloStatus);
+                  _facewiseRefinementStatus = (facewiseRefinementStatus);
                }
                
                
                
-               inline int getHaloStatus() const 
+               inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _haloStatus;
+                  return _refinementStatus;
                }
                
                
                
-               inline void setHaloStatus(const int& haloStatus) 
+               inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _haloStatus = haloStatus;
+                  _refinementStatus = refinementStatus;
                }
                
                
                
-               inline int getPreviousHaloStatus() const 
+               inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _previousHaloStatus;
+                  return _previousRefinementStatus;
                }
                
                
                
-               inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _previousHaloStatus = previousHaloStatus;
+                  _previousRefinementStatus = previousRefinementStatus;
                }
                
                
@@ -8000,7 +8000,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -9223,12 +9223,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._facewiseHaloStatus;
+                  return _persistentRecords._facewiseRefinementStatus;
                }
                
                
@@ -9252,78 +9252,78 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._facewiseHaloStatus = (facewiseHaloStatus);
+                  _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
                }
                
                
                
-               inline int getFacewiseHaloStatus(int elementIndex) const 
+               inline int getFacewiseRefinementStatus(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseHaloStatus[elementIndex];
+                  return _persistentRecords._facewiseRefinementStatus[elementIndex];
                   
                }
                
                
                
-               inline void setFacewiseHaloStatus(int elementIndex, const int& facewiseHaloStatus) 
+               inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseHaloStatus[elementIndex]= facewiseHaloStatus;
+                  _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
                   
                }
                
                
                
-               inline int getHaloStatus() const 
+               inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._haloStatus;
+                  return _persistentRecords._refinementStatus;
                }
                
                
                
-               inline void setHaloStatus(const int& haloStatus) 
+               inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._haloStatus = haloStatus;
+                  _persistentRecords._refinementStatus = refinementStatus;
                }
                
                
                
-               inline int getPreviousHaloStatus() const 
+               inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._previousHaloStatus;
+                  return _persistentRecords._previousRefinementStatus;
                }
                
                
                
-               inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._previousHaloStatus = previousHaloStatus;
+                  _persistentRecords._previousRefinementStatus = previousRefinementStatus;
                }
                
                
@@ -9577,7 +9577,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   05/07/2018 15:56
+       * @date   05/07/2018 21:58
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -9628,9 +9628,9 @@ namespace exahype {
                int _previousAugmentationStatus;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
                int _communicationStatus;
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseHaloStatus;
-               int _haloStatus;
-               int _previousHaloStatus;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
+               int _refinementStatus;
+               int _previousRefinementStatus;
                int _iterationsToCureTroubledCell;
                
                /** mapping of records:
@@ -9656,7 +9656,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -10741,12 +10741,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _facewiseHaloStatus;
+                  return _facewiseRefinementStatus;
                }
                
                
@@ -10770,52 +10770,52 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _facewiseHaloStatus = (facewiseHaloStatus);
+                  _facewiseRefinementStatus = (facewiseRefinementStatus);
                }
                
                
                
-               inline int getHaloStatus() const 
+               inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _haloStatus;
+                  return _refinementStatus;
                }
                
                
                
-               inline void setHaloStatus(const int& haloStatus) 
+               inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _haloStatus = haloStatus;
+                  _refinementStatus = refinementStatus;
                }
                
                
                
-               inline int getPreviousHaloStatus() const 
+               inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _previousHaloStatus;
+                  return _previousRefinementStatus;
                }
                
                
                
-               inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _previousHaloStatus = previousHaloStatus;
+                  _previousRefinementStatus = previousRefinementStatus;
                }
                
                
@@ -11037,7 +11037,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus, const int& haloStatus, const int& previousHaloStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementRequest& refinementRequest, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
@@ -12302,12 +12302,12 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseHaloStatus() const 
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._facewiseHaloStatus;
+                  return _persistentRecords._facewiseRefinementStatus;
                }
                
                
@@ -12331,78 +12331,78 @@ namespace exahype {
                 * 
                 * @see convert()
                 */
-               inline void setFacewiseHaloStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseHaloStatus) 
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._facewiseHaloStatus = (facewiseHaloStatus);
+                  _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
                }
                
                
                
-               inline int getFacewiseHaloStatus(int elementIndex) const 
+               inline int getFacewiseRefinementStatus(int elementIndex) const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseHaloStatus[elementIndex];
+                  return _persistentRecords._facewiseRefinementStatus[elementIndex];
                   
                }
                
                
                
-               inline void setFacewiseHaloStatus(int elementIndex, const int& facewiseHaloStatus) 
+               inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseHaloStatus[elementIndex]= facewiseHaloStatus;
+                  _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
                   
                }
                
                
                
-               inline int getHaloStatus() const 
+               inline int getRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._haloStatus;
+                  return _persistentRecords._refinementStatus;
                }
                
                
                
-               inline void setHaloStatus(const int& haloStatus) 
+               inline void setRefinementStatus(const int& refinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._haloStatus = haloStatus;
+                  _persistentRecords._refinementStatus = refinementStatus;
                }
                
                
                
-               inline int getPreviousHaloStatus() const 
+               inline int getPreviousRefinementStatus() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  return _persistentRecords._previousHaloStatus;
+                  return _persistentRecords._previousRefinementStatus;
                }
                
                
                
-               inline void setPreviousHaloStatus(const int& previousHaloStatus) 
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
-                  _persistentRecords._previousHaloStatus = previousHaloStatus;
+                  _persistentRecords._previousRefinementStatus = previousRefinementStatus;
                }
                
                

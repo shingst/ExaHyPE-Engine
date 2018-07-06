@@ -349,14 +349,14 @@ namespace exahype {
      * The limiter domain change that was detected after a solution
      * update or during the limiter status spreading.
      */
-    enum class LimiterDomainChange {
+    enum class MeshUpdateEvent {
       /**
        * A regular change of the limiter domain
        * has occurred. This might be either no change at
        * all or a situation where a cell directly next to a
        * troubled cell has been newly marked as troubled.
        */
-      Regular,
+      RegularChange,
 
       /**
        * A cell which is not directly next to a troubled cell
@@ -372,7 +372,7 @@ namespace exahype {
        * marked with LimiterStatus other than Ok on the finest mesh level,
        * this status will change to IrregularChangeOnCoarserMeshLevel.
        */
-      Irregular,
+      IrregularLimiterDomainChange,
 
       /**
        * Scenario 1:
@@ -395,7 +395,14 @@ namespace exahype {
        * This can potentially be relaxed for anarchic time stepping where
        * each cell has its own time step size and stamp.
        */
-      IrregularRequiringMeshUpdate,
+      IrregularRefinementRequested,
+
+
+      /**
+       * Regular refinement was requested, i.e.
+       * a resolved wave on the fine grid evolved into the next cell.
+       */
+      RegularRefinementRequested
     };
 
     /**

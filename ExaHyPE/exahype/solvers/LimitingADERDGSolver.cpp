@@ -938,7 +938,7 @@ exahype::solvers::LimitingADERDGSolver::determineLimiterStatusAfterSolutionUpdat
       limiterDomainChange = LimiterDomainChange::IrregularRequiringMeshUpdate;
     }
   } else {
-    if ( solverPatch.getPreviousHaloStatus()>=_solver->getMinimumLimiterStatusForTroubledCell() ) {
+    if ( solverPatch.getPreviousHaloStatus() >= _solver->getMinimumLimiterStatusForTroubledCell() ) {
       solverPatch.setHaloStatus(_solver->getMinimumLimiterStatusForTroubledCell());
       solverPatch.setIterationsToCureTroubledCell(
           solverPatch.getIterationsToCureTroubledCell()-1);
@@ -947,6 +947,13 @@ exahype::solvers::LimitingADERDGSolver::determineLimiterStatusAfterSolutionUpdat
         solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1); // TODO(Dominic): Probably not necessary
       }
     } else {
+      // here
+//      const int mergedHaloStatus     = ADERDGSolver::determineHaloStatus(solverPatch,neighbourMergePerformed);
+//      const int refinementHaloStatus = solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()
+//                                       &&
+//                                       (solverPatch.getRefinementRequest()==SolverPatch::RefinementRequest::Refine ||
+//                                       solverPatch.getRefinementRequest()==SolverPatch::RefinementRequest::Keep) ?
+//                                       ADERDGSolver::MaximumHaloStatus : 1;
       solverPatch.setHaloStatus(
           determineLimiterStatus(
               solverPatch,neighbourMergePerformed));

@@ -451,9 +451,9 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent int communicationStatus;
   
   /**
-   * \see haloStatus
+   * \see refinementStatus
    */
-  persistent int facewiseHaloStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseRefinementStatus[DIMENSIONS_TIMES_TWO];
   
   /**
    * The halo status of the cell is used for
@@ -467,10 +467,10 @@ class exahype::records::ADERDGCellDescription {
    * reduction of the facewiseHaloStatus elements.
    * It is not communicated to other cells.
    */
-  parallelise persistent int haloStatus;
+  parallelise persistent int refinementStatus;
   
   /**
-   * The cell descriptions previous limiter status.
+   * The cell descriptions previous refinement status.
    * 
    * This field is only need for the troubled cell recomputation
    * which must be performed after a irregular limiter domain
@@ -479,7 +479,7 @@ class exahype::records::ADERDGCellDescription {
    * the halo status of a cell changed by more than the
    * helper layer width.
    */
-  parallelise persistent int previousHaloStatus;
+  parallelise persistent int previousRefinementStatus;
   
   /**
    * A counter holding the number of iterations to
