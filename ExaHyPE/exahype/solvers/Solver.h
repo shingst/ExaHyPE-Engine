@@ -611,7 +611,7 @@ class exahype::solvers::Solver {
    * a pair of RegularRefinementRequested and IrregularLimiterDomainChange,
    * we overwrite _nextMeshUpdateEvent with IrregularRefinementRequested.
    */
-  static MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpdateEvents(
+  static MeshUpdateEvent mergeMeshUpdateEvents(
       const MeshUpdateEvent meshUpdateEvent1,const MeshUpdateEvent meshUpdateEvent2);
 
   /**

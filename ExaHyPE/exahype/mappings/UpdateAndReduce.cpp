@@ -103,10 +103,9 @@ exahype::mappings::UpdateAndReduce::UpdateAndReduce(
 void exahype::mappings::UpdateAndReduce::mergeWithWorkerThread(
     const UpdateAndReduce& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _meshUpdateRequests[i]   = _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
-    _meshUpdateEvents[i] = std::max ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
-    _minTimeStepSizes[i]     = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i]            = std::max(_maxLevels[i], workerThread._maxLevels[i]);
+    _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
+    _minTimeStepSizes[i] = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
+    _maxLevels[i]        = std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
 }
 #endif

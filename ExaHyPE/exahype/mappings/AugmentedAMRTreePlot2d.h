@@ -92,12 +92,11 @@ class exahype::mappings::AugmentedAMRTreePlot2d {
   tarch::plotter::griddata::Writer::CellDataWriter* _cellTypeWriter;
   tarch::plotter::griddata::Writer::CellDataWriter* _cellDescriptionIndexWriter;
   tarch::plotter::griddata::Writer::CellDataWriter* _refinementEventWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _refinementRequestWriter;
   tarch::plotter::griddata::Writer::CellDataWriter* _cellDataWriter;
   tarch::plotter::griddata::Writer::CellDataWriter* _augmentationStatusWriter;
   tarch::plotter::griddata::Writer::CellDataWriter* _communicationStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _limiterStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _previousLimiterStatusWriter;
+  tarch::plotter::griddata::Writer::CellDataWriter* _refinementStatusWriter;
+  tarch::plotter::griddata::Writer::CellDataWriter* _previousRefinementStatusWriter;
   tarch::plotter::griddata::Writer::CellDataWriter* _hasVirtualChildrenWriter;
 
   int _cellCounter;

@@ -1039,7 +1039,7 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
      &&
      fineGridCellDescription.getLevel()<getMaximumAdaptiveMeshLevel()
      &&
-     fineGridCellDescription.getRefinementStatus()==RefineOrKeepOnFineGrid
+     fineGridCellDescription.getRefinementStatus() > 0
   ) {
     fineGridCellDescription.setRefinementEvent(CellDescription::RefiningRequested);
   }

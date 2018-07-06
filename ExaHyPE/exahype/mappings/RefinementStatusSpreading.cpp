@@ -113,8 +113,7 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
 
 bool exahype::mappings::RefinementStatusSpreading::spreadRefinementStatus(exahype::solvers::Solver* solver) {
   return
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
-      !=exahype::solvers::Solver::MeshUpdateEvent::None;
+      solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None;
 }
 
 void exahype::mappings::RefinementStatusSpreading::beginIteration(
@@ -125,8 +124,7 @@ void exahype::mappings::RefinementStatusSpreading::beginIteration(
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if ( spreadRefinementStatus(solver) ) {
-      auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDG->updateNextMeshUpdateEvent(limitingADERDG->getMeshUpdateEvent());
+      solver->updateNextMeshUpdateEvent(solver->getMeshUpdateEvent());
     }
   }
 
@@ -143,14 +141,12 @@ void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if ( spreadRefinementStatus(solver) ) {
-      auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
       bool meshRefinementRequired =
-          limitingADERDG->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularRefinementRequested ||
-          limitingADERDG->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::RegularRefinementRequested;
-      limitingADERDG->updateNextAttainedStableState(!meshRefinementRequired);
-      limitingADERDG->setNextMeshUpdateEvent();
-      limitingADERDG->setNextAttainedStableState();
+          solver->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularRefinementRequested ||
+          solver->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::RegularRefinementRequested;
+      solver->updateNextAttainedStableState(!meshRefinementRequired);
+      solver->setNextMeshUpdateEvent();
+      solver->setNextAttainedStableState();
     }
   }
 

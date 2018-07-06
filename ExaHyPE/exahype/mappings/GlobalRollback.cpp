@@ -101,11 +101,7 @@ void exahype::mappings::GlobalRollback::beginIteration(
 }
 
 bool exahype::mappings::GlobalRollback::performGlobalRollback(exahype::solvers::Solver* solver) {
-  return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
-      ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
+  return solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularRefinementRequested;
 }
 
 void exahype::mappings::GlobalRollback::endIteration(
@@ -116,12 +112,12 @@ void exahype::mappings::GlobalRollback::endIteration(
          performGlobalRollback(solver) &&
          exahype::solvers::Solver::FuseADERDGPhases==true
     ) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
+      solver->rollbackToPreviousTimeStepFused();
     } else if (
          performGlobalRollback(solver) &&
          exahype::solvers::Solver::FuseADERDGPhases==false
     ) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
+      solver->rollbackToPreviousTimeStep();
     }
 
   }
@@ -148,17 +144,15 @@ void exahype::mappings::GlobalRollback::enterCell(
           element!=exahype::solvers::Solver::NotFound &&
           performGlobalRollback(solver)
       ) {
-        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-        limitingADERDGSolver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element); // TODO(Dominic): Merge
+        solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element); // TODO(Dominic): Merge
 
         if (exahype::solvers::Solver::FuseADERDGPhases) {
-          limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
+          solver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
         } else {
-          limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
+          solver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
         }
 
-        limitingADERDGSolver->rollbackSolutionGlobally(fineGridCell.getCellDescriptionsIndex(),element);
+        solver->rollbackSolutionGlobally(fineGridCell.getCellDescriptionsIndex(),element);
       }
     }
 
