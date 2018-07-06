@@ -570,12 +570,6 @@ void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
 ///////////////////////////////////
 // CELL-LOCAL
 //////////////////////////////////
-bool exahype::solvers::FiniteVolumesSolver::evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) {
-  // TODO(Dominic): Not implemented.
-  return false;
-}
 
 double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(
     const int cellDescriptionsIndex,

@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#ifndef EXAHYPE_MAPPINGS_LimiterStatusSpreading_H_
-#define EXAHYPE_MAPPINGS_LimiterStatusSpreading_H_
+#ifndef EXAHYPE_MAPPINGS_RefinementStatusSpreading_H_
+#define EXAHYPE_MAPPINGS_RefinementStatusSpreading_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -31,7 +31,7 @@
 
 namespace exahype {
 namespace mappings {
-class LimiterStatusSpreading;
+class RefinementStatusSpreading;
 }
 }
 
@@ -47,7 +47,7 @@ class LimiterStatusSpreading;
  *
  * @author Dominic E. Charrier
  */
-class exahype::mappings::LimiterStatusSpreading {
+class exahype::mappings::RefinementStatusSpreading {
 private:
   /**
    * Logging device for the trace macros.
@@ -58,8 +58,7 @@ private:
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
-  std::vector<bool>                                  _meshUpdateRequests;
-  std::vector<exahype::solvers::LimiterDomainChange> _limiterDomainChanges;
+  std::vector<exahype::solvers::Solver::MeshUpdateEvent> _limiterDomainChanges;
 
   /**
    * Initialise the vectors _meshUpdateRequests, _limiterDomainChanges.
@@ -71,7 +70,7 @@ private:
    * \return true if we need to perform limiter status spreading
    * for this solver.
    */
-  static bool spreadLimiterStatus(exahype::solvers::Solver* solver);
+  static bool spreadRefinementStatus(exahype::solvers::Solver* solver);
 
 public:
   /**
@@ -112,7 +111,7 @@ public:
   /**
    * We copy over the veto flag from the master thread
    */
-  LimiterStatusSpreading(const LimiterStatusSpreading& masterThread);
+  RefinementStatusSpreading(const RefinementStatusSpreading& masterThread);
 #endif
   /**
    * Initialise all heaps.
@@ -295,16 +294,16 @@ public:
   /**
    * Nop
    */
-  LimiterStatusSpreading();
+  RefinementStatusSpreading();
   /**
    * Nop
    */
-  virtual ~LimiterStatusSpreading();
+  virtual ~RefinementStatusSpreading();
 #if defined(SharedMemoryParallelisation)
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const LimiterStatusSpreading& workerThread);
+  void mergeWithWorkerThread(const RefinementStatusSpreading& workerThread);
 #endif
   /**
    * Nop.

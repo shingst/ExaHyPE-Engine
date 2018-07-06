@@ -110,8 +110,8 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
   return
       solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
       &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::Irregular;
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
+      ==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
 }
 
 void exahype::mappings::LocalRollback::endIteration(

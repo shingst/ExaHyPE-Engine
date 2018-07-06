@@ -104,7 +104,7 @@ bool exahype::mappings::GlobalRollback::performGlobalRollback(exahype::solvers::
   return
       solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
       &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
       ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
 }
 

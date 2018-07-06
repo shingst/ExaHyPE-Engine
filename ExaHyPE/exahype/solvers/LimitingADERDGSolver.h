@@ -141,19 +141,6 @@ private:
   #endif
 
   /**
-   * A flag indicating that the limiter domain has changed.
-   * This might be the case if either a cell has been
-   * newly marked as troubled or healed.
-   */
-  exahype::solvers::LimiterDomainChange _limiterDomainChange;
-
-  /**
-   * The limiterDomainHasChanged for the next
-   * iteration.
-   */
-  exahype::solvers::LimiterDomainChange _nextLimiterDomainChange;
-
-  /**
    * TODO(Dominc): Remove after docu is recycled.
    *
    * This operation sets the solutions' minimum and maximum value on a cell.
@@ -319,7 +306,7 @@ private:
    * to Troubled or from Troubled to NeighbourOfTroubled3, NeighbourOfTroubled4, this
    * methods returns false.
    */
-  LimiterDomainChange determineLimiterStatusAfterSolutionUpdate(
+  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
       SolverPatch& solverPatch,const bool isTroubled,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
 
@@ -527,36 +514,6 @@ public:
    */
   static int getMaxMinimumLimiterStatusForTroubledCell();
 
-  /*
-   * Check if a solver requested limiter status spreading.
-   * Such a request might stem from a limiting ADERDGSolver which
-   * has requested mesh refinement or a local
-   * or global recomputation.
-   *
-   * TODO(Dominic): We should distinguish between mesh update requests
-   * stemming from the limiter status based refinement criterion and
-   * and those stemming from the user's refinement criterion.
-   */
-  static bool oneSolverRequestedLimiterStatusSpreading();
-
-  /*
-   * Check if a solver requested either local or global
-   * recomputation.
-   */
-  static bool oneSolverRequestedLocalOrGlobalRecomputation();
-
-  /*
-   * Check if a solver requested local recomputation
-   * recomputation.
-   */
-  static bool oneSolverRequestedLocalRecomputation();
-
-  /*
-   * Check if a solver requested either global
-   * recomputation.
-   */
-  static bool oneSolverRequestedGlobalRecomputation();
-
   /**
    * Create a limiting ADER-DG solver.
    *
@@ -583,14 +540,6 @@ public:
   // Disallow copy and assignment
   LimitingADERDGSolver(const ADERDGSolver& other) = delete;
   LimitingADERDGSolver& operator=(const ADERDGSolver& other) = delete;
-
-  /**
-   * Wire through to the ADER-DG solver.
-   */
-  void updateNextMeshUpdateRequest(const bool& meshUpdateRequest) final override;
-  bool getNextMeshUpdateRequest() const final override;
-  bool getMeshUpdateRequest() const final override;
-  void setNextMeshUpdateRequest() final override;
 
   /**
    * Wire through to the ADER-DG solver.
@@ -656,25 +605,6 @@ public:
   void zeroTimeStepSizes() final override;
 
   /**
-   * TODO(Dominic): Add docu.
-   */
-  LimiterDomainChange getNextLimiterDomainChange() const;
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void updateNextLimiterDomainChange(LimiterDomainChange limiterDomainChange);
-  /**
-   * TODO(Dominic): Add docu.
-   * Can also be used to reset the _nextLimiterDomainChange
-   * state to Regular.
-   */
-  void setNextLimiterDomainChange();
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  LimiterDomainChange getLimiterDomainChange() const;
-
-  /**
    * Roll back the time step data to the
    * ones of the previous time step.
    */
@@ -737,24 +667,6 @@ public:
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
-  /**
-   * \return true in case a cell on a coarser mesh level is marked as
-   * Troubled or in case a cell on a coarser
-   * mesh level was marked with a limiter status other than troubled
-   * and for the given refinement level, it is required to refine this cell.
-   * Otherwise return false.
-   *
-   * In order to ensure that all four helper cells around the actual troubled cell
-   * fit on the finest mesh level, we need to refine additional cells around a troubled
-   * cell. The number of additionally refined cells around a troubled cells depends
-   * here on the difference in levels to the finest mesh level.
-   *
-   * At a sufficent distance to the finest level, the minimum set of cells that needs to be refined around a troubled cell
-   * are their 3^d neighbours. However since our limiter status flagging
-   * only considers direct (face) neighbours, we need to refine all cells with
-   * a limiter status Troubled-1 and Troubled-2.
-   */
-  bool evaluateLimiterStatusRefinementCriterion(const SolverPatch& solverPatch) const;
 
   /**
    * TODO(Dominic): Update docu.
@@ -803,7 +715,7 @@ public:
    *
    * returns true if a new limiter patch was allocated.
    */
-  void updateLimiterStatusDuringLimiterStatusSpreading(
+  void updateRefinementStatusDuringRefinementStatusSpreading(
       const int cellDescriptionsIndex, const int solverElement) const;
 
   /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
@@ -859,10 +771,6 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) final override;
-
   double startNewTimeStep(
       const int cellDescriptionsIndex,
       const int element) final override;
@@ -933,7 +841,7 @@ public:
    * set the ADER-DG time step sizes for the limiter patch.
    * (ADER-DG is always dictating the time step sizes.)
    *
-   * \see determineLimiterStatusAfterLimiterStatusSpreading(...)
+   * \see determineLimiterStatusAfterRefinementStatusSpreading(...)
    *
    * \note Make sure to reset neighbour merge
    * helper variables in this method call.
@@ -976,8 +884,8 @@ public:
    * the information taken from the neighbour
    * merging.
    */
-  exahype::solvers::LimiterDomainChange
-  updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
+  MeshUpdateEvent
+  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
       const int cellDescriptionsIndex,
       const int element,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);

@@ -67,16 +67,6 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
-double exahype::solvers::convertToDouble(const LimiterDomainChange& limiterDomainChange) {
-  return static_cast<double>(static_cast<int>(limiterDomainChange));
-}
-
-exahype::solvers::LimiterDomainChange exahype::solvers::convertToLimiterDomainChange(const double value) {
-  assertion((int) std::round(value)>=static_cast<int>(LimiterDomainChange::Regular));
-  assertion((int) std::round(value)<=static_cast<int>(LimiterDomainChange::IrregularRequiringMeshUpdate));
-  return static_cast<LimiterDomainChange>((int) std::round(value));
-}
-
 bool exahype::solvers::Solver::FuseADERDGPhases           = false;
 double exahype::solvers::Solver::WeightForPredictionRerun = 0.99;
 
@@ -181,16 +171,17 @@ exahype::solvers::Solver::Solver(
       _domainOffset(std::numeric_limits<double>::max()),
       _domainSize(std::numeric_limits<double>::max()),
       _maximumMeshSize(maximumMeshSize),
-      _coarsestMeshLevel(3),
+      _coarsestMeshSize(std::numeric_limits<double>::max()),
+      _coarsestMeshLevel(std::numeric_limits<double>::max()),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
       _maxLevel(-std::numeric_limits<int>::max()), // "-", min
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)),
-      _meshUpdateRequest(false),
-      _nextMeshUpdateRequest(false),
       _attainedStableState(false),
-      _nextAttainedStableState(false){ }
+      _nextAttainedStableState(false),
+      _meshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested),
+      _nextMeshUpdateEvent(MeshUpdateEvent::None) { }
 
 
 std::string exahype::solvers::Solver::getIdentifier() const {
@@ -375,27 +366,10 @@ int exahype::solvers::Solver::getMaxLevel() const {
   return _maxLevel;
 }
 
-void exahype::solvers::Solver::resetMeshUpdateRequestFlags() {
-  _meshUpdateRequest     = false;
-  _nextMeshUpdateRequest = false;
+bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
+  return _meshUpdateEvent==MeshUpdateEvent::IrregularRefinementRequested ||
+         _meshUpdateEvent==MeshUpdateEvent::RegularRefinementRequested;
 }
-
-
-void exahype::solvers::Solver::updateNextMeshUpdateRequest(
-    const bool& meshUpdateRequest) {
-  _nextMeshUpdateRequest |= meshUpdateRequest;
-}
-bool exahype::solvers::Solver::getNextMeshUpdateRequest() const {
-  return _nextMeshUpdateRequest;
-}
-void exahype::solvers::Solver::setNextMeshUpdateRequest() {
-  _meshUpdateRequest     = _nextMeshUpdateRequest;
-  _nextMeshUpdateRequest = false;
-}
-bool exahype::solvers::Solver::getMeshUpdateRequest() const {
-  return _meshUpdateRequest;
-}
-
 
 void exahype::solvers::Solver::updateNextAttainedStableState(
     const bool& attainedStableState) {
@@ -566,10 +540,34 @@ bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
   return result;
 }
 
-bool exahype::solvers::Solver::oneSolverRequestedMeshUpdate() {
+bool exahype::solvers::Solver::oneSolverRequestedMeshRefinement() {
   bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |= solver->getMeshUpdateRequest();
+    result |= solver->hasRequestedMeshRefinement();
+  }
+  return result;
+}
+
+bool exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() {
+  bool result = false;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result |= solver->getMeshUpdateEvent()!=MeshUpdateEvent::None;
+  }
+  return result;
+}
+
+bool exahype::solvers::Solver::oneSolverRequestedLocalRecomputation() {
+  bool result = false;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result |= solver->getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChange;
+  }
+  return result;
+}
+
+bool exahype::solvers::Solver::oneSolverRequestedGlobalRecomputation() {
+  bool result = false;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result |= solver->getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested;
   }
   return result;
 }
@@ -671,8 +669,7 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
 void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       const std::vector<double>& minTimeStepSizes,
       const std::vector<int>& maxLevels,
-      const std::vector<bool>& meshUpdateRequests,
-      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
+      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping) {
@@ -683,19 +680,8 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Update reduced quantities (over multiple batch iterations)
      */
     // mesh refinement events
-    solver->updateNextMeshUpdateRequest(meshUpdateRequests[solverNumber]);
-    solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
-    if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
-      if (
-          limitingADERDGSolver->getNextMeshUpdateRequest() && // TODO(Dominic): Reassess
-          limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
-      ) {
-        limitingADERDGSolver->updateNextLimiterDomainChange(
-            exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate);
-      }
-    }
+    solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
+    solver->updateNextAttainedStableState(solver->getNextMeshUpdateEvent()!=MeshUpdateEvent::None);
     // cell sizes (for AMR)
     solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
@@ -709,15 +695,8 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      */
     // mesh update events
     if ( isLastIterationOfBatchOrNoBatch ) {
-      solver->setNextMeshUpdateRequest();
+      solver->setNextMeshUpdateEvent();
       solver->setNextAttainedStableState();
-      if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDGSolver->setNextLimiterDomainChange();
-        assertion(
-            limitingADERDGSolver->getLimiterDomainChange()
-            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || solver->getMeshUpdateRequest());
-      }
     }
 
     // time
@@ -910,11 +889,84 @@ void exahype::dropMetadata(
       fromRank,x,level,messageType);
 }
 
+std::string exahype::solvers::Solver::toString(const MeshUpdateEvent& meshUpdateEvent) {
+  switch (meshUpdateEvent) {
+  case MeshUpdateEvent::None:
+    return "None";
+  case MeshUpdateEvent::IrregularLimiterDomainChange:
+    return "IrregularLimiterDomainChange";
+  case MeshUpdateEvent::RegularRefinementRequested:
+    return "RegularRefinementRequested";
+  case MeshUpdateEvent::IrregularRefinementRequested:
+    return "IrregularRefinementRequested";
+  default:
+    return "undefined";
+  }
+}
+
+double exahype::solvers::Solver::convertToDouble(const MeshUpdateEvent& meshUpdateEvent) {
+  return static_cast<double>(static_cast<int>(meshUpdateEvent));
+}
+
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::convertToMeshUpdateEvent(const double value) {
+  assertion((int) std::round(value)>=static_cast<int>(MeshUpdateEvent::None));
+  assertion((int) std::round(value)<=static_cast<int>(MeshUpdateEvent::IrregularRefinementRequested));
+  return static_cast<MeshUpdateEvent>((int) std::round(value));
+}
+
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpdateEvents(
+    const MeshUpdateEvent meshUpdateEvent1,
+    const MeshUpdateEvent meshUpdateEvent2) {
+  MeshUpdateEvent result = MeshUpdateEvent::None;
+  switch (meshUpdateEvent1) {
+  case MeshUpdateEvent::None:
+    result = meshUpdateEvent2;
+    break;
+  case MeshUpdateEvent::IrregularLimiterDomainChange:
+    if ( meshUpdateEvent2==MeshUpdateEvent::RegularRefinementRequested ) {
+      result = MeshUpdateEvent::IrregularRefinementRequested;
+    }
+    break;
+  case MeshUpdateEvent::RegularRefinementRequested:
+    if ( meshUpdateEvent2==MeshUpdateEvent::IrregularLimiterDomainChange ) {
+      result = MeshUpdateEvent::IrregularRefinementRequested;
+    }
+    break;
+  case MeshUpdateEvent::IrregularRefinementRequested:
+    result = MeshUpdateEvent::IrregularRefinementRequested;
+    break;
+  default:
+    logError("updateNextMeshUpdateEvent(...)","Unknown MeshUpdateRequest state: "<<_meshUpdateEvent);
+    std::abort();
+  }
+  return result;
+}
+
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::Solver::getNextMeshUpdateEvent() const {
+  return _nextMeshUpdateEvent;
+}
+
+void exahype::solvers::Solver::setNextMeshUpdateEvent() {
+  _meshUpdateEvent         = _nextMeshUpdateEvent;
+  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
+}
+
+void exahype::solvers::Solver::updateNextMeshUpdateEvent(
+    exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
+  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
+}
+
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::Solver::getMeshUpdateEvent() const {
+  return _meshUpdateEvent;
+}
+
 exahype::DataHeap::HeapEntries
 exahype::solvers::Solver::compileMeshUpdateFlagsForMaster(const int capacity) const {
   DataHeap::HeapEntries meshUpdateFlags(0,std::max(2,capacity)); // !!! does not fill the vector
 
-  meshUpdateFlags.push_back(getMeshUpdateRequest()   ? 1.0 : -1.0);
+  meshUpdateFlags.push_back(hasRequestedMeshRefinement()   ? 1.0 : -1.0);
   meshUpdateFlags.push_back(getAttainedStableState() ? 1.0 : -1.0);
   return meshUpdateFlags;
 }
@@ -941,7 +993,7 @@ void exahype::solvers::Solver::sendMeshUpdateFlagsToMaster(
 
 void exahype::solvers::Solver::mergeWithWorkerMeshUpdateFlags(const DataHeap::HeapEntries& message) {
   int index=0;
-  updateNextMeshUpdateRequest  ( ( message[index++] > 0 ) ? true : false );
+  updateNextMeshUpdateEvent    ( convertToMeshUpdateEvent( message[index++] > 0 ) );
   updateNextAttainedStableState( ( message[index++] > 0 ) ? true : false );
 }
 

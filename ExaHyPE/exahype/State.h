@@ -90,7 +90,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
      * Currently performing limiter status spreading. Only
      * relevant for merging metadata.
      */
-    LimiterStatusSpreading,
+    RefinementStatusSpreading,
 
     /**
      * In this section, the runner overlaps the

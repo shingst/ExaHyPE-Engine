@@ -44,8 +44,8 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
       case UseAdapterInitialPrediction: return "UseAdapterInitialPrediction";
       case UseAdapterFusedTimeStep: return "UseAdapterFusedTimeStep";
       case UseAdapterPredictionRerun: return "UseAdapterPredictionRerun";
-      case UseAdapterBroadcastAndRestrictLimiterStatus: return "UseAdapterBroadcastAndRestrictLimiterStatus";
-      case UseAdapterLimiterStatusSpreading: return "UseAdapterLimiterStatusSpreading";
+      case UseAdapterBroadcastAndDropNeighbourMessages: return "UseAdapterBroadcastAndDropNeighbourMessages";
+      case UseAdapterRefinementStatusSpreading: return "UseAdapterRefinementStatusSpreading";
       case UseAdapterPredictionOrLocalRecomputation: return "UseAdapterPredictionOrLocalRecomputation";
       case UseAdapterGlobalRollback: return "UseAdapterGlobalRollback";
       case UseAdapterMergeNeighbours: return "UseAdapterMergeNeighbours";
@@ -57,7 +57,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
 }
 
 std::string exahype::records::RepositoryState::getActionMapping() {
-   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotTree=5,UseAdapterFinaliseMeshRefinement=6,UseAdapterFinaliseMeshRefinementOrLocalRollback=7,UseAdapterInitialPrediction=8,UseAdapterFusedTimeStep=9,UseAdapterPredictionRerun=10,UseAdapterBroadcastAndRestrictLimiterStatus=11,UseAdapterLimiterStatusSpreading=12,UseAdapterPredictionOrLocalRecomputation=13,UseAdapterGlobalRollback=14,UseAdapterMergeNeighbours=15,UseAdapterUpdateAndReduce=16,UseAdapterPrediction=17,NumberOfAdapters=18)";
+   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotTree=5,UseAdapterFinaliseMeshRefinement=6,UseAdapterFinaliseMeshRefinementOrLocalRollback=7,UseAdapterInitialPrediction=8,UseAdapterFusedTimeStep=9,UseAdapterPredictionRerun=10,UseAdapterBroadcastAndDropNeighbourMessages=11,UseAdapterRefinementStatusSpreading=12,UseAdapterPredictionOrLocalRecomputation=13,UseAdapterGlobalRollback=14,UseAdapterMergeNeighbours=15,UseAdapterUpdateAndReduce=16,UseAdapterPrediction=17,NumberOfAdapters=18)";
 }
 
 

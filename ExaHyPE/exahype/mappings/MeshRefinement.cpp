@@ -31,7 +31,7 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 #include <sstream>
 
@@ -147,7 +147,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
     const MeshRefinement& workerThread) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getMeshUpdateRequest()) {
+    if (solver->hasRequestedMeshRefinement()) {
       _attainedStableState[solverNumber] =
           _attainedStableState[solverNumber] && workerThread._attainedStableState[solverNumber];
     }
@@ -172,7 +172,7 @@ void exahype::mappings::MeshRefinement::beginIteration(
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getMeshUpdateRequest()) {
+    if (solver->hasRequestedMeshRefinement()) {
       solver->zeroTimeStepSizes();
     }
     //assertion2(!solver->getNextMeshUpdateRequest(),solver->toString(),tarch::parallel::Node::getInstance().getRank());
@@ -190,7 +190,7 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getMeshUpdateRequest()) {
+    if (solver->hasRequestedMeshRefinement()) {
       if ( allSolversAttainedStableState() ) {
         _stableIterationsInARow++;
       } else {
@@ -462,7 +462,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->getMeshUpdateRequest()) {
+    if (solver->hasRequestedMeshRefinement()) {
       const bool newComputeCell =
           solver->progressMeshRefinementInEnterCell(
               fineGridCell,
@@ -523,7 +523,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->getMeshUpdateRequest()) {
+    if (solver->hasRequestedMeshRefinement()) {
       const bool newComputeCell =
           solver->progressMeshRefinementInLeaveCell(
               fineGridCell,

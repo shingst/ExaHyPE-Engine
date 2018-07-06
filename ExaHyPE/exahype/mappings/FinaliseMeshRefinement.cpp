@@ -23,7 +23,7 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/mappings/MeshRefinement.h"
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 peano::CommunicationSpecification
 exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
@@ -122,7 +122,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   OneSolverRequestedMeshUpdate =
-      exahype::solvers::Solver::oneSolverRequestedMeshUpdate();
+      exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
@@ -151,7 +151,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
     for( int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      if ( solver->getMeshUpdateRequest() ) {
+      if ( solver->hasRequestedMeshRefinement() ) {
         solver->finaliseStateUpdates(
             fineGridCell,
             fineGridVertices,
@@ -208,7 +208,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      if (solver->getMeshUpdateRequest()) {
+      if (solver->hasRequestedMeshRefinement()) {
         // cell sizes
         solver->updateNextMaxLevel(_maxLevels[solverNumber]);
 
@@ -269,7 +269,7 @@ void exahype::mappings::FinaliseMeshRefinement::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
 
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->getMeshUpdateRequest() ) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       solver->sendDataToMaster(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
           verticesEnumerator.getCellCenter(),
@@ -291,7 +291,7 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithMaster(
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->getMeshUpdateRequest() ) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       solver->mergeWithWorkerData(
           worker,
           fineGridVerticesEnumerator.getCellCenter(),

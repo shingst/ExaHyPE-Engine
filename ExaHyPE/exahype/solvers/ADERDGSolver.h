@@ -47,8 +47,6 @@ class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
 
-  static constexpr int BoundaryStatus = -1;
-
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
@@ -186,13 +184,6 @@ private:
    * is applied to.
    */
   const int _DMPObservables;
-  
-  /**
-   * Number of halo layers around a
-   * refined cell. This is the minimum as
-   * the next neighbour will then have status=1.
-   */
-  static constexpr int MaximumHaloStatus = 2;
 
   /**
    * Number of limiter helper layers in each
@@ -915,25 +906,23 @@ public:
   /**
    * Determine a new limiter status for the given direction based on the neighbour's
    * limiter status and the cell's reduced limiter status.
-   *
-   * Computes the new limiter status \f$ L_\rm{new} \f$ per direction
-   * according to:
-   *
-   * \f[
-   *  L_\rm{new} = \begin{cases}
-   *  T & L = T \\
-   *  \max \left( 0, \max \left( L, L_\rm{neighbour} \right) -1 \right) & \rm{else}
-   *   \end{cases}
-   * \f]
-   *
-   * with \f$ L \f$, \f$ L_\rm{neighbour} \f$, denoting the current limiter status
-   * of the cell and the neighbour, respectively, and \f$  T  \f$ indicates the status
-   * of a troubled cell.
    */
-  void mergeWithLimiterStatus(
+  void mergeWithRefinementStatus(
       CellDescription& cellDescription,
       const int faceIndex,
       const int neighbourLimiterStatus) const;
+
+  /**
+   * Determine the refinement status from the face
+   * neighbour values.
+   *
+   * \note It is very important that any troubled cell indicator
+   * and any refinement criterion has been evaluated before
+   * calling this function.
+   */
+  void updateRefinementStatus(
+      const CellDescription& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
 
   /**
    * Construct an ADERDGSolver.
@@ -1575,9 +1564,26 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   ///////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) override;
+
+  /**
+   * Evaluate the refinement criterion after
+   * a solution update has been performed and
+   * the patch has been advanced in time.
+   *
+   * We currently only return true if a cell requested refinement.
+   * ExaHyPE might then stop the
+   * time stepping and update the mesh
+   * before continuing. Erasing is here not considered.
+   *
+   * \note Must be called after startNewTimeStep was called
+   *
+   * \return True if mesh refinement is requested.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   */
+  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
+      CellDescription& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
    *

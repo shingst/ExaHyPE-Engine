@@ -59,7 +59,7 @@
 #include "exahype/plotters/Plotter.h"
 
 #include "exahype/mappings/MeshRefinement.h"
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -1020,7 +1020,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
 
 void exahype::runners::Runner::updateStatistics() {
   _meshRefinements      += (!exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() &&
-                           exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) ? 1 : 0;
+                           exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) ? 1 : 0;
   _localRecomputations  +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) ? 1 : 0;
   _globalRecomputations +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
   _predictorReruns      +=  (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) ? 1 : 0;
@@ -1121,9 +1121,9 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
-  if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading() ) {
+  if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedRefinementStatusSpreading() ) {
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
-    repository.switchToLimiterStatusSpreading();
+    repository.switchToRefinementStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
@@ -1140,7 +1140,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   }
 
   // 3. Perform a grid update for those solvers that requested refinement
-  if ( exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ) {
+  if ( exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ) {
     logInfo("updateMeshAndSubdomains(...)","perform mesh refinement");
     createMesh(repository);
   }
@@ -1301,15 +1301,15 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
+    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
 
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     updateMeshOrLimiterDomain(repository,true);
   }
 
@@ -1342,15 +1342,15 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
+    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
 
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     updateMeshOrLimiterDomain(repository,false);
   }
 

@@ -618,10 +618,6 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-        const int cellDescriptionsIndex,
-        const int element) override;
-
   double startNewTimeStep(
       const int cellDescriptionsIndex,
       const int element) override final;

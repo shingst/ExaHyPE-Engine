@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 #include "peano/utils/Globals.h"
 #include "peano/utils/Loop.h"
@@ -26,23 +26,21 @@
 
 #include "exahype/VertexOperations.h"
 
-tarch::logging::Log exahype::mappings::LimiterStatusSpreading::_log("exahype::mappings::LimiterStatusSpreading");
+tarch::logging::Log exahype::mappings::RefinementStatusSpreading::_log("exahype::mappings::RefinementStatusSpreading");
 
-bool exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
+bool exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
 
-void exahype::mappings::LimiterStatusSpreading::initialiseLocalVariables(){
+void exahype::mappings::RefinementStatusSpreading::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _limiterDomainChanges.resize(numberOfSolvers);
-  _meshUpdateRequests.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _limiterDomainChanges[solverNumber] = exahype::solvers::LimiterDomainChange::Regular;
-    _meshUpdateRequests[solverNumber]   = false;
+    _limiterDomainChanges[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
   }
 }
 
 peano::CommunicationSpecification
-exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
+exahype::mappings::RefinementStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
           MaskOutMasterWorkerDataAndStateExchange,
@@ -53,13 +51,13 @@ exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
 
 // Switched on.
 peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::touchVertexFirstTimeSpecification(int level) const {
+exahype::mappings::RefinementStatusSpreading::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::OnlyLeaves,
       peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
 }
 peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::enterCellSpecification(int level) const {
+exahype::mappings::RefinementStatusSpreading::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::OnlyLeaves,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
@@ -67,44 +65,44 @@ exahype::mappings::LimiterStatusSpreading::enterCellSpecification(int level) con
 
 // Switched off.
 peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::touchVertexLastTimeSpecification(int level) const {
+exahype::mappings::RefinementStatusSpreading::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::leaveCellSpecification(int level) const {
+exahype::mappings::RefinementStatusSpreading::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::Serial,false);
 }
 peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::ascendSpecification(int level) const {
+exahype::mappings::RefinementStatusSpreading::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::descendSpecification(int level) const {
+exahype::mappings::RefinementStatusSpreading::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::LimiterStatusSpreading::LimiterStatusSpreading(
-    const LimiterStatusSpreading& masterThread) {
+exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading(
+    const RefinementStatusSpreading& masterThread) {
   initialiseLocalVariables();
 }
 #endif
 
-exahype::mappings::LimiterStatusSpreading::~LimiterStatusSpreading() {
+exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
   // do nothing
 }
 
 #if defined(SharedMemoryParallelisation)
-void exahype::mappings::LimiterStatusSpreading::mergeWithWorkerThread(
-    const LimiterStatusSpreading& workerThread) {
+void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
+    const RefinementStatusSpreading& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
     _meshUpdateRequests[i]  =
         _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
@@ -113,25 +111,22 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithWorkerThread(
 }
 #endif
 
-bool exahype::mappings::LimiterStatusSpreading::spreadLimiterStatus(exahype::solvers::Solver* solver) {
+bool exahype::mappings::RefinementStatusSpreading::spreadRefinementStatus(exahype::solvers::Solver* solver) {
   return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      !=exahype::solvers::LimiterDomainChange::Regular;
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
+      !=exahype::solvers::Solver::MeshUpdateEvent::None;
 }
 
-void exahype::mappings::LimiterStatusSpreading::beginIteration(
+void exahype::mappings::RefinementStatusSpreading::beginIteration(
   exahype::State& solverState
 ) {
 
   // We memorise the previous request per solver
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( spreadLimiterStatus(solver) ) {
+    if ( spreadRefinementStatus(solver) ) {
       auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDG->updateNextMeshUpdateRequest(solver->getMeshUpdateRequest());
-      limitingADERDG->updateNextLimiterDomainChange(limitingADERDG->getLimiterDomainChange());
+      limitingADERDG->updateNextMeshUpdateEvent(limitingADERDG->getMeshUpdateEvent());
     }
   }
 
@@ -144,21 +139,17 @@ void exahype::mappings::LimiterStatusSpreading::beginIteration(
   #endif
 }
 
-void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& solverState) {
+void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( spreadLimiterStatus(solver) ) {
+    if ( spreadRefinementStatus(solver) ) {
       auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-      limitingADERDG->updateNextMeshUpdateRequest(_meshUpdateRequests[solverNumber]);
-      limitingADERDG->updateNextAttainedStableState(!limitingADERDG->getNextMeshUpdateRequest());
-      if (limitingADERDG->getNextMeshUpdateRequest()==true) {
-        limitingADERDG->updateNextLimiterDomainChange(
-            exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate);
-      }
-
-      limitingADERDG->setNextMeshUpdateRequest();
-      limitingADERDG->setNextLimiterDomainChange();
+      bool meshRefinementRequired =
+          limitingADERDG->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularRefinementRequested ||
+          limitingADERDG->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::RegularRefinementRequested;
+      limitingADERDG->updateNextAttainedStableState(!meshRefinementRequired);
+      limitingADERDG->setNextMeshUpdateEvent();
       limitingADERDG->setNextAttainedStableState();
     }
   }
@@ -166,7 +157,7 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
   IsFirstIteration = false;
 }
 
-void exahype::mappings::LimiterStatusSpreading::createHangingVertex(
+void exahype::mappings::RefinementStatusSpreading::createHangingVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -177,7 +168,7 @@ void exahype::mappings::LimiterStatusSpreading::createHangingVertex(
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::touchVertexFirstTime(
+void exahype::mappings::RefinementStatusSpreading::touchVertexFirstTime(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -191,12 +182,12 @@ void exahype::mappings::LimiterStatusSpreading::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
-      exahype::State::AlgorithmSection::LimiterStatusSpreading,fineGridX,fineGridH);
+      exahype::State::AlgorithmSection::RefinementStatusSpreading,fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
 
-void exahype::mappings::LimiterStatusSpreading::enterCell(
+void exahype::mappings::RefinementStatusSpreading::enterCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -214,19 +205,16 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
       const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
       const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if (
-          spreadLimiterStatus(solver) &&
+          spreadRefinementStatus(solver) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-        limitingADERDG->updateLimiterStatusDuringLimiterStatusSpreading(
+        limitingADERDG->updateRefinementStatusDuringRefinementStatusSpreading(
             cellDescriptionsIndex,element);
 
         auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(
             cellDescriptionsIndex,element);
-        _meshUpdateRequests[solverNumber] =
-            _meshUpdateRequests[solverNumber] ||
-              limitingADERDG->evaluateLimiterStatusRefinementCriterion(solverPatch);
       }
     }
 
@@ -239,7 +227,7 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
 }
 
 #ifdef Parallel
-bool exahype::mappings::LimiterStatusSpreading::prepareSendToWorker(
+bool exahype::mappings::RefinementStatusSpreading::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -252,7 +240,7 @@ bool exahype::mappings::LimiterStatusSpreading::prepareSendToWorker(
   return true;
 }
 
-void exahype::mappings::LimiterStatusSpreading::mergeWithNeighbour(
+void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
@@ -262,13 +250,13 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithNeighbour(
   if ( !IsFirstIteration ) {
     vertex.mergeOnlyWithNeighbourMetadata(
         fromRank,fineGridX,fineGridH,level,
-        exahype::State::AlgorithmSection::LimiterStatusSpreading);
+        exahype::State::AlgorithmSection::RefinementStatusSpreading);
   }
 
   logTraceOut("mergeWithNeighbour(...)");
 }
 
-void exahype::mappings::LimiterStatusSpreading::prepareSendToNeighbour(
+void exahype::mappings::RefinementStatusSpreading::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
@@ -280,7 +268,7 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToNeighbour(
   logTraceOut("prepareSendToNeighbour(...)");
 }
 
-void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
+void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
     const peano::grid::VertexEnumerator& verticesEnumerator,
     const exahype::Vertex* const coarseGridVertices,
@@ -292,7 +280,7 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if ( spreadLimiterStatus(solver) ) {
+    if ( spreadRefinementStatus(solver) ) {
       solver->sendMeshUpdateFlagsToMaster(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
           verticesEnumerator.getCellCenter(),
@@ -303,7 +291,7 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
   logTraceOut( "prepareSendToMaster(...)" );
 }
 
-void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
+void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
     const exahype::Cell& workerGridCell,
     exahype::Vertex* const workerGridVertices,
     const peano::grid::VertexEnumerator& workerEnumerator,
@@ -321,7 +309,7 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if ( spreadLimiterStatus(solver) ) {
+    if ( spreadRefinementStatus(solver) ) {
       solver->mergeWithWorkerMeshUpdateFlags(
           worker,
           fineGridVerticesEnumerator.getCellCenter(),
@@ -337,35 +325,35 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
 //
 // ==================================
 
-void exahype::mappings::LimiterStatusSpreading::prepareCopyToRemoteNode(
+void exahype::mappings::RefinementStatusSpreading::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::mappings::RefinementStatusSpreading::mergeWithRemoteDataDueToForkOrJoin(
         exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
         int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::prepareCopyToRemoteNode(
+void exahype::mappings::RefinementStatusSpreading::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::mappings::RefinementStatusSpreading::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::receiveDataFromMaster(
+void exahype::mappings::RefinementStatusSpreading::receiveDataFromMaster(
     exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
     const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
     exahype::Vertex* const receivedCoarseGridVertices,
@@ -378,14 +366,14 @@ void exahype::mappings::LimiterStatusSpreading::receiveDataFromMaster(
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::mergeWithWorker(
+void exahype::mappings::RefinementStatusSpreading::mergeWithWorker(
     exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::mergeWithWorker(
+void exahype::mappings::RefinementStatusSpreading::mergeWithWorker(
     exahype::Vertex& localVertex, const exahype::Vertex& receivedMasterVertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
@@ -393,11 +381,11 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithWorker(
 }
 #endif
 
-exahype::mappings::LimiterStatusSpreading::LimiterStatusSpreading() {
+exahype::mappings::RefinementStatusSpreading::RefinementStatusSpreading() {
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::touchVertexLastTime(
+void exahype::mappings::RefinementStatusSpreading::touchVertexLastTime(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -409,7 +397,7 @@ void exahype::mappings::LimiterStatusSpreading::touchVertexLastTime(
 }
 
 
-void exahype::mappings::LimiterStatusSpreading::createBoundaryVertex(
+void exahype::mappings::RefinementStatusSpreading::createBoundaryVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -421,7 +409,7 @@ void exahype::mappings::LimiterStatusSpreading::createBoundaryVertex(
 }
 
 
-void exahype::mappings::LimiterStatusSpreading::createInnerVertex(
+void exahype::mappings::RefinementStatusSpreading::createInnerVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -433,7 +421,7 @@ void exahype::mappings::LimiterStatusSpreading::createInnerVertex(
 }
 
 
-void exahype::mappings::LimiterStatusSpreading::createCell(
+void exahype::mappings::RefinementStatusSpreading::createCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -443,7 +431,7 @@ void exahype::mappings::LimiterStatusSpreading::createCell(
  // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::leaveCell(
+void exahype::mappings::RefinementStatusSpreading::leaveCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -453,7 +441,7 @@ void exahype::mappings::LimiterStatusSpreading::leaveCell(
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::destroyHangingVertex(
+void exahype::mappings::RefinementStatusSpreading::destroyHangingVertex(
     const exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -464,7 +452,7 @@ void exahype::mappings::LimiterStatusSpreading::destroyHangingVertex(
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::destroyVertex(
+void exahype::mappings::RefinementStatusSpreading::destroyVertex(
     const exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -475,7 +463,7 @@ void exahype::mappings::LimiterStatusSpreading::destroyVertex(
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::destroyCell(
+void exahype::mappings::RefinementStatusSpreading::destroyCell(
     const exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -486,7 +474,7 @@ void exahype::mappings::LimiterStatusSpreading::destroyCell(
 }
 
 
-void exahype::mappings::LimiterStatusSpreading::descend(
+void exahype::mappings::RefinementStatusSpreading::descend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -495,7 +483,7 @@ void exahype::mappings::LimiterStatusSpreading::descend(
   // do nothing
 }
 
-void exahype::mappings::LimiterStatusSpreading::ascend(
+void exahype::mappings::RefinementStatusSpreading::ascend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
