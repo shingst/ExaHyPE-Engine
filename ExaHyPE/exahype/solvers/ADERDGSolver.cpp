@@ -2796,7 +2796,7 @@ exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
   if (
-      cellDescription.getRefinementStatus()!=Pending &&
+//      cellDescription.getRefinementStatus()!=Pending &&
       cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
     int max = cellDescription.getRefinementStatus();

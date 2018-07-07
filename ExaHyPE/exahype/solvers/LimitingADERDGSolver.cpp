@@ -605,7 +605,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
         compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
       }
   } else if ( solverPatch.getType()==SolverPatch::Type::Descendant ) {
-    _solver->evaluateRefinementCriteriaAfterSolutionUpdate(solverPatch,solverPatch.getNeighbourMergePerformed());
+    _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+    result._meshUpdateEvent =
+        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(solverPatch,solverPatch.getNeighbourMergePerformed());
   }
   return result;
 }
