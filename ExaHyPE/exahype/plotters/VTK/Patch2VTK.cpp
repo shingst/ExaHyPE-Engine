@@ -381,7 +381,7 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 					previousRefinementStatus = 0;
 				}
 
-				assertion(RefinementStatus >= 0);
+				assertion(RefinementStatus >= -1);
 			}
 			break;
 		}

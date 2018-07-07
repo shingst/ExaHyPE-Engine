@@ -411,7 +411,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int cellDes
       previousRefinementStatus = 0;
     }
 
-    if(refinementStatus>=0) {  // TODO(Dominic): Plot FVM solution instead if <MinimumRefinementStatusForActiveFVPatch
+    if(refinementStatus>=-1) {  // TODO(Dominic): Plot FVM solution instead if <MinimumRefinementStatusForActiveFVPatch
       double* solverSolution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
 
       plotADERDGPatch(
