@@ -837,6 +837,14 @@ void exahype::solvers::FiniteVolumesSolver::restriction(
   // do nothing
 }
 
+void exahype::solvers::FiniteVolumesSolver::rollbackSolutionGlobally(
+    const int cellDescriptionsIndex, const int solverElement,
+    const bool fusedTimeStepping) const {
+  // do nothing
+  logError("rollbackSolutionGlobally(...)","Should have never been called");
+  std::abort();
+}
+
 ///////////////////////////////////
 // NEIGHBOUR
 ///////////////////////////////////

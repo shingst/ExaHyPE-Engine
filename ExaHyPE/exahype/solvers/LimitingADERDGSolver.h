@@ -803,7 +803,7 @@ public:
    */
   void rollbackToPreviousTimeStep(
       const int cellDescriptionsIndex,
-      const int solverElement) const final override;
+      const int solverElement) const;
 
   /*
    * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
@@ -811,7 +811,7 @@ public:
    */
   void rollbackToPreviousTimeStepFused(
       const int cellDescriptionsIndex,
-      const int solverElement) const final override;
+      const int solverElement) const;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -932,14 +932,17 @@ public:
 
 
    /**
-    * Overwrite the new limiter status by the previous one.
-    * Deallocate unneeded limiter patches.
-    * Set iterations to cure troubled cells
-    * to the maximum level.
+    * Go back to previous time step with
+    * time step data and solution.
+    *
+    * Keep the new refinement status.
+    *
+    * Allocate necessary new limiter patches.
     */
    void rollbackSolutionGlobally(
           const int cellDescriptionsIndex,
-          const int element) const;
+          const int element,
+          const bool fusedTimeStepping) const final override;
 
   /**
    * Reinitialises cells that have been subject to a limiter status change.
@@ -983,7 +986,8 @@ public:
    */
   void rollbackSolutionLocally(
       const int cellDescriptionsIndex,
-      const int element) const;
+      const int element,
+      const bool fusedTimeStepping) const;
 
   /**
    * Recompute the solution in cells that have been subject to a limiter status change

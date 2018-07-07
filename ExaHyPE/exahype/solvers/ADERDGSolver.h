@@ -1848,6 +1848,19 @@ public:
         const int parentCellDescriptionsIndex,
         const int parentElement);
 
+  /**
+   * Go back to previous time step with
+   * time step data and solution.
+   *
+   * Keep the new refinement status.
+   *
+   * Allocate necessary new limiter patches.
+   */
+  void rollbackSolutionGlobally(
+         const int cellDescriptionsIndex,
+         const int element,
+         const bool fusedTimeStepping) const final override;
+
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////

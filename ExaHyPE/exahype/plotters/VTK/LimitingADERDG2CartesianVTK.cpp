@@ -178,9 +178,9 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::startPlotting( double time 
       _cellDataWriter            = _patchWriter->createCellDataWriter("Q", _writtenUnknowns);
       _vertexDataWriter          = nullptr;
 
-      _cellLimiterStatusWriter   = _patchWriter->createCellDataWriter("Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1);
+      _cellLimiterStatusWriter   = _patchWriter->createCellDataWriter("RefinementStatus", 1);
       _vertexLimiterStatusWriter = nullptr;
-      _cellPreviousLimiterStatusWriter   = _patchWriter->createCellDataWriter("Previous-Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1);
+      _cellPreviousLimiterStatusWriter   = _patchWriter->createCellDataWriter("PreviousRefinementStatus", 1);
       _vertexPreviousLimiterStatusWriter = nullptr;
     }
     else {
@@ -188,10 +188,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::startPlotting( double time 
       _vertexDataWriter          = _patchWriter->createVertexDataWriter("Q", _writtenUnknowns);
 
       _cellLimiterStatusWriter   = nullptr;
-      _vertexLimiterStatusWriter = _patchWriter->createVertexDataWriter("Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1);
+      _vertexLimiterStatusWriter = _patchWriter->createVertexDataWriter("RefinementStatus", 1);
 
       _cellPreviousLimiterStatusWriter   = nullptr;
-      _vertexPreviousLimiterStatusWriter = _patchWriter->createVertexDataWriter("Previous-Limiter-Status(0-O,1..2-DG,3..4-FV,5-T", 1);
+      _vertexPreviousLimiterStatusWriter = _patchWriter->createVertexDataWriter("PreviousRefinementStatus";
     }
     _timeStampVertexDataWriter = _patchWriter->createVertexDataWriter("time", 1);
 //    _timeStampCellDataWriter   = _patchWriter->createCellDataWriter("time", 1);
@@ -401,25 +401,25 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int cellDes
   auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
-    int limiterStatus         = solverPatch.getLimiterStatus();
-    int previousLimiterStatus = solverPatch.getPreviousLimiterStatus();
+    int refinementStatus         = solverPatch.getRefinementStatus();
+    int previousRefinementStatus = solverPatch.getPreviousRefinementStatus();
 
     // ignore limiter status on coarser mesh levels
     assertion(static_cast<unsigned int>(solverPatch.getSolverNumber())<exahype::solvers::RegisteredSolvers.size());
     if (solverPatch.getLevel()<exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getMaximumAdaptiveMeshLevel()) {
-      limiterStatus         = 0;
-      previousLimiterStatus = 0;
+      refinementStatus         = 0;
+      previousRefinementStatus = 0;
     }
 
-    if(limiterStatus>=0) {  // TODO(Dominic): Plot FVM solution instead if <MinimumLimiterStatusForActiveFVPatch
+    if(refinementStatus>=0) {  // TODO(Dominic): Plot FVM solution instead if <MinimumLimiterStatusForActiveFVPatch
       double* solverSolution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
 
       plotADERDGPatch(
           solverPatch.getOffset(),
           solverPatch.getSize(), solverSolution,
           solverPatch.getCorrectorTimeStamp(),
-          limiterStatus,
-          previousLimiterStatus);
+          refinementStatus,
+          previousRefinementStatus);
     }
   }
 }

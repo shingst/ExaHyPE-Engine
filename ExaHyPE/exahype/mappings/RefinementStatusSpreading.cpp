@@ -32,10 +32,10 @@ bool exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
 
 void exahype::mappings::RefinementStatusSpreading::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-  _limiterDomainChanges.resize(numberOfSolvers);
+  _meshUpdateEvents.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _limiterDomainChanges[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
+    _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
   }
 }
 
@@ -104,9 +104,7 @@ exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
 void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
     const RefinementStatusSpreading& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _meshUpdateRequests[i]  =
-        _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
-    _limiterDomainChanges[i] = std::max ( _limiterDomainChanges[i], workerThread._limiterDomainChanges[i] );
+    _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
   }
 }
 #endif
@@ -204,13 +202,7 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
           spreadRefinementStatus(solver) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
-        auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-        limitingADERDG->updateRefinementStatusDuringRefinementStatusSpreading(
-            cellDescriptionsIndex,element);
-
-        auto& solverPatch = exahype::solvers::ADERDGSolver::getCellDescription(
-            cellDescriptionsIndex,element);
+        solver->updateRefinementStatusDuringRefinementStatusSpreading(cellDescriptionsIndex,element);
       }
     }
 

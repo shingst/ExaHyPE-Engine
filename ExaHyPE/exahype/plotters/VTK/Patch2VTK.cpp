@@ -370,8 +370,8 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 			level = solverPatch.getLevel();
 			
 			if(_isLimitingSolver) {
-				limiterStatus         = solverPatch.getLimiterStatus();
-				previousLimiterStatus = solverPatch.getPreviousLimiterStatus();
+				limiterStatus         = solverPatch.getRefinementStatus();
+				previousLimiterStatus = solverPatch.getPreviousRefinementStatus();
 
 				// this comes from LimitingADERDG2CartesianVTK.cpp:
 				// ignore limiter status on coarser mesh levels

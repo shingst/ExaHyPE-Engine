@@ -144,15 +144,9 @@ void exahype::mappings::GlobalRollback::enterCell(
           element!=exahype::solvers::Solver::NotFound &&
           performGlobalRollback(solver)
       ) {
-        solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element); // TODO(Dominic): Merge
-
-        if (exahype::solvers::Solver::FuseADERDGPhases) {
-          solver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
-        } else {
-          solver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-        }
-
-        solver->rollbackSolutionGlobally(fineGridCell.getCellDescriptionsIndex(),element);
+        solver->rollbackSolutionGlobally(
+            fineGridCell.getCellDescriptionsIndex(),element,
+            exahype::solvers::Solver::FuseADERDGPhases);
       }
     }
 

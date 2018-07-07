@@ -707,6 +707,10 @@ public:
         const int cellDescriptionsIndex,
         const int element) override;
 
+  void rollbackSolutionGlobally(
+      const int cellDescriptionsIndex, const int solverElement,
+      const bool fusedTimeStepping) const final override;
+
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////

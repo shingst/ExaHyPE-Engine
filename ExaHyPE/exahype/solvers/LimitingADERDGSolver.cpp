@@ -332,10 +332,6 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
   if ( solverElement!=exahype::solvers::Solver::NotFound ) {
     SolverPatch& solverPatch =
         _solver->getCellDescription(cellDescriptionsIndex,solverElement);
-    // only for global re-computation
-    if ( getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested ) {
-      solverPatch.setRefinementStatus(solverPatch.getPreviousRefinementStatus());
-    }
 
     // for global re-computation and mesh refinement
     const bool newLimiterPatchAllocated =
@@ -420,6 +416,7 @@ void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes(
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
     const int cellDescriptionsIndex,
     const int solverElement) const {
+  synchroniseTimeStepping(cellDescriptionsIndex, solverElement); // TODO(Dominic): have version with solver patch
   SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
   _solver->rollbackToPreviousTimeStep(solverPatch); // TODO(Dominic): Too many element lookups
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
@@ -428,6 +425,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused(
     const int cellDescriptionsIndex,
     const int solverElement) const {
+  synchroniseTimeStepping(cellDescriptionsIndex, solverElement); // TODO(Dominic): have version with solver patch
   SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
   _solver->rollbackToPreviousTimeStepFused(solverPatch); // TODO(Dominic): Too many element lookups
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
@@ -1045,8 +1043,15 @@ void exahype::solvers::LimitingADERDGSolver::projectDGSolutionOnFVSpace(
 
 // TODO(Dominic): Check that we have rolled back in time as well
 void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
-    const int cellDescriptionsIndex, const int solverElement) const {
+    const int cellDescriptionsIndex, const int solverElement,
+    const bool fusedTimeStepping) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+
+  if (fusedTimeStepping) { // TODO merge with synchronisation
+    rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
+  } else {
+    rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
+  }
 
   // 1. Ensure limiter patch is allocated (based on previous limiter status
   ensureRequiredLimiterPatchIsAllocated(
@@ -1080,8 +1085,16 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
-    const int cellDescriptionsIndex, const int solverElement) const {
+    const int cellDescriptionsIndex,
+    const int solverElement,
+    const bool fusedTimeStepping) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+
+  if (fusedTimeStepping) { // TODO merge with synchronisation
+    rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
+  } else {
+    rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
+  }
 
   // 1. Ensure limiter patch is allocated (based on current limiter status)
   ensureRequiredLimiterPatchIsAllocated(

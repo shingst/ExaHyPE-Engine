@@ -932,7 +932,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
-  
+
     assertion5(tarch::la::equals(fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize()),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
     assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
     // ensure that the fine grid cell descriptions's parent index is pointing to the
@@ -1002,7 +1002,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
-  assertion(cellDescription.getRefinementStatus()==Pending);
+  //assertion(cellDescription.getRefinementStatus()==Pending);
 
   double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   exahype::solvers::Solver::RefinementControl refinementControl =
@@ -1841,8 +1841,16 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
   if (element!=exahype::solvers::Solver::NotFound) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
+    // This allows ancestors to be erased in the next batch of mesh refinment iterations
+    if ( cellDescription.getType()!= CellDescription::Type::Cell ) {
+      cellDescription.setRefinementStatus(Pending);
+    }
+
     cellDescription.setPreviousAugmentationStatus(cellDescription.getAugmentationStatus());
-    cellDescription.setRefinementStatus(Pending);
+    // only for global recomputation
+    if ( getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested ) {
+      cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
+    }
   }
 }
 
@@ -2362,8 +2370,6 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
 
-  cellDescription.setRefinementStatus(Pending);
-
   double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   adjustSolution(
       solution,
@@ -2802,7 +2808,24 @@ exahype::solvers::ADERDGSolver::updateRefinementStatus(
       }
     }
   }
+}
 
+// TODO(Dominic): Check that we have rolled back in time as well
+void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(
+    const int cellDescriptionsIndex, const int solverElement,
+    const bool fusedTimeStepping) const {
+  CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+
+  // 1. Rollback time step data
+  if (fusedTimeStepping) {
+    rollbackToPreviousTimeStepFused(CellDescription);
+  } else {
+    rollbackToPreviousTimeStep(CellDescription);
+  }
+  // 2. Rollback solution to previous one
+  if (cellDescription.getType()==CellDescription::Type::Cell) {
+    swapSolutionAndPreviousSolution(cellDescription);
+  }
 }
 
 
