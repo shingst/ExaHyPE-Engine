@@ -540,7 +540,7 @@ class exahype::solvers::Solver {
      * all or a situation where a cell directly next to a
      * troubled cell has been newly marked as troubled.
      */
-    None = 0,
+    None,
     /**
      * A change of the limiter domain was not anticipated
      * by the evolving helper layers.
@@ -549,7 +549,7 @@ class exahype::solvers::Solver {
      * another worker has status RegularRefinementRequested,
      * the status shall be changed to IrregularRefinementRequested.
      */
-    IrregularLimiterDomainChange = 1,
+    IrregularLimiterDomainChange,
 
     /**
      * Regular refinement was requested, i.e.
@@ -559,7 +559,7 @@ class exahype::solvers::Solver {
      * another worker has status IrregularLimiterDomainChange,
      * the status shall be changed to IrregularRefinementRequested.
      */
-    RegularRefinementRequested  = 2,
+    RegularRefinementRequested,
 
     /**
      * Scenario 1:
@@ -582,7 +582,7 @@ class exahype::solvers::Solver {
      * This can potentially be relaxed for anarchic time stepping where
      * each cell has its own time step size and stamp.
      */
-    IrregularRefinementRequested = 3
+    IrregularRefinementRequested
   };
 
   /**

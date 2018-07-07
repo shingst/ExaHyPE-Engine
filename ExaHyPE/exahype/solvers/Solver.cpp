@@ -171,8 +171,8 @@ exahype::solvers::Solver::Solver(
       _domainOffset(std::numeric_limits<double>::max()),
       _domainSize(std::numeric_limits<double>::max()),
       _maximumMeshSize(maximumMeshSize),
+      _coarsestMeshLevel(std::numeric_limits<int>::max()),
       _coarsestMeshSize(std::numeric_limits<double>::max()),
-      _coarsestMeshLevel(std::numeric_limits<double>::max()),
       _maximumAdaptiveMeshDepth(maximumAdaptiveMeshDepth),
       _maxLevel(-std::numeric_limits<int>::max()), // "-", min
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
@@ -181,7 +181,8 @@ exahype::solvers::Solver::Solver(
       _attainedStableState(false),
       _nextAttainedStableState(false),
       _meshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested),
-      _nextMeshUpdateEvent(MeshUpdateEvent::None) { }
+      _nextMeshUpdateEvent(MeshUpdateEvent::None) {
+}
 
 
 std::string exahype::solvers::Solver::getIdentifier() const {
@@ -719,6 +720,81 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
   }
 }
 
+
+
+std::string exahype::solvers::Solver::toString(const MeshUpdateEvent& meshUpdateEvent) {
+  switch (meshUpdateEvent) {
+  case MeshUpdateEvent::None:
+    return "None";
+  case MeshUpdateEvent::IrregularLimiterDomainChange:
+    return "IrregularLimiterDomainChange";
+  case MeshUpdateEvent::RegularRefinementRequested:
+    return "RegularRefinementRequested";
+  case MeshUpdateEvent::IrregularRefinementRequested:
+    return "IrregularRefinementRequested";
+  default:
+    return "undefined";
+  }
+}
+
+double exahype::solvers::Solver::convertToDouble(const MeshUpdateEvent& meshUpdateEvent) {
+  return static_cast<double>(static_cast<int>(meshUpdateEvent));
+}
+
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::convertToMeshUpdateEvent(const double value) {
+  assertion((int) std::round(value)>=static_cast<int>(MeshUpdateEvent::None));
+  assertion((int) std::round(value)<=static_cast<int>(MeshUpdateEvent::IrregularRefinementRequested));
+  return static_cast<MeshUpdateEvent>((int) std::round(value));
+}
+
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpdateEvents(
+    const MeshUpdateEvent meshUpdateEvent1,
+    const MeshUpdateEvent meshUpdateEvent2) {
+  MeshUpdateEvent result = MeshUpdateEvent::None;
+  switch (meshUpdateEvent1) {
+  case MeshUpdateEvent::None:
+    result = meshUpdateEvent2;
+    break;
+  case MeshUpdateEvent::IrregularLimiterDomainChange:
+    if ( meshUpdateEvent2==MeshUpdateEvent::RegularRefinementRequested ) {
+      result = MeshUpdateEvent::IrregularRefinementRequested;
+    }
+    break;
+  case MeshUpdateEvent::RegularRefinementRequested:
+    if ( meshUpdateEvent2==MeshUpdateEvent::IrregularLimiterDomainChange ) {
+      result = MeshUpdateEvent::IrregularRefinementRequested;
+    }
+    break;
+  case MeshUpdateEvent::IrregularRefinementRequested:
+    result = MeshUpdateEvent::IrregularRefinementRequested;
+    break;
+  default:
+    logError("updateNextMeshUpdateEvent(...)","Unknown MeshUpdateRequest state: "<<static_cast<int>(meshUpdateEvent1));
+    std::abort();
+  }
+  return result;
+}
+
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::Solver::getNextMeshUpdateEvent() const {
+  return _nextMeshUpdateEvent;
+}
+
+void exahype::solvers::Solver::setNextMeshUpdateEvent() {
+  _meshUpdateEvent         = _nextMeshUpdateEvent;
+  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
+}
+
+void exahype::solvers::Solver::updateNextMeshUpdateEvent(
+    exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
+  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
+}
+
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::Solver::getMeshUpdateEvent() const {
+  return _meshUpdateEvent;
+}
+
 void exahype::solvers::Solver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,
     const int element,
@@ -887,79 +963,6 @@ void exahype::dropMetadata(
     const int                                   level) {
   MetadataHeap::getInstance().receiveData(
       fromRank,x,level,messageType);
-}
-
-std::string exahype::solvers::Solver::toString(const MeshUpdateEvent& meshUpdateEvent) {
-  switch (meshUpdateEvent) {
-  case MeshUpdateEvent::None:
-    return "None";
-  case MeshUpdateEvent::IrregularLimiterDomainChange:
-    return "IrregularLimiterDomainChange";
-  case MeshUpdateEvent::RegularRefinementRequested:
-    return "RegularRefinementRequested";
-  case MeshUpdateEvent::IrregularRefinementRequested:
-    return "IrregularRefinementRequested";
-  default:
-    return "undefined";
-  }
-}
-
-double exahype::solvers::Solver::convertToDouble(const MeshUpdateEvent& meshUpdateEvent) {
-  return static_cast<double>(static_cast<int>(meshUpdateEvent));
-}
-
-exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::convertToMeshUpdateEvent(const double value) {
-  assertion((int) std::round(value)>=static_cast<int>(MeshUpdateEvent::None));
-  assertion((int) std::round(value)<=static_cast<int>(MeshUpdateEvent::IrregularRefinementRequested));
-  return static_cast<MeshUpdateEvent>((int) std::round(value));
-}
-
-exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpdateEvents(
-    const MeshUpdateEvent meshUpdateEvent1,
-    const MeshUpdateEvent meshUpdateEvent2) {
-  MeshUpdateEvent result = MeshUpdateEvent::None;
-  switch (meshUpdateEvent1) {
-  case MeshUpdateEvent::None:
-    result = meshUpdateEvent2;
-    break;
-  case MeshUpdateEvent::IrregularLimiterDomainChange:
-    if ( meshUpdateEvent2==MeshUpdateEvent::RegularRefinementRequested ) {
-      result = MeshUpdateEvent::IrregularRefinementRequested;
-    }
-    break;
-  case MeshUpdateEvent::RegularRefinementRequested:
-    if ( meshUpdateEvent2==MeshUpdateEvent::IrregularLimiterDomainChange ) {
-      result = MeshUpdateEvent::IrregularRefinementRequested;
-    }
-    break;
-  case MeshUpdateEvent::IrregularRefinementRequested:
-    result = MeshUpdateEvent::IrregularRefinementRequested;
-    break;
-  default:
-    logError("updateNextMeshUpdateEvent(...)","Unknown MeshUpdateRequest state: "<<_meshUpdateEvent);
-    std::abort();
-  }
-  return result;
-}
-
-exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::Solver::getNextMeshUpdateEvent() const {
-  return _nextMeshUpdateEvent;
-}
-
-void exahype::solvers::Solver::setNextMeshUpdateEvent() {
-  _meshUpdateEvent         = _nextMeshUpdateEvent;
-  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
-}
-
-void exahype::solvers::Solver::updateNextMeshUpdateEvent(
-    exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
-  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
-}
-
-exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::Solver::getMeshUpdateEvent() const {
-  return _meshUpdateEvent;
 }
 
 exahype::DataHeap::HeapEntries

@@ -193,16 +193,32 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
+    const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+    auto& aderCellDescriptions = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex);
+    for ( auto& cellDescription : aderCellDescriptions ) {
+      auto* solver = exahype::solvers::RegisteredSolvers[cellDescription.getSolverNumber()];
+      switch (solver->getType()) {
+        case exahype::solvers::Solver::Type::ADERDG:
+          static_cast<exahype::solvers::ADERDGSolver*>(solver)->
+            updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
+          break;
+        case exahype::solvers::Solver::Type::LimitingADERDG:
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
+            updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
+          break;
+        default:
+          break;
+      }
+    }
+
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
       const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if (
           spreadRefinementStatus(solver) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
-        solver->updateRefinementStatusDuringRefinementStatusSpreading(cellDescriptionsIndex,element);
+
       }
     }
 

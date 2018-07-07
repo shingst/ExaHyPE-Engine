@@ -198,7 +198,7 @@ private:
    * All patches with limiter status smaller than this value,
    * hold no FV patch at all.
    */
-  const int _minimumLimiterStatusForPassiveFVPatch;
+  const int _minimumRefinementStatusForPassiveFVPatch;
 
   /**
    * The minimum limiter status a cell must have
@@ -207,12 +207,12 @@ private:
    * All patches with nonzero limiter status smaller than this value,
    * hold a passive FV patch.
    */
-  const int _minimumLimiterStatusForActiveFVPatch;
+  const int _minimumRefinementStatusForActiveFVPatch;
 
   /**
    * Minimum limiter status a troubled cell can have.
    */
-  const int _minimumLimiterStatusForTroubledCell;
+  const int _minimumRefinementStatusForTroubledCell;
 
   /**
    * Different to compress(), this operation is called automatically by
@@ -805,16 +805,18 @@ private:
    */
   class FusedTimeStepJob {
     private:
-      ADERDGSolver&    _solver; // TODO not const because of kernels
-      const int        _cellDescriptionsIndex;
-      const int        _element;
-      const bool       _isSkeletonJob;
+      ADERDGSolver&                            _solver; // TODO not const because of kernels
+      const int                                _cellDescriptionsIndex;
+      const int                                _element;
+      const std::bitset<DIMENSIONS_TIMES_TWO>  _neighbourMergePerformed;
+      const bool                               _isSkeletonJob;
     public:
       FusedTimeStepJob(
         ADERDGSolver& solver,
         const int     cellDescriptionsIndex,
         const int     element,
-        const bool    isAtRemoteBoundary);
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        const bool    isSkeletonJob);
 
       bool operator()();
   };
@@ -921,7 +923,7 @@ public:
    * calling this function.
    */
   void updateRefinementStatus(
-      const CellDescription& cellDescription,
+      CellDescription& cellDescription,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
 
   /**
@@ -1050,7 +1052,7 @@ public:
    * We thus have a total number of helper layers
    * which is twice the returned value.
    */
-  int getMinimumLimiterStatusForActiveFVPatch() const;
+  int getMinimumRefinementStatusForActiveFVPatch() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!
@@ -1063,7 +1065,7 @@ public:
    * We thus have a total number of helper layers
    * which is twice the returned value.
    */
-  int getMinimumLimiterStatusForTroubledCell() const;
+  int getMinimumRefinementStatusForTroubledCell() const;
 
   /**
    * Checks if no unnecessary memory is allocated for the cell description.
@@ -1729,7 +1731,8 @@ public:
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
         const bool isSkeletonCell,
-        const bool mustBeDoneImmediately);
+        const bool mustBeDoneImmediately,
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,

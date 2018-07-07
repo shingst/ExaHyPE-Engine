@@ -456,9 +456,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _stabilityConditionWasViolated( false ),
      _DMPObservables(DMPObservables),
      _limiterHelperLayers(limiterHelperLayers),
-     _minimumLimiterStatusForPassiveFVPatch(RefineOrKeepOnFineGrid+1),
-     _minimumLimiterStatusForActiveFVPatch (limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch),
-     _minimumLimiterStatusForTroubledCell  (limiterHelperLayers+_minimumLimiterStatusForPassiveFVPatch) {
+     _minimumRefinementStatusForPassiveFVPatch(RefineOrKeepOnFineGrid+1),
+     _minimumRefinementStatusForActiveFVPatch (limiterHelperLayers+_minimumRefinementStatusForPassiveFVPatch),
+     _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch) {
 
   // register tags with profiler
   for (const char* tag : tags) {
@@ -522,12 +522,12 @@ int exahype::solvers::ADERDGSolver::getDMPObservables() const {
   return _DMPObservables;
 }
 
-int exahype::solvers::ADERDGSolver::getMinimumLimiterStatusForActiveFVPatch() const {
-  return _minimumLimiterStatusForActiveFVPatch;
+int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForActiveFVPatch() const {
+  return _minimumRefinementStatusForActiveFVPatch;
 }
 
-int exahype::solvers::ADERDGSolver::getMinimumLimiterStatusForTroubledCell() const {
-  return _minimumLimiterStatusForTroubledCell;
+int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForTroubledCell() const {
+  return _minimumRefinementStatusForTroubledCell;
 }
 
 void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
@@ -1362,9 +1362,9 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   // We thus do not flag children cells with troubled
   if (
       !initialGrid &&
-      coarseGridCellDescription.getRefinementStatus()>=_minimumLimiterStatusForTroubledCell
+      coarseGridCellDescription.getRefinementStatus()>=_minimumRefinementStatusForTroubledCell
   ) {
-    fineGridCellDescription.setRefinementStatus(_minimumLimiterStatusForTroubledCell);
+    fineGridCellDescription.setRefinementStatus(_minimumRefinementStatusForTroubledCell);
     fineGridCellDescription.setIterationsToCureTroubledCell(coarseGridCellDescription.getIterationsToCureTroubledCell());
   }
   fineGridCellDescription.setFacewiseRefinementStatus(0);
@@ -1431,8 +1431,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     // Reading the refinement request might result into data race but this is accepted at this point
     // as we only read and not write
     if (
-      fineGridCellDescription.getType()                     != CellDescription::Type::Cell ||
-      fineGridCellDescription.getFacewiseRefinementStatus() != Pending
+      fineGridCellDescription.getType()             != CellDescription::Type::Cell ||
+      fineGridCellDescription.getRefinementStatus() != Pending
     ) {
       const int coarseGridElement =
           tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -1987,7 +1987,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
     const bool isSkeletonCell,
-    const bool mustBeDoneImmediately ) {
+    const bool mustBeDoneImmediately,
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed ) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
@@ -1999,7 +2000,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
   result._timeStepSize        = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,);
+  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
   if (
       !SpawnPredictionAsBackgroundJob ||
       mustBeDoneImmediately
@@ -2037,9 +2038,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       return
           fusedTimeStepBody(
               cellDescriptionsIndex,element,
-              isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately );
+              isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
+              cellDescription.getNeighbourMergePerformed() );
     } else {
-      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell );
+      FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
+          cellDescription.getNeighbourMergePerformed(),isSkeletonCell);
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
@@ -2711,13 +2714,8 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
 void exahype::solvers::ADERDGSolver::mergeWithRefinementStatus(
     CellDescription& cellDescription,
     const int faceIndex,
-    const int otherLimiterStatus) const {
-  const int croppedOtherLimiterStatus =
-      std::min(
-          otherLimiterStatus,
-          _minimumLimiterStatusForTroubledCell );
-
-  cellDescription.setFacewiseRefinementStatus( faceIndex, otherLimiterStatus );
+    const int otherRefinementStatus) const {
+  cellDescription.setFacewiseRefinementStatus( faceIndex, otherRefinementStatus );
 }
 
 void
@@ -2795,7 +2793,7 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
 
 void
 exahype::solvers::ADERDGSolver::updateRefinementStatus(
-    const CellDescription& cellDescription,
+    CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
   if (
       cellDescription.getRefinementStatus()!=Pending &&
@@ -2807,6 +2805,7 @@ exahype::solvers::ADERDGSolver::updateRefinementStatus(
         max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
       }
     }
+    cellDescription.setRefinementStatus(max);
   }
 }
 
@@ -2818,9 +2817,9 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(
 
   // 1. Rollback time step data
   if (fusedTimeStepping) {
-    rollbackToPreviousTimeStepFused(CellDescription);
+    rollbackToPreviousTimeStepFused(cellDescription);
   } else {
-    rollbackToPreviousTimeStep(CellDescription);
+    rollbackToPreviousTimeStep(cellDescription);
   }
   // 2. Rollback solution to previous one
   if (cellDescription.getType()==CellDescription::Type::Cell) {
@@ -3655,14 +3654,14 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
         neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus];
     const int neighbourCommunicationStatus       =
         neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus      ];
-    const int neighbourLimiterStatus      =
+    const int neighbourRefinementStatus      =
         neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ];
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
     mergeWithAugmentationStatus (cellDescription,faceIndex,neighbourAugmentationStatus);
     mergeWithCommunicationStatus(cellDescription,faceIndex,neighbourCommunicationStatus);
-    mergeWithRefinementStatus   (cellDescription,faceIndex,neighbourLimiterStatus);
+    mergeWithRefinementStatus   (cellDescription,faceIndex,neighbourRefinementStatus);
   }
 }
 
@@ -4226,10 +4225,12 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   ADERDGSolver& solver,
   const int     cellDescriptionsIndex,
   const int     element,
+  const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
   const bool    isSkeletonJob):
   _solver(solver),
   _cellDescriptionsIndex(cellDescriptionsIndex),
   _element(element),
+  _neighbourMergePerformed(neighbourMergePerformed),
   _isSkeletonJob(isSkeletonJob) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
@@ -4241,7 +4242,7 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::operator()() {
   _solver.fusedTimeStepBody(
-      _cellDescriptionsIndex,_element, false, false, _isSkeletonJob, false );
+      _cellDescriptionsIndex,_element, false, false, _isSkeletonJob, false, _neighbourMergePerformed );
 
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {

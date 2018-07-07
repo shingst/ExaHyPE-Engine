@@ -178,20 +178,20 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::startPlotting( double time 
       _cellDataWriter            = _patchWriter->createCellDataWriter("Q", _writtenUnknowns);
       _vertexDataWriter          = nullptr;
 
-      _cellLimiterStatusWriter   = _patchWriter->createCellDataWriter("RefinementStatus", 1);
-      _vertexLimiterStatusWriter = nullptr;
-      _cellPreviousLimiterStatusWriter   = _patchWriter->createCellDataWriter("PreviousRefinementStatus", 1);
-      _vertexPreviousLimiterStatusWriter = nullptr;
+      _cellRefinementStatusWriter   = _patchWriter->createCellDataWriter("RefinementStatus", 1);
+      _vertexRefinementStatusWriter = nullptr;
+      _cellPreviousRefinementStatusWriter   = _patchWriter->createCellDataWriter("PreviousRefinementStatus", 1);
+      _vertexPreviousRefinementStatusWriter = nullptr;
     }
     else {
       _cellDataWriter            = nullptr;
       _vertexDataWriter          = _patchWriter->createVertexDataWriter("Q", _writtenUnknowns);
 
-      _cellLimiterStatusWriter   = nullptr;
-      _vertexLimiterStatusWriter = _patchWriter->createVertexDataWriter("RefinementStatus", 1);
+      _cellRefinementStatusWriter   = nullptr;
+      _vertexRefinementStatusWriter = _patchWriter->createVertexDataWriter("RefinementStatus", 1);
 
-      _cellPreviousLimiterStatusWriter   = nullptr;
-      _vertexPreviousLimiterStatusWriter = _patchWriter->createVertexDataWriter("PreviousRefinementStatus";
+      _cellPreviousRefinementStatusWriter   = nullptr;
+      _vertexPreviousRefinementStatusWriter = _patchWriter->createVertexDataWriter("PreviousRefinementStatus", 1);
     }
     _timeStampVertexDataWriter = _patchWriter->createVertexDataWriter("time", 1);
 //    _timeStampCellDataWriter   = _patchWriter->createCellDataWriter("time", 1);
@@ -220,10 +220,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::finishPlotting() {
 //    if (_timeStampCellDataWriter!=nullptr) _timeStampCellDataWriter->close();
     if (_vertexDataWriter!=nullptr)                  _vertexDataWriter->close();
     if (_cellDataWriter!=nullptr)                    _cellDataWriter->close();
-    if (_cellLimiterStatusWriter!=nullptr)           _cellLimiterStatusWriter->close();
-    if (_vertexLimiterStatusWriter!=nullptr)         _vertexLimiterStatusWriter->close();
-    if (_cellPreviousLimiterStatusWriter!=nullptr)   _cellPreviousLimiterStatusWriter->close();
-    if (_vertexPreviousLimiterStatusWriter!=nullptr) _vertexPreviousLimiterStatusWriter->close();
+    if (_cellRefinementStatusWriter!=nullptr)           _cellRefinementStatusWriter->close();
+    if (_vertexRefinementStatusWriter!=nullptr)         _vertexRefinementStatusWriter->close();
+    if (_cellPreviousRefinementStatusWriter!=nullptr)   _cellPreviousRefinementStatusWriter->close();
+    if (_vertexPreviousRefinementStatusWriter!=nullptr) _vertexPreviousRefinementStatusWriter->close();
     _timeStampVertexDataWriter->close();
 
     std::ostringstream snapshotFileName;
@@ -255,10 +255,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::finishPlotting() {
   if (_cellDataWriter!=nullptr)                    delete _cellDataWriter;
   if (_timeStampVertexDataWriter!=nullptr)         delete _timeStampVertexDataWriter;
   if (_timeStampCellDataWriter!=nullptr)           delete _timeStampCellDataWriter;
-  if (_cellLimiterStatusWriter!=nullptr)           delete _cellLimiterStatusWriter;
-  if (_vertexLimiterStatusWriter!=nullptr)         delete _vertexLimiterStatusWriter;
-  if (_cellPreviousLimiterStatusWriter!=nullptr)   delete _cellPreviousLimiterStatusWriter;
-  if (_vertexPreviousLimiterStatusWriter!=nullptr) delete _vertexPreviousLimiterStatusWriter;
+  if (_cellRefinementStatusWriter!=nullptr)           delete _cellRefinementStatusWriter;
+  if (_vertexRefinementStatusWriter!=nullptr)         delete _vertexRefinementStatusWriter;
+  if (_cellPreviousRefinementStatusWriter!=nullptr)   delete _cellPreviousRefinementStatusWriter;
+  if (_vertexPreviousRefinementStatusWriter!=nullptr) delete _vertexPreviousRefinementStatusWriter;
   if (_gridWriter!=nullptr)                        delete _gridWriter;
   if (_patchWriter!=nullptr)                       delete _patchWriter;
 
@@ -267,10 +267,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::finishPlotting() {
   _patchWriter                       = nullptr;
   _timeStampVertexDataWriter         = nullptr;
   _timeStampCellDataWriter           = nullptr;
-  _cellLimiterStatusWriter           = nullptr;
-  _vertexLimiterStatusWriter         = nullptr;
-  _cellPreviousLimiterStatusWriter   = nullptr;
-  _vertexPreviousLimiterStatusWriter = nullptr;
+  _cellRefinementStatusWriter           = nullptr;
+  _vertexRefinementStatusWriter         = nullptr;
+  _cellPreviousRefinementStatusWriter   = nullptr;
+  _vertexPreviousRefinementStatusWriter = nullptr;
   _gridWriter                        = nullptr;
 }
 
@@ -296,8 +296,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotVertexData(
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
   double* u,
   double timeStamp,
-  const int limiterStatusAsInt,
-  const int previousLimiterStatusAsInt
+  const int RefinementStatusAsInt,
+  const int previousRefinementStatusAsInt
 ) {
   assertion( _vertexDataWriter!=nullptr || _writtenUnknowns==0 );
 
@@ -334,8 +334,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotVertexData(
       _vertexDataWriter->plotVertex(firstVertexIndex, value, _writtenUnknowns );
     }
 
-    _vertexLimiterStatusWriter->plotVertex(firstVertexIndex, static_cast<double>(limiterStatusAsInt));
-    _vertexPreviousLimiterStatusWriter->plotVertex(firstVertexIndex, static_cast<double>(previousLimiterStatusAsInt));
+    _vertexRefinementStatusWriter->plotVertex(firstVertexIndex, static_cast<double>(RefinementStatusAsInt));
+    _vertexPreviousRefinementStatusWriter->plotVertex(firstVertexIndex, static_cast<double>(previousRefinementStatusAsInt));
 
     firstVertexIndex++;
   }
@@ -351,8 +351,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotCellData(
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
   double* u,
   double timeStamp,
-  const int limiterStatusAsInt,
-  const int previousLimiterStatusAsInt
+  const int RefinementStatusAsInt,
+  const int previousRefinementStatusAsInt
 ) {
   assertion( _cellDataWriter!=nullptr || _writtenUnknowns==0 );
 
@@ -387,8 +387,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotCellData(
       _cellDataWriter->plotCell(firstCellIndex, value, _writtenUnknowns );
     }
 
-    _cellLimiterStatusWriter->plotCell(firstCellIndex, static_cast<double>(limiterStatusAsInt));
-    _cellPreviousLimiterStatusWriter->plotCell(firstCellIndex, static_cast<double>(previousLimiterStatusAsInt));
+    _cellRefinementStatusWriter->plotCell(firstCellIndex, static_cast<double>(RefinementStatusAsInt));
+    _cellPreviousRefinementStatusWriter->plotCell(firstCellIndex, static_cast<double>(previousRefinementStatusAsInt));
 
     firstCellIndex++;
   }
@@ -411,7 +411,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int cellDes
       previousRefinementStatus = 0;
     }
 
-    if(refinementStatus>=0) {  // TODO(Dominic): Plot FVM solution instead if <MinimumLimiterStatusForActiveFVPatch
+    if(refinementStatus>=0) {  // TODO(Dominic): Plot FVM solution instead if <MinimumRefinementStatusForActiveFVPatch
       double* solverSolution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
 
       plotADERDGPatch(
@@ -430,8 +430,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotADERDGPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u,
     double timeStamp,
-    const int limiterStatusAsInt,
-    const int previousLimiterStatusAsInt) {
+    const int RefinementStatusAsInt,
+    const int previousRefinementStatusAsInt) {
   if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     assertion( _writtenUnknowns==0 || _patchWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _gridWriter!=nullptr );
@@ -445,10 +445,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotADERDGPatch(
     writeTimeStampDataToADERDGPatch( timeStamp, vertexAndCellIndex.first );
 
     if (_plotCells) {
-      plotCellData( vertexAndCellIndex.second, offsetOfPatch, sizeOfPatch, u, timeStamp, limiterStatusAsInt, previousLimiterStatusAsInt );
+      plotCellData( vertexAndCellIndex.second, offsetOfPatch, sizeOfPatch, u, timeStamp, RefinementStatusAsInt, previousRefinementStatusAsInt );
     }
     else {
-      plotVertexData( vertexAndCellIndex.first, offsetOfPatch, sizeOfPatch, u, timeStamp, limiterStatusAsInt, previousLimiterStatusAsInt );
+      plotVertexData( vertexAndCellIndex.first, offsetOfPatch, sizeOfPatch, u, timeStamp, RefinementStatusAsInt, previousRefinementStatusAsInt );
     }
   }
 }
