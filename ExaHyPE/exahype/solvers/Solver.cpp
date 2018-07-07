@@ -750,23 +750,32 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::convertToMes
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpdateEvents(
     const MeshUpdateEvent meshUpdateEvent1,
     const MeshUpdateEvent meshUpdateEvent2) {
-  MeshUpdateEvent result = MeshUpdateEvent::None;
+  MeshUpdateEvent result = meshUpdateEvent1;
   switch (meshUpdateEvent1) {
   case MeshUpdateEvent::None:
     result = meshUpdateEvent2;
     break;
   case MeshUpdateEvent::IrregularLimiterDomainChange:
-    if ( meshUpdateEvent2==MeshUpdateEvent::RegularRefinementRequested ) {
-      result = MeshUpdateEvent::IrregularRefinementRequested;
+    switch (meshUpdateEvent2) {
+      case MeshUpdateEvent::RegularRefinementRequested:
+      case MeshUpdateEvent::IrregularRefinementRequested:
+        result = MeshUpdateEvent::IrregularRefinementRequested;
+        break;
+      default:
+        break;
     }
     break;
   case MeshUpdateEvent::RegularRefinementRequested:
-    if ( meshUpdateEvent2==MeshUpdateEvent::IrregularLimiterDomainChange ) {
+    switch (meshUpdateEvent2) {
+    case MeshUpdateEvent::IrregularLimiterDomainChange:
+    case MeshUpdateEvent::IrregularRefinementRequested:
       result = MeshUpdateEvent::IrregularRefinementRequested;
+      break;
+    default:
+      break;
     }
     break;
   case MeshUpdateEvent::IrregularRefinementRequested:
-    result = MeshUpdateEvent::IrregularRefinementRequested;
     break;
   default:
     logError("updateNextMeshUpdateEvent(...)","Unknown MeshUpdateRequest state: "<<static_cast<int>(meshUpdateEvent1));

@@ -412,8 +412,7 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
         _meshUpdateEvents[solverNumber] =
             exahype::solvers::Solver::mergeMeshUpdateEvents(
                 _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
-        assertion(_meshUpdateEvents[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-            _meshUpdateRequests[solverNumber]);
+
         _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                  _minTimeStepSizes[solverNumber]);
         _maxLevels       [solverNumber] = std::max( fineGridVerticesEnumerator.getLevel(), _maxLevels       [solverNumber]);
       }

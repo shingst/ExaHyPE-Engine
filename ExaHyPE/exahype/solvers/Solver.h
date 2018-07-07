@@ -588,7 +588,7 @@ class exahype::solvers::Solver {
   /**
    * \return String representation of the meshUpdateEvent.
    */
-  std::string toString(const MeshUpdateEvent& meshUpdateEvent);
+  static std::string toString(const MeshUpdateEvent& meshUpdateEvent);
 
   /**
    * Converts LimiterDomainChange to its double equivalent.
