@@ -645,13 +645,9 @@ public:
       const int cellDescriptionsIndex,
       const int solverElement) const override final;
 
-  void rollbackToPreviousTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) const final override;
+  void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
-  void rollbackToPreviousTimeStepFused(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
+  void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,

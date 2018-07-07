@@ -1002,7 +1002,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
-  assertion(cellDescription.getRefinementRequest()==CellDescription::RefinementRequest::Pending);
+  assertion(cellDescription.getRefinementStatus()==Pending);
 
   double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   exahype::solvers::Solver::RefinementControl refinementControl =
@@ -1741,7 +1741,7 @@ void exahype::solvers::ADERDGSolver::restrictVolumeData(
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
 //  assertion1(coarseGridCellDescription.getLimiterStatus()==CellDescription::LimiterStatus::Ok,
 //      coarseGridCellDescription.toString()); // TODO(Dominic): Does not always apply see veto
-  assertion1(fineGridCellDescription.getLimiterStatus()==0,
+  assertion1(fineGridCellDescription.getRefinementStatus()==0,
         fineGridCellDescription.toString());
   assertion1(DataHeap::getInstance().isValidIndex(
       fineGridCellDescription.getSolution()),fineGridCellDescription.toString());
@@ -2310,11 +2310,7 @@ void exahype::solvers::ADERDGSolver::zeroTimeStepSizes(
   }
 }
 
-void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
+void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep(CellDescription& cellDescription) const {
   // n+1
   cellDescription.setPredictorTimeStamp   (cellDescription.getPreviousCorrectorTimeStamp());
   cellDescription.setPredictorTimeStepSize(cellDescription.getPreviousCorrectorTimeStepSize());
@@ -2328,11 +2324,7 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep(
   cellDescription.setPreviousCorrectorTimeStepSize(std::numeric_limits<double>::max()); // TODO(Dominic): get rid of the last time level.
 }
 
-void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
+void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const {
   // n+1
   cellDescription.setPredictorTimeStamp   (
       cellDescription.getPreviousCorrectorTimeStamp()+cellDescription.getPreviousCorrectorTimeStepSize());
@@ -2353,7 +2345,7 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     const bool isInitialMeshRefinement) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
-  assertion1(cellDescription.getRefinementRequest()==CellDescription::RefinementRequest::Pending,cellDescription.toString());
+  assertion1(cellDescription.getRefinementStatus()==Pending,cellDescription.toString());
 
   zeroTimeStepSizes(cellDescriptionsIndex,element); // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
@@ -3981,7 +3973,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
         ",data[2]=" << message[2] );
     logDebug("mergeWithWorkerData(...)","[post] Updated time step fields: " <<
         ",_minNextPredictorTimeStepSize=" << _minNextTimeStepSize <<
-        ",_nextMeshUpdateRequest=" << _nextMeshUpdateRequest <<
+        ",_nextMeshUpdateEvent=" << Solver::toString(_nextMeshUpdateEvent) <<
         ",_nextMaxLevel=" << _nextMaxLevel);
   }
 }

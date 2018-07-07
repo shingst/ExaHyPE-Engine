@@ -1701,20 +1701,27 @@ public:
       const int cellDescriptionsIndex,
       const int solverElement) const override final;
 
-  void rollbackToPreviousTimeStep(
-        const int cellDescriptionsIndex,
-        const int element) const override final;
   /**
-   * !!! Only for fused time stepping !!!
-   *
-   * Rolls the solver time step data back to the
-   * previous time step for a cell description.
-   * Note that the newest time step
-   * data is lost in this process.
-   */
-  void rollbackToPreviousTimeStepFused(
-      const int cellDescriptionsIndex,
-      const int element) const override final;
+    * Rollback to the previous time step, i.e,
+    * overwrite the time step size and time stamp
+    * fields of the cell description
+    * by previous values.
+    */
+   void rollbackToPreviousTimeStep(
+       CellDescription& cellDescription) const;
+
+   /*
+    * Same as rollbackToPreviousTimeStep
+    * but for the fused time stepping scheme.
+    *
+    * Corrector time stamp and corrector time step size must
+    * add up to predictor time stamp after rollback.
+    *
+    * Corrector time step size is assumed to be used
+    * predictor time step size in batch.
+    */
+   void rollbackToPreviousTimeStepFused(
+       CellDescription& cellDescription) const;
 
   UpdateResult fusedTimeStepBody(
         const int cellDescriptionsIndex,

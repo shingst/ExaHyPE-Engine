@@ -139,7 +139,6 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
       break;
     case exahype::State::AlgorithmSection::MeshRefinement:
       isMergingMetadata = hasRequestedMeshRefinement();
-      assertion( getMeshUpdateEvent()!=LimiterDomainChange::IrregularRequiringMeshUpdate || hasRequestedMeshRefinement());
       break;
     default:
       break;
@@ -421,14 +420,16 @@ void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes(
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
     const int cellDescriptionsIndex,
     const int solverElement) const {
-  _solver->rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
+  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
+  _solver->rollbackToPreviousTimeStep(solverPatch); // TODO(Dominic): Too many element lookups
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused(
     const int cellDescriptionsIndex,
     const int solverElement) const {
-  _solver->rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
+  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
+  _solver->rollbackToPreviousTimeStepFused(solverPatch); // TODO(Dominic): Too many element lookups
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
@@ -484,7 +485,7 @@ void exahype::solvers::LimitingADERDGSolver::ensureLimiterPatchTimeStepDataIsCon
     #ifdef Asserts
     LimiterPatch& limiterPatch = FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
     #endif
-    assertion2(solverPatch.getPreviousLimiterStatus() >=_solver->_minimumLimiterStatusForPassiveFVPatch ||
+    assertion2(solverPatch.getPreviousRefinementStatus() >=_solver->_minimumLimiterStatusForPassiveFVPatch ||
                solverPatch.getRefinementStatus() >=_solver->_minimumLimiterStatusForPassiveFVPatch,solverPatch.toString(),limiterPatch.toString());
     copyTimeStepDataFromSolverPatch(solverPatch,cellDescriptionsIndex,limiterElement);
   }
@@ -1025,7 +1026,7 @@ bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocat
       solverPatch.getType()==SolverPatch::Type::Cell        &&
       limiterStatus>=_solver->_minimumLimiterStatusForPassiveFVPatch
   ) {
-    assertion1(solverPatch.getPreviousLimiterStatus()<_solver->_minimumLimiterStatusForPassiveFVPatch,
+    assertion1(solverPatch.getPreviousRefinementStatus()<_solver->_minimumLimiterStatusForPassiveFVPatch,
                solverPatch.toString());
     allocateLimiterPatch(cellDescriptionsIndex,solverElement);
     return true;
@@ -1181,7 +1182,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
   ) {
     if (
         solverPatch.getRefinementStatus() >= _solver->getMinimumLimiterStatusForActiveFVPatch()
-        ||
+        || // TODO(Dominic): Reassess what is this doing
         (solverPatch.getRefinementStatus() < _solver->getMinimumLimiterStatusForActiveFVPatch() &&
          solverPatch.getPreviousRefinementStatus()>=_solver->getMinimumLimiterStatusForTroubledCell())
     ) {

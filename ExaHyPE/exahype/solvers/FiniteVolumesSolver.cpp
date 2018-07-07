@@ -151,7 +151,7 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  _meshUpdateRequest = true; // for the initial mesh refinement
+  _meshUpdateEvent = MeshUpdateEvent::RegularRefinementRequested; // for the initial mesh refinement
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }
@@ -663,20 +663,15 @@ void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescription& cellDescription) const {
   cellDescription.setTimeStamp(cellDescription.getPreviousTimeStamp());
   cellDescription.setTimeStepSize(cellDescription.getPreviousTimeStepSize());
 
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::max());
 }
 
-void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  rollbackToPreviousTimeStep(cellDescriptionsIndex,element);
+void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const {
+  rollbackToPreviousTimeStep(cellDescription);
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(

@@ -1577,24 +1577,6 @@ class exahype::solvers::Solver {
   virtual void zeroTimeStepSizes(const int cellDescriptionsIndex, const int element) const = 0;
 
   /**
-    * Rollback to the previous time step, i.e,
-    * overwrite the time step size and time stamp
-    * fields of the cell description
-    * by previous values.
-    */
-   virtual void rollbackToPreviousTimeStep(
-       const int cellDescriptionsIndex,
-       const int solverElement) const = 0;
-
-   /*
-    * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
-    * but for the fused time stepping scheme.
-    */
-   virtual void rollbackToPreviousTimeStepFused(
-       const int cellDescriptionsIndex,
-       const int solverElement) const = 0;
-
-  /**
    * Impose initial conditions.
    *
    * \note Make sure to reset neighbour merge
