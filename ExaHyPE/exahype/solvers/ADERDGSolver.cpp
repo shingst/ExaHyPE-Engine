@@ -1031,13 +1031,12 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
           cellDescription.getCorrectorTimeStamp(), // is done after the update
           cellDescription.getLevel());
 
-  cellDescription.setRefinementFlag(false);
   switch (refinementControl) {
   case exahype::solvers::Solver::RefinementControl::Keep:
     cellDescription.setRefinementStatus(
         std::max( cellDescription.getRefinementStatus(), Keep ) );
     if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-       cellDescription.setRefinementFlag(true);
+       cellDescription.setRefinementFlag(true); // only set but do not reset
        cellDescription.setRefinementStatus(
            std::max( cellDescription.getRefinementStatus(),_refineOrKeepOnFineGrid ) );
     }
@@ -1047,7 +1046,7 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
         std::max( cellDescription.getRefinementStatus(), Erase ) );
     break;
   case exahype::solvers::Solver::RefinementControl::Refine:
-    cellDescription.setRefinementFlag(true);
+    cellDescription.setRefinementFlag(true); // only set but do not reset
     cellDescription.setRefinementStatus(
         std::max( cellDescription.getRefinementStatus(), _refineOrKeepOnFineGrid ) );
     break;
