@@ -221,7 +221,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
                 + "parser.getMaximumMeshDepth("+_kernelNumber+"), "
                 + "parser.getHaloCells("+_kernelNumber+"), "
                 + "parser.getRegularisedFineGridLevels("+_kernelNumber+"), "
-                + "parser.getTimeStepping("+_kernelNumber+")"
+                + "parser.getTimeStepping("+_kernelNumber+"), "
                 + "0, 0 "
                 + (_enableProfiler ? ", std::move(profiler)": ""));
       _methodBodyWriter.write( " ));\n");
