@@ -239,6 +239,10 @@ private:
       const int cellDescriptionsIndex,
       const int solverElement) const;
 
+  void deallocateLimiterPatch(
+      const SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
+
   /**
    * Allocates a new limiter patch,
    * copies geometry information from the solver
@@ -296,8 +300,6 @@ private:
    * If the counter is set to zero, change a troubled cell
    * to NeighbourOfCellIsTroubled1.
    *
-   * \param[in] isTroubled A bool indicating if the patch's solution is (still) troubled
-   *
    * \return True if the limiter domain changes irregularly in the cell, i.e.,
    * if a patch with status Ok, NeighbourOfTroubled3, NeighbourOfTroubled4
    * changes its status to Troubled.
@@ -307,8 +309,8 @@ private:
    * methods returns false.
    */
   MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
-      SolverPatch& solverPatch,const bool isTroubled,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+      SolverPatch& solverPatch,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -350,6 +352,10 @@ private:
   void ensureLimiterPatchTimeStepDataIsConsistent(
         const int cellDescriptionsIndex,
         const int solverElement) const;
+
+  void ensureLimiterPatchTimeStepDataIsConsistent(
+      const SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
 
   /**
    * Copies the time stamp and the time step sizes from the solver patch
@@ -588,6 +594,10 @@ public:
           const int cellDescriptionsIndex,
           const int element) const final override;
 
+  void synchroniseTimeStepping(
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
+
   /**
    * We always override the limiter time step
    * data by the ADER-DG one before a solution update.
@@ -716,7 +726,7 @@ public:
    * returns true if a new limiter patch was allocated.
    */
   void updateRefinementStatusDuringRefinementStatusSpreading(
-      const int cellDescriptionsIndex, const int solverElement) const;
+      SolverPatch& solverPatch,const int cellDescriptionsIndex) const;
 
   /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
    *
@@ -915,6 +925,10 @@ public:
    void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const int cellDescriptionsIndex,
        const int solverElement) const;
+
+   void ensureNoLimiterPatchIsAllocatedOnHelperCell(
+       const SolverPatch& solverPatch,
+       const int cellDescriptionsIndex) const;
 
    /*
     * Ensures that a limiter patch is allocated

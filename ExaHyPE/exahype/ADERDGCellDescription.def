@@ -440,6 +440,13 @@ class exahype::records::ADERDGCellDescription {
   persistent int facewiseRefinementStatus[DIMENSIONS_TIMES_TWO];
   
   /**
+   * A flag indicating cells marked by a normal refinement criterion
+   * during the time stepping. This is used as a marker for
+   * halo cell diffusion heat sources.
+   */
+  persistent bool refinementFlag;
+  
+  /**
    * Status which indicates the refinement decision made
    * by a cell description. 
    * -1 indicates the cell wants to be erased.

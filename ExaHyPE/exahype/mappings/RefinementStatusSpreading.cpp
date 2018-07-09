@@ -203,8 +203,8 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
             updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
           break;
         case exahype::solvers::Solver::Type::LimitingADERDG:
-          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-            updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+            updateRefinementStatusDuringRefinementStatusSpreading(cellDescription,cellDescriptionsIndex);
           break;
         default:
           break;

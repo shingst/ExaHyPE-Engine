@@ -1869,6 +1869,8 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (element!=exahype::solvers::Solver::NotFound) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
+    cellDescription.setRefinementFlag(false);
+    cellDescription.setLimiterFlag(false);
 
     // This allows ancestors to be erased in the next batch of mesh refinment iterations
     if ( cellDescription.getType()!= CellDescription::Type::Cell ) {
@@ -1962,6 +1964,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
 
+  cellDescription.setRefinementFlag(false);
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     const double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     RefinementControl refinementControl = refinementCriterion(
@@ -1970,13 +1973,12 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
                       cellDescription.getCorrectorTimeStamp(), // must be called after advancing in time
                       cellDescription.getLevel());
     if (
-        cellDescription.getRefinementStatus()<_refineOrKeepOnFineGrid
-        &&
         (refinementControl==RefinementControl::Refine ||
         (cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()    &&
         refinementControl==RefinementControl::Keep))
     ) {
       cellDescription.setRefinementStatus(_refineOrKeepOnFineGrid);
+      cellDescription.setRefinementFlag(true);
     } else if (
         cellDescription.getRefinementStatus()<_refineOrKeepOnFineGrid &&
         cellDescription.getLevel()<getMaximumAdaptiveMeshLevel()     &&
@@ -1985,11 +1987,13 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
       cellDescription.setRefinementStatus(Keep);
     }
     else if (
-        cellDescription.getRefinementStatus()<_refineOrKeepOnFineGrid &&
+        cellDescription.getRefinementStatus()<=Keep &&
         refinementControl==RefinementControl::Erase
     ) {
       cellDescription.setRefinementStatus(Erase);
     }
+
+    // update refinement status after prescribing refinement values
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
 
     return
@@ -2001,6 +2005,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
         cellDescription.getRefinementStatus() > 0 &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
     ) {
+      cellDescription.setRefinementFlag(true);
       return MeshUpdateEvent::RegularRefinementRequested;
     } else {
       return MeshUpdateEvent::None;
@@ -2827,10 +2832,8 @@ void
 exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
-  if (
-      cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
-  ) {
-    int max = cellDescription.getRefinementStatus();
+  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
+    int max = ( cellDescription.getRefinementFlag() ) ? _refineOrKeepOnFineGrid : Erase;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       if ( neighbourMergePerformed[i] ) {
         max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
