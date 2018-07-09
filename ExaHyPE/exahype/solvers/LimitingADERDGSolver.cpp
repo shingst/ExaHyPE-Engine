@@ -253,15 +253,19 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
           coarseGridCell,coarseGridVerticesEnumerator,
           initialGrid,solverNumber);
 
+  // Impose initial conditions and copy time step data if we have
+  // allocated a new FV patch.
   const int solverElement = _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = _solver->getCellDescription(fineGridCell.getCellDescriptionsIndex(),solverElement);
     bool limiterPatchAllocated = ensureRequiredLimiterPatchIsAllocated(
         solverPatch,fineGridCell.getCellDescriptionsIndex(),solverPatch.getRefinementStatus());
-    if ( limiterPatchAllocated && SpawnAMRBackgroundJobs ) {
+    //computeCellAllocated |= limiterPatchAllocated;
+    if ( limiterPatchAllocated ) {
       const int limiterElement = _limiter->tryGetElement(
           fineGridCell.getCellDescriptionsIndex(),solverPatch.getSolverNumber());
       LimiterPatch& limiterPatch = _limiter->getCellDescription(fineGridCell.getCellDescriptionsIndex(),limiterElement);
+      copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
       if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
         AdjustLimiterSolutionJob job(*this,solverPatch,limiterPatch);
         peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
@@ -528,7 +532,7 @@ void exahype::solvers::LimitingADERDGSolver::copyTimeStepDataFromSolverPatch(
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatchForSolverPatch(
     const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement) const {
-  assertion(limiterElement!=Solver::NotFound);
+  assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());
   LimiterPatch& limiterPatch =
       FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
   // Ensure time stamps and step sizes are consistent
@@ -721,8 +725,6 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAndMinAndMaxAfterS
 
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    meshUpdateEvent =
-        determineRefinementStatusAfterSolutionUpdate(solverPatch,neighbourMergePerformed);
     if (
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
         solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch()
@@ -730,13 +732,14 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAndMinAndMaxAfterS
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
       determineLimiterMinAndMax(solverPatch,limiterPatch);
     } // else: Keep the previously computed min and max values
+    
+    meshUpdateEvent =
+        determineRefinementStatusAfterSolutionUpdate(solverPatch,neighbourMergePerformed);
 
     ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,solverElement);
-
     bool limiterPatchAllocated =
         ensureRequiredLimiterPatchIsAllocated(
-            solverPatch,cellDescriptionsIndex,
-            solverPatch.getRefinementStatus());
+            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
     if ( limiterPatchAllocated ) {
       assertion(solverPatch.getLevel()==getMaximumAdaptiveMeshLevel());
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
@@ -758,8 +761,8 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
 
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
-  bool isTroubled = evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) &&
-                  evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  bool isTroubled = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
+                    !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
   if ( isTroubled ) {
     solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     if ( solverPatch.getRefinementStatus() > _solver->_minimumRefinementStatusForActiveFVPatch ) {
@@ -1037,10 +1040,10 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
         const SolverPatch& solverPatch,
         const int cellDescriptionsIndex) const {
   #if defined(Asserts)
-  const int previouslimiterElement =
-          tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  const int previousLimiterElement =
+          _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   #endif
-  assertion(previouslimiterElement==Solver::NotFound);
+  assertion(previousLimiterElement==Solver::NotFound);
 
   exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
       cellDescriptionsIndex,
