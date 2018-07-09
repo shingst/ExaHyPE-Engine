@@ -1994,7 +1994,8 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
 
     return
-        ( refinementControl==RefinementControl::Refine ) ?
+        (cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
+         refinementControl==RefinementControl::Refine ) ?
             MeshUpdateEvent::IrregularRefinementRequested : MeshUpdateEvent::None;
   } else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
@@ -2386,18 +2387,18 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
     const int element,
     const bool isInitialMeshRefinement) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
-  assertion1(cellDescription.getRefinementStatus()==Pending,cellDescription.toString());
 
   zeroTimeStepSizes(cellDescriptionsIndex,element); // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
 
-  if (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating) {
-    prolongateVolumeData(cellDescription,isInitialMeshRefinement);
-    cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
+    if (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating) {
+      prolongateVolumeData(cellDescription,isInitialMeshRefinement);
+      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+    }
+    adjustSolution(cellDescription);
+    markForRefinement(cellDescription);
   }
-  adjustSolution(cellDescription);
-  markForRefinement(cellDescription);
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {

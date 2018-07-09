@@ -682,7 +682,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      */
     // mesh refinement events
     solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
-    solver->updateNextAttainedStableState(solver->getNextMeshUpdateEvent()!=MeshUpdateEvent::None);
+    solver->updateNextAttainedStableState(solver->getNextMeshUpdateEvent()==MeshUpdateEvent::None);
     // cell sizes (for AMR)
     solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
