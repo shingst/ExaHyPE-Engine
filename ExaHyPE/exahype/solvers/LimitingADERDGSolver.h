@@ -526,8 +526,8 @@ public:
    */
   LimitingADERDGSolver(
       const std::string& identifier,
-      std::unique_ptr<exahype::solvers::ADERDGSolver> solver,
-      std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter,
+      exahype::solvers::ADERDGSolver* solver,
+      exahype::solvers::FiniteVolumesSolver* limiter,
       const double DMPRelaxationParameter=1e-4,
       const double DMPDifferenceScaling=1e-3,
       const int iterationsToCureTroubledCell=2);

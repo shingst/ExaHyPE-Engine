@@ -378,13 +378,6 @@ class exahype::solvers::Solver {
 
  protected:
 
-  /** Special Refinement Status values */
-  static constexpr int BoundaryStatus             = -3;
-  static constexpr int Pending                    = -2;
-  static constexpr int Erase                      = -1; // Erase must be chosen as -1. Otherwise
-  static constexpr int Keep                       =  0;
-  static constexpr int RefineOrKeepOnFineGrid     =  2;
-
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 

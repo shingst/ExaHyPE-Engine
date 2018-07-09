@@ -43,8 +43,8 @@ int exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTrouble
 
 exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const std::string& identifier,
-    std::unique_ptr<exahype::solvers::ADERDGSolver> solver,
-    std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter,
+    exahype::solvers::ADERDGSolver* solver,
+    exahype::solvers::FiniteVolumesSolver* limiter,
     const double DMPRelaxationParameter,
     const double DMPDifferenceScaling,
     const int iterationsToCureTroubledCell)
@@ -438,7 +438,8 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
       solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
     } else {
-      _solver->markForRefinement(solverPatch);
+      _solver->markForRefinement(solverPatch); // TODO This code probably overwrites the
+      // refinement status during the iterations.
     }
 
     const int limiterElement =

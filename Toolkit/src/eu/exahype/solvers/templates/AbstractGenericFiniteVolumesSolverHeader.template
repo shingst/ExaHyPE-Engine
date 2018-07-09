@@ -52,7 +52,10 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     class {{className}};
     {%- endfor %}
     
-    {{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
+    {{abstractSolver}}(
+        const double maximumMeshSize,
+        const exahype::solvers::Solver::TimeStepping timeStepping
+        {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
     void solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
     
