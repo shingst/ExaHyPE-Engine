@@ -274,10 +274,14 @@ public:
    */
   static void eraseCellDescriptions(const int cellDescriptionsIndex);
 
-  FiniteVolumesSolver(const std::string& identifier, int numberOfVariables,
-      int numberOfParameters, int nodesPerCoordinateAxis, int ghostLayerWidth,
-      double maximumMeshSize, int maximumAdaptiveMeshDepth,
-      exahype::solvers::Solver::TimeStepping timeStepping,
+  FiniteVolumesSolver(
+      const std::string& identifier,
+      const int numberOfVariables,
+      const int numberOfParameters,
+      const int basisSize,
+      const int ghostLayerWidth,
+      const double maximumMeshSize,
+      const exahype::solvers::Solver::TimeStepping timeStepping,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));

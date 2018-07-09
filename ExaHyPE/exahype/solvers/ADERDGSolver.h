@@ -176,6 +176,19 @@ private:
    */
   bool _stabilityConditionWasViolated;
 
+  /** Special Refinement Status values */
+  static constexpr int BoundaryStatus             = -3;
+  static constexpr int Pending                    = -2;
+  static constexpr int Erase                      = -1; // Erase must be chosen as -1. Otherwise
+  static constexpr int Keep                       =  0;
+
+  int _refineOrKeepOnFineGrid; // can be configured by the user
+
+  /**
+   * Number of limiter helper layers in each
+   * helper cell subdomain around a troubled cell.
+   */
+  const int _limiterHelperLayers;
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
@@ -184,12 +197,6 @@ private:
    * is applied to.
    */
   const int _DMPObservables;
-
-  /**
-   * Number of limiter helper layers in each
-   * helper cell subdomain around a troubled cell.
-   */
-  const int _limiterHelperLayers;
 
   /**
    * The minimum limiter status a cell must have
@@ -943,11 +950,16 @@ public:
    */
   ADERDGSolver(
       const std::string& identifier,
-      int numberOfVariables, int numberOfParameters, int DOFPerCoordinateAxis,
-      double maximumMeshSize, int maximumAdaptiveMeshDepth,
-      int DMPObservables,
-      int limiterHelperLayers,
-      exahype::solvers::Solver::TimeStepping timeStepping,
+      const int numberOfVariables,
+      const int numberOfParameters,
+      const int basisSize,
+      const double maximumMeshSize,
+      const int maximumAdaptiveMeshDepth,
+      const int haloCells,
+      const int regularisedFineGridLevels,
+      const exahype::solvers::Solver::TimeStepping timeStepping,
+      const int limiterHelperLayers,
+      const int DMPObservables,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));

@@ -68,14 +68,17 @@ void exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(const int cell
 }
 
 exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
-    const std::string& identifier, int numberOfVariables,
-    int numberOfParameters, int nodesPerCoordinateAxis, int ghostLayerWidth,
-    double maximumMeshSize, int maximumAdaptiveMeshDepth,
-    exahype::solvers::Solver::TimeStepping timeStepping,
+    const std::string& identifier,
+    const int numberOfVariables,
+    const int numberOfParameters,
+    const int basisSize,
+    const int ghostLayerWidth,
+    const double maximumMeshSize,
+    const exahype::solvers::Solver::TimeStepping timeStepping,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, exahype::solvers::Solver::Type::FiniteVolumes,
-             numberOfVariables, numberOfParameters, nodesPerCoordinateAxis,
-             maximumMeshSize, maximumAdaptiveMeshDepth,
+             numberOfVariables, numberOfParameters, basisSize,
+             maximumMeshSize, 0,
              timeStepping, std::move(profiler)),
             _previousMinTimeStamp( std::numeric_limits<double>::max() ),
             _previousMinTimeStepSize( std::numeric_limits<double>::max() ),

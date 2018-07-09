@@ -435,15 +435,20 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptions(
 }
 
 exahype::solvers::ADERDGSolver::ADERDGSolver(
-    const std::string& identifier, int numberOfVariables,
-    int numberOfParameters, int DOFPerCoordinateAxis,
-    double maximumMeshSize, int maximumAdaptiveMeshDepth,
-    int DMPObservables,
-    int limiterHelperLayers,
-    exahype::solvers::Solver::TimeStepping timeStepping,
+    const std::string& identifier,
+    const int numberOfVariables,
+    const int numberOfParameters,
+    const int basisSize,
+    const double maximumMeshSize,
+    const int maximumAdaptiveMeshDepth,
+    const int haloCells,
+    const int regularisedFineGridLevels,
+    const exahype::solvers::Solver::TimeStepping timeStepping,
+    const int limiterHelperLayers,
+    const int DMPObservables,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, Solver::Type::ADERDG, numberOfVariables,
-             numberOfParameters, DOFPerCoordinateAxis,
+             numberOfParameters, basisSize,
              maximumMeshSize, maximumAdaptiveMeshDepth,
              timeStepping, std::move(profiler)),
      _previousMinCorrectorTimeStamp( std::numeric_limits<double>::max() ),
@@ -454,9 +459,10 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minPredictorTimeStepSize( std::numeric_limits<double>::max() ),
      _minNextTimeStepSize( std::numeric_limits<double>::max() ),
      _stabilityConditionWasViolated( false ),
-     _DMPObservables(DMPObservables),
+     _refineOrKeepOnFineGrid(1+haloCells),
      _limiterHelperLayers(limiterHelperLayers),
-     _minimumRefinementStatusForPassiveFVPatch(RefineOrKeepOnFineGrid+1),
+     _DMPObservables(DMPObservables),
+     _minimumRefinementStatusForPassiveFVPatch(_refineOrKeepOnFineGrid+1),
      _minimumRefinementStatusForActiveFVPatch (limiterHelperLayers+_minimumRefinementStatusForPassiveFVPatch),
      _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch) {
 
@@ -1015,13 +1021,13 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   switch (refinementControl) {
   case exahype::solvers::Solver::RefinementControl::Keep:
     cellDescription.setRefinementStatus(
-        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ? RefineOrKeepOnFineGrid : Keep );
+        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ? _refineOrKeepOnFineGrid : Keep );
     break;
   case exahype::solvers::Solver::RefinementControl::Erase:
     cellDescription.setRefinementStatus( Erase );
     break;
   case exahype::solvers::Solver::RefinementControl::Refine:
-    cellDescription.setRefinementStatus( RefineOrKeepOnFineGrid );
+    cellDescription.setRefinementStatus( _refineOrKeepOnFineGrid );
     break;
   }
 }
@@ -1482,7 +1488,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
             getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
           tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
           if ( topMostParent.getType()==CellDescription::Type::Cell ) {
-            topMostParent.setRefinementStatus(RefineOrKeepOnFineGrid);
+            topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
           }
           lock.free();
         }
@@ -1941,22 +1947,22 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
                       cellDescription.getCorrectorTimeStamp(), // must be called after advancing in time
                       cellDescription.getLevel());
     if (
-        cellDescription.getRefinementStatus()<RefineOrKeepOnFineGrid
+        cellDescription.getRefinementStatus()<_refineOrKeepOnFineGrid
         &&
         (refinementControl==RefinementControl::Refine ||
         (cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()    &&
         refinementControl==RefinementControl::Keep))
     ) {
-      cellDescription.setRefinementStatus(RefineOrKeepOnFineGrid);
+      cellDescription.setRefinementStatus(_refineOrKeepOnFineGrid);
     } else if (
-        cellDescription.getRefinementStatus()<RefineOrKeepOnFineGrid &&
+        cellDescription.getRefinementStatus()<_refineOrKeepOnFineGrid &&
         cellDescription.getLevel()<getMaximumAdaptiveMeshLevel()     &&
         refinementControl==RefinementControl::Keep
     ) {
       cellDescription.setRefinementStatus(Keep);
     }
     else if (
-        cellDescription.getRefinementStatus()<RefineOrKeepOnFineGrid &&
+        cellDescription.getRefinementStatus()<_refineOrKeepOnFineGrid &&
         refinementControl==RefinementControl::Erase
     ) {
       cellDescription.setRefinementStatus(Erase);
@@ -2796,7 +2802,6 @@ exahype::solvers::ADERDGSolver::updateRefinementStatus(
     CellDescription& cellDescription,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
   if (
-//      cellDescription.getRefinementStatus()!=Pending &&
       cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
     int max = cellDescription.getRefinementStatus();
@@ -3354,7 +3359,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
             getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         if ( topMostParentCellDescription.getType()==CellDescription::Type::Cell ) {
            logDebug( "progressMeshRefinementInPrepareSendToWorker(...)"," try to refine parent " << topMostParentCellDescription.toString());
-           topMostParentCellDescription.setRefinementStatus(RefineOrKeepOnFineGrid);
+           topMostParentCellDescription.setRefinementStatus(_refineOrKeepOnFineGrid);
         }
       }
     }

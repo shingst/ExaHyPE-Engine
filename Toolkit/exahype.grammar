@@ -43,112 +43,113 @@ Helpers
    decimal_number          = sign? ( digit+ | digit+ '.' digit+ )  ;
   
 Tokens
-  token_end                         = 'end';
+  token_end                          = 'end';
 
-  token_project                     = 'exahype-project';
+  token_project                      = 'exahype-project';
   
-  token_const                       = 'const';
+  token_const                        = 'const';
 
-  token_peano_kernel_path           = 'peano-kernel-path';
-  token_peano_toolbox_path          = 'peano-toolbox-path';
-  token_exahype_path                = 'exahype-path';
-  token_output_directory            = 'output-directory';
-  token_architecture                = 'architecture';
-  token_logfile                     = 'log-file';
+  token_peano_kernel_path            = 'peano-kernel-path';
+  token_peano_toolbox_path           = 'peano-toolbox-path';
+  token_exahype_path                 = 'exahype-path';
+  token_output_directory             = 'output-directory';
+  token_architecture                 = 'architecture';
+  token_logfile                      = 'log-file';
 
+  token_computational_domain         = 'computational-domain';
+  token_dimension                    = 'dimension';
+  token_width                        = 'width';
+  token_offset                       = 'offset';
+  token_maximum_mesh_size            = 'maximum-mesh-size';
+  token_maximum_mesh_depth           = 'maximum-mesh-depth';
+  token_halo_cells                   = 'halo-cells';
+  token_regularised_fine_grid_levels = 'regularised-fine-grid-levels';
+  token_time_stepping                = 'time-stepping';
+  token_end_time                     = 'end-time';
+  token_time_steps                   = 'time-steps';
 
-  token_computational_domain        = 'computational-domain';
-  token_dimension                   = 'dimension';
-  token_width                       = 'width';
-  token_offset                      = 'offset';
-  token_maximum_mesh_size           = 'maximum-mesh-size';
-  token_maximum_mesh_depth          = 'maximum-mesh-depth';
-  token_time_stepping               = 'time-stepping';
-  token_end_time                    = 'end-time';
-  token_time_steps                  = 'time-steps';
+  token_solver                       = 'solver';
+  token_aderdg                       = 'ADER-DG';
+  token_finite_volumes               = 'Finite-Volumes';
+  token_limiting_aderdg              = 'Limiting-ADER-DG';
+  token_variables                    = 'variables';
+  token_parameters                   = 'parameters';
+  token_naming_scheme                = 'naming-scheme';
+  token_constants                    = 'constants';
+  token_order                        = 'order';
+  token_patch_size                   = 'patch-size';
+  token_kernel                       = 'kernel';
+  token_kernel_type                  = 'type';
+  token_kernel_terms                 = 'terms';
+  token_kernel_opt                   = 'optimisation';
+  token_kernel_solver                = 'kernel';
+  token_kernel_limiter_type          = 'limiter-type';
+  token_kernel_limiter_opt           = 'limiter-optimisation';
+  token_language                     = 'language';
+  token_language_limiter             = 'limiter-language';
+  token_dmp_observables              = 'dmp-observables';
+  token_dmp_relaxation_parameter     = 'dmp-relaxation-parameter';
+  token_dmp_difference_scaling       = 'dmp-difference-scaling';
+  token_steps_till_cured             = 'steps-till-cured';
+  token_helper_layers                = 'helper-layers';
 
-  token_solver                      = 'solver';
-  token_aderdg                      = 'ADER-DG';
-  token_finite_volumes              = 'Finite-Volumes';
-  token_limiting_aderdg             = 'Limiting-ADER-DG';
-  token_variables                   = 'variables';
-  token_parameters                  = 'parameters';
-  token_naming_scheme               = 'naming-scheme';
-  token_constants                   = 'constants';
-  token_order                       = 'order';
-  token_patch_size                  = 'patch-size';
-  token_kernel                      = 'kernel';
-  token_kernel_type                 = 'type';
-  token_kernel_terms                = 'terms';
-  token_kernel_opt                  = 'optimisation';
-  token_kernel_solver               = 'kernel';
-  token_kernel_limiter_type         = 'limiter-type';
-  token_kernel_limiter_opt          = 'limiter-optimisation';
-  token_language                    = 'language';
-  token_language_limiter            = 'limiter-language';
-  token_dmp_observables             = 'dmp-observables';
-  token_dmp_relaxation_parameter    = 'dmp-relaxation-parameter';
-  token_dmp_difference_scaling      = 'dmp-difference-scaling';
-  token_steps_till_cured            = 'steps-till-cured';
-  token_helper_layers               = 'helper-layers';
-
-  token_plot                        = 'plot';
-  token_variable                    = 'variable';
-  token_time                        = 'time';
-  token_repeat                      = 'repeat';
-  token_output                      = 'output';
-  token_select                      = 'select';
+  token_plot                         = 'plot';
+  token_variable                     = 'variable';
+  token_time                         = 'time';
+  token_repeat                       = 'repeat';
+  token_output                       = 'output';
+  token_select                       = 'select';
   
-  token_shared_memory               = 'shared-memory';
-  token_cores                       = 'cores';
-  token_properties_file             = 'properties-file';
-  token_identifier                  = 'identifier';
+  token_shared_memory                = 'shared-memory';
+  token_cores                        = 'cores';
+  token_properties_file              = 'properties-file';
+  token_identifier                   = 'identifier';
 
-  token_distributed_memory          = 'distributed-memory';
-  token_configure                   = 'configure';
-  token_buffer_size                 = 'buffer-size';
-  token_timeout                     = 'timeout';
+  token_distributed_memory           = 'distributed-memory';
+  token_configure                    = 'configure';
+  token_buffer_size                  = 'buffer-size';
+  token_timeout                      = 'timeout';
 
-  token_optimisation                = 'global-optimisation';
-  token_fuse_algorithm_steps        = 'fuse-algorithmic-steps';
-  token_fuse_algorithm_steps_factor = 'fuse-algorithmic-steps-factor';
-  token_spawn_predictor             = 'spawn-predictor-as-background-thread';
-  token_spawn_amr                   = 'spawn-amr-background-threads'; 
-  token_disable_vertex                 = 'disable-vertex-exchange-in-time-steps';
-  token_batch_timesteps             = 'time-step-batch-factor';
-  token_disable_metadata            = 'disable-metadata-exchange-in-batched-time-steps';
-  token_double_compression          = 'double-compression';
-  token_spawn_double_compression    = 'spawn-double-compression-as-background-thread';
+  token_optimisation                 = 'global-optimisation';
+  token_fuse_algorithm_steps         = 'fuse-algorithmic-steps';
+  token_fuse_algorithm_steps_factor  = 'fuse-algorithmic-steps-factor';
+  token_spawn_predictor              = 'spawn-predictor-as-background-thread';
+  token_spawn_amr                    = 'spawn-amr-background-threads'; 
+  token_disable_vertex               = 'disable-vertex-exchange-in-time-steps';
+  token_batch_timesteps              = 'time-step-batch-factor';
+  token_disable_metadata             = 'disable-metadata-exchange-in-batched-time-steps';
+  token_double_compression           = 'double-compression';
+  token_spawn_double_compression     = 'spawn-double-compression-as-background-thread';
 
-  token_profiling                   = 'profiling';
-  token_profiler                    = 'profiler';
-  token_metrics                     = 'metrics';
-  token_profiling_output            = 'profiling-output';
-  token_likwid_inc                  = 'likwid_inc';
-  token_likwid_lib                  = 'likwid_lib';
-  token_ipcm_inc                    = 'ipcm_inc';
-  token_ipcm_lib                    = 'ipcm_lib';
+  token_profiling                    = 'profiling';
+  token_profiler                     = 'profiler';
+  token_metrics                      = 'metrics';
+  token_profiling_output             = 'profiling-output';
+  token_likwid_inc                   = 'likwid_inc';
+  token_likwid_lib                   = 'likwid_lib';
+  token_ipcm_inc                     = 'ipcm_inc';
+  token_ipcm_lib                     = 'ipcm_lib';
 
-  token_on_off                      = 'on' | 'off';
+  token_on_off                       = 'on' | 'off';
 
-  token_equals                      = '=';
-  token_comma                       = ',';
-  token_colon                       = ':';
+  token_equals                       = '=';
+  token_comma                        = ',';
+  token_colon                        = ':';
 
-  blank                             = blank;
-  identifier                        = identifier;
-  typename                          = nondigit ( digit | nondigit | '::' ) *;
+  blank                              = blank;
+  identifier                         = identifier;
+  typename                           = nondigit ( digit | nondigit | '::' ) *;
   
-  int_number                        = sign? digit+;
-  float_number                      = decimal_number ( ( 'e' | 'E' ) sign? digit+ ) ?;
+  int_number                         = sign? digit+;
+  float_number                       = decimal_number ( ( 'e' | 'E' ) sign? digit+ ) ?;
 
-  filename                          = '/' ? (filename_element + '/') * filename_element +;
+  filename                           = '/' ? (filename_element + '/') * filename_element +;
 
-  traditional_comment               = '/*' not_star+ '*'+ (not_star_not_slash not_star* '*'+)* '/';
-  documentation_comment             = '/**' '*'* (not_star_not_slash not_star* '*'+)* '/';
-  end_of_line_comment               = '//' not_line_terminator* line_terminator;
+  traditional_comment                = '/*' not_star+ '*'+ (not_star_not_slash not_star* '*'+)* '/';
+  documentation_comment              = '/**' '*'* (not_star_not_slash not_star* '*'+)* '/';
+  end_of_line_comment                = '//' not_line_terminator* line_terminator;
   
-  configure_type                    = '{' not_bracket* '}';
+  configure_type                     = '{' not_bracket* '}';
 
 Ignored Tokens
 
@@ -391,6 +392,14 @@ Productions
   token_maximum_mesh_depth [maximum_mesh_depth_equals]:token_equals [value]:int_number
   	  { -> value };
   	  
+  halo_cells {->int_number} = 
+  token_halo_cells [halo_cells_equals]:token_equals [value]:int_number
+      { -> value };
+      
+  regularised_fine_grid_levels {->int_number} = 
+  token_regularised_fine_grid_levels [regularised_fine_grid_levels_equals]:token_equals [value]:int_number
+      { -> value };
+  	  
   steps_till_cured {->int_number} = 
   token_steps_till_cured [steps_till_cured_equals]:token_equals         [value]:int_number
   	  { -> value };
@@ -408,6 +417,8 @@ Productions
         token_order              [order_const]:token_const                [order_equals]:token_equals              [order]:int_number
         token_maximum_mesh_size                                           [maximum_mesh_size_equals]:token_equals  [maximum_mesh_size]:float_number
         maximum_mesh_depth?
+        halo_cells?
+        regularised_fine_grid_levels?
         token_time_stepping      [time_stepping_equals]:token_equals      [time_stepping]:identifier
         token_kernel_type        [kernel_type_const]:token_const          [kernel_type_equals]:token_equals        [kernel_type]:ids
 		token_kernel_terms       [kernel_terms_const]:token_const         [kernel_terms_equals]:token_equals       [kernel_terms]:ids
@@ -417,7 +428,7 @@ Productions
         plot_solution_list?
       token_end [end_token]:token_solver
       solver_list?
-      { -> [New solver.aderdg(name,variables,parameters_list.variables,naming_schemes,order,maximum_mesh_size,maximum_mesh_depth.int_number,time_stepping,kernel_type,kernel_terms,kernel_opt,language,constants_list.constants,[plot_solution_list.plot_solution]),solver_list.solver] }
+      { -> [New solver.aderdg(name,variables,parameters_list.variables,naming_schemes,order,maximum_mesh_size,maximum_mesh_depth.int_number,halo_cells.int_number,regularised_fine_grid_levels.int_number,time_stepping,kernel_type,kernel_terms,kernel_opt,language,constants_list.constants,[plot_solution_list.plot_solution]),solver_list.solver] }
     |  
     {limiting_aderdg}
     [begin_token]:token_solver token_limiting_aderdg [name]:identifier
@@ -427,6 +438,8 @@ Productions
         token_order                      [order_const]:token_const             [order_equals]:token_equals                    [order]:int_number
         token_maximum_mesh_size                                                [maximum_mesh_size_equals]:token_equals        [maximum_mesh_size]:float_number
         maximum_mesh_depth?
+        halo_cells?
+        regularised_fine_grid_levels?
         token_time_stepping              [time_stepping_equals]:token_equals   [time_stepping]:identifier
         token_kernel_type                [kernel_type_const]:token_const       [kernel_type_equals]:token_equals              [kernel_type]:ids
 		token_kernel_terms               [kernel_terms_const]:token_const      [kernel_terms_equals]:token_equals             [kernel_terms]:ids
@@ -444,7 +457,7 @@ Productions
         plot_solution_list?
       token_end [end_token]:token_solver
       solver_list?
-      { -> [New solver.limiting_aderdg(name,variables,parameters_list.variables,naming_schemes.naming_schemes,order,maximum_mesh_size,maximum_mesh_depth.int_number,time_stepping,kernel_type,kernel_terms,kernel_opt,language,kernel_limiter_type,kernel_limiter_opt,language_limiter,dmp_observables,dmp_relaxation_parameter,dmp_difference_scaling,steps_till_cured.int_number,helper_layers.int_number,constants_list.constants,[plot_solution_list.plot_solution]),solver_list.solver] }
+      { -> [New solver.limiting_aderdg(name,variables,parameters_list.variables,naming_schemes.naming_schemes,order,maximum_mesh_size,maximum_mesh_depth.int_number,halo_cells.int_number,regularised_fine_grid_levels.int_number,time_stepping,kernel_type,kernel_terms,kernel_opt,language,kernel_limiter_type,kernel_limiter_opt,language_limiter,dmp_observables,dmp_relaxation_parameter,dmp_difference_scaling,steps_till_cured.int_number,helper_layers.int_number,constants_list.constants,[plot_solution_list.plot_solution]),solver_list.solver] }
     |  
     {finite_volumes}
       [begin_token]:token_solver token_finite_volumes [name]:identifier
@@ -453,7 +466,6 @@ Productions
         naming_schemes?
         token_patch_size        [patch_size_const]:token_const           [patch_size_equals]:token_equals  [patch_size]:int_number
         token_maximum_mesh_size [maximum_mesh_size_equals]:token_equals  [maximum_mesh_size]:float_number
-        maximum_mesh_depth?
         token_time_stepping     [time_stepping_equals]:token_equals      [time_stepping]:identifier
         token_kernel_type       [kernel_type_const]:token_const          [kernel_type_equals]:token_equals              [kernel_type]:ids
 		token_kernel_terms      [kernel_terms_const]:token_const         [kernel_terms_equals]:token_equals             [kernel_terms]:ids
@@ -463,7 +475,7 @@ Productions
         plot_solution_list?
       token_end [end_token]:token_solver
       solver_list?
-      { -> [New solver.finite_volumes(name,variables,parameters_list.variables,naming_schemes.naming_schemes,patch_size,maximum_mesh_size,maximum_mesh_depth.int_number,time_stepping,kernel_type,kernel_terms,kernel_opt,language,constants_list.constants,[plot_solution_list.plot_solution]),solver_list.solver] };
+      { -> [New solver.finite_volumes(name,variables,parameters_list.variables,naming_schemes.naming_schemes,patch_size,maximum_mesh_size,time_stepping,kernel_type,kernel_terms,kernel_opt,language,constants_list.constants,[plot_solution_list.plot_solution]),solver_list.solver] };
     
   naming_schemes = 
     naming_scheme_list
@@ -689,9 +701,9 @@ Abstract Syntax Tree
     ;
   
   solver =
-      {aderdg}           [name]:identifier [variables]:variables [parameters]:variables? [naming_schemes]:naming_schemes? [order]:int_number      [maximum_mesh_size]:float_number [maximum_mesh_depth]:int_number? [time_stepping]:identifier [kernel_type]:ids [kernel_terms]:ids [kernel_opt]:ids [language]:identifier [constants]:constants? plot_solution*
-    | {finite_volumes}   [name]:identifier [variables]:variables [parameters]:variables? [naming_schemes]:naming_schemes? [patch_size]:int_number [maximum_mesh_size]:float_number [maximum_mesh_depth]:int_number? [time_stepping]:identifier [kernel_type]:ids [kernel_terms]:ids [kernel_opt]:ids [language]:identifier [constants]:constants? plot_solution*
-    | {limiting_aderdg}  [name]:identifier [variables]:variables [parameters]:variables? [naming_schemes]:naming_schemes? [order]:int_number      [maximum_mesh_size]:float_number [maximum_mesh_depth]:int_number? [time_stepping]:identifier [kernel_type]:ids [kernel_terms]:ids [kernel_opt]:ids [language]:identifier [kernel_limiter_type]:ids [kernel_limiter_opt]:ids [language_limiter]:identifier [dmp_observables]:int_number [dmp_relaxation_parameter]:float_number [dmp_difference_scaling]:float_number [steps_till_cured]:int_number? [helper_layers]:int_number? [constants]:constants? plot_solution*
+      {aderdg}           [name]:identifier [variables]:variables [parameters]:variables? [naming_schemes]:naming_schemes? [order]:int_number      [maximum_mesh_size]:float_number [maximum_mesh_depth]:int_number? [halo_cells]:int_number? [regularised_fine_grid_levels]:int_number? [time_stepping]:identifier [kernel_type]:ids [kernel_terms]:ids [kernel_opt]:ids [language]:identifier [constants]:constants? plot_solution*
+    | {finite_volumes}   [name]:identifier [variables]:variables [parameters]:variables? [naming_schemes]:naming_schemes? [patch_size]:int_number [maximum_mesh_size]:float_number [time_stepping]:identifier [kernel_type]:ids [kernel_terms]:ids [kernel_opt]:ids [language]:identifier [constants]:constants? plot_solution*
+    | {limiting_aderdg}  [name]:identifier [variables]:variables [parameters]:variables? [naming_schemes]:naming_schemes? [order]:int_number      [maximum_mesh_size]:float_number [maximum_mesh_depth]:int_number? [halo_cells]:int_number? [regularised_fine_grid_levels]:int_number? [time_stepping]:identifier [kernel_type]:ids [kernel_terms]:ids [kernel_opt]:ids [language]:identifier [kernel_limiter_type]:ids [kernel_limiter_opt]:ids [language_limiter]:identifier [dmp_observables]:int_number [dmp_relaxation_parameter]:float_number [dmp_difference_scaling]:float_number [steps_till_cured]:int_number? [helper_layers]:int_number? [constants]:constants? plot_solution*
     ;
 
   plot_solution =

@@ -19,13 +19,13 @@
 
 #include "exahype/disableOptimization.h" // we experience compiler bugs sometimes.
 
-{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
-  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumAdaptiveMeshDepth,timeStepping{% if enableProfiler %}, std::move(profiler){% endif %}) {
+{{project}}::{{solver}}::{{solver}}(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
+  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,timeStepping{% if enableProfiler %}, std::move(profiler){% endif %}) {
 }
 
-{{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
+{{project}}::{{abstractSolver}}::{{abstractSolver}}(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
   exahype::solvers::FiniteVolumesSolver("{{solver}}",NumberOfVariables,NumberOfParameters,PatchSize,
-                                        GhostLayerWidth,maximumMeshSize,maximumAdaptiveMeshDepth,timeStepping{% if enableProfiler %}, std::move(profiler){% endif %}) {
+                                        GhostLayerWidth,maximumMeshSize,timeStepping{% if enableProfiler %}, std::move(profiler){% endif %}) {
 }
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
