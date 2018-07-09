@@ -596,7 +596,7 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
         result[counter[0]][counter[1]] = -1.0
 
     try:
-        fileHandle=open(filePath)
+        fileHandle=open(filePath,encoding="utf-8")
 
         for line in fileHandle:
             if line.startswith("sweep/environment"):
