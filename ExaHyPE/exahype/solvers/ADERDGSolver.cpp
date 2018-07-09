@@ -69,6 +69,15 @@ int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                   
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining = 3;
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining        = 3;
 
+/**
+ * static constexpr need to defined again when following a
+ * C++ standard before C++17.
+ */
+constexpr int exahype::solvers::ADERDGSolver::BoundaryStatus;
+constexpr int exahype::solvers::ADERDGSolver::Pending;
+constexpr int exahype::solvers::ADERDGSolver::Erase; 
+constexpr int exahype::solvers::ADERDGSolver::Keep;
+
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
@@ -1024,13 +1033,24 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   switch (refinementControl) {
   case exahype::solvers::Solver::RefinementControl::Keep:
     cellDescription.setRefinementStatus(
-        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ? _refineOrKeepOnFineGrid : Keep );
+        std::max(
+          cellDescription.getRefinementStatus(),
+          cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ? _refineOrKeepOnFineGrid : Keep )
+    );
     break;
   case exahype::solvers::Solver::RefinementControl::Erase:
-    cellDescription.setRefinementStatus( Solver::Erase );
+    cellDescription.setRefinementStatus(
+        std::max(
+          cellDescription.getRefinementStatus(),
+          Erase )
+    );
     break;
   case exahype::solvers::Solver::RefinementControl::Refine:
-    cellDescription.setRefinementStatus( _refineOrKeepOnFineGrid );
+    cellDescription.setRefinementStatus(
+        std::max(
+          cellDescription.getRefinementStatus(),
+          _refineOrKeepOnFineGrid )
+    );
     break;
   }
 }
