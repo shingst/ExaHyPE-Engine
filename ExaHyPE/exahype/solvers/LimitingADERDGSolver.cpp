@@ -739,9 +739,9 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
 
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
-  bool troubled = evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) &&
-                  evaluatePhysicalAdmissibilityCriterion(solverPatch) // after min and max was found
-  if ( troubled ) {
+  bool isTroubled = evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) &&
+                  evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  if ( isTroubled ) {
     solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     if ( solverPatch.getRefinementStatus() > _solver->_minimumRefinementStatusForActiveFVPatch ) {
       meshUpdateEvent = MeshUpdateEvent::None;
