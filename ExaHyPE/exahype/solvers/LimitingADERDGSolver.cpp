@@ -247,12 +247,30 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const bool initialGrid,
     const int solverNumber) {
-  return
+  bool computeCellAllocated =
       _solver->progressMeshRefinementInEnterCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
           coarseGridCell,coarseGridVerticesEnumerator,
           initialGrid,solverNumber);
 
+  const int solverElement = _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  if ( solverElement != NotFound ) {
+    SolverPatch& solverPatch = _solver->getCellDescription(fineGridCell.getCellDescriptionsIndex(),solverElement);
+    bool limiterPatchAllocated = ensureRequiredLimiterPatchIsAllocated(
+        solverPatch,fineGridCell.getCellDescriptionsIndex(),solverPatch.getRefinementStatus());
+    if ( limiterPatchAllocated && SpawnAMRBackgroundJobs ) {
+      const int limiterElement = _limiter->tryGetElement(
+          fineGridCell.getCellDescriptionsIndex(),solverPatch.getSolverNumber());
+      LimiterPatch& limiterPatch = _limiter->getCellDescription(fineGridCell.getCellDescriptionsIndex(),limiterElement);
+      if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
+        AdjustLimiterSolutionJob job(*this,solverPatch,limiterPatch);
+        peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+      } else {
+        adjustLimiterSolution(solverPatch,limiterPatch);
+      }
+    }
+  }
+  return computeCellAllocated;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
@@ -326,7 +344,7 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
     // for global re-computation and mesh refinement
     const bool newLimiterPatchAllocated =
         ensureRequiredLimiterPatchIsAllocated(
-            cellDescriptionsIndex,solverElement,solverPatch.getRefinementStatus());
+            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
     if (newLimiterPatchAllocated) {
       const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
       LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
@@ -717,7 +735,8 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAndMinAndMaxAfterS
 
     bool limiterPatchAllocated =
         ensureRequiredLimiterPatchIsAllocated(
-            cellDescriptionsIndex,solverPatch.getSolverNumber(),solverPatch.getRefinementStatus());
+            solverPatch,cellDescriptionsIndex,
+            solverPatch.getRefinementStatus());
     if ( limiterPatchAllocated ) {
       assertion(solverPatch.getLevel()==getMaximumAdaptiveMeshLevel());
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
@@ -1015,11 +1034,8 @@ void exahype::solvers::LimitingADERDGSolver::adjustLimiterSolution(
 }
 
 int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
-        const int cellDescriptionsIndex,
-        const int solverElement) const {
-  assertion(solverElement!=Solver::NotFound);
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-
+        const SolverPatch& solverPatch,
+        const int cellDescriptionsIndex) const {
   #if defined(Asserts)
   const int previouslimiterElement =
           tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
@@ -1039,8 +1055,7 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
   assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getPreviousSolution()),solverPatch.toString());
   assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolution()),solverPatch.toString());
 
-  const int limiterElement =
-      tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   assertion(limiterElement!=Solver::NotFound);
   LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(
       solverPatch,cellDescriptionsIndex,limiterElement);
@@ -1050,13 +1065,10 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocated(
+        const SolverPatch& solverPatch,
         const int cellDescriptionsIndex,
-        const int solverElement,
         const int limiterStatus) const {
-  assertion(solverElement!=Solver::NotFound);
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-  const int limiterElement =
-      tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   if (
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
       limiterElement==Solver::NotFound                      &&
@@ -1065,7 +1077,7 @@ bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocat
   ) {
     assertion1(solverPatch.getPreviousRefinementStatus()<_solver->_minimumRefinementStatusForPassiveFVPatch,
                solverPatch.toString());
-    allocateLimiterPatch(cellDescriptionsIndex,solverElement);
+    allocateLimiterPatch(solverPatch,cellDescriptionsIndex);
     return true;
   }
   return false;
@@ -1094,7 +1106,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
 
   // 1. Ensure limiter patch is allocated (based on previous limiter status
   ensureRequiredLimiterPatchIsAllocated(
-      cellDescriptionsIndex,solverElement,
+      solverPatch,cellDescriptionsIndex,
       solverPatch.getPreviousRefinementStatus());
 
   // 2. Rollback solution to previous time step
@@ -1137,7 +1149,8 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
 
   // 1. Ensure limiter patch is allocated (based on current limiter status)
   ensureRequiredLimiterPatchIsAllocated(
-      cellDescriptionsIndex,solverElement,solverPatch.getRefinementStatus());
+      solverPatch,cellDescriptionsIndex,
+      solverPatch.getRefinementStatus());
 
   // 2. Now roll back to the last valid solution
   if (

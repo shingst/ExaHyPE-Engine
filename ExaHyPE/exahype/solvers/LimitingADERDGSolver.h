@@ -261,8 +261,8 @@ private:
    * being run as background job.
    */
   int allocateLimiterPatch(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
+      const SolverPatch&  solverPatch,
+      const int cellDescriptionsIndex) const;
 
   /**
    * Project the DG solution onto the FV
@@ -940,8 +940,8 @@ public:
     * the mesh refinement iterations.
     */
    bool ensureRequiredLimiterPatchIsAllocated(
+           const SolverPatch& solverPatch,
            const int cellDescriptionsIndex,
-           const int solverElement,
            const int limiterStatus) const;
 
 
