@@ -85,6 +85,17 @@ int exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
 int exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
 int exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
 
+/** 
+ *  Weird static constexpr declaration is sometimes necessary when compiling
+ *  with C++11 and optimisations turned off. Apparently, this is fixed with C++17. Related thread:
+ *  https://stackoverflow.com/questions/8016780/undefined-reference-to-static-constexpr-char
+ */
+constexpr int exahype::solvers::Solver::BoundaryStatus         ;
+constexpr int exahype::solvers::Solver::Pending                ;
+constexpr int exahype::solvers::Solver::Erase                  ; // Erase must be chosen as -1. Otherwise
+constexpr int exahype::solvers::Solver::Keep                   ;
+constexpr int exahype::solvers::Solver::RefineOrKeepOnFineGrid ;
+
 std::string exahype::solvers::Solver::toString(const JobType& jobType) {
   switch (jobType) {
     case JobType::AMRJob:      return "AMRJob";

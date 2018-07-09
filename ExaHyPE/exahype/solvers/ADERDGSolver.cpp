@@ -1001,7 +1001,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
 void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
-  assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
+  assertion1(
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested
+        ,cellDescription.toString());
   //assertion(cellDescription.getRefinementStatus()==Pending);
 
   double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -1015,13 +1018,13 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   switch (refinementControl) {
   case exahype::solvers::Solver::RefinementControl::Keep:
     cellDescription.setRefinementStatus(
-        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ? RefineOrKeepOnFineGrid : Keep );
+        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ? Solver::RefineOrKeepOnFineGrid : Solver::Keep );
     break;
   case exahype::solvers::Solver::RefinementControl::Erase:
-    cellDescription.setRefinementStatus( Erase );
+    cellDescription.setRefinementStatus( Solver::Erase );
     break;
   case exahype::solvers::Solver::RefinementControl::Refine:
-    cellDescription.setRefinementStatus( RefineOrKeepOnFineGrid );
+    cellDescription.setRefinementStatus( Solver::RefineOrKeepOnFineGrid );
     break;
   }
 }
@@ -1741,7 +1744,7 @@ void exahype::solvers::ADERDGSolver::restrictVolumeData(
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex) {
 //  assertion1(coarseGridCellDescription.getLimiterStatus()==CellDescription::LimiterStatus::Ok,
 //      coarseGridCellDescription.toString()); // TODO(Dominic): Does not always apply see veto
-  assertion1(fineGridCellDescription.getRefinementStatus()==0,
+  assertion1(fineGridCellDescription.getRefinementStatus()==-1,
         fineGridCellDescription.toString());
   assertion1(DataHeap::getInstance().isValidIndex(
       fineGridCellDescription.getSolution()),fineGridCellDescription.toString());
@@ -2371,7 +2374,10 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
-  assertion1(cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,cellDescription.toString());
+  assertion1(
+     cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+     cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested,
+     cellDescription.toString());
 
   double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   adjustSolution(

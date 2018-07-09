@@ -183,7 +183,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
             auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
             limitingADERDGSolver->determineMinAndMax(cellDescriptionsIndex,element);
-            assertion(limitingADERDGSolver->getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::Irregular);
+            assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
           }
         }
       }

@@ -429,7 +429,7 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
       solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
     }
-    assertion2(solverPatch.getRefinementEvent()==SolverPatch::None,solverPatch.toString(),cellDescriptionsIndex);
+    assertion2(solverPatch.getRefinementEvent()==SolverPatch::None || solverPatch.getRefinementEvent()==SolverPatch::RefiningRequested,solverPatch.toString(),cellDescriptionsIndex);
 
     _solver->adjustSolution(solverPatch);
 
@@ -646,7 +646,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
       const int limiterElement =
           _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
-      assertion(solverPatch.getRefinementStatus()>=0);
+      assertion(solverPatch.getRefinementStatus()>=-1);
 
       if (solverPatch.getRefinementStatus()       < _solver->_minimumRefinementStatusForPassiveFVPatch) {
         _solver->updateSolution(solverPatch,backupPreviousSolution);
@@ -831,7 +831,7 @@ void exahype::solvers::LimitingADERDGSolver::determineMinAndMax(
       ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
-      assertion1( solverPatch.getRefinementStatus()>=0,solverPatch.getRefinementStatus() );
+      assertion1( solverPatch.getRefinementStatus()>=-1,solverPatch.getRefinementStatus() );
       if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
         determineSolverMinAndMax(solverPatch);
       } else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch

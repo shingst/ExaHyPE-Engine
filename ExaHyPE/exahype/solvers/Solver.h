@@ -385,9 +385,6 @@ class exahype::solvers::Solver {
   static constexpr int Keep                       =  0;
   static constexpr int RefineOrKeepOnFineGrid     =  2;
 
-
-
-
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
