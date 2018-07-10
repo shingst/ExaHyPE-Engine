@@ -1851,7 +1851,6 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
   _solver->progressMeshRefinementInPrepareSendToWorker(
       workerRank, fineGridCell, fineGridVertices,fineGridVerticesEnumerator,
@@ -1880,8 +1879,7 @@ void exahype::solvers::LimitingADERDGSolver::receiveDataFromMasterIfProlongating
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
-    const bool initialGrid) {
+    const int receivedCellDescriptionsIndex, const int receivedElement) {
   _solver->progressMeshRefinementInMergeWithWorker(
       localCellDescriptionsIndex,
       receivedCellDescriptionsIndex,receivedElement);
