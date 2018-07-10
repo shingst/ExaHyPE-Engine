@@ -981,8 +981,14 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
     updateAugmentationStatus(fineGridCellDescription);
-    updateRefinementStatus(
+
+    if ( 
+        initialGrid  ||
+        getMeshUpdateEvent()!=MeshUpdateEvent::RegularRefinementRequested 
+    ) {
+      updateRefinementStatus(
         fineGridCellDescription,fineGridCellDescription.getNeighbourMergePerformed());
+    }
 
     progressCollectiveRefinementOperationsInEnterCell(fineGridCellDescription);
 
@@ -1424,7 +1430,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       }
     }
 
-    return 
+    return
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
         (cellDescription.getType()!=CellDescription::Cell ||
@@ -2000,12 +2006,26 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
             MeshUpdateEvent::IrregularRefinementRequested : MeshUpdateEvent::None;
   } else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
+//    if ( // TODO(Dominic): We currently do not use this feature
+//        cellDescription.getRefinementStatus() > 0 &&
+//        cellDescription.getRefinementStatus() <= _refineOrKeepOnFineGrid &&
+//        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+//    ) {
+//      cellDescription.setRefinementFlag(true);
+//      return MeshUpdateEvent::RegularRefinementRequested;
+//    } else if ( // if the limiter is used
+//        cellDescription.getRefinementStatus() > 0 &&
+//        cellDescription.getRefinementStatus() > _refineOrKeepOnFineGrid &&
+//        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+//    ) {
+//      cellDescription.setRefinementFlag(true);
+//      return MeshUpdateEvent::IrregularRefinementRequested;
     if (
         cellDescription.getRefinementStatus() > 0 &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
     ) {
       cellDescription.setRefinementFlag(true);
-      return MeshUpdateEvent::RegularRefinementRequested;
+      return MeshUpdateEvent::IrregularRefinementRequested;
     } else {
       return MeshUpdateEvent::None;
     }

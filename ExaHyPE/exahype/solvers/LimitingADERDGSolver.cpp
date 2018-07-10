@@ -152,7 +152,8 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
 
   switch (section) {
     case exahype::State::AlgorithmSection::RefinementStatusSpreading:
-      isMergingMetadata = getMeshUpdateEvent()!=MeshUpdateEvent::None;
+      isMergingMetadata = getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChange ||
+                          getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested;
       break;
     case exahype::State::AlgorithmSection::MeshRefinement:
       isMergingMetadata = hasRequestedMeshRefinement();
@@ -334,15 +335,13 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 
   const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
   const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-  if ( 
-       solverElement!=exahype::solvers::Solver::NotFound &&
-       getMeshUpdateEvent()==MeshUpdateEvent::RegularRefinementRequested
-   ) {
+  if ( solverElement!=exahype::solvers::Solver::NotFound ) {
     SolverPatch& solverPatch =
         _solver->getCellDescription(cellDescriptionsIndex,solverElement);
 
    // for global re-computation and mesh refinement
    const bool newLimiterPatchAllocated =
+       getMeshUpdateEvent()==MeshUpdateEvent::RegularRefinementRequested &&
        ensureRequiredLimiterPatchIsAllocated(
            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
    if ( newLimiterPatchAllocated ) {
