@@ -154,7 +154,8 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  _meshUpdateEvent = MeshUpdateEvent::RegularRefinementRequested; // for the initial mesh refinement
+  updateNextMeshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested);
+  setNextMeshUpdateEvent();
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }

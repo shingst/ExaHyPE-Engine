@@ -546,6 +546,13 @@ public:
   // Disallow copy and assignment
   LimitingADERDGSolver(const ADERDGSolver& other) = delete;
   LimitingADERDGSolver& operator=(const ADERDGSolver& other) = delete;
+  
+  /** Wire through to ADER-DG Solver */
+  bool hasRequestedMeshRefinement() const override;
+   MeshUpdateEvent getNextMeshUpdateEvent() const override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) override;
+  void setNextMeshUpdateEvent() override;
+  MeshUpdateEvent getMeshUpdateEvent() const override;
 
   /**
    * Wire through to the ADER-DG solver.

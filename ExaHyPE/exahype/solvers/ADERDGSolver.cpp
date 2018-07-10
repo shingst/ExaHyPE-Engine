@@ -843,7 +843,8 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _minCorrectorTimeStamp         = timeStamp;
   _minPredictorTimeStamp         = timeStamp;
 
-  _meshUpdateEvent=MeshUpdateEvent::RegularRefinementRequested;
+  updateNextMeshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested);
+  setNextMeshUpdateEvent();
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }

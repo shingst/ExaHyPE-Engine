@@ -987,6 +987,8 @@ class exahype::solvers::Solver {
    */
   std::unique_ptr<profilers::Profiler> _profiler;
 
+
+ private:
   /**
    * Flag indicating if the mesh refinement
    * performed by this solver attained a stable state.
@@ -1011,7 +1013,7 @@ class exahype::solvers::Solver {
    * with its workers' solver.
    */
   bool _nextAttainedStableState;
-
+  
   /**
    * A flag indicating that the limiter domain has changed.
    * This might be the case if either a cell has been
@@ -1159,29 +1161,29 @@ class exahype::solvers::Solver {
 
   virtual void toString(std::ostream& out) const;
 
-  bool hasRequestedMeshRefinement() const;
+  virtual bool hasRequestedMeshRefinement() const;
 
   /**
    * \return the mesh update event which will be set in
    * the next iteration. (This value might change during an iteration.)
    */
-  MeshUpdateEvent getNextMeshUpdateEvent() const;
+  virtual  MeshUpdateEvent getNextMeshUpdateEvent() const;
 
   /**
    * \see mergeMeshUpdateEvents
    */
-  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent);
+  virtual void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent);
 
   /**
    * Sets the _nextMeshUpdateEvent as this solver's
    * current event. Furthermore resets the
    * _nextMeshUpdateEvent variable.
    */
-  void setNextMeshUpdateEvent();
+  virtual void setNextMeshUpdateEvent();
   /**
    * \return the currently set mesh update event.
    */
-  MeshUpdateEvent getMeshUpdateEvent() const;
+  virtual MeshUpdateEvent getMeshUpdateEvent() const;
 
   /**
    * Update if the mesh refinement of this solver attained

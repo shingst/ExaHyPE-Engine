@@ -552,7 +552,8 @@ bool exahype::solvers::Solver::oneSolverRequestedMeshRefinement() {
 bool exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() {
   bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |= solver->getMeshUpdateEvent()!=MeshUpdateEvent::None;
+    result |= solver->getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChange ||
+              solver->getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested;
   }
   return result;
 }
