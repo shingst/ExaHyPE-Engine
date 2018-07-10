@@ -73,8 +73,6 @@ ExaHyPE.jar
 # As Peano ships it own .gitignore, this must be stated
 # here. Note also that Peano is managed with subversion
 Peano/peano-ExplicitEulerForHeatEquation-asserts
-Peano/peano
-Peano/tarch
 Peano/files.mk
 Peano/.svn
 Peano/.cvsignore

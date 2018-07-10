@@ -236,7 +236,12 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   /**
    * @see setupMetaData()
    */
-  void shutdownMetaData();
+  void shutdownMetaDataAndResetCellDescriptionsIndex();
+
+  /**
+   * @see setupMetaData()
+   */
+  void shutdownMetaData() const;
 
   /**
    * \return true if no cell descriptions
@@ -245,9 +250,10 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   bool isEmpty() const;
 
   /**
-   * todo docu
+   * Add a new ADER-DG cell description to the heap array maintained
+   * by this cell.
    *
-   * setupMetaData() is called if cell hasn't been properly initialised before.
+   * \note setupMetaData() is called if cell hasn't been properly initialised before.
    *
    * \note Operation is thread-safe.
    */
@@ -353,116 +359,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const int                                   master,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const int                                   level);
-
-  /*! Broadcast data per cell to a worker.
-   *
-   * Loop over all solvers and send data down
-   * to the worker if the respective solver
-   * has registered a patch at this cell which
-   * requires such a send.
-   * In all other cases, send a zero-length
-   * message.
-   *
-   * \param[in] worker the worker rank.
-   * \param[in] cellCentre centre of this cell.
-   * \param[in] cellSize   size of this cell.
-   * \param[in] level      grid level this cell is residing at.
-   */
-  void broadcastDataToWorkerPerCell(
-    const int                                   worker,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                   level) const;
-
-  /*! Receive cell-wise heap data from the master.
-   *
-   * \note Must be called on the "receivedCell" in "Mapping::receiveDataFromMaster".
-   *
-   * \param[in] cellCentrie centre of the received cell.
-   * \param[in] cellSize   size of this cell.
-   * \param[in] level grid level the received cell resides at.
-   *
-   */
-  void receiveDataFromMasterPerCell(
-      const int                                   master,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level);
-
-  /*! Merge received heap data with the local cell.
-   *
-   * In Peano's two-step receive-from-master process,
-   * we first receive data in "Mapping::receiveDataFromMaster".
-   * We store received heap data in the fields ReceivedDataHeapIndex and
-   * ReceivedHeapDataIndices.
-   *
-   * In the second and last step, in "Mapping::mergeWithWorker",
-   * we pick up the previously received heap data, merge
-   * it with the "localCell", and then delete the heap data associated
-   * with the "receivedCell".
-   *
-   * \note Must be called on the "localCell" in "Mapping::mergeWithWorker".
-   *
-   * \param[in] cellSize size of either cell.
-   */
-  void mergeWithMasterDataPerCell(
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize );
-
-  // WORKER->MASTER
-
-  /**
-   * Reduce Metadata from a worker
-   * to the master.
-   */
-  void reduceMetadataToMasterPerCell(
-      const int                                   master,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level) const;
-
-  /**
-   * Receives metadata from a worker and merges it with all
-   * solvers registered on the cell.
-   */
-  void mergeWithMetadataFromWorkerPerCell(
-      const int                                   workerRank,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level,
-      const exahype::State::AlgorithmSection&     section) const;
-
-
-  /**
-   * Reduce metadata and face data to the master
-   * In contrast to the two-step broadcast merging
-   * process, reductions are a single-step process.
-   *
-   * \param[in] master     the master rank.
-   * \param[in] cellCentre centre of this cell.
-   * \param[in] cellSize   size of this cell.
-   * \param[in] level      grid level this cell is residing at.
-   */
-  void reduceDataToMasterPerCell(
-      const int                                   master,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level) const;
-
-  /**
-   * Merge metadata and face data from the worker.
-   * In contrast to the two-step broadcast merging
-   * process, reductions are a single-step process.
-   *
-   * \param[in] worker     the worker rank.
-   * \param[in] cellCentre centre of this cell.
-   * \param[in] cellSize   size of this cell.
-   * \param[in] level      grid level this cell is residing at.
-   */
-  void mergeWithDataFromWorkerPerCell(
-      const int                                   worker,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int                                   level) const;
 
   // global
 

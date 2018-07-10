@@ -70,6 +70,12 @@ private:
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
+   * A local copy of the state set
+   * in beginIteration(...).
+   */
+  exahype::State _stateCopy;
+
+  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -108,14 +114,18 @@ private:
 
   int _batchIteration = 0;
   /**
-   * Updates the iteration tag from the mappings/adapters
-   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation.
+   * Updates a batch iteration counter and
+   * ensures that all background jobs of a certain type have terminated.
+   * The type of the background jobs is determined based on the batch iteration counter.
    *
-   * \note This routine must only be called once in every batch iteration
-   * (exceptions: first batch iteration or if no batch is run)
-   * as it toggles a state in intermediate batch iterations.
+   * \note As the state can only be copied in beginIteration(...) and
+   * we need to know the batch iteration in touchVertexFirstTime(...),
+   * we cannot rely on its batch iteration counter and
+   * have to count ourselves.
+   * Note that touchVertexFirstTime(...) might be invoked before beginIteration(...)
+   * if state broadcasting is turned off.
    */
-  void updateBatchIterationCounter();
+  void ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter);
 
   /**
    * \return if the mappings/adapters

@@ -1,5 +1,5 @@
 /**
-o * This file is part of the ExaHyPE project.
+ * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
  *
@@ -140,9 +140,10 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
     const exahype::parser::ParserView& parserView) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
-  std::cout << "initSolver" << std::endl;
-  _coarsestMeshLevel =
-      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,boundingBoxSize[0]);
+  std::pair<double,int> coarsestMeshInfo =
+      exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
+  _coarsestMeshSize  = coarsestMeshInfo.first;
+  _coarsestMeshLevel = coarsestMeshInfo.second;
 
   _previousMinTimeStepSize = 0.0;
   _previousMinTimeStamp = timeStamp;
@@ -307,6 +308,13 @@ int exahype::solvers::FiniteVolumesSolver::tryGetElement(
     }
   }
   return NotFound;
+}
+
+int exahype::solvers::FiniteVolumesSolver::computeWeight(const int cellDescriptionsIndex) {
+  if ( isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
+    return getCellDescriptions(cellDescriptionsIndex).size();
+  }
+  else return 0;
 }
 
 ///////////////////////////////////
@@ -535,9 +543,11 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
-     const int cellDescriptionsIndex,
-     const int solverNumber,
-     const tarch::la::Vector<DIMENSIONS, double>& cellSize) const {
+        const int cellDescriptionsIndex,
+        const int solverNumber,
+        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+        const bool checkThoroughly) const {
   if ( tarch::la::oneGreater(cellSize,_maximumMeshSize) ) {
     return RefinementControl::Refine;
   } else {
@@ -821,7 +831,7 @@ void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
 }
 
 
-void exahype::solvers::FiniteVolumesSolver::prolongateAndPrepareRestriction(
+void exahype::solvers::FiniteVolumesSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
     const int element) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
@@ -1058,10 +1068,10 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
       element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+
   logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)","solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
       ", cell: "<< x << ", level: " << level);
-
-  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
 
   assertion(cellDescription.getType()==CellDescription::Cell);
   assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()),
@@ -1133,14 +1143,8 @@ void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::ensureSameNumberOfMasterAndWorkerCellDescriptions(
-    exahype::Cell& localCell,
-    const exahype::Cell& receivedMasterCell) {
-  // do nothing
-}
-
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
-    const int localCellDescriptionsIndex,    const int localElement,
+    const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement,
     const bool initialGrid) {
   // do nothing
@@ -1282,8 +1286,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   const int orientation = (1 + src(direction) - dest(direction))/2;
   const int faceIndex   = 2*direction+orientation;
 
-  assertion4(!cellDescription.getNeighbourMergePerformed(faceIndex),
-      faceIndex,cellDescriptionsIndex,cellDescription.getOffset().toString(),cellDescription.getLevel());
+  assertion3(cellDescription.getNeighbourMergePerformed(faceIndex),
+     faceIndex,cellDescriptionsIndex,cellDescription.toString());
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
@@ -1346,13 +1350,6 @@ void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(
 ///////////////////////////////////
 // WORKER->MASTER
 ///////////////////////////////////
-
-void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) {
-  // do nothing
-}
 
 /*
  * At the time of sending data to the master,
@@ -1435,55 +1432,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToMaster(
-    const int                                     masterRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
-    const int                                     masterRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-      element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
-    const int                                     workerRank,
-    const exahype::MetadataHeap::HeapEntries&     workerMetadata,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level){
-  logDebug("mergeWithWorkerData(...)","Merge with worker data from rank "<<workerRank<<
-             ", cell: "<< x << ", level: " << level);
-
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::dropWorkerData(
-    const int                                     workerRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  logDebug("dropWorkerData(...)","Dropping worker data from rank "<<workerRank<<
-               ", cell: "<< x << ", level: " << level);
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
 ///////////////////////////////////
 // MASTER->WORKER
 ///////////////////////////////////
@@ -1542,48 +1490,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
 
   _minTimeStamp    = receivedTimeStepData[0];
   _minTimeStepSize = receivedTimeStepData[1];
-}
-
-void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
-    const int                                     workerRank,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level){
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-             element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToWorker(
-    const int                                     workerRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
-void exahype::solvers::FiniteVolumesSolver::receiveDataFromMaster(
-     const int                                    masterRank,
-     std::deque<int>&                             receivedDataHeapIndices,
-     const tarch::la::Vector<DIMENSIONS, double>& x,
-     const int                                    level) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
-}
-
- void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
-     const MetadataHeap::HeapEntries&             masterMetadata,
-     std::deque<int>&                             receivedDataHeapIndices,
-     const int                                    cellDescriptionsIndex,
-     const int                                    element) const {
-   // do nothing - limiter does not depend on solution from master for any tree cut
- }
-
-void exahype::solvers::FiniteVolumesSolver::dropMasterData(
-     std::deque<int>& heapIndices) const {
-  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 #endif
 

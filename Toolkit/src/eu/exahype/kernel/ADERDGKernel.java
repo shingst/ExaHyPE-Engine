@@ -51,6 +51,7 @@ public class ADERDGKernel {
     OPTIMIZATION_OPTION_ID.put("MAX_PICARD_ITER_OPTION_ID",    "maxpicarditer");
     OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_OPTION_ID",        "fusedsource");
     OPTIMIZATION_OPTION_ID.put("FLUX_VECT_OPTION_ID",          "fluxvect");
+    OPTIMIZATION_OPTION_ID.put("FUSEDSOURCE_VECT_OPTION_ID",   "fusedsourcevect");
     OPTIMIZATION_OPTION_ID.put("CERK_GUESS_OPTION_ID",         "cerkguess");
     OPTIMIZATION_OPTION_ID.put("CONVERTER_OPTION_ID",          "converter"); //for debug only, not in guidebook
     OPTIMIZATION_OPTION_ID.put("FLOPS_OPTION_ID",              "flops");     //for debug only, not in guidebook
@@ -65,10 +66,9 @@ public class ADERDGKernel {
   private Map<String, Integer> optimization;
   
   /**
-   * Ghostlayer paramters, initialized if using the a LimitingSolver
+   * numberOfObservables initialized if using the a LimitingSolver
    */ 
-  private int ghostLayerWidth = -1;
-  private int numberOfObservables = -1;
+  private int numberOfObservables = -1; // TODO This should not be part of this class!
   
   
   
@@ -136,6 +136,10 @@ public class ADERDGKernel {
     // can't used fusedSource without source
     if(useFusedSource() && !useSource()) {
       throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"' requires the PDE term '"+TERMS_OPTION_ID.get("SOURCE_OPTION_ID")+"'");
+    }
+    // fusedsourcevect include fusedsource
+    if(useFusedSource() && !useSource()) {
+      throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_VECT_OPTION_ID")+"' already includes the optimization '"+TERMS_OPTION_ID.get("FUSEDSOURCE_OPTION_ID")+"'");
     }
     // vect PDEs only with otptimized kernels
     if(!(getKernelType() ==  KernelType.OptimisedADERDG) && (useFluxVect())) {//TODO JMG extend with other vect PDE
@@ -220,6 +224,10 @@ public class ADERDGKernel {
     return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_OPTION_ID"));
   }
   
+  public boolean useFusedSourceVect() {
+    return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FUSEDSOURCE_VECT_OPTION_ID"));
+  }
+  
   public boolean useFluxVect() {
     return optimization.containsKey(OPTIMIZATION_OPTION_ID.get("FLUX_VECT_OPTION_ID"));
   }
@@ -248,27 +256,18 @@ public class ADERDGKernel {
     return -1;
   }
   
-  //Used set the GhostLayerWidth for LimitingSolver
-  public void setGhostLayerWidth(int glw) {
-    this.ghostLayerWidth = glw;
-  }
-  
-  public int getGhostLayerWidth() {
-    return ghostLayerWidth; // -1 by default
-  }
-  
   //Used set the numberOfObservable for LimitingSolver
-  public void setNumberOfObservables(int obs) {
+  public void setNumberOfObservables(int obs) { // TODO This should not be part of this class!
     this.numberOfObservables = obs;
   }
   
-  public int getNumberOfObservables() {
+  public int getNumberOfObservables() { // TODO This should not be part of this class!
     return numberOfObservables; // -1 by default
   }
   
   // useLimiter only if the two limiter parameter have been set
-  public boolean useLimiter() {
-    return ghostLayerWidth > -1 && numberOfObservables > -1;
+  public boolean useLimiter() { // TODO This should not be part of this class!
+    return numberOfObservables > -1;
   }
 
   //(type: [...], terms: [...], opt: [...])

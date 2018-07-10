@@ -121,12 +121,14 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
     eigs.hu() = 0.0;
     eigs.hv() = 0.0;
     eigs.b() = 0.0;
+    //    std::cout << 0.0 << std::endl;
   }
   else {
     eigs.h() = u_n + c;
     eigs.hu() = u_n - c;
     eigs.hv() = u_n;
     eigs.b() = 0.0;
+    //    std::cout << eigs.h() + std::abs(c) << std::endl;
   }
 }
 
@@ -177,12 +179,6 @@ void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,cons
   BgradQ[3] = 0.0;
 }
 
-void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables, const double* const Q) const {
-    //for (int i=0; i<NumberOfVariables; ++i) {
-        observables[0] = Q[0];
-    //}
-}
-
 bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
         const double* const solution,
         const double* const observablesMin,const double* const observablesMax,
@@ -190,15 +186,32 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
         const tarch::la::Vector<DIMENSIONS,double>& center,
         const tarch::la::Vector<DIMENSIONS,double>& dx,
         const double t, const double dt) const {
-    if (observablesMin[0] == 0 && observablesMax[0] == 0){
-        return true;
+
+  double hMin;
+  double hMax;
+  idx3 id(Order+1,Order+1,NumberOfVariables);
+  hMin=solution[id(0,0,0)];
+  hMax=solution[id(0,0,0)];
+  for(int i = 0 ; i < Order+1 ; i++){
+    for(int j = 0 ; j < Order+1 ; j++){
+      hMin=std::min(hMin, solution[id(i,j,0)]);
+      hMax=std::max(hMin, solution[id(i,j,0)]);
     }
-    else if (observablesMin[0] <= 20 * epsilon_DG){
+  }
+
+    if (hMin == 0 && hMax == 0){
+        return false;
+    }
+    else if (hMin <= 20 * epsilon_DG){
         return false;
     }
     else {
         return true;
     }
 }
+
+// void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const int numberOfObservables, const double* const Q){
+
+//}
 
 

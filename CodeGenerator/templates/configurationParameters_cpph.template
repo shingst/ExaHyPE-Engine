@@ -56,7 +56,7 @@ namespace {{namespaceName}} {
   {% set lSiSize = -1 %}
 {% endif %}
 {% if useNCP %}
-  {% set gradQSize = nVarPad*(nDof**(nDim+1))*(nDim+1) %}
+  {% set gradQSize = nVarPad*(nDof**nDim)*nDim %}
 {% else %}
   {% set gradQSize = -1 %}
 {% endif %}
@@ -151,6 +151,7 @@ namespace {{namespaceName}} {
   //amr (*leveldelta)
   constexpr unsigned long faceUnknownsProlongation_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
   constexpr unsigned long faceUnknownsRestriction_flops = {% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
+  constexpr unsigned long faceFluxRestriction_flops = 0; //TODO JMG //{% if nDim == 2 %}{{2*nDof*nDof*(nVarPad+nDataPad)}}{% else %}{{nDof*nDof*(nDof*(nDof*(2*nVarPad+2*nDataPad)+nDofPad))}}{% endif %}; // time leveldelta
   constexpr unsigned long volumeUnknownsProlongation_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
   constexpr unsigned long volumeUnknownsRestriction_flops = {{nDof*nDof*nDof3D*nDof3D*(2*nDof*nDof*nData+nDof*nDofPad*(nDim-1))}}; // time leveldelta
   
@@ -167,6 +168,7 @@ namespace {{namespaceName}} {
   constexpr unsigned long stableTimeStepSize_flops = {{(nDof**nDim)*nDim*2+(nDof**nDim)*2}};
   
   constexpr unsigned long surfaceIntegral_flops = {{(nDof*nDof3D + (nDof**nDim)*nVarPad*5)*nDim}};
+  constexpr unsigned long faceIntegral_flops = 0; //TODO JMG //{{(nDof*nDof3D + (nDof**nDim)*nVarPad*5)*nDim}};
   
 {% if isLinear %}
   constexpr unsigned long fusedSTPVI_flops = {{nDof*nDofPad+nDof*(useFluxFactor*(nDof**(nDim+1)*nVarPad*2*nDim)+useNCPFactor*(nDof**(nDim+1)*nVar*2*nDim+nDof**nDim*nDim*nVar)+nDof**nDim*nVarPad*(nDim+useSourceFactor))+(nDof-1)*nDof**nDim*nVar*2+(nDof-1)*nDof**nDim*nVarPad*(nDim+useSourceFactor)*2+nDof**nDim*(nVarPad+nDataPad)*4*nDim+nDof**nDim*nVarPad*(1+nDim+useSourceFactor)}};

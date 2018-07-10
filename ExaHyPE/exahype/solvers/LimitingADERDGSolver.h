@@ -299,6 +299,45 @@ private:
       const int solverElement) const;
 
   /**
+   * \return the internal limiter status which is not
+   * communicated to neighbouring cells.
+   *
+   * The limiter status is computed using a star stencil
+   * on the fine grid but we are using a box stencil on coarser grids
+   * as this leads to a smaller limiter guided refinement stencil.
+   *
+   * We compute the maximum limiter status of all neighbours of the cell.
+   * If there are at least two neighbours at faces pointing in different
+   * coordinate directions which have this limiter status,
+   * e.g. one face points in x direction, the other in y-direction, then
+   * the cell assumes this limiter status as well.
+   * Otherwise, the cell assumes the maximum limiter status minus one.
+   * The above procedure realises a box stencil.
+   *
+   * \note This is not the limiter status that is communicated to neighbouring
+   * cells as the above procedure would result in a ripppling effect.
+   * To this end, we use another external limiter status which is spread
+   * according to a star stencil.
+   *
+   * <h2>FusedTimeStep Background Jobs</h2>
+   * We assume that the limiter status might change locally during batching but
+   * not the adaptive mesh. When we perform Fused Time Stepping, we thus
+   * have to copy the neighbourMergePerformed array as it is potentially
+   * overwritten before the background job has been executed.
+   */
+  int determineLimiterStatus(
+      const SolverPatch& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+
+  /**
+   * \return the external limiter status which is communicated to neighbouring
+   * cells. It is spread according to a star stencil.
+   */
+  int determineExternalLimiterStatus(
+        const SolverPatch& cellDescription,
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+
+  /**
    * Update the limiter status based on the cell-local solution values.
    *
    * If the new limiter status is changed to or remains troubled,
@@ -787,17 +826,6 @@ public:
    */
   bool evaluateLimiterStatusRefinementCriterion(const SolverPatch& solverPatch) const;
 
-
-  /**
-   * Evaluate a stricter DMP as an a-priori refinement
-   * criterion.
-   *
-   * TODO(Dominic): It is a little hacked together
-   */
-  bool evaluateDiscreteMaximumPrincipleRefinementCriterion(
-      const int cellDescriptionsIndex,
-      const int element) const;
-
   /**
    * TODO(Dominic): Update docu.
    *
@@ -875,10 +903,12 @@ public:
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
      const int solverNumber) override;
 
-  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int cellDescriptionsIndex,
-        const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+ exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+     const int cellDescriptionsIndex,
+     const int solverNumber,
+     const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+     const bool checkThoroughly) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -1170,7 +1200,7 @@ public:
       const int element,
       const bool isAtRemoteBoundary);
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) final override;
 
@@ -1496,7 +1526,7 @@ public:
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
   void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) final override;
 
@@ -1552,11 +1582,6 @@ public:
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  void mergeWithWorkerMetadata(
-        const MetadataHeap::HeapEntries& receivedMetadata,
-        const int                        cellDescriptionsIndex,
-        const int                        element) override;
-
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1566,31 +1591,6 @@ public:
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
-
-  void sendDataToMaster(
-      const int                                     masterRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void sendEmptyDataToMaster(
-      const int                                     masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void mergeWithWorkerData(
-      const int                                     workerRank,
-      const MetadataHeap::HeapEntries&              workerMetadata,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
 
   ///////////////////////////////////
   // MASTER->WORKER
@@ -1605,32 +1605,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
-  void sendDataToWorker(
-      const int                                     workerRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) final override;
-
-  void sendEmptyDataToWorker(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const final override;

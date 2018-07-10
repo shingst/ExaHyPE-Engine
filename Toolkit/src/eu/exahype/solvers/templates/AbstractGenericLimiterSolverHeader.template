@@ -21,9 +21,10 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSolver {  
   public:
-    static constexpr int NumberOfVariables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
-    static constexpr int Order              = {{project}}::{{ADERDGAbstractSolver}}::Order;
-    static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
+    static constexpr int NumberOfVariables    = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
+    static constexpr int Order                = {{project}}::{{ADERDGAbstractSolver}}::Order;
+    static constexpr int NumberOfObservables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfObservables;
+    static constexpr int GhostLayerWidth      = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
   
     {{abstractSolver}}(std::string identifier, std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell);
     

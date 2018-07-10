@@ -36,14 +36,14 @@ exahype-project  Elastic
 
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:14,manual-pinning}	
-    cores                    = 14
+    configure                = {background-tasks:1,manual-pinning}	
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory
  
   distributed-memory	
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:2}
+    configure                = {hotspot,fair,ranks-per-node:1}
     buffer-size              = 1600
     timeout                  = 6000
   end distributed-memory
@@ -67,11 +67,14 @@ exahype-project  Elastic
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 3.0
     maximum-mesh-depth = 3
-    time-stepping      = global
+    time-stepping      = globalfixed
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,pointsources:1
     optimisation const = generic,patchwiseadjust,usestack
     language const     = C
+    /*amr_regulatization:0 refinement only for the top layer in y*/
+    /*amr_regulatization:1 highest refinement down to point source in y*/
+    constants          = amr_regularization:1
 
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12

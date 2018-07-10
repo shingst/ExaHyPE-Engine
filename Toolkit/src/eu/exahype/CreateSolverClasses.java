@@ -207,7 +207,6 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     try {
       ADERDGKernel         aderdgKernel  = new ADERDGKernel(node);
       FiniteVolumesKernel  FVKernel      = new FiniteVolumesKernel(node);
-      aderdgKernel.setGhostLayerWidth(FVKernel.getGhostLayerWidth());
       aderdgKernel.setNumberOfObservables(DmpObservables);
       
       SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _microarchitecture);

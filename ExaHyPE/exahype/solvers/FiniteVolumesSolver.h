@@ -537,9 +537,17 @@ public:
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
+
+  /**
+   * Compute a load balancing weight for a cell in the mesh.
+   */
+  static int computeWeight(const int cellDescriptionsIndex);
+
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
+
+
   /**
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
@@ -585,9 +593,11 @@ public:
       const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-      const int cellDescriptionsIndex,
-      const int solverNumber,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+          const int cellDescriptionsIndex,
+          const int solverNumber,
+          const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+          const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+          const bool checkThoroughly) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -697,7 +707,7 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) override;
 
@@ -877,15 +887,6 @@ public:
   // WORKER->MASTER
   ///////////////////////////////////
 
-  void mergeWithWorkerMetadata(
-        const MetadataHeap::HeapEntries& receivedMetadata,
-        const int                        cellDescriptionsIndex,
-        const int                        element) override;
-
-  static void ensureSameNumberOfMasterAndWorkerCellDescriptions(
-      exahype::Cell& localCell,
-      const exahype::Cell& receivedMasterCell);
-
   /**
    * Nop
    */
@@ -923,7 +924,7 @@ public:
    * Nop
    */
   void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) final override;
 
@@ -947,6 +948,10 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
+  ///////////////////////////////////
+  // WORKER->MASTER
+  ///////////////////////////////////
+
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -956,31 +961,6 @@ public:
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
-
-  void sendDataToMaster(
-      const int                                     masterRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void sendEmptyDataToMaster(
-      const int                                     masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void mergeWithWorkerData(
-      const int                                    workerRank,
-      const exahype::MetadataHeap::HeapEntries&    workerMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
-
-  void dropWorkerData(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
 
   ///////////////////////////////////
   // MASTER->WORKER
@@ -995,32 +975,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-  void sendDataToWorker(
-      const int                                     workerRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  void sendEmptyDataToWorker(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   void validateNoNansInFiniteVolumesSolution(CellDescription& cellDescription,const int cellDescriptionsIndex,const char* methodTrace) const;
