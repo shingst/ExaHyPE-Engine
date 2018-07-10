@@ -612,7 +612,7 @@ def generateScripts():
                                                 likwid_pin_arg = "0-"+str(likwid_pin_arg) # e.g. 0-7 pins likwid to cores 0-7 
                                             for group in groups:
                                                 likwidCommand = "{runCommand} likwid-perfctr -f -C {likwid_pin_arg} -g {group} {executable} {specFilePath} >> {outputFilePath}.likwid\n"
-                                                likwidCommand.format(
+                                                jobScriptBody += likwidCommand.format(
                                                     runCommand=runCommand,
                                                     likwid_pin_arg=likwid_pin_arg,
                                                     group=group,
@@ -620,7 +620,6 @@ def generateScripts():
                                                     specFilePath=specFilePath,
                                                     outputFilePath=outputFilePath
                                                 )
-                                                jobScriptBody += likwidCommand
                                         jobScriptBody += "\n" 
                             
                             # write job file
