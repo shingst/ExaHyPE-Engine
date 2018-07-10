@@ -525,11 +525,6 @@ class exahype::solvers::Solver {
    */
   enum class MeshUpdateEvent {
     /**
-     * The initial mesh will be created.
-     */
-    InitialRefinementRequested,
-
-    /**
      * A regular change of the limiter domain
      * has occurred. This might be either no change at
      * all or a situation where a cell directly next to a
@@ -570,7 +565,12 @@ class exahype::solvers::Solver {
      * This can potentially be relaxed for anarchic time stepping where
      * each cell has its own time step size and stamp.
      */
-    RefinementRequested
+    RefinementRequested,
+
+    /**
+     * The initial mesh will be created.
+     */
+    InitialRefinementRequested
   };
 
   /**

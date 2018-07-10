@@ -180,7 +180,7 @@ exahype::solvers::Solver::Solver(
       _profiler(std::move(profiler)),
       _attainedStableState(false),
       _nextAttainedStableState(false),
-      _meshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested),
+      _meshUpdateEvent(MeshUpdateEvent::None),
       _nextMeshUpdateEvent(MeshUpdateEvent::None) {
 }
 
@@ -368,8 +368,8 @@ int exahype::solvers::Solver::getMaxLevel() const {
 }
 
 bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
-  return _meshUpdateEvent==MeshUpdateEvent::RefinementRequested ||
-         _meshUpdateEvent==MeshUpdateEvent::InitialRefinementRequested;
+  return getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ||
+         getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
 }
 
 void exahype::solvers::Solver::updateNextAttainedStableState(
