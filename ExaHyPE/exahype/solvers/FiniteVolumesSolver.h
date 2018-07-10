@@ -585,7 +585,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) override;
 
   bool progressMeshRefinementInLeaveCell(
@@ -897,7 +896,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) final override;
 
   /**
@@ -925,8 +923,7 @@ public:
    */
   void progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) final override;
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 
   /**
    * Nop

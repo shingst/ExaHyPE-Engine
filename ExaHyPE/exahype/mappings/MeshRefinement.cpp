@@ -470,7 +470,6 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridVerticesEnumerator,
               coarseGridCell,
               coarseGridVerticesEnumerator,
-              exahype::mappings::MeshRefinement::IsInitialMeshRefinement,
               solverNumber);
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
@@ -488,7 +487,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
         if (element!=exahype::solvers::Solver::NotFound) {
           solver->adjustSolutionDuringMeshRefinement(
-              cellDescriptionsIndex,element,IsInitialMeshRefinement);
+              cellDescriptionsIndex,element);
         }
       }
     }
@@ -550,7 +549,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
 
         if (element!=exahype::solvers::Solver::NotFound) {
           solver->adjustSolutionDuringMeshRefinement(
-              cellDescriptionsIndex,element,IsInitialMeshRefinement);
+              cellDescriptionsIndex,element);
         }
       }
     }
@@ -622,7 +621,6 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
       solver->progressMeshRefinementInPrepareSendToWorker(
           worker, fineGridCell, fineGridVertices,fineGridVerticesEnumerator,
           coarseGridCell, coarseGridVerticesEnumerator,
-          IsInitialMeshRefinement,
           solverNumber);
     }
 
@@ -726,8 +724,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
         if ( receivedElement!=exahype::solvers::Solver::NotFound  ) {
           solver->progressMeshRefinementInMergeWithWorker(
               localCell.getCellDescriptionsIndex(),
-              receivedCellDescriptionsIndex,receivedElement,
-              IsInitialMeshRefinement);
+              receivedCellDescriptionsIndex,receivedElement);
         }
       }
       if ( localCell.isInitialised() && localCell.isEmpty() ) {

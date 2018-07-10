@@ -525,31 +525,29 @@ class exahype::solvers::Solver {
    */
   enum class MeshUpdateEvent {
     /**
+     * The initial mesh will be created.
+     */
+    InitialRefinementRequested,
+
+    /**
      * A regular change of the limiter domain
      * has occurred. This might be either no change at
      * all or a situation where a cell directly next to a
      * troubled cell has been newly marked as troubled.
      */
     None,
-    /**
-     * A change of the limiter domain was not anticipated
-     * by the evolving helper layers.
-     *
-     * If a cell/worker has this status while
-     * another worker has status RegularRefinementRequested,
-     * the status shall be changed to IrregularRefinementRequested.
-     */
-    IrregularLimiterDomainChange,
 
     /**
-     * Regular refinement was requested, i.e.
-     * a resolved wave on the fine grid evolved into the next cell.
+     * The limiter domain of this solver changed in an irregular
+     * fashion, i.e. a troubled cell appeared suddenly.
+     * Its appearance was not anticipated
      *
-     * If a cell/worker has this status while
-     * another worker has status IrregularLimiterDomainChange,
-     * the status shall be changed to IrregularRefinementRequested.
+     * During the consequent refinement
+     * status spreading, if we observe that
+     * we also need to update the mesh,
+     * this event is changed to RefinementRequested.
      */
-    RegularRefinementRequested,
+    IrregularLimiterDomainChange,
 
     /**
      * Scenario 1:
@@ -572,7 +570,7 @@ class exahype::solvers::Solver {
      * This can potentially be relaxed for anarchic time stepping where
      * each cell has its own time step size and stamp.
      */
-    IrregularRefinementRequested
+    RefinementRequested
   };
 
   /**
@@ -591,15 +589,7 @@ class exahype::solvers::Solver {
   static MeshUpdateEvent convertToMeshUpdateEvent(const double value);
 
   /**
-   * Update the _nextMeshUpdateEvent. If the
-   * _nextMeshUpdateEvent is set to None,
-   * we just set the handed in event.
-   * If _nextMeshUpdateEvent is IrregularRefinementRequested,
-   * we keep it.
-   *
-   * If _nextMeshUpdateEvent and the handed in event form
-   * a pair of RegularRefinementRequested and IrregularLimiterDomainChange,
-   * we overwrite _nextMeshUpdateEvent with IrregularRefinementRequested.
+   * \return the larger (cast to int) value of both events.
    */
   static MeshUpdateEvent mergeMeshUpdateEvents(
       const MeshUpdateEvent meshUpdateEvent1,const MeshUpdateEvent meshUpdateEvent2);
@@ -828,6 +818,18 @@ class exahype::solvers::Solver {
    * recomputation.
    */
   static bool oneSolverRequestedGlobalRecomputation();
+
+  /**
+   * Loops over all registered LimitingADERDGSolver instances
+   * and determines the maximum value of their
+   * minimum limiter status for a troubled cell.
+   *
+   * This value determines how long we have to perform
+   * limiter status spreading.
+   *
+   * The minimum possible return value is three.
+   */
+  static int getMaxRefinementStatus();
 
   /**
    * Weights the min next predictor time step size
@@ -1396,7 +1398,6 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) = 0;
 
   /**
@@ -1578,8 +1579,7 @@ class exahype::solvers::Solver {
    */
   void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
-      const int element,
-      const bool isInitialMeshRefinement);
+      const int element);
 
   /**
    * Fuse algorithmic phases of the solvers.
@@ -1903,7 +1903,6 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) = 0;
 
   /**
@@ -1933,8 +1932,7 @@ class exahype::solvers::Solver {
    */
   virtual void progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) = 0;
+      const int receivedCellDescriptionsIndex, const int receivedElement) = 0;
 
   /**
    * Finish erasing operations on the worker side and

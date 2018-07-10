@@ -28,19 +28,6 @@ namespace solvers {
 
 tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solvers::LimitingADERDGSolver");
 
-int exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell() {
-  int result = 0;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG ) {
-      result = std::max(
-          result,
-          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-          getMinimumRefinementStatusForTroubledCell());
-    }
-  }
-  return result;
-}
-
 exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const std::string& identifier,
     exahype::solvers::ADERDGSolver* solver,
@@ -134,7 +121,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _coarsestMeshSize  = coarsestMeshInfo.first;
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
-  updateNextMeshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested);
+  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
   setNextMeshUpdateEvent();
 
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
@@ -153,7 +140,7 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
   switch (section) {
     case exahype::State::AlgorithmSection::RefinementStatusSpreading:
       isMergingMetadata = getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChange ||
-                          getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested;
+                          getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested;
       break;
     case exahype::State::AlgorithmSection::MeshRefinement:
       isMergingMetadata = hasRequestedMeshRefinement();
@@ -262,13 +249,12 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
  return
      _solver->progressMeshRefinementInEnterCell(
         fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
         coarseGridCell,coarseGridVerticesEnumerator,
-        initialGrid,solverNumber);
+        solverNumber);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
@@ -339,9 +325,9 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
     SolverPatch& solverPatch =
         _solver->getCellDescription(cellDescriptionsIndex,solverElement);
 
-   // for global re-computation and mesh refinement
+   // only done when doing initial refinement
    const bool newLimiterPatchAllocated =
-       getMeshUpdateEvent()==MeshUpdateEvent::RegularRefinementRequested &&
+       getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested &&
        ensureRequiredLimiterPatchIsAllocated(
            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
    if ( newLimiterPatchAllocated ) {
@@ -772,7 +758,7 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
       //logInfo("determineLimiterStatusAfterSolutionUpdate()","irregular for x="<<solverPatch.getOffset() << ", level="<<solverPatch.getLevel() << "status="<<solverPatch.getRefinementStatus()<<","<<solverPatch.getPreviousLimiterStatus()<<","<<solverPatch.getExternalLimiterStatus()<<",max status="<<max status );
     }
     if (solverPatch.getLevel()<getMaximumAdaptiveMeshLevel()) {
-      meshUpdateEvent = MeshUpdateEvent::IrregularRefinementRequested;
+      meshUpdateEvent = MeshUpdateEvent::RefinementRequested;
     }
   } else { // We cool the troubled cells down so slowly
     if ( solverPatch.getPreviousRefinementStatus() >= _solver->getMinimumRefinementStatusForTroubledCell() ) {
@@ -1869,8 +1855,7 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
     const int solverNumber) {
   _solver->progressMeshRefinementInPrepareSendToWorker(
       workerRank, fineGridCell, fineGridVertices,fineGridVerticesEnumerator,
-      coarseGridCell, coarseGridVerticesEnumerator,
-      initialGrid, solverNumber);
+      coarseGridCell, coarseGridVerticesEnumerator,solverNumber);
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerIfProlongating(
@@ -1899,8 +1884,7 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWo
     const bool initialGrid) {
   _solver->progressMeshRefinementInMergeWithWorker(
       localCellDescriptionsIndex,
-      receivedCellDescriptionsIndex,receivedElement,
-      initialGrid);
+      receivedCellDescriptionsIndex,receivedElement);
 }
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSendToMaster(

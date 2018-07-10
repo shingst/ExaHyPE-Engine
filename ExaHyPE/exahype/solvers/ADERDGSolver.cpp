@@ -843,7 +843,7 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _minCorrectorTimeStamp         = timeStamp;
   _minPredictorTimeStamp         = timeStamp;
 
-  updateNextMeshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested);
+  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
   setNextMeshUpdateEvent();
 
   init(cmdlineargs,parserView); // call user define initalisiation
@@ -925,7 +925,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
   bool newComputeCell = false;
 
@@ -982,13 +981,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
     updateAugmentationStatus(fineGridCellDescription);
 
-    if ( 
-        initialGrid  ||
-        getMeshUpdateEvent()!=MeshUpdateEvent::RegularRefinementRequested 
-    ) {
-      updateRefinementStatus(
+    updateRefinementStatus(
         fineGridCellDescription,fineGridCellDescription.getNeighbourMergePerformed());
-    }
 
     progressCollectiveRefinementOperationsInEnterCell(fineGridCellDescription);
 
@@ -1015,8 +1009,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     newComputeCell |=
         addNewCellIfRefinementRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-            coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
-            initialGrid);
+            coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
   }
 
   return newComputeCell;
@@ -1287,8 +1280,7 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     CellDescription& coarseGridCellDescription,
-    const int coarseGridCellDescriptionsIndex,
-    const bool initialGrid) {
+    const int coarseGridCellDescriptionsIndex) {
   // read and modify coarse grid
   tarch::multicore::Lock lock(CoarseGridSemaphore);
   bool refiningOrRefiningRequested =
@@ -1883,7 +1875,7 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
 
     cellDescription.setPreviousAugmentationStatus(cellDescription.getAugmentationStatus());
     // only for global recomputation
-    if ( getMeshUpdateEvent()==MeshUpdateEvent::IrregularRefinementRequested ) {
+    if ( getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ) {
       cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
     }
   }
@@ -2003,29 +1995,15 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     return
         (cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
          refinementControl==RefinementControl::Refine ) ?
-            MeshUpdateEvent::IrregularRefinementRequested : MeshUpdateEvent::None;
+            MeshUpdateEvent::RefinementRequested : MeshUpdateEvent::None;
   } else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
-//    if ( // TODO(Dominic): We currently do not use this feature
-//        cellDescription.getRefinementStatus() > 0 &&
-//        cellDescription.getRefinementStatus() <= _refineOrKeepOnFineGrid &&
-//        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
-//    ) {
-//      cellDescription.setRefinementFlag(true);
-//      return MeshUpdateEvent::RegularRefinementRequested;
-//    } else if ( // if the limiter is used
-//        cellDescription.getRefinementStatus() > 0 &&
-//        cellDescription.getRefinementStatus() > _refineOrKeepOnFineGrid &&
-//        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
-//    ) {
-//      cellDescription.setRefinementFlag(true);
-//      return MeshUpdateEvent::IrregularRefinementRequested;
     if (
         cellDescription.getRefinementStatus() > 0 &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
     ) {
       cellDescription.setRefinementFlag(true);
-      return MeshUpdateEvent::IrregularRefinementRequested;
+      return MeshUpdateEvent::RefinementRequested;
     } else {
       return MeshUpdateEvent::None;
     }
@@ -3375,8 +3353,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator
     const int solverNumber) {
   // coarse grid based operations
   const int coarseGridCellDescriptionsIndex = coarseGridCell.getCellDescriptionsIndex();
@@ -3392,8 +3369,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker
     bool addedNewCell =
         addNewCellIfRefinementRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-            coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
-            initialGrid);
+            coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
     
     const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
     const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
@@ -3460,8 +3436,7 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
 
 void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
-    const bool initialGrid) {
+    const int receivedCellDescriptionsIndex, const int receivedElement) {
   auto& receivedCellDescriptions = getCellDescriptions(receivedCellDescriptionsIndex);
   assertion1( isValidCellDescriptionIndex(localCellDescriptionsIndex), localCellDescriptionsIndex );
   auto& localCellDescriptions = getCellDescriptions(localCellDescriptionsIndex);
@@ -3505,7 +3480,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
       // adjust solution
       localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
       Solver::adjustSolutionDuringMeshRefinement(
-          localCellDescriptionsIndex,localElement,initialGrid);
+          localCellDescriptionsIndex,localElement);
     }
   }
 }

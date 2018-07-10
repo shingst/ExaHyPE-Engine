@@ -101,7 +101,7 @@ void exahype::mappings::GlobalRollback::beginIteration(
 }
 
 bool exahype::mappings::GlobalRollback::performGlobalRollback(exahype::solvers::Solver* solver) {
-  return solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularRefinementRequested;
+  return solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested;
 }
 
 void exahype::mappings::GlobalRollback::endIteration(

@@ -435,8 +435,7 @@ private:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       CellDescription& coarseGridCellDescription,
-      const int coarseGridCellDescriptionsIndex,
-      const bool initialGrid);
+      const int coarseGridCellDescriptionsIndex);
 
   /**
    * Prolongates Volume data from a parent cell description to
@@ -1530,7 +1529,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) override;
 
   bool progressMeshRefinementInLeaveCell(
@@ -2133,7 +2131,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) final override;
 
 
@@ -2162,8 +2159,7 @@ public:
    */
   void progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) final override;
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 
   /**
    * Finish erasing operations on the worker side and

@@ -154,7 +154,7 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  updateNextMeshUpdateEvent(MeshUpdateEvent::RegularRefinementRequested);
+  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
   setNextMeshUpdateEvent();
 
   init(cmdlineargs,parserView); // call user defined initalisation
@@ -330,7 +330,6 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
@@ -1146,8 +1145,7 @@ void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
-    const bool initialGrid) {
+    const int receivedCellDescriptionsIndex, const int receivedElement) {
   // do nothing
 }
 

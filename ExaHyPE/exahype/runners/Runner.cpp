@@ -1126,7 +1126,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.switchToRefinementStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
-        exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
+        exahype::solvers::Solver::getMaxRefinementStatus(),false);
 
   }
   
@@ -1163,7 +1163,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   // (Note that we compute the predictor locally for the solvers performing
   // a local prediction as well. They are ready to sent here as well.)
   if (fusedTimeStepping ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+      exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step

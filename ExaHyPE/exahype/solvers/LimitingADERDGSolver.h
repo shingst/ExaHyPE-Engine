@@ -40,10 +40,15 @@ namespace solvers {
  * following algorithm sections.
  *
  * <h2>Mesh refinement</h2>
- * TODO
+ * If a solver requests regular mesh refinement, no limiter status spreading must be
+ * performed! We then simply adjust the mesh.
+ * No limiter patches are allocated!
  *
  * <h2>Local recomputation</h2>
- * TODO
+ * If a solver requests local recomputation, we perform limiter status spreading.
+ * No limiter patches are allocated during these spreading iterations.
+ * Only if it is decided that no global recomputation is performed,
+ * limiter patches are allocated.
  *
  * <h2>Global recomputation</h2>
  * The solver is redoing the last ADER-DG time
@@ -57,10 +62,7 @@ namespace solvers {
  * Next it will perform the computation of a new
  * time step size and then, the computation of
  * a new space-time predictor.
- * Afterwards a solution update in all cells is performed.
- * Now, the solution of the cells has evolved
- * to the anticipated time step.
- * Lastly, a recomputation of the predictor is performed.
+ * Then, the last time step is redone.
  *
  * The following scenario causes the solver
  * to switch to this algorithmic section:
@@ -68,9 +70,6 @@ namespace solvers {
  * Scenario 1:
  * A compute cell was marked as troubled on a
  * mesh level coarser than the finest one.
- *
- * Scenario 2: A cell of type Descendant/EmptyDescendant
- * was marked with a LimiterStatus other than Ok.
  */
 class LimitingADERDGSolver;
 
@@ -509,18 +508,6 @@ public:
   virtual void findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) = 0;
 
   /**
-   * Loops over all registered LimitingADERDGSolver instances
-   * and determines the maximum value of their
-   * minimum limiter status for a troubled cell.
-   *
-   * This value determines how long we have to perform
-   * limiter status spreading.
-   *
-   * The minimum possible return value is three.
-   */
-  static int getMaxMinimumLimiterStatusForTroubledCell();
-
-  /**
    * Create a limiting ADER-DG solver.
    *
    * <h2>Discrete maximum principle</h2>
@@ -751,7 +738,6 @@ public:
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     const bool initialGrid,
      const int solverNumber) override;
 
  bool progressMeshRefinementInLeaveCell(
@@ -1360,7 +1346,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) final override;
 
   /**
@@ -1390,8 +1375,7 @@ public:
    */
   void progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) final override;
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 
   /**
    * Finish erasing operations on the worker side and
