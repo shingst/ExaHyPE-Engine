@@ -334,7 +334,8 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 
   const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
   const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-  if ( solverElement!=exahype::solvers::Solver::NotFound &&
+  if ( 
+       solverElement!=exahype::solvers::Solver::NotFound &&
        getMeshUpdateEvent()==MeshUpdateEvent::RegularRefinementRequested
    ) {
     SolverPatch& solverPatch =
@@ -344,7 +345,9 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
    const bool newLimiterPatchAllocated =
        ensureRequiredLimiterPatchIsAllocated(
            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
-   if (newLimiterPatchAllocated) {
+   if ( newLimiterPatchAllocated ) {
+     assertion1(tarch::la::equals(solverPatch.getCorrectorTimeStamp(),0.0),solverPatch.toString());
+
      const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
      LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
      adjustLimiterSolution(solverPatch,limiterPatch);
