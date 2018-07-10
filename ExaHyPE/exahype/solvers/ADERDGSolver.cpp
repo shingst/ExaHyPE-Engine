@@ -1445,8 +1445,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
 
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (
-       fineGridCellElement!=exahype::solvers::Solver::NotFound) {
+  if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription = getCellDescription(
             fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
 
@@ -1456,62 +1455,58 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     // skip remainder if the refinement criterion has not been evaluated yet for a Cell
     // Reading the refinement request might result into data race but this is accepted at this point
     // as we only read and not write
-    if (
-      fineGridCellDescription.getType()             != CellDescription::Type::Cell ||
-      fineGridCellDescription.getRefinementStatus() != Pending
-    ) {
-      const int coarseGridElement =
-          tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-      if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
-        assertion3(fineGridCellDescription.getParentIndex()==coarseGridCell.getCellDescriptionsIndex(),
-                   fineGridCellDescription.toString(),fineGridCell.toString(),
-                   coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
+    const int coarseGridElement =
+        tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
+    if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+      assertion3(fineGridCellDescription.getParentIndex()==coarseGridCell.getCellDescriptionsIndex(),
+                 fineGridCellDescription.toString(),fineGridCell.toString(),
+                 coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
 
-        CellDescription& coarseGridCellDescription = getCellDescription(
-            fineGridCellDescription.getParentIndex(),coarseGridElement);
-        assertion1(fineGridCellDescription.getSolverNumber()==
-            coarseGridCellDescription.getSolverNumber(),
-                       fineGridCellDescription.toString());
+      CellDescription& coarseGridCellDescription = getCellDescription(
+          fineGridCellDescription.getParentIndex(),coarseGridElement);
+      assertion1(fineGridCellDescription.getSolverNumber()==
+          coarseGridCellDescription.getSolverNumber(),
+                     fineGridCellDescription.toString());
 
-        eraseCellDescriptionIfNecessary(
-                fineGridCell.getCellDescriptionsIndex(),
-                fineGridCellElement,
-                coarseGridCellDescription);
+      eraseCellDescriptionIfNecessary(
+              fineGridCell.getCellDescriptionsIndex(),
+              fineGridCellElement,
+              coarseGridCellDescription);
 
-        /**  bottom-up refinement */
-        // veto
+      /**  bottom-up refinement */
+      // veto
+      if (
+          fineGridCellDescription.getType()==CellDescription::Type::Cell &&
+          fineGridCellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+      ) {
+        tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
         if (
-            fineGridCellDescription.getType()==CellDescription::Type::Cell &&
-            fineGridCellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+            (coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
+             coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested)
+              &&
+             (
+             fineGridCellDescription.getRefinementStatus()!=Erase ||
+             fineGridCellDescription.getPreviousRefinementStatus()!=Erase)
         ) {
-          tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
-          if (
-              (coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingChildrenRequested ||
-                  coarseGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ChangeChildrenToVirtualChildrenRequested)
-                  &&
-                  (fineGridCellDescription.getRefinementStatus()>0 ||
-                      fineGridCellDescription.getPreviousRefinementStatus() > 0)
-          ) {
-            coarseGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-          }
-          lock.free();
-        } else if ( // bottom-up refinement (limiter guided refinement criterion)
-            fineGridCellDescription.getType()==CellDescription::Type::Descendant
-            &&
-            fineGridCellDescription.getLevel()==getMaximumAdaptiveMeshLevel() &&
-            (fineGridCellDescription.getRefinementStatus()>0 ||
-                fineGridCellDescription.getPreviousRefinementStatus() > 0) // TODO(Dominic): Move into ADER-DG solver
-        ) {
-          exahype::solvers::Solver::SubcellPosition subcellPosition =
-              exahype::amr::computeSubcellPositionOfDescendant<CellDescription,ADERDGSolver::Heap,true>(fineGridCellDescription);
-          CellDescription& topMostParent =
-            getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-          tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
-          if ( topMostParent.getType()==CellDescription::Type::Cell ) {
-            topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
-          }
-          lock.free();
+          coarseGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
         }
+        lock.free();
+      } else if ( // bottom-up refinement (limiter guided refinement criterion)
+          fineGridCellDescription.getType()==CellDescription::Type::Descendant
+          &&
+          fineGridCellDescription.getLevel()==getMaximumAdaptiveMeshLevel() &&
+          (fineGridCellDescription.getRefinementStatus()>0 ||
+          fineGridCellDescription.getPreviousRefinementStatus() > 0) // TODO(Dominic): Move into ADER-DG solver
+      ) {
+        exahype::solvers::Solver::SubcellPosition subcellPosition =
+            exahype::amr::computeSubcellPositionOfDescendant<CellDescription,ADERDGSolver::Heap,true>(fineGridCellDescription);
+        CellDescription& topMostParent =
+          getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+        tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
+        if ( topMostParent.getType()==CellDescription::Type::Cell ) {
+          topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
+        }
+        lock.free();
       }
     }
   }
