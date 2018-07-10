@@ -462,7 +462,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->hasRequestedMeshRefinement()) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       const bool newComputeCell =
           solver->progressMeshRefinementInEnterCell(
               fineGridCell,
