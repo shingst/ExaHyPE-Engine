@@ -209,17 +209,6 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
       }
     }
 
-    for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-      if (
-          spreadRefinementStatus(solver) &&
-          element!=exahype::solvers::Solver::NotFound
-      ) {
-
-      }
-    }
-
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
