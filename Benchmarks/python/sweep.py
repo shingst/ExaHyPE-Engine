@@ -605,7 +605,7 @@ def generateScripts():
                                         
                                         if "likwid" in general:
                                             groups = sweep_options.parseList(general["likwid"])
-                                            likwid_pin_arg = int(context["cores"]) - 1
+                                            likwid_pin_arg = int(myCores.split(":")[0]) - 1
                                             if likwid_pin_arg == 0:
                                                 likwid_pin_arg = str(likwid_pin_arg)
                                             else:
