@@ -383,6 +383,7 @@ void exahype::solvers::Solver::setNextAttainedStableState() {
   _attainedStableState     = _nextAttainedStableState;
   _nextAttainedStableState = true;
 }
+
 bool exahype::solvers::Solver::getAttainedStableState() const {
   return _attainedStableState;
 }

@@ -719,8 +719,7 @@ public:
    *
    * returns true if a new limiter patch was allocated.
    */
-  void updateRefinementStatusDuringRefinementStatusSpreading(
-      SolverPatch& solverPatch,const int cellDescriptionsIndex) const;
+  MeshUpdateEvent  updateRefinementStatusDuringRefinementStatusSpreading(SolverPatch& solverPatch) const;
 
   /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
    *

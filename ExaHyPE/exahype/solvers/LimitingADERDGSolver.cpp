@@ -118,7 +118,7 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
       exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
-  _coarsestMeshSize  = coarsestMeshInfo.first;
+  _coarsestMeshSize  = coarsestMeshInfo.first; // TODO(Dominic): Wire through as well
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
   updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
@@ -232,14 +232,17 @@ int exahype::solvers::LimitingADERDGSolver::getMaxLevel() const {
 // MODIFY CELL DESCRIPTION
 ///////////////////////////////////
 
-void exahype::solvers::LimitingADERDGSolver::updateRefinementStatusDuringRefinementStatusSpreading(
-    SolverPatch& solverPatch, const int cellDescriptionsIndex) const {
-  synchroniseTimeStepping(solverPatch,cellDescriptionsIndex);
-  if ( solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForTroubledCell ) {
-    solverPatch.setRefinementStatus(_solver->_minimumRefinementStatusForTroubledCell);
-    solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::updateRefinementStatusDuringRefinementStatusSpreading(
+    SolverPatch& solverPatch) const {
+  _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+  if ( solverPatch.getType()==SolverPatch::Type::Descendant &&
+      solverPatch.getRefinementStatus() > 0 &&
+      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()
+  ) {
+    solverPatch.setRefinementFlag(true);
+    return MeshUpdateEvent::RefinementRequested;
   } else {
-    _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+    return MeshUpdateEvent::None;
   }
 }
 
