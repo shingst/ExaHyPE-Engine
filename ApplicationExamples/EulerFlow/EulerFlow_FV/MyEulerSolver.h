@@ -33,7 +33,7 @@ class Euler::MyEulerSolver : public Euler::AbstractMyEulerSolver {
      */
     static tarch::logging::Log _log;
   public:
-    MyEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    MyEulerSolver(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
