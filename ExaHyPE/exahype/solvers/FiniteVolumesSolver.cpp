@@ -1121,7 +1121,6 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
   // do nothing
 }
