@@ -1398,7 +1398,8 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int solverNumber) = 0;
+      const int  solverNumber,
+      const bool stillInRefiningMode) = 0;
 
   /**
    * Refinement routine that should be used for
@@ -1958,7 +1959,8 @@ class exahype::solvers::Solver {
       const int localElement,
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
+      const int                                    level,
+      const bool                                   stillInRefiningMode) = 0;
 
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex

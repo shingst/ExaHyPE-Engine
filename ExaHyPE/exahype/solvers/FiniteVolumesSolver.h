@@ -585,7 +585,8 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int solverNumber) override;
+      const int  solverNumber,
+      const bool stillInRefiningMode) override;
 
   bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
@@ -938,12 +939,13 @@ public:
    * Nop. TODO(Dominic): As long as no multi-solver and limiter
    */
   bool progressMeshRefinementInMergeWithMaster(
-      const int worker,
-      const int localCellDescriptionsIndex,
-      const int localElement,
-      const int coarseGridCellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) final override;
+        const int worker,
+        const int localCellDescriptionsIndex,
+        const int localElement,
+        const int coarseGridCellDescriptionsIndex,
+        const tarch::la::Vector<DIMENSIONS, double>& x,
+        const int                                    level,
+        const bool                                   stillInRefiningMode) final override;
 
   ///////////////////////////////////
   // WORKER->MASTER

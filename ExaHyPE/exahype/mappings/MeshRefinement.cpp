@@ -38,6 +38,8 @@
 bool exahype::mappings::MeshRefinement::IsFirstIteration        = true;
 bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = true;
 
+bool exahype::mappings::MeshRefinement::StillInRefiningMode     = true;
+
 tarch::logging::Log exahype::mappings::MeshRefinement::_log("exahype::mappings::MeshRefinement");
 
 tarch::multicore::BooleanSemaphore exahype::mappings::MeshRefinement::BoundarySemaphore;
@@ -167,7 +169,21 @@ void exahype::mappings::MeshRefinement::beginIteration(
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
     _stableIterationsInARow     = 0;
     _iterationsSinceLastErasing = (MeshRefinement::IsInitialMeshRefinement) ? 1 : 0;
+    StillInRefiningMode = true;
   }
+  if (
+      // as soon as we have two iterations in a row where
+      // nothing has happened we switch to refining mode
+      StillInRefiningMode &&
+      _stableIterationsInARow>0
+  ) {
+    StillInRefiningMode = false;
+    _iterationsSinceLastErasing = 0;
+  }
+  if ( StillInRefiningMode ) { // we can use cheap neighbour lookup as long as we are in refining mode
+    _iterationsSinceLastErasing = 2;
+  }
+
   _iterationsSinceLastErasing++;
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -470,7 +486,8 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridVerticesEnumerator,
               coarseGridCell,
               coarseGridVerticesEnumerator,
-              solverNumber);
+              solverNumber,
+              StillInRefiningMode);
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
@@ -840,7 +857,8 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
                 worker, cellDescriptionsIndex, element,
                 coarseGridCell.getCellDescriptionsIndex(),
                 fineGridVerticesEnumerator.getCellCenter(),
-                fineGridVerticesEnumerator.getLevel());
+                fineGridVerticesEnumerator.getLevel(),
+                StillInRefiningMode);
       }
     }
 

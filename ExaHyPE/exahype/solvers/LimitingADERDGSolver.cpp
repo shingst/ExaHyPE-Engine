@@ -252,12 +252,13 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const int solverNumber) {
+    const int solverNumber,
+    const bool stillInRefiningMode) {
  return
      _solver->progressMeshRefinementInEnterCell(
         fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
         coarseGridCell,coarseGridVerticesEnumerator,
-        solverNumber);
+        solverNumber,stillInRefiningMode);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
@@ -1903,9 +1904,10 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) {
+    const int  level,
+    const bool stillInRefiningMode) {
   return _solver->progressMeshRefinementInMergeWithMaster(
-      worker,localElement,localElement,coarseGridCellDescriptionsIndex,x,level);
+      worker,localElement,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(

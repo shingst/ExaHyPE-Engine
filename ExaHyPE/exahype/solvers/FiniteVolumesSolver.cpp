@@ -330,7 +330,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const int solverNumber) {
+    const int solverNumber,
+    const bool stillInRefiningMode) {
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -1163,7 +1164,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMas
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) {
+    const int                                    level,
+    const bool stillInRefiningMode) {
   // do nothing
   return false;
 }
