@@ -1100,9 +1100,11 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
   // veto erasing
   if (
       !stillInRefiningMode &&
-      fineGridCellDescription.getType()==CellDescription::Type::Cell &&
+      ((fineGridCellDescription.getType()==CellDescription::Type::Cell &&
       (fineGridCellDescription.getRefinementStatus()!=Erase ||
-      fineGridCellDescription.getPreviousRefinementStatus()!=Erase)
+      fineGridCellDescription.getPreviousRefinementStatus()!=Erase)) 
+      ||
+      fineGridCellDescription.getType()==CellDescription::Type::Ancestor)
   ) {
     const int coarseGridCellElement = tryGetElement(
         fineGridCellDescription.getParentIndex(),fineGridCellDescription.getSolverNumber());
@@ -1763,6 +1765,12 @@ void exahype::solvers::ADERDGSolver::restrictVolumeData(
   const int levelFine  = fineGridCellDescription.getLevel();
   const int levelCoarse = coarseGridCellDescription.getLevel();
   assertion(levelCoarse < levelFine);
+
+  if ( !DataHeap::getInstance().isValidIndex(
+         fineGridCellDescription.getSolution()) ) {
+    logError("restrictVolumeData(..)","solution not valid for cell="<<fineGridCellDescription.toString());
+    std::abort();
+  }
 
   // restrict current solution
   double* solutionFine   = DataHeap::getInstance().getData(

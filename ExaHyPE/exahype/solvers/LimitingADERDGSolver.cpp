@@ -235,7 +235,8 @@ int exahype::solvers::LimitingADERDGSolver::getMaxLevel() const {
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::updateRefinementStatusDuringRefinementStatusSpreading(
     SolverPatch& solverPatch) const {
   _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
-  if ( solverPatch.getType()==SolverPatch::Type::Descendant &&
+  if ( 
+      solverPatch.getType()==SolverPatch::Type::Descendant &&
       solverPatch.getRefinementStatus() > 0 &&
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
@@ -336,7 +337,6 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
    if ( newLimiterPatchAllocated ) {
      assertion1(tarch::la::equals(solverPatch.getCorrectorTimeStamp(),0.0),solverPatch.toString());
-
      const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
      LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
      adjustLimiterSolution(solverPatch,limiterPatch);
@@ -456,14 +456,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       _solver->markForRefinement(solverPatch); // TODO This code probably overwrites the
       // refinement status during the iterations.
     }
-
-    const int limiterElement =
-        tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
-    if (limiterElement!=Solver::NotFound) {
-      LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
-      copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
-      _limiter->adjustSolution(limiterPatch);
-    } // TODO(Dominic): Add to docu: We adjust the limiter patch here but we do not allocate it.
   }
 }
 
@@ -1150,6 +1142,10 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
   ) { // this is one of the important differences to the global recomputation where we rollback also cells with limiter status == 0
     assertion(solverPatch.getType()==SolverPatch::Type::Cell);
     assertion(solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None);
+    if ( solverPatch.getType()!=SolverPatch::Type::Cell ) {
+      logError("rollbackSolutionLocally(..)","type is not cell but is=" << solverPatch.toString());
+      std::abort();
+    }
 
     if ( solverPatch.getPreviousRefinementStatus() >= _solver->_minimumRefinementStatusForPassiveFVPatch ) {
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
