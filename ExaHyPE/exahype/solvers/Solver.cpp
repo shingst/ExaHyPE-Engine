@@ -153,13 +153,13 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 
 void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJobs) {
   SpawnPredictionAsBackgroundJob = useBackgroundJobs;
-  #if defined(Parallel)
-  PredictionSweeps  = useBackgroundJobs ? 2 : 1;
-  #elif !defined(Parallel) && defined(SharedMemoryParallelisation)
-  PredictionSweeps  = ( useBackgroundJobs && !allSolversPerformOnlyUniformRefinement() )  ? 2 : 1;
-  #else // serial
-  PredictionSweeps = 1;
-  #endif
+
+  PredictionSweeps = ( !allSolversPerformOnlyUniformRefinement()
+                     #if defined(Parallel)
+                     || useBackgroundJobs
+                     #endif
+                     )
+                     ? 2 : 1;
 }
 
 
@@ -412,6 +412,14 @@ bool exahype::solvers::Solver::getAttainedStableState() const {
   return _attainedStableState;
 }
 
+bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
+  bool result = false;
+  for (auto* solver : RegisteredSolvers) {
+    result |= solver->getType()==type;
+  }
+  return result;
+}
+
 void exahype::solvers::Solver::moveDataHeapArray(
     const int fromIndex,const int toIndex,bool recycleFromArray) {
   std::copy(
@@ -486,13 +494,20 @@ bool exahype::solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::
 }
 
 double exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers() {
-  double result = std::numeric_limits<double>::max();
+  static double result = std::numeric_limits<double>::max();
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::min( result, p->getMaximumMeshSize() );
+  if ( result == std::numeric_limits<double>::max() ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::min( result, p->getMaximumMeshSize() );
+    }
   }
 
   return result;
+}
+
+const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainSize() {
+  assertion(RegisteredSolvers.size()>0);
+  return RegisteredSolvers[0]->_domainSize;
 }
 
 double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
@@ -515,12 +530,11 @@ int exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers() {
   return result;
 }
 
-
-int exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() {
-  int result = -std::numeric_limits<int>::max();
+double exahype::solvers::Solver::getCoarsestMeshSizeOfAllSolvers() {
+  double result = std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::max( result, p->getCoarsestMeshLevel() );
+    result = std::min( result, p->getCoarsestMeshSize() );
   }
 
   return result;
@@ -675,7 +689,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
       limitingADERDGSolver->updateNextLimiterDomainChange(limiterDomainChanges[solverNumber]);
       if (
-          limitingADERDGSolver->getNextMeshUpdateRequest() &&
+          limitingADERDGSolver->getNextMeshUpdateRequest() && // TODO(Dominic): Reassess
           limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
       ) {
         limitingADERDGSolver->updateNextLimiterDomainChange(
@@ -882,8 +896,11 @@ int exahype::receiveNeighbourCommunicationMetadata(
   return ReceivedMetadataMessageIndex;
 }
 
-// Master<=>Worker  TODO(Dominic): Move in exahype::Cell
+// Master<=>Worker
 
+/**
+ * \deprecated
+ */
 exahype::MetadataHeap::HeapEntries exahype::gatherMasterWorkerCommunicationMetadata(int cellDescriptionsIndex) {
   const int length =
       exahype::solvers::RegisteredSolvers.size()*exahype::MasterWorkerCommunicationMetadataPerSolver;
@@ -900,6 +917,9 @@ exahype::MetadataHeap::HeapEntries exahype::gatherMasterWorkerCommunicationMetad
   return encodedMetaData;
 }
 
+/**
+ * \deprecated
+ */
 void exahype::sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
     const int                                   toRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
@@ -911,6 +931,9 @@ void exahype::sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
       peano::heap::MessageType::MasterWorkerCommunication);
 }
 
+/**
+ * \deprecated
+ */
 void exahype::sendMasterWorkerCommunicationMetadata(
     const int                                   toRank,
     const int                                   cellDescriptionsIndex,
@@ -923,6 +946,9 @@ void exahype::sendMasterWorkerCommunicationMetadata(
       metadata,toRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 }
 
+/**
+ * \deprecated
+ */
 int exahype::receiveMasterWorkerCommunicationMetadata(
     const int                                   fromRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,

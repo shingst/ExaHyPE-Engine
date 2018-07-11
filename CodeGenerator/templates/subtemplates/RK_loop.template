@@ -1,7 +1,11 @@
 {#
   String inputLuh : name of the inputTensor (e.g. luh or lwh)
+  int    inputLuh_dataSize
   String outputKi : name of the output tensor (e.g. K1 or K2)
 #}
+{# /********************
+   **** Subtemplate ****
+   *********************/ #}
 {% if useFlux %}
 
   // Flux component
@@ -9,7 +13,7 @@
 {# ******************************************************
    **** call to flux function over {{inputLuh}} into lF_guess ****
    ****************************************************** #}
-{% with inputQ=inputLuh, inputQ_varSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
+{% with inputQ=inputLuh, inputQ_dataSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %} 
 
@@ -49,7 +53,7 @@
   // x direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
 {% endwith %} 
     }
@@ -58,7 +62,7 @@
   // y direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
 {% endwith %} 
     }
@@ -68,29 +72,20 @@
   // z direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ_guess', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
 {% endwith %} 
     }
   }
 {% endif %}
-  
-  for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
-    // Fusedsource (source and ncp)
-    double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
-    std::copy_n(&gradQ_guess[{{nVarPad}}*jkl]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
-    std::copy_n(&gradQ[{{nVarPad}}*jkl+{{1*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
-{% if nDim==3 %}
-    std::copy_n(&gradQ[{{nVarPad}}*jkl+{{2*nVarPad*(nDof**nDim)}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
-{% endif %}
-    #ifdef USE_IPO
-        #pragma forceinline recursive
-    #endif
-    solver.{{solverName}}::fusedSource(&{{inputLuh}}[{{nData}}*jkl], gradQNoPad, lSi);
-    
-    #pragma simd
-    for (int n = 0; n < {{nVarPad}}; n++) {
-      {{outputKi}}[n+{{nVarPad}}*jkl] -= lSi[n];
-    }
+
+
+  {
+{# ***********************************************************
+   **** call to Source and NCP (or FusedSource) functions ****
+   *********************************************************** #}
+{% with time_var='0', inputQ=inputLuh, output=outputKi, writeSource=False, multiplyByWeights=False, substractToOutput=True, inputQ_dataSize=inputLuh_dataSize, timeInterleaved=False %}
+{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %} 
   }
 {% endif %}

@@ -594,6 +594,18 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps =
       _parser.getDisableMetadataExchangeInBatchedTimeSteps();
 
+  if ( 
+       exahype::solvers::ADERDGSolver::PredictionSweeps==2 && 
+       exahype::solvers::Solver::FuseADERDGPhases          &&
+       exahype::solvers::Solver::oneSolverIsOfType(exahype::solvers::Solver::Type::LimitingADERDG) &&
+       !exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
+  ) { 
+    logError("parseOptimisations()","It is currently not possible to use the 'Limiting-ADER-DG' solver in combination with, both turned on at the same time, " << 
+            "'fuse-algorithmic-phases' and 'spawn-predictor-as-background-job'. The only exception is if 'globalfixed' time stepping is chosen which is interpreted " <<
+            "as signal that the limiter domain does not change dynamically during the simulation.");
+    std::abort();
+  }
+
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
       logInfo("parseOptimisations()","\tfuse-algorithmic-steps="        << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
@@ -623,6 +635,8 @@ int exahype::runners::Runner::run() {
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
+    exahype::State::BroadcastInThisIteration = true;
+    exahype::State::ReduceInThisIteration    = false;
     #endif
 
     auto* repository = createRepository();
@@ -739,6 +753,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
+
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while (
     (
@@ -851,7 +866,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
-    repository.switchToBroadcastAndDropNeighbourMessages();
+    repository.switchToBroadcastAndRestrictLimiterStatus();
     repository.iterate( 1, communicatePeanoVertices );
 
     printStatistics();
@@ -1103,30 +1118,30 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-  repository.switchToBroadcastAndDropNeighbourMessages();
+  repository.switchToBroadcastAndRestrictLimiterStatus();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading()) {
+  if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading() ) {
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
     repository.switchToLimiterStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
 
-    if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-      logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");
-    }
+    // Only the solvers which requested a global recomputation do a rollback
+    if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() ) {
+      logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
 
-    // TODO(Dominic): Need a broadcast again if global recomputation
-    logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-    repository.switchToGlobalRollback();
-    repository.iterate(1,false);
+      logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
+      peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
+      repository.switchToGlobalRollback();
+      repository.iterate(1,false);
+    }
   }
 
   // 3. Perform a grid update for those solvers that requested refinement
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
+  if ( exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ) {
     logInfo("updateMeshAndSubdomains(...)","perform mesh refinement");
     createMesh(repository);
   }

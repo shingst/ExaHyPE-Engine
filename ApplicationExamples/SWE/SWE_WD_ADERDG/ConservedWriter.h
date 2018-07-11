@@ -38,6 +38,7 @@ public:
     double* Q,
     double* outputQuantities,
     double timeStamp) override;
+  void writtenQuantitiesNames(char** name);
 };
 
 #endif /* POSTPROCESSING_ConservedWriter_CLASS_HEADER_ */

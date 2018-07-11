@@ -31,8 +31,8 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * Log device
      */
     static tarch::logging::Log _log;
-    bool   amr_balanced;
-    double amr_distance_from_surface;
+    bool   amr_regularization;
+
   public:
     MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
 

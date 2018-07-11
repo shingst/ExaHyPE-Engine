@@ -132,25 +132,57 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static bool VirtuallyExpandBoundingBox;
 
+  #ifdef Parallel //TODO Dominic fix, had to comment for single core to compile (JMG)
   /**
-   * \return true if the current batch state is
-   * BatchState::FirstIterationOfBatch or
-   * BatchState::NoBatch.
+   * Toggle switches used by the Prediction* and FusedTimeStep
+   * mappings where we turn broadcasts and reduction on and
+   * off in certain batch iterations.
    *
-   * \note It makes only sense to query the batch state from
-   * within a mapping.
+   * \note Use this switches only
    */
-  static bool isFirstIterationOfBatchOrNoBatch();
+  static bool BroadcastInThisIteration;
+  static bool ReduceInThisIteration;
+  #endif
 
   /**
-   * \return true if the current batch state is
-   * BatchState::FirstIterationOfBatch or
-   * BatchState::NoBatch.
+   * \return true if we run no batch or if
+   * we are in the first iteration of a batch (iteration: 0).
    *
    * \note It makes only sense to query the batch state from
    * within a mapping.
    */
-  static bool isLastIterationOfBatchOrNoBatch();
+  bool isFirstIterationOfBatchOrNoBatch() const;
+  
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second iteration of a batch (iteration: 1).
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  bool isSecondIterationOfBatchOrNoBatch() const;
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the last iteration of a batch (iteration: #iterations-1)
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   */
+  bool isLastIterationOfBatchOrNoBatch() const;
+
+  /**
+   * \return true if we run no batch or if
+   * we are in the second to last iteration of a batch (iteration: #iterations-2)
+   *
+   * \note It makes only sense to query the batch state from
+   * within a mapping.
+   *
+   * \note This function takes the role of isLastIterationOfBatchOrNoBatch() when we use
+   * two Prediction or FusedTimeStep sweeps.
+   */
+  bool isSecondToLastIterationOfBatchOrNoBatch() const;
 
   /**
    * Default Constructor

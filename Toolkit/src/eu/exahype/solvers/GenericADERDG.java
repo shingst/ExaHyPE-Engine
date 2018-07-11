@@ -39,6 +39,8 @@ public class GenericADERDG implements Solver {
     final int     maxPicardIterations    = kernel.maxPicardIterations();
     final int     numberOfPointSources   = kernel.getNumberOfPointSources();
     
+    final int     numberOfObservables    = kernel.getNumberOfObservables(); // TODO This field should not be member of class  ADERDGKernel
+    
     templateEngine = new TemplateEngine();
     context = new Context();
     
@@ -54,6 +56,7 @@ public class GenericADERDG implements Solver {
     context.put("order"               , order);
     context.put("numberOfVariables"   , numberOfVariables);
     context.put("numberOfParameters"  , numberOfParameters);
+    context.put("numberOfObservables" , numberOfObservables);
     context.put("numberOfPointSources", numberOfPointSources);
     context.put("maxPicardIterations" , maxPicardIterations);
     

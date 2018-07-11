@@ -37,18 +37,15 @@ exahype::mappings::PredictionRerun::communicationSpecification() const {
   // master->worker
   peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
       peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  #ifdef Parallel
+  if ( exahype::State::BroadcastInThisIteration ) { // must be set in previous iteration
     exchangeMasterWorkerData =
         peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
   }
-
+  #endif
   // worker->master
   peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    exchangeWorkerMasterData =
-        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime; // TODO(Dominic): Can be masked out with LTS program flow
-  }
 
   return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
@@ -58,13 +55,13 @@ exahype::mappings::PredictionRerun::enterCellSpecification(int level) const {
   return exahype::mappings::Prediction::determineEnterCellSpecification(level);
 }
 
+// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
-// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
@@ -100,8 +97,8 @@ exahype::mappings::PredictionRerun::~PredictionRerun() {
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) {
-  // do nothing
+exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread) :
+  _stateCopy(masterThread._stateCopy) {
 }
 
 void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
@@ -113,12 +110,14 @@ void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  _stateCopy = solverState;
+
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   } // this is a rerun; enclave jobs have been spawned before
   if (
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      exahype::State::isLastIterationOfBatchOrNoBatch()
+      _stateCopy.isLastIterationOfBatchOrNoBatch()
   ) {
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -129,7 +128,16 @@ void exahype::mappings::PredictionRerun::beginIteration(
 
 void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
-  // do nothing
+  #ifdef Parallel
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::BroadcastInThisIteration==true);
+    exahype::State::BroadcastInThisIteration = false;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::BroadcastInThisIteration==false);
+    exahype::State::BroadcastInThisIteration = true;
+  }
+  #endif
 }
 
 void exahype::mappings::PredictionRerun::enterCell(
@@ -147,7 +155,8 @@ void exahype::mappings::PredictionRerun::enterCell(
   exahype::mappings::Prediction::performPredictionOrProlongate(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
-      exahype::State::AlgorithmSection::PredictionRerunAllSend);
+      exahype::State::AlgorithmSection::PredictionRerunAllSend,
+      _stateCopy.isFirstIterationOfBatchOrNoBatch());
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -159,16 +168,7 @@ void exahype::mappings::PredictionRerun::leaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,
-                           fineGridVerticesEnumerator.toString(),
-                           coarseGridCell, fineGridPositionOfCell);
-
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::PredictionRerunAllSend);
-  }
-
-  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
+  // do nothing
 }
 
 #ifdef Parallel
@@ -178,7 +178,7 @@ void exahype::mappings::PredictionRerun::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceIn( "mergeWithMaster(...)" );
 
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( exahype::State::BroadcastInThisIteration ) {
     vertex.receiveNeighbourData(
         fromRank,false /*no merge*/,true /*no batch*/,
         fineGridX,fineGridH,level);
@@ -192,7 +192,7 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendToNeighbour(toRank,true,x,h,level);
   }
   logTraceOut( "prepareSendToNeighbour(...)" );
@@ -206,7 +206,7 @@ bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
@@ -226,7 +226,7 @@ void exahype::mappings::PredictionRerun::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
@@ -241,13 +241,7 @@ void exahype::mappings::PredictionRerun::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    localCell.reduceDataToMasterPerCell(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getCellSize(),
-        verticesEnumerator.getLevel());
-  }
+  // do nothing
 }
 
 void exahype::mappings::PredictionRerun::mergeWithMaster(
@@ -262,13 +256,7 @@ void exahype::mappings::PredictionRerun::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
-    fineGridCell.mergeWithDataFromWorkerPerCell(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getCellSize(),
-        fineGridVerticesEnumerator.getLevel());
-  }
+  // do nothing
 }
 
 //

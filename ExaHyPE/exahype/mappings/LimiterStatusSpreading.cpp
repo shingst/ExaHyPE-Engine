@@ -28,6 +28,8 @@
 
 tarch::logging::Log exahype::mappings::LimiterStatusSpreading::_log("exahype::mappings::LimiterStatusSpreading");
 
+bool exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
+
 void exahype::mappings::LimiterStatusSpreading::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _limiterDomainChanges.resize(numberOfSolvers);
@@ -160,6 +162,8 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
       limitingADERDG->setNextAttainedStableState();
     }
   }
+
+  IsFirstIteration = false;
 }
 
 void exahype::mappings::LimiterStatusSpreading::createHangingVertex(
@@ -255,7 +259,7 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if ( exahype::State::getBatchState()!=exahype::State::BatchState::FirstIterationOfBatch ) {
+  if ( !IsFirstIteration ) {
     vertex.mergeOnlyWithNeighbourMetadata(
         fromRank,fineGridX,fineGridH,level,
         exahype::State::AlgorithmSection::LimiterStatusSpreading);

@@ -22,7 +22,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <deque>
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "peano/utils/PeanoOptimisations.h"
@@ -703,6 +702,12 @@ class exahype::solvers::Solver {
   static constexpr int NotFound = -1;
 
   /**
+   * Checks if one of the solvers is of a certain
+   * type.
+   */
+  static bool oneSolverIsOfType(const Type& type);
+
+  /**
    * Moves a DataHeap array, i.e. copies the found
    * data at "fromIndex" to the array at "toIndex" and
    * deletes the "fromIndex" array afterwards.
@@ -758,14 +763,16 @@ class exahype::solvers::Solver {
   static int getCoarsestMeshLevelOfAllSolvers();
 
   /**
-   * Returns the finest level which holds a uniform
-   * base grid of a solver.
+   * Returns the coarsest mesh size a solver is actually
+   * using.
    *
    * \note It is very important that initSolvers
    * has been called on all solvers before this
    * method is used.
    */
-  static int getFinestUniformMeshLevelOfAllSolvers();
+  static double getCoarsestMeshSizeOfAllSolvers();
+
+  static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
 
   /**
    * Run over all solvers and identify the maximum depth of adaptive
@@ -785,9 +792,6 @@ class exahype::solvers::Solver {
    * performs adaptive mesh refinement.
    */
   static bool allSolversPerformOnlyUniformRefinement();
-
-
-
 
 
   /**
@@ -1438,11 +1442,19 @@ class exahype::solvers::Solver {
   /**
    * \return if the vertices around a cell should be erased, kept,
    * or refined.
+   *
+   * \param checkThoroughly If set to true, check that the indices found in the
+   *                        adjacency map are actual heap indices and that the
+   *                        geometry information of the cell descriptions found at
+   *                        the heap index indicates that these cells are adjacent
+   *                        to the vertex.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
       const int cellDescriptionsIndex,
       const int solverNumber,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const = 0;
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const bool checkThoroughly) const = 0;
 
   /**
    * Returns true if the solver has attained
@@ -1725,7 +1737,7 @@ class exahype::solvers::Solver {
     *
     * \note Has no const modifier since kernels are not const functions yet.
     */
-  virtual void prolongateAndPrepareRestriction(
+  virtual void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
@@ -1969,7 +1981,7 @@ class exahype::solvers::Solver {
    * Finish prolongation operations started on the master.
    */
   virtual void progressMeshRefinementInMergeWithWorker(
-      const int localCellDescriptionsIndex,    const int localElement,
+      const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement,
       const bool initialGrid) = 0;
 
@@ -2057,17 +2069,6 @@ class exahype::solvers::Solver {
   ///////////////////////////////////
 
   /**
-   * Merge with the worker's metadata.
-   *
-   * \return if we need to perform vertical communication of solver face data for the
-   * considered cell description during the time stepping.
-   */
-  virtual void mergeWithWorkerMetadata(
-          const MetadataHeap::HeapEntries& receivedMetadata,
-          const int                        cellDescriptionsIndex,
-          const int                        element) = 0;
-
-  /**
    * Send data to the master that is not
    * depending on a particular cell description.
    *
@@ -2142,61 +2143,6 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);
 
-  /**
-   * Send solver data to master rank. Read the data from
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the heap vector at \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void sendDataToMaster(
-      const int                                    masterRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Send empty solver data to master rank.
-   */
-  virtual void sendEmptyDataToMaster(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Merge with solver data from worker rank.
-   * Write the data to the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void mergeWithWorkerData(
-      const int                                    workerRank,
-      const MetadataHeap::HeapEntries&             workerMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Drop solver data from worker rank.
-   */
-  virtual void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
   ///////////////////////////////////
   // MASTER->WORKER
   ///////////////////////////////////
@@ -2221,71 +2167,6 @@ class exahype::solvers::Solver {
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
-
-  /**
-   * Send solver data to worker rank. Read the data from
-   * the cell description \p element in the cell descriptions
-   * vector stored at \p cellDescriptionsIndex.
-   *
-   * \param[in] element Index of the ADERDGCellDescription
-   *                    holding the data to send out in
-   *                    the heap vector at \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual void sendDataToWorker(
-      const int                                    workerRank,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
-
-  /**
-   * Send empty solver data to worker rank.
-   */
-  virtual void sendEmptyDataToWorker(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
-
-  /**
-   * Receive solver data from the master rank.
-   *
-   * \param[inout] heapIndices a queue where the solver
-   *                    needs to add DataHeap indices
-   *                    of received data.
-   */
-  virtual void receiveDataFromMaster(
-        const int                                    masterRank,
-        std::deque<int>&                             receivedDataHeapIndices,
-        const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level) const = 0;
-
-  /**
-   * Pop the heap indices from the double ended
-   * queue and merge the data - or not.
-   * Delete the corresponding heap arrays.
-   *
-   * \param[in] element Index of the cell description
-   *                    holding the data to send out in
-   *                    the array with address \p cellDescriptionsIndex.
-   *                    This is not the solver number.
-   */
-  virtual void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const = 0;
-
-  /**
-   * Drop solver data from master rank.
-   *
-   * Just pop the heap indices from the double ended
-   * queue and delete the corresponding heap arrays.
-   */
-  virtual void dropMasterData(
-      std::deque<int>& heapIndices) const = 0;
   #endif
 };
 

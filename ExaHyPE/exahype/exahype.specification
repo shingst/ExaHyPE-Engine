@@ -30,7 +30,7 @@ event-mapping:
   name: LoadBalancing
  
 event-mapping:
-  name: BroadcastAndDropNeighbourMessages
+  name: BroadcastAndRestrictLimiterStatus
   
 event-mapping:
   name: MergeNeighbours
@@ -106,8 +106,8 @@ adapter:
 
 // Additional adapters for limiter status spreading and recomputation
 adapter: 
-  name: BroadcastAndDropNeighbourMessages
-  merge-with-user-defined-mapping: BroadcastAndDropNeighbourMessages
+  name: BroadcastAndRestrictLimiterStatus
+  merge-with-user-defined-mapping: BroadcastAndRestrictLimiterStatus
 
 adapter:
   name: LimiterStatusSpreading

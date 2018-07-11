@@ -25,14 +25,25 @@
 
 bool exahype::State::VirtuallyExpandBoundingBox = false;
 
-bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::FirstIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
+#ifdef Parallel
+bool exahype::State::BroadcastInThisIteration = true;
+bool exahype::State::ReduceInThisIteration    = false;
+#endif
+
+bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==0;
 }
 
-bool exahype::State::isLastIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::LastIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
+bool exahype::State::isSecondIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==1;
+}
+
+bool exahype::State::isLastIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-1;
+}
+
+bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-2;
 }
 
 exahype::State::State() : Base() {

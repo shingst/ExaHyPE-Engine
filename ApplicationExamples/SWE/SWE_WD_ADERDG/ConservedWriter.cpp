@@ -18,6 +18,14 @@ SWE::ConservedWriter::ConservedWriter(exahype::solvers::LimitingADERDGSolver&  s
 SWE::ConservedWriter::~ConservedWriter() {
 }
 
+void SWE::ConservedWriter::writtenQuantitiesNames(char** name){
+  name[0]="h";
+  name[1]="hu";
+  name[2]="hv";
+  name[3]="water level";
+  name[4]="error";
+}
+
 void SWE::ConservedWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
 }

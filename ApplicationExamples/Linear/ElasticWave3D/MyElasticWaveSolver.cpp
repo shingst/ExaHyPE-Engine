@@ -28,8 +28,7 @@ tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveS
 void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
   initPointSourceLocations(cmdlineargs,constants);
-  amr_balanced = constants.getValueAsBool ("amr_balanced");
-  amr_distance_from_surface = constants.getValueAsDouble("amr_distance_from_surface");
+  amr_regularization = constants.getValueAsBool ("amr_regularization");
 }
 
 void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
@@ -126,10 +125,10 @@ exahype::solvers::Solver::RefinementControl Elastic::MyElasticWaveSolver::refine
   }
 
   double refined_domain;
-  if(amr_balanced){
-    refined_domain = amr_distance_from_surface * getCoarsestMeshSize() + dx[1] * 0.5;
+  if(amr_regularization){
+    refined_domain = getCoarsestMeshSize();
   }else{
-    refined_domain = amr_distance_from_surface * getCoarsestMeshSize();
+    refined_domain = std::ceil(pointSourceLocation[0][1]/getCoarsestMeshSize())*getCoarsestMeshSize();
   }
 
   bool elementOnSurface = left_vertex[1] < refined_domain;

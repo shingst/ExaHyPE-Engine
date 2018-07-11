@@ -40,6 +40,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
         self.context["gemm_gradQ_y"] = gemmName+"_gradQ_y"
         self.context["gemm_gradQ_z"] = gemmName+"_gradQ_z"
         self.context["nVarMinusOne_seq"] = range(self.context["nVar"] - 1)
+        self.context["nDataMinusOne_seq"] = range(self.context["nData"] - 1)
         
         if(self.context["isLinear"]):
             self.context["ncpOutputShift"] = self.controller.getSizeWithPadding(self.context["nVar"]*self.context["nDim"]) #shift used to split the tmpArray into input and output for NCP
@@ -514,7 +515,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # LDB
                                             self.context["nDofPad"], \
                                             # LDC
-                                            self.context["nVarPad"] * self.context["nDim"] * self.context["nDof"], \
+                                            self.context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -541,7 +542,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # LDB
                                             self.context["nDofPad"], \
                                             # LDC
-                                            self.context["nVarPad"] * self.context["nDim"] * (self.context["nDof"] ** 2), \
+                                            self.context["nVarPad"] * self.context["nDof"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -569,7 +570,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # LDB
                                                 self.context["nDofPad"], \
                                                 # LDC
-                                                self.context["nVarPad"] * self.context["nDim"] * (self.context["nDof"] ** 3), \
+                                                self.context["nVarPad"] * (self.context["nDof"] ** 2), \
                                                 # alpha
                                                 1,                         \
                                                 # beta

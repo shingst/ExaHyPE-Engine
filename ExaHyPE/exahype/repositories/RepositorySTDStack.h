@@ -23,7 +23,7 @@
  #include "exahype/adapters/InitialPrediction.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
- #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
+ #include "exahype/adapters/BroadcastAndRestrictLimiterStatus.h" 
  #include "exahype/adapters/LimiterStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
  #include "exahype/adapters/GlobalRollback.h" 
@@ -62,7 +62,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::InitialPrediction> _gridWithInitialPrediction;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FusedTimeStep> _gridWithFusedTimeStep;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionRerun> _gridWithPredictionRerun;
-    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::BroadcastAndDropNeighbourMessages> _gridWithBroadcastAndDropNeighbourMessages;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::BroadcastAndRestrictLimiterStatus> _gridWithBroadcastAndRestrictLimiterStatus;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::LimiterStatusSpreading> _gridWithLimiterStatusSpreading;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionOrLocalRecomputation> _gridWithPredictionOrLocalRecomputation;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::GlobalRollback> _gridWithGlobalRollback;
@@ -80,7 +80,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureInitialPredictionCPUTime;
     tarch::timing::Measurement _measureFusedTimeStepCPUTime;
     tarch::timing::Measurement _measurePredictionRerunCPUTime;
-    tarch::timing::Measurement _measureBroadcastAndDropNeighbourMessagesCPUTime;
+    tarch::timing::Measurement _measureBroadcastAndRestrictLimiterStatusCPUTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCPUTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCPUTime;
     tarch::timing::Measurement _measureGlobalRollbackCPUTime;
@@ -95,7 +95,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureInitialPredictionCalendarTime;
     tarch::timing::Measurement _measureFusedTimeStepCalendarTime;
     tarch::timing::Measurement _measurePredictionRerunCalendarTime;
-    tarch::timing::Measurement _measureBroadcastAndDropNeighbourMessagesCalendarTime;
+    tarch::timing::Measurement _measureBroadcastAndRestrictLimiterStatusCalendarTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCalendarTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCalendarTime;
     tarch::timing::Measurement _measureGlobalRollbackCalendarTime;
@@ -148,7 +148,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToInitialPrediction();    
     virtual void switchToFusedTimeStep();    
     virtual void switchToPredictionRerun();    
-    virtual void switchToBroadcastAndDropNeighbourMessages();    
+    virtual void switchToBroadcastAndRestrictLimiterStatus();    
     virtual void switchToLimiterStatusSpreading();    
     virtual void switchToPredictionOrLocalRecomputation();    
     virtual void switchToGlobalRollback();    
@@ -163,7 +163,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterInitialPrediction() const;
     virtual bool isActiveAdapterFusedTimeStep() const;
     virtual bool isActiveAdapterPredictionRerun() const;
-    virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const;
+    virtual bool isActiveAdapterBroadcastAndRestrictLimiterStatus() const;
     virtual bool isActiveAdapterLimiterStatusSpreading() const;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const;
     virtual bool isActiveAdapterGlobalRollback() const;

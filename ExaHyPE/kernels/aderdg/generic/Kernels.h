@@ -97,6 +97,19 @@ template <bool useSourceOrNCP, bool useFlux, bool noTimeAveraging, int numberOfV
 void volumeIntegralNonlinear(double* lduh, const double* const lFi,
                              const tarch::la::Vector<DIMENSIONS, double>& dx);
 
+template <int numberOfVariables, int basisSize>
+void faceIntegralNonlinear(
+    double *lduh, const double *const lFhbnd,
+    const int direction, const int orientation,
+    const tarch::la::Vector<DIMENSIONS, double> &dx);
+
+template <int numberOfVariables, int basisSize>
+void faceIntegralLinear(
+    double *lduh, const double *const lFhbnd,
+    const int direction, const int orientation,
+    const tarch::la::Vector<DIMENSIONS, double> &dx);
+
+
 // todo 10/02/16: Dominic
 // Keep only one surfaceIntegral.
 template <int numberOfVariables, int basisSize>
@@ -131,7 +144,7 @@ void riemannSolverNonlinear(
     double* FL, double* FR, const double* const QL,
     const double* const QR,
     const double dt,
-    const int normalNonZero);
+    const int direction);
 
 template <typename SolverType>
 void boundaryConditions(
@@ -141,7 +154,7 @@ void boundaryConditions(
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
     const double t, const double dt, const int faceIndex,
-    const int normalNonZero);
+    const int direction);
 
 
 template <typename SolverType>
@@ -159,9 +172,19 @@ void faceUnknownsProlongation(
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS - 1, int>& subfaceIndex);
 
+
+template <int numberOfVariables,int basisSize>
+void faceUnknownsRestriction(
+    double* const       lFhbndCoarse,
+    const double* const lFhbndFine,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+    const int levelDelta);
+
 /**
  * \note We need to consider material parameters in
  * lQhbndFine and lQhbndCoarse.
+ *
+ * @\deprecated
  */
 template <int numberOfVariables,int numberOfParameters,int basisSize>
 void faceUnknownsRestriction(
@@ -223,6 +246,8 @@ void deltaDistribution(
 #include "kernels/aderdg/generic/c/2d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/stableTimeStepSize.cpph"
 #include "kernels/aderdg/generic/c/2d/deltaDistribution.cpph"
+#include "kernels/aderdg/generic/c/2d/faceIntegralLinear.cpph"
+#include "kernels/aderdg/generic/c/2d/faceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/surfaceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralLinear.cpph"
@@ -238,6 +263,8 @@ void deltaDistribution(
 #include "kernels/aderdg/generic/c/3d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/stableTimeStepSize.cpph"
 #include "kernels/aderdg/generic/c/3d/deltaDistribution.cpph"
+#include "kernels/aderdg/generic/c/3d/faceIntegralLinear.cpph"
+#include "kernels/aderdg/generic/c/3d/faceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/surfaceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralLinear.cpph"
@@ -319,7 +346,7 @@ void surfaceIntegralNonlinear(double* lduh, const double* const lFbnd,
 
 template <int numberOfVariables, int basisSize>
 void surfaceIntegralLinear(double* lduh, const double* const lFbnd,
-                           const tarch::la::Vector<DIMENSIONS, double>& dx);
+                            const tarch::la::Vector<DIMENSIONS, double>& dx); 
 
 /*void surfaceIntegral2(
     double* lduh,
@@ -346,7 +373,7 @@ void riemannSolverNonlinear(
     double* FL, double* FR, const double* const QL,
     const double* const QR,
     const double dt,
-    const int normalNonZero);
+    const int direction);
 
 template <typename SolverType>
 void riemannSolverLinear(
@@ -354,7 +381,7 @@ void riemannSolverLinear(
     double* FL, double* FR,
     const double* const QL, const double* const QR,
     const double dt,
-    const int normalNonZero);
+    const int direction);
 
 
 template <typename SolverType>
