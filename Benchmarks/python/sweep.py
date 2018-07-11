@@ -605,11 +605,21 @@ def generateScripts():
                                         
                                         if "likwid" in general:
                                             groups = sweep_options.parseList(general["likwid"])
+                                            likwid_pin_arg = int(myCores.split(":")[0]) - 1
+                                            if likwid_pin_arg == 0:
+                                                likwid_pin_arg = str(likwid_pin_arg)
+                                            else:
+                                                likwid_pin_arg = "0-"+str(likwid_pin_arg) # e.g. 0-7 pins likwid to cores 0-7 
                                             for group in groups:
-                                                if "./"==runCommand:
-                                                    jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n" 
-                                                else:
-                                                    jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n"
+                                                likwidCommand = "{runCommand} likwid-perfctr -f -C {likwid_pin_arg} -g {group} {executable} {specFilePath} >> {outputFilePath}.likwid\n"
+                                                jobScriptBody += likwidCommand.format(
+                                                    runCommand=runCommand,
+                                                    likwid_pin_arg=likwid_pin_arg,
+                                                    group=group,
+                                                    executable=executable,
+                                                    specFilePath=specFilePath,
+                                                    outputFilePath=outputFilePath
+                                                )
                                         jobScriptBody += "\n" 
                             
                             # write job file
