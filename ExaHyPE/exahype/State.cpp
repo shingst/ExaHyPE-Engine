@@ -208,8 +208,8 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 
 bool exahype::State::continueToConstructGrid() const {
 #ifdef Parallel
-  return _stateData.getMaxRefinementLevelAllowed()>=-3;
+  return _stateData.getMaxRefinementLevelAllowed()>=-3 && _stateData.getMeshRefinementHasConverged();
 #else
-  return !isGridBalanced();
+  return !isGridBalanced() && _stateData.getMeshRefinementHasConverged();
 #endif
 }
