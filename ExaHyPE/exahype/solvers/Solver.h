@@ -742,6 +742,16 @@ class exahype::solvers::Solver {
   static int getCoarsestMeshLevelOfAllSolvers();
 
   /**
+   * Returns the finest mesh level where a solver
+   * has his uniform mesh.
+   *
+   * \note It is very important that initSolvers
+   * has been called on all solvers before this
+   * method is used.
+   */
+  static int getFinestUniformMeshLevelOfAllSolvers();
+
+  /**
    * Returns the coarsest mesh size a solver is actually
    * using.
    *
@@ -764,7 +774,7 @@ class exahype::solvers::Solver {
    * has been called on all solvers before this
    * method is used.
    */
-  static int getMaxAdaptiveRefinementDepthOfAllSolvers();
+  static int getMaximumAdaptiveMeshDepthOfAllSolvers();
 
   /**
    * Loop over the solver registry and check if no solver
