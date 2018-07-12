@@ -78,19 +78,6 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver
   return _solver->getMeshUpdateEvent();
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateNextAttainedStableState(const bool& attainedStableState)  {
-  _solver->updateNextAttainedStableState(attainedStableState);
-}
-bool exahype::solvers::LimitingADERDGSolver::getNextAttainedStableState() const  {
-  return _solver->getNextAttainedStableState();
-}
-bool exahype::solvers::LimitingADERDGSolver::getAttainedStableState() const  {
-  return _solver->getAttainedStableState();
-}
-void exahype::solvers::LimitingADERDGSolver::setNextAttainedStableState()  {
-  _solver->setNextAttainedStableState();
-}
-
 double exahype::solvers::LimitingADERDGSolver::getMinTimeStamp() const {
   return _solver->getMinTimeStamp();
 }
