@@ -129,6 +129,9 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
 
 void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
   _localState = solverState;
+    
+
+   //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
   // stability check
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
@@ -146,11 +149,8 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     StillInRefiningMode = false;
   }
   // reset
-  _allSolversAttainedStableState = true;
-  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
-    solverState.setAllSolversAttainedStableStateInPreviousIteration(true);
-    solverState.setVerticalExchangeOfSolverDataRequired(false);
-  }
+  _allSolversAttainedStableState        = true;
+  _verticalExchangeOfSolverDataRequired = false;
   
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -171,17 +171,13 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   logTraceInWith1Argument("endIteration(State)", solverState);
 
   // update the solver state
-  solverState.setAllSolversAttainedStableStateInPreviousIteration(
-      solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
-      _allSolversAttainedStableState);  // merge the local values
-  solverState.setVerticalExchangeOfSolverDataRequired(
-      solverState.getVerticalExchangeOfSolverDataRequired() ||
-      _verticalExchangeOfSolverDataRequired);
-//  logInfo("endIteration(...)","_attainedStableState="<<_allSolversAttainedStableState);
-//  logInfo("endIteration(...)","StillInRefiningMode="<<StillInRefiningMode);
-//  logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
-//  logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
-//  logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
+  solverState.setAllSolversAttainedStableStateInPreviousIteration(_allSolversAttainedStableState);  // merge the local values
+  solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
+  // logInfo("endIteration(...)","_attainedStableState="<<_allSolversAttainedStableState);
+  // logInfo("endIteration(...)","StillInRefiningMode="<<StillInRefiningMode);
+  // logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
+  // logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
+  // logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     #ifndef TrackGridStatistics
     #error Compiler flag TrackGridStatistics must be defined!
@@ -777,7 +773,8 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
   logTraceIn( "mergeWithMaster(...)" );
 
   // Merge global solver states
-  masterState.mergeWithMaster(workerState);
+  _allSolversAttainedStableState        &= workerState.getAllSolversAttainedStableStateInPreviousIteration();
+  _verticalExchangeOfSolverDataRequired |= workerState.getVerticalExchangeOfSolverDataRequired();
 
   if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getCellSize()) ) {
     if ( fineGridCell.isInitialised() ) {
