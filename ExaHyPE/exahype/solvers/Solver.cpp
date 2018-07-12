@@ -769,7 +769,7 @@ double exahype::solvers::Solver::convertToDouble(const MeshUpdateEvent& meshUpda
 
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::convertToMeshUpdateEvent(const double value) {
   assertion((int) std::round(value)>=static_cast<int>(MeshUpdateEvent::None));
-  assertion((int) std::round(value)<=static_cast<int>(MeshUpdateEvent::RefinementRequested));
+  assertion((int) std::round(value)<=static_cast<int>(MeshUpdateEvent::InitialRefinementRequested));
   return static_cast<MeshUpdateEvent>((int) std::round(value));
 }
 
