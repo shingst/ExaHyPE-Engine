@@ -541,14 +541,6 @@ public:
   void setNextMeshUpdateEvent() override;
   MeshUpdateEvent getMeshUpdateEvent() const override;
 
-  /**
-   * Wire through to the ADER-DG solver.
-   */
-  void updateNextAttainedStableState(const bool& attainedStableState) final override;
-  bool getNextAttainedStableState() const final override;
-  bool getAttainedStableState() const final override;
-  void setNextAttainedStableState() final override;
-
   /*
    * A time stamp minimised over all the ADERDG and FV solver
    * patches.
