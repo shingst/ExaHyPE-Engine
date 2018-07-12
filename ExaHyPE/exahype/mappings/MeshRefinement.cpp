@@ -142,16 +142,13 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       _stableIterationsInARow = 0;
     }
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>0 ) {
+  if ( StillInRefiningMode && _stableIterationsInARow>1 ) { // experimentally found
     StillInRefiningMode = false;
   }
   // reset
+  _allSolversAttainedStableState = true;
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
-    #ifndef TrackGridStatistics
-    #error Compiler flag TrackGridStatistics must be defined!
-    #endif
-    solverState.setAllSolversAttainedStableStateInPreviousIteration(
-        solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
+    solverState.setAllSolversAttainedStableStateInPreviousIteration(true);
     solverState.setVerticalExchangeOfSolverDataRequired(false);
   }
   
@@ -176,16 +173,25 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   // update the solver state
   solverState.setAllSolversAttainedStableStateInPreviousIteration(
       solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
-      _allSolversAttainedStableState); // merge the local values
+      _allSolversAttainedStableState);  // merge the local values
   solverState.setVerticalExchangeOfSolverDataRequired(
       solverState.getVerticalExchangeOfSolverDataRequired() ||
       _verticalExchangeOfSolverDataRequired);
-  if (
-      tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() &&
-      solverState.getAllSolversAttainedStableStateInPreviousIteration() // it's actually the currently finishing iteration
-  ) {
+//  logInfo("endIteration(...)","_attainedStableState="<<_allSolversAttainedStableState);
+//  logInfo("endIteration(...)","StillInRefiningMode="<<StillInRefiningMode);
+//  logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
+//  logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
+//  logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
+  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+    #ifndef TrackGridStatistics
+    #error Compiler flag TrackGridStatistics must be defined!
+    #endif
+    solverState.setAllSolversAttainedStableStateInPreviousIteration( // check if we actually reached the solver's grids 
+        solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
+        solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers()); // max level only available in endIteration(..>)
     solverState.setMeshRefinementHasConverged(
-      !StillInRefiningMode && _stableIterationsInARow > 1);
+      !StillInRefiningMode && _stableIterationsInARow > 1 && // experimentally found
+      solverState.getAllSolversAttainedStableStateInPreviousIteration() ); // it's actually the currently finishing iteration
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;

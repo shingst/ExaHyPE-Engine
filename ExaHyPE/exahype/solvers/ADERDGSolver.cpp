@@ -929,10 +929,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     const bool stillInRefiningMode) {
   bool newComputeCell = false;
 
-  if ( !stillInRefiningMode ) {
-    std::cout << "switched to erasing mode" << std::endl;
-  }
-
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -1628,7 +1624,7 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
   bool newComputeCell = false;
   switch (fineGridCellDescription.getRefinementEvent()) {
     case CellDescription::RefinementEvent::ErasingChildrenRequested:
-      logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren started");
+      //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren started");
       fineGridCellDescription.setType(CellDescription::Type::Cell);
       fineGridCellDescription.setAugmentationStatus(0);
       fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
@@ -1639,7 +1635,7 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
       break;
     case CellDescription::RefinementEvent::ErasingChildren:
-      logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
+      //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
       fineGridCellDescription.setRefinementStatus(Pending);
       newComputeCell = true;
