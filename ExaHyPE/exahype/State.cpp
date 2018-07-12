@@ -64,10 +64,39 @@ bool exahype::State::getVerticalExchangeOfSolverDataRequired() const {
   return _stateData.getVerticalExchangeOfSolverDataRequired();
 }
 
-void exahype::State::merge(const exahype::State& anotherState) {
-  setVerticalExchangeOfSolverDataRequired(
-      getVerticalExchangeOfSolverDataRequired() ||
-      anotherState.getVerticalExchangeOfSolverDataRequired());
+/**
+ * \see exahype/State.def
+ */
+void exahype::State::setAllSolversAttainedStableStateInPreviousIteration(const bool state) {
+  _stateData.setAllSolversAttainedStableStateInPreviousIteration(state);
+}
+/**
+ * \see exahype/State.def
+ */
+bool exahype::State::getAllSolversAttainedStableStateInPreviousIteration() const {
+  return _stateData.getAllSolversAttainedStableStateInPreviousIteration();
+}
+
+/**
+ * \see exahype/State.def
+ */
+void exahype::State::setMeshRefinementHasConverged(const bool state) {
+  _stateData.setMeshRefinementHasConverged(state);
+}
+/**
+ * \see exahype/State.def
+ */
+bool exahype::State::getMeshRefinementHasConverged() const {
+  return _stateData.getMeshRefinementHasConverged();
+}
+
+void exahype::State::mergeWithMaster(const exahype::State& anotherState) {
+  _stateData.setVerticalExchangeOfSolverDataRequired(
+      _stateData.getVerticalExchangeOfSolverDataRequired() ||
+      anotherState._stateData.getVerticalExchangeOfSolverDataRequired());
+  _stateData.setAllSolversAttainedStableStateInPreviousIteration(
+      _stateData.getAllSolversAttainedStableStateInPreviousIteration() ||
+      anotherState._stateData.getAllSolversAttainedStableStateInPreviousIteration());
 }
 
 void exahype::State::writeToCheckpoint(

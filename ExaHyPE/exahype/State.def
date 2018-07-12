@@ -3,6 +3,7 @@ Packed-Type: short int;
 class exahype::dastgen::State {    
   /**
    * Consult Peano guidebook Section 6.3.2
+   * "Incremental, slow decomposition with ranks running out of memory"
    */
   persistent parallelise int maxRefinementLevelAllowed;
   
@@ -16,4 +17,16 @@ class exahype::dastgen::State {
    * admissible time step sizes. 
    */
   persistent parallelise bool verticalExchangeOfSolverDataRequired;
+  
+  /**
+   * All solvers attained a stable state in the last mesh 
+   * refinement iteration.
+   */
+  persistent parallelise bool allSolversAttainedStableStateInPreviousIteration;
+  
+  /**
+   * Indicates the runner that the mesh refinement iterations (refining and erasing)
+   * have converged.
+   */
+  persistent bool meshRefinementHasConverged;
 };

@@ -726,9 +726,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
       "grid setup iteration #" << meshSetupIterations <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
-  );
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() );
   #endif
 
   #if !defined(Parallel)
@@ -755,12 +753,8 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while (
-    (
-      repository.getState().continueToConstructGrid() ||
-      exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
-    )
+    ( repository.getState().continueToConstructGrid() )
   ) {
-    exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
     repository.iterate(1,true);
     meshSetupIterations++;
 
