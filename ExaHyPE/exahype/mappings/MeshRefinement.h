@@ -81,16 +81,6 @@ private:
   int _stableIterationsInARow = 0;
 
   /**
-   * A value greater than 1 means that
-   * the adjacency maps of the vertices
-   * are up to date.
-   *
-   * We can the fall back to less costly lookups
-   * of adjacent cells from a vertex' point of view.
-   */
-  int _iterationsSinceLastErasing = 0;
-
-  /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
    * for any of the registered solvers.

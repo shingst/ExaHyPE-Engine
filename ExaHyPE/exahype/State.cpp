@@ -95,7 +95,7 @@ void exahype::State::mergeWithMaster(const exahype::State& anotherState) {
       _stateData.getVerticalExchangeOfSolverDataRequired() ||
       anotherState._stateData.getVerticalExchangeOfSolverDataRequired());
   _stateData.setAllSolversAttainedStableStateInPreviousIteration(
-      _stateData.getAllSolversAttainedStableStateInPreviousIteration() ||
+      _stateData.getAllSolversAttainedStableStateInPreviousIteration() &&
       anotherState._stateData.getAllSolversAttainedStableStateInPreviousIteration());
 }
 

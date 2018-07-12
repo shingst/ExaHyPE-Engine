@@ -115,7 +115,6 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
   _allSolversAttainedStableState(masterThread._allSolversAttainedStableState),
   _stableIterationsInARow(masterThread._stableIterationsInARow),
-  _iterationsSinceLastErasing(masterThread._iterationsSinceLastErasing),
   _localState(masterThread._localState) {
   // do nothing
 }
@@ -125,43 +124,37 @@ exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterTh
 void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
     const MeshRefinement& workerThread) {
   _allSolversAttainedStableState &= workerThread._allSolversAttainedStableState;
-  _iterationsSinceLastErasing     = std::min( _iterationsSinceLastErasing, workerThread._iterationsSinceLastErasing );
 }
 #endif
 
-void exahype::mappings::MeshRefinement::beginIteration(
-  exahype::State& solverState
-) {
+void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
   _localState = solverState;
 
-  _verticalExchangeOfSolverDataRequired = false;
   // stability check
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
-    _allSolversAttainedStableState = false;
-    _stableIterationsInARow        = 0;
-    _iterationsSinceLastErasing    = 2;
-    StillInRefiningMode            = true;
+    solverState.setAllSolversAttainedStableStateInPreviousIteration(false);
+    _stableIterationsInARow = 0;
+    StillInRefiningMode     = true;
   } else {
-    #ifndef TrackGridStatistics
-    #error Compiler flag TrackGridStatistics must be defined!
-    #endif
-    _allSolversAttainedStableState =
-        solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers();
     if ( solverState.getAllSolversAttainedStableStateInPreviousIteration() ) {
       _stableIterationsInARow++;
     } else {
       _stableIterationsInARow = 0;
     }
   }
-
   if ( StillInRefiningMode && _stableIterationsInARow>0 ) {
     StillInRefiningMode = false;
-    _iterationsSinceLastErasing = 0;
-  } else if ( StillInRefiningMode ) { // we can use cheap neighbour lookup as long as we are in refining mode
-    _iterationsSinceLastErasing = 2;
   }
-  _iterationsSinceLastErasing++;
-
+  // reset
+  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+    #ifndef TrackGridStatistics
+    #error Compiler flag TrackGridStatistics must be defined!
+    #endif
+    solverState.setAllSolversAttainedStableStateInPreviousIteration(
+        solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
+    solverState.setVerticalExchangeOfSolverDataRequired(false);
+  }
+  
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (solver->hasRequestedMeshRefinement()) {
@@ -182,16 +175,17 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
 
   // update the solver state
   solverState.setAllSolversAttainedStableStateInPreviousIteration(
-      solverState.getAllSolversAttainedStableStateInPreviousIteration() ||
-      _allSolversAttainedStableState);
+      solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
+      _allSolversAttainedStableState); // merge the local values
   solverState.setVerticalExchangeOfSolverDataRequired(
       solverState.getVerticalExchangeOfSolverDataRequired() ||
       _verticalExchangeOfSolverDataRequired);
   if (
       tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() &&
-      solverState.getAllSolversAttainedStableStateInPreviousIteration() // it's actually the current iteration
+      solverState.getAllSolversAttainedStableStateInPreviousIteration() // it's actually the currently finishing iteration
   ) {
-    solverState.setMeshRefinementHasConverged(_stableIterationsInARow > 3);
+    solverState.setMeshRefinementHasConverged(
+      !StillInRefiningMode && _stableIterationsInARow > 1);
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
@@ -235,7 +229,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
       fineGridH,
-      _iterationsSinceLastErasing < 1);
+      !StillInRefiningMode);
 
   if (
       _stableIterationsInARow <= 3 // Found experimentally
@@ -278,7 +272,7 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          _iterationsSinceLastErasing < 1)
+          !StillInRefiningMode)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -304,7 +298,7 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          _iterationsSinceLastErasing < 1)
+          !StillInRefiningMode)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -366,7 +360,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
-      _iterationsSinceLastErasing < 1
+      !StillInRefiningMode
       &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(
           fineGridVertices,fineGridVerticesEnumerator)
@@ -491,7 +485,6 @@ void exahype::mappings::MeshRefinement::enterCell(
     // shutdown metadata for empty cells (no cell descriptions)
     if ( fineGridCell.isEmpty() ) {
       fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
-      _iterationsSinceLastErasing = 0;
     }
   }
 
@@ -522,7 +515,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
               fineGridPositionOfCell,
               solverNumber);
 
-      _allSolversAttainedStableState |=
+      _allSolversAttainedStableState &=
           solver->attainedStableState(
               fineGridCell,
               fineGridVertices,
@@ -556,7 +549,6 @@ void exahype::mappings::MeshRefinement::destroyCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
     fineGridCell.shutdownMetaData();
-    _iterationsSinceLastErasing = 0;
   }
 }
 
@@ -855,7 +847,6 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
 
     if ( localCell.isInitialised() && localCell.getRankOfRemoteNode()==toRank ) { // isAsignedToRemoteRank does not work, remeber the halo sends
       localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
-      _iterationsSinceLastErasing=0;
     } 
   }
 

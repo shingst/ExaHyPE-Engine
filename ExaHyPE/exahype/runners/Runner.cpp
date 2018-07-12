@@ -750,9 +750,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
   repository.getState().setMeshRefinementHasConverged(false);
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
-  while (
-    ( repository.getState().continueToConstructGrid() )
-  ) {
+  while ( repository.getState().continueToConstructGrid() ) {
     repository.iterate(1,true);
     meshSetupIterations++;
 
