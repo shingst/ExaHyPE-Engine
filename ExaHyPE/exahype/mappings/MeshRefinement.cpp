@@ -113,26 +113,19 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
+  _allSolversAttainedStableState(masterThread._allSolversAttainedStableState),
   _stableIterationsInARow(masterThread._stableIterationsInARow),
   _iterationsSinceLastErasing(masterThread._iterationsSinceLastErasing),
-  _localState(masterThread._localState)
-{
-  initialiseLocalVariables();
+  _localState(masterThread._localState) {
+  // do nothing
 }
 #endif
 
 #if defined(SharedMemoryParallelisation)
 void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
     const MeshRefinement& workerThread) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (solver->hasRequestedMeshRefinement()) {
-      _attainedStableState[solverNumber] =
-          _attainedStableState[solverNumber] && workerThread._attainedStableState[solverNumber];
-    }
-  }
-
-  _iterationsSinceLastErasing = std::min( _iterationsSinceLastErasing, workerThread._iterationsSinceLastErasing );
+  _allSolversAttainedStableState &= workerThread._allSolversAttainedStableState;
+  _iterationsSinceLastErasing     = std::min( _iterationsSinceLastErasing, workerThread._iterationsSinceLastErasing );
 }
 #endif
 
@@ -146,7 +139,7 @@ void exahype::mappings::MeshRefinement::beginIteration(
   if ( exahype::mappings::MeshRefinement::IsFirstIteration ) {
     _allSolversAttainedStableState = false;
     _stableIterationsInARow        = 0;
-    _iterationsSinceLastErasing    = 2
+    _iterationsSinceLastErasing    = 2;
     StillInRefiningMode            = true;
   } else {
     #ifndef TrackGridStatistics

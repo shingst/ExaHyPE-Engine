@@ -140,10 +140,7 @@ void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& 
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if ( spreadRefinementStatus(solver) ) {
       solver->updateNextMeshUpdateEvent(_meshUpdateEvents[solverNumber]);
-      solver->updateNextAttainedStableState(
-          solver->getNextMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested);
       solver->setNextMeshUpdateEvent();
-      solver->setNextAttainedStableState();
     }
   }
 

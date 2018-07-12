@@ -161,7 +161,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         solvers::Solver::getMinTimeStampOfAllSolvers());
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      solver->setNextAttainedStableState();
       solver->setNextMeshUpdateEvent();
     }
 

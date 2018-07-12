@@ -229,11 +229,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   bool getVerticalExchangeOfSolverDataRequired() const;
 
   /**
-   * The maximum level of refinement in the tree.
-   */
-  int getMaxLevel();
-
-  /**
    * \see exahype/State.def
    */
   void setAllSolversAttainedStableStateInPreviousIteration(const bool state);

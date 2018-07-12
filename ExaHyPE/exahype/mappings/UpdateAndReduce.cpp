@@ -128,7 +128,6 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
       solvers::Solver::getMinTimeStampOfAllSolvers());
 
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    solver->setNextAttainedStableState();
     solver->setNextMeshUpdateEvent();
   }
 

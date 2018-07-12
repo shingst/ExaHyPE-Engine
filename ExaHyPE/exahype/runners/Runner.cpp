@@ -700,8 +700,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid()
   );
   #elif defined(Asserts)
   logInfo("createGrid()",
@@ -709,8 +708,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid()
   );
   #elif defined(TrackGridStatistics)
   logInfo("createGrid()",
@@ -718,8 +716,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", max-level=" << repository.getState().getMaxLevel() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid()
   );
   #else
   logInfo("createGrid()",
@@ -751,6 +748,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
+  repository.getState().setMeshRefinementHasConverged(false);
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
   while (
     ( repository.getState().continueToConstructGrid() )

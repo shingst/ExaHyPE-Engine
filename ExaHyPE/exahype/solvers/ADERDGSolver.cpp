@@ -929,6 +929,10 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     const bool stillInRefiningMode) {
   bool newComputeCell = false;
 
+  if ( !stillInRefiningMode ) {
+    std::cout << "switched to erasing mode" << std::endl;
+  }
+
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -1443,17 +1447,23 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         flaggingHasConverged &=
             std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
         flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1)       - cellDescription.getFacewiseRefinementStatus(2*d+0)) <= 2;
+            std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1)    - cellDescription.getFacewiseRefinementStatus(2*d+0))    <= 2;
       }
     }
 
     return
+        flaggingHasConverged
+        &&
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
-        (cellDescription.getType()!=CellDescription::Cell ||
-        cellDescription.getRefinementStatus()!=Pending)
+        (cellDescription.getType()!=CellDescription::Cell || // cell must have pending refinement status and must not require refinement
+          (cellDescription.getRefinementStatus()!=Pending &&
+          (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
+          cellDescription.getRefinementStatus()!=_refineOrKeepOnFineGrid)))
         &&
-        flaggingHasConverged;
+        (cellDescription.getType()!=CellDescription::Descendant || // descendant must not have refinement status on finest level  > 0
+         cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
+          cellDescription.getRefinementStatus()<=0);
   } else {
     return true;
   }
