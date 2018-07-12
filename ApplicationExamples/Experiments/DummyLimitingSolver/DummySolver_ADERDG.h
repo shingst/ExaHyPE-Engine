@@ -28,7 +28,7 @@ class Dummy::DummySolver_ADERDG : public Dummy::AbstractDummySolver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    DummySolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    DummySolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.

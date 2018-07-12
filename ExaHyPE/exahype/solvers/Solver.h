@@ -295,11 +295,6 @@ namespace exahype {
       const tarch::la::Vector<DIMENSIONS,int>& dest);
 
   /**
-   * TODO(Dominic): Add docu.
-   */
-  MetadataHeap::HeapEntries gatherMasterWorkerCommunicationMetadata(const int cellDescriptionsIndex);
-
-  /**
    * Send metadata to rank \p toRank.
    */
   void sendNeighbourCommunicationMetadata(
@@ -322,39 +317,10 @@ namespace exahype {
       const int                                   level);
 
   /**
-   * Send metadata to rank \p toRank.
-   */
-  void sendMasterWorkerCommunicationMetadata(
-      const int                                   toRank,
-      const int                                   cellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-
-  /**
-   * Receive metadata to rank \p toRank.
-   *
-   * \return The index of the received metadata message
-   * on the exahype::MetadataHeap.
-   */
-  int receiveMasterWorkerCommunicationMetadata(
-      const int                                   fromRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-
-  /**
    * Send a metadata sequence filled with InvalidMetadataEntry
    * to rank \p toRank.
    */
   void sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
-      const int                                   toRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level);
-
-  /**
-   * Send a metadata sequence filled with InvalidMetadataEntry
-   * to rank \p toRank.
-   */
-  void sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
       const int                                   toRank,
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const int                                   level);
@@ -378,69 +344,6 @@ namespace exahype {
      * it is instantiated in the corresponding cpp file.
      */
     extern std::vector<Solver*> RegisteredSolvers;
-
-    /**
-     * The limiter domain change that was detected after a solution
-     * update or during the limiter status spreading.
-     */
-    enum class LimiterDomainChange {
-      /**
-       * A regular change of the limiter domain
-       * has occurred. This might be either no change at
-       * all or a situation where a cell directly next to a
-       * troubled cell has been newly marked as troubled.
-       */
-      Regular,
-
-      /**
-       * A cell which is not directly next to a troubled cell
-       * has newly been marked as troubled.
-       * The cell and all its neighbours with Limiter-Status other than Ok,
-       * are on the finest mesh level.
-       *
-       * <h2>Consequences</h2>
-       * Usually, only a limiter status spreading, reinitialisation
-       * and recomputation is necessary.
-       *
-       * However, if we further detect a cell of type Descendant/EmptyDescendant
-       * marked with LimiterStatus other than Ok on the finest mesh level,
-       * this status will change to IrregularChangeOnCoarserMeshLevel.
-       */
-      Irregular,
-
-      /**
-       * Scenario 1:
-       * A cell which is not directly next to a troubled cell
-       * has newly been marked as troubled.
-       * The cell is not on the finest mesh level.
-       *
-       * Scenario 2:
-       * A cell of type Descendant/EmptyDescendant
-       * was marked with LimiterStatus other than Ok.
-       * The cell is on the finest mesh level.
-       *
-       * <h2>Consequences</h2>
-       * The runner must then refine the mesh accordingly, and perform a
-       * rollback in all cells to the previous solution. It computes
-       * a new time step size in all cells. Next, it recomputes the predictor in all
-       * cells, troubled or not. Finally, it reruns the whole ADERDG time step in
-       * all cells, troubled or not.
-       *
-       * This can potentially be relaxed for anarchic time stepping where
-       * each cell has its own time step size and stamp.
-       */
-      IrregularRequiringMeshUpdate,
-    };
-
-    /**
-     * Converts LimiterDomainChange to its double equivalent.
-     */
-    double convertToDouble(const LimiterDomainChange& limiterDomainChange);
-
-    /**
-     * Converts a double to a LimiterDomainChange.
-     */
-    LimiterDomainChange convertToLimiterDomainChange(const double value);
   }
 }
 
@@ -615,13 +518,89 @@ class exahype::solvers::Solver {
    */
   enum class RefinementControl { Keep = 0, Refine = 1, Erase = 2 };
 
+
   /**
-   * TODO(Dominic): Add docu.
+   * The limiter domain change that was detected after a solution
+   * update or during the limiter status spreading.
+   */
+  enum class MeshUpdateEvent {
+    /**
+     * A regular change of the limiter domain
+     * has occurred. This might be either no change at
+     * all or a situation where a cell directly next to a
+     * troubled cell has been newly marked as troubled.
+     */
+    None,
+
+    /**
+     * The limiter domain of this solver changed in an irregular
+     * fashion, i.e. a troubled cell appeared suddenly.
+     * Its appearance was not anticipated
+     *
+     * During the consequent refinement
+     * status spreading, if we observe that
+     * we also need to update the mesh,
+     * this event is changed to RefinementRequested.
+     */
+    IrregularLimiterDomainChange,
+
+    /**
+     * Scenario 1:
+     * A cell which is not directly next to a troubled cell
+     * has newly been marked as troubled.
+     * The cell is not on the finest mesh level.
+     *
+     * Scenario 2:
+     * A cell of type Descendant/EmptyDescendant
+     * was marked with LimiterStatus other than Ok.
+     * The cell is on the finest mesh level.
+     *
+     * <h2>Consequences</h2>
+     * The runner must then refine the mesh accordingly, and perform a
+     * rollback in all cells to the previous solution. It computes
+     * a new time step size in all cells. Next, it recomputes the predictor in all
+     * cells, troubled or not. Finally, it reruns the whole ADERDG time step in
+     * all cells, troubled or not.
+     *
+     * This can potentially be relaxed for anarchic time stepping where
+     * each cell has its own time step size and stamp.
+     */
+    RefinementRequested,
+
+    /**
+     * The initial mesh will be created.
+     */
+    InitialRefinementRequested
+  };
+
+  /**
+   * \return String representation of the meshUpdateEvent.
+   */
+  static std::string toString(const MeshUpdateEvent& meshUpdateEvent);
+
+  /**
+   * Converts LimiterDomainChange to its double equivalent.
+   */
+  static double convertToDouble(const MeshUpdateEvent& meshUpdateEvent);
+
+  /**
+   * Converts a double to a LimiterDomainChange.
+   */
+  static MeshUpdateEvent convertToMeshUpdateEvent(const double value);
+
+  /**
+   * \return the larger (cast to int) value of both events.
+   */
+  static MeshUpdateEvent mergeMeshUpdateEvents(
+      const MeshUpdateEvent meshUpdateEvent1,const MeshUpdateEvent meshUpdateEvent2);
+
+  /**
+   * This struct is returned after the update or fusedTimeStep
+   * methods are run.
    */
   typedef struct UpdateResult {
     double _timeStepSize                     = std::numeric_limits<double>::max();
-    LimiterDomainChange _limiterDomainChange = LimiterDomainChange::Regular;
-    bool _refinementRequested                = false;
+    MeshUpdateEvent _meshUpdateEvent         = MeshUpdateEvent::None;
 
     UpdateResult() {}
   } UpdateResult;
@@ -763,6 +742,16 @@ class exahype::solvers::Solver {
   static int getCoarsestMeshLevelOfAllSolvers();
 
   /**
+   * Returns the finest mesh level where a solver
+   * has his uniform mesh.
+   *
+   * \note It is very important that initSolvers
+   * has been called on all solvers before this
+   * method is used.
+   */
+  static int getFinestUniformMeshLevelOfAllSolvers();
+
+  /**
    * Returns the coarsest mesh size a solver is actually
    * using.
    *
@@ -785,7 +774,7 @@ class exahype::solvers::Solver {
    * has been called on all solvers before this
    * method is used.
    */
-  static int getMaxAdaptiveRefinementDepthOfAllSolvers();
+  static int getMaximumAdaptiveMeshDepthOfAllSolvers();
 
   /**
    * Loop over the solver registry and check if no solver
@@ -798,18 +787,7 @@ class exahype::solvers::Solver {
    * Loop over the solver registry and check if one
    * of the solvers has requested a mesh update.
    */
-  static bool oneSolverRequestedMeshUpdate();
-
-  /**
-   * Loop over the solver registry and check if one
-   * of the solver's mesh refinement has not
-   * attained a stable state yet.
-   *
-   * TODO(Dominic): Make this a state attribute since
-   * we do not need to know which particular solver
-   * did not attain a stable state.
-   */
-  static bool oneSolverHasNotAttainedStableState();
+  static bool oneSolverRequestedMeshRefinement();
 
   /**
    * Returns true if one of the solvers used a time step size
@@ -819,6 +797,38 @@ class exahype::solvers::Solver {
    * oneSolverHasNotAttainedStableState.
    */
   static bool oneSolverViolatedStabilityCondition();
+
+  /*
+   * Check if a solver requested limiter status spreading.
+   * Such a request might stem from a limiting ADERDGSolver which
+   * has requested mesh refinement or a local
+   * or global recomputation.
+   */
+  static bool oneSolverRequestedRefinementStatusSpreading();
+
+  /*
+   * Check if a solver requested local recomputation
+   * recomputation.
+   */
+  static bool oneSolverRequestedLocalRecomputation();
+
+  /*
+   * Check if a solver requested either global
+   * recomputation.
+   */
+  static bool oneSolverRequestedGlobalRecomputation();
+
+  /**
+   * Loops over all registered LimitingADERDGSolver instances
+   * and determines the maximum value of their
+   * minimum limiter status for a troubled cell.
+   *
+   * This value determines how long we have to perform
+   * limiter status spreading.
+   *
+   * The minimum possible return value is three.
+   */
+  static int getMaxRefinementStatus();
 
   /**
    * Weights the min next predictor time step size
@@ -837,7 +847,7 @@ class exahype::solvers::Solver {
   /**
    * Starts a new time step on all solvers.
    *
-   * \param[in] meshUpdateRequests   flags for each solver indicating if a mesh update is necessary.
+   * \param[in] meshUpdateEvents     flags for each solver indicating if a mesh or limiter domain update is necessary.
    * \param[in] limiterDomainChanges flags for each solver indicating if the limiter domain has changed.
    * \param[in] minTimeStepSizes     the minimum CFL-stable time step size for all solvers.
    * \param[in] minCellSizes         the minimum cell size found in the grid for each solver.
@@ -849,8 +859,7 @@ class exahype::solvers::Solver {
   static void startNewTimeStepForAllSolvers(
       const std::vector<double>& minTimeStepSizes,
       const std::vector<int>& maxLevels,
-      const std::vector<bool>& meshUpdateRequests,
-      const std::vector<exahype::solvers::LimiterDomainChange>& limiterDomainChanges,
+      const std::vector<exahype::solvers::Solver::MeshUpdateEvent>& meshUpdateEvents,
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
@@ -979,58 +988,20 @@ class exahype::solvers::Solver {
    */
   std::unique_ptr<profilers::Profiler> _profiler;
 
+
+ private:
   /**
-   * Flag indicating if a mesh update was
-   * requested by this solver.
-   *
-   * This is the state after the
-   * time step size computation.
-   *
-   * <h2>MPI</h2>
-   * This is the state after this rank's
-   * solver has merged its state
-   * with its workers' worker.
+   * A flag indicating that the limiter domain has changed.
+   * This might be the case if either a cell has been
+   * newly marked as troubled or healed.
    */
-  bool _meshUpdateRequest;
+  MeshUpdateEvent _meshUpdateEvent;
 
   /**
-   * Flag indicating if a mesh update was
-   * requested by this solver.
-   *
-   * This is the state before the
-   * time step size computation.
-   *
-   * <h2>MPI</h2>
-   * This is the state before this rank's
-   * solver has merged its state
-   * with its workers' solver.
+   * The limiterDomainHasChanged for the next
+   * iteration.
    */
-  bool _nextMeshUpdateRequest;
-
-  /**
-   * Flag indicating if the mesh refinement
-   * performed by this solver attained a stable state.
-   *
-   * <h2>MPI</h2>
-   * This is the state after this rank's
-   * solver has merged its state
-   * with its workers' worker.
-   */
-  bool _attainedStableState;
-
-  /**
-   * Flag indicating if the mesh refinement
-   * performed by this solver attained a stable state.
-   *
-   * This is the state before the
-   * time step size computation.
-   *
-   * <h2>MPI</h2>
-   * This is the state before this rank's
-   * solver has merged its state
-   * with its workers' solver.
-   */
-  bool _nextAttainedStableState;
+  MeshUpdateEvent _nextMeshUpdateEvent;
 
  public:
   Solver(const std::string& identifier, exahype::solvers::Solver::Type type,
@@ -1166,88 +1137,36 @@ class exahype::solvers::Solver {
 
   virtual void toString(std::ostream& out) const;
 
+  virtual bool hasRequestedMeshRefinement() const;
+
   /**
-   * Reset the mesh update flags.
+   * \return the mesh update event which will be set in
+   * the next iteration. (This value might change during an iteration.)
+   */
+  virtual  MeshUpdateEvent getNextMeshUpdateEvent() const;
+
+  /**
+   * \see mergeMeshUpdateEvents
+   */
+  virtual void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent);
+
+  /**
+   * Sets the _nextMeshUpdateEvent as this solver's
+   * current event. Furthermore resets the
+   * _nextMeshUpdateEvent variable.
+   */
+  virtual void setNextMeshUpdateEvent();
+  /**
+   * \return the currently set mesh update event.
+   */
+  virtual MeshUpdateEvent getMeshUpdateEvent() const;
+  
+  /**
+   * Overwrite the current mesh update event with the given value.
    *
-   * \deprecated
+   * Is used to set the master's value on a worker rank.
    */
-  virtual void resetMeshUpdateRequestFlags();
-
-  /**
-   * Update if a mesh update was requested by this solver.
-   *
-   * <h2>MPI</h2>
-   * This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual void updateNextMeshUpdateRequest(const bool& meshUpdateRequest);
-
-  /**
-   * Indicates if a mesh update was requested
-   * by this solver.
-   *
-   * <h2>MPI</h2>
-   * This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual bool getNextMeshUpdateRequest() const;
-
-  /**
-   * Indicates if a mesh update was requested
-   * by this solver.
-   *
-   * <h2>MPI</h2>
-   *This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual bool getMeshUpdateRequest() const;
-
-  /**
-   * Overwrite the _MeshUpdateRequest flag
-   * by the _nextMeshUpdateRequest flag.
-   * Reset the _nextMeshUpdateRequest flag
-   * to false;
-   */
-  virtual void setNextMeshUpdateRequest();
-
-  /**
-   * Update if the mesh refinement of this solver attained
-   * a stable state.
-   *
-   * <h2>MPI</h2>
-   * This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual void updateNextAttainedStableState(const bool& attainedStableState);
-
-  /**
-   * Indicates if the mesh refinement of this solver
-   * attained a stable state.
-   *
-   * <h2>MPI</h2>
-   * This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual bool getNextAttainedStableState() const;
-
-  /**
-   * Indicates if the mesh refinement of this solver
-   * attained a stable state.
-   *
-   * <h2>MPI</h2>
-   *This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual bool getAttainedStableState() const;
-
-  /**
-   * Overwrite the _attainedStableState flag
-   * by the _nextAttainedStableState flag.
-   * Reset the _nextAttainedStableState flag
-   * to false;
-   */
-  virtual void setNextAttainedStableState();
-
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent);
   /**
    * Run over all solvers and identify the minimal time stamp.
    */
@@ -1421,8 +1340,8 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
-      const int solverNumber) = 0;
+      const int  solverNumber,
+      const bool stillInRefiningMode) = 0;
 
   /**
    * Refinement routine that should be used for
@@ -1495,25 +1414,6 @@ class exahype::solvers::Solver {
   /////////////////////////////////////
   // CELL-LOCAL
   /////////////////////////////////////
-  /**
-   * Evaluate the refinement criterion after
-   * a solution update has been performed and
-   * the patch has been advanced in time.
-   *
-   * We currently only return true if a cell requested refinement.
-   * ExaHyPE might then stop the
-   * time stepping and update the mesh
-   * before continuing. Erasing is here not considered.
-   *
-   * \note Must be called after startNewTimeStep was called
-   *
-   * \return True if mesh refinement is requested.
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual bool evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
 
   /**
    * Compute and return a new admissible time step
@@ -1613,24 +1513,6 @@ class exahype::solvers::Solver {
   virtual void zeroTimeStepSizes(const int cellDescriptionsIndex, const int element) const = 0;
 
   /**
-    * Rollback to the previous time step, i.e,
-    * overwrite the time step size and time stamp
-    * fields of the cell description
-    * by previous values.
-    */
-   virtual void rollbackToPreviousTimeStep(
-       const int cellDescriptionsIndex,
-       const int solverElement) const = 0;
-
-   /*
-    * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
-    * but for the fused time stepping scheme.
-    */
-   virtual void rollbackToPreviousTimeStepFused(
-       const int cellDescriptionsIndex,
-       const int solverElement) const = 0;
-
-  /**
    * Impose initial conditions.
    *
    * \note Make sure to reset neighbour merge
@@ -1640,8 +1522,7 @@ class exahype::solvers::Solver {
    */
   void adjustSolutionDuringMeshRefinement(
       const int cellDescriptionsIndex,
-      const int element,
-      const bool isInitialMeshRefinement);
+      const int element);
 
   /**
    * Fuse algorithmic phases of the solvers.
@@ -1706,6 +1587,19 @@ class exahype::solvers::Solver {
           const int cellDescriptionsIndex,
           const int element,
           const bool isAtRemoteBoundary) = 0;
+
+  /**
+   * Go back to previous time step with
+   * time step data and solution.
+   *
+   * Keep the new refinement status.
+   *
+   * Allocate necessary new limiter patches.
+   */
+  virtual void rollbackSolutionGlobally(
+         const int cellDescriptionsIndex,
+         const int element,
+         const bool fusedTimeStepping) const = 0;
 
   /**
    * Explicitly ask the solver to compress
@@ -1952,7 +1846,6 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) = 0;
 
   /**
@@ -1982,8 +1875,7 @@ class exahype::solvers::Solver {
    */
   virtual void progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) = 0;
+      const int receivedCellDescriptionsIndex, const int receivedElement) = 0;
 
   /**
    * Finish erasing operations on the worker side and
@@ -2009,7 +1901,8 @@ class exahype::solvers::Solver {
       const int localElement,
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) = 0;
+      const int                                    level,
+      const bool                                   stillInRefiningMode) = 0;
 
   /**
    * If a cell description was allocated at heap address \p cellDescriptionsIndex
@@ -2122,14 +2015,6 @@ class exahype::solvers::Solver {
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
-
-  /**
-   * Merge with the workers mesh update flags.
-   *
-   * \see exahype::solvers::Solver::mergeWithWorkerMeshUpdateFlags,
-   * exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMeshUpdateFlags
-   */
-  void mergeWithWorkerMeshUpdateFlags(const DataHeap::HeapEntries& message);
 
   /**
    * Merge with the workers mesh update flags.

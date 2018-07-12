@@ -83,7 +83,7 @@ private:
   static tarch::logging::Log _log;
 
 public:
-  EulerSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+  EulerSolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
 
   /**
    * Initialise the solver.

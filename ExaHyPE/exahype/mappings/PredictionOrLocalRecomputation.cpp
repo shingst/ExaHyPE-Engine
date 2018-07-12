@@ -71,7 +71,7 @@ peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
   if (
       exahype::solvers::Solver::FuseADERDGPhases &&
-      exahype::solvers::Solver::oneSolverRequestedMeshUpdate()
+      exahype::solvers::Solver::oneSolverRequestedMeshRefinement()
   ) {
     return exahype::mappings::Prediction::determineEnterCellSpecification(level);
   } else {
@@ -192,14 +192,14 @@ bool exahype::mappings::PredictionOrLocalRecomputation::performLocalRecomputatio
   return
       solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
       &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::Irregular;
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
+      ==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
 }
 
 bool exahype::mappings::PredictionOrLocalRecomputation::performPrediction(
     exahype::solvers::Solver* solver) {
   return exahype::solvers::Solver::FuseADERDGPhases &&
-         solver->getMeshUpdateRequest();
+         solver->hasRequestedMeshRefinement();
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
@@ -414,7 +414,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               limitingADERDG->
                 mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
                   cellDescriptionsIndex1,element1,
-                  solverPatch1.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values.
+                  solverPatch1.getRefinementStatus(), // !!! We assume here that we have already unified the merged limiter status values.
                   pos1,pos2,                              // The cell-based limiter status is still holding the old value though.
                   true);
 
@@ -432,7 +432,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               limitingADERDG->
                 mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
                   cellDescriptionsIndex2,element2,
-                  solverPatch2.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values
+                  solverPatch2.getRefinementStatus(), // !!! We assume here that we have already unified the merged limiter status values
                   pos2,pos1,                              // The cell-based limiter status is still holding the old value though.
                   true);
               #ifdef Debug

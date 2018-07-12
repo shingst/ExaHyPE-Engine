@@ -29,7 +29,7 @@ class DIM::DIMSolver_FV : public DIM::AbstractDIMSolver_FV {
      */
     static tarch::logging::Log _log;
   public:
-    DIMSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    DIMSolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

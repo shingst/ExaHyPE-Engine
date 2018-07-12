@@ -365,8 +365,8 @@ else ifeq ($(call tolower,$(SHAREDMEM)),tbbinvade)
 endif
 
 
-ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
-	COMPILER_CFLAGS += -DParallel -DnoPackedRecords
+
+	COMPILER_CFLAGS += -DParallel -DnoPackedRecords -DnoPersistentRegularSubtrees
 endif
 
 
