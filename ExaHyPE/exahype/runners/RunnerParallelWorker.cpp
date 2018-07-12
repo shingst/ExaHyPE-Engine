@@ -74,7 +74,6 @@ int exahype::runners::Runner::runAsWorker(
 //              logInfo("runAsWorker(...)",
 //                "\tmemoryDelta    =" << memoryUsageDelta << " MB");
 
-              MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
 
               #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
               if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
