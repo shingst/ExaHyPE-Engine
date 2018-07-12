@@ -178,8 +178,6 @@ exahype::solvers::Solver::Solver(
       _nextMaxLevel(-std::numeric_limits<int>::max()), // "-", min
       _timeStepping(timeStepping),
       _profiler(std::move(profiler)),
-      _attainedStableState(false),
-      _nextAttainedStableState(false),
       _meshUpdateEvent(MeshUpdateEvent::None),
       _nextMeshUpdateEvent(MeshUpdateEvent::None) {
 }
@@ -370,22 +368,6 @@ int exahype::solvers::Solver::getMaxLevel() const {
 bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
   return getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested ||
          getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
-}
-
-void exahype::solvers::Solver::updateNextAttainedStableState(
-    const bool& attainedStableState) {
-  _nextAttainedStableState &= attainedStableState;
-}
-bool exahype::solvers::Solver::getNextAttainedStableState() const {
-  return _nextAttainedStableState;
-}
-void exahype::solvers::Solver::setNextAttainedStableState() {
-  _attainedStableState     = _nextAttainedStableState;
-  _nextAttainedStableState = true;
-}
-
-bool exahype::solvers::Solver::getAttainedStableState() const {
-  return _attainedStableState;
 }
 
 bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
@@ -609,15 +591,6 @@ int exahype::solvers::Solver::getMaxRefinementStatus() {
   return result;
 }
 
-
-bool exahype::solvers::Solver::oneSolverHasNotAttainedStableState() {
-  bool result = false;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |= !solver->getAttainedStableState();
-  }
-  return result;
-}
-
 bool exahype::solvers::Solver::oneSolverViolatedStabilityCondition() {
   bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -719,7 +692,6 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      */
     // mesh refinement events
     solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
-    solver->updateNextAttainedStableState(solver->getNextMeshUpdateEvent()==MeshUpdateEvent::None);
     // cell sizes (for AMR)
     solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
@@ -734,7 +706,6 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
     // mesh update events
     if ( isLastIterationOfBatchOrNoBatch ) {
       solver->setNextMeshUpdateEvent();
-      solver->setNextAttainedStableState();
     }
 
     // time
@@ -988,10 +959,8 @@ void exahype::dropMetadata(
 
 exahype::DataHeap::HeapEntries
 exahype::solvers::Solver::compileMeshUpdateFlagsForMaster(const int capacity) const {
-  DataHeap::HeapEntries meshUpdateFlags(0,std::max(2,capacity)); // !!! does not fill the vector
-
-  meshUpdateFlags.push_back(hasRequestedMeshRefinement()   ? 1.0 : -1.0);
-  meshUpdateFlags.push_back(getAttainedStableState() ? 1.0 : -1.0);
+  DataHeap::HeapEntries meshUpdateFlags(0,1); // !!! does not fill the vector
+  meshUpdateFlags.push_back(convertToDouble(_meshUpdateEvent));
   return meshUpdateFlags;
 }
 
@@ -1001,12 +970,11 @@ void exahype::solvers::Solver::sendMeshUpdateFlagsToMaster(
     const int                                    level) const {
   DataHeap::HeapEntries meshRefinementFlags = compileMeshUpdateFlagsForMaster();
 
-  assertion1(meshRefinementFlags.size()==2,meshRefinementFlags.size());
+  assertion1(meshRefinementFlags.size()==1,meshRefinementFlags.size());
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("sendDataToMaster(...)","sending mesh update flags: " <<
-             "data[0]=" << meshRefinementFlags[0] <<
-             ",data[1]=" << meshRefinementFlags[1]);
+             "data[0]=" << meshRefinementFlags[0]);
   }
 
   DataHeap::getInstance().sendData(
@@ -1015,30 +983,23 @@ void exahype::solvers::Solver::sendMeshUpdateFlagsToMaster(
       peano::heap::MessageType::MasterWorkerCommunication);
 }
 
-void exahype::solvers::Solver::mergeWithWorkerMeshUpdateFlags(const DataHeap::HeapEntries& message) {
-  int index=0;
-  updateNextMeshUpdateEvent    ( convertToMeshUpdateEvent( message[index++] > 0 ) );
-  updateNextAttainedStableState( ( message[index++] > 0 ) ? true : false );
-}
-
 void exahype::solvers::Solver::mergeWithWorkerMeshUpdateFlags(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(2); // !!! fills the vector
+  DataHeap::HeapEntries messageFromWorker(1); // !!! fills the vector
 
   DataHeap::getInstance().receiveData(
       messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
       peano::heap::MessageType::MasterWorkerCommunication);
 
-  mergeWithWorkerMeshUpdateFlags(messageFromWorker);
-  assertion1(messageFromWorker.size()==2,messageFromWorker.size());
+  updateNextMeshUpdateEvent( convertToMeshUpdateEvent( messageFromWorker[0] ) );
+  assertion1(messageFromWorker.size()==1,messageFromWorker.size());
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
     logDebug("mergeWithWorkerData(...)","received mesh update flags: " <<
-             "data[0]=" << messageFromWorker[0] <<
-             ",data[1]=" << messageFromWorker[1]);
+             "data[0]=" << messageFromWorker[0]);
   }
 }
 #endif

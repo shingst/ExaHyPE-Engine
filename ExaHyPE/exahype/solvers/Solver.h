@@ -790,17 +790,6 @@ class exahype::solvers::Solver {
   static bool oneSolverRequestedMeshRefinement();
 
   /**
-   * Loop over the solver registry and check if one
-   * of the solver's mesh refinement has not
-   * attained a stable state yet.
-   *
-   * TODO(Dominic): Make this a state attribute since
-   * we do not need to know which particular solver
-   * did not attain a stable state.
-   */
-  static bool oneSolverHasNotAttainedStableState();
-
-  /**
    * Returns true if one of the solvers used a time step size
    * that violated the CFL condition.
    *
@@ -1002,31 +991,6 @@ class exahype::solvers::Solver {
 
  private:
   /**
-   * Flag indicating if the mesh refinement
-   * performed by this solver attained a stable state.
-   *
-   * <h2>MPI</h2>
-   * This is the state after this rank's
-   * solver has merged its state
-   * with its workers' worker.
-   */
-  bool _attainedStableState;
-
-  /**
-   * Flag indicating if the mesh refinement
-   * performed by this solver attained a stable state.
-   *
-   * This is the state before the
-   * time step size computation.
-   *
-   * <h2>MPI</h2>
-   * This is the state before this rank's
-   * solver has merged its state
-   * with its workers' solver.
-   */
-  bool _nextAttainedStableState;
-  
-  /**
    * A flag indicating that the limiter domain has changed.
    * This might be the case if either a cell has been
    * newly marked as troubled or healed.
@@ -1203,45 +1167,6 @@ class exahype::solvers::Solver {
    * Is used to set the master's value on a worker rank.
    */
   void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent);
-
-  /**
-   * Update if the mesh refinement of this solver attained
-   * a stable state.
-   *
-   * <h2>MPI</h2>
-   * This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual void updateNextAttainedStableState(const bool& attainedStableState);
-
-  /**
-   * Indicates if the mesh refinement of this solver
-   * attained a stable state.
-   *
-   * <h2>MPI</h2>
-   * This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual bool getNextAttainedStableState() const;
-
-  /**
-   * Indicates if the mesh refinement of this solver
-   * attained a stable state.
-   *
-   * <h2>MPI</h2>
-   *This is the state before we have send data to the master rank
-   * and have merged the state with this rank's workers.
-   */
-  virtual bool getAttainedStableState() const;
-
-  /**
-   * Overwrite the _attainedStableState flag
-   * by the _nextAttainedStableState flag.
-   * Reset the _nextAttainedStableState flag
-   * to false;
-   */
-  virtual void setNextAttainedStableState();
-
   /**
    * Run over all solvers and identify the minimal time stamp.
    */
@@ -2090,14 +2015,6 @@ class exahype::solvers::Solver {
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
-
-  /**
-   * Merge with the workers mesh update flags.
-   *
-   * \see exahype::solvers::Solver::mergeWithWorkerMeshUpdateFlags,
-   * exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMeshUpdateFlags
-   */
-  void mergeWithWorkerMeshUpdateFlags(const DataHeap::HeapEntries& message);
 
   /**
    * Merge with the workers mesh update flags.
