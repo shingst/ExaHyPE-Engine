@@ -1,4 +1,4 @@
-/**
+/*nIter*
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
@@ -129,10 +129,7 @@ void exahype::mappings::UpdateAndReduce::beginIteration(
 
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->setNextAttainedStableState();
-
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextMeshUpdateEvent();
-    }
+    solver->setNextMeshUpdateEvent();
   }
 
   // temporary variables

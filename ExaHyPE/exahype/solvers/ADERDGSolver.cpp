@@ -3950,7 +3950,7 @@ exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) cons
   DataHeap::HeapEntries messageForMaster(0,std::max(3,capacity));
   messageForMaster.push_back(_minPredictorTimeStepSize);
   messageForMaster.push_back(_maxLevel);
-  messageForMaster.push_back(convertToDouble(_meshUpdateEvent));
+  messageForMaster.push_back(convertToDouble(getMeshUpdateEvent()));
   return messageForMaster;
 }
 
@@ -4007,7 +4007,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   int index=0;
   _minNextTimeStepSize    = std::min( _minNextTimeStepSize, message[index++] );
   _nextMaxLevel           = std::max( _nextMaxLevel,        static_cast<int>(message[index++]) );
-  _nextMeshUpdateEvent    = updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++]));
+  updateNextMeshUpdateEvent(convertToMeshUpdateEvent(message[index++]));
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -4061,7 +4061,7 @@ exahype::solvers::ADERDGSolver::compileMessageForWorker(const int capacity) cons
 
   messageForWorker.push_back(_maxLevel);
 
-  messageForWorker.push_back(convertToDouble( _meshUpdateEvent ));
+  messageForWorker.push_back(convertToDouble( getMeshUpdateEvent() ));
 
   messageForWorker.push_back(_stabilityConditionWasViolated ? 1.0 : -1.0);
 
@@ -4114,7 +4114,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
 
   _maxLevel                      = message[index++];
 
-  _meshUpdateEvent               = convertToMeshUpdateEvent(message[index++]);
+  Solver::overwriteMeshUpdateEvent( convertToMeshUpdateEvent(message[index++]) );
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
 
   logDebug("mergeWithMasterData(...)",

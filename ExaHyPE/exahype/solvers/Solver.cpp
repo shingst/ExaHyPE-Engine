@@ -811,6 +811,10 @@ exahype::solvers::Solver::MeshUpdateEvent
 exahype::solvers::Solver::getMeshUpdateEvent() const {
   return _meshUpdateEvent;
 }
+  
+void exahype::solvers::Solver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
+   _meshUpdateEvent = newMeshUpdateEvent;
+}
 
 void exahype::solvers::Solver::adjustSolutionDuringMeshRefinement(
     const int cellDescriptionsIndex,

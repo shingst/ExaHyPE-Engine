@@ -267,7 +267,6 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( "
               + "new " + _projectName + "::" + _solverName + "("
               + "parser.getMaximumMeshSize("+_kernelNumber+"), "
-              + "parser.getMaximumMeshDepth("+_kernelNumber+"), "
               + "parser.getTimeStepping("+_kernelNumber+")"+
               (_enableProfiler ? ", std::move(profiler)": ""));
       _methodBodyWriter.write( " ));\n");

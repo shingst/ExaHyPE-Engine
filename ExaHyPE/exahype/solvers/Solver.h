@@ -1196,6 +1196,13 @@ class exahype::solvers::Solver {
    * \return the currently set mesh update event.
    */
   virtual MeshUpdateEvent getMeshUpdateEvent() const;
+  
+  /**
+   * Overwrite the current mesh update event with the given value.
+   *
+   * Is used to set the master's value on a worker rank.
+   */
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent);
 
   /**
    * Update if the mesh refinement of this solver attained
