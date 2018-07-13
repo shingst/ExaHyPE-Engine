@@ -116,10 +116,10 @@ def parseRanksNodesCoreCounts(jobs):
     CoreCount = collections.namedtuple("coreCount", \
         "cores consumers")
     # example: "29 x 29 x {4:2,8:4},\\n758 x 29 x {1:1}"
-    entryPattern      = re.compile(r"(\s*([0-9]+)\s*x\s*([0-9]+)\s*x\s*\{(([0-9]|\:|,)+)\})");
+    entryPattern      = re.compile(r"(\s*([0-9]+)\s*x\s*([0-9]+)\s*x\s*\{(([0-9]|\:|,|\s)+)\})");
     # example: 4:2,8:4
     # example: 4:2
-    coreCountsPattern = re.compile(r"([0-9]+)\:([0-9]+)");
+    coreCountsPattern = re.compile(r"([0-9]+)\s*\:\s*([0-9]+)");
     
     ranksNodesCoreCountsList = []
     for entryMatch in re.findall(entryPattern, jobs["ranks_nodes_cores"]):
@@ -140,7 +140,7 @@ def parseRanksNodesCoreCounts(jobs):
         
     if not ranksNodesCoreCountsList:
         print("ERROR: could not find any 'ranks_nodes_cores' entries in the form: '<ranks> x <nodes> x {<cores0>:<consumertasks0>,<cores1>:<consumertasks1>,...}'.\n"\
-              "       Valid examples: '29 x 29 x {1:1}', '758 x 29 x {8:416:8}'",file=sys.stderr)
+              "       Valid examples: '29 x 29 x {1:1}', '758 x 29 x {8:4,16:8}'",file=sys.stderr)
         sys.exit()
     elif compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
         sys.exit()
