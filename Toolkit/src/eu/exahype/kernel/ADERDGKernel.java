@@ -39,7 +39,7 @@ public class ADERDGKernel {
     TERM_OPTION_IDS.put("NCP_OPTION_ID",               "ncp");
     TERM_OPTION_IDS.put("POINTSOURCES_OPTION_ID",      "pointsources");
     TERM_OPTION_IDS.put("MATERIALPARAMETER_OPTION_ID", "materialparameters");
-    TERMS_OPTION_ID.put("PARABOLIC_FLUX_OPTION_ID",    "parabolicflux");
+    TERM_OPTION_IDS.put("PARABOLIC_FLUX_OPTION_ID",     "parabolicflux");
   }
   
   private static final Map<String, String> OPTIMIZATION_OPTION_IDS = new HashMap<String, String>();
@@ -152,7 +152,7 @@ public class ADERDGKernel {
     }
     // can't use flux and parabolic flux together
     if(useFlux() && useParabolicFlux()) {
-      throw new IllegalArgumentException("The term '"+TERMS_OPTION_ID.get("FLUX_OPTION_ID")+"' and term '"+TERMS_OPTION_ID.get("PARABOLIC_FLUX_OPTION_ID")+"' can't be used together");
+      throw new IllegalArgumentException("The term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"' and term '"+TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID")+"' can't be used together");
     }
   }
 
@@ -190,7 +190,7 @@ public class ADERDGKernel {
   }
 
   public boolean useParabolicFlux() {
-    return terms.containsKey(TERMS_OPTION_ID.get("PARABOLIC_FLUX_OPTION_ID"));
+    return terms.containsKey(TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID"));
   }
   
   public boolean useSource() {
