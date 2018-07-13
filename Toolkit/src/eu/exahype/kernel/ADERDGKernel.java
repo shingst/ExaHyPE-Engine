@@ -152,11 +152,7 @@ public class ADERDGKernel {
     }
     // can't use flux and parabolic flux together
     if(useFlux() && useParabolicFlux()) {
-<<<<<<< e409deff4e9c56888ffbccaed0916189314ffa50
       throw new IllegalArgumentException("The term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"' and term '"+TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID")+"' can't be used together");
-=======
-      throw new IllegalArgumentException("The term '"+TERMS_OPTION_ID.get("FLUX_OPTION_ID")+"' and term '"+TERMS_OPTION_ID.get("PARABOLIC_FLUX_OPTION_ID")+"' can't be used together");
->>>>>>> introduce parabolicflux flag in Toolkit
     }
   }
 
@@ -194,11 +190,15 @@ public class ADERDGKernel {
   }
 
   public boolean useParabolicFlux() {
+<<<<<<< 204e7bfa65a273d52cd7c7f6b0f1400652394bcd
 <<<<<<< e409deff4e9c56888ffbccaed0916189314ffa50
     return terms.containsKey(TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID"));
 =======
     return terms.containsKey(TERMS_OPTION_ID.get("PARABOLIC_FLUX_OPTION_ID"));
 >>>>>>> introduce parabolicflux flag in Toolkit
+=======
+    return terms.containsKey(TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID"));
+>>>>>>>  fix exception handling
   }
   
   public boolean useSource() {
