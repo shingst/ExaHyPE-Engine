@@ -39,6 +39,7 @@ public class ADERDGKernel {
     TERM_OPTION_IDS.put("NCP_OPTION_ID",               "ncp");
     TERM_OPTION_IDS.put("POINTSOURCES_OPTION_ID",      "pointsources");
     TERM_OPTION_IDS.put("MATERIALPARAMETER_OPTION_ID", "materialparameters");
+    TERMS_OPTION_ID.put("PARABOLIC_FLUX_OPTION_ID",    "parabolicflux");
   }
   
   private static final Map<String, String> OPTIMIZATION_OPTION_IDS = new HashMap<String, String>();
@@ -149,7 +150,10 @@ public class ADERDGKernel {
     if(useFluxVect() && !useFlux()) {
       throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_IDS.get("FLUX_VECT_OPTION_ID")+"' requires the PDE term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"'");
     }
-    
+    // can't use flux and parabolic flux together
+    if(useFlux() && useParabolicFlux()) {
+      throw new IllegalArgumentException("The term '"+TERMS_OPTION_ID.get("FLUX_OPTION_ID")+"' and term '"+TERMS_OPTION_ID.get("PARABOLIC_FLUX_OPTION_ID")+"' can't be used together");
+    }
   }
 
   public enum KernelType {
@@ -183,6 +187,10 @@ public class ADERDGKernel {
 
   public boolean useFlux() {
     return terms.containsKey(TERM_OPTION_IDS.get("FLUX_OPTION_ID"));
+  }
+
+  public boolean useParabolicFlux() {
+    return terms.containsKey(TERMS_OPTION_ID.get("PARABOLIC_FLUX_OPTION_ID"));
   }
   
   public boolean useSource() {

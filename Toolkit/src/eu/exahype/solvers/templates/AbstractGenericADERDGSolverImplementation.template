@@ -172,7 +172,7 @@ const int picardIterations = 1;
   double* lFhi = memory; memory+=sizeLFhi;
 {%-   endif %}
 
-  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
+  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{useParabolicFlux}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
   kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
 {%- endif %}
