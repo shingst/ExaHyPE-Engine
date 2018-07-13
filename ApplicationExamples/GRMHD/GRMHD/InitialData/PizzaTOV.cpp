@@ -81,7 +81,10 @@ void pizzatov::Interpolate(const double* x, double t, double* Q) {
 	// ExaHyPE infrastructure and not suitable Initial Data for simulation.
 	// If you want to do 2D, Pizza can use polar coordinates but it hasn't
 	// been implemented in the pizza_tovfront.
-	double x3d[3] = { x[0], x[1], 0.0 };
+	
+	// We now abuse this to get only values on the x axis, which effectively
+	// gives us a radius coordinate. This is fine for a nonrotating star.
+	double x3d[3] = { x[0], 0.0, 0.0 };
 	tov->initial_data(x3d, V);
 	#else
 	tov->initial_data(x, V);

@@ -77,54 +77,6 @@ namespace amr {
       const std::bitset<DIMENSIONS_TIMES_TWO>&    parentIsInside);
 
   /**
-   * Determine the position of a Cell or Ancestor with respect
-   * to a parent of type Ancestor.
-   * The return values subcellPosition.parentCellDescriptionsIndex
-   * and subcellPosition.parentElement only
-   * hold valid indices >= 0 if we have found a parent of type Ancestor
-   * and the cell description itself is of type Cell or Ancestor or EmptyAncestor.
-   *
-   * Otherwise, subcellPosition.parentIndex holds the value
-   * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-   * subcellPosition.parentElement holds the value exahype::solver::Solvers::NotFound,
-   * and subcellPosition.subcellIndex holds undefined values.
-   * This applies to the case where the parent index of the
-   * Cell or Ancestor is not a valid index and further to
-   * the case where we have found a parent of type EmptyAncestor
-   * as top most parent.
-   *
-   * This method is required for preparing cell description types
-   * before sending the cell description away to a new worker.
-   */
-  template <class CellDescription,class CellDescriptionHeap>
-  exahype::solvers::Solver::SubcellPosition
-  computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(const CellDescription& pChild);
-
-  /**
-   * Determine the position of a Cell or Ancestor with respect
-   * to a parent of type Ancestor.
-   * The return values subcellPosition.parentCellDescriptionsIndex
-   * and subcellPosition.parentElement only
-   * hold valid indices >= 0 if we have found a parent of type Ancestor
-   * and the cell description itself is of type Cell or Ancestor.
-   *
-   * Otherwise, subcellPosition.parentIndex holds the value
-   * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-   * subcellPosition.parentElement holds the value exahype::solver::Solvers::NotFound,
-   * and subcellPosition.subcellIndex holds undefined values.
-   * This applies to the case where the parent index of the
-   * Cell or Ancestor is not a valid index and further to
-   * the case where we have found a parent of type EmptyAncestor
-   * as top most parent.
-   *
-   * This method is required for the face data restriction, the
-   * volume data restriction, and the FV volume data restriction.
-   */
-  template <class CellDescription,class CellDescriptionHeap>
-  exahype::solvers::Solver::SubcellPosition
-  computeSubcellPositionOfCellOrAncestor(const CellDescription& pChild);
-
-  /**
    * Determine the position of a Descendant with respect
    * to a  Cell or Descendant that contains data, i.e.,
    * has at least one neighbour that is a real cell.
@@ -132,21 +84,17 @@ namespace amr {
    * \note This function only makes sense if the
    * Descendant has a valid parentIndex attribute.
    *
-   * \note This method is less complicated that corresponding
-   * method for computing the parent of
-   * a Cell or Ancestor since a Descendant always(!) has
-   * a parent of type Cell or Descendant.
-   *
    * This method is required for the face data prolongation, the
-   * volume data prolongation, and the FV volume data prolongation.
+   * volume data prolongation (!), and the FV volume data prolongation (!).
    *
    * \param topMost Set to true if you want to lookup the
-   * rank-local top-most parent of the descendant.
+   * rank-local top-most parent of the descendant which
+   * might either be of type Cell or a Descendant at the
+   * master-worker boundaryl
    */
   template <class CellDescription,class CellDescriptionHeap, bool topMost>
   exahype::solvers::Solver::SubcellPosition
   computeSubcellPositionOfDescendant(const CellDescription& pChild);
-
 }  // namespace amr
 }  // namespace exahype
 

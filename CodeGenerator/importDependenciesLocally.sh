@@ -102,14 +102,5 @@ make realclean
 make generator
 cd "$scriptDir"
 
-# make sym links if needed
-if [ "$JINJA2_ALREADY_AVAILABLE" = false ] ; then
-  echo "Make symbolic links for python import"
-  cd utils
-  ln -s ../"$MARKUPSAFE_LOCAL_DIR"/markupsafe
-  ln -s ../"$JINJA_LOCAL_DIR"/jinja2
-  cd ..
-fi
-
 # move back to where the script was called
 cd "$currentLocation"

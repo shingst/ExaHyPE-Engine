@@ -40,10 +40,15 @@ namespace solvers {
  * following algorithm sections.
  *
  * <h2>Mesh refinement</h2>
- * TODO
+ * If a solver requests regular mesh refinement, no limiter status spreading must be
+ * performed! We then simply adjust the mesh.
+ * No limiter patches are allocated!
  *
  * <h2>Local recomputation</h2>
- * TODO
+ * If a solver requests local recomputation, we perform limiter status spreading.
+ * No limiter patches are allocated during these spreading iterations.
+ * Only if it is decided that no global recomputation is performed,
+ * limiter patches are allocated.
  *
  * <h2>Global recomputation</h2>
  * The solver is redoing the last ADER-DG time
@@ -57,10 +62,7 @@ namespace solvers {
  * Next it will perform the computation of a new
  * time step size and then, the computation of
  * a new space-time predictor.
- * Afterwards a solution update in all cells is performed.
- * Now, the solution of the cells has evolved
- * to the anticipated time step.
- * Lastly, a recomputation of the predictor is performed.
+ * Then, the last time step is redone.
  *
  * The following scenario causes the solver
  * to switch to this algorithmic section:
@@ -68,9 +70,6 @@ namespace solvers {
  * Scenario 1:
  * A compute cell was marked as troubled on a
  * mesh level coarser than the finest one.
- *
- * Scenario 2: A cell of type Descendant/EmptyDescendant
- * was marked with a LimiterStatus other than Ok.
  */
 class LimitingADERDGSolver;
 
@@ -128,25 +127,17 @@ private:
    */
   static tarch::logging::Log _log;
 
+
+  #ifdef Parallel
+  std::vector<double> _receivedMax;
+  std::vector<double> _receivedMin;
   /**
    * TODO(WORKAROUND): We store these fields in order
    * to use the symmetric boundary exchanger of Peano
    * which does not yet support asymmetric send buffers.
    */
-  DataHeap::HeapEntries _invalidObservables;
-
-  /**
-   * A flag indicating that the limiter domain has changed.
-   * This might be the case if either a cell has been
-   * newly marked as troubled or healed.
-   */
-  exahype::solvers::LimiterDomainChange _limiterDomainChange;
-
-  /**
-   * The limiterDomainHasChanged for the next
-   * iteration.
-   */
-  exahype::solvers::LimiterDomainChange _nextLimiterDomainChange;
+  std::vector<double> _invalidObservables;
+  #endif
 
   /**
    * TODO(Dominc): Remove after docu is recycled.
@@ -247,6 +238,10 @@ private:
       const int cellDescriptionsIndex,
       const int solverElement) const;
 
+  void deallocateLimiterPatch(
+      const SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
+
   /**
    * Allocates a new limiter patch,
    * copies geometry information from the solver
@@ -265,8 +260,8 @@ private:
    * being run as background job.
    */
   int allocateLimiterPatch(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
+      const SolverPatch&  solverPatch,
+      const int cellDescriptionsIndex) const;
 
   /**
    * Project the DG solution onto the FV
@@ -304,10 +299,6 @@ private:
    * If the counter is set to zero, change a troubled cell
    * to NeighbourOfCellIsTroubled1.
    *
-   * Further write back the new value to the boundary.
-   *
-   * \param[in] isTroubled A bool indicating if the patch's solution is (still) troubled
-   *
    * \return True if the limiter domain changes irregularly in the cell, i.e.,
    * if a patch with status Ok, NeighbourOfTroubled3, NeighbourOfTroubled4
    * changes its status to Troubled.
@@ -316,9 +307,9 @@ private:
    * to Troubled or from Troubled to NeighbourOfTroubled3, NeighbourOfTroubled4, this
    * methods returns false.
    */
-  LimiterDomainChange determineLimiterStatusAfterSolutionUpdate(
-      SolverPatch& solverPatch,const bool isTroubled,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
+      SolverPatch& solverPatch,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -331,35 +322,6 @@ private:
    * FV space, overwrites the FV solution on the limiter patch with the projected values.
    */
   void projectDGSolutionOnFVSpace(SolverPatch& solverPatch,LimiterPatch& limiterPatch) const;
-
-  /**
-   * Vetoes an erasing request if the cell is within
-   * or right next to a region which is refined according to
-   * the limiter status.
-   */
-  void vetoErasingChildrenRequestBasedOnLimiterStatus(
-      SolverPatch& solverPatch) const;
-
-  /**
-   * Depending on the finest adaptive mesh level and the given level,
-   * compute the minimum limiter status for which we need to refine
-   * a cell.
-   *
-   * If we have FV layer of width 1, refine if the limiter status is at least 1.
-   * If we have a FV layer of width 2, do some telescoping:
-   * On the second finest level, refine if the limiter status is at least 2.
-   * On coarser levels, refine if the limiter status is at least 3.
-   *
-   * On the finest level, the general rule is
-   *
-   * minStatusForRef = maximumLimiterStatus - helperLayers (+1)
-   *
-   * On coarser levels we have to ensure that
-   *
-   * maximumLimiterStatus - minStatusForRef >= 2
-   *
-   */
-  int computeMinimumLimiterStatusForRefinement(int level) const;
 
   /**
    * Ensure that the time step data of the limiter is
@@ -390,6 +352,10 @@ private:
         const int cellDescriptionsIndex,
         const int solverElement) const;
 
+  void ensureLimiterPatchTimeStepDataIsConsistent(
+      const SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
+
   /**
    * Copies the time stamp and the time step sizes from the solver patch
    * to the limiter patch.
@@ -412,8 +378,9 @@ private:
       const int   element,
       const bool  isFirstIterationOfBatch,
       const bool  isLastIterationOfBatch,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-      const bool  vetoSpawnPredictionJob);
+      const bool  isSkeletonJob,
+      const bool  mustBeDoneImmediately,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
@@ -501,12 +468,14 @@ private:
     const int                         _cellDescriptionsIndex;
     const int                         _element;
     std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+    const bool                        _isSkeletonJob;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        const bool                               isSkeletonJob);
 
     bool operator()();
   };
@@ -539,48 +508,6 @@ public:
   virtual void findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) = 0;
 
   /**
-   * Loops over all registered LimitingADERDGSolver instances
-   * and determines the maximum value of their
-   * minimum limiter status for a troubled cell.
-   *
-   * This value determines how long we have to perform
-   * limiter status spreading.
-   *
-   * The minimum possible return value is three.
-   */
-  static int getMaxMinimumLimiterStatusForTroubledCell();
-
-  /*
-   * Check if a solver requested limiter status spreading.
-   * Such a request might stem from a limiting ADERDGSolver which
-   * has requested mesh refinement or a local
-   * or global recomputation.
-   *
-   * TODO(Dominic): We should distinguish between mesh update requests
-   * stemming from the limiter status based refinement criterion and
-   * and those stemming from the user's refinement criterion.
-   */
-  static bool oneSolverRequestedLimiterStatusSpreading();
-
-  /*
-   * Check if a solver requested either local or global
-   * recomputation.
-   */
-  static bool oneSolverRequestedLocalOrGlobalRecomputation();
-
-  /*
-   * Check if a solver requested local recomputation
-   * recomputation.
-   */
-  static bool oneSolverRequestedLocalRecomputation();
-
-  /*
-   * Check if a solver requested either global
-   * recomputation.
-   */
-  static bool oneSolverRequestedGlobalRecomputation();
-
-  /**
    * Create a limiting ADER-DG solver.
    *
    * <h2>Discrete maximum principle</h2>
@@ -592,8 +519,8 @@ public:
    */
   LimitingADERDGSolver(
       const std::string& identifier,
-      std::unique_ptr<exahype::solvers::ADERDGSolver> solver,
-      std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter,
+      exahype::solvers::ADERDGSolver* solver,
+      exahype::solvers::FiniteVolumesSolver* limiter,
       const double DMPRelaxationParameter=1e-4,
       const double DMPDifferenceScaling=1e-3,
       const int iterationsToCureTroubledCell=2);
@@ -606,22 +533,13 @@ public:
   // Disallow copy and assignment
   LimitingADERDGSolver(const ADERDGSolver& other) = delete;
   LimitingADERDGSolver& operator=(const ADERDGSolver& other) = delete;
-
-  /**
-   * Wire through to the ADER-DG solver.
-   */
-  void updateNextMeshUpdateRequest(const bool& meshUpdateRequest) final override;
-  bool getNextMeshUpdateRequest() const final override;
-  bool getMeshUpdateRequest() const final override;
-  void setNextMeshUpdateRequest() final override;
-
-  /**
-   * Wire through to the ADER-DG solver.
-   */
-  void updateNextAttainedStableState(const bool& attainedStableState) final override;
-  bool getNextAttainedStableState() const final override;
-  bool getAttainedStableState() const final override;
-  void setNextAttainedStableState() final override;
+  
+  /** Wire through to ADER-DG Solver */
+  bool hasRequestedMeshRefinement() const override;
+   MeshUpdateEvent getNextMeshUpdateEvent() const override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) override;
+  void setNextMeshUpdateEvent() override;
+  MeshUpdateEvent getMeshUpdateEvent() const override;
 
   /*
    * A time stamp minimised over all the ADERDG and FV solver
@@ -662,6 +580,10 @@ public:
           const int cellDescriptionsIndex,
           const int element) const final override;
 
+  void synchroniseTimeStepping(
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
+
   /**
    * We always override the limiter time step
    * data by the ADER-DG one before a solution update.
@@ -679,25 +601,6 @@ public:
   void zeroTimeStepSizes() final override;
 
   /**
-   * TODO(Dominic): Add docu.
-   */
-  LimiterDomainChange getNextLimiterDomainChange() const;
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void updateNextLimiterDomainChange(LimiterDomainChange limiterDomainChange);
-  /**
-   * TODO(Dominic): Add docu.
-   * Can also be used to reset the _nextLimiterDomainChange
-   * state to Regular.
-   */
-  void setNextLimiterDomainChange();
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  LimiterDomainChange getLimiterDomainChange() const;
-
-  /**
    * Roll back the time step data to the
    * ones of the previous time step.
    */
@@ -712,9 +615,6 @@ public:
   void updateNextMaxLevel(int maxLevel) final override;
   int getNextMaxLevel() const final override;
   int getMaxLevel() const final override;
-
-  bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const final override;
 
   /**
    * Returns the index of the solver patch registered for the solver with
@@ -763,35 +663,6 @@ public:
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
-  /**
-   * \return true in case a cell on a coarser mesh level is marked as
-   * Troubled or in case a cell on a coarser
-   * mesh level was marked with a limiter status other than troubled
-   * and for the given refinement level, it is required to refine this cell.
-   * Otherwise return false.
-   *
-   * In order to ensure that all four helper cells around the actual troubled cell
-   * fit on the finest mesh level, we need to refine additional cells around a troubled
-   * cell. The number of additionally refined cells around a troubled cells depends
-   * here on the difference in levels to the finest mesh level.
-   *
-   * At a sufficent distance to the finest level, the minimum set of cells that needs to be refined around a troubled cell
-   * are their 3^d neighbours. However since our limiter status flagging
-   * only considers direct (face) neighbours, we need to refine all cells with
-   * a limiter status Troubled-1 and Troubled-2.
-   */
-  bool evaluateLimiterStatusRefinementCriterion(const SolverPatch& solverPatch) const;
-
-
-  /**
-   * Evaluate a stricter DMP as an a-priori refinement
-   * criterion.
-   *
-   * TODO(Dominic): It is a little hacked together
-   */
-  bool evaluateDiscreteMaximumPrincipleRefinementCriterion(
-      const int cellDescriptionsIndex,
-      const int element) const;
 
   /**
    * TODO(Dominic): Update docu.
@@ -840,8 +711,7 @@ public:
    *
    * returns true if a new limiter patch was allocated.
    */
-  void updateLimiterStatusDuringLimiterStatusSpreading(
-      const int cellDescriptionsIndex, const int solverElement) const;
+  MeshUpdateEvent  updateRefinementStatusDuringRefinementStatusSpreading(SolverPatch& solverPatch) const;
 
   /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
    *
@@ -858,26 +728,24 @@ public:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) final override;
+      const int  solverNumber,
+      const bool stillInRefiningMode) override;
 
-  bool progressMeshRefinementInLeaveCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) final override;
+ bool progressMeshRefinementInLeaveCell(
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+     const int solverNumber) override;
 
-  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int& cellDescriptionsIndex,
-        const int& solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+ exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+     const int cellDescriptionsIndex,
+     const int solverNumber,
+     const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+     const bool checkThoroughly) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -898,10 +766,6 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) final override;
-
   double startNewTimeStep(
       const int cellDescriptionsIndex,
       const int element) final override;
@@ -934,7 +798,7 @@ public:
    */
   void rollbackToPreviousTimeStep(
       const int cellDescriptionsIndex,
-      const int solverElement) const final override;
+      const int solverElement) const;
 
   /*
    * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
@@ -942,7 +806,7 @@ public:
    */
   void rollbackToPreviousTimeStepFused(
       const int cellDescriptionsIndex,
-      const int solverElement) const final override;
+      const int solverElement) const;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -972,7 +836,7 @@ public:
    * set the ADER-DG time step sizes for the limiter patch.
    * (ADER-DG is always dictating the time step sizes.)
    *
-   * \see determineLimiterStatusAfterLimiterStatusSpreading(...)
+   * \see determineLimiterStatusAfterRefinementStatusSpreading(...)
    *
    * \note Make sure to reset neighbour merge
    * helper variables in this method call.
@@ -1015,8 +879,8 @@ public:
    * the information taken from the neighbour
    * merging.
    */
-  exahype::solvers::LimiterDomainChange
-  updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
+  MeshUpdateEvent
+  updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
       const int cellDescriptionsIndex,
       const int element,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
@@ -1047,6 +911,10 @@ public:
        const int cellDescriptionsIndex,
        const int solverElement) const;
 
+   void ensureNoLimiterPatchIsAllocatedOnHelperCell(
+       const SolverPatch& solverPatch,
+       const int cellDescriptionsIndex) const;
+
    /*
     * Ensures that a limiter patch is allocated
     * on all compute cells (Cell) on the finest mesh
@@ -1057,20 +925,23 @@ public:
     * the mesh refinement iterations.
     */
    bool ensureRequiredLimiterPatchIsAllocated(
+           const SolverPatch& solverPatch,
            const int cellDescriptionsIndex,
-           const int solverElement,
            const int limiterStatus) const;
 
 
    /**
-    * Overwrite the new limiter status by the previous one.
-    * Deallocate unneeded limiter patches.
-    * Set iterations to cure troubled cells
-    * to the maximum level.
+    * Go back to previous time step with
+    * time step data and solution.
+    *
+    * Keep the new refinement status.
+    *
+    * Allocate necessary new limiter patches.
     */
    void rollbackSolutionGlobally(
           const int cellDescriptionsIndex,
-          const int element) const;
+          const int element,
+          const bool fusedTimeStepping) const final override;
 
   /**
    * Reinitialises cells that have been subject to a limiter status change.
@@ -1114,7 +985,8 @@ public:
    */
   void rollbackSolutionLocally(
       const int cellDescriptionsIndex,
-      const int element) const;
+      const int element,
+      const bool fusedTimeStepping) const;
 
   /**
    * Recompute the solution in cells that have been subject to a limiter status change
@@ -1169,7 +1041,7 @@ public:
       const int element,
       const bool isAtRemoteBoundary);
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) final override;
 
@@ -1451,60 +1323,105 @@ public:
   /////////////////////////////////////
   // MASTER<=>WORKER
   /////////////////////////////////////
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  /**
+   * Kind of similar to progressMeshRefinementInPrepareSendToWorker
+   * but performs a few additional operations in order to
+   * notify the worker about some coarse grid operations only
+   * the master knows.
+   *
+   * \note This function sends out MPI messages.
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const int solverNumber) final override;
 
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  /**
+   * Forward to ADERDGSolver
+   */
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
+  /**
+   * Forward to ADERDGSolver
+   */
+  void receiveDataFromMasterIfProlongating(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * \return If we the solver requires master worker communication
+   * at this cell
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,
+      const int localElement,
+      const int coarseGridCellDescriptionsIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int  level,
+      const bool stillInRefiningMode) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const final override;
 
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
-
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1514,31 +1431,6 @@ public:
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
-
-  void sendDataToMaster(
-      const int                                     masterRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void sendEmptyDataToMaster(
-      const int                                     masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void mergeWithWorkerData(
-      const int                                     workerRank,
-      const MetadataHeap::HeapEntries&              workerMetadata,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
 
   ///////////////////////////////////
   // MASTER->WORKER
@@ -1553,32 +1445,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
-  void sendDataToWorker(
-      const int                                     workerRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) final override;
-
-  void sendEmptyDataToWorker(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const final override;

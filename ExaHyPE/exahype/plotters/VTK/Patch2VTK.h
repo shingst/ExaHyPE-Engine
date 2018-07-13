@@ -95,7 +95,7 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
   */
   
   /// as a leftover, we only store this vector of celldata with lnength _writtenUnknowns.
-  tarch::plotter::griddata::Writer::CellDataWriter *_cellDataWriter, *_cellMpiRankWriter, *_cellLimiterStatusWriter, *_cellPreviousLimiterStatusWriter, *_cellTimeStampDataWriter, *_cellDescriptionIndexWriter, *_cellElementWriter, *_cellLevelWriter;
+  tarch::plotter::griddata::Writer::CellDataWriter *_cellDataWriter, *_cellMpiRankWriter, *_cellRefinementStatusWriter, *_cellPreviousRefinementStatusWriter, *_cellTimeStampDataWriter, *_cellDescriptionIndexWriter, *_cellElementWriter, *_cellLevelWriter;
 
   static tarch::logging::Log _log;
 

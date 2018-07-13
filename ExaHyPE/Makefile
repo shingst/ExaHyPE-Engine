@@ -69,6 +69,11 @@ ifeq ($(call tolower,$(GPROF)),on)
 	COMPILER_LFLAGS += -pg 
 endif
 
+# other valid options are: c++14.
+ifeq ($(CPP_STANDARD),)
+	CPP_STANDARD=c++11
+endif
+
 # ************************************************
 
 ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
@@ -90,7 +95,7 @@ endif
 ifeq ($(call tolower,$(MODE)),release)
 	# Settings for the Release mode
 	# ----------------------------------------------
-	#COMPILER_CFLAGS +=
+	COMPILER_CFLAGS +=  -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
 
 else ifeq ($(call tolower,$(MODE)),debug)
@@ -116,6 +121,15 @@ else ifeq ($(call tolower,$(MODE)),peanoprofile)
 	# --------------------------------------------
 	COMPILER_CFLAGS += -DPerformanceAnalysis -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
+	
+else ifeq ($(call tolower,$(MODE)),itac)
+	# Settings for the ITAC mode
+	# --------------------------------------------
+	ifneq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
+$(error DISTRIBUTEDMEM must equal MPI for MODE=ITAC)
+	endif
+	COMPILER_CFLAGS += -DUSE_ITAC -trace -I$(VT_ROOT)/include
+	COMPILER_LFLAGS += -DUSE_ITAC -trace
 
 else
 	# Option not recognized
@@ -159,7 +173,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	#   -reentrance  -recursive
 	
 	FCOMPILER_CFLAGS  += -r8 -cpp -auto
-	COMPILER_CFLAGS   += -restrict -std=c++11 -pedantic -Wall
+	COMPILER_CFLAGS   += -restrict -std=$(CPP_STANDARD) -pedantic -Wall
 	#COMPILER_LFLAGS   +=
 	
 	
@@ -192,6 +206,9 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	ifeq ($(call tolower,$(ARCHITECTURE)),phi)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
+	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+		COMPILER_CFLAGS += -xCORE-AVX512 -fma
+		COMPILER_LFLAGS += -xCORE-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS += -xMIC-AVX512 -fma
 		#FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
@@ -237,7 +254,7 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	# REMOVING "-O3"  as it creates compiler bugs!
 	LINK_FORTRAN	  += -lgfortran
 
-	COMPILER_CFLAGS   += -std=c++11 -pedantic -Wall -Drestrict=__restrict__ -pipe -D__assume_aligned=__builtin_assume_aligned -Wstrict-aliasing
+	COMPILER_CFLAGS   += -std=$(CPP_STANDARD) -pedantic -Wall -Drestrict=__restrict__ -pipe -D__assume_aligned=__builtin_assume_aligned -Wstrict-aliasing
 	COMPILER_LFLAGS   += -lm -lstdc++
 	
 	ifeq ($(call tolower,$(MODE)),debug)
@@ -269,6 +286,9 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS  += -march=knl
 		COMPILER_LFLAGS  += -march=knl
+	else ifeq ($(call tolower,$(ARCHITECTURE)),sky)
+		COMPILER_CFLAGS  += -march=skylake-avx512
+		COMPILER_LFLAGS  += -march=skylake-avx512
     else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
 		COMPILER_CFLAGS  += -march=sandybridge
 		COMPILER_LFLAGS  += -march=sandybridge
@@ -346,7 +366,7 @@ endif
 
 
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
-	COMPILER_CFLAGS += -DParallel
+	COMPILER_CFLAGS += -DParallel -DnoPackedRecords -DnoPersistentRegularSubtrees
 endif
 
 
@@ -566,6 +586,12 @@ endif
 	rm -f cipofiles.mk
 	rm -f buildinfo.h
 
+# peano.a: Useful for quickly setting up external applications which use the ExaHyPE
+#          code base as a library.
+peano.a: $(FOBJECTS) $(COBJECTS)
+#	Only the Peano object files: #$(find -H $(PEANO_KERNEL_PEANO_PATH) $(PEANO_KERNEL_TARCH_PATH) $(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)  $(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH) $(PEANO_TOOLBOX_MPI_BLANCING_PATH) -name '*.o')
+#	Since the find does not work in-place, here we just collect all object files, also from ExaHyPE:
+	ar r peano.a  $(COBJECTS) $(FOBJECTS)
 
 $(COBJECTS): %.o : %.cpp
 	$(CC) $(PROJECT_CFLAGS) $(COMPILER_CFLAGS) $(NO_IPO_FLAG) $(SYSTEM_CFLAGS) -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/.. -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/.. -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/.. -I$(PEANO_KERNEL_PEANO_PATH)/.. -I$(PEANO_KERNEL_TARCH_PATH)/.. -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@

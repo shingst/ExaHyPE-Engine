@@ -122,6 +122,14 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double* restrict const lFhbnd, 
     const tarch::la::Vector<DIMENSIONS,double> &inverseDx
   );
+  
+  void faceIntegral(
+    double *lduh, 
+    const double *const lFhbnd,
+    const int direction, 
+    const int orientation,
+    const tarch::la::Vector<DIMENSIONS, double> &inverseDx
+  );
 
   void solutionAdjustment(
     {{solverName}}& solver,
@@ -205,6 +213,14 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
   );
+  
+  // used by faceIntegral, only restrict the flux on the face
+  void faceFluxRestriction(
+    double* restrict lFhbndCoarse,
+    const double* restrict lFhbndFine,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+    const int levelDelta
+  );
 
   void volumeUnknownsProlongation(
     double* restrict luhFine,
@@ -275,5 +291,8 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
 {% endfor %}
 
 #include "{{pathToOptKernel}}/ConfigurationParameters.cpph"
+{% if useVectPDEs %}
+#include "{{pathToOptKernel}}/matrixUtils.cpph"
+{% endif %}
 
 #endif // _EXAHYPE_{{guardNamespace}}_KERNELS_H_

@@ -76,8 +76,8 @@ public class DirectoryAndPathChecker extends DepthFirstAdapter {
         valid = false;
       }
     
-    // initialize the CodeGeneratorHelper TODO JMG do it only if necessary
-    CodeGeneratorHelper.getInstance().setPaths(this);
+    // initialize the CodeGeneratorHelper path (static)
+    CodeGeneratorHelper.setPaths(this);
   };
 
   @Override

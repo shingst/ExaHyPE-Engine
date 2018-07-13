@@ -168,9 +168,9 @@ SUBROUTINE ADERDGInit
     
 
     ! 
-    IMAX = 40     ! 81                                               ! Number of elements in x,y,z direction 
-    JMAX = 40     ! 27
-    KMAX = 40
+    IMAX = 5     ! 81                                               ! Number of elements in x,y,z direction 
+    JMAX = 5     ! 27
+    KMAX = 5
     !
 #ifdef TORUS
 #ifdef Spherical

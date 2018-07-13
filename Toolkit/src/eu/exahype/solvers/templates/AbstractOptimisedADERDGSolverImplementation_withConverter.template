@@ -42,15 +42,15 @@
 #include <stdio.h>
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
-{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}):
-  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler) {%- endif %}) {
+{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}):
+  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler) {%- endif %}) {
 }
 
 
 
-{{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} ):
+{{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} ):
   exahype::solvers::ADERDGSolver("{{solver}}",{{optNamespace}}::getNumberOfVariable(),{{optNamespace}}::getNumberOfParameter(),{{optNamespace}}::getBasisSize(),
-                                 maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler){% endif %}) {
+                                 maximumMeshSize,maximumMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler){% endif %}) {
 }
 
 
@@ -144,10 +144,10 @@ if(useGeneric) {
 {%- else %}
 {%- if noTimeAveraging %}
   //No Time Averaging scheme
-  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
+  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %}); //lSi, gradQ
   {{optNamespace}}::extrapolatorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], lQhbnd, lFhbnd);
 {%- else %}
-  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
+  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %}); //lSi, gradQ
   {{optNamespace}}::predictorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], tempUnknowns, tempFluxUnknowns, &tempFluxUnknowns[lShi_offset]);
   {{optNamespace}}::extrapolatorNonlinear(tempUnknowns, tempFluxUnknowns, lQhbnd, lFhbnd);
 {%- endif %}
@@ -317,7 +317,7 @@ if(useGeneric) {
     
 } else {
 
-  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, dt, normalNonZeroIndex {%- if enableDeepProfiler %}, _profiler.get(){% endif %});
+  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, dt, normalNonZeroIndex);
   
 }
 {%- if enableProfiler %}

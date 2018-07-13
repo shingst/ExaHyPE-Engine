@@ -35,14 +35,14 @@ exahype-project EulerADERDG
    ===========================================
    Comment this stuff in to get an MPI version
    ===========================================
-*/
+
   distributed-memory
     identifier               = static_load_balancing
     configure                = {greedy-naive,FCFS}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
-
+*/
 
   /*
    ====================================================
@@ -69,7 +69,7 @@ exahype-project EulerADERDG
     limiter-type const         = godunov
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables            = 5
+    dmp-observables     const  = 5
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
     

@@ -155,3 +155,19 @@ void {{codeNamespace}}::converter::PSi_generic2optimised(const double* const gen
     }
   }
 }
+
+void {{codeNamespace}}::converter::Lduh_optimised2generic(const double* const opt, double* gen) {
+  for(int zyx=0; zyx < {{nDof**nDim}}; zyx++){
+    for(int n=0; n<{{nVar}};n++){
+      gen[zyx*{{nVar}}+n] = opt[zyx*{{nVarPad}}+n];
+    }
+  }
+}
+
+void {{codeNamespace}}::converter::Lduh_generic2optimised(const double* const gen, double* opt) {
+  for(int zyx=0; zyx < {{nDof**nDim}}; zyx++){
+    for(int n=0; n<{{nVar}};n++){
+      opt[zyx*{{nVarPad}}+n] = gen[zyx*{{nVar}}+n];
+    }
+  }
+}

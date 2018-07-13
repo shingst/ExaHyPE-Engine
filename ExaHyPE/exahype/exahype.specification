@@ -40,7 +40,7 @@ event-mapping:
 
 // Limiter
 event-mapping:
-  name: LimiterStatusSpreading
+  name: RefinementStatusSpreading
 
 event-mapping:
   name: LocalRollback
@@ -90,6 +90,10 @@ adapter:
   merge-with-user-defined-mapping: FinaliseMeshRefinement  // sends time step data up to the master
   merge-with-user-defined-mapping: LocalRollback           // does not send because 
   merge-with-user-defined-mapping: LevelwiseAdjacencyBookkeeping
+
+adapter:
+  name: InitialPrediction
+  merge-with-user-defined-mapping: Prediction
   
 // Adapter for 1 phase time stepping
 adapter: 
@@ -106,8 +110,8 @@ adapter:
   merge-with-user-defined-mapping: BroadcastAndDropNeighbourMessages
 
 adapter:
-  name: LimiterStatusSpreading
-  merge-with-user-defined-mapping: LimiterStatusSpreading
+  name: RefinementStatusSpreading
+  merge-with-user-defined-mapping: RefinementStatusSpreading
 
 adapter: 
   name: PredictionOrLocalRecomputation

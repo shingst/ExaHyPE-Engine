@@ -32,7 +32,7 @@ class CCZ4::CCZ4Solver_FV : public CCZ4::AbstractCCZ4Solver_FV {
      */
     static tarch::logging::Log _log;
   public:
-    CCZ4Solver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    CCZ4Solver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

@@ -57,27 +57,35 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * A state indicating if the mesh refinement has attained a stable state
-   * for each solver.
-   *
-   * TODO(Dominic): The corresponding MPI send must (probably) not be performed
-   * per solver. _attainedStableState is a global state which is
-   * only read when deciding if we need to run more mesh setup iterations.
-   * It is not used to select certain solvers in contrast to the meshUpdateRequests.
+   * This switch is set to true in the first overall
+   * iteration in beginIteration(...).
+   * If we detect, that all solvers have
+   * attained a stable state for more than 1 iterations, we switch to
+   * erasing mode.
    */
-  std::vector<bool> _attainedStableState;
+  static bool StillInRefiningMode;
+
+  /**
+   * A state indicating if the mesh refinement has attained a stable state
+   * for all solver.
+   */
+  bool _allSolversAttainedStableState = false;
+
+  /**
+   * The number of iterations in a row where
+   * all solvers attained a stable state.
+   * This counter is used for delaying erasing
+   * iterations till all solvers
+   * have finished their flagging.
+   */
+  int _stableIterationsInARow = 0;
 
   /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
    * for any of the registered solvers.
    */
-  bool _verticalExchangeOfSolverDataRequired = false;
-
-  /**
-   * Prepare all local variables.
-   */
-  void initialiseLocalVariables();
+  bool _verticalExchangeOfSolverDataRequired = false; // TODO(Dominic): Is Parallel
 
   /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
@@ -112,17 +120,6 @@ private:
   void ensureRegularityAlongBoundary(
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
-
-  /**
-   * Call erase on an inside fine grid vertex as long as it does not
-   * harm the regularity at the remote boundary.
-   *
-   * \note Only erasing inside vertices ensures that we do not compete
-   * with routine eraseButPreserveRegularityAlongRemoteBoundary(...).
-   */
-  void eraseIfInsideAndNotRemote(
-      exahype::Vertex& fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS, double>&  fineGridH) const;
 
 public:
 
@@ -369,8 +366,7 @@ public:
 
 
   /**
-   * Reduce the grid update requested flag up
-   * to the master.
+   * TODO(Dominic): Add docu
    */
   void prepareSendToMaster(
       exahype::Cell& localCell, exahype::Vertex* vertices,

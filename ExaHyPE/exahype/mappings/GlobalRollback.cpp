@@ -101,11 +101,7 @@ void exahype::mappings::GlobalRollback::beginIteration(
 }
 
 bool exahype::mappings::GlobalRollback::performGlobalRollback(exahype::solvers::Solver* solver) {
-  return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
+  return solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested;
 }
 
 void exahype::mappings::GlobalRollback::endIteration(
@@ -114,14 +110,14 @@ void exahype::mappings::GlobalRollback::endIteration(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (
          performGlobalRollback(solver) &&
-         exahype::State::fuseADERDGPhases()==true
+         exahype::solvers::Solver::FuseADERDGPhases==true
     ) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
+      solver->rollbackToPreviousTimeStepFused();
     } else if (
          performGlobalRollback(solver) &&
-         exahype::State::fuseADERDGPhases()==false
+         exahype::solvers::Solver::FuseADERDGPhases==false
     ) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
+      solver->rollbackToPreviousTimeStep();
     }
 
   }
@@ -148,25 +144,15 @@ void exahype::mappings::GlobalRollback::enterCell(
           element!=exahype::solvers::Solver::NotFound &&
           performGlobalRollback(solver)
       ) {
-        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-        limitingADERDGSolver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element); // TODO(Dominic): Merge
-
-        if (exahype::State::fuseADERDGPhases()) {
-          limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
-        } else {
-          limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-        }
-
-        limitingADERDGSolver->rollbackSolutionGlobally(fineGridCell.getCellDescriptionsIndex(),element);
+        solver->rollbackSolutionGlobally(
+            fineGridCell.getCellDescriptionsIndex(),element,
+            exahype::solvers::Solver::FuseADERDGPhases);
       }
     }
 
     // !!! The following has to be done after GlobalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }

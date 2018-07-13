@@ -23,8 +23,8 @@ Options/solver/limiting = LimitingSolver
 
 
 Project::Name = "GRMHD"
-#Project::directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
-Project::directory = "GMRHD_cpp"
+Project::directory = "./ApplicationExamples/GRMHD/GRMHD_cpp"
+#Project::directory = "GMRHD_cpp"
 
 BaseSolver::variables = "rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1"
 BaseSolver::time_stepping = "global"

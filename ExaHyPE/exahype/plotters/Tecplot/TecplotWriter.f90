@@ -1,6 +1,7 @@
 ! Exemplary stubs to connect to an ExaHyPE plotter.
 
 subroutine ExaHyPETecplotWriter_init(filename,solverType,basisSize,writtenUnknowns)
+  use iso_c_binding
   implicit none
   CHARACTER(LEN=1000), INTENT(IN) :: filename
   INTEGER, INTENT(IN) :: solverType, basisSize, writtenUnknowns
@@ -20,5 +21,5 @@ subroutine ExaHyPETecplotWriter_init(filename,solverType,basisSize,writtenUnknow
       PRINT *, "Something weird, please abort."
   END SELECT
 
-end subroutine sub
+end subroutine
 

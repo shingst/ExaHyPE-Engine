@@ -142,33 +142,20 @@ private:
 #endif
 
   /**
-   * Sets heap indices of all finite volumes cell descriptions that were
-   * received due to a fork or join event to
-   * multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-   * and the parent index of the cell descriptions to the specified \p
-   * parentIndex.
+   * Allocate necessary memory and deallocate unnecessary memory.
    */
-  static void resetDataHeapIndices(
-      const int cellDescriptionsIndex,
-      const int parentIndex);
+  static void ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription);
 
   /**
-   * Checks if the parent index of a fine grid cell description
-   * was set to RemoteAdjacencyIndex during a previous forking event.
+   * There are no prolongations and restrictions
+   * for the Finite Volums Solver in ExaHyPE
    *
-   * If so, check if there exists a coarse grid cell description
-   * which must have been also received during a previous fork event.
-   * If so, update the parent index of the fine grid cell description
-   * with the coarse grid cell descriptions index.
+   * \param[in] isSkeletonCell indicates that the cell is adjacent to a remote boundary.
+   *            (There is currently no AMR for the pure FVM solver.)
    */
-  void ensureConsistencyOfParentIndex(
-      CellDescription& cellDescription,
-      const int coarseGridCellDescriptionsIndex,
-      const int solverNumber);
-
   void compress(
       CellDescription& cellDescription,
-      const bool vetoSpawnBackgroundTask) const;
+      const bool isSkeletonCell) const;
   /**
    * \copydoc ADERDGSolver::computeHierarchicalTransform()
    *
@@ -189,15 +176,16 @@ private:
   void putUnknownsIntoByteStream(CellDescription& cellDescription) const;
   void uncompress(CellDescription& cellDescription) const;
 
-  class CompressionTask {
+  class CompressionJob {
     private:
-      const FiniteVolumesSolver&                       _solver;
-      exahype::records::FiniteVolumesCellDescription&  _cellDescription;
+      const FiniteVolumesSolver& _solver;
+      CellDescription&           _cellDescription;
+      const bool                 _isSkeletonJob;
     public:
-      CompressionTask(
-        const FiniteVolumesSolver&                       _solver,
-        exahype::records::FiniteVolumesCellDescription&  _cellDescription
-      );
+      CompressionJob(
+        const FiniteVolumesSolver& solver,
+        CellDescription&           cellDescription,
+        const bool                 isSkeletonJob);
 
       bool operator()();
   };
@@ -216,11 +204,13 @@ private:
     FiniteVolumesSolver&  _solver;
     const int             _cellDescriptionsIndex;
     const int             _element;
+    const bool            _isSkeletonJob;
   public:
     FusedTimeStepJob(
-        FiniteVolumesSolver& _solver,
+        FiniteVolumesSolver& solver,
         const int            cellDescriptionsIndex,
-        const int            element
+        const int            element,
+        const bool           isSkeletonJob
     );
 
     bool operator()();
@@ -284,10 +274,14 @@ public:
    */
   static void eraseCellDescriptions(const int cellDescriptionsIndex);
 
-  FiniteVolumesSolver(const std::string& identifier, int numberOfVariables,
-      int numberOfParameters, int nodesPerCoordinateAxis, int ghostLayerWidth,
-      double maximumMeshSize, int maximumAdaptiveMeshDepth,
-      exahype::solvers::Solver::TimeStepping timeStepping,
+  FiniteVolumesSolver(
+      const std::string& identifier,
+      const int numberOfVariables,
+      const int numberOfParameters,
+      const int basisSize,
+      const int ghostLayerWidth,
+      const double maximumMeshSize,
+      const exahype::solvers::Solver::TimeStepping timeStepping,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));
@@ -541,18 +535,23 @@ public:
 
   double getMinNextTimeStepSize() const override;
 
-  bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const override {
-    return Heap::getInstance().isValidIndex(cellDescriptionsIndex);
-  }
+  static bool isValidCellDescriptionIndex(const int cellDescriptionsIndex);
 
   int tryGetElement(
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
+
+  /**
+   * Compute a load balancing weight for a cell in the mesh.
+   */
+  static int computeWeight(const int cellDescriptionsIndex);
+
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
   ///////////////////////////////////
+
+
   /**
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
@@ -568,7 +567,7 @@ public:
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    */
-  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   /**
    * Checks if all the necessary memory is allocated for the cell description.
@@ -578,33 +577,31 @@ public:
    * \note Heap data creation assumes default policy
    * DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired.
    */
-  void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription);
+  void ensureNecessaryMemoryIsAllocated(CellDescription& cellDescription) const;
 
   bool progressMeshRefinementInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) override;
+      const int  solverNumber,
+      const bool stillInRefiningMode) override;
 
   bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-      const int& cellDescriptionsIndex,
-      const int& solverNumber,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+          const int cellDescriptionsIndex,
+          const int solverNumber,
+          const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+          const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+          const bool checkThoroughly) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -625,10 +622,6 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-        const int cellDescriptionsIndex,
-        const int element) override;
-
   double startNewTimeStep(
       const int cellDescriptionsIndex,
       const int element) override final;
@@ -656,13 +649,9 @@ public:
       const int cellDescriptionsIndex,
       const int solverElement) const override final;
 
-  void rollbackToPreviousTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) const final override;
+  void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
-  void rollbackToPreviousTimeStepFused(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
+  void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -714,13 +703,17 @@ public:
    */
   void swapSolutionAndPreviousSolution(CellDescription& cellDescription) const;
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) override;
 
   void restriction(
         const int cellDescriptionsIndex,
         const int element) override;
+
+  void rollbackSolutionGlobally(
+      const int cellDescriptionsIndex, const int solverElement,
+      const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -750,28 +743,18 @@ public:
   ///////////////////////////////////
   // MASTER<=>WORKER
   ///////////////////////////////////
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) override;
-
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-        const int cellDescriptionsIndex,
-        const int element) override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const override;
 
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) override;
+  /**
+     * Sets heap indices of an FiniteVolumesCellDescription to -1,
+     * and the parent index of the cell descriptions to the specified \p
+     * parentIndex.
+     */
+   static void resetIndicesAndFlagsOfReceivedCellDescription(CellDescription& cellDescription,const int parentIndex);
 
   /**
    * Send all ADERDG cell descriptions to rank
@@ -816,7 +799,7 @@ public:
    * Here, we would merge first the cell descriptions sent by the master and worker
    * and then merge the data that is sent out right after.
    */
-  static void mergeCellDescriptionsWithRemoteData(
+  static void receiveCellDescriptions(
       const int                                     fromRank,
       exahype::Cell&                                localCell,
       const peano::heap::MessageType&               messageType,
@@ -880,15 +863,15 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
+  ///////////////////////
+  // MASTER <=> WORKER
+  ///////////////////////
+
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
@@ -896,20 +879,77 @@ public:
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const int solverNumber) final override;
+
+  /**
+   * Nop
+   */
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
+  /**
+   * Nop
+   */
+  void receiveDataFromMasterIfProlongating(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
+
+  /**
+   * Nop
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Nop. TODO(Dominic): As long as no multi-solver and limiter
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+        const int worker,
+        const int localCellDescriptionsIndex,
+        const int localElement,
+        const int coarseGridCellDescriptionsIndex,
+        const tarch::la::Vector<DIMENSIONS, double>& x,
+        const int                                    level,
+        const bool                                   stillInRefiningMode) final override;
+
+  ///////////////////////////////////
+  // WORKER->MASTER
+  ///////////////////////////////////
 
   void sendDataToMaster(
       const int                                    masterRank,
@@ -920,31 +960,6 @@ public:
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
-
-  void sendDataToMaster(
-      const int                                     masterRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void sendEmptyDataToMaster(
-      const int                                     masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void mergeWithWorkerData(
-      const int                                    workerRank,
-      const exahype::MetadataHeap::HeapEntries&    workerMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
-
-  void dropWorkerData(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
 
   ///////////////////////////////////
   // MASTER->WORKER
@@ -959,32 +974,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-  void sendDataToWorker(
-      const int                                     workerRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  void sendEmptyDataToWorker(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   void validateNoNansInFiniteVolumesSolution(CellDescription& cellDescription,const int cellDescriptionsIndex,const char* methodTrace) const;

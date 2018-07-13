@@ -7,6 +7,7 @@
 // ========================
 #include "ConservedWriter.h"
 
+extern double grav;
 
 SWE::ConservedWriter::ConservedWriter(MySWESolver&  solver) {
   // @TODO Please insert your code here.
@@ -33,9 +34,13 @@ void SWE::ConservedWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 5;
-  for (int i=0; i<writtenUnknowns - 1; i++){
+  const int writtenUnknowns = 6;
+  for (int i=0; i<writtenUnknowns - 2; i++){
     outputQuantities[i] = Q[i];
   }
   outputQuantities[4] = Q[3] + Q[0];
+
+  //calculate error for OscillationLake
+  double omega = sqrt(0.2*grav);
+  outputQuantities[5] = std::abs(Q[0] - std::max(0.0, 0.05 * (2 * x[0] * std::cos(omega * timeStamp) + 2 * x[1] * std::sin(omega * timeStamp)) + 0.075 - Q[3]));
 }

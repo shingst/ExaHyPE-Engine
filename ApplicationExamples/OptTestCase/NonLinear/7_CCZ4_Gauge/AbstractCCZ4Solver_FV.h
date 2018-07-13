@@ -46,7 +46,7 @@ class CCZ4::AbstractCCZ4Solver_FV : public exahype::solvers::FiniteVolumesSolver
     class VariableMultiplicities;
     class VariableNames;
     
-    AbstractCCZ4Solver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    AbstractCCZ4Solver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     void solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
     

@@ -60,8 +60,20 @@ int exahype::runners::Runner::runAsWorker(
              preProcessTimeStepInSharedMemoryEnvironment();
 
              repository.iterate();
+
+             static int lastMemoryUsageValue = 0;
+             int memoryUsageDelta = 0;
+             if (lastMemoryUsageValue > 0) {
+               memoryUsageDelta = peano::utils::UserInterface::getMemoryUsageMB() - lastMemoryUsageValue;
+             }
+
+             lastMemoryUsageValue = peano::utils::UserInterface::getMemoryUsageMB();
               logInfo("runAsWorker(...)",
-                "\tmemoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
+                "\tmemoryUsage    =" << lastMemoryUsageValue << " MB\t" << "(delta: " << memoryUsageDelta << ")" );
+
+//              logInfo("runAsWorker(...)",
+//                "\tmemoryDelta    =" << memoryUsageDelta << " MB");
+
 
               #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
               if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {

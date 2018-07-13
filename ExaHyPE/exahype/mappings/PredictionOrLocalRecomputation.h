@@ -29,7 +29,6 @@
 
 #include "exahype/solvers/Solver.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 namespace exahype {
 namespace mappings {
@@ -43,7 +42,7 @@ class PredictionOrLocalRecomputation;
  *
  * |Mapping                 | Event                  | Action                                            |
  * -------------------------------------------------------------------------------------------------------
- * | LimiterStatusSpreading | touchVertexFirstTime   | Merge the face-wise limiter status between local neighbours.|
+ * | RefinementStatusSpreading | touchVertexFirstTime   | Merge the face-wise limiter status between local neighbours.|
  * |                        | enterCell              | Determine a unified value of the merged face-wise limiter status values and write it to every face. (Do not update the cell-wise limiter status.)|
  * |                        | prepareSendToNeighbour | Send the unified ace-wise limiter status to neighbouring ranks.|
  * -------------------------------------------------------------------------------------------------------
@@ -71,6 +70,12 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
+
+  /**
+   * A local copy of the state set
+   * in beginIteration(...).
+   */
+  exahype::State _stateCopy;
 
   #ifdef Debug // TODO(Dominic): Exclude shared memory etc.
   /*
@@ -227,9 +232,16 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   void beginIteration(exahype::State& solverState);
 
   /**
-   * Frees previously allocated temporary variables.
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
    *
-   * In debug mode, prints the output of counters.
+   * <h2>Local Recomputation</h2>
+   * Advance the global solver state to the desired time step again.
+   *
+   * <h2>Background Jobs</h2>
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
    */
   void endIteration(exahype::State& solverState);
 

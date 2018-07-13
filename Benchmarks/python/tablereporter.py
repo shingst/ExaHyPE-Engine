@@ -188,7 +188,7 @@ r"""
                 caption  = "\\textbf{"+", ".join("%s: %s" %  pair for pair in plotDict.items())
                 caption += " (y-scale: "+yScale+"):} "
                 caption += "The bars show measurements for different values of the tuples "
-                caption += "-".join(r"\textit{%s}" % item for item in perPlotSpace.keys()) 
+                caption += "-".join(r"\textit{%s}" % item.replace("_","\\_") for item in perPlotSpace.keys()) 
                 caption += "."
                 renderedFigure = renderedFigure.replace("{{caption}}",caption)
                 
@@ -219,8 +219,9 @@ def getDataColumnIndex():
     if dataColumnName in columnNames:
         columnIndex = columnNames.index(dataColumnName)
     else:
-      print("ERROR: program aborted since data column to plot "+dataColumnName+" is not a column name of the table.",file=sys.stderr)
-      print("ERROR: found table column names: "+",".join(columnNames),file=sys.stderr)
+      print("ERROR: program aborted since data column to plot '"+dataColumnName+"' is not a column name of the table.",file=sys.stderr)
+      print("ERROR: found table column names: '"+"','".join(columnNames)+"'",file=sys.stderr)
+      print(columnNames)
       sys.exit()
     
     return columnIndex
@@ -269,7 +270,9 @@ def parseList(string):
     into a list of strings:
     [ 'val1,val2' ,'val3', 'val4,val5' ]
     """
-    for line in csv.reader([string],delimiter=","):
+    strippedString = string.replace("\n","").replace("\r","")
+
+    for line in csv.reader([strippedString],delimiter=","):
       values = line
       return values
 
@@ -380,8 +383,8 @@ NOTE: The order of the parameters in the section 'per_plot' is preserved.
     tableFile   = open(tablePath, 'r')
     columnNames = next(tableFile)
     columnNames = columnNames.strip()
-    columnNames = columnNames.split(";")
-    tableData   = list(csv.reader(tableFile,delimiter=";"))
+    columnNames = columnNames.split(",")
+    tableData   = list(csv.reader(tableFile,delimiter=","))
     tableFile.close()
     
     dataColumnIndex     = getDataColumnIndex()

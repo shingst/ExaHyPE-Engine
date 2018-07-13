@@ -32,7 +32,7 @@ class Qt::Demonstrator_FV : public Qt::AbstractDemonstrator_FV {
      */
     static tarch::logging::Log _log;
   public:
-    Demonstrator_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    Demonstrator_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

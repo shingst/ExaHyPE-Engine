@@ -40,6 +40,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int NumberOfParameters      = {{optNamespace}}::getNumberOfParameter();
     static constexpr int Order                   = {{optNamespace}}::getBasisSize() -1;
     static constexpr int Dimensions              = {{optNamespace}}::getDimension();
+    
     static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
     static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
     static constexpr double CFL                  = 0.9;
@@ -65,7 +66,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     class {{className}};
     {%- endfor %}
     
-    {{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping  {%- if enableProfiler %}
+    {{abstractSolver}}(double maximumMeshSize,int maximumMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping  {%- if enableProfiler %}
     , std::unique_ptr<exahype::profilers::Profiler> profiler  {%- endif %});
     
 {%- if countFlops %}
@@ -91,7 +92,11 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     
     static std::atomic_ulong surfaceIntegral_f;
     static std::atomic_ulong surfaceIntegral_t;
-    static std::atomic_ulong surfaceIntegral_c;
+    static std::atomic_ulong surfaceIntegral_c;  
+    
+    static std::atomic_ulong faceIntegral_f;
+    static std::atomic_ulong faceIntegral_t;
+    static std::atomic_ulong faceIntegral_c;
     
     static std::atomic_ulong solutionUpdate_f;
     static std::atomic_ulong solutionUpdate_t;
@@ -138,7 +143,9 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       
       std::cout << "fusedSTPVI flops: " << fusedSTPVI_f.load() << std::endl << "fusedSTPVI time: " << ((double)fusedSTPVI_t.load()) / 1000000000.0 << std::endl << "fusedSTPVI GFlops: " <<  ((double) fusedSTPVI_f.load()) / ((double) fusedSTPVI_t.load()) << std::endl << "fusedSTPVI calls: " << fusedSTPVI_c.load() << std::endl << "Total picard iterations:" << fusedSTPVI_picard.load() << std::endl << std::endl;
       
-      std::cout << "surfaceIntegral flops: " << surfaceIntegral_f.load() << std::endl << "surfaceIntegral time: " << ((double)surfaceIntegral_t.load()) / 1000000000.0 << std::endl << "surfaceIntegral GFlops: " <<  ((double) surfaceIntegral_f.load()) / ((double) surfaceIntegral_t.load()) << std::endl << "surfaceIntegral calls: " << surfaceIntegral_c.load() << std::endl << std::endl;
+      //std::cout << "surfaceIntegral flops: " << surfaceIntegral_f.load() << std::endl << "surfaceIntegral time: " << ((double)surfaceIntegral_t.load()) / 1000000000.0 << std::endl << "surfaceIntegral GFlops: " <<  ((double) surfaceIntegral_f.load()) / ((double) surfaceIntegral_t.load()) << std::endl << "surfaceIntegral calls: " << surfaceIntegral_c.load() << std::endl << std::endl;
+
+      std::cout << "faceIntegral flops: " << faceIntegral_f.load() << std::endl << "faceIntegral time: " << ((double)faceIntegral_t.load()) / 1000000000.0 << std::endl << "faceIntegral GFlops: " <<  ((double) faceIntegral_f.load()) / ((double) faceIntegral_t.load()) << std::endl << "faceIntegral calls: " << faceIntegral_c.load() << std::endl << std::endl;
       
       std::cout << "solutionUpdate flops: " << solutionUpdate_f.load() << std::endl << "solutionUpdate time: " << ((double)solutionUpdate_t.load()) / 1000000000.0 << std::endl << "solutionUpdate GFlops: " <<  ((double) solutionUpdate_f.load()) / ((double) solutionUpdate_t.load()) << std::endl << "solutionUpdate calls: " << solutionUpdate_c.load() << std::endl << std::endl;
       
@@ -216,10 +223,12 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     // old: void fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt, double** tempPointForceSources) override; 
     int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override; 
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
-    void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
+    void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx); //override; //TODO JMG make override again when enabled back
+    void faceIntegral(double* const lduh, const double* const lFhbnd, const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex, const int levelDelta, const tarch::la::Vector<DIMENSIONS, double>& cellSize) override;    
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
     // old: void boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) override;
-    void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
+    // old: void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
+    void boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     {%- if patchwiseAdjust %}
     // adjustSolution is implemented by the user solver as patchwise adjust option was used 
@@ -227,7 +236,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) override; 
     {%- endif %}
     void faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
-    void faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
+    //old: void faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
     void volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
     void volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
 

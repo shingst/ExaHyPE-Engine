@@ -23,8 +23,9 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-peano::CommunicationSpecification
-exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
+#include "exahype/mappings/RefinementStatusSpreading.h"
+
+peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
@@ -77,14 +78,13 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  #ifdef Parallel
-  if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
-    exit(-1);
+  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
+    // background threads
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   }
-  #endif
 
-  // background threads
-  exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+  exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -98,8 +98,6 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }
@@ -113,7 +111,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  if ( exahype::State::fuseADERDGPhases() ) {
+  if ( exahype::solvers::Solver::FuseADERDGPhases ) {
   vertex.receiveNeighbourData(
       fromRank,false /*no merge*/,true /*no batch*/,
       fineGridX,fineGridH,level);

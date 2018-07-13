@@ -216,12 +216,23 @@ class exahype::parser::Parser {
   bool   getSpawnDoubleCompressionAsBackgroundTask() const;
 
   /**
-   * If we batch time steps, we can in principle switch off the boundary data
+   * If we batch time steps, we can in principle switch off the Peano boundary data
    * exchange, as ExaHyPE's data flow is realised through heaps. However, if we
-   * turn off the boundary exchange, we enforce that no AMR is done in-between
-   * domain boundaries.
+   * turn off the boundary exchange, we enforce that no AMR and load balancing
+   * is done in-between time steps.
    */
-  bool getExchangeBoundaryDataInBatchedTimeSteps() const;
+  bool getDisablePeanoNeighbourExchangeInTimeSteps() const;
+
+  /**
+   * If we batch time steps, we can in principle switch off the
+   * exchange of ExaHyPE metadata if and only if no dynamic limiting
+   * and no dynamic AMR is used.
+   *
+   * \note That this is upgraded to all time stepping communication
+   * if you turn getDisablePeanoNeighbourExchangeDuringTimeSteps()
+   * returns true as well.
+   */
+  bool getDisableMetadataExchangeInBatchedTimeSteps() const;
 
   /**
    * \return The type of a solver.
@@ -258,10 +269,26 @@ class exahype::parser::Parser {
    * \return The maximum adaptive mesh depth as specified
    * by the user.
    *
-   * \note I fthe user has not specified an adaptive
+   * \note If the user has not specified an adaptive
    * mesh depth, 0 is returned.
    */
-  double getMaximumMeshDepth(int solverNumber) const;
+  int getMaximumMeshDepth(int solverNumber) const;
+
+  /**
+   * \return The number of halo cells that are refined around a
+   * a cell on the finest allowed mesh level which wants to be kept
+   * or refined further.
+   *
+   * \note If the user has not specified this optional value, 0 is returned.
+   */
+  int getHaloCells(int solverNumber) const;
+
+  /**
+   * \return The number of regularised fine grid levels.
+   *
+   * \note If the user has not specified this optional value, 0 is returned.
+   */
+  int getRegularisedFineGridLevels(int solverNumber) const;
 
   /**
    * Prints a summary of the parameters read in for a solver.

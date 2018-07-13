@@ -25,7 +25,6 @@
 
 #include "tarch/multicore/BooleanSemaphore.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 #include "exahype/Cell.h"
 #include "exahype/State.h"
@@ -86,7 +85,22 @@ private:
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
+
+  /**
+   * A local copy of the state set
+   * in beginIteration(...).
+   */
+  exahype::State _stateCopy;
  public:
+  /**
+   * Determine the enter cell specification depending
+   * on if background threads are used or not.
+   *
+   * The mappings FusedTimeStep, PredictionRerun, and
+   * PredictionOrLocalRecomputation use the same
+   * enter cell specification.
+   */
+  static peano::MappingSpecification determineEnterCellSpecification(int level);
 
   /**
    * This method first synchronises the time step sizes and time stamps, and
@@ -115,37 +129,8 @@ private:
       const exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const exahype::State::AlgorithmSection& algorithmSection);
-
-  /**
-   * This routine restricts face data from a
-   * cell description to a parent cell description if the fine grid cell
-   * associated with the cell description is adjacent to a boundary of the
-   * coarser grid cell associated with the parent cell description.
-   *
-   * We further restrict data (e.g. the limiter status) to the
-   * next parent if it exists. This operation is performed
-   * if we send face data or if we reduce time step data.
-   * In the first case, we might encounter a batch. We
-   * then still want to restrict that data up locally
-   * per rank. In the second case, we might run the nonfused
-   * time stepping scheme. Then, we are required to
-   * restrict the limiter status before we
-   * send out face data.
-   *
-   * Lastly, we call post-process on every solver.
-   *
-   * \note We use locks to make both operation thread-safe.
-   *
-   * <h2> Multicore parallelisation </h2>
-   *
-   * We face issues here with pfor as the ADER-DG solver can spawn background
-   * threads. See the documentation of peano::datatraversal::TasksSet for a
-   * remark on this.
-   */
-  static void restriction(
-      const exahype::Cell&  fineGridCell,
-      const exahype::State::AlgorithmSection& algorithmSection);
+      const exahype::State::AlgorithmSection& algorithmSection,
+      const bool issuePredictionJobs);
 
   /**
    * Level for which we ask what to do. This value is negative
@@ -194,14 +179,18 @@ private:
   #endif
 
   /**
-   * Copy the state.
-   * Further initialise temporary variables
-   * if they are not initialised yet (or
-   * if a new solver was introuced to the grid.
-   * This is why we put the initialisation
-   * in beginIteration().
+   * Turns ITAC on if required
+   * Turn the broadcast off at the end of the first iteration.
    */
   void beginIteration(exahype::State& solverState);
+
+  /**
+   * <h2>Background Jobs</h2>
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
+   */
+  void endIteration(exahype::State& solverState);
 
   /**
    * \see performPredictionAndProlongateData
@@ -215,7 +204,7 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * \see restrictData
+   * Nop.
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -465,11 +454,6 @@ private:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Nop
-   */
-  void endIteration(exahype::State& solverState);
 
   /**
    * Nop
