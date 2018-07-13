@@ -2,7 +2,7 @@
 import jenkins.model.Jenkins
 
 pipeline {
-    agent { label 'mac-intel' }
+    agent { label 'Linux-Cluster' }
     // triggers {
     // 	cron('H H * * *')
     // }
