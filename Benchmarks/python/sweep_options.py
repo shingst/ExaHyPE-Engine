@@ -94,8 +94,8 @@ def compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
     for i,tuple1 in enumerate(ranksNodesCoreCountsList):
         for j,tuple2 in enumerate(ranksNodesCoreCountsList):
             if i != j:
-                coresNodesIdentical = tuple1.nodes=tuple2.nodes and\
-                                      tuple1.ranks=tuple2.ranks
+                coresNodesIdentical = tuple1.nodes==tuple2.nodes and\
+                                      tuple1.ranks==tuple2.ranks
                 if coresNodesIdentical:
                     for coreCount1 in tuple1.coreCounts:
                         for coreCount2 in tuple2.coreCounts:
@@ -125,9 +125,8 @@ def parseRanksNodesCoreCounts(jobs):
     for entryMatch in re.findall(entryPattern, jobs["ranks_nodes_cores"]):
         coreCountsList = []
         for coresMatch in re.findall(coreCountsPattern,entryMatch[3]):
-            coreCountsList.append( CoreCount( cores=coresMatch[1], consumers=coresMatch[2] )
-            coreCounts[coresMatch[1]]=coresMatch[2]
-        if not coreCounts:
+            coreCountsList.append( CoreCount( cores=coresMatch[0], consumers=coresMatch[1] ) )
+        if not coreCountsList:
             print("ERROR: the cores specification (the part in curly braces {...}) in 'ranks_nodes_cores' does not have the form: '{<cores0>:<consumertasks0>,<cores1>:<consumertasks1>',...}'.\n"\
                   "       Valid examples: '{1:1}', '{1:1,2:2}'",file=sys.stderr)
             sys.exit()
@@ -137,13 +136,13 @@ def parseRanksNodesCoreCounts(jobs):
             print("ERROR: specified ranks ("+ranks+") must always be greater than or equal to specified nodes ("+nodes+").\n"\
                   "       Error occured in entry: '"+entryMatch[0]+"'",file=sys.stderr) 
             sys.exit()
-        rankNodesCoreCountsList.append( Options( ranks=ranks nodes=nodes coreCounts=coreCountsList text=entryMatch[0] ) )
+        ranksNodesCoreCountsList.append( RanksNodesCoreCounts( ranks=ranks, nodes=nodes, coreCounts=coreCountsList, text=entryMatch[0] ) )
         
     if not ranksNodesCoreCountsList:
         print("ERROR: could not find any 'ranks_nodes_cores' entries in the form: '<ranks> x <nodes> x {<cores0>:<consumertasks0>,<cores1>:<consumertasks1>,...}'.\n"\
               "       Valid examples: '29 x 29 x {1:1}', '758 x 29 x {8:416:8}'",file=sys.stderr)
         sys.exit()
-    else if compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList)
+    elif compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
         sys.exit()
     return ranksNodesCoreCountsList
 
@@ -196,7 +195,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "buildFolderPath scriptsFolderPath "
             "resultsFolderPath historyFolderPath "
             "jobClass islands "
-            "rankNodesCoreCounts "
+            "ranksNodesCoreCounts "
             "runNumbers runNumbersGrouped"))
     
     options = Options(

@@ -66,6 +66,7 @@ def clean(subFolder=""):
     print("rm -r "+folder)
     subprocess.call("rm -r "+folder, shell=True)
 
+
 def renderSpecFile(templateBody,parameterDict,tasks,cores,consumers):
     renderedFile = templateBody
     
@@ -73,27 +74,31 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores,consumers):
     
     consistent = True
     # verify mandatory options file parameters can be found in template file
-    keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
-    for key in context:
-        if key not in keysInTemplate:
-            consistent = False
-            print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
+    global createdFirstSpecFile
+    if not createdFirstSpecFile:
+        keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
+        for key in context:
+            if key not in keysInTemplate:
+                consistent = False
+                print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
     # optional parameters
     context["tasks"]           = tasks
     context["cores"]           = cores
     context["backgroundTasks"] = consumers
 
-    for key in context:
-        if key not in keysInTemplate:
-            print("WARNING: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
-    # verify template parameters are defined in options file
-    for key in keysInTemplate:
-        if key not in context:
-            consistent = False
-            print("ERROR: specification file template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
-    if not consistent:
-        print("ERROR: subprogram aborted as specification file template and sweep options file are inconsistent.",file=sys.stderr)
-        sys.exit()
+    if not createdFirstSpecFile:
+        for key in context:
+            if key not in keysInTemplate:
+                print("WARNING: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
+        # verify template parameters are defined in options file
+        for key in keysInTemplate:
+            if key not in context:
+                consistent = False
+                print("ERROR: specification file template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
+        if not consistent:
+            print("ERROR: subprogram aborted as specification file template and sweep options file are inconsistent.",file=sys.stderr)
+            sys.exit()
+        createdFirstSpecFile = True
     
     for key,value in context.items():
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
@@ -130,7 +135,6 @@ def verifyEnvironmentIsCorrect(justWarn=False):
             if (os.environ["DISTRIBUTEDMEM"].strip() not in ["MPI"]) and int(ranks)>1:
                 print(messageType+": DISTRIBUTEDMEM environment variable set to "+environmentDict["DISTRIBUTEDMEM"]+" and ranks is set to "+ranks+" > 1",file=sys.stderr)
                 environmentIsCorrect = False
-            myCoreCounts = coreCounts
             for coreCount in config.coreCounts:
                 cores = coreCount.cores
                 if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(cores)>1:
@@ -240,7 +244,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     buildParameterDict["dimension"]   =dimension
                                     buildParameterDict["order"]       =order
                                         
-                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1:1")
+                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1","1")
                                         
                                     buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+suffix+".exahype"
                                         
@@ -338,11 +342,13 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     consistent = True
     # verify all mandatory(!) sweep options are defined in template
-    keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",jobScriptTemplate)]
-    for key in context:
-        if key not in keysInTemplate:
-            consistent = False
-            print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
+    global createdFirstJobScript
+    if not createdFirstJobScript:
+        keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",jobScriptTemplate)]
+        for key in context:
+            if key not in keysInTemplate:
+                consistent = False
+                print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
     
     # put optional sweep options in context
     context["mail"]         = jobs["mail"]
@@ -353,13 +359,14 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     context["coresPerTask"] = str( int ( int(jobs["num_cpus"]) / int(tasks) ) )
     
     # now verify template parameters are defined in options file
-    for key in keysInTemplate:
-        if key not in context:
-            consistent = False
-            print("ERROR: job script template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
-    if not consistent:
-        print("ERROR: subprogram aborted as job script template and sweep options file are inconsistent.",file=sys.stderr)
-        sys.exit()
+    if not createdFirstJobScript:
+        for key in keysInTemplate:
+            if key not in context:
+                consistent = False
+                print("ERROR: job script template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
+        if not consistent:
+            print("ERROR: subprogram aborted as job script template and sweep options file are inconsistent.",file=sys.stderr)
+            sys.exit()
     
     context["body"] = jobScriptBody 
  
@@ -497,7 +504,7 @@ def generateScripts():
                     ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                     
                     jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                              "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+configId+"-r"+run
+                              "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+str(configId)+"-r"+run
                     jobScriptFilePath = scriptsFolderPath + "/" + jobName + ".job"
                     jobOutputFilePath = resultsFolderPath + "/" + jobName + ".job_out"
                     jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".job_err"
@@ -632,7 +639,7 @@ def verifyAllJobScriptsExist():
                     ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                     
                     jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                              "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+configId+"-r"+run
+                              "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+str(configId)+"-r"+run
                     jobScriptFilePath  = scriptsFolderPath + "/" + jobName + ".job"
                     if not os.path.exists(jobScriptFilePath):
                         allJobScriptsExist = False
@@ -691,7 +698,7 @@ def hashSweep():
     for config in ranksNodesCoreCounts:
         chain += config.ranks+";"+config.nodes+";"
         for coreCount in config.coreCounts:
-            chain += coreCount.contes+";"+coreCount.
+            chain += coreCount.cores+";"+coreCount.consumers
     for value in runNumbers:
         chain += value+";"
     for value in runNumbersGrouped:
@@ -752,8 +759,8 @@ def submitJobs():
                     
                     jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
                               "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+configId+"-r"+run
-                            jobScriptFilePrefix  = scriptsFolderPath + "/" + jobName
-                            jobScriptFilePath    = jobScriptFilePrefix + ".job"
+                    jobScriptFilePrefix  = scriptsFolderPath + "/" + jobName
+                    jobScriptFilePath    = jobScriptFilePrefix + ".job"
                             
                     command=jobSubmissionTool + " " + jobScriptFilePath
                     print(command)
@@ -900,6 +907,9 @@ same value in every row.
     ranksNodesCoreCounts = options.ranksNodesCoreCounts
     runNumbers           = options.runNumbers
     runNumbersGrouped    = options.runNumbersGrouped   
+
+    createdFirstSpecFile  = False
+    createdFirstJobScript = False
  
     verifySweepAgreesWithHistoricalExperiments()
     
