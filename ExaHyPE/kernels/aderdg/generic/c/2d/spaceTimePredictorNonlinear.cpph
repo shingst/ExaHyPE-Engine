@@ -36,7 +36,7 @@ namespace {
  *  We have to consider that we store parameters in luh, lQi
  *  and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useNCP, typename SolverType>
+template <bool useSource, bool useFlux, bool useNCP,bool useParabolicFlux typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double dt,
                              const tarch::la::Vector<DIMENSIONS, double>& invDx,
@@ -85,7 +85,49 @@ int aderPicardLoopNonlinear(SolverType& solver,
   for (; iter < MaxIterations; iter++) {
 
     for (int i = 0; i < basisSize; i++) {  // time DOF
-      // Compute the fluxes
+
+
+        // Compute gradients only if nonconservative contributions have to be
+        // computed. 
+        if(useNCP || useParabolicFlux) {
+            std::memset(gradQ, 0, basisSize2 * DIMENSIONS * numberOfVariables * sizeof(double));
+
+            for (int k = 0; k < basisSize; k++) { // k == y
+                const double weight = kernels::gaussLegendreWeights[order][i] *
+                    kernels::gaussLegendreWeights[order][k];
+                const double updateSize = weight * dt * invDx[0];
+
+
+                for (int l = 0; l < basisSize; l++) { // l == x
+                    for (int m = 0; m < numberOfVariables; m++) {
+                        for (int n = 0; n < basisSize; n++) { // n == matmul x
+                            gradQ[idx_gradQ(k, l, /*x*/0, m)] += 1.0 * invDx[0] *
+                                lQi[idx_lQi(k,n,i,m)] *
+                                kernels::dudx[order][l][n];
+                        }
+                    }
+                }
+            }
+            for(int k=0; k<basisSize; k++) {
+                const double weight = kernels::gaussLegendreWeights[order][i] *
+                    kernels::gaussLegendreWeights[order][k];
+                const double updateSize = weight * dt * invDx[1];
+
+                for (int l = 0; l < basisSize; l++) { // l == y
+                    for (int m = 0; m < numberOfVariables; m++) {
+                        for (int n = 0; n < basisSize; n++) { // n = matmul y
+                            gradQ[idx_gradQ(l, k, /*y*/1, m)] += 1.0 * invDx[1] *
+                                lQi[idx_lQi(n, k, i, m)] *
+                                kernels::dudx[order][l][n]; /* l,n: transpose */
+                        }
+                    }
+                }
+            }
+
+        }
+
+
+        // Compute the fluxes
       if (useFlux) {
         for (int k = 0; k < basisSize; k++) { // presumably k=y
           for (int l = 0; l < basisSize; l++) { // presumably l=x
@@ -113,62 +155,46 @@ int aderPicardLoopNonlinear(SolverType& solver,
         }
       }
 
-      // Compute gradients only if nonconservative contributions have to be
-      // computed. 
-      if(useNCP) {
-        std::memset(gradQ, 0, basisSize2 * DIMENSIONS * numberOfVariables * sizeof(double));
-      }
 
       // Compute the "derivatives" (contributions of the stiffness matrix)
       // x direction (independent from the y derivatives)
       for (int k = 0; k < basisSize; k++) { // k == y
-        const double weight = kernels::gaussLegendreWeights[order][i] *
-                              kernels::gaussLegendreWeights[order][k];
-        const double updateSize = weight * dt * invDx[0];
+          const double weight = kernels::gaussLegendreWeights[order][i] *
+              kernels::gaussLegendreWeights[order][k];
+          const double updateSize = weight * dt * invDx[0];
 
-        // Matrix operation
-        for (int l = 0; l < basisSize; l++) { // l == x
-          for (int m = 0; m < numberOfVariables; m++) {
-            for (int n = 0; n < basisSize; n++) { // n == matmul x
-              if (useFlux) {
-                rhs[idx_rhs(i, k, l, m)] -= updateSize * lFi[idx_lFi(i, k, n, 0, m)] *
-                                            kernels::Kxi[order][n][l]; 
+          // Matrix operation
+          if (useFlux) {
+              for (int l = 0; l < basisSize; l++) { // l == x
+                  for (int m = 0; m < numberOfVariables; m++) {
+                      for (int n = 0; n < basisSize; n++) { // n == matmul x
+                          rhs[idx_rhs(i, k, l, m)] -= updateSize * lFi[idx_lFi(i, k, n, 0, m)] *
+                              kernels::Kxi[order][n][l]; 
+                      }
+                  }
               }
-              if(useNCP) {
-                gradQ[idx_gradQ(k, l, /*x*/0, m)] += 1.0 * invDx[0] *
-                                          lQi[idx_lQi(k,n,i,m)] *
-                                          kernels::dudx[order][l][n];
-              }
-            }
           }
-        }
       }
-      
 
       // y direction (independent from the x derivatives)
       for(int k=0; k<basisSize; k++) {
-        const double weight = kernels::gaussLegendreWeights[order][i] *
-            kernels::gaussLegendreWeights[order][k];
-        const double updateSize = weight * dt * invDx[1];
+          const double weight = kernels::gaussLegendreWeights[order][i] *
+              kernels::gaussLegendreWeights[order][k];
+          const double updateSize = weight * dt * invDx[1];
 
-        // Matrix operation
-        for (int l = 0; l < basisSize; l++) { // l == y
-          for (int m = 0; m < numberOfVariables; m++) {
-            for (int n = 0; n < basisSize; n++) { // n = matmul y
-              if (useFlux) {
-                rhs[idx_rhs(i, l, k, m)] -= updateSize * lFi[idx_lFi(i, n, k, 1, m)] *
-                    kernels::Kxi[order][n][l];
+          // Matrix operation
+          if (useFlux) {
+              for (int l = 0; l < basisSize; l++) { // l == y
+                  for (int m = 0; m < numberOfVariables; m++) {
+                      for (int n = 0; n < basisSize; n++) { // n = matmul y
+                          rhs[idx_rhs(i, l, k, m)] -= updateSize * lFi[idx_lFi(i, n, k, 1, m)] *
+                              kernels::Kxi[order][n][l];
+                      }
+                  }
               }
-              if(useNCP) {
-                gradQ[idx_gradQ(l, k, /*y*/1, m)] += 1.0 * invDx[1] *
-                                          lQi[idx_lQi(n, k, i, m)] *
-                                          kernels::dudx[order][l][n]; /* l,n: transpose */
-              }
-            }
           }
-        }
       }
-      
+
       if(useSource || useNCP) {
         // source
         for (int k=0; k<basisSize; k++) {
@@ -520,7 +546,7 @@ void aderTimeAveragingExtrapolatorNonlinear(
 }  // namespace
 
 
-template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
+template <bool useSource, bool useFlux, bool useNCP, bool useParabolicFlux, bool noTimeAveraging, typename SolverType>
 int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
@@ -533,7 +559,7 @@ int spaceTimePredictorNonlinear(
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
   
-  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
+  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP,useParabolicFlux, SolverType>(
         solver, luh, dt, invDx,
         lQi, rhs, lFi, gradQ);
   
