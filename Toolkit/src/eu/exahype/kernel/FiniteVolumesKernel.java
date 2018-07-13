@@ -109,6 +109,10 @@ public class FiniteVolumesKernel {
         throw new IllegalArgumentException("Optimisation key \""+parsedId+"\" not recognized");
       }
     }
+    // can't use flux and parabolic flux together
+    if(useFlux() && useParabolicFlux()) {
+      throw new IllegalArgumentException("The term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"' and term '"+TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID")+"' can't be used together");
+    }
   }
   
   public enum KernelType {
