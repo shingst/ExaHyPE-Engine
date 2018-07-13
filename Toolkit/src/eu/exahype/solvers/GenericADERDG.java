@@ -27,7 +27,8 @@ public class GenericADERDG implements Solver {
     _solverName         = solverName;
     
     final boolean isLinear               = kernel.isLinear();
-    final boolean useFlux                = kernel.useFlux();
+    final boolean useFlux                = kernel.useFlux() || kernel.useParabolicFlux();
+    final boolean useParabolicFlux       = kernel.useParabolicFlux(); 
     final boolean useSource              = kernel.useSource();
     final boolean useNCP                 = kernel.useNCP();
     final boolean usePointSources        = kernel.usePointSources();
@@ -66,6 +67,7 @@ public class GenericADERDG implements Solver {
     context.put("isLinear"              , isLinear);
     context.put("isFortran"             , isFortran);
     context.put("useFlux"               , useFlux);
+    context.put("useParabolicFlux"      , useParabolicFlux);
     context.put("useSource"             , useSource);
     context.put("useNCP"                , useNCP);
     context.put("usePointSources"       , usePointSources);
@@ -76,9 +78,10 @@ public class GenericADERDG implements Solver {
     context.put("useMaxPicardIterations", useMaxPicardIterations);
     
     //boolean as String
-    context.put("useFlux_s"         , boolToTemplate(useFlux));
-    context.put("useSource_s"       , boolToTemplate(useSource));
-    context.put("useNCP_s"          , boolToTemplate(useNCP));
+    context.put("useFlux_s"          , boolToTemplate(useFlux));
+    context.put("useParabolicFlux_s" , boolToTemplate(useParabolicFlux));
+    context.put("useSource_s"        , boolToTemplate(useSource));
+    context.put("useNCP_s"           , boolToTemplate(useNCP));
     
     //Set<String>
     context.put("namingSchemes"     , namingSchemeNames.stream().map(s -> s.substring(0, 1).toUpperCase()+s.substring(1)).collect(Collectors.toSet())); //capitalize
