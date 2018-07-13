@@ -700,9 +700,9 @@ def hashSweep():
         for coreCount in config.coreCounts:
             chain += coreCount.cores+";"+coreCount.consumers
     for value in runNumbers:
-        chain += value+";"
+        chain += str(value)+";"
     for value in runNumbersGrouped:
-        chain += value+";"  
+        chain += str(value)+";"  
         
     for environmentDict in dictProduct(environmentSpace):
         chain += hashDictionary(environmentDict)
@@ -758,7 +758,7 @@ def submitJobs():
                     ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                     
                     jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                              "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+configId+"-r"+run
+                              "-n" + ranks + "-N" + nodes + "-t"+tasks+"-C"+str(configId)+"-r"+run
                     jobScriptFilePrefix  = scriptsFolderPath + "/" + jobName
                     jobScriptFilePath    = jobScriptFilePrefix + ".job"
                             
