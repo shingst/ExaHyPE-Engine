@@ -40,6 +40,7 @@ public class FiniteVolumesKernel {
     TERM_OPTION_IDS.put("NCP_OPTION_ID",               "ncp");
     TERM_OPTION_IDS.put("POINTSOURCES_OPTION_ID",      "pointsources");
     //TERM_OPTION_IDS.put("MATERIALPARAMETER_OPTION_ID", "materialparameters"); //TODO
+    TERM_OPTION_IDS.put("PARABOLIC_FLUX_OPTION_ID",      "parabolicflux");
   }
   
   private static final Map<String, String> OPTIMIZATION_OPTION_IDS = new HashMap<String, String>();
@@ -174,6 +175,9 @@ public class FiniteVolumesKernel {
   
   public boolean useMaterialParameterMatrix() {
     return terms.containsKey(TERM_OPTION_IDS.get("MATERIALPARAMETER_OPTION_ID"));
+  }
+  public boolean useParabolicFlux() {
+    return terms.containsKey(TERM_OPTION_IDS.get("PARABOLIC_FLUX_OPTION_ID"));
   }
   
   public boolean tempVarsOnStack() {
