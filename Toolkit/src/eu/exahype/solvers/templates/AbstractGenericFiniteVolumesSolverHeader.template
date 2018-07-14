@@ -81,8 +81,11 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void algebraicSource(const double* const Q,double* S)  final {}
     {%- endif %}
     
-    {%- if !useFlux %}
+    {%- if !useFlux || useParabolicFlux %}
     void flux(const double* const Q,double** F)  final {}
+    {%- endif %}
+    {%- if !useParabolicFlux %}
+    void parabolicFlux(const double* const Q,const double* const gradQ, double** F)  final {}
     {%- endif %}
     
     {%- if !usePointSources %}
