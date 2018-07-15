@@ -83,7 +83,7 @@ void {{project}}::{{solver}}::eigenvalues(const double* const Q,const int d,doub
 }
 
 
-{%- if useFlux &&! useParabolicFlux %}
+{%- if useFlux && !useParabolicFlux %}
 void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
   // Dimensions                        = {{dimensions}}
   // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}

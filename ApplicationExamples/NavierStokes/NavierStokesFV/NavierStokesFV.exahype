@@ -1,6 +1,6 @@
 /**
  * 
- * NavierStokes Flow
+ * NavierStokes
  * 
  * This setup corresponds to the Finite Volume demonstrator code as discussed in 
  * Section 2 of the guidebook. To keep stuff here extremely simple, the spec file 
@@ -28,7 +28,7 @@ exahype-project NavierStokesFV
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.1
+    end-time                = 0.3
   end computational-domain
  
   /*
@@ -46,7 +46,7 @@ exahype-project NavierStokesFV
   solver Finite-Volumes MyNavierStokesSolver
     variables const    = rho:1,j:3,E:1
     patch-size const   = 10
-    maximum-mesh-size  = 2e-2    
+    maximum-mesh-size  = 0.8
     time-stepping      = global
     type const         = godunov
     terms const        = parabolicflux
@@ -57,7 +57,7 @@ exahype-project NavierStokesFV
       variables const = 5
       time            = 0.0
       repeat          = 0.01
-      output          = ./variables
+      output          = ./VtkOutput/variables
     end plot
   end solver
 end exahype-project

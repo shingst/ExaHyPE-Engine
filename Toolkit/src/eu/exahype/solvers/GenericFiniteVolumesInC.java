@@ -28,7 +28,7 @@ public class GenericFiniteVolumesInC implements Solver {
         
     _solverName         = solverName;
     
-    final boolean useFlux            = kernel.useFlux();
+    final boolean useFlux            = kernel.useFlux() || kernel.useParabolicFlux();
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSources    = kernel.usePointSources();
