@@ -36,7 +36,7 @@ namespace {
  *  We have to consider that we store parameters in luh, lQi
  *  and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useNCP,bool useParabolicFlux typename SolverType>
+template <bool useSource, bool useFlux, bool useNCP,bool useParabolicFlux, typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double dt,
                              const tarch::la::Vector<DIMENSIONS, double>& invDx,

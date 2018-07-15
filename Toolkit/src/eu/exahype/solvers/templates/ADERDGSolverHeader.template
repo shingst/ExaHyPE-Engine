@@ -126,7 +126,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     
     //PDE
     
-{%- if useFlux %}
+{%- if useFlux && !useParabolicFlux %}
     /**
      * Compute the flux tensor.
      *
@@ -137,6 +137,21 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     void flux(const double* const Q,double** F) final override;
 {%- else -%}
 /* flux() function not included, as requested in the specification file */
+{%- endif %}
+
+{%- if useParabolicFlux %}
+    /**
+     * Compute the flux tensor with diffusive components.
+     *
+     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
+     *                 as C array (already allocated).
+     *               gradQ the gradient of the conserved variables (and parameters) associated with a quadrature point
+     *                     as C array (already allocated).
+     * \param[inout] F the fluxes at that point as C array (already allocated).
+     */
+    void parabolicFlux(const double* const Q,const double* gradQ, double** F) final override;
+{%- else -%}
+/* parabolicFlux() function not included, as requested in the specification file */
 {%- endif %}
     
 {%- if useSource %}

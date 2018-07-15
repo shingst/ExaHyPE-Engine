@@ -60,7 +60,7 @@ public class GenericFiniteVolumesInC implements Solver {
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
     context.put("usePointSources"   , usePointSources);
-    context.put("useParabolicFlux"           , useParabolicFlux);
+    context.put("useParabolicFlux"  , useParabolicFlux);
     context.put("tempVarsOnStack"   , tempVarsOnStack);
     
     //Set<String>

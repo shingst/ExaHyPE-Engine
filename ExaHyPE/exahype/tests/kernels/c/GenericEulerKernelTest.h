@@ -69,6 +69,8 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
 
   static void coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn);
 
+  static void parabolicFlux(const double* const Q, const double* const gradQ, double** F);
+
   static void multiplyMaterialParameterMatrix(const double *Q, double *rhs){return;}
 
   const double eps = 1.0e-10;  // for quick adaption of the test cases (say,
