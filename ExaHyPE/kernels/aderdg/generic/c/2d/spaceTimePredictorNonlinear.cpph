@@ -137,7 +137,9 @@ int aderPicardLoopNonlinear(SolverType& solver,
             double* F[2]; // TODO(Sven): set but not used
             F[0]      = lFi + idx_lFi(i, k, l, 0, 0);
             F[1]      = lFi + idx_lFi(i, k, l, 1, 0);
-            if(useParabolicFlux) solver.parabolicFlux(Q,gradQ,F);
+            if(useParabolicFlux){
+                solver.parabolicFlux(Q,gradQ,F);
+            }
             else solver.flux(Q,F);
             // everything related to source now moved down to the NCP
           }

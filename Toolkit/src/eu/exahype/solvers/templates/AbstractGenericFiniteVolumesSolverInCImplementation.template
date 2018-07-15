@@ -108,7 +108,7 @@ void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* luhbnd,con
 
 double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
   // Default FV Riemann Solver
-  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP}}, {{useFlux}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,direction);
+  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP}}, {{useFlux}},{{useParabolicFlux}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,direction);
 }
 
 
