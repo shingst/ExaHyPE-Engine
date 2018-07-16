@@ -48,7 +48,7 @@ tail -f "$log_file" &
 # Wait until batch job is finished...
 while 
     sleep 60s # Busy waiting, sue me.
-    scontrol_err="$(scontrol show job ${jobid} 2>&1 > /dev/null)"
+    scontrol_err="$(scontrol --cluster=mpp2 show job ${jobid} 2>&1 > /dev/null)"
     if grep -q Invalid <<< "${scontrol_err}"; then
 	echo "Job-Id invalid/Job cancelled. Aborting."
 	status="CANCELLED"
