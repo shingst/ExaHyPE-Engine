@@ -4149,6 +4149,8 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
 
   logDebug("mergeWithMasterData(...)",
+      "_meshUpdateEvent="<<Solver::toString(getMeshUpdateEvent()));
+  logDebug("mergeWithMasterData(...)",
       "_stabilityConditionWasViolated="<< _stabilityConditionWasViolated);
 }
 
