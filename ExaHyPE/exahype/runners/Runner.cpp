@@ -1104,8 +1104,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.switchToRefinementStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
-        exahype::solvers::Solver::getMaxRefinementStatus(),false);
-
+        exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
   
   // Only the solvers which requested a global recomputation do a rollback
