@@ -270,7 +270,7 @@ void exahype::mappings::LocalRollback::sendDataToNeighbour(
     }
   }
 
-  logInfo("sendDataToNeighbour(...)","metadata sent to rank "<<toRank<<", x:"<<
+  logDebug("sendDataToNeighbour(...)","metadata sent to rank "<<toRank<<", x:"<<
              x.toString() << ", level=" <<level);
 
   exahype::sendNeighbourCommunicationMetadata(

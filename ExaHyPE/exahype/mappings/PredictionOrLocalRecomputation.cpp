@@ -259,7 +259,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
   if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
     assertion(exahype::State::ReduceInThisIteration==false);
     exahype::State::ReduceInThisIteration = true;
-    logInfo("endIteration(...)","exahype::State::ReduceInThisIteration="<<exahype::State::ReduceInThisIteration);
   }
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
     assertion(exahype::State::ReduceInThisIteration==true);
@@ -557,7 +556,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
           element!=exahype::solvers::Solver::NotFound &&
           receivedMetadata[offset]!=exahype::InvalidMetadataEntry
       ) {
-        logInfo("mergeWithNeighbourData(...)", "receive data for solver " << solverNumber << " from rank " <<
+        logDebug("mergeWithNeighbourData(...)", "receive data for solver " << solverNumber << " from rank " <<
                       fromRank << " at vertex x=" << x << ", level=" << level <<
                       ", src=" << src << ", dest=" << dest);
 
