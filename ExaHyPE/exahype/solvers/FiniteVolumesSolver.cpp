@@ -134,8 +134,8 @@ void exahype::solvers::FiniteVolumesSolver::updateNextMeshUpdateEvent(
   _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
 }
 
-exahype::solvers::FiniteVolumesSolver::MeshUpdateEvent
-exahype::solvers::ADERDGSolver::getMeshUpdateEvent() const {
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::FiniteVolumesSolver::getMeshUpdateEvent() const {
   return _meshUpdateEvent;
 }
 
