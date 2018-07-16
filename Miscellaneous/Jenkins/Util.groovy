@@ -22,11 +22,11 @@ cat > "$tmpfile" <<EOF
 #SBATCH -J exahype
 #SBATCH --clusters=mpp2
 ##SBATCH --partition=acc
-#SBATCH --cpus-per-task=60
+#SBATCH --cpus-per-task=28
 #SBATCH --time=02:00:00
 source /etc/profile.d/modules.sh
 cd "${workspace}"
-export OMP_NUM_THREADS=60
+export OMP_NUM_THREADS=28
 EOF
 # Now write actual code to file.
 # Quoting the EOL avoids string interpolation!
