@@ -535,11 +535,11 @@ public:
   LimitingADERDGSolver& operator=(const ADERDGSolver& other) = delete;
   
   /** Wire through to ADER-DG Solver */
-  bool hasRequestedMeshRefinement() const override;
-   MeshUpdateEvent getNextMeshUpdateEvent() const override;
-  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) override;
-  void setNextMeshUpdateEvent() override;
-  MeshUpdateEvent getMeshUpdateEvent() const override;
+  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void setNextMeshUpdateEvent() final override;
+  MeshUpdateEvent getMeshUpdateEvent() const final override;
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
   /*
    * A time stamp minimised over all the ADERDG and FV solver

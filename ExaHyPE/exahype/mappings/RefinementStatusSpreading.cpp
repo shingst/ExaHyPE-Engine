@@ -273,7 +273,7 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
     if ( spreadRefinementStatus(solver) ) {
-      solver->sendMeshUpdateFlagsToMaster(
+      solver->sendMeshUpdateEventToMaster(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
           verticesEnumerator.getCellCenter(),
           verticesEnumerator.getLevel());
@@ -302,7 +302,7 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
     if ( spreadRefinementStatus(solver) ) {
-      solver->mergeWithWorkerMeshUpdateFlags(
+      solver->mergeWithWorkerMeshUpdateEvent(
           worker,
           fineGridVerticesEnumerator.getCellCenter(),
           fineGridVerticesEnumerator.getLevel());

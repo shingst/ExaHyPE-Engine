@@ -96,7 +96,18 @@ private:
    * Width of the ghost layer used for
    * reconstruction and Riemann solves.
    */
-  int _ghostLayerWidth;
+  const int _ghostLayerWidth;
+
+  /**
+   * The current mesh update event.
+   */
+  MeshUpdateEvent _meshUpdateEvent;
+
+  /**
+   * The mesh update event which will become active
+   * in the next iteration.
+   */
+  MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
    * Synchonises the cell description time stamps
@@ -291,6 +302,12 @@ public:
   // Disallow copy and assignment
   FiniteVolumesSolver(const FiniteVolumesSolver& other) = delete;
   FiniteVolumesSolver& operator=(const FiniteVolumesSolver& other) = delete;
+
+  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void setNextMeshUpdateEvent() final override;
+  MeshUpdateEvent getMeshUpdateEvent() const final override;
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
   /**
    * \brief Returns a stable time step size.

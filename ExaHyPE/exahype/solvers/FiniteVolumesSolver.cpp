@@ -85,7 +85,9 @@ exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
             _minTimeStamp( std::numeric_limits<double>::max() ),
             _minTimeStepSize( std::numeric_limits<double>::max() ),
             _minNextTimeStepSize( std::numeric_limits<double>::max() ),
-            _ghostLayerWidth( ghostLayerWidth ) {
+            _ghostLayerWidth( ghostLayerWidth ),
+            _meshUpdateEvent( MeshUpdateEvent::None ),
+            _nextMeshUpdateEvent( MeshUpdateEvent::None ) {
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
@@ -115,6 +117,30 @@ int exahype::solvers::FiniteVolumesSolver::getDataPerPatchFace() const {
 
 int exahype::solvers::FiniteVolumesSolver::getDataPerPatchBoundary() const {
   return DIMENSIONS_TIMES_TWO *getDataPerPatchFace();
+}
+
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::FiniteVolumesSolver::getNextMeshUpdateEvent() const {
+  return _nextMeshUpdateEvent;
+}
+
+void exahype::solvers::FiniteVolumesSolver::setNextMeshUpdateEvent() {
+  _meshUpdateEvent         = _nextMeshUpdateEvent;
+  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
+}
+
+void exahype::solvers::FiniteVolumesSolver::updateNextMeshUpdateEvent(
+    exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
+  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
+}
+
+exahype::solvers::FiniteVolumesSolver::MeshUpdateEvent
+exahype::solvers::ADERDGSolver::getMeshUpdateEvent() const {
+  return _meshUpdateEvent;
+}
+
+void exahype::solvers::FiniteVolumesSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
+   _meshUpdateEvent = newMeshUpdateEvent;
 }
 
 double exahype::solvers::FiniteVolumesSolver::getPreviousMinTimeStepSize() const {
@@ -154,8 +180,7 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
-  setNextMeshUpdateEvent();
+  overwriteMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }

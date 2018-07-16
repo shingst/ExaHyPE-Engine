@@ -474,7 +474,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minimumRefinementStatusForPassiveFVPatch(_refineOrKeepOnFineGrid+1),
      _minimumRefinementStatusForActiveFVPatch (limiterHelperLayers+_minimumRefinementStatusForPassiveFVPatch),
-     _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch) {
+     _minimumRefinementStatusForTroubledCell  (limiterHelperLayers+_minimumRefinementStatusForActiveFVPatch),
+     _meshUpdateEvent(MeshUpdateEvent::None),
+     _nextMeshUpdateEvent(MeshUpdateEvent::None) {
 
   // register tags with profiler
   for (const char* tag : tags) {
@@ -544,6 +546,30 @@ int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForActiveFVPatch()
 
 int exahype::solvers::ADERDGSolver::getMinimumRefinementStatusForTroubledCell() const {
   return _minimumRefinementStatusForTroubledCell;
+}
+
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::ADERDGSolver::getNextMeshUpdateEvent() const {
+  return _nextMeshUpdateEvent;
+}
+
+void exahype::solvers::ADERDGSolver::setNextMeshUpdateEvent() {
+  _meshUpdateEvent         = _nextMeshUpdateEvent;
+  _nextMeshUpdateEvent     = MeshUpdateEvent::None;
+}
+
+void exahype::solvers::ADERDGSolver::updateNextMeshUpdateEvent(
+    exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
+  _nextMeshUpdateEvent = mergeMeshUpdateEvents(_nextMeshUpdateEvent,meshUpdateEvent);
+}
+
+exahype::solvers::ADERDGSolver::MeshUpdateEvent
+exahype::solvers::ADERDGSolver::getMeshUpdateEvent() const {
+  return _meshUpdateEvent;
+}
+
+void exahype::solvers::ADERDGSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
+   _meshUpdateEvent = newMeshUpdateEvent;
 }
 
 void exahype::solvers::ADERDGSolver::synchroniseTimeStepping(
@@ -843,8 +869,7 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _minCorrectorTimeStamp         = timeStamp;
   _minPredictorTimeStamp         = timeStamp;
 
-  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
-  setNextMeshUpdateEvent();
+  overwriteMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
 
   init(cmdlineargs,parserView); // call user define initalisiation
 }

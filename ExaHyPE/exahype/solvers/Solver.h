@@ -988,21 +988,6 @@ class exahype::solvers::Solver {
    */
   std::unique_ptr<profilers::Profiler> _profiler;
 
-
- private:
-  /**
-   * A flag indicating that the limiter domain has changed.
-   * This might be the case if either a cell has been
-   * newly marked as troubled or healed.
-   */
-  MeshUpdateEvent _meshUpdateEvent;
-
-  /**
-   * The limiterDomainHasChanged for the next
-   * iteration.
-   */
-  MeshUpdateEvent _nextMeshUpdateEvent;
-
  public:
   Solver(const std::string& identifier, exahype::solvers::Solver::Type type,
          int numberOfVariables, int numberOfParameters,
@@ -1137,36 +1122,40 @@ class exahype::solvers::Solver {
 
   virtual void toString(std::ostream& out) const;
 
-  virtual bool hasRequestedMeshRefinement() const;
-
   /**
    * \return the mesh update event which will be set in
    * the next iteration. (This value might change during an iteration.)
+   *
+   * \note We decided to make these functions virtual as the LimitingADERDGSolver
+   * delegates these events to the wrapped ADERDGSolver.
    */
-  virtual  MeshUpdateEvent getNextMeshUpdateEvent() const;
-
+  virtual  MeshUpdateEvent getNextMeshUpdateEvent() const = 0;
   /**
    * \see mergeMeshUpdateEvents
    */
-  virtual void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent);
-
+  virtual void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) = 0;
   /**
    * Sets the _nextMeshUpdateEvent as this solver's
    * current event. Furthermore resets the
    * _nextMeshUpdateEvent variable.
    */
-  virtual void setNextMeshUpdateEvent();
+  virtual void setNextMeshUpdateEvent() = 0;
   /**
    * \return the currently set mesh update event.
    */
-  virtual MeshUpdateEvent getMeshUpdateEvent() const;
-  
+  virtual MeshUpdateEvent getMeshUpdateEvent() const = 0;
   /**
    * Overwrite the current mesh update event with the given value.
    *
    * Is used to set the master's value on a worker rank.
    */
-  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent);
+  virtual void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) = 0;
+
+  /**
+   * \return true if the current mesh update event
+   * is either RefinementRequested or InitialRefinementRequested.
+   */
+  bool hasRequestedMeshRefinement() const;
   /**
    * Run over all solvers and identify the minimal time stamp.
    */
@@ -1988,42 +1977,29 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
 
-  /**
-   * Compile a message containing mesh update flags
-   * for the master.
-   *
-   * The initial capacity defaults to 2 but can be modified
-   * to attend more data to the message.
-   *
-   * \see exahype::solvers::Solver::sendMeshUpdateFlagsToMaster,
-   * exahype::solvers::LimitingADERDGSolver::sendMeshUpdateFlagsToMaster
-   */
-  exahype::DataHeap::HeapEntries
-  compileMeshUpdateFlagsForMaster(const int capacity=2) const;
-
   /*
-   * Send the rank-local mesh update request and
-   * limiter domain change to the master.
+   * Send the rank-local mesh update event to
+   * the master.
    *
    * At the time of sending data to the master,
    * we have already set the next
-   * mesh update request locally.
+   * mesh update event locally.
    * We thus need to communicate the
-   * current mesh update request to the master.
+   * current mesh update event to the master.
    */
-  void sendMeshUpdateFlagsToMaster(
+  void sendMeshUpdateEventToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const;
 
   /**
-   * Merge with the workers mesh update flags.
+   * Merge with the worker's mesh update event.
    *
-   * The master has not yet performed swapped
-   * the current values with the "next" values.
+   * The master has not yet swapped
+   * the current event with the next event yet.
    * This will happen after the merge.
    */
-  void mergeWithWorkerMeshUpdateFlags(
+  void mergeWithWorkerMeshUpdateEvent(
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level);

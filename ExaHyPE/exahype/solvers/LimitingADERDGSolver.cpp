@@ -62,9 +62,6 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
   #endif
 }
 /** Wire through to limiting ADER-DG solver */
-bool exahype::solvers::LimitingADERDGSolver::hasRequestedMeshRefinement() const {
-  return _solver->hasRequestedMeshRefinement();
-}
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::getNextMeshUpdateEvent() const {
   return _solver->getNextMeshUpdateEvent();
 }
@@ -76,6 +73,9 @@ void exahype::solvers::LimitingADERDGSolver::setNextMeshUpdateEvent() {
 }
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::getMeshUpdateEvent() const {
   return _solver->getMeshUpdateEvent();
+}
+void exahype::solvers::LimitingADERDGSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
+   _solver->overwriteMeshUpdateEvent(newMeshUpdateEvent);
 }
 
 double exahype::solvers::LimitingADERDGSolver::getMinTimeStamp() const {
@@ -157,8 +157,8 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStep() {
   _solver->startNewTimeStep();
   ensureLimiterTimeStepDataIsConsistent();
 
-  logDebug("startNewTimeStep()","_limiterDomainHasChanged="<<static_cast<int>(_meshUpdateEvent)<<
-           ",nextLimiterDomainChange="<<static_cast<int>(_nextMeshUpdateEvent));
+  logDebug("startNewTimeStep()","getMeshUpdateEvent()="<<Solver::toString(getMeshUpdateEvent())<<
+           ",getNextMeshUpdateEvent()="<<Solver::toString(getNextMeshUpdateEvent()));
 }
 
 void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
@@ -167,8 +167,8 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
   _solver->startNewTimeStepFused(isFirstIterationOfBatch,isLastIterationOfBatch);
   ensureLimiterTimeStepDataIsConsistent();
 
-  logDebug("startNewTimeStep()","_limiterDomainHasChanged="<<static_cast<int>(_meshUpdateEvent)<<
-           ",nextLimiterDomainChange="<<static_cast<int>(_nextMeshUpdateEvent));
+  logDebug("startNewTimeStep()","getMeshUpdateEvent()="<<Solver::toString(getMeshUpdateEvent())<<
+           ",getNextMeshUpdateEvent()="<<Solver::toString(getNextMeshUpdateEvent()));
 }
 
 void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsistent() const {

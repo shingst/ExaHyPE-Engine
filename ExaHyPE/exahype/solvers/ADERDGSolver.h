@@ -222,6 +222,17 @@ private:
   const int _minimumRefinementStatusForTroubledCell;
 
   /**
+   * The current mesh update event.
+   */
+  MeshUpdateEvent _meshUpdateEvent;
+
+  /**
+   * The mesh update event which will become active
+   * in the next iteration.
+   */
+  MeshUpdateEvent _nextMeshUpdateEvent;
+
+  /**
    * Different to compress(), this operation is called automatically by
    * mergeNeighbours(). Therefore the routine is private.
    *
@@ -1077,6 +1088,12 @@ public:
    * which is twice the returned value.
    */
   int getMinimumRefinementStatusForTroubledCell() const;
+
+  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void setNextMeshUpdateEvent() final override;
+  MeshUpdateEvent getMeshUpdateEvent() const final override;
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
   /**
    * Checks if no unnecessary memory is allocated for the cell description.
