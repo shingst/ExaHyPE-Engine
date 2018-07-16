@@ -51,9 +51,9 @@ pipeline {
     }
 
     post {
-	always {
+	//always {
 	    //cleanWs()
-	}
+	//}
 	success {
 	    updateGitlabCommitStatus(name: 'jenkins', state: 'success')
 	}
