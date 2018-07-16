@@ -594,18 +594,6 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps =
       _parser.getDisableMetadataExchangeInBatchedTimeSteps();
 
-  if ( 
-       exahype::solvers::ADERDGSolver::PredictionSweeps==2 && 
-       exahype::solvers::Solver::FuseADERDGPhases          &&
-       exahype::solvers::Solver::oneSolverIsOfType(exahype::solvers::Solver::Type::LimitingADERDG) &&
-       !exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
-  ) { 
-    logError("parseOptimisations()","It is currently not possible to use the 'Limiting-ADER-DG' solver in combination with, both turned on at the same time, " << 
-            "'fuse-algorithmic-phases' and 'spawn-predictor-as-background-job'. The only exception is if 'globalfixed' time stepping is chosen which is interpreted " <<
-            "as signal that the limiter domain does not change dynamically during the simulation.");
-    std::abort();
-  }
-
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
       logInfo("parseOptimisations()","\tfuse-algorithmic-steps="        << (exahype::solvers::Solver::FuseADERDGPhases ? "on" : "off"));
