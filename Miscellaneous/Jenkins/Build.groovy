@@ -15,7 +15,7 @@ IFS=$'\n\t'
 pwd
 ''' + util.getModuleCode() + """
 set -euo pipefail
-cp -r ${workspace}/. .
+cp -rf ${workspace}/. .
 path=${config.exahypeFile}
 """ + '''
 ls
