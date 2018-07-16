@@ -6,14 +6,22 @@
 
 using namespace kernels;
 
-const double grav = 9.81;
-
-const double epsilon = 1e-12;
+double grav;
+double epsilon;
+int scenario;
 
 tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
 
 void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // @todo Please implement/augment if required
+    if (constants.isValueValidDouble( "grav" )) {
+        grav = constants.getValueAsDouble("grav");
+    }
+    if (constants.isValueValidDouble( "epsilon" )) {
+        epsilon = constants.getValueAsDouble( "epsilon" );
+    }
+    if (constants.isValueValidInt( "scenario" )) {
+        scenario = constants.getValueAsInt( "scenario" );
+    }
 }
 
 void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -41,7 +49,7 @@ void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, doub
   else {
       const double c = std::sqrt(grav * vars.h());
       const double ih = 1. / vars.h();
-      double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(Q[0]*Q[0]*Q[0]*Q[0] + std::max(vars.h(), epsilon)*std::max(vars.h(), epsilon)*std::max(vars.h(), epsilon)*std::max(vars.h(), epsilon));
+      double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(std::pow(Q[0], 4) + std::pow(std::max(vars.h(), epsilon), 4));
 
       eigs.h() = u_n + c;
       eigs.hu() = u_n - c;
@@ -100,13 +108,13 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
       const double ih = 1. / vars.h();
 
       f[0] = vars.hu();
-      f[1] = vars.hu() * vars.hu() * ih + 0.5 * grav * vars.h() * vars.h();
+      f[1] = vars.hu() * vars.hu() * ih; // 0.5 * grav * vars.h() * vars.h();
       f[2] = vars.hu() * vars.hv() * ih;
       f[3] = 0.0;
 
       g[0] = vars.hv();
       g[1] = vars.hu() * vars.hv() * ih;
-      g[2] = vars.hv() * vars.hv() * ih + 0.5 * grav * vars.h() * vars.h();
+      g[2] = vars.hv() * vars.hv() * ih; // 0.5 * grav * vars.h() * vars.h();
       g[3] = 0.0;
   }
   
@@ -158,5 +166,7 @@ double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL,
         fL[i] = flux[i] + djump[i];
         fR[i] = flux[i] - djump[i];
     }
+
+    return smax;
 }
 

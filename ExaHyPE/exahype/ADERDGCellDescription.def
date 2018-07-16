@@ -26,7 +26,7 @@ class exahype::records::ADERDGCellDescription {
    * These flags indicate on which face a neighbour merge, e.g. a Riemann solve or metadata merge, has already been
    * performed during the current traversal.
    */
-  parallelise persistent packed bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
+  persistent packed bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
   ///@}
   
   #ifdef Parallel  
@@ -36,7 +36,7 @@ class exahype::records::ADERDGCellDescription {
     * is adjacent to a remote rank at
     * at least one of its faces.
     */
-   parallelise persistent packed bool adjacentToRemoteRank;
+   persistent packed bool adjacentToRemoteRank;
   
   /**
    * This flag is set just before a cell description is sent to a new
@@ -56,7 +56,7 @@ class exahype::records::ADERDGCellDescription {
    * a face might be exchanged up to 2^{d-1} times. We use this flag to avoid 
    * this. See prepareSendToNeighbour() in mapping Sending.
    */
-  parallelise persistent int faceDataExchangeCounter[DIMENSIONS_TIMES_TWO];
+  persistent int faceDataExchangeCounter[DIMENSIONS_TIMES_TWO];
   #endif
 
   /**
@@ -70,7 +70,35 @@ class exahype::records::ADERDGCellDescription {
    * The index of the ADERDGCellDescription that is the parent of
    * this ADERDGCellDescription or "-1" if no parent is specified.
    */
-  parallelise persistent int parentIndex;
+  persistent int parentIndex;
+  
+  /**
+   * This field is used to compute the difference in levels between a Descendant
+   * and its top-most parent of type Cell.
+   * This field is specifically for Descendant cell descriptions and plays
+   * a role in computing face integrals whenever the Cell parent has refined
+   * neighbours.
+   * 
+   * It must be inherited by child Descendants if a Descendant cell is (virtually) refined further.
+   * It is a parallelised field as the information must not get lost if we send a cell
+   * to a new worker.
+   */
+  parallelise persistent int parentCellLevel;
+  
+  /**
+   * This field is used to store the offset of a Descendant's
+   * cell parent.
+   * 
+   * This field is specifically for Descendant cell descriptions and plays
+   * a role in computing face integrals whenever the Cell parent has refined
+   * neighbours.
+   * 
+   * It must be inherited by child Descendants if a Descendant cell is (virtually) refined further.
+   * It is a parallelised field as the information must not get lost if we send a cell
+   * to a new worker.
+   */
+  parallelise persistent double parentOffset[DIMENSIONS];
+  
   
   /**
    * Flag indicating that a cell description is a 
@@ -121,7 +149,7 @@ class exahype::records::ADERDGCellDescription {
     Refine
   };
   
-  persistent packed RefinementRequest refinementRequest;
+  parallelise persistent packed RefinementRequest refinementRequest;
   
   enum RefinementEvent {
     /**
@@ -217,7 +245,15 @@ class exahype::records::ADERDGCellDescription {
     ErasingVirtualChildren, 
     
     VirtualRefiningRequested,         
-    VirtualRefining  
+    VirtualRefining,  
+    
+    /**
+     * Additional events for notifying a deployed child cell about an erasing
+     * decision made by the master.
+     */
+    Erasing,
+    ChangeToVirtualCell,
+    ErasingVirtualCell
   };
 
   /**
@@ -239,17 +275,17 @@ class exahype::records::ADERDGCellDescription {
    * Space-tree level of the cell this ADERDGCellDescription is associated
    * with.
    */
-  parallelise persistent int level;
+  parallelise persistent int level; // TODO(Dominic): Do not send around
   /**
    * Offset of the "lower left" node of the lower left ghost cell from the
    * lower left node of the cell.
    */
-  parallelise persistent double offset[DIMENSIONS];
+  parallelise persistent double offset[DIMENSIONS]; // TODO(Dominic): Do not send around
   /**
    * Dimension of the cell associated with this ADERDGCellDescription in the
    * respective dimension.
    */
-  parallelise persistent double size[DIMENSIONS];
+  parallelise persistent double size[DIMENSIONS]; // TODO(Dominic): Do not send around
   ///@}
   
   /**
@@ -306,10 +342,10 @@ class exahype::records::ADERDGCellDescription {
    * calculations.
    *  Symbol: \f$ u_h \f$.
    */
-  parallelise persistent int solution;
-  parallelise persistent int solutionAverages;
-  parallelise persistent int solutionCompressed;
-  
+  persistent int solution;
+  persistent int solutionAverages;
+  persistent int solutionCompressed;
+   
   /**
    *  Heap index pointing to the DoF of the previous solution associated with this cell
    *  description.
@@ -321,20 +357,18 @@ class exahype::records::ADERDGCellDescription {
    *  DoF. We can then not use the solution Update DoF anymore for
    *  performing a rollback to the previous solution.
    */
-  parallelise persistent int previousSolution;
-  parallelise persistent int previousSolutionAverages;
-  parallelise persistent int previousSolutionCompressed;
+  persistent int previousSolution;
+  persistent int previousSolutionAverages;
+  persistent int previousSolutionCompressed;
 
   /**
    * Index pointing to the update DoF belonging to this cell. All volume updates
    * and face fluctuations contribute to this Symbol. Symbol:
    * \f$ \Delta u_h \f$.
-   * 
-   * @deprecated
    */
-  parallelise persistent int update;
-  parallelise persistent int updateAverages;
-  parallelise persistent int updateCompressed;
+  persistent int update;
+  persistent int updateAverages;
+  persistent int updateCompressed;
   ///@}
 
   /**
@@ -349,17 +383,17 @@ class exahype::records::ADERDGCellDescription {
    * the
    * cell.
    */
-  parallelise persistent int extrapolatedPredictor;
-  parallelise persistent int extrapolatedPredictorAverages;
-  parallelise persistent int extrapolatedPredictorCompressed;
+  persistent int extrapolatedPredictor;
+  persistent int extrapolatedPredictorAverages;
+  persistent int extrapolatedPredictorCompressed;
 
   /**
    * Index pointing to the normal fluxes computed at the bounding faces of the
    * cell.
    */
-  parallelise persistent int fluctuation;
-  parallelise persistent int fluctuationAverages;
-  parallelise persistent int fluctuationCompressed;
+  persistent int fluctuation;
+  persistent int fluctuationAverages;
+  persistent int fluctuationCompressed;
   ///@}
   
   /**
@@ -368,13 +402,13 @@ class exahype::records::ADERDGCellDescription {
    * First, all the _numberOfUnknowns entries of the left face are stored, then
    * the _numberOfUnknowns of the right face and so forth.
    */
-  parallelise persistent int solutionMin;
-  parallelise persistent int solutionMax;
+  persistent int solutionMin;
+  persistent int solutionMax;
   
   /**
    * \see augmentationStatus
    */
-  parallelise persistent int facewiseAugmentationStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseAugmentationStatus[DIMENSIONS_TIMES_TWO];
 
   /**
    * Another diffused status flag that controls how many
@@ -396,7 +430,7 @@ class exahype::records::ADERDGCellDescription {
   /**
    * \see communicationStatus
    */
-  parallelise persistent int facewiseCommunicationStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseCommunicationStatus[DIMENSIONS_TIMES_TWO];
   
   /**
    * Status of a helper cell description (Descendant,Ancestor)
@@ -416,51 +450,28 @@ class exahype::records::ADERDGCellDescription {
    */
   parallelise persistent int communicationStatus;
   
-  enum LimiterStatus {
-    /**
-     * A cell holds a physically admissible ADER-DG solution
-     * that satisfies a discrete maximum principle.
-     * 
-     * This cell's dominant solver is ADER-DG solver
-     */
-    Ok,
-    /** 
-     * This cell's dominant solver is ADER-DG solver.
-     */
-    NeighbourOfTroubled4,
-    /**
-     * This cell's dominant solver is ADER-DG solver.
-     */
-    NeighbourOfTroubled3,
-    /**
-     * This cell's dominant solver is the FV solver. 
-     */
-    NeighbourOfTroubled2,
-    /**
-     * This cell's dominant solver is the FV solver. 
-     */
-    NeighbourOfTroubled1,
-    /**
-     * A cell (still) holds a physically wrong ADER-DG solution.
-     * 
-     * This cell's dominant solver is the FV solver. 
-     */
-    Troubled
-  };
-  
   /**
    * \see limiterStatus
    */
-  parallelise persistent int facewiseLimiterStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseLimiterStatus[DIMENSIONS_TIMES_TWO];
   
   /**
-   * The cell descriptions limiter status which
+   * The cell descriptions internal limiter status which
    * is a reduction of the facewiseLimiterStatus elements.
-   *
-   * This value only corresponds on the finest level to 
-   * a limiter status enum.
+   * It is not communicated to other cells.
    */
   parallelise persistent int limiterStatus;
+  
+  /**
+   * The cell descriptions external limiter status which
+   * is a reduction of the facewiseLimiterStatus elements.
+   * This limiter status is communicated
+   * to other cells.
+   *
+   * It needs to be stored persistently as it
+   * read by neighbouring cells in the next iteration.
+   */
+  parallelise persistent int externalLimiterStatus;
   
   /**
    * The cell descriptions previous limiter status.
@@ -469,9 +480,6 @@ class exahype::records::ADERDGCellDescription {
    * which must be performed after a irregular limiter domain
    * change has occured, i.e. cells outside of the first(!) FV
    * helper cell layer have been marked as troubled.
-   
-   * This value only corresponds on the finest level to 
-   * a limiter status enum.
    */
   parallelise persistent int previousLimiterStatus;
 

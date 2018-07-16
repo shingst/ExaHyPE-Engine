@@ -79,8 +79,10 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
     # optional parameters
-    context["tasks"] = tasks
-    context["cores"] = cores
+    context["tasks"]           = tasks
+    context["cores"]           = cores.split(":")[0] 
+    context["backgroundTasks"] = cores.split(":")[1]
+
     for key in context:
         if key not in keysInTemplate:
             print("WARNING: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
@@ -98,6 +100,58 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
+def verifyLogFilterExists(justWarn=False):
+    foundLogFilter = False
+    for file in os.listdir(exahypeRoot + "/" + projectPath):
+        foundLogFilter = foundLogFilter or file.endswith(".log-filter")
+
+    messageType = "ERROR"
+    if justWarn:
+        messageTypeV = "WARNING"
+    if not foundLogFilter:
+        print(messageType+": no 'exahype.log-filter' file could be found in the project folder",file=sys.stderr)
+        if not justWarn:
+            sys.exit()
+
+def verifyEnvironmentIsCorrect(justWarn=False):
+    environmentIsCorrect = True
+    
+    messageType = "ERROR"
+    if justWarn:
+        messageType = "WARNING"
+    
+    cpus = jobs["num_cpus"]
+    for environmentDict in dictProduct(environmentSpace):
+        for key,value in environmentDict.items():
+            os.environ[key]=value
+          
+        for ranks in rankCounts:
+            if (os.environ["DISTRIBUTEDMEM"].strip() not in ["MPI"]) and int(ranks)>1:
+                print(messageType+": DISTRIBUTEDMEM environment variable set to "+environmentDict["DISTRIBUTEDMEM"]+" and ranks is set to "+ranks+" > 1",file=sys.stderr)
+                environmentIsCorrect = False
+            for nodes in nodeCounts:
+                if int(nodes) > int(ranks):
+                    print(messageType+": specified ranks ("+ranks+") must always be greater than or equals to specified nodes ("+nodes+")",file=sys.stderr)
+                    environmentIsCorrect = False
+                
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
+                myCoreCounts = coreCounts
+                if coreCounts[0]=="+":
+                    myCoreCounts = coreCountsGrouped
+                for parsedCores in myCoreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
+                    myCores = cores.split(":")[0]
+                    if (os.environ["SHAREDMEM"].strip() not in ["TBB","CPP14","OMP","TBBInvade"]) and int(myCores)>1:
+                        print(messageType+": SHAREDMEM environment variable set to "+environmentDict["SHAREDMEM"]+" and cores set to "+myCores+" > 1",file=sys.stderr)
+                        environmentIsCorrect = False
+                        
+    if not justWarn and not environmentIsCorrect:
+        print("ERROR: subprogram failed as environment variables are not chosen setup correctly. Please adopt your options file according to the error messages.\n" + \
+              "       Then rerun the subprogram.",file=sys.stderr)
+        sys.exit()
 
 def verifyAllRequiredParametersAreGiven(specFileTemplate):
     if "order" not in parameterSpace:
@@ -123,7 +177,6 @@ def verifyAllRequiredParametersAreGiven(specFileTemplate):
             sys.exit()
 
     return foundLimitingADERDG
-    
 
 def build(buildOnlyMissing=False, skipMakeClean=False):
     """
@@ -150,6 +203,9 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
         print("create directory "+buildFolderPath)
         os.makedirs(buildFolderPath)
     
+    verifyLogFilterExists(justWarn=True)        
+    verifyEnvironmentIsCorrect(justWarn=True)
+    
     architectures = parameterSpace["architecture"]
     optimisations = parameterSpace["optimisation"]
     dimensions    = parameterSpace["dimension"]
@@ -168,7 +224,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
             os.environ[key]=value
-        environmentDictHash = hashDictionary(environmentDict)   
+        environmentDictHash = hashDictionary(environmentDict)
         
         for architecture in architectures:
             for dimension in dimensions:
@@ -195,7 +251,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     buildParameterDict["dimension"]   =dimension
                                     buildParameterDict["order"]       =order
                                         
-                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1")
+                                    buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1:1")
                                         
                                     buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+suffix+".exahype"
                                         
@@ -232,14 +288,13 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                         print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                         sys.exit()
                                     
-                                    if firstIteration:
+                                    if firstIteration and not skipMakeClean:
                                         command = "make clean"
                                         print(command)
                                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                                         (output, err) = process.communicate()
                                         process.wait()
-                                        firstIteration = False
-
+                                    
                                     # call make
                                     make_threads=general["make_threads"]
                                     makeCommand="make -j"+make_threads
@@ -250,19 +305,24 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     if "build of ExaHyPE successful" in str(output):
                                         print(" [OK]")
                                     else:
-                                        print(" [FAILED]")
+                                        print(" [FAILED]",file=sys.stderr)
                                         print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                                         sys.exit()
 
-                                    moveCommand   = "mv "+oldExecutable+" "+executable
-                                    print(moveCommand)
-                                    subprocess.call(moveCommand,shell=True)
+                                    if not os.path.exists(oldExecutable):
+                                        print("ERROR: could not find built executable '"+oldExecutable+"'. The parameter 'project' in your configuration file is probably wrong." ,file=sys.stderr)
+                                        sys.exit()
+                                    os.rename(oldExecutable,executable)
+                                    print("created executable:"+executable)
+                                     
                                     print("SUCCESS!")
                                     print("--------------------------------------------------------------------------------")
                                     print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                     print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                                     print("--------------------------------------------------------------------------------")
                                     executables+=1
+                                    
+                                    firstIteration = False
                                 else:
                                     print("skipped building of '"+executable+"' as it already exists.")
 
@@ -271,7 +331,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
 
 def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
                     jobName,jobScriptFilePath,outputFileName,errorFileName,
-                    nodes,tasks,cores): # cores still necessary?
+                    ranks,nodes,tasks,cores): # cores still necessary?
     """
     Render a job script.
     """
@@ -279,14 +339,14 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     context = {}
     # mandatory
+    context["ranks"]       = ranks
     context["nodes"]       = nodes
-    context["tasks"]       = tasks
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
     context["job_name"]    = jobName 
     
-    context["body"]        = jobScriptBody   
- 
+    context["body"] = jobScriptBody   
+    
     consistent = True
     # verify all mandatory(!) sweep options are defined in template
     keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",jobScriptTemplate)]
@@ -296,12 +356,12 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
             print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
     
     # put optional sweep options in context
-    context["mail"]    = jobs["mail"]
-    context["time"]    = jobs["time"]
-    context["ranks"]   = str(int(nodes)*int(tasks))
-    context["class"]   = jobClass
-    context["islands"] = islands
-    context["cores"]   = cores
+    context["mail"]         = jobs["mail"]
+    context["tasks"]        = tasks
+    context["time"]         = jobs["time"]
+    context["class"]        = jobClass
+    context["islands"]      = islands
+    context["coresPerTask"] = str( int ( int(jobs["num_cpus"]) / int(tasks) ) )
     
     # now verify template parameters are defined in options file
     for key in keysInTemplate:
@@ -312,6 +372,8 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
         print("ERROR: subprogram aborted as job script template and sweep options file are inconsistent.",file=sys.stderr)
         sys.exit()
     
+    context["body"] = jobScriptBody 
+ 
     for key,value in context.items():
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
     
@@ -410,116 +472,151 @@ def generateScripts():
     specFiles=0
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashDictionary(parameterDict)
-        
-        for tasks in taskCounts:
-            for parsedCores in coreCounts:
-              cores = parsedCores
-              if parsedCores=="auto":
-                 cores=str(int(int(cpus) / int(tasks)))
-              specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
-              
-              specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
-              
-              with open(specFilePath, "w") as specFile:
-                  specFile.write(specFileBody)
-              specFiles+=1
+       
+        myCoreCounts = coreCounts
+        if coreCounts[0]=="+":
+            myCoreCounts = coreCountsGrouped
+ 
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
+                for parsedCores in myCoreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
+                    specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
+                    
+                    specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                    
+                    with open(specFilePath, "w") as specFile:
+                        specFile.write(specFileBody)
+                    specFiles+=1
     
     print("generated specification files: "+str(specFiles))
     
     # check if required executables exist
-    verifyAllExecutablesExist(True)
+    verifyEnvironmentIsCorrect(justWarn=True)
+    verifyLogFilterExists(justWarn=True)        
+    verifyAllExecutablesExist(justWarn=True)
     
     # generate job scrips
     jobScripts = 0
     for run in runNumbers:
-        for nodes in nodeCounts:
-            for tasks in taskCounts:
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         for ungroupedParameterDict in dictProduct(ungroupedParameterSpace):
                             ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
                             jobName = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                                "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                      "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePath = scriptsFolderPath + "/" + jobName + ".job"
                             jobOutputFilePath = resultsFolderPath + "/" + jobName + ".job_out"
                             jobErrorFilePath  = resultsFolderPath + "/" + jobName + ".job_err"
                             
                             # aggregate the job script body
                             jobScriptBody = ""
-                            for groupedParameterDict in dictProduct(groupedParameterSpace):
-                                parameterDict     = {}
-                                parameterDict.update(ungroupedParameterDict)
-                                parameterDict.update(groupedParameterDict)
-                                parameterDict.pop(None) # ensure we do not hash a dummy None key
-                                parameterDictHash = hashDictionary(parameterDict)
-                                
-                                architecture = parameterDict["architecture"]
-                                optimisation = parameterDict["optimisation"]
-                                dimension    = parameterDict["dimension"]
-                                order        = parameterDict["order"]
-                                
-                                suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
-                                if foundLimitingADERDG:
-                                    limiterType         = parameterDict["limiterType"]
-                                    limiterOptimisation = parameterDict["limiterOptimisation"]
-                                    suffix += "-"+limiterType+"-"+limiterOptimisation
-                                
-                                executable     = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
-                                
-                                specFilePath   = scriptsFolderPath + "/" + projectName + "-" + \
-                                                 parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
-                                                 
-                                outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
-                                                 "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run+".out"
-                                outputFilePath = resultsFolderPath + "/" + outputFileName 
-                                
-                                # pipe some information into output file
-                                jobScriptBody += "echo \"Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`\" > "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
-                                jobScriptBody += "module list >> "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
-                                jobScriptBody += "printenv >> "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
-                                jobScriptBody += "echo \""+jobScriptFilePath+":\" >> "+outputFilePath+"\n" 
-                                jobScriptBody += "cat \""+jobScriptFilePath+"\" >> "+outputFilePath+"\n"  
-                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
-                                jobScriptBody += "echo \""+specFilePath+":\" >> "+outputFilePath+"\n" 
-                                jobScriptBody += "cat \""+specFilePath+"\" >> "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
-                                # pipe environment and parameter dicts into output file
-                                jobScriptBody += "echo \"sweep/environment="+json.dumps(environmentDict).replace("\"","\\\"")+"\" >> "+outputFilePath+"\n"
-                                jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
-                                # pipe the commands into the output file
-                                runCommand = general["run_command"].replace("\"","")
-                                runCommand = runCommand.replace("{{ranks}}",str(int(nodes)*int(tasks)));
-                                runCommand = runCommand.replace("{{nodes}}",nodes);
-                                runCommand = runCommand.replace("{{tasks}}",tasks);
-                                runCommand = runCommand.replace("{{cores}}",cores);
-                                if "./"==runCommand.strip():
-                                    runCommand = runCommand.strip()
-                                else:
-                                    runCommand += " "
-                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+"\n" # no whitespace after runCommand
-                                
-                                if "likwid" in general:
-                                    groups = sweep_options.parseList(general["likwid"])
-                                    for group in groups:
-                                        if "./"==runCommand:
-                                            jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n" 
+                            for coresGrouped in coreCountsGrouped:
+                                myCores = cores
+                                if cores=="+":
+                                    myCores = coresGrouped
+                                    if myCores=="auto":
+                                        myCores=str(int(int(cpus) / int(tasks)))
+                                        myCores=myCores+":"+myCores
+                                for runGrouped in runNumbersGrouped:
+                                    myRun = run
+                                    if run=="+":
+                                        myRun = runGrouped
+                                    for groupedParameterDict in dictProduct(groupedParameterSpace):
+                                        parameterDict     = {}
+                                        parameterDict.update(ungroupedParameterDict)
+                                        parameterDict.update(groupedParameterDict)
+                                        parameterDict.pop(None) # ensure we do not hash a dummy None key
+                                        parameterDictHash = hashDictionary(parameterDict)
+                                        
+                                        architecture = parameterDict["architecture"]
+                                        optimisation = parameterDict["optimisation"]
+                                        dimension    = parameterDict["dimension"]
+                                        order        = parameterDict["order"]
+                                        
+                                        suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
+                                        if foundLimitingADERDG:
+                                            limiterType         = parameterDict["limiterType"]
+                                            limiterOptimisation = parameterDict["limiterOptimisation"]
+                                            suffix += "-"+limiterType+"-"+limiterOptimisation
+                                        
+                                        executable     = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
+                                        
+                                        specFilePath   = scriptsFolderPath + "/" + projectName + "-" + \
+                                                         parameterDictHash + "-t"+tasks+"-c"+myCores+".exahype"
+                                                         
+                                        outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                                                         "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+myCores+"-r"+myRun+".out"
+                                        outputFilePath = resultsFolderPath + "/" + outputFileName 
+    
+                                        if "preamble" in jobs:
+                                            renderedPreamble = jobs["preamble"]
+                                            context = dict(parameterDict)
+                                            context["ranks"]=ranks
+                                            context["nodes"]=nodes
+                                            context["tasks"]=tasks
+                                            context["cores"]=myCores.split(":")[0]
+                                            context["backgroundTasks"]=myCores.split(":")[1]
+                                            context["run"]=myRun
+                                            for key,value in context.items():
+                                                renderedPreamble = renderedPreamble.replace("{{"+key+"}}", value)
+                                            jobScriptBody += "\n\n" + renderedPreamble + "\n\n"
+                                        
+                                        # pipe some information into output file
+                                        jobScriptBody += "echo \"Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`\" > "+outputFilePath+"\n"
+                                        jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                        jobScriptBody += "module list >> "+outputFilePath+"\n"
+                                        jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                        jobScriptBody += "printenv >> "+outputFilePath+"\n"
+                                        jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                        jobScriptBody += "echo \""+jobScriptFilePath+":\" >> "+outputFilePath+"\n" 
+                                        jobScriptBody += "cat \""+jobScriptFilePath+"\" >> "+outputFilePath+"\n"  
+                                        jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                        jobScriptBody += "echo \""+specFilePath+":\" >> "+outputFilePath+"\n" 
+                                        jobScriptBody += "cat \""+specFilePath+"\" >> "+outputFilePath+"\n"
+                                        jobScriptBody += "echo \"\" >> "+outputFilePath+"\n" 
+                                        # pipe environment and parameter dicts into output file
+                                        jobScriptBody += "echo \"sweep/environment="+json.dumps(environmentDict).replace("\"","\\\"")+"\" >> "+outputFilePath+"\n"
+                                        jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
+                                        # pipe the commands into the output file
+                                        runCommand = general["run_command"].replace("\"","")
+                                        runCommand = runCommand.replace("{{ranks}}",ranks);
+                                        runCommand = runCommand.replace("{{nodes}}",nodes);
+                                        runCommand = runCommand.replace("{{tasks}}",tasks);
+                                        runCommand = runCommand.replace("{{cores}}",myCores);
+                                        if "./"==runCommand.strip():
+                                            runCommand = runCommand.strip()
                                         else:
-                                            jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n"
-                                jobScriptBody += "\n" 
+                                            runCommand += " "
+                                        jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+"\n" # no whitespace after runCommand
+                                        
+                                        if "likwid" in general:
+                                            groups = sweep_options.parseList(general["likwid"])
+                                            for group in groups:
+                                                if "./"==runCommand:
+                                                    jobScriptBody += "likwid-perfctr -f -C 0 -g "+group+" "+runCommand+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n" 
+                                                else:
+                                                    jobScriptBody += runCommand+"likwid-perfctr -f -C 0 -g "+group+" "+executable+" "+specFilePath+" >> "+outputFilePath+".likwid\n"
+                                        jobScriptBody += "\n" 
                             
                             # write job file
                             renderedJobScript = renderJobScript(\
                                                     jobScriptTemplate,jobScriptBody,jobs,
                                                     jobName,jobScriptFilePath,jobOutputFilePath,jobErrorFilePath,
-                                                    nodes,tasks,cores)
+                                                    ranks,nodes,tasks,cores)
                             with open(jobScriptFilePath, "w") as jobScriptFile:
                                 jobScriptFile.write(renderedJobScript)
                             
@@ -539,8 +636,9 @@ def verifyAllJobScriptsExist():
     
     allJobScriptsExist = True
     for run in runNumbers:
-        for nodes in nodeCounts:
-            for tasks in taskCounts:
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
@@ -552,7 +650,7 @@ def verifyAllJobScriptsExist():
                             ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
                             jobName      = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                           "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePath  = scriptsFolderPath + "/" + jobName + ".job"
                             if not os.path.exists(jobScriptFilePath):
                                 allJobScriptsExist = False
@@ -578,18 +676,25 @@ def verifyAllSpecFilesExist():
     if not os.path.exists(scriptsFolderPath):
         print("ERROR: job script folder '"+scriptsFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
-    
+   
+    myCoreCounts = coreCounts
+    if coreCounts[0]=="+":
+        myCoreCounts = coreCountsGrouped
+ 
     allSpecFilesExist = True
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashDictionary(parameterDict)
         
-        for tasks in taskCounts:
-            for parsedCores in coreCounts:
-                cores = parsedCores
-                if parsedCores=="auto":
-                    cores=str(int(int(cpus) / int(tasks)))
-                
-                specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
+                for parsedCores in myCoreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
+
+                    specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
                 if not os.path.exists(specFilePath):
                      allSpecFilesExist = False
@@ -606,9 +711,9 @@ def verifyAllSpecFilesExist():
 
 def hashSweep():
     chain = ""
-    for value in nodeCounts:
+    for value in rankCounts:
         chain += value+";"
-    for value in taskCounts:
+    for value in nodeCounts:
         chain += value+";"
     for value in coreCounts:
         chain += value+";"
@@ -627,10 +732,14 @@ def extractJobId(processOutput):
     lines = processOutput.split("\n")
     for line in lines:
         # SLURM
-        # hamilton: "Submitted batch job 67586"
-        # coolmuc:  "Submitted batch job 67586 on cluster mpp3"
+        # hamilton: 'Submitted batch job 67586'
+        # coolmuc:  'Submitted batch job 67586 on cluster mpp3'
+        # LOAD-LEVELER:
+        # supermuc: 'llsubmit: The job "srv24ib.840220" has been submitted.'
         if "Submitted batch job " in line:
             jobId = line.strip().split(" ")[3]
+        if "llsubmit: The job " in line:
+            jobId = line.strip().split("\"")[1]
     return jobId
 
 def submitJobs():
@@ -642,6 +751,8 @@ def submitJobs():
     cpus = jobs["num_cpus"]
     
     # verify everything is fine
+    verifyEnvironmentIsCorrect()
+    verifyLogFilterExists(justWarn=True)        
     verifyAllExecutablesExist()
     verifyAllJobScriptsExist()
     verifyAllSpecFilesExist()
@@ -653,12 +764,14 @@ def submitJobs():
     # loop over job scrips
     jobIds = []
     for run in runNumbers:
-        for nodes in nodeCounts:
-            for tasks in taskCounts:
+        for ranks in rankCounts:
+            for nodes in nodeCounts:
+                tasks = str( math.ceil(float(ranks)/float(nodes)) )
                 for parsedCores in coreCounts:
                     cores = parsedCores
                     if parsedCores=="auto":
                         cores=str(int(int(cpus) / int(tasks)))
+                        cores=cores+":"+cores
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
@@ -666,7 +779,7 @@ def submitJobs():
                             ungroupedParameterDictHash = hashDictionary(ungroupedParameterDict)
                             
                             jobName              = projectName + "-" + environmentDictHash + "-" + ungroupedParameterDictHash + \
-                                                   "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
+                                                   "-n" + ranks + "-N" + nodes + "-t"+tasks+"-c"+cores+"-r"+run
                             jobScriptFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobScriptFilePath    = jobScriptFilePrefix + ".job"
                             
@@ -726,6 +839,7 @@ if __name__ == "__main__":
     import hashlib
     import json
     import re
+    import math
     
     import sweep_analysis
     import sweep_options
@@ -769,9 +883,16 @@ typical workflow:
 
 (after jobs have finished)
 
-./sweep.py myoptions.ini parseAdapters
+./sweep.py myoptions.ini parseAdapters [--compress]
 ./sweep.py myoptions.ini parseTotalTimes
 ./sweep.py myoptions.ini parseTimeStepTimes
+
+note: with --compress you remove table columns containing the
+same value in every row.
+
+(if likwid measurements have been performed)
+
+./sweep.py myoptions.ini parseMetrics [--compress]
 
 """
         print(info) # correctly indented
@@ -779,6 +900,8 @@ typical workflow:
     
     optionsFile = parseArgument(sys.argv,1)
     subprogram  = parseArgument(sys.argv,2)
+    
+    compressTable = parseArgument(sys.argv,3)=="--compress"
     
     options = sweep_options.parseOptionsFile(optionsFile)
     
@@ -800,22 +923,24 @@ typical workflow:
     resultsFolderPath = options.resultsFolderPath
     historyFolderPath = options.historyFolderPath
     
-    jobClass   = options.jobClass
-    islands    = options.islands
-    nodeCounts = options.nodeCounts
-    taskCounts = options.taskCounts
-    coreCounts = options.coreCounts
-    runNumbers = options.runNumbers
-    
+    jobClass          = options.jobClass
+    islands           = options.islands
+    rankCounts        = options.rankCounts
+    nodeCounts        = options.nodeCounts
+    coreCounts        = options.coreCounts
+    coreCountsGrouped = options.coreCountsGrouped
+    runNumbers        = options.runNumbers
+    runNumbersGrouped = options.runNumbersGrouped   
+ 
     verifySweepAgreesWithHistoricalExperiments()
     
-    specFileTemplatePath = general["spec_template"]
+    specFileTemplatePath = exahypeRoot+"/"+general["spec_template"]
     specFileTemplate     = None
     try:
-        with open(exahypeRoot+"/"+specFileTemplatePath, "r") as specFileTemplateFile:
+        with open(specFileTemplatePath, "r") as specFileTemplateFile:
             specFileTemplate=specFileTemplateFile.read()
     except IOError:
-        print("ERROR: couldn\'t open specification file template file: "+templateFileName,file=sys.stderr)
+        print("ERROR: couldn\'t open specification file template file: "+specFileTemplatePath,file=sys.stderr)
         sys.exit()
         
     jobScriptTemplatePath = exahypeRoot+"/"+general["job_template"]    
@@ -841,11 +966,11 @@ typical workflow:
     elif subprogram == "cleanHistory":
         clean("history")
     elif subprogram == "build":
-        build()
+        build(buildOnlyMissing=False, skipMakeClean=False)
     elif subprogram == "buildMissing":
-        build(True)
+        build(buildOnlyMissing=True, skipMakeClean=False)
     elif subprogram == "buildLocally":
-        build(False,True)
+        build(buildOnlyMissing=False, skipMakeClean=True)
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
@@ -853,10 +978,10 @@ typical workflow:
     elif subprogram == "cancel":
         cancelJobs()
     elif subprogram == "parseAdapters":
-        sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName)
+        sweep_analysis.parseAdapterTimes(resultsFolderPath,projectName,compressTable)
     elif subprogram == "parseTotalTimes":
         sweep_analysis.parseSummedTimes(resultsFolderPath,projectName)
     elif subprogram == "parseTimeStepTimes":
         sweep_analysis.parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=True)
     elif subprogram == "parseMetrics":
-        sweep_analysis.parseMetrics(resultsFolderPath,projectName)
+        sweep_analysis.parseMetrics(resultsFolderPath,projectName,compressTable)

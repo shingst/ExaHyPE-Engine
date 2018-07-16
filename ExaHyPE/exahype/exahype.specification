@@ -30,7 +30,7 @@ event-mapping:
   name: LoadBalancing
  
 event-mapping:
-  name: BroadcastAndDropNeighbourMessages
+  name: BroadcastAndRestrictLimiterStatus
   
 event-mapping:
   name: MergeNeighbours
@@ -90,6 +90,10 @@ adapter:
   merge-with-user-defined-mapping: FinaliseMeshRefinement  // sends time step data up to the master
   merge-with-user-defined-mapping: LocalRollback           // does not send because 
   merge-with-user-defined-mapping: LevelwiseAdjacencyBookkeeping
+
+adapter:
+  name: InitialPrediction
+  merge-with-user-defined-mapping: Prediction
   
 // Adapter for 1 phase time stepping
 adapter: 
@@ -102,8 +106,8 @@ adapter:
 
 // Additional adapters for limiter status spreading and recomputation
 adapter: 
-  name: BroadcastAndDropNeighbourMessages
-  merge-with-user-defined-mapping: BroadcastAndDropNeighbourMessages
+  name: BroadcastAndRestrictLimiterStatus
+  merge-with-user-defined-mapping: BroadcastAndRestrictLimiterStatus
 
 adapter:
   name: LimiterStatusSpreading

@@ -18,6 +18,7 @@
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -142,7 +143,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     if ( !_backgroundJobsHaveTerminated ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
       _backgroundJobsHaveTerminated = true;
     }
 
@@ -167,7 +168,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
 
           // compute a new time step size
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
-          if ( exahype::State::fuseADERDGPhases() ) {
+          if ( exahype::solvers::Solver::FuseADERDGPhases ) {
             admissibleTimeStepSize = solver->updateTimeStepSizesFused(cellDescriptionsIndex,element);
           } else {
             admissibleTimeStepSize = solver->updateTimeStepSizes(cellDescriptionsIndex,element);
@@ -189,10 +190,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
     }
 
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-            fineGridCell.getCellDescriptionsIndex(),
-            fineGridVertices,fineGridVerticesEnumerator);
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
@@ -217,7 +216,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
-        if ( exahype::State::fuseADERDGPhases() ) {
+        if ( exahype::solvers::Solver::FuseADERDGPhases ) {
           #ifdef Parallel
           if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
             exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(solver);

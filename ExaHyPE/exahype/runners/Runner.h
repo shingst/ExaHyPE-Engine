@@ -19,6 +19,8 @@
 
 #include "exahype/State.h"
 
+#include "tarch/multicore/MulticoreDefinitions.h"
+
 namespace exahype {
 namespace runners {
 class Runner;
@@ -82,6 +84,12 @@ class exahype::runners::Runner {
   void updateStatistics();
 
   void printStatistics();
+
+  /**
+   * Parses global optimisations and
+   * prints them out. Must be used for all ranks.
+   */
+  void parseOptimisations() const;
 
   /**
    * Setup the oracles for the shared memory parallelisation. Different

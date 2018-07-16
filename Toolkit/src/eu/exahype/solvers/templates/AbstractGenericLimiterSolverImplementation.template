@@ -19,20 +19,20 @@
 }
 
 void {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
-  kernels::limiter::generic::c::projectOnFVLimiterSpace(luh, NumberOfVariables, Order+1, GhostLayerWidth, lim);
+  kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables,GhostLayerWidth>(luh, lim);
 }
 
 void {{project}}::{{abstractSolver}}::projectOnDGSpace(const double* const lim, double* const luh) const {
-  kernels::limiter::generic::c::projectOnDGSpace(lim, NumberOfVariables, Order+1, GhostLayerWidth, luh);
+  kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables,GhostLayerWidth>(lim, luh);
 }
 
 bool {{project}}::{{abstractSolver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) {
-  return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(luh, _solver.get(), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
+  return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<{{ADERDGAbstractSolver}}, NumberOfObservables, GhostLayerWidth>(luh, *static_cast<{{ADERDGAbstractSolver}}*>(_solver.get()), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
 }
 
 void {{project}}::{{abstractSolver}}::findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) {
-  kernels::limiter::generic::c::findCellLocalMinAndMax(luh, _solver.get(), localMinPerVariables, localMaxPerVariable);
+  kernels::limiter::generic::c::findCellLocalMinAndMax<{{ADERDGAbstractSolver}}, NumberOfObservables>(luh, *static_cast<{{ADERDGAbstractSolver}}*>(_solver.get()), localMinPerVariables, localMaxPerVariable);
 }
 void {{project}}::{{abstractSolver}}::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
-  kernels::limiter::generic::c::findCellLocalLimiterMinAndMax(lim, _solver.get(), GhostLayerWidth, localMinPerObservable,localMaxPerObservable);
+  kernels::limiter::generic::c::findCellLocalLimiterMinAndMax<{{ADERDGAbstractSolver}}, NumberOfObservables, GhostLayerWidth>(lim, *static_cast<{{ADERDGAbstractSolver}}*>(_solver.get()), localMinPerObservable,localMaxPerObservable);
 }

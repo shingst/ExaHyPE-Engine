@@ -114,12 +114,12 @@ void exahype::mappings::GlobalRollback::endIteration(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (
          performGlobalRollback(solver) &&
-         exahype::State::fuseADERDGPhases()==true
+         exahype::solvers::Solver::FuseADERDGPhases==true
     ) {
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
     } else if (
          performGlobalRollback(solver) &&
-         exahype::State::fuseADERDGPhases()==false
+         exahype::solvers::Solver::FuseADERDGPhases==false
     ) {
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
     }
@@ -152,7 +152,7 @@ void exahype::mappings::GlobalRollback::enterCell(
 
         limitingADERDGSolver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element); // TODO(Dominic): Merge
 
-        if (exahype::State::fuseADERDGPhases()) {
+        if (exahype::solvers::Solver::FuseADERDGPhases) {
           limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
         } else {
           limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
@@ -165,8 +165,6 @@ void exahype::mappings::GlobalRollback::enterCell(
     // !!! The following has to be done after GlobalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }

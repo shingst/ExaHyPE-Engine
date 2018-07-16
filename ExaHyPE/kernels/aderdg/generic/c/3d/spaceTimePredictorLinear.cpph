@@ -69,11 +69,8 @@ void spaceTimePredictorLinear(SolverType& solver,
   idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, DIMENSIONS+1, numberOfVariables);
   std::fill_n(lFi,basisSize4*(DIMENSIONS+1)*numberOfVariables, 0.);
 
-  //double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize4 * DIMENSIONS * numberOfVariables
-  idx6 idx_gradQ(basisSize, basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
-  if(useNCP) {
-    std::fill_n(gradQ, basisSize4 * DIMENSIONS * numberOfVariables, 0.);
-  }
+  //double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize3 * DIMENSIONS * numberOfVariables
+  idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
 
   idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
   
@@ -256,6 +253,9 @@ void spaceTimePredictorLinear(SolverType& solver,
     } //useFlux
   
     if(useNCP){
+
+      std::fill_n(gradQ, basisSize3 * DIMENSIONS * numberOfVariables, 0.); //reset gradQ
+      
       // Compute the derivatives in x direction (independent from the y and z derivatives)
       for (int j = 0; j < basisSize; j++) { // y-loop
         for (int k = 0; k < basisSize; k++) { // z-loop
@@ -263,7 +263,7 @@ void spaceTimePredictorLinear(SolverType& solver,
           for (int l = 0; l < basisSize; l++) {  // x-loop
             for (int m = 0; m < numberOfVariables; m++) { // Skip parameters
               for (int n = 0; n < basisSize; n++) {
-                gradQ[idx_gradQ(i, j, k, l, 0, m)] += lQi[idx_lQi(i, j, k, n, m)] * kernels::dudx[order][l][n] * invDx[0];
+                gradQ[idx_gradQ(j, k, l, 0, m)] += lQi[idx_lQi(i, j, k, n, m)] * kernels::dudx[order][l][n] * invDx[0];
               }
             }
           }
@@ -277,7 +277,7 @@ void spaceTimePredictorLinear(SolverType& solver,
           for (int l = 0; l < basisSize; l++) {
             for (int m = 0; m < numberOfVariables; m++) { // Skip parameters
               for (int n = 0; n < basisSize; n++) {
-                gradQ[idx_gradQ(i, j, l, k, 1, m)] += lQi[idx_lQi(i, j, n, k, m)] * kernels::dudx[order][l][n] * invDx[1];
+                gradQ[idx_gradQ(j, l, k, 1, m)] += lQi[idx_lQi(i, j, n, k, m)] * kernels::dudx[order][l][n] * invDx[1];
               }
             }
           }
@@ -291,7 +291,7 @@ void spaceTimePredictorLinear(SolverType& solver,
           for (int l = 0; l < basisSize; l++) {     
             for (int m = 0; m < numberOfVariables; m++) {// Skip parameters
               for (int n = 0; n < basisSize; n++) {
-                gradQ[idx_gradQ(i, l, j, k, 2, m)] += lQi[idx_lQi(i, n, j, k, m)] * kernels::dudx[order][l][n] * invDx[2];
+                gradQ[idx_gradQ(l, j, k, 2, m)] += lQi[idx_lQi(i, n, j, k, m)] * kernels::dudx[order][l][n] * invDx[2];
               }
             }
           }
@@ -303,7 +303,7 @@ void spaceTimePredictorLinear(SolverType& solver,
           for (int l = 0; l < basisSize; l++) {
             std::fill_n(&ncpResult[0],DIMENSIONS*numberOfVariables, 0.); // zero out ncpResult
             solver.nonConservativeProduct(&lQi[idx_lQi(i, j, k, l, 0)],
-                                          &gradQ[idx_gradQ(i, j, k, l, 0, 0)],
+                                          &gradQ[idx_gradQ(j, k, l, 0, 0)],
                                           ncpResult);
             for(int d = 0; d < DIMENSIONS; d++) {
               for (int n = 0; n < numberOfVariables; n++) {

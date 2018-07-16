@@ -23,33 +23,27 @@
 
 #include <limits>
 
-bool exahype::State::FuseADERDGPhases           = false;
-double exahype::State::WeightForPredictionRerun = 0.99;
-
-bool exahype::State::SpawnPredictorAsBackgroundThread = false;
-
 bool exahype::State::VirtuallyExpandBoundingBox = false;
 
-bool exahype::State::fuseADERDGPhases() {
-  return FuseADERDGPhases;
+#ifdef Parallel
+bool exahype::State::BroadcastInThisIteration = true;
+bool exahype::State::ReduceInThisIteration    = false;
+#endif
+
+bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==0;
 }
 
-double exahype::State::getTimeStepSizeWeightForPredictionRerun() {
-  return WeightForPredictionRerun;
+bool exahype::State::isSecondIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==1;
 }
 
-bool exahype::State::spawnPredictorAsBackgroundThread() {
-  return SpawnPredictorAsBackgroundThread;
+bool exahype::State::isLastIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-1;
 }
 
-bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::FirstIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
-}
-
-bool exahype::State::isLastIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::LastIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
+bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-2;
 }
 
 exahype::State::State() : Base() {
@@ -91,6 +85,19 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
       tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()>0;
   const bool nodePoolHasGivenOutRankSizeLastQuery =
       tarch::parallel::NodePool::getInstance().hasGivenOutRankSizeLastQuery();
+
+  #ifdef Debug
+  std::cout <<  "!getHasChangedVertexOrCellState=" << !_stateData.getHasChangedVertexOrCellState() << std::endl;
+  std::cout <<  "!getHasRefined=" << !_stateData.getHasRefined() << std::endl;
+  std::cout <<  "!getHasErased=" << !_stateData.getHasErased()  << std::endl;
+  std::cout <<  "!getHasTriggeredRefinementForNextIteration=" << !_stateData.getHasTriggeredRefinementForNextIteration() << std::endl;
+  std::cout <<  "!getHasTriggeredEraseForNextIteration=" << !_stateData.getHasTriggeredEraseForNextIteration() << std::endl;
+  #ifdef Parallel
+  std::cout <<  "!getCouldNotEraseDueToDecompositionFlag=" << !_stateData.getCouldNotEraseDueToDecompositionFlag() << std::endl;
+  #endif
+  std::cout << "isGridStationary()=" << isGridStationary() << std::endl;
+  std::cout << "getMaxRefinementLevelAllowed()=" << _stateData.getMaxRefinementLevelAllowed() << std::endl;
+  #endif
 
   // No more nodes left. Start to enforce refinement
   if ( !idleNodesLeft

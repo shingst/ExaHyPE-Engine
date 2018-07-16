@@ -14,17 +14,18 @@ peano::CommunicationSpecification   exahype::mappings::LevelwiseAdjacencyBookkee
   return peano::CommunicationSpecification::getMinimalSpecification(true);
 }
 
-peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCellSpecification(int level) const {
+  return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 
+// All specifications below are Nop
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCellSpecification(int level) const {
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+}
 peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexFirstTimeSpecification(int level) const { 
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,true);
-}
-peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::ascendSpecification(int level) const {
@@ -110,14 +111,16 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
-  exahype::Cell&                 fineGridCell,
-  exahype::Vertex * const        fineGridVertices,
-  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-  exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-  exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
+      exahype::Cell&           fineGridCell,
+      exahype::Vertex * const  fineGridVertices,
+      const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
+      exahype::Vertex * const  coarseGridVertices,
+      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
+      exahype::Cell&           coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfCell
 ) {
   // Write cell's index into adjacent vertices
   dfor2(k)
@@ -140,17 +143,17 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
       if ( isBoundaryFace ) {
         dfor2(v)
           dfor2(c)
-            if (
+          if (
               v(direction)==orientation &&
               c(direction)==orientation
-            ) {
-              assertion( !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() );
+          ) {
+            assertion( !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() );
 
-              VertexOperations::writeCellDescriptionsIndex(
-                  fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
-                  multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
-            }
-          enddforx
+            VertexOperations::writeCellDescriptionsIndex(
+                fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
+                multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+          }
+        enddforx
         enddforx
       }
     }
@@ -225,10 +228,8 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
   const tarch::la::Vector<DIMENSIONS,double>&  h,
   int                                       level
 ) {
-  if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
-    localCell.setCellDescriptionsIndex(
-        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-  }
+  // do not reset heap indices here. This will result in wrong behaviour when
+  // merging remote data if this mapping follows another mapping
 }
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
@@ -364,6 +365,14 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyCell(
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
+  // Write invalid index into adjacent vertices
+  dfor2(k)
+    if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
+      VertexOperations::writeCellDescriptionsIndex(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,
+              multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+    }
+  enddforx
 }
 
 
@@ -390,18 +399,16 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexLastTime(
 ) {
 }
 
-
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
-      exahype::Cell&           fineGridCell,
-      exahype::Vertex * const  fineGridVertices,
-      const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
-      exahype::Vertex * const  coarseGridVertices,
-      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
-      exahype::Cell&           coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfCell
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
+  exahype::Cell&                 fineGridCell,
+  exahype::Vertex * const        fineGridVertices,
+  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+  exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+  exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
 }
-
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::beginIteration(
   exahype::State&  solverState

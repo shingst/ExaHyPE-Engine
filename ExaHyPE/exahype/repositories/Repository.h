@@ -73,9 +73,10 @@ class exahype::repositories::Repository {
     virtual void switchToMeshRefinementAndPlotTree() = 0;    
     virtual void switchToFinaliseMeshRefinement() = 0;    
     virtual void switchToFinaliseMeshRefinementOrLocalRollback() = 0;    
+    virtual void switchToInitialPrediction() = 0;    
     virtual void switchToFusedTimeStep() = 0;    
     virtual void switchToPredictionRerun() = 0;    
-    virtual void switchToBroadcastAndDropNeighbourMessages() = 0;    
+    virtual void switchToBroadcastAndRestrictLimiterStatus() = 0;    
     virtual void switchToLimiterStatusSpreading() = 0;    
     virtual void switchToPredictionOrLocalRecomputation() = 0;    
     virtual void switchToGlobalRollback() = 0;    
@@ -87,9 +88,10 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterMeshRefinementAndPlotTree() const = 0;
     virtual bool isActiveAdapterFinaliseMeshRefinement() const = 0;
     virtual bool isActiveAdapterFinaliseMeshRefinementOrLocalRollback() const = 0;
+    virtual bool isActiveAdapterInitialPrediction() const = 0;
     virtual bool isActiveAdapterFusedTimeStep() const = 0;
     virtual bool isActiveAdapterPredictionRerun() const = 0;
-    virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const = 0;
+    virtual bool isActiveAdapterBroadcastAndRestrictLimiterStatus() const = 0;
     virtual bool isActiveAdapterLimiterStatusSpreading() const = 0;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const = 0;
     virtual bool isActiveAdapterGlobalRollback() const = 0;

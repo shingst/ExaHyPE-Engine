@@ -3,6 +3,9 @@ package eu.exahype;
 import java.io.IOException;
 import java.io.BufferedWriter;
 import java.util.Set;
+import java.util.Collections;
+import java.util.Collection;
+import java.util.Arrays;
 
 import eu.exahype.analysis.DepthFirstAdapter;
 import eu.exahype.kernel.ADERDGKernel;
@@ -23,29 +26,21 @@ import eu.exahype.io.FileSearch;
 import eu.exahype.io.IOUtils;
 
 public class CreateSolverClasses extends DepthFirstAdapter {
+  
+  private static final Collection<String> SUPPORTED_MICROARCHITECTURES = Collections.unmodifiableCollection(Arrays.asList("wsm", "snb", "hsw", "knc", "knl", "noarch"));
+  
   public Boolean valid = true;
-
-  private DirectoryAndPathChecker _directoryAndPathChecker;
-
+  
+  private String _outputPath;
   private String _projectName;
-
   private String _microarchitecture;
-
-  private java.util.List<String> _supportedMicroarchitectures;
-
-  private java.util.Set<String>  _definedSolvers;
-
+  private Collection<String> _definedSolvers;
   private int _dimensions;
-
   private boolean _enableProfiler;
-  private boolean _enableDeepProfiler;
 
   public CreateSolverClasses(DirectoryAndPathChecker directoryAndPathChecker) {
-    _directoryAndPathChecker = directoryAndPathChecker;
-    _supportedMicroarchitectures =
-        java.util.Arrays.asList("wsm", "snb", "hsw", "knc", "knl", "noarch");
+    _outputPath = directoryAndPathChecker.outputDirectory.getAbsolutePath();
     _enableProfiler = false;
-    _enableDeepProfiler = false;
   }
 
   @Override
@@ -63,7 +58,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     else {
       _microarchitecture = "noarch";
     }
-    if (!_supportedMicroarchitectures.contains(_microarchitecture)) {
+    if (!SUPPORTED_MICROARCHITECTURES.contains(_microarchitecture)) {
       System.out.println("Unknown architecture specified ... fallback solution \"noarch\" taken");
       _microarchitecture = "noarch";
     }
@@ -81,7 +76,6 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   @Override
   public void inAProfiling(AProfiling node) {
     _enableProfiler = !node.getProfiler().getText().equals("NoOpProfiler");
-    _enableDeepProfiler = (node.getDeepProfiling() != null) && node.getDeepProfiling().getText().equals("on");
   };
 
   // @todo This function should be a member of Solver.java.
@@ -126,7 +120,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     try {
       ADERDGKernel kernel = new ADERDGKernel(node);
     
-      SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _enableDeepProfiler, _microarchitecture);
+      SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _microarchitecture);
       eu.exahype.solvers.Solver solver = solverFactory.createADERDGSolver(
           solverName, kernel, isFortran, variables.getNumberOfVariables(), variables.getNumberOfParameters(),variables.getNamingSchemeNames(), order, hasConstants);
       valid = validate(variables,order,kernel.toString(),language,solverName,solver);
@@ -162,7 +156,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     Variables variables  = new Variables(solverName, node);
     boolean isFortran    = language.equals("Fortran");
     
-    SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _enableDeepProfiler, _microarchitecture);
+    SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _microarchitecture);
     FiniteVolumesKernel kernel  = new FiniteVolumesKernel(node);
     eu.exahype.solvers.Solver solver = solverFactory.createFiniteVolumesSolver(
         solverName, kernel, isFortran, variables.getNumberOfVariables(), variables.getNumberOfParameters(),variables.getNamingSchemeNames(), patchSize, hasConstants);
@@ -213,10 +207,9 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     try {
       ADERDGKernel         aderdgKernel  = new ADERDGKernel(node);
       FiniteVolumesKernel  FVKernel      = new FiniteVolumesKernel(node);
-      aderdgKernel.setGhostLayerWidth(FVKernel.getGhostLayerWidth());
       aderdgKernel.setNumberOfObservables(DmpObservables);
       
-      SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _enableDeepProfiler, _microarchitecture);
+      SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _microarchitecture);
       Solver solverAderdg  = solverFactory.createADERDGSolver(
           solverNameADERDG, aderdgKernel,isFortran,variablesSolver.getNumberOfVariables(),variablesSolver.getNumberOfParameters(),variablesSolver.getNamingSchemeNames(),order,hasConstants);
       Solver solverFV = solverFactory.createFiniteVolumesSolver(
@@ -260,7 +253,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   
   private void tryWriteSolverHeader(Solver solver) throws IOException,IllegalArgumentException {
     java.io.File solverHeaderFile = FileSearch.relocatableFile(
-        _directoryAndPathChecker.outputDirectory.getAbsolutePath() + "/" + solver.getSolverName() + ".h");
+        _outputPath + "/" + solver.getSolverName() + ".h");
     
     if (solverHeaderFile.exists()) {
       System.out.println("create header of solver " + solver.getSolverName() + " ... header "
@@ -277,7 +270,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   
   private void tryWriteSolverUserImplementation(Solver solver) throws IOException,IllegalArgumentException {
     java.io.File solverUserImplementationFile = FileSearch.relocatableFile(
-        _directoryAndPathChecker.outputDirectory.getAbsolutePath() + "/" + solver.getSolverName() + ".cpp");
+        _outputPath + "/" + solver.getSolverName() + ".cpp");
     
     if (solverUserImplementationFile.exists()) {
       System.out.println("user's implementation file of solver " + solver.getSolverName()
@@ -294,7 +287,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
 
   private void tryWriteAbstractSolverHeader(Solver solver) throws IOException,IllegalArgumentException {
     java.io.File abstractSolverHeaderFile = FileSearch.relocatableFile(
-        _directoryAndPathChecker.outputDirectory.getAbsolutePath() + "/Abstract" + solver.getSolverName() + ".h");
+        _outputPath + "/Abstract" + solver.getSolverName() + ".h");
     
     if (abstractSolverHeaderFile.exists()) {
       System.out.println("implementation file for abstract solver superclass Abstract" + solver.getSolverName()
@@ -310,7 +303,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   
   private void tryWriteAbstractSolverImplementation(Solver solver) throws IOException,IllegalArgumentException {
     java.io.File abstractSolverImplementationFile = FileSearch.relocatableFile(
-        _directoryAndPathChecker.outputDirectory.getAbsolutePath() + "/Abstract" + solver.getSolverName() + ".cpp");
+        _outputPath + "/Abstract" + solver.getSolverName() + ".cpp");
     
     if (abstractSolverImplementationFile.exists()) {
       System.out.println("implementation file for abstract solver superclass Abstract" + solver.getSolverName()
@@ -327,7 +320,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
   
   private void tryWriteVariablesHeader(Variables variables) throws IOException {
     java.io.File solverHeaderFile = FileSearch.relocatableFile(
-        _directoryAndPathChecker.outputDirectory.getAbsolutePath() + "/" + variables.getSolverName() + "_Variables.h");
+        _outputPath + "/" + variables.getSolverName() + "_Variables.h");
     
     if (solverHeaderFile.exists()) {
       BufferedWriter headerWriter =

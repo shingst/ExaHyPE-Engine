@@ -1,11 +1,11 @@
 #!/bin/bash
 # Mandatory parameters are:
-# time, nodes, tasks,
+# time, ranks, nodes,
 # job_name, output_file, error_file, 
 # body
 # 
 # Optional parameters are:
-# ranks, cores, mail
+# tasks, coresPerTask, mail
 
 #SBATCH --job-name={{job_name}}
 #SBATCH -o {{output_file}}
@@ -13,9 +13,10 @@
 #SBATCH -t {{time}}
 #SBATCH --exclusive
 #SBATCH -p par7.q
+#SBATCH --mem=MaxMemPerNode
+#SBATCH --ntasks={{ranks}}
 #SBATCH --nodes={{nodes}}
-#SBATCH --ntasks-per-node={{tasks}}
-#SBATCH --cpus-per-task={{cores}}
+#SBATCH --cpus-per-task={{coresPerTask}}
 #SBATCH --mail-user={{mail}}
 #SBATCH --mail-type=END
 module purge

@@ -128,12 +128,17 @@ private:
    */
   static tarch::logging::Log _log;
 
+
+  #ifdef Parallel
+  std::vector<double> _receivedMax;
+  std::vector<double> _receivedMin;
   /**
    * TODO(WORKAROUND): We store these fields in order
    * to use the symmetric boundary exchanger of Peano
    * which does not yet support asymmetric send buffers.
    */
-  DataHeap::HeapEntries _invalidObservables;
+  std::vector<double> _invalidObservables;
+  #endif
 
   /**
    * A flag indicating that the limiter domain has changed.
@@ -294,6 +299,45 @@ private:
       const int solverElement) const;
 
   /**
+   * \return the internal limiter status which is not
+   * communicated to neighbouring cells.
+   *
+   * The limiter status is computed using a star stencil
+   * on the fine grid but we are using a box stencil on coarser grids
+   * as this leads to a smaller limiter guided refinement stencil.
+   *
+   * We compute the maximum limiter status of all neighbours of the cell.
+   * If there are at least two neighbours at faces pointing in different
+   * coordinate directions which have this limiter status,
+   * e.g. one face points in x direction, the other in y-direction, then
+   * the cell assumes this limiter status as well.
+   * Otherwise, the cell assumes the maximum limiter status minus one.
+   * The above procedure realises a box stencil.
+   *
+   * \note This is not the limiter status that is communicated to neighbouring
+   * cells as the above procedure would result in a ripppling effect.
+   * To this end, we use another external limiter status which is spread
+   * according to a star stencil.
+   *
+   * <h2>FusedTimeStep Background Jobs</h2>
+   * We assume that the limiter status might change locally during batching but
+   * not the adaptive mesh. When we perform Fused Time Stepping, we thus
+   * have to copy the neighbourMergePerformed array as it is potentially
+   * overwritten before the background job has been executed.
+   */
+  int determineLimiterStatus(
+      const SolverPatch& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+
+  /**
+   * \return the external limiter status which is communicated to neighbouring
+   * cells. It is spread according to a star stencil.
+   */
+  int determineExternalLimiterStatus(
+        const SolverPatch& cellDescription,
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
+
+  /**
    * Update the limiter status based on the cell-local solution values.
    *
    * If the new limiter status is changed to or remains troubled,
@@ -412,8 +456,9 @@ private:
       const int   element,
       const bool  isFirstIterationOfBatch,
       const bool  isLastIterationOfBatch,
-      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
-      const bool  vetoSpawnPredictionJob);
+      const bool  isSkeletonJob,
+      const bool  mustBeDoneImmediately,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
@@ -501,12 +546,14 @@ private:
     const int                         _cellDescriptionsIndex;
     const int                         _element;
     std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+    const bool                        _isSkeletonJob;
   public:
     FusedTimeStepJob(
         LimitingADERDGSolver&                    solver,
         const int                                cellDescriptionsIndex,
         const int                                element,
-        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        const bool                               isSkeletonJob);
 
     bool operator()();
   };
@@ -713,9 +760,6 @@ public:
   int getNextMaxLevel() const final override;
   int getMaxLevel() const final override;
 
-  bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const final override;
-
   /**
    * Returns the index of the solver patch registered for the solver with
    * index \p solverNumber in exahype::solvers::RegisteredSolvers.
@@ -782,17 +826,6 @@ public:
    */
   bool evaluateLimiterStatusRefinementCriterion(const SolverPatch& solverPatch) const;
 
-
-  /**
-   * Evaluate a stricter DMP as an a-priori refinement
-   * criterion.
-   *
-   * TODO(Dominic): It is a little hacked together
-   */
-  bool evaluateDiscreteMaximumPrincipleRefinementCriterion(
-      const int cellDescriptionsIndex,
-      const int element) const;
-
   /**
    * TODO(Dominic): Update docu.
    *
@@ -854,30 +887,28 @@ public:
    * criterion have not been evaluated.
    */
   bool progressMeshRefinementInEnterCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const bool initialGrid,
-      const int solverNumber) final override;
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+     const bool initialGrid,
+     const int solverNumber) override;
 
-  bool progressMeshRefinementInLeaveCell(
-      exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) final override;
+ bool progressMeshRefinementInLeaveCell(
+     exahype::Cell& fineGridCell,
+     exahype::Vertex* const fineGridVertices,
+     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+     exahype::Cell& coarseGridCell,
+     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+     const int solverNumber) override;
 
-  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int& cellDescriptionsIndex,
-        const int& solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize) const final override;
+ exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
+     const int cellDescriptionsIndex,
+     const int solverNumber,
+     const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+     const bool checkThoroughly) const final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
@@ -1169,7 +1200,7 @@ public:
       const int element,
       const bool isAtRemoteBoundary);
 
-  void prolongateAndPrepareRestriction(
+  void prolongateFaceData(
       const int cellDescriptionsIndex,
       const int element) final override;
 
@@ -1451,60 +1482,106 @@ public:
   /////////////////////////////////////
   // MASTER<=>WORKER
   /////////////////////////////////////
-  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  /**
+   * Kind of similar to progressMeshRefinementInPrepareSendToWorker
+   * but performs a few additional operations in order to
+   * notify the worker about some coarse grid operations only
+   * the master knows.
+   *
+   * \note This function sends out MPI messages.
+   */
+  void progressMeshRefinementInPrepareSendToWorker(
+      const int workerRank,
+      exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const bool initialGrid,
+      const int solverNumber) final override;
 
-  void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+  /**
+   * Forward to ADERDGSolver
+   */
+  void sendDataToWorkerIfProlongating(
+      const int                                     toRank,
+      const int                                     cellDescriptionsIndex,
+      const int                                     element,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const final override;
+
+  /**
+   * Forward to ADERDGSolver
+   */
+  void receiveDataFromMasterIfProlongating(
+      const int masterRank,
+      const int receivedCellDescriptionsIndex,
+      const int receivedElement,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  void progressMeshRefinementInMergeWithWorker(
+      const int localCellDescriptionsIndex,
+      const int receivedCellDescriptionsIndex, const int receivedElement,
+      const bool initialGrid) final override;
+
+  /**
+   * Finish erasing operations on the worker side and
+   * send data up to the master if necessary.
+   * This data is then picked up to finish restriction
+   * operations.
+   */
+  void progressMeshRefinementInPrepareSendToMaster(
+      const int masterRank,
+      const int cellDescriptionsIndex, const int element,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int level) const final override;
+
+  /**
+   * Finish prolongation operations started on the master.
+   *
+   * \return If we the solver requires master worker communication
+   * at this cell
+   *
+   * TODO(Dominic): No const modifier const as kernels are not const yet
+   */
+  bool progressMeshRefinementInMergeWithMaster(
+      const int worker,
+      const int localCellDescriptionsIndex,
+      const int localElement,
+      const int coarseGridCellDescriptionsIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
       const int solverNumber) const final override;
 
-  void mergeWithMasterMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
-  bool mergeWithWorkerMetadata(
-      const MetadataHeap::HeapEntries& receivedMetadata,
-      const int                        cellDescriptionsIndex,
-      const int                        element) final override;
-
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
-      const int                                     toRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
+      const peano::heap::MessageType&               messageType,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void dropWorkerOrMasterDataDueToForkOrJoin(
-      const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
+      const int                                     level) const override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
-  bool hasToSendDataToMaster(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
-
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -1514,31 +1591,6 @@ public:
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
-
-  void sendDataToMaster(
-      const int                                     masterRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void sendEmptyDataToMaster(
-      const int                                     masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void mergeWithWorkerData(
-      const int                                     workerRank,
-      const MetadataHeap::HeapEntries&              workerMetadata,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
-
-  void dropWorkerData(
-      const int                                    workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
 
   ///////////////////////////////////
   // MASTER->WORKER
@@ -1553,32 +1605,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
-  void sendDataToWorker(
-      const int                                     workerRank,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) final override;
-
-  void sendEmptyDataToWorker(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const final override;
-
-  void receiveDataFromMaster(
-      const int                                    masterRank,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const final override;
-
-  void mergeWithMasterData(
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             receivedDataHeapIndices,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element) const final override;
-
-  void dropMasterData(
-      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const final override;

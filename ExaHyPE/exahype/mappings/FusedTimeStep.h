@@ -27,7 +27,6 @@
 #include "exahype/State.h"
 #include "exahype/Vertex.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
 
 namespace exahype {
 namespace mappings {
@@ -71,6 +70,12 @@ private:
   static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
+   * A local copy of the state set
+   * in beginIteration(...).
+   */
+  exahype::State _stateCopy;
+
+  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -104,7 +109,41 @@ private:
    * We process background jobs in touchVertexFirstTime(...)
    * and set this flag here as well.
    */
-  bool _backgroundJobsHaveTerminated = false;
+  bool _batchIterationCounterUpdated = false;
+
+
+  int _batchIteration = 0;
+  /**
+   * Updates a batch iteration counter and
+   * ensures that all background jobs of a certain type have terminated.
+   * The type of the background jobs is determined based on the batch iteration counter.
+   *
+   * \note As the state can only be copied in beginIteration(...) and
+   * we need to know the batch iteration in touchVertexFirstTime(...),
+   * we cannot rely on its batch iteration counter and
+   * have to count ourselves.
+   * Note that touchVertexFirstTime(...) might be invoked before beginIteration(...)
+   * if state broadcasting is turned off.
+   */
+  void ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter);
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to send out riemann data in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  bool sendOutRiemannDataInThisIteration() const;
+
+  /**
+   * \return if the mappings/adapters
+   * FusedTimeStep, Prediction, PredictionRerun, and PredictionOrLocalRecomputation
+   * are supposed to issue prediction jobs in this iteration.
+   *
+   * \see updatePredictionIterationTag(...)
+   */
+  bool issuePredictionJobsInThisIteration() const;
 
  public:
   /**
@@ -152,8 +191,8 @@ private:
 
   #if defined(SharedMemoryParallelisation)
   /**
-   * Prepare the temporary variables for
-   * the worker threads.
+   * Copy the _backgroundJobsHaveTerminated
+   * and _batchIteration fields form the masterThread
    */
   FusedTimeStep(const FusedTimeStep& masterThread);
   /**
@@ -214,12 +253,12 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Prepares the temporary variables and copies
-   * the state.
-   *
-   * Resets the next mesh update request flag to false and
+   *Resets the next mesh update request flag to false and
    * the next limiter domain change to Regular
    * using the "setNext..." methods.
+   *
+   * Updates the prediction iteration tag in the first iteration
+   * of a batch or if no batch is run.
    */
   void beginIteration(exahype::State& solverState);
 
@@ -232,7 +271,13 @@ private:
    *
    * Finish plotting if a plotter is active.
    *
+   * <h2> Background Jobs </h2>
    * Reset the _backgroundJobsHaveTerminated switch.
+   *
+   * Notify Peano's tarch that we want to start processing
+   * background jobs with all available cores.
+   *
+   * Updates the prediction iteration tag in every iteration.
    */
   void endIteration(exahype::State& solverState);
 

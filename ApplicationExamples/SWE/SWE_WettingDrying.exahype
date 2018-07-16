@@ -31,33 +31,64 @@ exahype-project  SWE
     /* for shelf scenarios */
     /*width                    = 1200.0, 1200.0 */ 
     /* for dam breaks */ 
-    width                = 10.0,10.0
-    offset                   = 0.0, 0.0
-    end-time                 = 5.0
+    width = 70.0,1.0
+    offset = -10.0,0.0
+    end-time                 = 20.0
   end computational-domain
 
   shared-memory
-      identifier = autotuning
-      configure = {background-tasks:8}
-      cores = 8
+      identifier = dummy
+      configure = {background-tasks:4}
+      cores = 4
       properties-file = sharedmemory.properties
   end shared-memory
+
+  global-optimisation
+      fuse-algorithmic-steps          = on
+      fuse-algorithmic-steps-factor   = 0.99
+      spawn-predictor-as-background-thread = off
+      spawn-amr-background-threads         = off
+      /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+      disable-vertex-exchange-in-time-steps = on
+      time-step-batch-factor           = 0.0
+      disable-metadata-exchange-in-batched-time-steps = off
+      double-compression = 0.0
+      spawn-double-compression-as-background-thread = off
+   end global-optimisation
 
   solver Finite-Volumes MySWESolver
     variables const   = h:1,hu:1,hv:1,b:1
     //parameters const  = b:1
-    patch-size const   = 5
+    patch-size const   = 3
     maximum-mesh-size = 0.15
     time-stepping     = global
     type const      = godunov
     terms const = flux
-    optimisation const = generic
+    optimisation const = generic, usestack
     language const    = C
+    constants = grav:9.81, epsilon:1e-7, scenario:13
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
-      time            = 0.0
+      time            = 25.0
       repeat          = 0.1
       output          = ./conserved
     end plot
   end solver
 end exahype-project
+
+/*------Scenarios-------
+0: ShockShockProblem            (width = 10.0, 10.0 offset = 0.0, 0.0)
+1: RareRareProblem              (width = 10.0, 10.0 offset = 0.0, 0.0)
+2: GaussFunction                (width = 10.0, 10.0 offset = 0.0, 0.0)
+3: ExpBreakProblem
+4: DamBreakProblem              (width = 10.0, 10.0 offset = 0.0, 0.0)
+5: SeaAtRestProblem
+6: SteadyRunUpLinear
+7: RunUpLinear
+8: SteadyRunUpShelf
+9: RunUpShelf
+10: WettingDryingProblem        (width = 10.0, 10.0 offset = 0.0, 0.0)
+11: OscillatingLake             (width = 4.0, 4.0 offset = -2.0, -2.0)
+12: RunUpTest                   (width = 10.0, 10.0 offset = 0.0, 0.0)
+13: SolitaryWaveOnSimpleBeach   (width = 70.0, 1.0 offset = -10.0, 0.0)
+Default: GaussFunction          (width = 10.0, 10.0 offset = 0.0, 0.0)*/

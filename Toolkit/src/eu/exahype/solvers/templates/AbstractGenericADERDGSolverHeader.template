@@ -32,7 +32,8 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
   public:
     static constexpr int NumberOfVariables       = {{numberOfVariables}};
     static constexpr int NumberOfParameters      = {{numberOfParameters}};
-    static constexpr int Order                   = {{order}}; 
+    static constexpr int Order                   = {{order}};
+    static constexpr int NumberOfObservables     = {{numberOfObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
     static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
     static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
     static constexpr double CFL                  = 0.9;
@@ -45,8 +46,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int constexpr_getNumberOfVariables()  const override { return NumberOfVariables; };
     int constexpr_getNumberOfParameters() const override { return NumberOfParameters; };
     int constexpr_getOrder()              const override { return Order; };
-    double constexpr_getCFLNumber()       const override { return CFL; };
-    
+    double constexpr_getCFLNumber()       const override { return CFL; };  
   
     class VariableMetrics;
     class Variables;
@@ -123,9 +123,9 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      
     int fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t, const double dt) override;
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
-    void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) override;
-    void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
+    void boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
+    void faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) override;    
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     {%- if patchwiseAdjust %}
     // adjustSolution is implemented by the user solver as patchwise adjust option was used 
@@ -133,7 +133,6 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) override; 
     {%- endif %}
     void faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
-    void faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
     void volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
     void volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
 

@@ -103,13 +103,12 @@
             Cell dummyCell[2];
             
             #ifdef MPI2
-            const int Attributes = 3;
+            const int Attributes = 2;
             #else
-            const int Attributes = 4;
+            const int Attributes = 3;
             #endif
             MPI_Datatype subtypes[Attributes] = {
-                 MPI_INT		 //CellDescriptionsIndex
-               , MPI_CXX_BOOL		 //isInside
+                 MPI_CXX_BOOL		 //isInside
                , MPI_INT		 //state
                #ifndef MPI2
                , MPI_UB
@@ -118,8 +117,7 @@
             };
             
             int blocklen[Attributes] = {
-                 1		 //CellDescriptionsIndex
-               , 1		 //isInside
+                 1		 //isInside
                , 1		 //state
                #ifndef MPI2
                , 1
@@ -135,19 +133,14 @@
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
             #endif
             #ifdef MPI2
             for (int i=1; i<Attributes; i++) {
@@ -165,9 +158,9 @@
                assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
             }
             #ifndef MPI2
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
-            disp[3] -= base;
-            disp[3] += disp[0];
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[2] );
+            disp[2] -= base;
+            disp[2] += disp[0];
             #endif
             #ifdef MPI2
             MPI_Datatype tmpType; 
@@ -671,13 +664,12 @@ switch (mode) {
             CellPacked dummyCellPacked[2];
             
             #ifdef MPI2
-            const int Attributes = 2;
+            const int Attributes = 1;
             #else
-            const int Attributes = 3;
+            const int Attributes = 2;
             #endif
             MPI_Datatype subtypes[Attributes] = {
-                 MPI_INT		 //CellDescriptionsIndex
-               , MPI_INT		 //_packedRecords0
+                 MPI_INT		 //_packedRecords0
                #ifndef MPI2
                , MPI_UB
                #endif
@@ -685,8 +677,7 @@ switch (mode) {
             };
             
             int blocklen[Attributes] = {
-                 1		 //CellDescriptionsIndex
-               , 1		 //_packedRecords0
+                 1		 //_packedRecords0
                #ifndef MPI2
                , 1
                #endif
@@ -701,14 +692,9 @@ switch (mode) {
             MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
             #endif
             #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
             #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
-            #endif
-            #ifdef MPI2
-            MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
-            #else
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
             #endif
             #ifdef MPI2
             for (int i=1; i<Attributes; i++) {
@@ -726,9 +712,9 @@ switch (mode) {
                assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
             }
             #ifndef MPI2
-            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
-            disp[2] -= base;
-            disp[2] += disp[0];
+            MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[1] );
+            disp[1] -= base;
+            disp[1] += disp[0];
             #endif
             #ifdef MPI2
             MPI_Datatype tmpType; 
@@ -1205,13 +1191,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -1221,8 +1206,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -1239,24 +1223,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -1274,9 +1253,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -1813,13 +1792,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //subtreeHoldsWorker
+                    MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -1828,8 +1806,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //subtreeHoldsWorker
+                    1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -1845,19 +1822,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -1875,9 +1847,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -2365,13 +2337,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   #ifndef MPI2
                   , MPI_UB
@@ -2380,8 +2351,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   #ifndef MPI2
                   , 1
@@ -2397,19 +2367,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -2427,9 +2392,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -2955,13 +2920,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 2;
+               const int Attributes = 1;
                #else
-               const int Attributes = 3;
+               const int Attributes = 2;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //_packedRecords0
+                    MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
                   #endif
@@ -2969,8 +2933,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //_packedRecords0
+                    1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
                   #endif
@@ -2985,14 +2948,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -3010,9 +2968,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
-               disp[2] -= base;
-               disp[2] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[1] );
+               disp[1] -= base;
+               disp[1] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -3496,13 +3454,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   #ifndef MPI2
                   , MPI_UB
@@ -3511,8 +3468,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   #ifndef MPI2
                   , 1
@@ -3528,19 +3484,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -3558,9 +3509,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -4075,13 +4026,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 2;
+               const int Attributes = 1;
                #else
-               const int Attributes = 3;
+               const int Attributes = 2;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //_packedRecords0
+                    MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
                   #endif
@@ -4089,8 +4039,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //_packedRecords0
+                    1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
                   #endif
@@ -4105,14 +4054,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -4130,9 +4074,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
-               disp[2] -= base;
-               disp[2] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[1] );
+               disp[1] -= base;
+               disp[1] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -4609,13 +4553,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   #ifndef MPI2
@@ -4625,8 +4568,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   #ifndef MPI2
@@ -4643,24 +4585,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -4678,9 +4615,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -5195,13 +5132,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -5210,8 +5146,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -5227,19 +5162,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -5257,9 +5187,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -5748,13 +5678,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 5;
+               const int Attributes = 4;
                #else
-               const int Attributes = 6;
+               const int Attributes = 5;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
@@ -5765,8 +5694,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   , 1		 //subtreeHoldsWorker
@@ -5784,29 +5712,24 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -5824,9 +5747,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[5] );
-               disp[5] -= base;
-               disp[5] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
+               disp[4] -= base;
+               disp[4] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -6374,13 +6297,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
@@ -6390,8 +6312,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
@@ -6408,24 +6329,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -6443,9 +6359,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -6944,13 +6860,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   #ifndef MPI2
                   , MPI_UB
@@ -6959,8 +6874,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   #ifndef MPI2
                   , 1
@@ -6976,19 +6890,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -7006,9 +6915,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -7545,13 +7454,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 2;
+               const int Attributes = 1;
                #else
-               const int Attributes = 3;
+               const int Attributes = 2;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //_packedRecords0
+                    MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
                   #endif
@@ -7559,8 +7467,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //_packedRecords0
+                    1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
                   #endif
@@ -7575,14 +7482,9 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[0] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -7600,9 +7502,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
-               disp[2] -= base;
-               disp[2] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[1] );
+               disp[1] -= base;
+               disp[1] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -8101,13 +8003,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   #ifndef MPI2
@@ -8117,8 +8018,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   #ifndef MPI2
@@ -8135,24 +8035,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -8170,9 +8065,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -8709,13 +8604,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -8724,8 +8618,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -8741,19 +8634,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -8771,9 +8659,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -9268,13 +9156,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   #ifndef MPI2
@@ -9284,8 +9171,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   #ifndef MPI2
@@ -9302,24 +9188,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -9337,9 +9218,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -9865,13 +9746,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -9880,8 +9760,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -9897,19 +9776,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -9927,9 +9801,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -10429,13 +10303,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -10445,8 +10318,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -10463,24 +10335,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -10498,9 +10365,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -11059,13 +10926,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //subtreeHoldsWorker
+                    MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -11074,8 +10940,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //subtreeHoldsWorker
+                    1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -11091,19 +10956,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -11121,9 +10981,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -11633,13 +11493,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -11649,8 +11508,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -11667,24 +11525,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -11702,9 +11555,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -12252,13 +12105,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //subtreeHoldsWorker
+                    MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -12267,8 +12119,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //subtreeHoldsWorker
+                    1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -12284,19 +12135,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -12314,9 +12160,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -12819,13 +12665,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   #ifndef MPI2
@@ -12835,8 +12680,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   #ifndef MPI2
@@ -12853,24 +12697,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -12888,9 +12727,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -13438,13 +13277,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -13453,8 +13291,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -13470,19 +13307,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -13500,9 +13332,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -14020,13 +13852,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 5;
+               const int Attributes = 4;
                #else
-               const int Attributes = 6;
+               const int Attributes = 5;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
@@ -14037,8 +13868,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   , 1		 //subtreeHoldsWorker
@@ -14056,29 +13886,24 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -14096,9 +13921,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[5] );
-               disp[5] -= base;
-               disp[5] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
+               disp[4] -= base;
+               disp[4] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -14668,13 +14493,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
@@ -14684,8 +14508,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
@@ -14702,24 +14525,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -14737,9 +14555,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -15264,13 +15082,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -15280,8 +15097,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //subtreeHoldsWorker
                   #ifndef MPI2
@@ -15298,24 +15114,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -15333,9 +15144,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -15905,13 +15716,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 3;
+               const int Attributes = 2;
                #else
-               const int Attributes = 4;
+               const int Attributes = 3;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //subtreeHoldsWorker
+                    MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
                   , MPI_UB
@@ -15920,8 +15730,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //subtreeHoldsWorker
+                    1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
                   , 1
@@ -15937,19 +15746,14 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[1] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -15967,9 +15771,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
-               disp[3] -= base;
-               disp[3] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[2] );
+               disp[2] -= base;
+               disp[2] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -16490,13 +16294,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 5;
+               const int Attributes = 4;
                #else
-               const int Attributes = 6;
+               const int Attributes = 5;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
@@ -16507,8 +16310,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   , 1		 //subtreeHoldsWorker
@@ -16526,29 +16328,24 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -16566,9 +16363,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[5] );
-               disp[5] -= base;
-               disp[5] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
+               disp[4] -= base;
+               disp[4] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -17127,13 +16924,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
@@ -17143,8 +16939,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
@@ -17161,24 +16956,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -17196,9 +16986,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -17720,13 +17510,12 @@ switch (mode) {
                Cell dummyCell[2];
                
                #ifdef MPI2
-               const int Attributes = 5;
+               const int Attributes = 4;
                #else
-               const int Attributes = 6;
+               const int Attributes = 5;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_CXX_BOOL		 //isInside
+                    MPI_CXX_BOOL		 //isInside
                   , MPI_INT		 //state
                   , MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
@@ -17737,8 +17526,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //isInside
+                    1		 //isInside
                   , 1		 //state
                   , 1		 //level
                   , 1		 //subtreeHoldsWorker
@@ -17756,29 +17544,24 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._isInside))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._state))), 		&disp[2] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[2] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._level))), 		&disp[3] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[4] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[3] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -17796,9 +17579,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(Cell)), i, disp[i], Attributes, sizeof(Cell));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[5] );
-               disp[5] -= base;
-               disp[5] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCell[1]))), 		&disp[4] );
+               disp[4] -= base;
+               disp[4] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 
@@ -18379,13 +18162,12 @@ switch (mode) {
                CellPacked dummyCellPacked[2];
                
                #ifdef MPI2
-               const int Attributes = 4;
+               const int Attributes = 3;
                #else
-               const int Attributes = 5;
+               const int Attributes = 4;
                #endif
                MPI_Datatype subtypes[Attributes] = {
-                    MPI_INT		 //CellDescriptionsIndex
-                  , MPI_INT		 //level
+                    MPI_INT		 //level
                   , MPI_CXX_BOOL		 //subtreeHoldsWorker
                   , MPI_INT		 //_packedRecords0
                   #ifndef MPI2
@@ -18395,8 +18177,7 @@ switch (mode) {
                };
                
                int blocklen[Attributes] = {
-                    1		 //CellDescriptionsIndex
-                  , 1		 //level
+                    1		 //level
                   , 1		 //subtreeHoldsWorker
                   , 1		 //_packedRecords0
                   #ifndef MPI2
@@ -18413,24 +18194,19 @@ switch (mode) {
                MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked))), &base);
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._CellDescriptionsIndex))), 		&disp[0] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[0] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._level))), 		&disp[1] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[1] );
                #endif
                #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
+               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._subtreeHoldsWorker))), 		&disp[2] );
-               #endif
-               #ifdef MPI2
-               MPI_Get_address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
-               #else
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[3] );
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[0]._persistentRecords._packedRecords0))), 		&disp[2] );
                #endif
                #ifdef MPI2
                for (int i=1; i<Attributes; i++) {
@@ -18448,9 +18224,9 @@ switch (mode) {
                   assertion4(disp[i]<static_cast<int>(sizeof(CellPacked)), i, disp[i], Attributes, sizeof(CellPacked));
                }
                #ifndef MPI2
-               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[4] );
-               disp[4] -= base;
-               disp[4] += disp[0];
+               MPI_Address( const_cast<void*>(static_cast<const void*>(&(dummyCellPacked[1]))), 		&disp[3] );
+               disp[3] -= base;
+               disp[3] += disp[0];
                #endif
                #ifdef MPI2
                MPI_Datatype tmpType; 

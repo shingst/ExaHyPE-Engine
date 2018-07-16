@@ -89,44 +89,22 @@ java -jar ~/workspace/peano/pdt/pdt.jar --generate-gluecode exahype/exahype.spec
 
 ## Build a new release ##
 
-I assume that the ExaHyPE release repository is checked out to ~/git/ExaHyPE-Release.
+Recommendation: create a release separate from your working copy, e.g. in a ExaHyPE release folder.
 
+1) Clone/pull the ExaHyPE-Engine repository
 
+2) Run `Peano/checkout-update-peano.sh`
 
-X. Preparation (usually not required)
-  git config --global user.email "tobias.weinzierl@durham.ac.uk"
-  git config --global user.name "Tobias Weinzierl"
+3) Clone/pull the ExaHyPE-Documentation repository
 
-A Prepare ExaHyPE repository
-  - Switch to branch release within ExaHyPE
-  - Select git rebase master
+4) Run `make release` in ExaHyPE-Documentation
 
-B.1. Update the guidebook
-    - Change into the directory holding your guidebook and build with `make release`.
-      The release target builds the PDF without annotations.
-    - Copy the PDF over: `cp guidebook.pdf ~/git/ExaHyPE-Engine`
+5) Run `upload.sh` in ExaHyPE-Documentation
+    - This uploads a copy of the guidebook to http://dev.exahype.eu/guidebook.pdf
 
-B.2. Build the toolkit
-    - Change into Toolkit
-      `./build.sh && cp dist/* ~/git/ExaHyPE-Engine`
+6) Run `Miscellaneous/create-release.sh` and pass the application folder(s) you would like to add to the release
 
-C.1 Clean up
-    - Remove all directories that are not under version control in the release branch (Miscellaneous, e.g.)
-    - Clean up Java
-     `find . -name "*.o" -delete`
-     `find . -name "*.class" -delete`
-
-C.2 Create snapshots
-  tar -czhvf ExaHyPE.tar.gz --exclude=.svn --exclude=*.o Peano ExaHyPE LICENSE.txt
-  tar -czvf ExaHyPE-without-Peano.tar.gz --exclude=.svn --exclude=*.o --exclude Peano/peano --exclude Peano/tarch Peano ExaHyPE LICENSE.txt
-
-C.3 Commit and push
-
-D. Make release snapshot from release branch (new directory)
-
-  git clone -b release --single-branch https://gitlab.lrz.de/exahype/ExaHyPE-Engine.git
-  cd ExaHyPE-Engine
-  git push --mirror https://github.com/exahype/exahype.git
+7) This will create a tar.gz archive containing the ExaHyPE+Peano source and your application(s)
 
 
 

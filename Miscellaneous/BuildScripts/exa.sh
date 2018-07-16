@@ -212,6 +212,14 @@ case $CMD in
 		err "Exa Project Makefile specific:"
 		err "PROJECT_CFLAGS: ${PROJECT_CFLAGS:=-not set-}"
 		err "PROJECT_LFLAGS: ${PROJECT_LFLAGS:=-not set-}"
+    err 
+		err "C compiler flags"
+		err "COMPILER_CFLAGS: ${COMPILER_CFLAGS:=-not set-}"
+		err "COMPILER_LFLAGS: ${COMPILER_LFLAGS:=-not set-}" 
+    err
+		err "Fortran compiler flags"
+		err "FCOMPILER_CFLAGS: ${FCOMPILER_CFLAGS:=-not set-}"
+		err "FCOMPILER_LFLAGS: ${FCOMPILER_LFLAGS:=-not set-}" 
 		err
 		err "Exa Build tool specific:"
 		err "CLEAN:     ${CLEAN:=-not-set-}"
