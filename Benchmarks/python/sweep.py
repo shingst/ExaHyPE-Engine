@@ -55,7 +55,7 @@ def hashDictionary(dictionary):
     for key,value in sorted(dictionary.items()):
         chain += key+","+value+";"
     
-    return hashlib.md5(chain.encode()).hexdigest()
+    return hashlib.md5(chain.encode()).hexdigest()[0:8]
 
 def clean(subFolder=""):
     """
@@ -709,7 +709,7 @@ def hashSweep():
     for parameterDict in dictProduct(parameterSpace):
         chain += hashDictionary(parameterDict)
         
-    return hashlib.md5(chain.encode()).hexdigest()
+    return hashlib.md5(chain.encode()).hexdigest()[0:8]
 
 def extractJobId(processOutput):
     jobId = "unknown"
