@@ -465,39 +465,36 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
       vertex.hasToCommunicate(fineGridH)
   ) {
     dfor2(myDest)
-        dfor2(mySrc)
+      dfor2(mySrc)
         tarch::la::Vector<DIMENSIONS, int> dest = tarch::la::Vector<DIMENSIONS, int>(1) - myDest;
-    tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
+        tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
 
-    int destScalar = TWO_POWER_D - myDestScalar - 1;
+        const int destScalar = TWO_POWER_D - myDestScalar - 1;
 
-    if (vertex.hasToReceiveMetadata(fromRank,src,dest)) {
-      const int receivedMetadataIndex =
+        if ( vertex.hasToReceiveMetadata(fromRank,src,dest) ) {
+          exahype::MetadataHeap::HeapEntries receivedMetadata;
+          receivedMetadata.clear();
           exahype::receiveNeighbourCommunicationMetadata(
-              fromRank, fineGridX, level);
-      exahype::MetadataHeap::HeapEntries& receivedMetadata =
-          MetadataHeap::getInstance().getData(receivedMetadataIndex);
-      assertionEquals(receivedMetadata.size(),
-          exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+              receivedMetadata,fromRank, fineGridX, level);
+          assertionEquals(receivedMetadata.size(),
+              exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
-      if(vertex.hasToMergeWithNeighbourData(src,dest)) { // Only communicate data once per face
-        mergeNeighourData(
-            fromRank,
-            src,dest,
-            vertex.getCellDescriptionsIndex()[destScalar],
-            fineGridX,level,
-            receivedMetadata);
-      } else {
-        dropNeighbourData(
-            fromRank,
-            src,dest,
-            fineGridX,level,
-            receivedMetadata);
-      }
-      // Clean up
-      MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
-    }
-    enddforx
+          if( vertex.hasToMergeWithNeighbourData(src,dest) ) { // Only communicate data once per face
+            mergeNeighourData(
+                fromRank,
+                src,dest,
+                vertex.getCellDescriptionsIndex()[destScalar],
+                fineGridX,level,
+                receivedMetadata);
+          } else {
+            dropNeighbourData(
+                fromRank,
+                src,dest,
+                fineGridX,level,
+                receivedMetadata);
+          }
+        }
+      enddforx
     enddforx
   }
 
