@@ -77,17 +77,47 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
 {%- endif %}
 
 // We define the constructor of the actual solver here in order to regenerate it easily.
-{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
-  {{abstractSolver}}::{{abstractSolver}}(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler) {%- endif %}) {
-}
+{{project}}::{{solver}}::{{solver}}(
+    const double maximumMeshSize,
+    const int maximumMeshDepth,
+    const int haloCells,
+    const int regularisedFineGridLevels,
+    const exahype::solvers::Solver::TimeStepping timeStepping
+    const int DMPObservables,
+    const int limiterHelperLayers, 
+    {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
+  {{abstractSolver}}::{{abstractSolver}}(
+      maximumMeshSize,
+      maximumMeshDepth,
+      haloCells,
+      regularisedFineGridLevels,
+      timeStepping,
+      DMPObservables,
+      limiterHelperLayers 
+      {%- if enableProfiler %},std::move(profiler) {%- endif %}) {}
 
-
-
-{{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} ):
-  exahype::solvers::ADERDGSolver("{{solver}}",{{optNamespace}}::getNumberOfVariable(),{{optNamespace}}::getNumberOfParameter(),{{optNamespace}}::getBasisSize(),maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler){% endif %}) {
-}
-
-
+{{project}}::{{abstractSolver}}::{{abstractSolver}}(
+    const double maximumMeshSize,
+    const int maximumMeshDepth,
+    const int haloCells,
+    const int regularisedFineGridLevels,
+    const int DMPObservables,
+    const int limiterHelperLayers,
+    const  exahype::solvers::Solver::TimeStepping timeStepping
+    {%- if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} )
+    :
+    exahype::solvers::ADERDGSolver("{{solver}}",
+        {{optNamespace}}::getNumberOfVariable(),
+        {{optNamespace}}::getNumberOfParameter(),
+        {{optNamespace}}::getBasisSize(),
+        maximumMeshSize,
+        maximumMeshDepth,
+        haloCells,
+        regularisedFineGridLevels,
+        timeStepping 
+        limiterHelperLayers,
+        DMPObservables,
+        {%- if enableProfiler %}, std::move(profiler){% endif %}) {}
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 	// This string is used in the --version output to identify compile time constants

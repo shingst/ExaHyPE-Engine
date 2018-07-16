@@ -68,14 +68,17 @@ void exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(const int cell
 }
 
 exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
-    const std::string& identifier, int numberOfVariables,
-    int numberOfParameters, int nodesPerCoordinateAxis, int ghostLayerWidth,
-    double maximumMeshSize, int maximumAdaptiveMeshDepth,
-    exahype::solvers::Solver::TimeStepping timeStepping,
+    const std::string& identifier,
+    const int numberOfVariables,
+    const int numberOfParameters,
+    const int basisSize,
+    const int ghostLayerWidth,
+    const double maximumMeshSize,
+    const exahype::solvers::Solver::TimeStepping timeStepping,
     std::unique_ptr<profilers::Profiler> profiler)
     : Solver(identifier, exahype::solvers::Solver::Type::FiniteVolumes,
-             numberOfVariables, numberOfParameters, nodesPerCoordinateAxis,
-             maximumMeshSize, maximumAdaptiveMeshDepth,
+             numberOfVariables, numberOfParameters, basisSize,
+             maximumMeshSize, 0,
              timeStepping, std::move(profiler)),
             _previousMinTimeStamp( std::numeric_limits<double>::max() ),
             _previousMinTimeStepSize( std::numeric_limits<double>::max() ),
@@ -151,7 +154,8 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _minTimeStepSize = 0.0;
   _minTimeStamp = timeStamp;
 
-  _meshUpdateRequest = true; // for the initial mesh refinement
+  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
+  setNextMeshUpdateEvent();
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }
@@ -326,8 +330,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
-    const int solverNumber) {
+    const int solverNumber,
+    const bool stillInRefiningMode) {
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -570,12 +574,6 @@ void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
 ///////////////////////////////////
 // CELL-LOCAL
 //////////////////////////////////
-bool exahype::solvers::FiniteVolumesSolver::evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) {
-  // TODO(Dominic): Not implemented.
-  return false;
-}
 
 double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(
     const int cellDescriptionsIndex,
@@ -669,20 +667,15 @@ void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes(
   }
 }
 
-void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescription& cellDescription) const {
   cellDescription.setTimeStamp(cellDescription.getPreviousTimeStamp());
   cellDescription.setTimeStepSize(cellDescription.getPreviousTimeStepSize());
 
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::max());
 }
 
-void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  rollbackToPreviousTimeStep(cellDescriptionsIndex,element);
+void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const {
+  rollbackToPreviousTimeStep(cellDescription);
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(
@@ -846,6 +839,14 @@ void exahype::solvers::FiniteVolumesSolver::restriction(
       const int cellDescriptionsIndex,
       const int element) {
   // do nothing
+}
+
+void exahype::solvers::FiniteVolumesSolver::rollbackSolutionGlobally(
+    const int cellDescriptionsIndex, const int solverElement,
+    const bool fusedTimeStepping) const {
+  // do nothing
+  logError("rollbackSolutionGlobally(...)","Should have never been called");
+  std::abort();
 }
 
 ///////////////////////////////////
@@ -1120,7 +1121,6 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
   // do nothing
 }
@@ -1145,8 +1145,7 @@ void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
-    const bool initialGrid) {
+    const int receivedCellDescriptionsIndex, const int receivedElement) {
   // do nothing
 }
 
@@ -1164,7 +1163,8 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMas
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) {
+    const int                                    level,
+    const bool stillInRefiningMode) {
   // do nothing
   return false;
 }

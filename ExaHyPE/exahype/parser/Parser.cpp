@@ -861,7 +861,7 @@ double exahype::parser::Parser::getMaximumMeshSize(int solverNumber) const {
   return result;
 }
 
-double exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
+int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
   std::string token;
 
   int result = 0;
@@ -883,6 +883,56 @@ double exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
   }
 
   logDebug("getMaximumMeshDepth()", "found maximum mesh size " << result);
+  return result;
+}
+
+int exahype::parser::Parser::getHaloCells(int solverNumber) const {
+  std::string token;
+
+  int result = 0;
+  token = getTokenAfter("solver", solverNumber + 1, "halo-cells", 1, 0);
+  if (token==_noTokenFound) {
+    return result;
+  }
+
+  result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getHaloCells(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'halo-cells': Value must be greater than or equal to zero.");
+    _interpretationErrorOccured = true;
+  }
+
+  logDebug("getHaloCells()", "found halo-cells " << result);
+  return result;
+}
+
+int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) const {
+  std::string token;
+
+  int result = 0;
+  token = getTokenAfter("solver", solverNumber + 1, "regularised-fine-grid-levels", 1, 0);
+  if (token==_noTokenFound) {
+    return result;
+  }
+
+  result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getRegularisedFineGridLevels(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'regularised-fine-grid-levels': Value must be greater than or equal to zero.");
+    _interpretationErrorOccured = true;
+  }
+
+  logDebug("getRegularisedFineGridLevels()", "found regularised-fine-grid-levels " << result);
   return result;
 }
 

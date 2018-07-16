@@ -49,14 +49,12 @@ void exahype::mappings::FusedTimeStep::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
-  _limiterDomainChanges.resize(numberOfSolvers);
-  _meshUpdateRequests.resize(numberOfSolvers);
+  _meshUpdateEvents.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber]     = std::numeric_limits<double>::max();
-    _maxLevels[solverNumber]            = -std::numeric_limits<int>::max(); // "-", min
-    _limiterDomainChanges[solverNumber] = exahype::solvers::LimiterDomainChange::Regular;
-    _meshUpdateRequests[solverNumber]   = false;
+    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
+    _maxLevels[solverNumber]        = -std::numeric_limits<int>::max(); // "-", min
+    _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
   }
 }
 
@@ -163,12 +161,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         solvers::Solver::getMinTimeStampOfAllSolvers());
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      solver->setNextMeshUpdateRequest();
-      solver->setNextAttainedStableState();
-
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextLimiterDomainChange();
-      }
+      solver->setNextMeshUpdateEvent();
     }
 
     initialiseLocalVariables();
@@ -191,7 +184,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
           _stateCopy.isSecondIterationOfBatchOrNoBatch();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-        _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
+        _minTimeStepSizes,_maxLevels,_meshUpdateEvents,
         isFirstTimeStep,
         _stateCopy.isLastIterationOfBatchOrNoBatch(),
         true);
@@ -236,10 +229,9 @@ exahype::mappings::FusedTimeStep::FusedTimeStep(
 void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
     const FusedTimeStep& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _meshUpdateRequests[i]   = _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
-    _limiterDomainChanges[i] = std::max ( _limiterDomainChanges[i], workerThread._limiterDomainChanges[i] );
-    _minTimeStepSizes[i]     = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i]            = std::max(_maxLevels[i], workerThread._maxLevels[i]);
+    _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
+    _minTimeStepSizes[i] = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
+    _maxLevels[i]        = std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
 }
 #endif
@@ -336,14 +328,9 @@ void exahype::mappings::FusedTimeStep::leaveCell(
             );
         solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
-
-        _meshUpdateRequests    [solverNumber]  =
-            _meshUpdateRequests[solverNumber] || result._refinementRequested;
-        _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
-        assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-                  _meshUpdateRequests[solverNumber]);
-        _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
-        _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
+        _meshUpdateEvents  [solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents( _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
+        _minTimeStepSizes[solverNumber]   = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
+        _maxLevels       [solverNumber]   = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
       }
     }
 

@@ -1379,6 +1379,17 @@ class encoded_mexafile(io_mexafile):
 		needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
 		return "".join([ quote(c) if needsquote(c) else c for c in s])
 	
+	@staticmethod
+	def relaxed_quoted_printable(s, escape='%'):
+		"""
+		Version of quoted printable which allows more special characters
+		which are probably accepted by the toolkit.
+		"""
+		HEX = '0123456789ABCDEF'
+		quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
+		needsquote = lambda c: not (c in '_-' or '0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
+		return "".join([ quote(c) if needsquote(c) else c for c in s])
+	
 	encodings = {
 		# base64 is the well known base64
 		'base64': lambda f: base64.b64encode(f),
@@ -1569,7 +1580,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 			# Strings must be treated with special care. They must not whitespace other "weird"
 			# characters. Therefore, they are encoded.
 			encoding = 'quotedprintable'
-			encode_str = encoded_mexafile.quoted_printable
+			encode_str = encoded_mexafile.relaxed_quoted_printable
 			ret['mexa/encoding'] = encoding
 			join_multiline = True
 			join_kv_tpl = "%s: %s" # Allow some whitespace

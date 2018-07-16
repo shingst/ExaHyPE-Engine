@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_LimiterStatusSpreading_H_
-#define EXAHYPE_ADAPTERS_LimiterStatusSpreading_H_
+#ifndef EXAHYPE_ADAPTERS_RefinementStatusSpreading_H_
+#define EXAHYPE_ADAPTERS_RefinementStatusSpreading_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,13 +18,13 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/LimiterStatusSpreading.h"
+ #include "exahype/mappings/RefinementStatusSpreading.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class LimiterStatusSpreading;
+        class RefinementStatusSpreading;
       } 
 }
 
@@ -36,11 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::LimiterStatusSpreading {
+class exahype::adapters::RefinementStatusSpreading {
   private:
-    typedef mappings::LimiterStatusSpreading Mapping0;
+    typedef mappings::RefinementStatusSpreading Mapping0;
 
-     Mapping0  _map2LimiterStatusSpreading;
+     Mapping0  _map2RefinementStatusSpreading;
 
 
   public:
@@ -52,16 +52,16 @@ class exahype::adapters::LimiterStatusSpreading {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    LimiterStatusSpreading();
+    RefinementStatusSpreading();
 
     #if defined(SharedMemoryParallelisation)
-    LimiterStatusSpreading(const LimiterStatusSpreading& masterThread);
+    RefinementStatusSpreading(const RefinementStatusSpreading& masterThread);
     #endif
 
-    virtual ~LimiterStatusSpreading();
+    virtual ~RefinementStatusSpreading();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const LimiterStatusSpreading& workerThread);
+    void mergeWithWorkerThread(const RefinementStatusSpreading& workerThread);
     #endif
 
     void createInnerVertex(

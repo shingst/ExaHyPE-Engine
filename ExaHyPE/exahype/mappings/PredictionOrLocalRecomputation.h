@@ -42,7 +42,7 @@ class PredictionOrLocalRecomputation;
  *
  * |Mapping                 | Event                  | Action                                            |
  * -------------------------------------------------------------------------------------------------------
- * | LimiterStatusSpreading | touchVertexFirstTime   | Merge the face-wise limiter status between local neighbours.|
+ * | RefinementStatusSpreading | touchVertexFirstTime   | Merge the face-wise limiter status between local neighbours.|
  * |                        | enterCell              | Determine a unified value of the merged face-wise limiter status values and write it to every face. (Do not update the cell-wise limiter status.)|
  * |                        | prepareSendToNeighbour | Send the unified ace-wise limiter status to neighbouring ranks.|
  * -------------------------------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 import jenkins.model.Jenkins
 
 pipeline {
-    agent { label 'mac-intel' }
+    agent { label 'Linux-Cluster' }
     // triggers {
     // 	cron('H H * * *')
     // }
@@ -20,7 +20,8 @@ pipeline {
 		run = load "Miscellaneous/Jenkins/Run.groovy"
 		build = load "Miscellaneous/Jenkins/Build.groovy"
 		}
-		sh util.getModuleCode() + 'Peano/checkout-update-peano.sh'
+		sh util.getModuleCode() + 'Peano/updatePeano.sh -s'
+		sh util.getModuleCode() + 'Peano/updatePeano.sh'
 
 	    }
 	}

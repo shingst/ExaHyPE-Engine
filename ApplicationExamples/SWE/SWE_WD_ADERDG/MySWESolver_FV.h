@@ -32,7 +32,7 @@ class SWE::MySWESolver_FV : public SWE::AbstractMySWESolver_FV {
      */
     static tarch::logging::Log _log;
   public:
-    MySWESolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    MySWESolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

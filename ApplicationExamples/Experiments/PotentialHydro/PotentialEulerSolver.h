@@ -33,7 +33,7 @@ class PotentialHydro::PotentialEulerSolver : public PotentialHydro::AbstractPote
      */
     static tarch::logging::Log _log;
   public:
-    PotentialEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    PotentialEulerSolver(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

@@ -135,22 +135,6 @@ class exahype::records::ADERDGCellDescription {
    */
   parallelise persistent packed Type type;
   
-  /**
-   * Using this enum, we can manifest the evaluation
-   * of the refinement criterion. It is then
-   * not necessary to evaluate the refinement criterion
-   * in every cell but only in the first iteration of
-   * a mesh update or in case a new cell is introduced.
-   */
-  enum RefinementRequest {
-    Pending,
-    Keep,
-    Erase,
-    Refine
-  };
-  
-  parallelise persistent packed RefinementRequest refinementRequest;
-  
   enum RefinementEvent {
     /**
      * In this state, the cell description is ready to
@@ -451,38 +435,57 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent int communicationStatus;
   
   /**
-   * \see limiterStatus
+   * \see refinementStatus
    */
-  persistent int facewiseLimiterStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseRefinementStatus[DIMENSIONS_TIMES_TWO];
   
   /**
-   * The cell descriptions internal limiter status which
-   * is a reduction of the facewiseLimiterStatus elements.
-   * It is not communicated to other cells.
+   * A flag indicating cells marked by a normal refinement criterion
+   * during the time stepping. This is used as a marker for
+   * halo cell diffusion heat sources.
    */
-  parallelise persistent int limiterStatus;
+  persistent bool refinementFlag;
   
   /**
-   * The cell descriptions external limiter status which
-   * is a reduction of the facewiseLimiterStatus elements.
-   * This limiter status is communicated
-   * to other cells.
+   * Status which indicates the refinement decision made
+   * by a cell description. 
+   * -1 indicates the cell wants to be erased.
+   * -2 indicates no refinement decision was made yet.
+   * 0 means that the cell wants to be kept on the coarse grid.
+   * 2 indicates that the cell wants to be refined on the coarse grid 
+   * or kept / refined on the fine grid.
+   * This is realised with an if after the decision was made.
    *
-   * It needs to be stored persistently as it
-   * read by neighbouring cells in the next iteration.
+   * (Can this be exploited for the regularisation?)
+   * 
+   * Unless the value is -2, the cells refinement status can be overwritten 
+   * by a neighbour's value subtracted by 1 in case the neighbour's refinement status 
+   * is larger. The value 1 then indicates the halo cells around a  
+   * fine grid cell with status 2. 
+   * The bottom-up refinement criterion ensures that all halo cells 
+   * are placed on the fine grid.
+   * No spreading is performed on coarser grids.
+   * There are no halo cells.
+   * 
+   * A troubled ADER-DG cell obtains a refinement status
+   * 2+#DG-FV layers+#FV-DG layers+1 on the fine grid.
+   * Diffusion introduces other refinement status
+   * values into which have a special meaning 
+   * for the limiting ADER-DG solver but need to be refined as well.
    */
-  parallelise persistent int externalLimiterStatus;
+  parallelise persistent int refinementStatus;
   
   /**
-   * The cell descriptions previous limiter status.
+   * The cell descriptions previous refinement status.
    * 
    * This field is only need for the troubled cell recomputation
    * which must be performed after a irregular limiter domain
-   * change has occured, i.e. cells outside of the first(!) FV
-   * helper cell layer have been marked as troubled.
+   * change has occurred, i.e. cells outside of the first(!) FV
+   * helper cell layer have been marked as troubled or
+   * the halo status of a cell changed by more than the
+   * helper layer width.
    */
-  parallelise persistent int previousLimiterStatus;
-
+  parallelise persistent int previousRefinementStatus;
   
   /**
    * A counter holding the number of iterations to

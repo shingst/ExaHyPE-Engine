@@ -20,13 +20,13 @@ cat > "$tmpfile" <<EOF
 #SBATCH -D ${workspace}/
 #SBATCH --get-user-env
 #SBATCH -J exahype
-#SBATCH --clusters=tum
-#SBATCH --partition=acc
-#SBATCH --cpus-per-task=32
+#SBATCH --clusters=mpp2
+##SBATCH --partition=acc
+#SBATCH --cpus-per-task=28
 #SBATCH --time=02:00:00
 source /etc/profile.d/modules.sh
 cd "${workspace}"
-export OMP_NUM_THREADS=32
+export OMP_NUM_THREADS=28
 EOF
 # Now write actual code to file.
 # Quoting the EOL avoids string interpolation!
@@ -48,12 +48,12 @@ tail -f "$log_file" &
 # Wait until batch job is finished...
 while 
     sleep 60s # Busy waiting, sue me.
-    scontrol_err="$(scontrol show job ${jobid} 2>&1 > /dev/null)"
+    scontrol_err="$(scontrol --cluster=mpp2 show job ${jobid} 2>&1 > /dev/null)"
     if grep -q Invalid <<< "${scontrol_err}"; then
 	echo "Job-Id invalid/Job cancelled. Aborting."
 	status="CANCELLED"
     else
-	status="$(scontrol show job ${jobid} | grep -o -E "JobState=(PENDING|RUNNING|COMPLETED|FAILED|CANCELLED)" | cut -d '=' -f2)"
+	status="$(scontrol --cluster=mpp2 show job ${jobid} | grep -o -E "JobState=(PENDING|RUNNING|COMPLETED|FAILED|CANCELLED)" | cut -d '=' -f2)"
     fi
     [[ "$status" != "CANCELLED" && "$status" != "COMPLETED" && "$status" != "FAILED" ]]
 do

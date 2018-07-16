@@ -76,8 +76,8 @@ class exahype::repositories::Repository {
     virtual void switchToInitialPrediction() = 0;    
     virtual void switchToFusedTimeStep() = 0;    
     virtual void switchToPredictionRerun() = 0;    
-    virtual void switchToBroadcastAndRestrictLimiterStatus() = 0;    
-    virtual void switchToLimiterStatusSpreading() = 0;    
+    virtual void switchToBroadcastAndDropNeighbourMessages() = 0;    
+    virtual void switchToRefinementStatusSpreading() = 0;    
     virtual void switchToPredictionOrLocalRecomputation() = 0;    
     virtual void switchToGlobalRollback() = 0;    
     virtual void switchToMergeNeighbours() = 0;    
@@ -91,8 +91,8 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterInitialPrediction() const = 0;
     virtual bool isActiveAdapterFusedTimeStep() const = 0;
     virtual bool isActiveAdapterPredictionRerun() const = 0;
-    virtual bool isActiveAdapterBroadcastAndRestrictLimiterStatus() const = 0;
-    virtual bool isActiveAdapterLimiterStatusSpreading() const = 0;
+    virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const = 0;
+    virtual bool isActiveAdapterRefinementStatusSpreading() const = 0;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const = 0;
     virtual bool isActiveAdapterGlobalRollback() const = 0;
     virtual bool isActiveAdapterMergeNeighbours() const = 0;
