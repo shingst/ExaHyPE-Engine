@@ -53,7 +53,7 @@ while
 	echo "Job-Id invalid/Job cancelled. Aborting."
 	status="CANCELLED"
     else
-	status="$(scontrol show job ${jobid} | grep -o -E "JobState=(PENDING|RUNNING|COMPLETED|FAILED|CANCELLED)" | cut -d '=' -f2)"
+	status="$(scontrol --cluster=mpp2 show job ${jobid} | grep -o -E "JobState=(PENDING|RUNNING|COMPLETED|FAILED|CANCELLED)" | cut -d '=' -f2)"
     fi
     [[ "$status" != "CANCELLED" && "$status" != "COMPLETED" && "$status" != "FAILED" ]]
 do
