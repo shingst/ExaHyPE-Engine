@@ -4145,7 +4145,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
 
   _maxLevel                      = message[index++];
 
-  Solver::overwriteMeshUpdateEvent( convertToMeshUpdateEvent(message[index++]) );
+  overwriteMeshUpdateEvent( convertToMeshUpdateEvent(message[index++]) );
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
 
   logDebug("mergeWithMasterData(...)",
