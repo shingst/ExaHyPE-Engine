@@ -431,8 +431,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
       solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
     }
-    assertion2(solverPatch.getRefinementEvent()==SolverPatch::None || solverPatch.getRefinementEvent()==SolverPatch::RefiningRequested,solverPatch.toString(),cellDescriptionsIndex);
-
     _solver->adjustSolution(solverPatch);
 
     determineSolverMinAndMax(solverPatch);
