@@ -102,16 +102,13 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
   OneSolverRequestedLocalRecomputation =
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+      exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
     exahype::solvers::Solver* solver) {
   return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::Irregular;
+      solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
 }
 
 void exahype::mappings::LocalRollback::endIteration(
@@ -161,13 +158,9 @@ void exahype::mappings::LocalRollback::enterCell(
       if (element!=exahype::solvers::Solver::NotFound) {
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-          if (exahype::solvers::Solver::FuseADERDGPhases) {
-            limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
-          } else {
-            limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-          }
-          limitingADERDGSolver->rollbackSolutionLocally(fineGridCell.getCellDescriptionsIndex(),element);
+          limitingADERDGSolver->rollbackSolutionLocally(
+              fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::solvers::Solver::FuseADERDGPhases);
         }
       }
     }

@@ -19,7 +19,7 @@
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
- #include "exahype/adapters/LimiterStatusSpreading.h" 
+ #include "exahype/adapters/RefinementStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
  #include "exahype/adapters/GlobalRollback.h" 
  #include "exahype/adapters/MergeNeighbours.h" 

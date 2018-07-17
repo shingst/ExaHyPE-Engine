@@ -48,7 +48,6 @@ private:
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
-
 public:
 
   /**

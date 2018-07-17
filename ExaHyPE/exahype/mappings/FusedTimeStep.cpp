@@ -31,11 +31,6 @@
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
-void exahype::mappings::FusedTimeStep::updateBatchIterationCounter() {
-  _batchIteration++;
-  _batchIterationCounterUpdated = true;
-}
-
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() const {
   return
       exahype::solvers::Solver::PredictionSweeps==1 ||
@@ -54,14 +49,12 @@ void exahype::mappings::FusedTimeStep::initialiseLocalVariables(){
   const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
   _minTimeStepSizes.resize(numberOfSolvers);
   _maxLevels.resize(numberOfSolvers);
-  _limiterDomainChanges.resize(numberOfSolvers);
-  _meshUpdateRequests.resize(numberOfSolvers);
+  _meshUpdateEvents.resize(numberOfSolvers);
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber]     = std::numeric_limits<double>::max();
-    _maxLevels[solverNumber]            = -std::numeric_limits<int>::max(); // "-", min
-    _limiterDomainChanges[solverNumber] = exahype::solvers::LimiterDomainChange::Regular;
-    _meshUpdateRequests[solverNumber]   = false;
+    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
+    _maxLevels[solverNumber]        = -std::numeric_limits<int>::max(); // "-", min
+    _meshUpdateEvents[solverNumber] = exahype::solvers::Solver::MeshUpdateEvent::None;
   }
 }
 
@@ -140,6 +133,21 @@ exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
 exahype::mappings::FusedTimeStep::FusedTimeStep() {
 }
 
+void exahype::mappings::FusedTimeStep::ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter) {
+  if (!_batchIterationCounterUpdated) {
+    _batchIteration = ( initialiseBatchIterationCounter) ? 0 : _batchIteration+1;
+    _batchIterationCounterUpdated = true;
+
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && issuePredictionJobsInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+    }
+    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+    }
+  }
+}
+
 void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
@@ -147,44 +155,17 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   _stateCopy = solverState;
 
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-    _batchIteration = 0;
-    _batchIterationCounterUpdated = true;
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      if ( issuePredictionJobsInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
-      if ( sendOutRiemannDataInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-    }
+    ensureAllBackgroundJobsHaveTerminated(true);
 
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      solver->setNextMeshUpdateRequest();
-      solver->setNextAttainedStableState();
-
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextLimiterDomainChange();
-      }
+      solver->setNextMeshUpdateEvent();
     }
 
     initialiseLocalVariables();
   }
-  
-  #ifdef Parallel
-  // reduction (must come here; is before first commSpec evaluation for reduction
-  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
-    assertion(exahype::State::ReduceInThisIteration==false);
-    exahype::State::ReduceInThisIteration = true;
-  }
-  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    assertion(exahype::State::ReduceInThisIteration==true);
-    exahype::State::ReduceInThisIteration = false;
-  }
-  #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -203,11 +184,13 @@ void exahype::mappings::FusedTimeStep::endIteration(
           _stateCopy.isSecondIterationOfBatchOrNoBatch();
 
     exahype::solvers::Solver::startNewTimeStepForAllSolvers(
-        _minTimeStepSizes,_maxLevels,_meshUpdateRequests,_limiterDomainChanges,
+        _minTimeStepSizes,_maxLevels,_meshUpdateEvents,
         isFirstTimeStep,
-        _stateCopy.isLastIterationOfBatchOrNoBatch(),    // TODO I have to distinguish here if I use two sweeps or one
+        _stateCopy.isLastIterationOfBatchOrNoBatch(),
         true);
   }
+
+  _batchIterationCounterUpdated = false;
 
   //logInfo("endIteration(State)", _stateCopy.getBatchIteration() << ", "<<state.getBatchIteration() << ", " << _batchIteration);
   #ifdef Parallel
@@ -220,9 +203,16 @@ void exahype::mappings::FusedTimeStep::endIteration(
     assertion(exahype::State::BroadcastInThisIteration==false);
     exahype::State::BroadcastInThisIteration = true;
   }
+  // reduction (must come here; is before first commSpec evaluation for reduction
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::ReduceInThisIteration==false);
+    exahype::State::ReduceInThisIteration = true;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::ReduceInThisIteration==true);
+    exahype::State::ReduceInThisIteration = false;
+  }
   #endif
-
-  _batchIterationCounterUpdated = false;
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
@@ -239,10 +229,9 @@ exahype::mappings::FusedTimeStep::FusedTimeStep(
 void exahype::mappings::FusedTimeStep::mergeWithWorkerThread(
     const FusedTimeStep& workerThread) {
   for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _meshUpdateRequests[i]   = _meshUpdateRequests[i] || workerThread._meshUpdateRequests[i];
-    _limiterDomainChanges[i] = std::max ( _limiterDomainChanges[i], workerThread._limiterDomainChanges[i] );
-    _minTimeStepSizes[i]     = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i]            = std::max(_maxLevels[i], workerThread._maxLevels[i]);
+    _meshUpdateEvents[i] = exahype::solvers::Solver::mergeMeshUpdateEvents ( _meshUpdateEvents[i], workerThread._meshUpdateEvents[i] );
+    _minTimeStepSizes[i] = std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
+    _maxLevels[i]        = std::max(_maxLevels[i], workerThread._maxLevels[i]);
   }
 }
 #endif
@@ -260,18 +249,7 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  if ( !_batchIterationCounterUpdated ) {
-    updateBatchIterationCounter();
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      if ( issuePredictionJobsInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
-      if ( sendOutRiemannDataInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-    }
-  }
+  ensureAllBackgroundJobsHaveTerminated(false);
 
   if ( issuePredictionJobsInThisIteration() ) {
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
@@ -350,14 +328,9 @@ void exahype::mappings::FusedTimeStep::leaveCell(
             );
         solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
-
-        _meshUpdateRequests    [solverNumber]  =
-            _meshUpdateRequests[solverNumber] || result._refinementRequested;
-        _limiterDomainChanges  [solverNumber]  = std::max( _limiterDomainChanges[solverNumber], result._limiterDomainChange );
-        assertion(_limiterDomainChanges[solverNumber]!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
-                  _meshUpdateRequests[solverNumber]);
-        _minTimeStepSizes[solverNumber] = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
-        _maxLevels       [solverNumber] = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
+        _meshUpdateEvents  [solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents( _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
+        _minTimeStepSizes[solverNumber]   = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);
+        _maxLevels       [solverNumber]   = std::min( fineGridVerticesEnumerator.getLevel(),_maxLevels       [solverNumber]);
       }
     }
 
@@ -377,18 +350,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  if ( !_batchIterationCounterUpdated ) {
-    updateBatchIterationCounter();
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      if ( issuePredictionJobsInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
-      if ( sendOutRiemannDataInThisIteration() ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-    }
-  }
+  ensureAllBackgroundJobsHaveTerminated(false);
 
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(

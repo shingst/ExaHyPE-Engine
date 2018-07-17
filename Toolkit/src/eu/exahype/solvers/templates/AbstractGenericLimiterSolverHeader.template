@@ -12,8 +12,8 @@
 #include <string>
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
-#include "{{ADERDGAbstractSolver}}.h"
-#include "{{FVAbstractSolver}}.h"
+#include "{{ADERDGSolver}}.h"
+#include "{{FVSolver}}.h"
 
 namespace {{project}}{
   class {{abstractSolver}};
@@ -21,11 +21,24 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSolver {  
   public:
-    static constexpr int NumberOfVariables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
-    static constexpr int Order              = {{project}}::{{ADERDGAbstractSolver}}::Order;
-    static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
-  
-    {{abstractSolver}}(std::string identifier, std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell);
+    static constexpr int NumberOfVariables    = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
+    static constexpr int Order                = {{project}}::{{ADERDGAbstractSolver}}::Order;
+    static constexpr int NumberOfObservables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfObservables;
+    static constexpr int GhostLayerWidth      = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
+      
+    {{abstractSolver}}(
+        const std::string identifier,
+        const double maximumMeshSize,
+        const int maximumMeshDepth,
+        const int haloCells,
+        const int regularisedFineGridLevels,
+        const exahype::solvers::Solver::TimeStepping timeStepping,
+        const int limiterHelperLayers,
+        const int DMPObservables,
+        const double DMPRelaxationParameter,
+        const double DMPDifferenceScaling,
+        const int iterationsToCureTroubledCell
+        {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;
     void projectOnDGSpace(const double* const lim, double* const luh) const override;

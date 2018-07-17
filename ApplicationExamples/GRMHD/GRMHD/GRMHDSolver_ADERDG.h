@@ -30,7 +30,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    GRMHDSolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    GRMHDSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.

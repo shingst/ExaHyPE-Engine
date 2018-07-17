@@ -40,6 +40,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int NumberOfParameters      = {{optNamespace}}::getNumberOfParameter();
     static constexpr int Order                   = {{optNamespace}}::getBasisSize() -1;
     static constexpr int Dimensions              = {{optNamespace}}::getDimension();
+    
     static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
     static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
     static constexpr double CFL                  = 0.9;
@@ -65,8 +66,16 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     class {{className}};
     {%- endfor %}
     
-    {{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping  {%- if enableProfiler %}
-    , std::unique_ptr<exahype::profilers::Profiler> profiler  {%- endif %});
+    {{abstractSolver}}(
+      double maximumMeshSize,
+      int maximumMeshDepth,
+      int haloCells,
+      int regularisedFineGridLevels,
+      exahype::solvers::Solver::TimeStepping timeStepping,
+      int limiterHelperLayers,
+      int DMPObservables
+      {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}
+    );
     
 {%- if countFlops %}
     // Change to the correct values

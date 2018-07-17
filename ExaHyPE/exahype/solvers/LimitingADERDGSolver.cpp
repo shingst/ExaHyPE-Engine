@@ -28,72 +28,10 @@ namespace solvers {
 
 tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solvers::LimitingADERDGSolver");
 
-int exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell() {
-  int result = 0;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG ) {
-      result = std::max(
-          result,
-          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
-          getMinimumLimiterStatusForTroubledCell());
-    }
-  }
-  return result;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading() {
-  bool result = false;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |=
-        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-        &&
-        (static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        !=exahype::solvers::LimiterDomainChange::Regular ||
-        solver->getMeshUpdateRequest());
-  }
-  return result;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation() {
-  bool result = false;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |=
-        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-        &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        !=exahype::solvers::LimiterDomainChange::Regular;
-  }
-  return result;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation(){
-  bool result = false;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |=
-        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-        &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular;
-  }
-  return result;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation(){
-  bool result = false;
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    result |=
-        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-        &&
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-  }
-  return result;
-}
-
 exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     const std::string& identifier,
-    std::unique_ptr<exahype::solvers::ADERDGSolver> solver,
-    std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter,
+    exahype::solvers::ADERDGSolver* solver,
+    exahype::solvers::FiniteVolumesSolver* limiter,
     const double DMPRelaxationParameter,
     const double DMPDifferenceScaling,
     const int iterationsToCureTroubledCell)
@@ -106,9 +44,7 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
           _limiter(std::move(limiter)),
           _DMPMaximumRelaxationParameter(DMPRelaxationParameter),
           _DMPDifferenceScaling(DMPDifferenceScaling),
-          _iterationsToCureTroubledCell(iterationsToCureTroubledCell),
-          _limiterDomainChange(LimiterDomainChange::Regular),
-          _nextLimiterDomainChange(LimiterDomainChange::Regular)
+          _iterationsToCureTroubledCell(iterationsToCureTroubledCell)
 {
   assertion(_solver->getNumberOfParameters() == 0);
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
@@ -125,31 +61,21 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
   assertion( numberOfObservables==0 || !_receivedMin.empty());
   #endif
 }
-
-void exahype::solvers::LimitingADERDGSolver::updateNextMeshUpdateRequest(const bool& meshUpdateRequest)  {
-  _solver->updateNextMeshUpdateRequest(meshUpdateRequest);
+/** Wire through to limiting ADER-DG solver */
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::getNextMeshUpdateEvent() const {
+  return _solver->getNextMeshUpdateEvent();
 }
-bool exahype::solvers::LimitingADERDGSolver::getNextMeshUpdateRequest() const  {
-  return _solver->getNextMeshUpdateRequest();
+void exahype::solvers::LimitingADERDGSolver::updateNextMeshUpdateEvent(exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
+  return _solver->updateNextMeshUpdateEvent(meshUpdateEvent);
 }
-bool exahype::solvers::LimitingADERDGSolver::getMeshUpdateRequest() const  {
-  return _solver->getMeshUpdateRequest();
+void exahype::solvers::LimitingADERDGSolver::setNextMeshUpdateEvent() {
+  _solver->setNextMeshUpdateEvent();
 }
-void exahype::solvers::LimitingADERDGSolver::setNextMeshUpdateRequest()  {
-  _solver->setNextMeshUpdateRequest();
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::getMeshUpdateEvent() const {
+  return _solver->getMeshUpdateEvent();
 }
-
-void exahype::solvers::LimitingADERDGSolver::updateNextAttainedStableState(const bool& attainedStableState)  {
-  _solver->updateNextAttainedStableState(attainedStableState);
-}
-bool exahype::solvers::LimitingADERDGSolver::getNextAttainedStableState() const  {
-  return _solver->getNextAttainedStableState();
-}
-bool exahype::solvers::LimitingADERDGSolver::getAttainedStableState() const  {
-  return _solver->getAttainedStableState();
-}
-void exahype::solvers::LimitingADERDGSolver::setNextAttainedStableState()  {
-  _solver->setNextAttainedStableState();
+void exahype::solvers::LimitingADERDGSolver::overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) {
+   _solver->overwriteMeshUpdateEvent(newMeshUpdateEvent);
 }
 
 double exahype::solvers::LimitingADERDGSolver::getMinTimeStamp() const {
@@ -179,10 +105,11 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =
       exahype::solvers::Solver::computeCoarsestMeshSizeAndLevel(_maximumMeshSize,boundingBoxSize[0]);
-  _coarsestMeshSize  = coarsestMeshInfo.first;
+  _coarsestMeshSize  = coarsestMeshInfo.first; // TODO(Dominic): Wire through as well
   _coarsestMeshLevel = coarsestMeshInfo.second;
 
-  _limiterDomainChange=LimiterDomainChange::Regular;
+  updateNextMeshUpdateEvent(MeshUpdateEvent::InitialRefinementRequested);
+  setNextMeshUpdateEvent();
 
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
   _limiter->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize, cmdlineargs, parserView);
@@ -198,12 +125,12 @@ bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
   bool isMergingMetadata = false;
 
   switch (section) {
-    case exahype::State::AlgorithmSection::LimiterStatusSpreading:
-      isMergingMetadata = getLimiterDomainChange()!=LimiterDomainChange::Regular;
+    case exahype::State::AlgorithmSection::RefinementStatusSpreading:
+      isMergingMetadata = getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChange ||
+                          getMeshUpdateEvent()==MeshUpdateEvent::RefinementRequested;
       break;
     case exahype::State::AlgorithmSection::MeshRefinement:
-      isMergingMetadata = getMeshUpdateRequest();
-      assertion( getLimiterDomainChange()!=LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
+      isMergingMetadata = hasRequestedMeshRefinement();
       break;
     default:
       break;
@@ -219,12 +146,19 @@ void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
+void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
+    SolverPatch& solverPatch,
+    const int cellDescriptionsIndex) const {
+  _solver->synchroniseTimeStepping(solverPatch);
+  ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellDescriptionsIndex);
+}
+
 void exahype::solvers::LimitingADERDGSolver::startNewTimeStep() {
   _solver->startNewTimeStep();
   ensureLimiterTimeStepDataIsConsistent();
 
-  logDebug("startNewTimeStep()","_limiterDomainHasChanged="<<static_cast<int>(_limiterDomainChange)<<
-           ",nextLimiterDomainChange="<<static_cast<int>(_nextLimiterDomainChange));
+  logDebug("startNewTimeStep()","getMeshUpdateEvent()="<<Solver::toString(getMeshUpdateEvent())<<
+           ",getNextMeshUpdateEvent()="<<Solver::toString(getNextMeshUpdateEvent()));
 }
 
 void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
@@ -233,8 +167,8 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
   _solver->startNewTimeStepFused(isFirstIterationOfBatch,isLastIterationOfBatch);
   ensureLimiterTimeStepDataIsConsistent();
 
-  logDebug("startNewTimeStep()","_limiterDomainHasChanged="<<static_cast<int>(_limiterDomainChange)<<
-           ",nextLimiterDomainChange="<<static_cast<int>(_nextLimiterDomainChange));
+  logDebug("startNewTimeStep()","getMeshUpdateEvent()="<<Solver::toString(getMeshUpdateEvent())<<
+           ",getNextMeshUpdateEvent()="<<Solver::toString(getNextMeshUpdateEvent()));
 }
 
 void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsistent() const {
@@ -257,25 +191,6 @@ void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes()  {
 void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes() {
   _solver->zeroTimeStepSizes();
   ensureLimiterTimeStepDataIsConsistent();
-}
-
-exahype::solvers::LimiterDomainChange
-exahype::solvers::LimitingADERDGSolver::getNextLimiterDomainChange() const {
-  return _nextLimiterDomainChange;
-}
-
-void exahype::solvers::LimitingADERDGSolver::setNextLimiterDomainChange() {
-  _limiterDomainChange         = _nextLimiterDomainChange;
-  _nextLimiterDomainChange     = LimiterDomainChange::Regular;
-}
-void exahype::solvers::LimitingADERDGSolver::updateNextLimiterDomainChange(
-    exahype::solvers::LimiterDomainChange limiterDomainChange) {
-  _nextLimiterDomainChange =
-      std::max( _nextLimiterDomainChange, limiterDomainChange );
-}
-exahype::solvers::LimiterDomainChange
-exahype::solvers::LimitingADERDGSolver::getLimiterDomainChange() const {
-  return _limiterDomainChange;
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
@@ -303,42 +218,20 @@ int exahype::solvers::LimitingADERDGSolver::getMaxLevel() const {
 ///////////////////////////////////
 // MODIFY CELL DESCRIPTION
 ///////////////////////////////////
-void exahype::solvers::LimitingADERDGSolver::markForRefinementBasedOnLimiterStatus(
+
+exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver::updateRefinementStatusDuringRefinementStatusSpreading(
     SolverPatch& solverPatch) const {
-  const int minimumLimiterStatusForRefinement =
-      computeMinimumLimiterStatusForRefinement(solverPatch.getLevel());
-  // forward refinement
-  if (
-      solverPatch.getType()==SolverPatch::Type::Cell &&
-      solverPatch.getLimiterStatus() >= minimumLimiterStatusForRefinement &&
-      solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
+  _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+  if ( 
+      solverPatch.getType()==SolverPatch::Type::Descendant &&
+      solverPatch.getRefinementStatus() > 0 &&
+      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()
   ) {
-    solverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Refine);
-  } else if (
-      solverPatch.getType()==SolverPatch::Type::Cell &&
-      solverPatch.getLevel() == getMaximumAdaptiveMeshLevel() &&
-      (solverPatch.getLimiterStatus()        > 0  || // > 0 is fine here
-      solverPatch.getPreviousLimiterStatus() > 0 )
-  ) {
-    solverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Keep);
-  }
-}
-
-void exahype::solvers::LimitingADERDGSolver::updateLimiterStatusDuringLimiterStatusSpreading(
-    const int cellDescriptionsIndex, const int solverElement) const {
-  SolverPatch& solverPatch =
-      ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-
-  synchroniseTimeStepping(cellDescriptionsIndex,solverElement);
-
-  if (solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell()) {
-    solverPatch.setLimiterStatus(
-        ADERDGSolver::determineLimiterStatus(solverPatch,solverPatch.getNeighbourMergePerformed()));
+    solverPatch.setRefinementFlag(true);
+    return MeshUpdateEvent::RefinementRequested;
   } else {
-    solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell());
-    solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
+    return MeshUpdateEvent::None;
   }
-  ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,solverElement);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
@@ -347,55 +240,13 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
-    const int solverNumber) {
-  const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
-  const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-  if (solverElement!=exahype::solvers::Solver::NotFound) {
-    SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
-
-
-
-    // skip remainder if the refinement criterion has not been evaluated yet for a Cell
-    // Reading the refinement request might result into data race but this is accepted at this point
-    // as we only read and not write
-    if (
-      solverPatch.getType()              != SolverPatch::Type::Cell ||
-      solverPatch.getRefinementRequest() != SolverPatch::RefinementRequest::Pending 
-    ) { 
-      updateLimiterStatusDuringLimiterStatusSpreading(cellDescriptionsIndex,solverElement);
-
-      if ( solverPatch.getRefinementRequest() != SolverPatch::RefinementRequest::Pending ) { // wait till other refinement crit was evaluated and initial data was imposed
-        markForRefinementBasedOnLimiterStatus(solverPatch);
-      }
-    }
-  }
-
-  return
-      _solver->progressMeshRefinementInEnterCell(
-          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,coarseGridVerticesEnumerator,
-          initialGrid,solverNumber);
-
-}
-
-void exahype::solvers::LimitingADERDGSolver::vetoErasingChildrenRequestBasedOnLimiterStatus(
-    SolverPatch& fineGridSolverPatch) const {
-  const int minLimiterStatusForRefinement =
-      computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel());
-  if (
-      (fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ErasingChildrenRequested ||
-      fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ChangeChildrenToVirtualChildrenRequested)
-      &&
-      (getLimiterDomainChange()!=LimiterDomainChange::Regular ||
-      fineGridSolverPatch.getLimiterStatus()>=minLimiterStatusForRefinement ||
-      fineGridSolverPatch.getPreviousLimiterStatus()>=minLimiterStatusForRefinement)
-      // TODO(Dominic): Add to docu: This is necessary for not erasing cells in global recomputation and it further adds some laziness in erasing.
-      // TODO(Dominic): Add to docu: We always veto based on the previous limiter status too
-      // in case we need to go back in time
-  ) {
-    fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
-  }
+    const int solverNumber,
+    const bool stillInRefiningMode) {
+ return
+     _solver->progressMeshRefinementInEnterCell(
+        fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
+        coarseGridCell,coarseGridVerticesEnumerator,
+        solverNumber,stillInRefiningMode);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
@@ -405,38 +256,6 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber) {
-  const int solverElement =
-      _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  const int parentSolverElement =
-      _solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (
-      solverElement!=Solver::NotFound &&
-      parentSolverElement!=Solver::NotFound
-  ) {
-    SolverPatch& solverPatch = _solver->getCellDescription(
-        fineGridCell.getCellDescriptionsIndex(),solverElement);
-    _solver->restrictToNextParent(solverPatch,parentSolverElement);
- 
-    const int parentElement = tryGetElement(
-        solverPatch.getParentIndex(),solverPatch.getSolverNumber());
-    if ( 
-      parentElement!=exahype::solvers::Solver::NotFound && 
-      solverPatch.getType()==SolverPatch::Type::Descendant  &&
-      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-      (solverPatch.getLimiterStatus()>0                     ||
-      solverPatch.getPreviousLimiterStatus()>0)
-    ) {
-      exahype::solvers::Solver::SubcellPosition subcellPosition =
-          exahype::amr::computeSubcellPositionOfDescendant<SolverPatch,ADERDGSolver::Heap,true>(solverPatch);
-      assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,solverPatch.toString());
-      
-      SolverPatch& parentSolverPatch = _solver->getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-      if ( parentSolverPatch.getType()==SolverPatch::Type::Cell ) {
-         parentSolverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Refine);
-      }
-    }
-  }
-
   return
       _solver->progressMeshRefinementInLeaveCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
@@ -468,8 +287,8 @@ bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
     limiterRefinementDone = 
          !(solverPatch.getType()==SolverPatch::Type::Descendant  &&
            solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-           (solverPatch.getLimiterStatus()>0                     ||
-           solverPatch.getPreviousLimiterStatus()>0));
+           (solverPatch.getRefinementStatus()>0                     ||
+           solverPatch.getPreviousRefinementStatus()>0));
   } 
   if ( limiterRefinementDone )
     return 
@@ -497,20 +316,18 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
   if ( solverElement!=exahype::solvers::Solver::NotFound ) {
     SolverPatch& solverPatch =
         _solver->getCellDescription(cellDescriptionsIndex,solverElement);
-    // only for global re-computation
-    if ( getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ) {
-      solverPatch.setLimiterStatus(solverPatch.getPreviousLimiterStatus());
-    }
 
-    // for global re-computation and mesh refinement
-    const bool newLimiterPatchAllocated =
-        ensureRequiredLimiterPatchIsAllocated(
-            cellDescriptionsIndex,solverElement,solverPatch.getLimiterStatus());
-    if (newLimiterPatchAllocated) {
-      const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
-      LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
-      adjustLimiterSolution(solverPatch,limiterPatch);
-    }
+   // only done when doing initial refinement
+   const bool newLimiterPatchAllocated =
+       getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested &&
+       ensureRequiredLimiterPatchIsAllocated(
+           solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
+   if ( newLimiterPatchAllocated ) {
+     assertion1(tarch::la::equals(solverPatch.getCorrectorTimeStamp(),0.0),solverPatch.toString());
+     const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
+     LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
+     adjustLimiterSolution(solverPatch,limiterPatch);
+   }
     ensureNoLimiterPatchIsAllocatedOnHelperCell(
         cellDescriptionsIndex,solverElement);
     ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
@@ -521,110 +338,6 @@ void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
 ///////////////////////////////////
 // CELL-LOCAL
 //////////////////////////////////
-int exahype::solvers::LimitingADERDGSolver::computeMinimumLimiterStatusForRefinement(
-    int level) const {
-  return _solver->getMinimumLimiterStatusForTroubledCell()-1;
-  // TODO(Dominic): old code; keep for reference
-  //const int levelDelta = getMaximumAdaptiveMeshLevel() - level;
-  //
-  //assertion(levelDelta>=0);
-  //const int status = _solver->getMinimumLimiterStatusForActiveFVPatch()-1 + (levelDelta-1);
-  //return (_solver->getMinimumLimiterStatusForTroubledCell()-status>=2) ?
-  //        status +1: _solver->getMinimumLimiterStatusForTroubledCell()-2 +1; // +1 due to extra Ok state.
-}
-
-bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCriterion(
-    const SolverPatch& solverPatch) const {
-  return solverPatch.getType()==SolverPatch::Type::Descendant  &&
-         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-         solverPatch.getLimiterStatus()>0; // > 0 is correct here; only used during time stepping and limiter status spreading
-}
-
-bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleRefinementCriterion(
-    const int cellDescriptionsIndex,
-    const int solverElement) const {
-//  if (solverElement!=Solver::NotFound) {
-//    SolverPatch& solverPatch =
-//        ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-//    const int numberOfObservables = _solver->getDMPObservables();
-//    if (solverPatch.getType()==SolverPatch::Type::Cell
-//        &&
-//        numberOfObservables > 0
-//    ) {
-//      double* observablesMin = DataHeap::getInstance().getData(
-//          solverPatch.getSolutionMin()).data();
-//      double* observablesMax = DataHeap::getInstance().getData(
-//          solverPatch.getSolutionMax()).data();
-//
-//      bool discreteMaximumPrincipleSatisfied = true;
-//      if (
-//          solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
-//          &&
-//          (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None ||
-//         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::DeaugmentingChildrenRequested ||
-//         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::AugmentingRequested)
-//      ) {
-//        const double* localMinPerObservable    = observablesMin+0;
-//        const double* localMaxPerObservable    = observablesMin+0;
-//        const double* boundaryMinPerObservable = observablesMin+numberOfObservables;
-//        const double* boundaryMaxPerObservable = observablesMax+numberOfObservables;
-//
-//        const double differenceScaling   = _DMPDifferenceScaling;
-//        const double relaxationParameter = _DMPMaximumRelaxationParameter * 0.1; // TODO(Dominic): Should be a parameter in the spec file (optional)
-//
-//        for(int v = 0; v < numberOfObservables; v++) {
-//          double boundaryMin = boundaryMinPerObservable[v];
-//          double boundaryMax = boundaryMaxPerObservable[v];
-//          double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
-//
-//          assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
-//          scaledDifference = std::max( scaledDifference, relaxationParameter );
-//
-//          if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
-//              (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
-//            discreteMaximumPrincipleSatisfied=false;
-//          }
-//        }
-//
-//        return false; // TODO(Dominic): Reenable
-////        return !discreteMaximumPrincipleSatisfied;
-//      }
-//
-//      // copy local min and max onto boundary
-//      //  TODO(Dominic):
-//      // 2. Copy the result on the other faces as well
-//      for (int i=1; i<DIMENSIONS_TIMES_TWO; ++i) {
-//        std::copy_n(
-//            observablesMin,numberOfObservables, // past-the-end element
-//            observablesMin+i*numberOfObservables);
-//        std::copy_n(
-//            observablesMax,numberOfObservables, // past-the-end element
-//            observablesMax+i*numberOfObservables);
-//      }
-//    }
-//  }
-  return false;
-}
-
-bool
-exahype::solvers::LimitingADERDGSolver::evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,const int element) {
-  // TODO(Dominic): Reenable if it makes sense
-  // refinementRequested |=
-  //    evaluateDiscreteMaximumPrincipleRefinementCriterion(cellDescriptionsIndex,element);
-  SolverPatch& solverPatch =
-      ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-  return
-      evaluateLimiterStatusRefinementCriterion(solverPatch)
-      ||
-      (solverPatch.getLimiterStatus()<
-      computeMinimumLimiterStatusForRefinement(solverPatch.getLevel())
-      &&
-      _solver->evaluateRefinementCriterionAfterSolutionUpdate(
-          cellDescriptionsIndex,element));
-}
-
-
 double exahype::solvers::LimitingADERDGSolver::startNewTimeStep(
     const int cellDescriptionsIndex,
     const int solverElement)  {
@@ -689,14 +402,18 @@ void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes(
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep(
     const int cellDescriptionsIndex,
     const int solverElement) const {
-  _solver->rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
+  synchroniseTimeStepping(cellDescriptionsIndex, solverElement); // TODO(Dominic): have version with solver patch
+  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
+  _solver->rollbackToPreviousTimeStep(solverPatch); // TODO(Dominic): Too many element lookups
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused(
     const int cellDescriptionsIndex,
     const int solverElement) const {
-  _solver->rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
+  synchroniseTimeStepping(cellDescriptionsIndex, solverElement); // TODO(Dominic): have version with solver patch
+  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,solverElement);
+  _solver->rollbackToPreviousTimeStepFused(solverPatch); // TODO(Dominic): Too many element lookups
   ensureLimiterPatchTimeStepDataIsConsistent(cellDescriptionsIndex,solverElement);
 }
 
@@ -714,38 +431,38 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
       solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
     }
-    assertion2(solverPatch.getRefinementEvent()==SolverPatch::None,solverPatch.toString(),cellDescriptionsIndex);
-
     _solver->adjustSolution(solverPatch);
 
     determineSolverMinAndMax(solverPatch);
     if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch) ) {
       solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
-      solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell());
-      solverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Keep);
-      if ( solverPatch.getLevel()<getMaximumAdaptiveMeshLevel() ) {
-        solverPatch.setRefinementRequest(SolverPatch::RefinementRequest::Refine);
-      }
+      solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
     } else {
-      _solver->markForRefinement(solverPatch);
+      _solver->markForRefinement(solverPatch); // TODO This code probably overwrites the
+      // refinement status during the iterations.
     }
-
-    const int limiterElement =
-        tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
-    if (limiterElement!=Solver::NotFound) {
-      LimiterPatch& limiterPatch = _limiter->getCellDescription(cellDescriptionsIndex,limiterElement);
-      copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch);
-      _limiter->adjustSolution(limiterPatch);
-    } // TODO(Dominic): Add to docu: We adjust the limiter patch here but we do not allocate it.
   }
 }
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatchForSolverPatch(
     const int cellDescriptionsIndex, const SolverPatch& solverPatch) const {
-  assertion(solverPatch.getLimiterStatus()>=0);
+  assertion(solverPatch.getRefinementStatus()>=0);
   const int limiterElement =
       _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   return getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex,limiterElement);
+}
+
+void exahype::solvers::LimitingADERDGSolver::ensureLimiterPatchTimeStepDataIsConsistent(
+  const SolverPatch& solverPatch,const int cellDescriptionsIndex) const {
+  const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
+  if ( limiterElement!=Solver::NotFound ) {
+    #ifdef Asserts
+    LimiterPatch& limiterPatch = FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
+    #endif
+    assertion2(solverPatch.getPreviousRefinementStatus() >=_solver->_minimumRefinementStatusForPassiveFVPatch ||
+               solverPatch.getRefinementStatus() >=_solver->_minimumRefinementStatusForPassiveFVPatch,solverPatch.toString(),limiterPatch.toString());
+    copyTimeStepDataFromSolverPatch(solverPatch,cellDescriptionsIndex,limiterElement);
+  }
 }
 
 void exahype::solvers::LimitingADERDGSolver::ensureLimiterPatchTimeStepDataIsConsistent(
@@ -756,8 +473,8 @@ void exahype::solvers::LimitingADERDGSolver::ensureLimiterPatchTimeStepDataIsCon
     #ifdef Asserts
     LimiterPatch& limiterPatch = FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
     #endif
-    assertion2(solverPatch.getPreviousLimiterStatus() >=_solver->_minimumLimiterStatusForPassiveFVPatch ||
-               solverPatch.getLimiterStatus() >=_solver->_minimumLimiterStatusForPassiveFVPatch,solverPatch.toString(),limiterPatch.toString());
+    assertion2(solverPatch.getPreviousRefinementStatus() >=_solver->_minimumRefinementStatusForPassiveFVPatch ||
+               solverPatch.getRefinementStatus() >=_solver->_minimumRefinementStatusForPassiveFVPatch,solverPatch.toString(),limiterPatch.toString());
     copyTimeStepDataFromSolverPatch(solverPatch,cellDescriptionsIndex,limiterElement);
   }
 }
@@ -779,7 +496,7 @@ void exahype::solvers::LimitingADERDGSolver::copyTimeStepDataFromSolverPatch(
 
 exahype::solvers::LimitingADERDGSolver::LimiterPatch& exahype::solvers::LimitingADERDGSolver::getLimiterPatchForSolverPatch(
     const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement) const {
-  assertion(limiterElement!=Solver::NotFound);
+  assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());
   LimiterPatch& limiterPatch =
       FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
   // Ensure time stamps and step sizes are consistent
@@ -798,7 +515,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
   updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
   UpdateResult result;
-  result._limiterDomainChange = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
+  result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
                                     cellDescriptionsIndex,element,neighbourMergePerformed);
   // This is important to memorise before calling startNewTimeStepFused
   // TODO(Dominic): Add to docu and/or make cleaner
@@ -807,10 +524,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const double memorisedPredictorTimeStepSize = solverPatch.getPredictorTimeStepSize();
   result._timeStepSize = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
-  result._refinementRequested |= result._limiterDomainChange==LimiterDomainChange::IrregularRequiringMeshUpdate ||
-                                   evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
 
-  if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+  if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
     _solver->performPredictionAndVolumeIntegral(
         cellDescriptionsIndex, element,
         memorisedPredictorTimeStamp,memorisedPredictorTimeStepSize,
@@ -827,6 +542,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const bool isAtRemoteBoundary) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
+  // Write the previous limiter status back onto the patch for all cell description types
+  solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
+
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(solverPatch,isAtRemoteBoundary);
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
@@ -838,25 +556,26 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         isLastIterationOfBatch  ||
         mustBeDoneImmediately
     ) {
-      return
-          fusedTimeStepBody(
-              cellDescriptionsIndex,element,
-              isFirstIterationOfBatch,isLastIterationOfBatch,
-              isSkeletonCell,
-              mustBeDoneImmediately,
-              solverPatch.getNeighbourMergePerformed());
+      return fusedTimeStepBody(
+          cellDescriptionsIndex,element,
+          isFirstIterationOfBatch,isLastIterationOfBatch,
+          isSkeletonCell,
+          mustBeDoneImmediately,
+          solverPatch.getNeighbourMergePerformed());
     } else {
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
           solverPatch.getNeighbourMergePerformed(), isSkeletonCell );
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
-  } else if ( solverPatch.getType()==SolverPatch::Type::Descendant ) {
-    UpdateResult result;
-    result._refinementRequested = evaluateLimiterStatusRefinementCriterion(solverPatch);
-    return result;
   } else {
-    return UpdateResult();
+    UpdateResult result;
+    result._meshUpdateEvent =
+        exahype::solvers::Solver::mergeMeshUpdateEvents(
+            result._meshUpdateEvent,
+            _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+                solverPatch,solverPatch.getNeighbourMergePerformed()));
+    return result;
   }
 }
 
@@ -866,6 +585,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       const bool isAtRemoteBoundary){
   SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,element);
   
+  // Write the previous limiter status back onto the patch for all cell description types
+  solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
+
   UpdateResult result;
   if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
       // uncompress
@@ -881,20 +603,19 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
 
       // the actual computations
       updateSolution(cellDescriptionsIndex,element,true);
-      result._timeStepSize         = startNewTimeStep(cellDescriptionsIndex,element);
-      result._limiterDomainChange  = updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
+      result._timeStepSize    = startNewTimeStep(cellDescriptionsIndex,element);
+      result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
                                        cellDescriptionsIndex,element,solverPatch.getNeighbourMergePerformed());  // !!! limiter status must be updated before refinement criterion is evaluated
-      result._refinementRequested |= result._limiterDomainChange==LimiterDomainChange::IrregularRequiringMeshUpdate ||
-                                       evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
       // compress again
       if (CompressionAccuracy>0.0) {
         compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
       }
-      return result;
   } else if ( solverPatch.getType()==SolverPatch::Type::Descendant ) {
-     result._refinementRequested = evaluateLimiterStatusRefinementCriterion(solverPatch);
+    _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
+    result._meshUpdateEvent =
+        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(solverPatch,solverPatch.getNeighbourMergePerformed());
   }
-  return result;;
+  return result;
 }
 
 void exahype::solvers::LimitingADERDGSolver::compress(
@@ -921,9 +642,6 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
     const bool backupPreviousSolution) {
   SolverPatch& solverPatch =
       ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-
-  // 0. Write back the limiter status to the previous limiter status field
-  solverPatch.setPreviousLimiterStatus(solverPatch.getLimiterStatus());
   
   // 1. Erase old cells; now it's safe (TODO(Dominic): Add to docu)
   ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,element);
@@ -934,12 +652,12 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
       const int limiterElement =
           _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
-      assertion(solverPatch.getLimiterStatus()>=0);
+      assertion(solverPatch.getRefinementStatus()>=-1);
 
-      if (solverPatch.getLimiterStatus()       < _solver->_minimumLimiterStatusForPassiveFVPatch) {
+      if (solverPatch.getRefinementStatus()       < _solver->_minimumRefinementStatusForPassiveFVPatch) {
         _solver->updateSolution(solverPatch,backupPreviousSolution);
       }
-      else if ( solverPatch.getLimiterStatus() < _solver->_minimumLimiterStatusForActiveFVPatch ) {
+      else if ( solverPatch.getRefinementStatus() < _solver->_minimumRefinementStatusForActiveFVPatch ) {
         _solver->updateSolution(solverPatch,backupPreviousSolution);
 
         LimiterPatch& limiterPatch =
@@ -947,7 +665,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
         _limiter->swapSolutionAndPreviousSolution(limiterPatch);
         projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
       }
-      else { // solverPatch.getLimiterStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
+      else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
         assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());
         _limiter->updateSolution(cellDescriptionsIndex,limiterElement,backupPreviousSolution);
 
@@ -961,36 +679,33 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
   }
 }
 
-exahype::solvers::LimiterDomainChange
-exahype::solvers::LimitingADERDGSolver::updateLimiterStatusAndMinAndMaxAfterSolutionUpdate(
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
     const int cellDescriptionsIndex,
     const int solverElement,
     const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed
 ) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
 
-  LimiterDomainChange limiterDomainChange = LimiterDomainChange::Regular;
-  if (solverPatch.getType()==SolverPatch::Type::Cell) {
-    const bool solutionIsValid =
-        evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) &&
-        evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     if (
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-        solverPatch.getLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch()
+        solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch()
     ) {
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
       determineLimiterMinAndMax(solverPatch,limiterPatch);
     } // else: Keep the previously computed min and max values
-
-    limiterDomainChange =
-        determineLimiterStatusAfterSolutionUpdate(solverPatch,!solutionIsValid,neighbourMergePerformed);
+    
+    meshUpdateEvent =
+        determineRefinementStatusAfterSolutionUpdate(solverPatch,neighbourMergePerformed);
 
     ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,solverElement);
-
     bool limiterPatchAllocated =
+        meshUpdateEvent==MeshUpdateEvent::None &&
         ensureRequiredLimiterPatchIsAllocated(
-            cellDescriptionsIndex,solverPatch.getSolverNumber(),solverPatch.getLimiterStatus());
-    if ( limiterPatchAllocated ) {
+            solverPatch,cellDescriptionsIndex,solverPatch.getRefinementStatus());
+    if ( limiterPatchAllocated ) { // TODO(Dominic): Unsafe
       assertion(solverPatch.getLevel()==getMaximumAdaptiveMeshLevel());
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
 
@@ -998,54 +713,65 @@ exahype::solvers::LimitingADERDGSolver::updateLimiterStatusAndMinAndMaxAfterSolu
       projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
     }
   } else {
-    solverPatch.setLimiterStatus(ADERDGSolver::determineLimiterStatus(solverPatch,neighbourMergePerformed));
+    _solver->updateRefinementStatus(solverPatch,neighbourMergePerformed);
     ensureNoLimiterPatchIsAllocatedOnHelperCell(cellDescriptionsIndex,solverElement);
   }
-  return limiterDomainChange;
+  return meshUpdateEvent;
 }
 
-exahype::solvers::LimiterDomainChange
-exahype::solvers::LimitingADERDGSolver::determineLimiterStatusAfterSolutionUpdate(
+exahype::solvers::Solver::MeshUpdateEvent
+exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUpdate(
     SolverPatch& solverPatch,
-    const bool isTroubled,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const {
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
 
-  LimiterDomainChange limiterDomainChange = LimiterDomainChange::Regular;
-  if (isTroubled) {
+  MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
+  bool isTroubled = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
+                    !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  if ( isTroubled ) {
     solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
-    if (solverPatch.getLimiterStatus()>_solver->getMinimumLimiterStatusForActiveFVPatch()) {
-      // TODO(Dominic): Add to docu: width=2: 5->5 and 4->5 are okay. width=1: 3->3 is okay
-      limiterDomainChange = LimiterDomainChange::Regular;
-      solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell());
+    if ( solverPatch.getRefinementStatus() > _solver->_minimumRefinementStatusForActiveFVPatch ) {
+      meshUpdateEvent = MeshUpdateEvent::None;
+      solverPatch.setRefinementStatus(_solver->_minimumRefinementStatusForTroubledCell);
     } else {
-      limiterDomainChange = LimiterDomainChange::Irregular;
-      solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell());
+      meshUpdateEvent = MeshUpdateEvent::IrregularLimiterDomainChange;
+      solverPatch.setRefinementStatus(_solver->_minimumRefinementStatusForTroubledCell);
+      //logInfo("determineLimiterStatusAfterSolutionUpdate()","irregular for x="<<solverPatch.getOffset() << ", level="<<solverPatch.getLevel() << "status="<<solverPatch.getRefinementStatus()<<","<<solverPatch.getPreviousLimiterStatus()<<","<<solverPatch.getExternalLimiterStatus()<<",max status="<<max status );
     }
     if (solverPatch.getLevel()<getMaximumAdaptiveMeshLevel()) {
-      limiterDomainChange = LimiterDomainChange::IrregularRequiringMeshUpdate;
+      meshUpdateEvent = MeshUpdateEvent::RefinementRequested;
     }
-  } else {
-    if (solverPatch.getPreviousLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell()) {
-      solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell());
+  } else { // We cool the troubled cells down so slowly
+    if ( solverPatch.getPreviousRefinementStatus() >= _solver->getMinimumRefinementStatusForTroubledCell() ) {
+      solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
       solverPatch.setIterationsToCureTroubledCell(
           solverPatch.getIterationsToCureTroubledCell()-1);
       if (solverPatch.getIterationsToCureTroubledCell()==0) {
-        solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell()-1);
-        solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1); // TODO(Dominic): Probably not necessary
+        solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell()-1);
+        solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
       }
     } else {
-      solverPatch.setLimiterStatus(
-          ADERDGSolver::determineLimiterStatus(solverPatch,neighbourMergePerformed));
+      _solver->updateRefinementStatus(solverPatch,neighbourMergePerformed); // update the limiter status first
+      if ( solverPatch.getRefinementStatus() < _solver->_minimumRefinementStatusForPassiveFVPatch ) { // if below threshold evaluate the refinement criterion
+        meshUpdateEvent = Solver::mergeMeshUpdateEvents(
+            meshUpdateEvent,
+            _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+                solverPatch,solverPatch.getNeighbourMergePerformed()));
+      }
+      if ( solverPatch.getRefinementStatus() - solverPatch.getPreviousRefinementStatus() > _solver->_limiterHelperLayers ) {
+        meshUpdateEvent = Solver::mergeMeshUpdateEvents(
+            meshUpdateEvent, MeshUpdateEvent::IrregularLimiterDomainChange );
+        //logInfo("determineLimiterStatusAfterSolutionUpdate()","irregular for x="<<solverPatch.getOffset() << ", level="<<solverPatch.getLevel() << "status="<<solverPatch.getRefinementStatus()<<","<<solverPatch.getPreviousLimiterStatus()<<","<<solverPatch.getExternalLimiterStatus()<<",max status="<<max status );
+      }
     }
   }
 
   assertion2(
       !isTroubled ||
-      solverPatch.getLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell(),
+      solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForTroubledCell(),
       isTroubled,
-      solverPatch.getLimiterStatus());
-  return limiterDomainChange;
+      solverPatch.getRefinementStatus());
+  return meshUpdateEvent;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(SolverPatch& solverPatch) {
@@ -1109,10 +835,10 @@ void exahype::solvers::LimitingADERDGSolver::determineMinAndMax(
       ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
-      assertion(solverPatch.getLimiterStatus()>=0);
-      if (solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForActiveFVPatch()) {
+      assertion1( solverPatch.getRefinementStatus()>=-1,solverPatch.getRefinementStatus() );
+      if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
         determineSolverMinAndMax(solverPatch);
-      } else { // solverPatch.getLimiterStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
+      } else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
         LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
         determineLimiterMinAndMax(solverPatch,limiterPatch);
       }
@@ -1207,6 +933,22 @@ void exahype::solvers::LimitingADERDGSolver::deallocateLimiterPatch(
   lock.free();
 }
 
+void exahype::solvers::LimitingADERDGSolver::deallocateLimiterPatch(
+    const SolverPatch& solverPatch,
+    const int cellDescriptionsIndex) const {
+  const int limiterElement =
+        _solver->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
+  assertion(limiterElement!=Solver::NotFound);
+  LimiterPatch& limiterPatch = FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex,limiterElement);
+  limiterPatch.setType(LimiterPatch::Type::Erased);
+  _limiter->ensureNoUnnecessaryMemoryIsAllocated(limiterPatch);
+
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
+  FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex).erase(
+      FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex).begin()+limiterElement);
+  lock.free();
+}
+
 void exahype::solvers::LimitingADERDGSolver::ensureNoLimiterPatchIsAllocatedOnHelperCell(
     const int cellDescriptionsIndex,
     const int solverElement) const {
@@ -1222,6 +964,19 @@ void exahype::solvers::LimitingADERDGSolver::ensureNoLimiterPatchIsAllocatedOnHe
   }
 }
 
+void exahype::solvers::LimitingADERDGSolver::ensureNoLimiterPatchIsAllocatedOnHelperCell(
+    const SolverPatch& solverPatch,
+    const int cellDescriptionsIndex) const {
+  const int limiterElement =
+      _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
+  if (
+      limiterElement!=exahype::solvers::Solver::NotFound &&
+      solverPatch.getType()!=SolverPatch::Type::Cell
+  ) {
+    deallocateLimiterPatch(solverPatch,cellDescriptionsIndex);
+  }
+}
+
 void exahype::solvers::LimitingADERDGSolver::ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
     const int cellDescriptionsIndex,
     const int solverElement) const {
@@ -1232,8 +987,8 @@ void exahype::solvers::LimitingADERDGSolver::ensureNoUnrequiredLimiterPatchIsAll
       tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
   if (
       limiterElement!=Solver::NotFound      &&
-      solverPatch.getLimiterStatus()         < _solver->_minimumLimiterStatusForPassiveFVPatch &&
-      solverPatch.getPreviousLimiterStatus() < _solver->_minimumLimiterStatusForPassiveFVPatch
+      solverPatch.getRefinementStatus()         < _solver->_minimumRefinementStatusForPassiveFVPatch &&
+      solverPatch.getPreviousRefinementStatus() < _solver->_minimumRefinementStatusForPassiveFVPatch
   ) {
     deallocateLimiterPatch(cellDescriptionsIndex,solverElement);
   }
@@ -1247,16 +1002,13 @@ void exahype::solvers::LimitingADERDGSolver::adjustLimiterSolution(
 }
 
 int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
-        const int cellDescriptionsIndex,
-        const int solverElement) const {
-  assertion(solverElement!=Solver::NotFound);
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-
+        const SolverPatch& solverPatch,
+        const int cellDescriptionsIndex) const {
   #if defined(Asserts)
-  const int previouslimiterElement =
-          tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  const int previousLimiterElement =
+          _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   #endif
-  assertion(previouslimiterElement==Solver::NotFound);
+  assertion(previousLimiterElement==Solver::NotFound);
 
   exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
       cellDescriptionsIndex,
@@ -1271,8 +1023,7 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
   assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getPreviousSolution()),solverPatch.toString());
   assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolution()),solverPatch.toString());
 
-  const int limiterElement =
-      tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   assertion(limiterElement!=Solver::NotFound);
   LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(
       solverPatch,cellDescriptionsIndex,limiterElement);
@@ -1282,22 +1033,19 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocated(
+        const SolverPatch& solverPatch,
         const int cellDescriptionsIndex,
-        const int solverElement,
         const int limiterStatus) const {
-  assertion(solverElement!=Solver::NotFound);
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-  const int limiterElement =
-      tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
+  const int limiterElement = _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
   if (
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
       limiterElement==Solver::NotFound                      &&
       solverPatch.getType()==SolverPatch::Type::Cell        &&
-      limiterStatus>=_solver->_minimumLimiterStatusForPassiveFVPatch
+      limiterStatus>=_solver->_minimumRefinementStatusForPassiveFVPatch
   ) {
-    assertion1(solverPatch.getPreviousLimiterStatus()<_solver->_minimumLimiterStatusForPassiveFVPatch,
+    assertion1(solverPatch.getPreviousRefinementStatus()<_solver->_minimumRefinementStatusForPassiveFVPatch,
                solverPatch.toString());
-    allocateLimiterPatch(cellDescriptionsIndex,solverElement);
+    allocateLimiterPatch(solverPatch,cellDescriptionsIndex);
     return true;
   }
   return false;
@@ -1312,26 +1060,22 @@ void exahype::solvers::LimitingADERDGSolver::projectDGSolutionOnFVSpace(
   projectOnFVLimiterSpace(solverSolution, limiterSolution);
 }
 
-//void exahype::solvers::LimitingADERDGSolver::projectDGSolutionOnFVSpaceAfterSolutionUpdate(
-//    SolverPatch& solverPatch,LimiterPatch& limiterPatch) const {
-//  const double* solverSolution  = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
-//  double*       limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
-//
-//  const double* solverSolution  = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
-//    double*       limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
-//
-//  projectOnFVLimiterSpace(solverSolution, limiterSolution);
-//}
-
 // TODO(Dominic): Check that we have rolled back in time as well
 void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
-    const int cellDescriptionsIndex, const int solverElement) const {
+    const int cellDescriptionsIndex, const int solverElement,
+    const bool fusedTimeStepping) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+
+  if (fusedTimeStepping) { // TODO merge with synchronisation
+    rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
+  } else {
+    rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
+  }
 
   // 1. Ensure limiter patch is allocated (based on previous limiter status
   ensureRequiredLimiterPatchIsAllocated(
-      cellDescriptionsIndex,solverElement,
-      solverPatch.getPreviousLimiterStatus());
+      solverPatch,cellDescriptionsIndex,
+      solverPatch.getPreviousRefinementStatus());
 
   // 2. Rollback solution to previous time step
   if (solverPatch.getType()==SolverPatch::Type::Cell) {
@@ -1340,7 +1084,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
 
       _solver->swapSolutionAndPreviousSolution(solverPatch);   // roll back solver
 
-      if ( solverPatch.getPreviousLimiterStatus() >= _solver->_minimumLimiterStatusForPassiveFVPatch ) {
+      if ( solverPatch.getPreviousRefinementStatus() >= _solver->_minimumRefinementStatusForPassiveFVPatch ) {
         LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
         _limiter->swapSolutionAndPreviousSolution(limiterPatch); // roll back limiter (must exist!)
       } else {
@@ -1360,22 +1104,35 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
-    const int cellDescriptionsIndex, const int solverElement) const {
+    const int cellDescriptionsIndex,
+    const int solverElement,
+    const bool fusedTimeStepping) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+
+  if (fusedTimeStepping) { // TODO merge with synchronisation
+    rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
+  } else {
+    rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
+  }
 
   // 1. Ensure limiter patch is allocated (based on current limiter status)
   ensureRequiredLimiterPatchIsAllocated(
-      cellDescriptionsIndex,solverElement,solverPatch.getLimiterStatus());
+      solverPatch,cellDescriptionsIndex,
+      solverPatch.getRefinementStatus());
 
   // 2. Now roll back to the last valid solution
   if (
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-      solverPatch.getLimiterStatus()>=_solver->_minimumLimiterStatusForPassiveFVPatch
+      solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForPassiveFVPatch
   ) { // this is one of the important differences to the global recomputation where we rollback also cells with limiter status == 0
     assertion(solverPatch.getType()==SolverPatch::Type::Cell);
     assertion(solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None);
+    if ( solverPatch.getType()!=SolverPatch::Type::Cell ) {
+      logError("rollbackSolutionLocally(..)","type is not cell but is=" << solverPatch.toString());
+      std::abort();
+    }
 
-    if ( solverPatch.getPreviousLimiterStatus() >= _solver->_minimumLimiterStatusForPassiveFVPatch ) {
+    if ( solverPatch.getPreviousRefinementStatus() >= _solver->_minimumRefinementStatusForPassiveFVPatch ) {
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
       _limiter->swapSolutionAndPreviousSolution(limiterPatch);
     }
@@ -1387,7 +1144,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
     }
 
     // 2.1 Reset the iterationsToCure on all troubled cells to maximum value if cell is troubled
-    if (solverPatch.getLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell()) {
+    if (solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForTroubledCell()) {
       solverPatch.setIterationsToCureTroubledCell(1+_iterationsToCureTroubledCell);
     }
   }
@@ -1412,10 +1169,10 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
   if (
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
       solverPatch.getType()==SolverPatch::Type::Cell &&
-      solverPatch.getLimiterStatus()>=_solver->_minimumLimiterStatusForPassiveFVPatch
+      solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForPassiveFVPatch
   ) {
     if (
-        solverPatch.getLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch()
+        solverPatch.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch()
     ) { // these guys are recomputing with the limiter
       const int limiterElement =
           tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
@@ -1429,7 +1186,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
     else { // these guys are just swapping and projecting
       LimiterPatch& limiterPatch = getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
 
-      if ( solverPatch.getPreviousLimiterStatus() >= _solver->_minimumLimiterStatusForPassiveFVPatch ) { // these did just do a swap
+      if ( solverPatch.getPreviousRefinementStatus() >= _solver->_minimumRefinementStatusForPassiveFVPatch ) { // these did just do a swap
         _limiter->swapSolutionAndPreviousSolution(limiterPatch);
       }
       else { // this one has a new FV patch
@@ -1457,14 +1214,14 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
   if (
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
       solverPatch.getType()==SolverPatch::Type::Cell &&
-      solverPatch.getLimiterStatus() < _solver->getMinimumLimiterStatusForTroubledCell()  &&
+      solverPatch.getRefinementStatus() < _solver->getMinimumRefinementStatusForTroubledCell()  &&
       solverPatch.getPredictorTimeStepSize() > 0
   ) {
     if (
-        solverPatch.getLimiterStatus() >= _solver->getMinimumLimiterStatusForActiveFVPatch()
-        ||
-        (solverPatch.getLimiterStatus() < _solver->getMinimumLimiterStatusForActiveFVPatch() &&
-         solverPatch.getPreviousLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell())
+        solverPatch.getRefinementStatus() >= _solver->getMinimumRefinementStatusForActiveFVPatch()
+        || // TODO(Dominic): Reassess what is this doing
+        (solverPatch.getRefinementStatus() < _solver->getMinimumRefinementStatusForActiveFVPatch() &&
+         solverPatch.getPreviousRefinementStatus()>=_solver->getMinimumRefinementStatusForTroubledCell())
     ) {
       _solver->performPredictionAndVolumeIntegral(
           cellDescriptionsIndex,
@@ -1480,14 +1237,6 @@ void exahype::solvers::LimitingADERDGSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
     const int element) {
   _solver->prolongateFaceData(cellDescriptionsIndex,element);
-
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-  if (
-      solverPatch.getType()==SolverPatch::Type::Ancestor &&
-      solverPatch.getPreviousLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell()) {
-    solverPatch.setLimiterStatus(_solver->getMinimumLimiterStatusForTroubledCell()-1);
-    solverPatch.setFacewiseLimiterStatus(0);
-  }
 }
 
 void exahype::solvers::LimitingADERDGSolver::restriction(
@@ -1552,16 +1301,16 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus
     assertion2(solverPatch1.getLevel()==getMaximumAdaptiveMeshLevel(),solverPatch1.toString(),solverPatch2.toString());
     // 1. Merge solver solution or limiter solution values in
     // non-overlapping parts of solver and limiter domain:
-    if (solverPatch1.getLimiterStatus()<_solver->getMinimumLimiterStatusForActiveFVPatch() &&
-        solverPatch2.getLimiterStatus()<_solver->getMinimumLimiterStatusForActiveFVPatch()) {
+    if (solverPatch1.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch() &&
+        solverPatch2.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
       if (!isRecomputation) {
         _solver->mergeNeighbours(
             cellDescriptionsIndex1,element1,cellDescriptionsIndex2,element2,pos1,pos2);
          // Which one is left and right is checked internally again.
       }
     }
-    else if (solverPatch1.getLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch() &&
-             solverPatch2.getLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch()) {
+    else if (solverPatch1.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch() &&
+             solverPatch2.getRefinementStatus()>=_solver->getMinimumRefinementStatusForActiveFVPatch()) {
       _limiter->mergeNeighbours(
           cellDescriptionsIndex1,limiterElement1,cellDescriptionsIndex2,limiterElement2,pos1,pos2);
           // Which one is left and right is checked internally again.
@@ -1569,13 +1318,13 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus
     // 2. Merge limiter solution values in overlapping part
     // of solver and limiter domain:
     else if (
-        (solverPatch1.getLimiterStatus() >= _solver->getMinimumLimiterStatusForActiveFVPatch() &&
-         solverPatch2.getLimiterStatus() <  _solver->getMinimumLimiterStatusForActiveFVPatch() &&
-         solverPatch2.getLimiterStatus() >= _solver->_minimumLimiterStatusForPassiveFVPatch)
+        (solverPatch1.getRefinementStatus() >= _solver->getMinimumRefinementStatusForActiveFVPatch() &&
+         solverPatch2.getRefinementStatus() <  _solver->getMinimumRefinementStatusForActiveFVPatch() &&
+         solverPatch2.getRefinementStatus() >= _solver->_minimumRefinementStatusForPassiveFVPatch)
         ||
-        (solverPatch1.getLimiterStatus() >= _solver->_minimumLimiterStatusForPassiveFVPatch    &&
-         solverPatch1.getLimiterStatus() <  _solver->getMinimumLimiterStatusForActiveFVPatch() &&
-         solverPatch2.getLimiterStatus() >= _solver->getMinimumLimiterStatusForActiveFVPatch())
+        (solverPatch1.getRefinementStatus() >= _solver->_minimumRefinementStatusForPassiveFVPatch    &&
+         solverPatch1.getRefinementStatus() <  _solver->getMinimumRefinementStatusForActiveFVPatch() &&
+         solverPatch2.getRefinementStatus() >= _solver->getMinimumRefinementStatusForActiveFVPatch())
     ) {
       assertion2(limiterElement1!=Solver::NotFound,solverPatch1.toString(),solverPatch2.toString());
       assertion2(limiterElement2!=Solver::NotFound,solverPatch2.toString(),solverPatch1.toString());
@@ -1682,7 +1431,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
 
   mergeWithBoundaryDataBasedOnLimiterStatus(
       cellDescriptionsIndex,element,
-      solverPatch.getLimiterStatus(),
+      solverPatch.getRefinementStatus(),
       posCell,posBoundary,
       false /* isRecomputation */);
 }
@@ -1702,8 +1451,8 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryDataBasedOnLimiter
     if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel()) {
       const int limiterElement = tryGetLimiterElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
 
-      if (solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForActiveFVPatch()) {
-        assertion(limiterStatus<=_solver->_minimumLimiterStatusForPassiveFVPatch || limiterElement!=Solver::NotFound);
+      if (solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch()) {
+        assertion(limiterStatus<=_solver->_minimumRefinementStatusForPassiveFVPatch || limiterElement!=Solver::NotFound);
         if (!isRecomputation) {
           _solver->mergeWithBoundaryData(cellDescriptionsIndex,element,posCell,posBoundary);
         }
@@ -1829,11 +1578,11 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
 
     logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank " <<
                  toRank << " at vertex x=" << x << ", level=" << level <<
-                 ", source=" << src << ", destination=" << dest <<", limiterStatus="<<solverPatch.getLimiterStatus());
+                 ", source=" << src << ", destination=" << dest <<", limiterStatus="<<solverPatch.getRefinementStatus());
 
     // solver sends
     if (
-        solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell() &&
+        solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() &&
         isRecomputation==false
     ) {
       _solver->sendDataToNeighbour(toRank,cellDescriptionsIndex,element,src,dest,x,level);
@@ -1842,7 +1591,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
     }
 
     // limiter sends (receive order must be inverted)
-    if (solverPatch.getLimiterStatus()>=_solver->_minimumLimiterStatusForPassiveFVPatch) {
+    if (solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForPassiveFVPatch) {
       const int limiterElement = tryGetLimiterElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
       assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());
       _limiter->sendDataToNeighbour(toRank,cellDescriptionsIndex,limiterElement,src,dest,x,level);
@@ -1925,10 +1674,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
 
     logDebug("mergeWithNeighbourDataBasedOnLimiterStatus(...)", "receive data for solver " << _identifier << " from rank " <<
         fromRank << " at vertex x=" << x << ", level=" << level <<
-        ", source=" << src << ", destination=" << dest << ",limiterStatus=" << solverPatch.getLimiterStatus());
-    assertion1(solverPatch.getLimiterStatus()>=0,solverPatch.toString());
+        ", source=" << src << ", destination=" << dest << ",limiterStatus=" << solverPatch.getRefinementStatus());
+    assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
 
-    if ( solverPatch.getLimiterStatus()<_solver->getMinimumLimiterStatusForActiveFVPatch() ) {
+    if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch() ) {
       _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
       if (!isRecomputation) {
         _solver->mergeWithNeighbourData(
@@ -1937,7 +1686,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       } else {
         _solver->dropNeighbourData(fromRank,src,dest,x,level);
       }
-    } else { // solverPatch.getLimiterStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch) {
+    } else { // solverPatch.getRefinementStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch) {
       const int limiterElement = tryGetLimiterElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
       assertion(limiterElement!=Solver::NotFound);
       _limiter->mergeWithNeighbourData(
@@ -2087,12 +1836,10 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const bool initialGrid,
     const int solverNumber) {
   _solver->progressMeshRefinementInPrepareSendToWorker(
       workerRank, fineGridCell, fineGridVertices,fineGridVerticesEnumerator,
-      coarseGridCell, coarseGridVerticesEnumerator,
-      initialGrid, solverNumber);
+      coarseGridCell, coarseGridVerticesEnumerator,solverNumber);
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerIfProlongating(
@@ -2116,13 +1863,11 @@ void exahype::solvers::LimitingADERDGSolver::receiveDataFromMasterIfProlongating
 }
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(
-    const int localCellDescriptionsIndex,    const int localElement,
-    const int receivedCellDescriptionsIndex, const int receivedElement,
-    const bool initialGrid) {
+    const int localCellDescriptionsIndex,
+    const int receivedCellDescriptionsIndex, const int receivedElement) {
   _solver->progressMeshRefinementInMergeWithWorker(
-      localCellDescriptionsIndex,localElement,
-      receivedCellDescriptionsIndex,receivedElement,
-      initialGrid);
+      localCellDescriptionsIndex,
+      receivedCellDescriptionsIndex,receivedElement);
 }
 
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSendToMaster(
@@ -2140,9 +1885,10 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) {
+    const int  level,
+    const bool stillInRefiningMode) {
   return _solver->progressMeshRefinementInMergeWithMaster(
-      worker,localElement,localElement,coarseGridCellDescriptionsIndex,x,level);
+      worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
@@ -2195,55 +1941,14 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToMaster(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries messageForMaster =
-      _solver->compileMessageForMaster(4);
-
-  // Send additional data to master
-  messageForMaster.push_back(
-      exahype::solvers::convertToDouble(_limiterDomainChange));
-
-  assertion1(messageForMaster.size()==4,messageForMaster.size());
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("sendDataToMaster(...)","Sending time step data: " <<
-        "data[0]=" << messageForMaster[0] <<
-        ",data[1]=" << messageForMaster[1] <<
-        ",data[2]=" << messageForMaster[2] <<
-        ",data[3]=" << messageForMaster[3]);
-  }
-  DataHeap::getInstance().sendData(
-      messageForMaster.data(), messageForMaster.size(),
-      masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  _solver->sendDataToMaster(masterRank,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromWorker(4); // !!! Creates and fills the vector
-  DataHeap::getInstance().receiveData(
-      messageFromWorker.data(),messageFromWorker.size(),workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
-
-  // pass message to the ADER-DG solver
-  _solver->mergeWithWorkerData(messageFromWorker);
-
-  // merge own flags
-  const int firstEntry=3;
-  LimiterDomainChange workerLimiterDomainChange =
-      exahype::solvers::convertToLimiterDomainChange(messageFromWorker[firstEntry]);
-  updateNextLimiterDomainChange(workerLimiterDomainChange); // !!! It is important that we merge with the "next" field here
-
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("mergeWithWorkerData(...)","Received data from worker:" <<
-             " messageFromWorker[0]=" << messageFromWorker[0] <<
-             " messageFromWorker[1]=" << messageFromWorker[1] <<
-             " messageFromWorker[2]=" << messageFromWorker[2] <<
-             " messageFromWorker[3]=" << messageFromWorker[3]);
-    logDebug("mergeWithWorkerData(...)","nextLimiterDomainChange=" << static_cast<int>(_nextLimiterDomainChange));
-  }
+  _solver->mergeWithWorkerData(workerRank,x,level);
 }
 
 ///////////////////////////////////
@@ -2253,60 +1958,14 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToWorker(
     const                                        int workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  DataHeap::HeapEntries messageForWorker = _solver->compileMessageForWorker(8);
-
-  // append additional data
-  messageForWorker.push_back(
-      exahype::solvers::convertToDouble(_limiterDomainChange));
-
-  assertion1(messageForWorker.size()==8,messageForWorker.size());
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("sendDataToWorker(...)","sending data to worker: " <<
-             "data[0]=" << messageForWorker[0] <<
-             ",data[1]=" << messageForWorker[1] <<
-             ",data[2]=" << messageForWorker[2] <<
-             ",data[3]=" << messageForWorker[3] <<
-             ",data[4]=" << messageForWorker[4] <<
-             ",data[5]=" << messageForWorker[5] <<
-             ",data[6]=" << messageForWorker[6] <<
-             ",data[7]=" << messageForWorker[7]);
-  }
-  DataHeap::getInstance().sendData(
-      messageForWorker.data(), messageForWorker.size(),
-      workerRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
+  _solver->sendDataToWorker(workerRank,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
     const int                                    masterRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  DataHeap::HeapEntries messageFromMaster(8); // !!! Creates and fills the vector
-  DataHeap::getInstance().receiveData(
-      messageFromMaster.data(),messageFromMaster.size(),masterRank, x, level,
-      peano::heap::MessageType::MasterWorkerCommunication);
-
-  // pass message to the ADER-DG solver
-  _solver->mergeWithMasterData(messageFromMaster);
-
-  // merge own data
-  const int firstEntry=7;
-  _limiterDomainChange = exahype::solvers::convertToLimiterDomainChange(messageFromMaster[firstEntry]);
-
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("mergeWithWorkerData(...)","received data from master:" <<
-             " messageFromMaster[0]=" << messageFromMaster[0] <<
-             " messageFromMaster[1]=" << messageFromMaster[1] <<
-             " messageFromMaster[2]=" << messageFromMaster[2] <<
-             " messageFromMaster[3]=" << messageFromMaster[3] <<
-             " messageFromMaster[4]=" << messageFromMaster[4] <<
-             " messageFromMaster[5]=" << messageFromMaster[5] <<
-             " messageFromMaster[6]=" << messageFromMaster[6] <<
-             " messageFromMaster[7]=" << messageFromMaster[7]);
-    logDebug("mergeWithWorkerData(...)","_limiterDomainChange=" << static_cast<int>(_limiterDomainChange));
-  }
+  _solver->mergeWithMasterData(masterRank,x,level);
 }
 #endif
 

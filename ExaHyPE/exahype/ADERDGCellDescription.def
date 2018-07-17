@@ -36,7 +36,7 @@ class exahype::records::ADERDGCellDescription {
     * is adjacent to a remote rank at
     * at least one of its faces.
     */
-   persistent packed bool adjacentToRemoteRank;
+  persistent packed bool adjacentToRemoteRank;
   
   /**
    * This flag is set just before a cell description is sent to a new
@@ -134,22 +134,6 @@ class exahype::records::ADERDGCellDescription {
    * more details.
    */
   parallelise persistent packed Type type;
-  
-  /**
-   * Using this enum, we can manifest the evaluation
-   * of the refinement criterion. It is then
-   * not necessary to evaluate the refinement criterion
-   * in every cell but only in the first iteration of
-   * a mesh update or in case a new cell is introduced.
-   */
-  enum RefinementRequest {
-    Pending,
-    Keep,
-    Erase,
-    Refine
-  };
-  
-  parallelise persistent packed RefinementRequest refinementRequest;
   
   enum RefinementEvent {
     /**
@@ -450,65 +434,58 @@ class exahype::records::ADERDGCellDescription {
    */
   parallelise persistent int communicationStatus;
   
-  enum LimiterStatus {
-    /**
-     * A cell holds a physically admissible ADER-DG solution
-     * that satisfies a discrete maximum principle.
-     * 
-     * This cell's dominant solver is ADER-DG solver
-     */
-    Ok,
-    /** 
-     * This cell's dominant solver is ADER-DG solver.
-     */
-    NeighbourOfTroubled4,
-    /**
-     * This cell's dominant solver is ADER-DG solver.
-     */
-    NeighbourOfTroubled3,
-    /**
-     * This cell's dominant solver is the FV solver. 
-     */
-    NeighbourOfTroubled2,
-    /**
-     * This cell's dominant solver is the FV solver. 
-     */
-    NeighbourOfTroubled1,
-    /**
-     * A cell (still) holds a physically wrong ADER-DG solution.
-     * 
-     * This cell's dominant solver is the FV solver. 
-     */
-    Troubled
-  };
-  
   /**
-   * \see limiterStatus
+   * \see refinementStatus
    */
-  persistent int facewiseLimiterStatus[DIMENSIONS_TIMES_TWO];
+  persistent int facewiseRefinementStatus[DIMENSIONS_TIMES_TWO];
   
   /**
-   * The cell descriptions limiter status which
-   * is a reduction of the facewiseLimiterStatus elements.
+   * A flag indicating cells marked by a normal refinement criterion
+   * during the time stepping. This is used as a marker for
+   * halo cell diffusion heat sources.
+   */
+  persistent bool refinementFlag;
+  
+  /**
+   * Status which indicates the refinement decision made
+   * by a cell description. 
+   * -1 indicates the cell wants to be erased.
+   * -2 indicates no refinement decision was made yet.
+   * 0 means that the cell wants to be kept on the coarse grid.
+   * 2 indicates that the cell wants to be refined on the coarse grid 
+   * or kept / refined on the fine grid.
+   * This is realised with an if after the decision was made.
    *
-   * This value only corresponds on the finest level to 
-   * a limiter status enum.
+   * (Can this be exploited for the regularisation?)
+   * 
+   * Unless the value is -2, the cells refinement status can be overwritten 
+   * by a neighbour's value subtracted by 1 in case the neighbour's refinement status 
+   * is larger. The value 1 then indicates the halo cells around a  
+   * fine grid cell with status 2. 
+   * The bottom-up refinement criterion ensures that all halo cells 
+   * are placed on the fine grid.
+   * No spreading is performed on coarser grids.
+   * There are no halo cells.
+   * 
+   * A troubled ADER-DG cell obtains a refinement status
+   * 2+#DG-FV layers+#FV-DG layers+1 on the fine grid.
+   * Diffusion introduces other refinement status
+   * values into which have a special meaning 
+   * for the limiting ADER-DG solver but need to be refined as well.
    */
-  parallelise persistent int limiterStatus;
+  parallelise persistent int refinementStatus;
   
   /**
-   * The cell descriptions previous limiter status.
+   * The cell descriptions previous refinement status.
    * 
    * This field is only need for the troubled cell recomputation
    * which must be performed after a irregular limiter domain
-   * change has occured, i.e. cells outside of the first(!) FV
-   * helper cell layer have been marked as troubled.
-   
-   * This value only corresponds on the finest level to 
-   * a limiter status enum.
+   * change has occurred, i.e. cells outside of the first(!) FV
+   * helper cell layer have been marked as troubled or
+   * the halo status of a cell changed by more than the
+   * helper layer width.
    */
-  parallelise persistent int previousLimiterStatus;
-
+  parallelise persistent int previousRefinementStatus;
   
   /**
    * A counter holding the number of iterations to
@@ -545,4 +522,20 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent packed int bytesPerDoFInUpdate                from 1 to 7;
   parallelise persistent packed int bytesPerDoFInExtrapolatedPredictor from 1 to 7;
   parallelise persistent packed int bytesPerDoFInFluctuation           from 1 to 7;
+  
+  #ifdef Asserts
+  /** 
+   * Some debug information indicating how a cell
+   * description of type Cell ended up on a MPI rank.
+   */
+  enum Creation {
+    NotSpecified,
+    UniformRefinement,
+    AdaptiveRefinement,
+    AdaptiveCoarsening,
+    ReceivedDueToForkOrJoin,
+    ReceivedFromWorker
+  };
+  persistent Creation creation;
+  #endif
 };

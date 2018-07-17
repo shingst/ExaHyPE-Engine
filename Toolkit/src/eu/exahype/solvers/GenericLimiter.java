@@ -30,11 +30,14 @@ public class GenericLimiter implements Solver {
     context = new Context();
     
     //String
+    context.put("enableProfiler"      , false);
     context.put("project"             , projectName);
     context.put("solver"              , solverName);
     context.put("abstractSolver"      , getAbstractSolverName());
     context.put("ADERDGAbstractSolver", ADERDGSolver.getAbstractSolverName());
     context.put("FVAbstractSolver"    , FVSolver.getAbstractSolverName());
+    context.put("ADERDGSolver"        , ADERDGSolver.getSolverName());
+    context.put("FVSolver"            , FVSolver.getSolverName());
   }
     
   @Override

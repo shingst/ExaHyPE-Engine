@@ -29,7 +29,7 @@ class Euler::LimitingADERDG_FV : public Euler::AbstractLimitingADERDG_FV {
      */
     static tarch::logging::Log _log;
   public:
-    LimitingADERDG_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    LimitingADERDG_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

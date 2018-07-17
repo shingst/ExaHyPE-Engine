@@ -23,10 +23,9 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
-peano::CommunicationSpecification
-exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
+peano::CommunicationSpecification exahype::mappings::BroadcastAndDropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
@@ -85,7 +84,7 @@ void exahype::mappings::BroadcastAndDropNeighbourMessages::beginIteration(
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
   }
 
-  exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
+  exahype::mappings::RefinementStatusSpreading::IsFirstIteration = true;
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }

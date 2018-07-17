@@ -16,7 +16,7 @@ String time_var        : name of the var used in the outer time loop (use '0' is
 {% if time_var=='0' %}
 {% set useTime=False %}
 {% set outputF_BlockSize=(nDof**nDim)*nVarPad %}
-{% set inputQ_iterator='xyz'~inputQ_dataSize %}
+{% set inputQ_iterator='xyz*'~inputQ_dataSize %}
 {% set inputQ_iterator_rest=''~rest_start*inputQ_dataSize %}
 {% else %}
 {% set useTime=True %}

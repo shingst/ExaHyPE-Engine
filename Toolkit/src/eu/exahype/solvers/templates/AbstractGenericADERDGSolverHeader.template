@@ -32,7 +32,8 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
   public:
     static constexpr int NumberOfVariables       = {{numberOfVariables}};
     static constexpr int NumberOfParameters      = {{numberOfParameters}};
-    static constexpr int Order                   = {{order}}; 
+    static constexpr int Order                   = {{order}};
+    static constexpr int NumberOfObservables     = {{numberOfObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
     static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
     static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
     static constexpr double CFL                  = 0.9;
@@ -45,8 +46,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int constexpr_getNumberOfVariables()  const override { return NumberOfVariables; };
     int constexpr_getNumberOfParameters() const override { return NumberOfParameters; };
     int constexpr_getOrder()              const override { return Order; };
-    double constexpr_getCFLNumber()       const override { return CFL; };
-    
+    double constexpr_getCFLNumber()       const override { return CFL; };  
   
     class VariableMetrics;
     class Variables;
@@ -59,7 +59,15 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     class {{className}};
     {%- endfor %}
     
-    {{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
+    {{abstractSolver}}(
+        double maximumMeshSize,
+        int maximumMeshDepth,
+        int haloCells,
+        int regularisedFineGridLevels,
+        exahype::solvers::Solver::TimeStepping timeStepping,
+        int limiterHelperLayers,
+        int DMPObservables
+        {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
 
     /**
      * This operation should be overwritten in your application-specific 

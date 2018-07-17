@@ -10,7 +10,7 @@
 EXE  = ADERDG  
 # *********************************************************************
 
-F90 = ftn 
+F90 = mpifort 
 
 # OMP = -fopenmp 
 
@@ -22,14 +22,18 @@ LIBDIR      = ./lib
 #LTEC   = -ltecio
 LTEC = 
 
-LFLAGS = $(LTEC) -cxxlib 
+LFLAGS = $(LTEC) 
 
 # COMPILATION OPTIMIZATION FLAGS for ifort
-F90FLAGS = -c -O2 -r8 -align -fpp  
+# F90FLAGS = -c -O2 -r8 -align -fpp  
+
+# COMPILATION OPTIMIZATION FLAGS for gfortran
+F90FLAGS = -c -O2 -cpp -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -fcray-pointer
+
 
 # PREPROCESSOR DEFINITIONS 
 #FCFLAGS = -DGRMHD -DFLUX -DNOLIMITER -DSOURCE -DNONCONSERVATIVE -DNOIO -DPARALLEL -DRKDG               
-FCFLAGS = -DCCZ4EINSTEIN -DNOFLUX -DNOLIMITER -DSOURCE -DNONCONSERVATIVE -DNOIO -DPARALLEL -DRKDG
+FCFLAGS = -DCCZ4EINSTEIN -DNOFLUX -DNOLIMITER -DSOURCE -DNONCONSERVATIVE -DNOIO -DPARALLEL
 
 #
 .SUFFIXES: .f90 .o .f77 .F90

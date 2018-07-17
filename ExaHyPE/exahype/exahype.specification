@@ -40,7 +40,7 @@ event-mapping:
 
 // Limiter
 event-mapping:
-  name: LimiterStatusSpreading
+  name: RefinementStatusSpreading
 
 event-mapping:
   name: LocalRollback
@@ -110,8 +110,8 @@ adapter:
   merge-with-user-defined-mapping: BroadcastAndDropNeighbourMessages
 
 adapter:
-  name: LimiterStatusSpreading
-  merge-with-user-defined-mapping: LimiterStatusSpreading
+  name: RefinementStatusSpreading
+  merge-with-user-defined-mapping: RefinementStatusSpreading
 
 adapter: 
   name: PredictionOrLocalRecomputation

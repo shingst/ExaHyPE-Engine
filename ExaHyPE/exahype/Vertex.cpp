@@ -666,15 +666,14 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
         tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
         int destScalar = TWO_POWER_D - myDestScalar - 1;
 
-        if (hasToReceiveMetadata(fromRank,src,dest)) {
+        if ( hasToReceiveMetadata(fromRank,src,dest) ) {
           logDebug("mergeOnlyWithNeighbourMetadata(...)","[pre] rec. from rank "<<fromRank<<", x:"<<
                    x.toString() << ", level=" <<level << ", adjacentRanks: "
                    << getAdjacentRanks());
 
-          const int receivedMetadataIndex =
-              exahype::receiveNeighbourCommunicationMetadata(fromRank, x, level);
-          exahype::MetadataHeap::HeapEntries& receivedMetadata =
-              MetadataHeap::getInstance().getData(receivedMetadataIndex);
+          exahype::MetadataHeap::HeapEntries receivedMetadata;
+          receivedMetadata.clear();
+          exahype::receiveNeighbourCommunicationMetadata(receivedMetadata,fromRank, x, level);
           assertionEquals(receivedMetadata.size(),
               exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
@@ -924,7 +923,8 @@ void exahype::Vertex::dropNeighbourData(
 
 void exahype::Vertex::mergeWithNeighbourData(
         const int fromRank,
-        const int receivedMetadataIndex,
+        const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+        const bool mergeWithNeighbourMetadata,
         const int srcCellDescriptionIndex,
         const int destCellDescriptionIndex,
         const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -945,9 +945,7 @@ void exahype::Vertex::mergeWithNeighbourData(
         destCellDescriptionIndex,element,src,dest,
         x,level);
 
-      if ( receivedMetadataIndex != InvalidMetadataIndex ) {
-          exahype::MetadataHeap::HeapEntries& receivedMetadata =
-              MetadataHeap::getInstance().getData(receivedMetadataIndex);
+      if ( mergeWithNeighbourMetadata ) {
           assertionEquals(receivedMetadata.size(),exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
           const int offset = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
@@ -979,11 +977,10 @@ void exahype::Vertex::receiveNeighbourData(
         tarch::la::Vector<DIMENSIONS, int> dest = tarch::la::Vector<DIMENSIONS, int>(1) - myDest; // "invert" points
         tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
 
-        int destScalar = TWO_POWER_D - myDestScalar - 1; // "invert" point indices
-        int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
+        const int destScalar = TWO_POWER_D - myDestScalar - 1; // "invert" point indices
+        const int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
         if ( hasToReceiveMetadata(fromRank,src,dest) ) {
-
           //#ifdef Asserts
           //logInfo("receiveNeighbourData(...)","from rank "<<fromRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           //#endif
@@ -995,16 +992,17 @@ void exahype::Vertex::receiveNeighbourData(
               (exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps
               && !isFirstIterationOfBatchOrNoBatch);
 
-          int receivedMetadataIndex = InvalidMetadataIndex;
-          if ( receiveNoMetadata==false ) {
-            receivedMetadataIndex = exahype::receiveNeighbourCommunicationMetadata(fromRank, x, level);
-          }
+          MetadataHeap::HeapEntries receivedMetadata;
+          receivedMetadata.clear();
+          exahype::receiveNeighbourCommunicationMetadata(
+              receivedMetadata, fromRank, x, level);
 
           if( hasToMergeWithNeighbourData(src,dest) ) {
             if ( mergeWithReceivedData ) {
               mergeWithNeighbourData(
                   fromRank,
-                  receivedMetadataIndex,
+                  receivedMetadata,
+                  !receiveNoMetadata,
                   getCellDescriptionsIndex()[srcScalar],
                   getCellDescriptionsIndex()[destScalar],
                   src,dest,

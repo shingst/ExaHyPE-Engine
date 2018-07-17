@@ -32,8 +32,12 @@ metrics =  [
         ["L3 miss rate",                "Avg"],
         ["L2 request rate",             "Avg"],
         ["L2 miss rate",                "Avg"],
-        ["Branch misprediction rate",   "Avg"]
-       ]
+        ["Branch misprediction rate",   "Avg"],
+        ["Temperature [C]",             "Avg"],
+        ["Energy [J]",                  "Sum"],
+        ["Energy DRAM [J]",             "Sum"]
+]
+
 
 counters = [
             ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
@@ -220,8 +224,8 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
             print("processed files:")
             firstFile = True
             for fileName in files:
-                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out$',fileName)
+                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-b1-r1.out
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-b([0-9]+)-r([0-9]+).out$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -229,6 +233,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
+                consumers           = match.group(8)
                 run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
@@ -246,6 +251,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         header.append("nodes")
                         header.append("tasks")
                         header.append("cores")
+                        header.append("consumers")
                         header.append("run")
                         header.append("adapter")
                         header.append("iterations")
@@ -282,6 +288,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         row.append(nodes)
                         row.append(tasks)
                         row.append(cores)
+                        row.append(consumers)
                         row.append(run)
                         row.append(adapter)
                         row.append(adapters[adapter]["iterations"])
@@ -314,6 +321,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                     row.append(nodes)
                     row.append(tasks)
                     row.append(cores)
+                    row.append(consumers)
                     row.append(run)
                     row.append("missing")
                     row.append("missing")
@@ -596,7 +604,7 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
         result[counter[0]][counter[1]] = -1.0
 
     try:
-        fileHandle=open(filePath)
+        fileHandle=open(filePath,encoding="utf-8")
 
         for line in fileHandle:
             if line.startswith("sweep/environment"):
@@ -677,8 +685,8 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
             print("processed files:")
             firstFile = True
             for fileName in files:
-                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-N1-t1-c1-r1.out
-                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c(([0-9]|\:)+)-r([0-9]+).out.likwid$',fileName)
+                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-N1-t1-c1-b1-r1.out
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-b([0-9]+)-r([0-9]+).out.likwid$',fileName)
                 prefix              = match.group(1)
                 parameterDictHash   = match.group(2)
                 environmentDictHash = match.group(3)
@@ -686,6 +694,7 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                 nodes               = match.group(5)
                 tasks               = match.group(6)
                 cores               = match.group(7)
+                consumers           = match.group(8)
                 run                 = match.group(9)
 
                 environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores.startswith("1:"))
@@ -708,6 +717,7 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                         header.append("nodes")
                         header.append("tasks")
                         header.append("cores")
+                        header.append("consumers")
                         header.append("run")
                         for key in sorted(measurements):
                             for subkey in measurements[key]:
@@ -730,6 +740,7 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                     row.append(nodes)
                     row.append(tasks)
                     row.append(cores)
+                    row.append(consumers)
                     row.append(run)
                     for key in sorted(measurements):
                         for subkey in measurements[key]:

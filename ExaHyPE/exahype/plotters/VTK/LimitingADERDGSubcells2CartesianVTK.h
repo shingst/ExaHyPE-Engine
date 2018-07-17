@@ -54,8 +54,8 @@ private:
   tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexDataWriter;
   tarch::plotter::griddata::Writer::CellDataWriter*                          _cellDataWriter;
   tarch::plotter::griddata::Writer::CellDataWriter*                          _timeStampCellDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellLimiterStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellPreviousLimiterStatusWriter;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellRefinementStatusWriter;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellPreviousRefinementStatusWriter;
 
 public:
   LimitingADERDGSubcells2CartesianVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
@@ -74,7 +74,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
       const double* const u,
       const double timeStamp,
-      const int limiterStatus, const int previousLimiterStatus);
+      const int RefinementStatus, const int previousRefinementStatus);
 
   void startPlotting( double time ) override;
   void finishPlotting() override;
