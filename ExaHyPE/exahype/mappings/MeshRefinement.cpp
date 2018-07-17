@@ -831,7 +831,10 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
 
   _allSolversAttainedStableState = false;
 
-  if ( localCell.hasToCommunicate(cellSize) ) {
+  if ( 
+      localCell.hasToCommunicate(cellSize) && 
+      localCell.getRankOfRemoteNode()==toRank 
+  ) { // isAsignedToRemoteRank does not work, remeber the halo sends
     const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
     exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,cellDescriptionsIndex,
         exahype::State::isJoiningWithMaster()/* send out data from worker side */,
@@ -848,7 +851,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
       }
     }
 
-    if ( localCell.isInitialised() && localCell.getRankOfRemoteNode()==toRank ) { // isAsignedToRemoteRank does not work, remeber the halo sends
+    if ( localCell.isInitialised() ) { 
       localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
     } 
   }
@@ -876,7 +879,10 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith3Arguments( "mergeWithRemoteDataDueToForkOrJoin(...)", localCell, masterOrWorkerCell, fromRank );
 
-  if ( localCell.hasToCommunicate(cellSize) ) {
+  if ( 
+      localCell.hasToCommunicate(cellSize) && 
+      masterOrWorkerCell.getRankOfRemoteNode()==tarch::parallel::Node::getInstance().getRank()
+  ) {
     if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       localCell.setCellDescriptionsIndex(
           multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
@@ -910,10 +916,7 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
     // shut down the metadata again
     if (
         localCell.isInitialised() &&
-        (
-          localCell.isEmpty() ||
-          localCell.getRankOfRemoteNode()==fromRank
-        )
+        localCell.isEmpty()
     ) {
       localCell.shutdownMetaDataAndResetCellDescriptionsIndex();
     }
