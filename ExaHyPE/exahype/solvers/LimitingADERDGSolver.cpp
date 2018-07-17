@@ -1890,7 +1890,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const int  level,
     const bool stillInRefiningMode) {
   return _solver->progressMeshRefinementInMergeWithMaster(
-      worker,localElement,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
+      worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
