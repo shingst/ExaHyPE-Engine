@@ -1049,8 +1049,10 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
-        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested
-        ,cellDescription.toString());
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildrenRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested,
+        cellDescription.toString());
   //assertion(cellDescription.getRefinementStatus()==Pending);
 
   double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -2433,17 +2435,20 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
       prolongateVolumeData(cellDescription,isInitialMeshRefinement);
       cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
     }
+    
     adjustSolution(cellDescription);
     markForRefinement(cellDescription);
   }
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
-  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());    
   assertion1(
-     cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
-     cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested,
-     cellDescription.toString());
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildrenRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested,
+      cellDescription.toString());
 
   double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   adjustSolution(
