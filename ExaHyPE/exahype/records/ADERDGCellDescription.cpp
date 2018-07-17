@@ -102,12 +102,13 @@
          case AdaptiveRefinement: return "AdaptiveRefinement";
          case AdaptiveCoarsening: return "AdaptiveCoarsening";
          case ReceivedDueToForkOrJoin: return "ReceivedDueToForkOrJoin";
+         case ReceivedFromWorker: return "ReceivedFromWorker";
       }
       return "undefined";
    }
    
    std::string exahype::records::ADERDGCellDescription::getCreationMapping() {
-      return "Creation(NotSpecified=0,UniformRefinement=1,AdaptiveRefinement=2,AdaptiveCoarsening=3,ReceivedDueToForkOrJoin=4)";
+      return "Creation(NotSpecified=0,UniformRefinement=1,AdaptiveRefinement=2,AdaptiveCoarsening=3,ReceivedDueToForkOrJoin=4,ReceivedFromWorker=5)";
    }
    std::string exahype::records::ADERDGCellDescription::toString(const RefinementEvent& param) {
       switch (param) {
@@ -5136,12 +5137,13 @@ switch (mode) {
             case AdaptiveRefinement: return "AdaptiveRefinement";
             case AdaptiveCoarsening: return "AdaptiveCoarsening";
             case ReceivedDueToForkOrJoin: return "ReceivedDueToForkOrJoin";
+            case ReceivedFromWorker: return "ReceivedFromWorker";
          }
          return "undefined";
       }
       
       std::string exahype::records::ADERDGCellDescription::getCreationMapping() {
-         return "Creation(NotSpecified=0,UniformRefinement=1,AdaptiveRefinement=2,AdaptiveCoarsening=3,ReceivedDueToForkOrJoin=4)";
+         return "Creation(NotSpecified=0,UniformRefinement=1,AdaptiveRefinement=2,AdaptiveCoarsening=3,ReceivedDueToForkOrJoin=4,ReceivedFromWorker=5)";
       }
       std::string exahype::records::ADERDGCellDescription::toString(const RefinementEvent& param) {
          switch (param) {

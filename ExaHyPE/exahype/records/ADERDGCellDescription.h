@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   17/07/2018 09:51
+    * @date   17/07/2018 11:01
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -46,7 +46,7 @@ namespace exahype {
          };
          
          enum Creation {
-            NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4
+            NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4, ReceivedFromWorker = 5
          };
          
          enum RefinementEvent {
@@ -3278,7 +3278,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   17/07/2018 09:51
+    * @date   17/07/2018 11:01
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
@@ -6666,7 +6666,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   17/07/2018 09:51
+       * @date   17/07/2018 11:01
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -9856,7 +9856,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   17/07/2018 09:51
+       * @date   17/07/2018 11:01
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -13192,7 +13192,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   17/07/2018 09:51
+       * @date   17/07/2018 11:01
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -13205,7 +13205,7 @@ namespace exahype {
             };
             
             enum Creation {
-               NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4
+               NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4, ReceivedFromWorker = 5
             };
             
             enum RefinementEvent {
@@ -16208,7 +16208,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   17/07/2018 09:51
+       * @date   17/07/2018 11:01
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
@@ -19366,7 +19366,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   17/07/2018 09:51
+       * @date   17/07/2018 11:01
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -22327,7 +22327,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   17/07/2018 09:51
+       * @date   17/07/2018 11:01
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          

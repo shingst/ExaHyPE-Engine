@@ -3570,6 +3570,9 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const bool                                   stillInRefiningMode) {
   CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
   ensureConsistencyOfParentInformation(cellDescription,coarseGridCellDescriptionsIndex);
+  #ifdef Asserts
+  cellDescription.setCreation(CellDescription::Creation::ReceivedFromWorker);
+  #endif
 
   // receive the data
   if (

@@ -533,7 +533,8 @@ class exahype::records::ADERDGCellDescription {
     UniformRefinement,
     AdaptiveRefinement,
     AdaptiveCoarsening,
-    ReceivedDueToForkOrJoin
+    ReceivedDueToForkOrJoin,
+    ReceivedFromWorker
   };
   persistent Creation creation;
   #endif
