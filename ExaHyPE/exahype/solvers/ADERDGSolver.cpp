@@ -190,6 +190,10 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setBytesPerDoFInSolution(-1);
   newCellDescription.setBytesPerDoFInUpdate(-1);
 
+  #ifdef Asserts
+  newCellDescription.setCreation(CellDescription::Creation::NotSpecified);
+  #endif
+
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
   ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
   lock.free();
@@ -1264,6 +1268,10 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   CellDescription& fineGridCellDescription =
       getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
   ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+
+  #ifdef Asserts
+  fineGridCellDescription.setCreation(CellDescription::Creation::UniformRefinement);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
@@ -1356,6 +1364,9 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
           getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setRefinementEvent(CellDescription::Prolongating);
       fineGridCellDescription.setRefinementStatus(Pending);
+      #ifdef Asserts
+      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
+      #endif
     } else {
       CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
       #ifdef Parallel
@@ -1377,6 +1388,9 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       fineGridCellDescription.setCommunicationStatus(CellCommunicationStatus);
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+      #ifdef Asserts
+      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
+      #endif
     }
     return true;
   }
@@ -1658,6 +1672,9 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       prepareVolumeDataRestriction(fineGridCellDescription);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
+      #ifdef Asserts
+      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveCoarsening);
+      #endif
       break;
     case CellDescription::RefinementEvent::ErasingChildren:
       //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
@@ -3270,6 +3287,10 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
 
   // limiter flagging
   cellDescription.setIterationsToCureTroubledCell(-1);
+
+  #ifdef Asserts
+  cellDescription.setCreation(CellDescription::Creation::ReceivedDueToForkOrJoin);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {

@@ -36,7 +36,7 @@ class exahype::records::ADERDGCellDescription {
     * is adjacent to a remote rank at
     * at least one of its faces.
     */
-   persistent packed bool adjacentToRemoteRank;
+  persistent packed bool adjacentToRemoteRank;
   
   /**
    * This flag is set just before a cell description is sent to a new
@@ -522,4 +522,19 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent packed int bytesPerDoFInUpdate                from 1 to 7;
   parallelise persistent packed int bytesPerDoFInExtrapolatedPredictor from 1 to 7;
   parallelise persistent packed int bytesPerDoFInFluctuation           from 1 to 7;
+  
+  #ifdef Asserts
+  /** 
+   * Some debug information indicating how a cell
+   * description of type Cell ended up on a MPI rank.
+   */
+  enum Creation {
+    NotSpecified,
+    UniformRefinement,
+    AdaptiveRefinement,
+    AdaptiveCoarsening,
+    ReceivedDueToForkOrJoin
+  };
+  persistent Creation creation;
+  #endif
 };
