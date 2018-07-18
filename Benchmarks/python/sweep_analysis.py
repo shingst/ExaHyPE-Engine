@@ -231,9 +231,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                 environmentDictHash = match.group(3)
                 ranks               = match.group(4)
                 nodes               = match.group(5)
-                tasks               = match.group(6)
+                ranksPerNode        = match.group(6)
                 cores               = match.group(7)
-                consumers           = match.group(8)
+                consumerTasks       = match.group(8)
                 run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
@@ -249,9 +249,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                                 header.append(parameter)
                         header.append("ranks")
                         header.append("nodes")
-                        header.append("tasks")
+                        header.append("ranksPerNode")
                         header.append("cores")
-                        header.append("consumers")
+                        header.append("consumerTasks")
                         header.append("run")
                         header.append("adapter")
                         header.append("iterations")
@@ -286,16 +286,25 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                                 row.append(parameterDict[key])
                         row.append(ranks)
                         row.append(nodes)
-                        row.append(tasks)
+                        row.append(ranksPerNode)
                         row.append(cores)
-                        row.append(consumers)
+                        row.append(consumerTasks)
                         row.append(run)
                         row.append(adapter)
                         row.append(adapters[adapter]["iterations"])
                         row.append(adapters[adapter]["total_cputime"])
                         row.append(adapters[adapter]["total_usertime"])
                         
-                        normalisationPerCells =  ( float(parameterDict["order"]) + 1 )**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_avg"])
+                        base = -1.0
+                        if "patchSize" in parameterDict:
+                            base = float(parameterDict["patchSize"]) 
+                        elif "order" in parameterDict:
+                            base = float(parameterDict["order"]) + 1.0 
+                        else:
+                            print("ERROR: Found neither 'order' nor 'patchSize' key in parameter list="+str(parameterDict),file=sys.stderr)
+                            sys.exit()
+
+                        normalisationPerCells =  base**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_avg"])
                         row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))
                         row.append(str( float(adapters[adapter]["total_usertime"]) / normalisationPerCells ))
                         row.append(str( int(stats["unrefined_inner_cells_min"]) ))
@@ -319,9 +328,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                             row.append(parameterDict[key])
                     row.append(ranks)
                     row.append(nodes)
-                    row.append(tasks)
+                    row.append(ranksPerNode)
                     row.append(cores)
-                    row.append(consumers)
+                    row.append(consumerTasks)
                     row.append(run)
                     row.append("missing")
                     row.append("missing")
@@ -692,9 +701,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                 environmentDictHash = match.group(3)
                 ranks               = match.group(4)
                 nodes               = match.group(5)
-                tasks               = match.group(6)
+                ranksPerNode        = match.group(6)
                 cores               = match.group(7)
-                consumers           = match.group(8)
+                consumerTasks       = match.group(8)
                 run                 = match.group(9)
 
                 environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores.startswith("1:"))
@@ -715,9 +724,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                                 header.append(parameter)
                         header.append("ranks")
                         header.append("nodes")
-                        header.append("tasks")
+                        header.append("ranksPerNode")
                         header.append("cores")
-                        header.append("consumers")
+                        header.append("consumerTasks")
                         header.append("run")
                         for key in sorted(measurements):
                             for subkey in measurements[key]:
@@ -738,9 +747,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                             row.append(parameterDict[key])
                     row.append(ranks)
                     row.append(nodes)
-                    row.append(tasks)
+                    row.append(ranksPerNode)
                     row.append(cores)
-                    row.append(consumers)
+                    row.append(consumerTasks)
                     row.append(run)
                     for key in sorted(measurements):
                         for subkey in measurements[key]:

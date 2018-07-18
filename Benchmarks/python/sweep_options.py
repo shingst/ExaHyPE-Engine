@@ -81,7 +81,7 @@ def parseParameters(config):
     # always put None in order to have at least one element
     groupedParameterSpace[None] = [None] 
 
-    blackList = ["tasks","cores","backgroundTasks"]
+    blackList = ["ranksPerNode","coresPerRank","consumerTasks"]
     for key in blackList:
         if key in parameterSpace:
             print("ERROR: The following keys are reserved: "+",".join(blackList)+".",file=sys.stderr)
