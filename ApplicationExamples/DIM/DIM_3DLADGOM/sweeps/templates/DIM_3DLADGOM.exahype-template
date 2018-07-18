@@ -1,0 +1,86 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ DIM, Diffuse Interface Method
+
+ */
+exahype-project DIM
+
+  peano-kernel-path const = ./Peano
+  exahype-path const      = ./ExaHyPE
+  output-directory const  = ./ApplicationExamples/DIM/DIM_3DLADGOM
+  architecture const      = {{architecture}}
+
+  computational-domain
+    dimension const = {{dimension}}
+    width           = 30000.0, 10000.0, 10000.0
+    offset          = -15000.0, -5000.0, -5000.0
+    time-steps      = {{timeSteps}}
+  end computational-domain
+  
+  shared-memory
+    identifier       = dummy
+    configure        = {background-tasks:{{consumerTasks}}}
+    cores            = {{coresPerRank}}
+    properties-file  = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks-per-node:{{ranksPerNode}}}
+    buffer-size      = {{bufferSize}}
+    timeout          = 60
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps                          = {{fused}}
+    fuse-algorithmic-steps-factor                   = 0.99
+    spawn-predictor-as-background-thread            = {{predictorBackgroundThreads}}
+    spawn-amr-background-threads                    = {{amrBackgroundThreads}}
+    disable-vertex-exchange-in-time-steps           = {{disableVertexExchange}}
+    time-step-batch-factor                          = {{batchFactor}}
+    disable-metadata-exchange-in-batched-time-steps = {{disableMetadataExchange}}
+    double-compression                              = 0.0
+    spawn-double-compression-as-background-thread   = on
+  end global-optimisation
+
+  solver Limiting-ADER-DG DIMSolver
+    variables const              = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
+    order const                  = {{order}}
+    maximum-mesh-size            = {{maximumMeshSize}}
+    maximum-mesh-depth           = {{maximumMeshDepth}}
+    time-stepping                = {{timeStepping}}
+    type const                   = nonlinear
+    terms const                  = flux,ncp
+    optimisation const           = {{optimisation}}
+    language const               = C
+    limiter-type const           = {{limiterType}}
+    limiter-optimisation const   = {{limiterOptimisation}}
+    limiter-language const       = C
+    dmp-observables  const       = 1
+    dmp-relaxation-parameter     = 1e+3 
+    dmp-difference-scaling       = 1e+4 
+    steps-till-cured             = 5
+    // helper-layers             = 2
+
+     plot user::defined TecplotWriter
+       variables const = 14
+       time            = 10.0
+       repeat          = 10.0
+       output          = ./output/tecplot
+     end plot
+
+  end solver
+end exahype-project
