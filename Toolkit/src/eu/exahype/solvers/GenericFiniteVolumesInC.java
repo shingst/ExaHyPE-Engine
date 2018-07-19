@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import minitemp.Context;
 import minitemp.TemplateEngine;
 
+import eu.exahype.CreateReadme;
 import eu.exahype.io.IOUtils;
 import eu.exahype.kernel.FiniteVolumesKernel;
 
@@ -67,6 +68,9 @@ public class GenericFiniteVolumesInC implements Solver {
     context.put("range_0_nDim"      , IntStream.range(0, dimensions)                          .boxed().collect(Collectors.toList()));
     context.put("range_0_nVar"      , IntStream.range(0, numberOfVariables)                   .boxed().collect(Collectors.toList()));
     context.put("range_0_nVarParam" , IntStream.range(0, numberOfVariables+numberOfParameters).boxed().collect(Collectors.toList()));
+    
+    //Register solver for the README
+    CreateReadme.getInstance().addSolverContext(context);
   }
     
   @Override

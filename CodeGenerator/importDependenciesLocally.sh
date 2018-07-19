@@ -12,8 +12,19 @@
 # Use the github URL below after you logged in to SuperMUC via
 # ssh -R 12345:github.com:9418 <Your Login>@<SuperMUC Login Node> (port 12345 is arbitrarily chosen)
 #GITHUB_URL="git://localhost:12345"
+
+if [ $# -eq 0 ]; then
+    GITHUB_URL="https://github.com/"
+else
+    while getopts s opt; do
+	case $opt in
+	    s) echo "Clone over ssh"
+	       GITHUB_URL="git@github.com:";;
+	esac
+    done
+fi
 # The following should work on your local machine:
-GITHUB_URL="https://github.com"
+
 
 # Change this if Jinja2 is available with your python3.
 JINJA2_ALREADY_AVAILABLE=false #false (default) => import Jinja2 and MarkupSafe locally, true => skip it.
@@ -22,9 +33,9 @@ JINJA2_ALREADY_AVAILABLE=false #false (default) => import Jinja2 and MarkupSafe 
 DELETE_UNUSED_LIBXSMM_SAMPLE_AND_DOC=true #true (default) => delete, false => keep it. Sample + Documentation is ~200MB.
 
 # Git paths
-JINJA_GIT_URL=$GITHUB_URL"/pallets/jinja.git"
-MARKUPSAFE_GIT_URL=$GITHUB_URL"/pallets/markupsafe.git"
-LIBXSMM_GIT_URL=$GITHUB_URL"/hfp/libxsmm.git"
+JINJA_GIT_URL=$GITHUB_URL"pallets/jinja.git"
+MARKUPSAFE_GIT_URL=$GITHUB_URL"pallets/markupsafe.git"
+LIBXSMM_GIT_URL=$GITHUB_URL"hfp/libxsmm.git"
 # Local import paths
 JINJA_LOCAL_DIR="dependencies/jinja"
 MARKUPSAFE_LOCAL_DIR="dependencies/markupsafe"
