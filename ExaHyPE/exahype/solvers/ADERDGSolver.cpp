@@ -190,6 +190,10 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setBytesPerDoFInSolution(-1);
   newCellDescription.setBytesPerDoFInUpdate(-1);
 
+  #ifdef Asserts
+  newCellDescription.setCreation(CellDescription::Creation::NotSpecified);
+  #endif
+
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
   ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
   lock.free();
@@ -1045,8 +1049,10 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
-        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested
-        ,cellDescription.toString());
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildrenRequested ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested,
+        cellDescription.toString());
   //assertion(cellDescription.getRefinementStatus()==Pending);
 
   double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -1264,6 +1270,10 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   CellDescription& fineGridCellDescription =
       getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
   ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+
+  #ifdef Asserts
+  fineGridCellDescription.setCreation(CellDescription::Creation::UniformRefinement);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::addNewDescendantIfVirtualRefiningRequested(
@@ -1356,6 +1366,9 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
           getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setRefinementEvent(CellDescription::Prolongating);
       fineGridCellDescription.setRefinementStatus(Pending);
+      #ifdef Asserts
+      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
+      #endif
     } else {
       CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
       #ifdef Parallel
@@ -1377,6 +1390,9 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       fineGridCellDescription.setCommunicationStatus(CellCommunicationStatus);
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+      #ifdef Asserts
+      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
+      #endif
     }
     return true;
   }
@@ -1658,6 +1674,9 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       prepareVolumeDataRestriction(fineGridCellDescription);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::ErasingChildren);
+      #ifdef Asserts
+      fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveCoarsening);
+      #endif
       break;
     case CellDescription::RefinementEvent::ErasingChildren:
       //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
@@ -2416,17 +2435,20 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
       prolongateVolumeData(cellDescription,isInitialMeshRefinement);
       cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
     }
+    
     adjustSolution(cellDescription);
     markForRefinement(cellDescription);
   }
 }
 
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
-  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
+  assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());    
   assertion1(
-     cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
-     cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested,
-     cellDescription.toString());
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::ErasingVirtualChildrenRequested ||
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::VirtualRefiningRequested,
+      cellDescription.toString());
 
   double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   adjustSolution(
@@ -3270,6 +3292,10 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
 
   // limiter flagging
   cellDescription.setIterationsToCureTroubledCell(-1);
+
+  #ifdef Asserts
+  cellDescription.setCreation(CellDescription::Creation::ReceivedDueToForkOrJoin);
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::ensureOnlyNecessaryMemoryIsAllocated(CellDescription& cellDescription) {
@@ -3549,6 +3575,9 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const bool                                   stillInRefiningMode) {
   CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
   ensureConsistencyOfParentInformation(cellDescription,coarseGridCellDescriptionsIndex);
+  #ifdef Asserts
+  cellDescription.setCreation(CellDescription::Creation::ReceivedFromWorker);
+  #endif
 
   // receive the data
   if (
@@ -4148,6 +4177,8 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(const DataHeap::HeapEnt
   overwriteMeshUpdateEvent( convertToMeshUpdateEvent(message[index++]) );
   _stabilityConditionWasViolated = (message[index++] > 0.0) ? true : false;
 
+  logDebug("mergeWithMasterData(...)",
+      "_meshUpdateEvent="<<Solver::toString(getMeshUpdateEvent()));
   logDebug("mergeWithMasterData(...)",
       "_stabilityConditionWasViolated="<< _stabilityConditionWasViolated);
 }

@@ -102,16 +102,13 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
   OneSolverRequestedLocalRecomputation =
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+      exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
     exahype::solvers::Solver* solver) {
   return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getMeshUpdateEvent()
-      ==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
+      solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
 }
 
 void exahype::mappings::LocalRollback::endIteration(

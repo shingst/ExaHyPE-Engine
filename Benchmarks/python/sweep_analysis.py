@@ -113,7 +113,7 @@ def parseResultFile(filePath):
        A dict holding for each of the found adapters a nested dict that holds the following key-value pairs:
           * 'n'       : (int)    Number of times this adapter was used.
           * 'cputime' : (float) Total CPU time spent within the adapter.
-          * 'usertime': (float) Total user time spent within the adapter.
+          * 'realtime': (float) Total user time spent within the adapter.
 
        The dict further holds the following dictionaries:
           * 'environment':(dictionary(str,str)) Total user time spent within the adapter.
@@ -137,7 +137,7 @@ def parseResultFile(filePath):
  
     adapters      = {}
     cputimeIndex  = 3
-    usertimeIndex = 5
+    realtimeIndex = 5
     
     isPassedGridSetup = False
     
@@ -185,7 +185,7 @@ def parseResultFile(filePath):
                 adapters[adapter]                   = {}
                 adapters[adapter]['iterations']     = segments[2].strip()
                 adapters[adapter]['total_cputime']  = segments[cputimeIndex ].strip()
-                adapters[adapter]['total_usertime'] = segments[usertimeIndex].strip()
+                adapters[adapter]['total_realtime'] = segments[realtimeIndex].strip()
     except IOError as err:
         print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
     except json.decoder.JSONDecodeError as err:
@@ -231,9 +231,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                 environmentDictHash = match.group(3)
                 ranks               = match.group(4)
                 nodes               = match.group(5)
-                tasks               = match.group(6)
+                ranksPerNode        = match.group(6)
                 cores               = match.group(7)
-                consumers           = match.group(8)
+                consumerTasks       = match.group(8)
                 run                 = match.group(9)
                 
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
@@ -249,16 +249,16 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                                 header.append(parameter)
                         header.append("ranks")
                         header.append("nodes")
-                        header.append("tasks")
+                        header.append("ranksPerNode")
                         header.append("cores")
-                        header.append("consumers")
+                        header.append("consumerTasks")
                         header.append("run")
                         header.append("adapter")
                         header.append("iterations")
                         header.append("total_cputime")
-                        header.append("total_usertime")
+                        header.append("total_realtime")
                         header.append("normalised_cputime")
-                        header.append("normalised_usertime")
+                        header.append("normalised_realtime")
                         header.append("unrefined_inner_cells_min")
                         header.append("unrefined_inner_cells_max")
                         header.append("unrefined_inner_cells_avg")
@@ -286,18 +286,27 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                                 row.append(parameterDict[key])
                         row.append(ranks)
                         row.append(nodes)
-                        row.append(tasks)
+                        row.append(ranksPerNode)
                         row.append(cores)
-                        row.append(consumers)
+                        row.append(consumerTasks)
                         row.append(run)
                         row.append(adapter)
                         row.append(adapters[adapter]["iterations"])
                         row.append(adapters[adapter]["total_cputime"])
-                        row.append(adapters[adapter]["total_usertime"])
+                        row.append(adapters[adapter]["total_realtime"])
                         
-                        normalisationPerCells =  ( float(parameterDict["order"]) + 1 )**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_avg"])
+                        base = -1.0
+                        if "patchSize" in parameterDict:
+                            base = float(parameterDict["patchSize"]) 
+                        elif "order" in parameterDict:
+                            base = float(parameterDict["order"]) + 1.0 
+                        else:
+                            print("ERROR: Found neither 'order' nor 'patchSize' key in parameter list="+str(parameterDict),file=sys.stderr)
+                            sys.exit()
+
+                        normalisationPerCells =  base**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_avg"])
                         row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))
-                        row.append(str( float(adapters[adapter]["total_usertime"]) / normalisationPerCells ))
+                        row.append(str( float(adapters[adapter]["total_realtime"]) / normalisationPerCells ))
                         row.append(str( int(stats["unrefined_inner_cells_min"]) ))
                         row.append(str( int(stats["unrefined_inner_cells_max"]) ))
                         row.append(str( stats["unrefined_inner_cells_avg"] ))
@@ -319,9 +328,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                             row.append(parameterDict[key])
                     row.append(ranks)
                     row.append(nodes)
-                    row.append(tasks)
+                    row.append(ranksPerNode)
                     row.append(cores)
-                    row.append(consumers)
+                    row.append(consumerTasks)
                     row.append(run)
                     row.append("missing")
                     row.append("missing")
@@ -402,9 +411,9 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         adapterColumn            = header.index("adapter")
         iterationsColumn         = header.index("iterations")
         cpuTimeColumn            = header.index("total_cputime")
-        userTimeColumn           = header.index("total_usertime")
+        userTimeColumn           = header.index("total_realtime")
         normalisedCPUTimeColumn  = header.index("normalised_cputime")
-        normalisedUserTimeColumn = header.index("normalised_usertime")
+        normalisedUserTimeColumn = header.index("normalised_realtime")
         runTimeStepsColumn       = header.index("run_time_steps")
         
         if runColumn >= adapterColumn:
@@ -456,18 +465,18 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
             row.append("cputime_max")
             row.append("cputime_mean")
             row.append("cputime_stdev")
-            row.append("usertime_min")
-            row.append("usertime_max")
-            row.append("usertime_mean")
-            row.append("usertime_stdev")
+            row.append("realtime_min")
+            row.append("realtime_max")
+            row.append("realtime_mean")
+            row.append("realtime_stdev")
             row.append("normalised_cputime_min")
             row.append("normalised_cputime_max")
             row.append("normalised_cputime_mean")
             row.append("normalised_cputime_stdev")
-            row.append("normalised_usertime_min")
-            row.append("normalised_usertime_max")
-            row.append("normalised_usertime_mean")
-            row.append("normalised_usertime_stdev")
+            row.append("normalised_realtime_min")
+            row.append("normalised_realtime_max")
+            row.append("normalised_realtime_mean")
+            row.append("normalised_realtime_stdev")
             csvwriter.writerow(row)
             
             # init
@@ -692,9 +701,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                 environmentDictHash = match.group(3)
                 ranks               = match.group(4)
                 nodes               = match.group(5)
-                tasks               = match.group(6)
+                ranksPerNode        = match.group(6)
                 cores               = match.group(7)
-                consumers           = match.group(8)
+                consumerTasks       = match.group(8)
                 run                 = match.group(9)
 
                 environmentDict,parameterDict,measurements = parseLikwidMetrics(resultsFolderPath + "/" + fileName, metrics, counters, cores.startswith("1:"))
@@ -715,9 +724,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                                 header.append(parameter)
                         header.append("ranks")
                         header.append("nodes")
-                        header.append("tasks")
+                        header.append("ranksPerNode")
                         header.append("cores")
-                        header.append("consumers")
+                        header.append("consumerTasks")
                         header.append("run")
                         for key in sorted(measurements):
                             for subkey in measurements[key]:
@@ -738,9 +747,9 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
                             row.append(parameterDict[key])
                     row.append(ranks)
                     row.append(nodes)
-                    row.append(tasks)
+                    row.append(ranksPerNode)
                     row.append(cores)
-                    row.append(consumers)
+                    row.append(consumerTasks)
                     row.append(run)
                     for key in sorted(measurements):
                         for subkey in measurements[key]:

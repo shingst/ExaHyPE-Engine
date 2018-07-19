@@ -35,8 +35,6 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 
 #ifdef Parallel
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
-
-int exahype::ReceivedMetadataMessageIndex(-1);
 #endif
 
 tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
@@ -690,6 +688,9 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      */
     // mesh refinement events
     solver->updateNextMeshUpdateEvent(meshUpdateEvents[solverNumber]);
+    if ( isLastIterationOfBatchOrNoBatch ) { // set the next as current event
+      solver->setNextMeshUpdateEvent();
+    }
     // cell sizes (for AMR)
     solver->updateNextMaxLevel(maxLevels[solverNumber]);
 
@@ -697,14 +698,6 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
     assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
     assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
     solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
-
-    /*
-     * Swap the current values with the next values (in last batch iteration)
-     */
-    // mesh update events
-    if ( isLastIterationOfBatchOrNoBatch ) {
-      solver->setNextMeshUpdateEvent();
-    }
 
     // time
     // only update the time step size in last iteration; just advance with old time step size otherwise
@@ -888,33 +881,27 @@ void exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
       peano::heap::MessageType::NeighbourCommunication);
 }
 
-int exahype::receiveNeighbourCommunicationMetadata(
+void
+exahype::receiveNeighbourCommunicationMetadata(
+    MetadataHeap::HeapEntries&                  buffer,
     const int                                   fromRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level) {
   const unsigned int length =
       exahype::NeighbourCommunicationMetadataPerSolver*exahype::solvers::RegisteredSolvers.size();
-  if ( ReceivedMetadataMessageIndex < 0 ) {
-    ReceivedMetadataMessageIndex = exahype::MetadataHeap::getInstance().createData(0,length);
-  }
-  MetadataHeap::HeapEntries& receivedMetadataMessage =
-      MetadataHeap::getInstance().getData(ReceivedMetadataMessageIndex);
-  receivedMetadataMessage.reserve(length);
-  receivedMetadataMessage.clear();
-  assertion(receivedMetadataMessage.size()==0);
-  assertion(receivedMetadataMessage.capacity()==length);
+  buffer.reserve(length);
+  buffer.clear();
+  assertion(buffer.size()==0);
+  assertion(buffer.capacity()>=length);
 
-  MetadataHeap::getInstance().receiveData(
-      ReceivedMetadataMessageIndex,
-      fromRank, x, level,
-      peano::heap::MessageType::NeighbourCommunication);
-  assertion(receivedMetadataMessage.size()==0 || receivedMetadataMessage.size()==length);
-  assertion(receivedMetadataMessage.capacity()==length);
-
-  if (receivedMetadataMessage.size()==0) {
-    receivedMetadataMessage.assign(length, InvalidMetadataEntry);
+  MetadataHeap::HeapEntries receivedMessage =
+      MetadataHeap::getInstance().receiveData(
+          fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
+  assertion(receivedMessage.size()==0 || receivedMessage.size()==length);
+  buffer.insert(buffer.begin(),receivedMessage.begin(),receivedMessage.end());
+  if ( buffer.size()==0 ) {
+    buffer.assign(length,InvalidMetadataEntry);
   }
-  return ReceivedMetadataMessageIndex;
 }
 
 // Master<=>Worker
@@ -941,8 +928,10 @@ void exahype::solvers::Solver::sendMeshUpdateEventToMaster(
   assertion1(meshUpdateEvent.size()==1,meshUpdateEvent.size());
   if (tarch::parallel::Node::getInstance().getRank()!=
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("sendDataToMaster(...)","sending mesh update flags: " <<
-             "data[0]=" << meshUpdateEvent[0]);
+    logDebug("sendDataToMaster(...)","sending mesh update event: " <<
+             "data[0]=" << toString(convertToMeshUpdateEvent( meshUpdateEvent[0] )) <<
+	     ",_meshUpdateEvent=" << toString( getMeshUpdateEvent() ) <<
+             ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
   }
 
   DataHeap::getInstance().sendData(
@@ -966,8 +955,10 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    logDebug("mergeWithWorkerData(...)","received mesh update flags: " <<
-             "data[0]=" << messageFromWorker[0]);
+    logDebug("mergeWithWorkerData(...)","merged with worker's mesh update event: " <<
+             "data[0]=" << toString(convertToMeshUpdateEvent( messageFromWorker[0] )) <<
+	     ",_meshUpdateEvent=" << toString( getMeshUpdateEvent() ) <<
+             ",_nextMeshUpdateEvent=" << toString( getNextMeshUpdateEvent() ));
   }
 }
 #endif

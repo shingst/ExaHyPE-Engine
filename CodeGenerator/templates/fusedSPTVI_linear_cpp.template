@@ -78,6 +78,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
 #endif
 {% endif %}
+{% if useFluxVect %}
+  // transposed F slice for flux_vect
+{% with array='Ft', blockedDim=True %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% endwith %}
+{% endif %}
+{% if useFluxVect %}
+  // transposed Q slice for flux_vect
+{% with array='Qt', blockedDim=False %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% endwith %}
+{% endif %}
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
   #pragma simd
@@ -210,7 +222,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {# *************************************************
    **** call to flux function over lQi into lFi ****
    ************************************************* #}
-{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi',  timeInterleaved=False, time_var='i' %}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi', timeInterleaved=False, time_var='i' %}
 {% include 'subtemplates/flux_PDE_over_xyz.template' %}
 {% endwith %}
 

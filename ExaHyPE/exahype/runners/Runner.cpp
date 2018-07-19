@@ -252,7 +252,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #endif
 
   if ( _parser.useManualPinning() ) {
-    #if defined(SharedTBB) || defined(SharedCPP)
+    #if defined(TBBInvade)
+    logWarning("initSharedMemoryConfiguration()", "TBBInvade always pins threads automatically, i.e. manual pinning is ignored" );
+    #elif defined(SharedTBB) || defined(SharedCPP)
     logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
     tarch::multicore::Core::getInstance().pinThreads( true );
     #else
@@ -976,7 +978,6 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3);
 
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "ranksOnThisNode=" << ranksOnThisNode );
   logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
   logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
   logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
@@ -1104,8 +1105,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.switchToRefinementStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
-        exahype::solvers::Solver::getMaxRefinementStatus(),false);
-
+        exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
   
   // Only the solvers which requested a global recomputation do a rollback

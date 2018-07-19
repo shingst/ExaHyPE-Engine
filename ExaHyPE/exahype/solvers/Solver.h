@@ -268,9 +268,6 @@ namespace exahype {
   static constexpr int MasterWorkerCommunicationMetadataLimiterStatus       = 3;
   static constexpr int MasterWorkerCommunicationMetadataSendReceiveData     = 4;
 
-  /** Some storage for receiving metadata messages. */
-  extern int ReceivedMetadataMessageIndex;
-
   /**
    * TODO(Dominic): Docu is outdated
    *
@@ -308,10 +305,16 @@ namespace exahype {
   /**
    * Receive metadata to rank \p toRank.
    *
+   * \note Clears and enlarges the buffer
+   * if necessary.
+   *
+   * \param[in] doNotReceiveAndFillBufferWithInvalidEntries Within batches, we sometimes do not want to receive metadata.
+   *
    * \return The index of the received metadata message
    * on the exahype::MetadataHeap.
    */
-  int receiveNeighbourCommunicationMetadata(
+  void receiveNeighbourCommunicationMetadata(
+      MetadataHeap::HeapEntries&                  buffer,
       const int                                   fromRank,
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const int                                   level);
@@ -530,7 +533,7 @@ class exahype::solvers::Solver {
      * all or a situation where a cell directly next to a
      * troubled cell has been newly marked as troubled.
      */
-    None,
+    None = 0,
 
     /**
      * The limiter domain of this solver changed in an irregular
@@ -542,7 +545,7 @@ class exahype::solvers::Solver {
      * we also need to update the mesh,
      * this event is changed to RefinementRequested.
      */
-    IrregularLimiterDomainChange,
+    IrregularLimiterDomainChange = 1,
 
     /**
      * Scenario 1:
@@ -565,12 +568,12 @@ class exahype::solvers::Solver {
      * This can potentially be relaxed for anarchic time stepping where
      * each cell has its own time step size and stamp.
      */
-    RefinementRequested,
+    RefinementRequested = 2,
 
     /**
      * The initial mesh will be created.
      */
-    InitialRefinementRequested
+    InitialRefinementRequested = 3
   };
 
   /**

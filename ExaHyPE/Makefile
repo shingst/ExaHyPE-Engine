@@ -361,7 +361,7 @@ else ifeq ($(call tolower,$(SHAREDMEM)),cpp14)
 else ifeq ($(call tolower,$(SHAREDMEM)),tbbinvade)
 	SYSTEM_CFLAGS   += $(INCLUDE_TBB)
 	SYSTEM_LFLAGS   += $(LINK_TBB)
-	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade -DSHM_INVADE_NAMESPACE=shminvade -DSHM_INVADE_DEBUG=4
+	COMPILER_CFLAGS += -DSharedTBB -DTBBInvade -DSHM_INVADE_DEBUG=4
 endif
 
 

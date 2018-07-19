@@ -431,8 +431,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
       solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
     }
-    assertion2(solverPatch.getRefinementEvent()==SolverPatch::None || solverPatch.getRefinementEvent()==SolverPatch::RefiningRequested,solverPatch.toString(),cellDescriptionsIndex);
-
     _solver->adjustSolution(solverPatch);
 
     determineSolverMinAndMax(solverPatch);
@@ -1677,7 +1675,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
     logDebug("mergeWithNeighbourDataBasedOnLimiterStatus(...)", "receive data for solver " << _identifier << " from rank " <<
         fromRank << " at vertex x=" << x << ", level=" << level <<
         ", source=" << src << ", destination=" << dest << ",limiterStatus=" << solverPatch.getRefinementStatus());
-    assertion1(solverPatch.getRefinementStatus()>=0,solverPatch.toString());
+    assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
 
     if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForActiveFVPatch() ) {
       _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
@@ -1890,7 +1888,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const int  level,
     const bool stillInRefiningMode) {
   return _solver->progressMeshRefinementInMergeWithMaster(
-      worker,localElement,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
+      worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(

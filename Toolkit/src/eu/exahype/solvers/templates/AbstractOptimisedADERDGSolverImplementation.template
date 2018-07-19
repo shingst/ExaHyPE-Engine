@@ -82,9 +82,9 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const int maximumMeshDepth,
     const int haloCells,
     const int regularisedFineGridLevels,
-    const exahype::solvers::Solver::TimeStepping timeStepping
+    const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables,
-    const int limiterHelperLayers, 
+    const int limiterHelperLayers
     {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
   {{abstractSolver}}::{{abstractSolver}}(
       maximumMeshSize,
@@ -101,10 +101,10 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const int maximumMeshDepth,
     const int haloCells,
     const int regularisedFineGridLevels,
-    const int DMPObservables,
+    const exahype::solvers::Solver::TimeStepping timeStepping,
     const int limiterHelperLayers,
-    const  exahype::solvers::Solver::TimeStepping timeStepping
-    {%- if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} )
+    const int DMPObservables
+    {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %})
     :
     exahype::solvers::ADERDGSolver("{{solver}}",
         {{optNamespace}}::getNumberOfVariable(),
@@ -114,9 +114,9 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
         maximumMeshDepth,
         haloCells,
         regularisedFineGridLevels,
-        timeStepping 
+        timeStepping,
         limiterHelperLayers,
-        DMPObservables,
+        DMPObservables
         {%- if enableProfiler %}, std::move(profiler){% endif %}) {}
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {

@@ -9,7 +9,8 @@ if [ $# -eq 0 ]; then
 	git submodule update --init --remote
     else
        echo "Update Peano submodule"
-       git submodule update
+       cd ${parent_path}/../Submodules/Peano
+       git pull origin master
     fi
 else
     while getopts hsw opt; do
