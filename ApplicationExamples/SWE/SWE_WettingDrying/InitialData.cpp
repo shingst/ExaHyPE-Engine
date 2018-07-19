@@ -272,11 +272,10 @@ void SWE::RunUpTest(const double* const x, double* Q){
 
 //width = 70.0,10.0
 //offset = -10.0,0.0
-void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
+void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q, double Hd, double d){
   MySWESolver::Variables vars(Q);
 
-  const double d = 0.15;
-  const double H = 0.3 * d;
+  const double H = Hd * d;
   const double beta = std::atan(1/19.85);
 
   double gamma = std::sqrt((3*H)/(4*d));
@@ -347,7 +346,10 @@ void SWE::initialData(const double* const x,double* Q) {
       RunUpTest(x, Q);
           break;
     case 13:
-      SolitaryWaveOnSimpleBeach(x, Q);
+      SolitaryWaveOnSimpleBeach(x, Q, 0.0185, 0.3);
+          break;
+    case 14:
+      SolitaryWaveOnSimpleBeach(x, Q, 0.3, 0.15);
           break;
     default:
       GaussFunctionProblem(x, Q);

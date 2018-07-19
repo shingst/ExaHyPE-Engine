@@ -30,12 +30,15 @@ void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const
 
   if (tarch::la::equals(t,0.0)) {
     initialData(x, Q);
-  }else{
+  }
+  else{
     if(Q[0] < epsilon){
       Q[1] = 0;
-      Q[2] = 0;      
+      Q[2] = 0;
     }
   }
+
+
 }
 
 void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
@@ -92,7 +95,7 @@ void SWE::MySWESolver::boundaryValues(
 void SWE::MySWESolver::flux(const double* const Q,double** F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
- 
+
   ReadOnlyVariables vars(Q);
 
   double* f = F[0];
@@ -110,7 +113,7 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
   g[1] = vars.h() * u_n * v_n;
   g[2] = vars.h() * v_n * v_n; // 0.5 * grav * vars.h() * vars.h();
   g[3] = 0.0;
- 
+
 }
 
 double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
@@ -144,9 +147,6 @@ double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL,
     flux[2] = 0.5 * (FL[direction][2] + FR[direction][2]) - 0.5 * smax * (qR[2] - qL[2]);
     flux[3] = 0.5 * (FL[direction][3] + FR[direction][3]);
 
-	if (FL[direction][3] != 0.0 || FR[direction][3] != 0.0)
-	std::cout << FL[direction][3] << ", " <<  FR[direction][3] << std::endl;
-
     double hRoe = 0.5*(qL[0] + qR[0]);
 
     double bm = std::max(qL[3], qR[3]);
@@ -165,4 +165,3 @@ double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL,
 
     return smax;
 }
-

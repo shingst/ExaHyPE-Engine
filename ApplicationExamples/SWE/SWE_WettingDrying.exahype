@@ -90,5 +90,6 @@ end exahype-project
 10: WettingDryingProblem        (width = 20.0, 1.0 offset = -10.0, 0.0)
 11: OscillatingLake             (width = 4.0, 4.0 offset = -2.0, -2.0)
 12: RunUpTest                   (width = 10.0, 10.0 offset = 0.0, 0.0)
-13: SolitaryWaveOnSimpleBeach   (width = 70.0, 1.0 offset = -10.0, 0.0)
+13: SolitaryWaveOnSimpleBeach (Case = 0.0185)   (width = 70.0, 1.0 offset = -10.0, 0.0)
+14: SolitaryWaveOnSimpleBeach (Case = 0.3)      (width = 70.0, 1.0 offset = -10.0, 0.0)
 Default: GaussFunction          (width = 10.0, 10.0 offset = 0.0, 0.0)*/
