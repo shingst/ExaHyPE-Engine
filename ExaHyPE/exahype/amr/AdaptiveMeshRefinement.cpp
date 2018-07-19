@@ -19,7 +19,7 @@ tarch::la::Vector<DIMENSIONS,int> exahype::amr::computeSubcellIndex(
     const tarch::la::Vector<DIMENSIONS,double>& parentOffset) {
   tarch::la::Vector<DIMENSIONS,int> subcellIndex;
   for (int xi = 0; xi < DIMENSIONS; ++xi) {
-    assertion((childOffset(xi) - parentOffset(xi)) >= 0);
+    assertion2((childOffset(xi) - parentOffset(xi)) >= 0,childOffset,parentOffset);
     subcellIndex[xi] = tarch::la::round(
         (childOffset(xi) - parentOffset(xi))/childSize(xi));
   }
