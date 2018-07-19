@@ -12,6 +12,7 @@ import minitemp.Context;
 import minitemp.TemplateEngine;
 
 import eu.exahype.CodeGeneratorHelper;
+import eu.exahype.CreateReadme;
 import eu.exahype.kernel.ADERDGKernel;
 import eu.exahype.io.IOUtils;
 
@@ -100,6 +101,9 @@ public class OptimisedADERDG implements Solver {
     context.put("range_0_nVar"      , IntStream.range(0, numberOfVariables)                   .boxed().collect(Collectors.toList()));
     context.put("range_0_nVarParam" , IntStream.range(0, numberOfVariables+numberOfParameters).boxed().collect(Collectors.toList()));
     context.put("range_0_numberOfPointSources", IntStream.range(0, numberOfPointSources)      .boxed().collect(Collectors.toList()));
+    
+    //Register solver for the README
+    CreateReadme.getInstance().addSolverContext(context);
   }
     
   @Override
