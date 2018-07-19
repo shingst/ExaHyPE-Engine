@@ -126,6 +126,7 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   int limvalue;
+
   // Variant 1 (cheapest, currently works only in 2D)
   //  double outerRadius = 1.25*0.25;
   //  double innerRadius = 0.75*0.25;
@@ -147,6 +148,14 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   // Slow bug has to works
   //pdelimitervalue_(&limvalue,xx);
   //if (tarch::la::equals(t,0.0)) {
+  
+  // Another variant: Just check solution at GLob nodes
+  //  double obsMin[(NumberOfVariables+NumberOfParameters)];
+  //  double obsMax[(NumberOfVariables+NumberOfParameters)];
+  //  kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<Order+1,NumberOfVariables+NumberOfParameters>(
+  //      solution,obsMin,obsMax);
+  //  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, obsMin, obsMax);
+
   pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;

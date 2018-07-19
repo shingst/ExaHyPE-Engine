@@ -227,6 +227,19 @@ public class Main {
     println("generate computational kernel calls ... ok");
     waitForInteraction();
 
+    // Create the README
+    CreateReadme createReadme = CreateReadme.getInstance();
+    createReadme.writeReadme(directoryAndPathChecker.outputDirectory.getPath());
+
+    println("\n\n\n\n");
+    if (!createReadme.valid) {
+      System.err.println("ERROR: Could not create ExaHyPE's README");
+      System.err.println("ExaHyPE script failed ");
+      System.exit(-14);
+    }
+    println("generate README ... ok");
+    waitForInteraction();
+    
     //
     // Setup build environment, i.e. makefiles
     //

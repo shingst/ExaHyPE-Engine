@@ -1,0 +1,11 @@
+TODO
+====
+
+This README is still a stub
+
+Solvers used
+============
+
+{%- for solverText in solverParts %}
+{{solverText}}
+{%- endfor %}
