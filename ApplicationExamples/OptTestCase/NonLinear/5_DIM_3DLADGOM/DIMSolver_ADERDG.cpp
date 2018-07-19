@@ -146,7 +146,7 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   // Slow bug has to works
   //pdelimitervalue_(&limvalue,xx);
   //if (tarch::la::equals(t,0.0)) {
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{

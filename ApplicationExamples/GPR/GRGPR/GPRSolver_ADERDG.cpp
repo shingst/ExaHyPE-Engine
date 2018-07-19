@@ -192,7 +192,7 @@ void GRGPR::GPRSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
   assertion(numberOfObservables==1);
   ReadOnlyVariables vars(Q);
 
-  pdedefineobservables_(&numberOfObservables,observables,Q);
+  pdedefineobservables_(&NumberOfObservables,observables,Q);
 }
 
 bool GRGPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
@@ -204,7 +204,7 @@ bool GRGPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
       const double t, const double dt) const {
   int limvalue;
   return true;
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{

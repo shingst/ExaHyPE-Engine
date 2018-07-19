@@ -156,9 +156,9 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   //  double obsMax[(NumberOfVariables+NumberOfParameters)];
   //  kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<Order+1,NumberOfVariables+NumberOfParameters>(
   //      solution,obsMin,obsMax);
-  //  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, obsMin, obsMax);
+  //  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, obsMin, obsMax);
 
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{

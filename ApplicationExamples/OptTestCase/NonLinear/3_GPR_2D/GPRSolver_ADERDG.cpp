@@ -133,7 +133,7 @@ bool GPR::GPRSolver_ADERDG::isPhysicallyAdmissible(
       const double t, const double dt) const {
   int limvalue;
   //pdelimitervalue_(&limvalue,&center[0]);
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{
