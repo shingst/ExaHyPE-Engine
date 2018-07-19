@@ -823,7 +823,8 @@ bool exahype::solvers::LimitingADERDGSolver::evaluatePhysicalAdmissibilityCriter
 
   return _solver->isPhysicallyAdmissible(
       solution,
-      observablesMin,observablesMax,numberOfObservables,
+      observablesMin,observablesMax,
+      solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForTroubledCell,
       solverPatch.getOffset()+0.5*solverPatch.getSize(),solverPatch.getSize(),
       solverPatch.getCorrectorTimeStamp(),solverPatch.getCorrectorTimeStepSize());
 }

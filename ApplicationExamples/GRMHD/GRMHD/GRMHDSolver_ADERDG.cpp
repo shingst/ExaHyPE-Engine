@@ -160,10 +160,12 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 */
 /*
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
-  const double* const solution,
-  const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-  const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-  const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
 
   // geometric criterion:
   //  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;

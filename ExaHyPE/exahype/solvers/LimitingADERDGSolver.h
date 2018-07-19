@@ -202,6 +202,9 @@ private:
    * Checks if the updated solution
    * of the ADER-DG solver is
    * a physically admissible one (true).
+   *
+   * \note This method assumes the (previous) refinement status
+   * was not modified yet by another routine.
    */
   bool evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch);
 
