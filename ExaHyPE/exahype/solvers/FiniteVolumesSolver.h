@@ -581,6 +581,11 @@ public:
       const int solverNumber);
 
   /**
+   * Check if the heap array with index \p index could be allocated.
+   */
+  static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
+
+  /**
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    */
