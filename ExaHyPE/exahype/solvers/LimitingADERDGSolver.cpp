@@ -1594,8 +1594,13 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
     // limiter sends (receive order must be inverted)
     if (solverPatch.getRefinementStatus()>=_solver->_minimumRefinementStatusForPassiveFVPatch) {
       const int limiterElement = tryGetLimiterElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
-      assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());
-      _limiter->sendDataToNeighbour(toRank,cellDescriptionsIndex,limiterElement,src,dest,x,level);
+      if ( limiterElement!=NotFound ) {
+        _limiter->sendDataToNeighbour(toRank,cellDescriptionsIndex,limiterElement,src,dest,x,level);
+      } else { // if the limiter status of a cell changes dramatically, a limiter patch might not been allocated
+               // at the time data is sent to neighbouring ranks if fused time stepping is used.
+        assertion1(Solver::FuseADERDGPhases,solverPatch.toString());
+        _limiter->sendEmptyDataToNeighbour(toRank,x,level);
+      }
     } else {
       _limiter->sendEmptyDataToNeighbour(toRank,x,level);
     }
