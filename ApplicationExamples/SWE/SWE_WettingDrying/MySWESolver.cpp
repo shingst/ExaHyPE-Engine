@@ -30,6 +30,11 @@ void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const
 
   if (tarch::la::equals(t,0.0)) {
     initialData(x, Q);
+  }else{
+    if(Q[0] < epsilon){
+      Q[1] = 0;
+      Q[2] = 0;      
+    }
   }
 }
 
