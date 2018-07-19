@@ -7,6 +7,9 @@
 
 
 shminvade::SHMOccupyAllCoresStrategy::SHMOccupyAllCoresStrategy() {
+  #if SHM_INVADE_DEBUG>=4
+  std::cout << SHM_DEBUG_PREFIX <<  "created SHMOccupyAllCoresStrategy" << std::endl;
+  #endif
 }
 
 
@@ -14,14 +17,14 @@ shminvade::SHMOccupyAllCoresStrategy::~SHMOccupyAllCoresStrategy() {
 }
 
 
-std::set<pid_t> shminvade::SHMOccupyAllCoresStrategy::invadeThreads(int wantedNumberOfThreads) {
-  std::set<pid_t> bookedCores;
+std::set<int> shminvade::SHMOccupyAllCoresStrategy::invade(int wantedNumberOfCores) {
+  std::set<int> bookedCores;
 
-  for (auto p: SHMController::getInstance()._threads) {
-    if (SHMController::getInstance().tryToBookThread(p.first)) {
+  for (auto p: SHMController::getInstance()._cores) {
+    if (SHMController::getInstance().tryToBookCore(p.first)) {
       bookedCores.insert(p.first);
-      wantedNumberOfThreads--;
-      if (wantedNumberOfThreads==0) break;
+      wantedNumberOfCores--;
+      if (wantedNumberOfCores==0) break;
     }
   }
 
@@ -33,8 +36,8 @@ void shminvade::SHMOccupyAllCoresStrategy::cleanUp() {
 }
 
 
-void shminvade::SHMOccupyAllCoresStrategy::retreat(const std::set<pid_t>& threadIds) {
-  for (auto p: threadIds) {
-    SHMController::getInstance().retreatFromThread(p);
+void shminvade::SHMOccupyAllCoresStrategy::retreat(const std::set<int>& cores) {
+  for (auto p: cores) {
+    SHMController::getInstance().retreat(p);
   }
 }
