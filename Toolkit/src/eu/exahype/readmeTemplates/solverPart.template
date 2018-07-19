@@ -1,0 +1,14 @@
+{{solver}}
+{{solver.replace(/./gi, '-')}}
+
+### Prerequisite
+
+{%- if useFlux %}
+flux
+
+{%- endif %}
+{%- if useNCP %}
+ncp
+
+{%- endif %}
+TODO JMG add prerequisites
