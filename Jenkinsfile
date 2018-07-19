@@ -22,7 +22,7 @@ pipeline {
 		}
 		sh util.getModuleCode() + 'Peano/updatePeano.sh -s'
 		sh util.getModuleCode() + 'Peano/updatePeano.sh'
-		sh util.getModuleCode() + './CodeGenerator/importDependenciesLocally.sh'
+		sh util.getModuleCode() + 'CodeGenerator/importDependenciesLocally.sh -s'
 
 	    }
 	}
