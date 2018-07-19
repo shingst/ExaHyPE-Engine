@@ -40,22 +40,13 @@ void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, doub
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  if (vars.h() < epsilon){
-      eigs.h() = 0.0;
-      eigs.hu() = 0.0;
-      eigs.hv() = 0.0;
-      eigs.b() = 0.0;
-  }
-  else {
-      const double c = std::sqrt(grav * vars.h());
-      const double ih = 1. / vars.h();
-      double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(std::pow(Q[0], 4) + std::pow(std::max(vars.h(), epsilon), 4));
+  const double c = std::sqrt(grav * vars.h());
+  double u_n = Q[dIndex + 1] * vars.h() * std::sqrt(2)/std::sqrt(std::pow(vars.h(), 4) + std::pow(std::max(vars.h(), epsilon), 4));
 
-      eigs.h() = u_n + c;
-      eigs.hu() = u_n - c;
-      eigs.hv() = u_n;
-      eigs.b() = 0.0;
-  }
+  eigs.h() = u_n + c;
+  eigs.hu() = u_n - c;
+  eigs.hv() = u_n;
+  eigs.b() = 0.0;
 }
 
 void SWE::MySWESolver::boundaryValues(
@@ -68,6 +59,15 @@ void SWE::MySWESolver::boundaryValues(
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
+
+  //OL Code
+//  stateOutside[0] = stateInside[0];
+//  stateOutside[1] = 0.0;
+//  stateOutside[2] = 0.0;
+//  stateOutside[3] = 0.0;
+
+
+  //normal Code
   stateOutside[0] = stateInside[0];
   stateOutside[1] = stateInside[1];
   stateOutside[2] = stateInside[2];
@@ -87,37 +87,25 @@ void SWE::MySWESolver::boundaryValues(
 void SWE::MySWESolver::flux(const double* const Q,double** F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
-
+ 
   ReadOnlyVariables vars(Q);
 
   double* f = F[0];
   double* g = F[1];
 
-  if (Q[0] < epsilon){
-      f[0] = 0.0;
-      f[1] = 0.0;
-      f[2] = 0.0;
-      f[3] = 0.0;
+  double u_n = vars.hu() * vars.h() *std::sqrt(2)/std::sqrt(std::pow(vars.h(), 4) + std::pow(std::max(vars.h(), epsilon), 4));
+  double v_n = vars.hv() * vars.h() *std::sqrt(2)/std::sqrt(std::pow(vars.h(), 4) + std::pow(std::max(vars.h(), epsilon), 4));
 
-      g[0] = 0.0;
-      g[1] = 0.0;
-      g[2] = 0.0;
-      g[3] = 0.0;
-  }
-  else {
-      const double ih = 1. / vars.h();
+  f[0] = vars.h() * u_n;
+  f[1] = vars.h() * u_n * u_n; // 0.5 * grav * vars.h() * vars.h();
+  f[2] = vars.h() * u_n * v_n;
+  f[3] = 0.0;
 
-      f[0] = vars.hu();
-      f[1] = vars.hu() * vars.hu() * ih; // 0.5 * grav * vars.h() * vars.h();
-      f[2] = vars.hu() * vars.hv() * ih;
-      f[3] = 0.0;
-
-      g[0] = vars.hv();
-      g[1] = vars.hu() * vars.hv() * ih;
-      g[2] = vars.hv() * vars.hv() * ih; // 0.5 * grav * vars.h() * vars.h();
-      g[3] = 0.0;
-  }
-  
+  g[0] = vars.h() * v_n;
+  g[1] = vars.h() * u_n * v_n;
+  g[2] = vars.h() * v_n * v_n; // 0.5 * grav * vars.h() * vars.h();
+  g[3] = 0.0;
+ 
 }
 
 double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
@@ -150,6 +138,9 @@ double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL,
     flux[1] = 0.5 * (FL[direction][1] + FR[direction][1]) - 0.5 * smax * (qR[1] - qL[1]);
     flux[2] = 0.5 * (FL[direction][2] + FR[direction][2]) - 0.5 * smax * (qR[2] - qL[2]);
     flux[3] = 0.5 * (FL[direction][3] + FR[direction][3]);
+
+	if (FL[direction][3] != 0.0 || FR[direction][3] != 0.0)
+	std::cout << FL[direction][3] << ", " <<  FR[direction][3] << std::endl;
 
     double hRoe = 0.5*(qL[0] + qR[0]);
 
