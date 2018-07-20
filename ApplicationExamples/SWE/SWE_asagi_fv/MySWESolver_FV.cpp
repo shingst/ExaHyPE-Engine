@@ -169,5 +169,5 @@ void SWE::MySWESolver_FV::nonConservativeProduct(const double* const Q,const dou
   //do nothing: Should never be called
   std::cout << "Called fv ncp" << std::endl;
   std::terminate();
-};
+}
 
