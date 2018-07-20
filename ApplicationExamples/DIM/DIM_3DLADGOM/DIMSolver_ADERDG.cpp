@@ -158,11 +158,17 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   //      solution,obsMin,obsMax);
   //  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, obsMin, obsMax);
 
-  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
-  if(limvalue>0){
-	  return false;
+  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  if (tarch::la::equals(t,0.0)) {
+	  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	  pdegeometriclimitervalue_(&limvalue,&center[0]);
+	  if(limvalue>0){
+		  return false;
+	  }else{
+		  return true;
+	  };
   }else{
-	  return true;
+		return !wasTroubledInPreviousTimeStep;
   };
   /*}else{
 	if(!tarch::la::equals(observablesMax[1],observablesMin[1])){
