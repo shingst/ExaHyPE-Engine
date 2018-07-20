@@ -237,7 +237,14 @@ class exahype::records::ADERDGCellDescription {
      */
     Erasing,
     ChangeToVirtualCell,
-    ErasingVirtualCell
+    ErasingVirtualCell,
+    
+    /**
+     * In this state, a cell description is adjusting the solution
+     * (e.g. imposing the initial condition) and/or
+     * marking for refinement/erasing.
+     */
+    AdjustingSolutionAndMarking
   };
 
   /**

@@ -251,9 +251,8 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isInitialMeshRefinement) final override;
+      CellDescription& cellDescription,
+      const bool isInitialMeshRefinement);
 
   /**
    * Query the user's refinement criterion and
@@ -836,6 +835,23 @@ private:
         const bool    isSkeletonJob);
 
       bool operator()();
+  };
+
+  /**
+   * A job that calls adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    ADERDGSolver&    _solver;
+    CellDescription& _cellDescription;
+    const bool       _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        const bool       isInitialMeshRefinement);
+
+    bool operator()();
   };
 
 public:
@@ -1736,9 +1752,7 @@ public:
         const int cellDescriptionsIndex,
         const int element) override final;
 
-  void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const override final;
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
   /**
     * Rollback to the previous time step, i.e,
@@ -1787,6 +1801,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Computes the surface integral contributions to the

@@ -127,9 +127,8 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int  cellDescriptionsIndex,
-      const int  element,
-      const bool isInitialMeshRefinement) final override;
+      CellDescription& cellDescription,
+      const bool isInitialMeshRefinement);
 
 #ifdef Parallel
   /**
@@ -223,6 +222,23 @@ private:
         const int            element,
         const bool           isSkeletonJob
     );
+
+    bool operator()();
+  };
+
+  /**
+   * A job that calls adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    FiniteVolumesSolver& _solver;
+    CellDescription&     _cellDescription;
+    const bool           _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        FiniteVolumesSolver& solver,
+        CellDescription&     cellDescription,
+        const bool           isInitialMeshRefinement);
 
     bool operator()();
   };
@@ -667,9 +683,7 @@ public:
           const int cellDescriptionsIndex,
           const int element) override final;
 
-  void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const override final;
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
@@ -691,6 +705,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Update the solution of a cell description.
