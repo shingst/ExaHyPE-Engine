@@ -238,10 +238,6 @@ private:
    * \note Thread-safe.
    */
   void deallocateLimiterPatch(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
-
-  void deallocateLimiterPatch(
       const SolverPatch& solverPatch,
       const int cellDescriptionsIndex) const;
 
@@ -288,8 +284,8 @@ private:
    * for performing a global rollback.
    */
   void ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
+      const SolverPatch&  solverPatch,
+      const int cellDescriptionsIndex) const;
 
   /**
    * Update the limiter status based on the cell-local solution values.
@@ -389,9 +385,9 @@ private:
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int  cellDescriptionsIndex,
-      const int  element,
-      const bool isInitialMeshRefinement) final override;
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex,
+      const bool isInitialMeshRefinement);
 
 #ifdef Parallel
 
@@ -484,19 +480,20 @@ private:
   };
 
   /**
-   * A job that calls LimitingADERDGSolver::projectDGSolutionOnFVSpace(...)
-   * and
+   * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustLimiterSolutionJob {
+  class AdjustSolutionDuringMeshRefinementJob {
   private:
     LimitingADERDGSolver& _solver;
     SolverPatch&          _solverPatch;
-    LimiterPatch&         _limiterPatch;
+    const int             _cellDescriptionsIndex;
+    const bool            _isInitialMeshRefinement;
   public:
-    AdjustLimiterSolutionJob(
+    AdjustSolutionDuringMeshRefinementJob(
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
-        LimiterPatch&         limiterPatch);
+        const int             cellDescriptionsIndex,
+        const bool            isInitialMeshRefinement);
 
     bool operator()();
   };
@@ -788,8 +785,8 @@ public:
         const int element) final override;
 
   void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const final override;
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
 
  /**
    * Rollback to the previous time step, i.e,
@@ -827,6 +824,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Update the solution of a solver patch and or
@@ -910,10 +910,6 @@ public:
    *
    * \note Thread-safe.
    */
-   void ensureNoLimiterPatchIsAllocatedOnHelperCell(
-       const int cellDescriptionsIndex,
-       const int solverElement) const;
-
    void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const SolverPatch& solverPatch,
        const int cellDescriptionsIndex) const;
