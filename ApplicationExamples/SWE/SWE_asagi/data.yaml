@@ -1,0 +1,31 @@
+!AffineMap
+matrix:
+ x: [1.0, 0.0, 0.0]
+ y: [0.0, 1.0, 0.0]
+translation:
+ x: 0.0
+ y: 0.0
+components:
+  !Switch
+  [b]: 
+    !ASAGI
+    file: data/tohoku_gebco_ucsb3_500m_hawaii_bath.nc
+    parameters: [b]
+    var: z
+  [d]: 
+    !Any
+    components:
+      - !AxisAlignedCuboidalDomainFilter
+        limits:
+          x: [-249750.0, 249750.0]
+          y: [-399750.0, 399750.0]
+        components:
+          !ASAGI
+          file: data/tohoku_gebco_ucsb3_500m_hawaii_displ.nc
+          parameters: [d]
+          var: z
+      - !ConstantMap
+        map:
+          d: 0.0
+
+
