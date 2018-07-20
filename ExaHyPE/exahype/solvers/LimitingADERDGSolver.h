@@ -1362,7 +1362,7 @@ public:
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 

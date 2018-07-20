@@ -1189,10 +1189,10 @@ void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
+bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement) {
-  // do nothing
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToMaster(

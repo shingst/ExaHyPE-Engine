@@ -1817,7 +1817,7 @@ class exahype::solvers::Solver {
   /**
    * Finish prolongation operations started on the master.
    */
-  virtual void progressMeshRefinementInMergeWithWorker(
+  virtual bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) = 0;
 

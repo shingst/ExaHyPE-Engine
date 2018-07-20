@@ -1851,10 +1851,10 @@ void exahype::solvers::LimitingADERDGSolver::receiveDataFromMasterIfProlongating
       masterRank,receivedCellDescriptionsIndex,receivedElement,x,level);
 }
 
-void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(
+bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement) {
-  _solver->progressMeshRefinementInMergeWithWorker(
+ return _solver->progressMeshRefinementInMergeWithWorker(
       localCellDescriptionsIndex,
       receivedCellDescriptionsIndex,receivedElement);
 }

@@ -3512,7 +3512,7 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMasterIfProlongating(
   }
 }
 
-void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
+bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement) {
   auto& receivedCellDescriptions = getCellDescriptions(receivedCellDescriptionsIndex);
@@ -3527,8 +3527,11 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
     element++;
   }
   if ( localElement==NotFound ) { // We have already received data and allocated all memory in this case
-    localCellDescriptions.push_back(receivedCellDescriptions[receivedElement]);
+    CellDescription& receivedCellDescription = receivedCellDescriptions[receivedElement];
+    localCellDescriptions.push_back(receivedCellDescription);
+    assertion1(receivedCellDescription.getType()==CellDescription::Type::Descendant,receivedCellDescription.toString());
     receivedCellDescriptions.erase(receivedCellDescriptions.begin()+receivedElement);
+    return false;
   } else {
     CellDescription& receivedCellDescription = receivedCellDescriptions[receivedElement];
     if ( receivedCellDescriptions[receivedElement].getRefinementEvent()==CellDescription::RefinementEvent::Prolongating ) {
@@ -3557,8 +3560,9 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
 
       // adjust solution
       localCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      Solver::adjustSolutionDuringMeshRefinement(
-          localCellDescriptionsIndex,localElement);
+      return true;
+    } else {
+      return false;
     }
   }
 }

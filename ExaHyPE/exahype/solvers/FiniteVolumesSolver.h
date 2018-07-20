@@ -959,9 +959,11 @@ public:
       const int level) const final override;
 
   /**
-   * Nop
+   * Nop as it does not support adaptivity
+   *
+   * \return false
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 
