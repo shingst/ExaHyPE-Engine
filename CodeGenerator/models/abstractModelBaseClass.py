@@ -29,8 +29,9 @@ import copy
 import sys
 import os
 
-sys.path.append("../dependencies/jinja2")
-import jinja2
+
+sys.path.append(os.path.join(os.path.dirname(__file__),"../dependencies"))
+import jinja.jinja2 as jinja2
 
 
 class AbstractModelBaseClass():
