@@ -149,43 +149,44 @@ bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
     const double relaxationParameter,
     const double differenceScaling,
     double* boundaryMinPerObservable, double* boundaryMaxPerObservable) {  
-  double localMinPerObservable[numberOfObservables];
-  double localMaxPerObservable[numberOfObservables];
-
-  // 1. Determine the new cell-local -minimum and maximummin and max
-  findCellLocalMinAndMax<SolverType,numberOfObservables>(luh,solver,localMinPerObservable,localMaxPerObservable);
-
-  // 2. Compare to the boundary minimum and maximum
   bool discreteMaximumPrincipleSatisfied=true;
-  for(int v = 0; v < numberOfObservables; v++) {
-    double boundaryMin = boundaryMinPerObservable[v];
-    for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
-      boundaryMin = std::min( boundaryMin, boundaryMinPerObservable[i*numberOfObservables+v] );
+  if ( numberOfObservables>0 ) {
+    double localMinPerObservable[numberOfObservables];
+    double localMaxPerObservable[numberOfObservables];
+
+    // 1. Determine the new cell-local -minimum and maximummin and max
+    findCellLocalMinAndMax<SolverType,numberOfObservables>(luh,solver,localMinPerObservable,localMaxPerObservable);
+
+    // 2. Compare to the boundary minimum and maximum
+    for(int v = 0; v < numberOfObservables; v++) {
+      double boundaryMin = boundaryMinPerObservable[v];
+      for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
+        boundaryMin = std::min( boundaryMin, boundaryMinPerObservable[i*numberOfObservables+v] );
+      }
+      double boundaryMax = boundaryMaxPerObservable[v];
+      for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
+        boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*numberOfObservables+v] );
+      }
+      double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
+
+      assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
+      scaledDifference = std::max( scaledDifference, relaxationParameter );
+
+      if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
+         (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
+        discreteMaximumPrincipleSatisfied=false;
+      }
+
+      // We have the new min and max directly available now and
+      // overwrite the block for face 0 with it
+      boundaryMinPerObservable[v] = localMinPerObservable[v];
+      boundaryMaxPerObservable[v] = localMaxPerObservable[v];
+
+      // In the block for face 1, we write the boundary min and max
+      boundaryMinPerObservable[v+numberOfObservables] = boundaryMin;
+      boundaryMaxPerObservable[v+numberOfObservables] = boundaryMax;
     }
-    double boundaryMax = boundaryMaxPerObservable[v];
-    for (int i=1; i<DIMENSIONS_TIMES_TWO; i++) {
-      boundaryMax = std::max( boundaryMax, boundaryMaxPerObservable[i*numberOfObservables+v] );
-    }
-    double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
-
-    assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
-    scaledDifference = std::max( scaledDifference, relaxationParameter );
-
-    if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
-       (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
-      discreteMaximumPrincipleSatisfied=false;
-    }
-
-    // We have the new min and max directly available now and
-    // overwrite the block for face 0 with it
-    boundaryMinPerObservable[v] = localMinPerObservable[v];
-    boundaryMaxPerObservable[v] = localMaxPerObservable[v];
-
-    // In the block for face 1, we write the boundary min and max
-    boundaryMinPerObservable[v+numberOfObservables] = boundaryMin;
-    boundaryMaxPerObservable[v+numberOfObservables] = boundaryMax;
   }
-
   return discreteMaximumPrincipleSatisfied;
 }
 
@@ -280,45 +281,47 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtGaussLobattoNodes(
     const double* const luh,
     const SolverType& solver,
     double* min, double* max) {
-  constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
-  constexpr int order        = SolverType::Order;
-  constexpr int basisSize    = order+1;
+  if ( numberOfObservables>0 ) {
+    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
+    constexpr int order        = SolverType::Order;
+    constexpr int basisSize    = order+1;
+    
+    #if DIMENSIONS == 3
+    constexpr int basisSize3D = basisSize;
+    #else
+    constexpr int basisSize3D = 1;
+    #endif
   
-  #if DIMENSIONS == 3
-  constexpr int basisSize3D = basisSize;
-  #else
-  constexpr int basisSize3D = 1;
-  #endif
-
-  idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
-  idx2 idxConv(basisSize,basisSize);
-
-  double observables[numberOfObservables];
-  double lobValues[numberOfData];
-  for(int z=0; z<basisSize3D; z++) {
-    for(int y=0; y<basisSize; y++) {
-      for(int x=0; x<basisSize; x++) {
-        for(int v=0; v<numberOfData; v++) {
-          lobValues[v] = 0.0;
-          for(int iz=0; iz<basisSize3D; iz++) {
-            for(int iy=0; iy<basisSize; iy++) {
-              for(int ix=0; ix<basisSize;ix++) {
-                lobValues[v] += luh[idx(iz,iy,ix,v)]
-                            #if DIMENSIONS == 3
-                            * uh2lob[order][idxConv(iz,z)]
-                            #endif
-                            * uh2lob[order][idxConv(iy,y)]
-                            * uh2lob[order][idxConv(ix,x)];
+    idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
+    idx2 idxConv(basisSize,basisSize);
+  
+    double observables[numberOfObservables];
+    double lobValues[numberOfData];
+    for(int z=0; z<basisSize3D; z++) {
+      for(int y=0; y<basisSize; y++) {
+        for(int x=0; x<basisSize; x++) {
+          for(int v=0; v<numberOfData; v++) {
+            lobValues[v] = 0.0;
+            for(int iz=0; iz<basisSize3D; iz++) {
+              for(int iy=0; iy<basisSize; iy++) {
+                for(int ix=0; ix<basisSize;ix++) {
+                  lobValues[v] += luh[idx(iz,iy,ix,v)]
+                              #if DIMENSIONS == 3
+                              * uh2lob[order][idxConv(iz,z)]
+                              #endif
+                              * uh2lob[order][idxConv(iy,y)]
+                              * uh2lob[order][idxConv(ix,x)];
+                }
               }
             }
           }
-        }
-
-        solver.mapDiscreteMaximumPrincipleObservables(
-            observables,numberOfObservables,lobValues);
-        for (int v=0; v<numberOfObservables; v++) {
-          min[v] = std::min( min[v], observables[v] );
-          max[v] = std::max( max[v], observables[v] );
+  
+          solver.mapDiscreteMaximumPrincipleObservables(
+              observables,numberOfObservables,lobValues);
+          for (int v=0; v<numberOfObservables; v++) {
+            min[v] = std::min( min[v], observables[v] );
+            max[v] = std::max( max[v], observables[v] );
+          }
         }
       }
     }
@@ -334,51 +337,53 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtFVSubcellCenters(
     const double* const luh,
     const SolverType& solver,
     double* min, double* max) {
-  constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
-  constexpr int order        = SolverType::Order;
-  constexpr int basisSize    = order+1;
-  constexpr int basisSizeLim = 2*order+1;
-
-  #if DIMENSIONS == 3
-  constexpr int basisSize3D    = basisSize;
-  constexpr int basisSizeLim3D = basisSizeLim;
-  #else
-  constexpr int basisSize3D    = 1;
-  constexpr int basisSizeLim3D = 1;
-  #endif
-
-  idx4 idxLuh(basisSize3D,basisSize,basisSize,numberOfData);
-  idx4 idxLim(basisSizeLim3D,basisSizeLim,basisSizeLim,numberOfData);
-  idx2 idxConv(basisSize,basisSizeLim);
-
-  double* observables = new double[numberOfObservables];
-  double* limValues   = new double[numberOfData];
-
-  //tensor operation
-  for(int z=0; z<basisSizeLim3D; z++) {
-    for(int y=0; y<basisSizeLim; y++) {
-      for(int x=0; x<basisSizeLim; x++) {
-        for(int v=0; v<numberOfData; v++) {
-          limValues[v] = 0.0;
-          for(int iz=0; iz<basisSize3D; iz++) {
-            for(int iy=0; iy<basisSize; iy++) {
-              for(int ix=0; ix<basisSize; ix++) {
-                limValues[v] += luh[idxLuh(iz,iy,ix,v)]
-                                #if DIMENSIONS == 3
-                                * uh2lim[basisSize-1][idxConv(iz,z)]
-                                #endif
-                                * uh2lim[basisSize-1][idxConv(iy,y)]
-                                * uh2lim[basisSize-1][idxConv(ix,x)];
+  if ( numberOfObservables>0 ) {  
+    constexpr int numberOfData = SolverType::NumberOfVariables+SolverType::NumberOfParameters;
+    constexpr int order        = SolverType::Order;
+    constexpr int basisSize    = order+1;
+    constexpr int basisSizeLim = 2*order+1;
+  
+    #if DIMENSIONS == 3
+    constexpr int basisSize3D    = basisSize;
+    constexpr int basisSizeLim3D = basisSizeLim;
+    #else
+    constexpr int basisSize3D    = 1;
+    constexpr int basisSizeLim3D = 1;
+    #endif
+  
+    idx4 idxLuh(basisSize3D,basisSize,basisSize,numberOfData);
+    idx4 idxLim(basisSizeLim3D,basisSizeLim,basisSizeLim,numberOfData);
+    idx2 idxConv(basisSize,basisSizeLim);
+  
+    double observables[numberOfObservables];
+    double limValues  [numberOfData];
+  
+    //tensor operation
+    for(int z=0; z<basisSizeLim3D; z++) {
+      for(int y=0; y<basisSizeLim; y++) {
+        for(int x=0; x<basisSizeLim; x++) {
+          for(int v=0; v<numberOfData; v++) {
+            limValues[v] = 0.0;
+            for(int iz=0; iz<basisSize3D; iz++) {
+              for(int iy=0; iy<basisSize; iy++) {
+                for(int ix=0; ix<basisSize; ix++) {
+                  limValues[v] += luh[idxLuh(iz,iy,ix,v)]
+                                  #if DIMENSIONS == 3
+                                  * uh2lim[basisSize-1][idxConv(iz,z)]
+                                  #endif
+                                  * uh2lim[basisSize-1][idxConv(iy,y)]
+                                  * uh2lim[basisSize-1][idxConv(ix,x)];
+                }
               }
             }
           }
-        }
-
-        solver.mapDiscreteMaximumPrincipleObservables(
-            observables,numberOfObservables,limValues);
-        for (int v=0; v<numberOfObservables; v++) {
-          min[v] = std::min( min[v], observables[v] );
-          max[v] = std::max( max[v], observables[v] );
+  
+          solver.mapDiscreteMaximumPrincipleObservables(
+              observables,numberOfObservables,limValues);
+          for (int v=0; v<numberOfObservables; v++) {
+            min[v] = std::min( min[v], observables[v] );
+            max[v] = std::max( max[v], observables[v] );
+          }
         }
       }
     }
