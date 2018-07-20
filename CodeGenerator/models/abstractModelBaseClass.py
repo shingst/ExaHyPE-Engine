@@ -29,7 +29,8 @@ import copy
 import sys
 import os
 
-sys.path.append("../dependencies/jinja2")
+sys.path.insert(1, os.path.join(os.path.dirname(__file__),"../dependencies/jinja"))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__),"../dependencies/markupsafe"))
 import jinja2
 
 
@@ -54,7 +55,6 @@ class AbstractModelBaseClass():
         # set default context to local context if none given
         if context == None:
             context = self.context
-        
         loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),'..','templates')))
         env = jinja2.Environment(loader=loader, trim_blocks=True)
         template = env.get_template(templateName)                
