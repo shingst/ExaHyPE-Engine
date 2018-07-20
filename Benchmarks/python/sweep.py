@@ -182,19 +182,25 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
     skipMakeClean(bool):
         Do not run make clean, only clean application folder
     """
-    print("currently loaded modules:")
     subprocess.call("module list",shell=True)
     print("")
-    print("ExaHyPE build environment (unmodified):")
+    print("found preset ExaHyPE environment variables:")
     exahypeEnv = ["COMPILER", "MODE", "SHAREDMEM", "DISTRIBUTEDMEM", "EXAHYPE_CC", "PROJECT_C_FLAGS", "PROJECT_L_FLAGS", "COMPILER_CFLAGS", "COMPILER_LFLAGS", "FCOMPILER_CFLAGS", "FCOMPILER_LFLAGS"]
     for variable in exahypeEnv:
         if variable in os.environ:
             print(variable+"="+os.environ[variable])
     print("")
-    
+
     if not os.path.exists(buildFolderPath):
-        print("create directory "+buildFolderPath)
+        print("create build directory "+buildFolderPath)
         os.makedirs(buildFolderPath)
+    print("clean build directory")
+    for file in os.listdir(buildFolderPath):
+        if os.path.islink(buildFolderPath+"/"+file):
+           os.unlink(buildFolderPath+"/"+file)
+    print("")
+ 
+    oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
     
     verifyLogFilterExists(justWarn=True)        
     verifyEnvironmentIsCorrect(justWarn=True)
@@ -240,7 +246,6 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                     for order in ordersOrPatchSizes:
                         for limiterType in limiterTypes:
                             for limiterOptimisation in limiterOptimisations:
-                                oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
                                 suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
                                 if foundLimitingADERDG:
                                     suffix += "-"+limiterType+"-"+limiterOptimisation
@@ -327,6 +332,19 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     firstIteration = False
                                 else:
                                     print("skipped building of '"+executable+"' as it already exists.")
+
+    # symlink local files into build folder
+    blackListedEndings = [ ".o", "bak", ".cpp", ".h", ".cpph", ".f90", ".mod", "Makefile", ".mk", ".exahype", ".log", "ExHyPE-"+projectName ]
+    print("create symlinks to project folder files in build directory. Exclude files/file endings: "+", ".join(blackListedEndings))
+    print("")
+    for file in os.listdir(exahypeRoot+"/"+projectPath):
+      if not os.path.exists(buildFolderPath+"/"+file):
+          createSymLink = True
+          for ending in blackListedEndings: 
+              createSymLink &= not file.lower().endswith(ending)
+          if createSymLink:
+              os.symlink(exahypeRoot+"/"+projectPath+"/"+file,buildFolderPath+"/"+file)
+    
 
     print("built executables: "+str(executables))
 
