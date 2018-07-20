@@ -11,15 +11,16 @@
  * For the full license text, see LICENSE.txt
  **/
 
+#include <algorithm>
+#include <string>
+#include <math.h>
+
+// for the intrinsics, required by gcc7
+#include <immintrin.h>
+ 
 #include "EulerSolver_ADERDG.h"
 #include "EulerSolver_ADERDG_Variables.h"
 #include "tarch/la/MatrixVectorOperations.h"
-
-#include <algorithm>
-
-#include <string>
-
-#include <math.h>
 
 #include "kernels/GaussLegendreQuadrature.h"
 
