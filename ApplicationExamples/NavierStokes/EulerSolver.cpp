@@ -23,6 +23,7 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
   // Dimensions                        = 3
   // Number of variables + parameters  = 5 + 0
   // @todo Please implement/augment if required
+  /*
   if (tarch::la::equals(t,0.0)) {
     Variables vars(Q);
 
@@ -33,6 +34,26 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
 	       -((x[0] - 0.5) * (x[0] - 0.5) +
 		 (x[1] - 0.5) * (x[1] - 0.5)) / (0.05*0.05)) * 1.0e-3;
     }
+  */
+  double p;
+  if (tarch::la::equals(t,0.0)) {
+    Variables vars(Q);
+    // Sod shock tube
+    if (x[0] < 0.5) {
+      vars.rho() = 1.0;
+      const double u = 0.0; 
+      vars.j(u * vars.rho(), 0.0, 0.0);
+      p  = 1.0;
+    } else {
+      vars.rho() = 0.125;
+      const double u = 0;
+      vars.j(u * vars.rho(), 0.0, 0.0);
+      p  = 0.1;
+    }
+    vars.E() = p/(GAMMA - 1) + 0.5 / vars.rho() * (vars.j(0) * vars.j(0));
+
+  }
+
 }
 
 void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
