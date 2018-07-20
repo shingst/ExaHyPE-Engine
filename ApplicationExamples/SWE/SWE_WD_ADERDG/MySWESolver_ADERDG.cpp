@@ -180,12 +180,12 @@ void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,cons
 }
 
 bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
-        const double* const solution,
-        const double* const observablesMin,const double* const observablesMax,
-        const int numberOfObservables,
-        const tarch::la::Vector<DIMENSIONS,double>& center,
-        const tarch::la::Vector<DIMENSIONS,double>& dx,
-        const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
 
   double hMin;
   double hMax;

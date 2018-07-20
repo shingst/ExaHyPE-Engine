@@ -145,12 +145,12 @@ void EulerADERDG::MyEulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 
 
 bool EulerADERDG::MyEulerSolver_ADERDG::isPhysicallyAdmissible(
-    const double* const solution,
-    const double* const observablesMin,const double* const observablesMax,
-    const int numberOfObservables,
-    const tarch::la::Vector<DIMENSIONS,double>& center,
-    const tarch::la::Vector<DIMENSIONS,double>& dx,
-    const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
   // This is an example for the compressible Euler equations.
   // Modify it according to your needs.
   if (observablesMin[0] <= 0.0) return false;

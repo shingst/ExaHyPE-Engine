@@ -121,10 +121,12 @@ void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 }
 
 bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
-  const double* const solution,
-  const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-  const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-  const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
   int limvalue;
 
   // Variant 1 (cheapest, currently works only in 2D)
@@ -154,13 +156,19 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   //  double obsMax[(NumberOfVariables+NumberOfParameters)];
   //  kernels::limiter::generic::c::computeMinimumAndMaximumValueAtGaussLobattoNodes<Order+1,NumberOfVariables+NumberOfParameters>(
   //      solution,obsMin,obsMax);
-  //  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, obsMin, obsMax);
+  //  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, obsMin, obsMax);
 
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
-  if(limvalue>0){
-	  return false;
+  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+  if (tarch::la::equals(t,0.0)) {
+	  //pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
+	  pdegeometriclimitervalue_(&limvalue,&center[0]);
+	  if(limvalue>0){
+		  return false;
+	  }else{
+		  return true;
+	  };
   }else{
-	  return true;
+		return !wasTroubledInPreviousTimeStep;
   };
   /*}else{
 	if(!tarch::la::equals(observablesMax[1],observablesMin[1])){

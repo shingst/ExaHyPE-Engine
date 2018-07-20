@@ -92,10 +92,12 @@ bool pointwiseIsPhysicallyAdmissible(const double* const Q) {
 }
 
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
-	const double* const solution,
-	const double* const observablesMin, const double* const observablesMax,const int numberOfObservables,
-	const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-	const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
 
 	// Q: Do we have to check the observables{Min,Max} whether they are useful?
 

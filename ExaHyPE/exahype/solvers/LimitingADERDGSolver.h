@@ -202,6 +202,9 @@ private:
    * Checks if the updated solution
    * of the ADER-DG solver is
    * a physically admissible one (true).
+   *
+   * \note This method assumes the (previous) refinement status
+   * was not modified yet by another routine.
    */
   bool evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch);
 
@@ -1211,23 +1214,21 @@ public:
    * Send data or empty data to the neighbour data based
    * on the limiter status.
    *
-   * \param[in] isRecomputation Indicates if this called within a solution recomputation
+   * \param[in] isRecomputation Indicates if this called within a local recomputation
    *                            process.
    * \param[in] limiterStatus   This method is used in two different contexts (see \p isRecomputation)
    *                            which either make use of the unified face-wise limiter status (isRecomputation)
    *                            or make use of the cell-wise limiter status (!isRecomputation).
    *
-   * <h2>SolutionRecomputation</h2>
-   * In case this method is called within a solution recomputation,
+   * <h2>Local Recomputation</h2>
+   * In case this method is called during a local recomputation,
    * the ADER-DG solver does only send empty messages to the neighbour.
    * Otherwise it merges the received data and adds it to the update.
    *
-   * \note This method assumes that there has been a unified face-wise limiter status value
-   * determined and written back to the faces a-priori.
-   *
-   * <h2>Possible optimisations</h2>
-   * Depending on isRecomputation we do not need to send both, solver and limiter,
-   * data for patches with status NeighbourIsNeighbourOfTroubledCell and NeighbourOfTroubledCell.
+   * <h2>Fused Time Stepping</h2>
+   * If the limiter status of a cell changes dramatically, a cell might have
+   * not allocated a limiter patch yet when fused time stepping is used.
+   * In this case, we send out an empty FV boundary data message.
    */
   void sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,

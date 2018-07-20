@@ -1095,6 +1095,12 @@ public:
   MeshUpdateEvent getMeshUpdateEvent() const final override;
   void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
+
+  /**
+   * Check if the heap array with index \p index could be allocated.
+   */
+  static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
+
   /**
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
@@ -1357,9 +1363,12 @@ public:
    */
   virtual bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const = 0;
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt
+      ) const = 0;
 
   /**
    * Maps the solution values Q to

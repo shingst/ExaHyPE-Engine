@@ -351,6 +351,15 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
   }
 }
 
+void exahype::solvers::ADERDGSolver::checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex,const std::string arrayName) {
+  assertion1(DataHeap::getInstance().isValidIndex(arrayIndex),cellDescription.toString());
+  if ( arrayIndex < 0 ) {
+    logError("checkDataHeapIndex(...)","The data heap array 'cellDescription."<<arrayName<<"' could not be allocated! Potential reason: Not enough memory available." <<
+             " CellDescription="<<cellDescription.toString());
+    std::abort();
+  }
+}
+
 void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
   // allocate solution
@@ -366,12 +375,16 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     const int dataPerCell     = getDataPerCell(); // Only the solution and previousSolution store material parameters
     cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
     cellDescription.setSolution( DataHeap::getInstance().createData( dataPerCell, dataPerCell ) );
+    checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolution(),"getPreviousSolution()");
+    checkDataHeapIndex(cellDescription,cellDescription.getSolution(),"getSolution()");
     
     cellDescription.setSolutionCompressed(-1);
     cellDescription.setPreviousSolutionCompressed(-1);
 
     cellDescription.setPreviousSolutionAverages( DataHeap::getInstance().createData( dataPerNode, dataPerNode ) );
     cellDescription.setSolutionAverages(         DataHeap::getInstance().createData( dataPerNode, dataPerNode ) );
+    checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAverages(),"getPreviousSolutionAverages()");
+    checkDataHeapIndex(cellDescription,cellDescription.getSolutionAverages(),"getSolutionAverages()");
 
     cellDescription.setCompressionState(CellDescription::Uncompressed);
 
@@ -391,6 +404,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     cellDescription.setUpdate( DataHeap::getInstance().createData( getUpdateSize(), getUpdateSize() ) );
     cellDescription.setUpdateAverages( DataHeap::getInstance().createData( getNumberOfVariables(), getNumberOfVariables() ) );
     cellDescription.setUpdateCompressed(-1);
+    checkDataHeapIndex(cellDescription,cellDescription.getUpdate(),"getUpdate()");
+    checkDataHeapIndex(cellDescription,cellDescription.getUpdateAverages(),"getUpdateAverages()");
 
     // extrapolated predictor
     const int dataPerBnd = getBndTotalSize();
@@ -398,6 +413,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     cellDescription.setExtrapolatedPredictorCompressed(-1);
     const int boundaryData     = (getNumberOfParameters()+getNumberOfVariables()) * DIMENSIONS_TIMES_TWO; //TODO JMG / Dominic adapt for padding with optimized kernels //TODO Tobias: Does it make sense to pad these arrays.
     cellDescription.setExtrapolatedPredictorAverages( DataHeap::getInstance().createData( boundaryData,  boundaryData  ) );
+    checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedPredictor(),"getExtrapolatedPredictor()");
+    checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedPredictorAverages(),"getExtrapolatedPredictorAverages()");
 
     // fluctuations
     const int dofPerBnd  = getBndFluxTotalSize();
@@ -405,6 +422,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     cellDescription.setFluctuationCompressed(-1);
     const int boundaryUnknowns = getNumberOfVariables() * DIMENSIONS_TIMES_TWO;     //TODO JMG / Dominic adapt for padding with optimized kernels //TODO Tobias: Does it make sense to pad these arrays.
     cellDescription.setFluctuationAverages( DataHeap::getInstance().createData( boundaryUnknowns, boundaryUnknowns ) );
+    checkDataHeapIndex(cellDescription,cellDescription.getFluctuation(),"getFluctuation()");
+    checkDataHeapIndex(cellDescription,cellDescription.getFluctuationAverages(),"getFluctuationAverages()");
 
     // Allocate volume DoF for limiter (we need for every of the 2*DIMENSIONS faces an array of min values
     // and array of max values of the neighbour at this face).
@@ -414,6 +433,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
           numberOfObservables * DIMENSIONS_TIMES_TWO, numberOfObservables * DIMENSIONS_TIMES_TWO ));
       cellDescription.setSolutionMax(DataHeap::getInstance().createData(
           numberOfObservables * DIMENSIONS_TIMES_TWO, numberOfObservables * DIMENSIONS_TIMES_TWO ));
+      checkDataHeapIndex(cellDescription,cellDescription.getSolutionMin(),"getSolutionMin()");
+      checkDataHeapIndex(cellDescription,cellDescription.getSolutionMax(),"getSolutionMax()");
 
       for (int i=0; i<numberOfObservables * DIMENSIONS_TIMES_TWO; i++) {
         DataHeap::getInstance().getData( cellDescription.getSolutionMin() )[i] = std::numeric_limits<double>::max();

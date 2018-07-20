@@ -131,7 +131,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
     bool isPhysicallyAdmissible(
         const double* const solution,
         const double* const observablesMin,const double* const observablesMax,
-        const int numberOfObservables,
+        const bool wasTroubledInPreviousTimeStep,
         const tarch::la::Vector<DIMENSIONS,double>& center,
         const tarch::la::Vector<DIMENSIONS,double>& dx,
         const double t, const double dt) const override;

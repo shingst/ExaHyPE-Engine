@@ -40,8 +40,10 @@ void GridDemonstrator::GridDemonstrator_ADERDG::init(const std::vector<std::stri
 
 bool GridDemonstrator::GridDemonstrator_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
 
 	// admissible means the solution is acceptable as being a physical solution.
