@@ -151,9 +151,12 @@ bool kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch(
     double* boundaryMinPerObservable, double* boundaryMaxPerObservable) {  
   bool discreteMaximumPrincipleSatisfied=true;
   if ( numberOfObservables>0 ) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     double localMinPerObservable[numberOfObservables];
     double localMaxPerObservable[numberOfObservables];
-
+#pragma GCC diagnostic pop
+    
     // 1. Determine the new cell-local -minimum and maximummin and max
     findCellLocalMinAndMax<SolverType,numberOfObservables>(luh,solver,localMinPerObservable,localMaxPerObservable);
 
@@ -295,8 +298,12 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtGaussLobattoNodes(
     idx4 idx(basisSize3D,basisSize,basisSize,numberOfData);
     idx2 idxConv(basisSize,basisSize);
   
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     double observables[numberOfObservables];
     double lobValues[numberOfData];
+#pragma GCC diagnostic pop
+   
     for(int z=0; z<basisSize3D; z++) {
       for(int y=0; y<basisSize; y++) {
         for(int x=0; x<basisSize; x++) {
@@ -355,8 +362,11 @@ void kernels::limiter::generic::c::compareWithADERDGSolutionAtFVSubcellCenters(
     idx4 idxLim(basisSizeLim3D,basisSizeLim,basisSizeLim,numberOfData);
     idx2 idxConv(basisSize,basisSizeLim);
   
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     double observables[numberOfObservables];
     double limValues  [numberOfData];
+#pragma GCC diagnostic pop
   
     //tensor operation
     for(int z=0; z<basisSizeLim3D; z++) {

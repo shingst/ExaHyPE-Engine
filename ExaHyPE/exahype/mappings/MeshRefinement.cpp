@@ -193,7 +193,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
 
   // background threads
-  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
@@ -841,6 +840,8 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
   logTraceInWith5Arguments( "prepareCopyToRemoteNode(...)", localCell, toRank, cellCentre, cellSize, level );
 
   _allSolversAttainedStableState = false;
+
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   if ( 
       localCell.hasToCommunicate(cellSize) && 
