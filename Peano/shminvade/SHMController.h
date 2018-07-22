@@ -155,11 +155,6 @@ class shminvade::SHMController {
      */
     void shutdown();
 
-    /**
-     * @return Core number a thread is pinned to
-     */
-    int getCoreOfThread(pid_t threadId) const;
-
     void retreat( int core );
 
     bool tryToBookCore( int core );

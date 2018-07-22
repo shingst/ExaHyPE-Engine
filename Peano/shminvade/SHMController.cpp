@@ -19,8 +19,7 @@ shminvade::SHMController::SHMController():
 
   InvasiveTaskGroupContext.set_priority( tbb::priority_low );
 
-  pid_t  masterThread = (pid_t) syscall (__NR_gettid);
-  int    masterCore   = getCoreOfThread(masterThread);
+  int    masterCore   = sched_getcpu();
   for (int i=0; i<getMaxAvailableCores(); i++ ) {
     registerNewCore(i,masterCore==i ? ThreadType::Master : ThreadType::NotOwned );
   }
@@ -220,9 +219,4 @@ std::string shminvade::SHMController::ThreadState::toString() const {
   }
   msg << ",no-of-existing-lock-tasks=" << numberOfExistingLockTasks << ")";
   return msg.str();
-}
-
-
-int shminvade::SHMController::getCoreOfThread( pid_t threadId ) const {
-  return _pinningObserver.getCoreOfThread(threadId);
 }
