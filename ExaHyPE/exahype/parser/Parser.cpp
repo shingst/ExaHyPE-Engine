@@ -1356,3 +1356,14 @@ bool exahype::parser::Parser::useManualPinning() {
 exahype::parser::ParserView exahype::parser::Parser::createParserView(const int solverNumberInSpecificationFile) {
   return exahype::parser::ParserView(*this,solverNumberInSpecificationFile);
 }
+
+
+exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvadeStrategy() const {
+  if ( getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvade;
+  if ( getSharedMemoryConfiguration().find("occupy-all-cores")!=std::string::npos) return TBBInvadeStrategy::OccupyAllCores;
+  if ( getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) return TBBInvadeStrategy::InvadeBetweenTimeSteps;
+  if ( getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeThroughoutComputation;
+  if ( getSharedMemoryConfiguration().find("invade-at-time-step-startup-plus-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
+
+  return TBBInvadeStrategy::Undef;
+}

@@ -72,6 +72,8 @@
 #ifdef TBBInvade
 #include "shminvade/SHMController.h"
 #include "shminvade/SHMSharedMemoryBetweenTasks.h"
+#include "shminvade/SHMOccupyAllCoresStrategy.h"
+#include "shminvade/SHMMultipleRanksPerNodeStrategy.h"
 #endif
 
 
@@ -272,16 +274,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true,  //   bool useMultithreading                  = true,
          0,     //   int  grainSizeOfUserDefinedRegions      = 0,
-
-     #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
-         false, //  bool pipelineDescendProcessing          = false,
-         false,  //   bool pipelineAscendProcessing           = false,
-		 #else
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing
-    #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
@@ -338,8 +333,26 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #endif
 
 
-
   #if  defined(TBBInvade)
+  shminvade::SHMSharedMemoryBetweenTasks::getInstance().cleanUp();
+  switch ( _parser.getTBBInvadeStrategy() ) {
+    case exahype::parser::Parser::TBBInvadeStrategy::Undef:
+      logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+    case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+      shminvade::SHMStrategy::setStrategy( new shminvade::SHMOccupyAllCoresStrategy() );
+	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's OccupyAllCores strategy" );
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
+      shminvade::SHMStrategy::setStrategy( new shminvade::SHMMultipleRanksPerNodeStrategy() );
+	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's MultipleRanksPerNode strategy" );
+      break;
+  }
+
+  // This initialisation with dummies is most likely not required at all
   double localData[3] = { 0.0, 1.0, 1.0 };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
@@ -930,23 +943,24 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     2
     );
 
-  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
+  switch ( _parser.getTBBInvadeStrategy() ) {
+    case exahype::parser::Parser::TBBInvadeStrategy::Undef:
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+      tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+      tarch::multicore::Core::getInstance().configure( 2, true );
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
+      tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
+      break;
   }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
-    //tarch::multicore::logThreadAffinities();
-  }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( 2, true );
-    //tarch::multicore::logThreadAffinities();
-  }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-at-time-step-startup-plus-throughout-computation")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
-    //tarch::multicore::logThreadAffinities();
-  }
-  else {
-    logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
-  }
+
   #endif
 }
 
@@ -987,7 +1001,11 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
   assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
 
-  if (_parser.getSharedMemoryConfiguration().find("no-invade")==std::string::npos) {
+  if (
+    _parser.getTBBInvadeStrategy() != exahype::parser::Parser::TBBInvadeStrategy::NoInvade
+    and
+    _parser.getTBBInvadeStrategy() != exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores
+  ) {
     logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "retreat from my threads/cores" );
     tarch::multicore::Core::getInstance().configure( 1, false );
   }
