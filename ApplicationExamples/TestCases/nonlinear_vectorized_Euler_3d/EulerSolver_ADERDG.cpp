@@ -11,15 +11,16 @@
  * For the full license text, see LICENSE.txt
  **/
 
+#include <algorithm>
+#include <string>
+#include <math.h>
+
+// for the intrinsics, required by gcc7
+#include <immintrin.h>
+ 
 #include "EulerSolver_ADERDG.h"
 #include "EulerSolver_ADERDG_Variables.h"
 #include "tarch/la/MatrixVectorOperations.h"
-
-#include <algorithm>
-
-#include <string>
-
-#include <math.h>
 
 #include "kernels/GaussLegendreQuadrature.h"
 
@@ -277,10 +278,12 @@ void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 
 
 bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
-    const double* const solution,
-    const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-    const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-    const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
   if (observablesMin[0] <= 0.0) return false;
   if (observablesMin[4] < 0.0) return false;
   return true;

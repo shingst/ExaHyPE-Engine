@@ -127,9 +127,8 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int  cellDescriptionsIndex,
-      const int  element,
-      const bool isInitialMeshRefinement) final override;
+      CellDescription& cellDescription,
+      const bool isInitialMeshRefinement);
 
 #ifdef Parallel
   /**
@@ -223,6 +222,23 @@ private:
         const int            element,
         const bool           isSkeletonJob
     );
+
+    bool operator()();
+  };
+
+  /**
+   * A job that calls adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    FiniteVolumesSolver& _solver;
+    CellDescription&     _cellDescription;
+    const bool           _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        FiniteVolumesSolver& solver,
+        CellDescription&     cellDescription,
+        const bool           isInitialMeshRefinement);
 
     bool operator()();
   };
@@ -581,6 +597,11 @@ public:
       const int solverNumber);
 
   /**
+   * Check if the heap array with index \p index could be allocated.
+   */
+  static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
+
+  /**
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    */
@@ -662,9 +683,7 @@ public:
           const int cellDescriptionsIndex,
           const int element) override final;
 
-  void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const override final;
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
   void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
@@ -686,6 +705,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Update the solution of a cell description.
@@ -937,9 +959,11 @@ public:
       const int level) const final override;
 
   /**
-   * Nop
+   * Nop as it does not support adaptivity
+   *
+   * \return false
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 

@@ -39,7 +39,7 @@ exahype-project Euler
   end distributed-memory
   
   global-optimisation
-    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads = off
@@ -54,9 +54,9 @@ exahype-project Euler
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 3
-    maximum-mesh-size          = 0.0404
-    maximum-mesh-depth         = 2
-    time-stepping              = globalfixed
+    maximum-mesh-size          = 0.04
+    maximum-mesh-depth         = 1
+    time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
     optimisation const         = generic
@@ -67,8 +67,9 @@ exahype-project Euler
     dmp-observables  const     = 5
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
+    helper-layers              = 1
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                  = reference:explosion
+    constants                  = reference:sod
     
     // works only properly for single-node runs
     /*

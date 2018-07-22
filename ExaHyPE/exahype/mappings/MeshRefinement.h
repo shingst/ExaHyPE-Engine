@@ -215,6 +215,10 @@ public:
    * <h2>MPI</h2>
    * If this rank is the global master, update the
    * initial grid refinement strategy.
+   *
+   * <h2>Background Jobs</h2>
+   * Finish processing background jobs before starting
+   * the next iteration.
    */
   void endIteration(exahype::State& solverState);
 
@@ -430,6 +434,10 @@ public:
 
   /**
    * TODO(Dominic): Add docu.
+   *
+   * <h2>Background Jobs</h2>
+   * Finish processing background jobs before sending
+   * out any data.
    */
   void prepareCopyToRemoteNode(
       exahype::Cell& localCell, int toRank,

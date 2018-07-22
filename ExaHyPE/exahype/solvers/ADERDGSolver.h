@@ -251,9 +251,8 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isInitialMeshRefinement) final override;
+      CellDescription& cellDescription,
+      const bool isInitialMeshRefinement);
 
   /**
    * Query the user's refinement criterion and
@@ -838,6 +837,23 @@ private:
       bool operator()();
   };
 
+  /**
+   * A job that calls adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    ADERDGSolver&    _solver;
+    CellDescription& _cellDescription;
+    const bool       _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        const bool       isInitialMeshRefinement);
+
+    bool operator()();
+  };
+
 public:
 
   /**
@@ -1094,6 +1110,12 @@ public:
   void setNextMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
   void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
+
+
+  /**
+   * Check if the heap array with index \p index could be allocated.
+   */
+  static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
 
   /**
    * Checks if no unnecessary memory is allocated for the cell description.
@@ -1357,9 +1379,12 @@ public:
    */
   virtual bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const = 0;
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt
+      ) const = 0;
 
   /**
    * Maps the solution values Q to
@@ -1727,9 +1752,7 @@ public:
         const int cellDescriptionsIndex,
         const int element) override final;
 
-  void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const override final;
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
   /**
     * Rollback to the previous time step, i.e,
@@ -1778,6 +1801,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Computes the surface integral contributions to the
@@ -2175,7 +2201,7 @@ public:
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 

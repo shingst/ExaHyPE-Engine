@@ -133,10 +133,12 @@ public:
       double* observables,const int numberOfObservables,
       const double* const Q) const override;
 
-  bool isPhysicallyAdmissible(
+      bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const override;
 };
 

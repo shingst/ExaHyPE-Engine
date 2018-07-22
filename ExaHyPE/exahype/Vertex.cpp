@@ -994,8 +994,10 @@ void exahype::Vertex::receiveNeighbourData(
 
           MetadataHeap::HeapEntries receivedMetadata;
           receivedMetadata.clear();
-          exahype::receiveNeighbourCommunicationMetadata(
-              receivedMetadata, fromRank, x, level);
+          if ( !receiveNoMetadata ) {
+            exahype::receiveNeighbourCommunicationMetadata(
+                receivedMetadata, fromRank, x, level);
+          }
 
           if( hasToMergeWithNeighbourData(src,dest) ) {
             if ( mergeWithReceivedData ) {

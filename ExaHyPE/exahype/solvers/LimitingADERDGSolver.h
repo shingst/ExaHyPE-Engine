@@ -202,6 +202,9 @@ private:
    * Checks if the updated solution
    * of the ADER-DG solver is
    * a physically admissible one (true).
+   *
+   * \note This method assumes the (previous) refinement status
+   * was not modified yet by another routine.
    */
   bool evaluatePhysicalAdmissibilityCriterion(SolverPatch& solverPatch);
 
@@ -234,10 +237,6 @@ private:
    *
    * \note Thread-safe.
    */
-  void deallocateLimiterPatch(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
-
   void deallocateLimiterPatch(
       const SolverPatch& solverPatch,
       const int cellDescriptionsIndex) const;
@@ -285,8 +284,8 @@ private:
    * for performing a global rollback.
    */
   void ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(
-      const int cellDescriptionsIndex,
-      const int solverElement) const;
+      const SolverPatch&  solverPatch,
+      const int cellDescriptionsIndex) const;
 
   /**
    * Update the limiter status based on the cell-local solution values.
@@ -386,9 +385,9 @@ private:
    * Body of LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int  cellDescriptionsIndex,
-      const int  element,
-      const bool isInitialMeshRefinement) final override;
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex,
+      const bool isInitialMeshRefinement);
 
 #ifdef Parallel
 
@@ -481,19 +480,20 @@ private:
   };
 
   /**
-   * A job that calls LimitingADERDGSolver::projectDGSolutionOnFVSpace(...)
-   * and
+   * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
    */
-  class AdjustLimiterSolutionJob {
+  class AdjustSolutionDuringMeshRefinementJob {
   private:
     LimitingADERDGSolver& _solver;
     SolverPatch&          _solverPatch;
-    LimiterPatch&         _limiterPatch;
+    const int             _cellDescriptionsIndex;
+    const bool            _isInitialMeshRefinement;
   public:
-    AdjustLimiterSolutionJob(
+    AdjustSolutionDuringMeshRefinementJob(
         LimitingADERDGSolver& solver,
         SolverPatch&          solverPatch,
-        LimiterPatch&         limiterPatch);
+        const int             cellDescriptionsIndex,
+        const bool            isInitialMeshRefinement);
 
     bool operator()();
   };
@@ -785,8 +785,8 @@ public:
         const int element) final override;
 
   void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const final override;
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
 
  /**
    * Rollback to the previous time step, i.e,
@@ -824,6 +824,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Update the solution of a solver patch and or
@@ -907,10 +910,6 @@ public:
    *
    * \note Thread-safe.
    */
-   void ensureNoLimiterPatchIsAllocatedOnHelperCell(
-       const int cellDescriptionsIndex,
-       const int solverElement) const;
-
    void ensureNoLimiterPatchIsAllocatedOnHelperCell(
        const SolverPatch& solverPatch,
        const int cellDescriptionsIndex) const;
@@ -1211,23 +1210,21 @@ public:
    * Send data or empty data to the neighbour data based
    * on the limiter status.
    *
-   * \param[in] isRecomputation Indicates if this called within a solution recomputation
+   * \param[in] isRecomputation Indicates if this called within a local recomputation
    *                            process.
    * \param[in] limiterStatus   This method is used in two different contexts (see \p isRecomputation)
    *                            which either make use of the unified face-wise limiter status (isRecomputation)
    *                            or make use of the cell-wise limiter status (!isRecomputation).
    *
-   * <h2>SolutionRecomputation</h2>
-   * In case this method is called within a solution recomputation,
+   * <h2>Local Recomputation</h2>
+   * In case this method is called during a local recomputation,
    * the ADER-DG solver does only send empty messages to the neighbour.
    * Otherwise it merges the received data and adds it to the update.
    *
-   * \note This method assumes that there has been a unified face-wise limiter status value
-   * determined and written back to the faces a-priori.
-   *
-   * <h2>Possible optimisations</h2>
-   * Depending on isRecomputation we do not need to send both, solver and limiter,
-   * data for patches with status NeighbourIsNeighbourOfTroubledCell and NeighbourOfTroubledCell.
+   * <h2>Fused Time Stepping</h2>
+   * If the limiter status of a cell changes dramatically, a cell might have
+   * not allocated a limiter patch yet when fused time stepping is used.
+   * In this case, we send out an empty FV boundary data message.
    */
   void sendDataToNeighbourBasedOnLimiterStatus(
         const int                                    toRank,
@@ -1365,7 +1362,7 @@ public:
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 

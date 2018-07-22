@@ -193,7 +193,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
 
   // background threads
-  peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
@@ -691,7 +690,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
 
-  if (  receivedMasterCell.isInitialised() ) { // we do not receive anything here
+  if ( receivedMasterCell.isInitialised() ) { // we do not receive anything here
     // Do not merge anything if our worker is on a newly forked part of the mesh
     if ( !exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       if ( !localCell.isInitialised() ) { // simply copy the index
@@ -703,9 +702,20 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         const int receivedElement = solver->tryGetElement(receivedCellDescriptionsIndex,solverNumber);
         if ( receivedElement!=exahype::solvers::Solver::NotFound  ) {
-          solver->progressMeshRefinementInMergeWithWorker(
-              localCell.getCellDescriptionsIndex(),
-              receivedCellDescriptionsIndex,receivedElement);
+          bool newComputeCell =
+              solver->progressMeshRefinementInMergeWithWorker(
+                  localCell.getCellDescriptionsIndex(),
+                  receivedCellDescriptionsIndex,receivedElement);
+
+          if ( newComputeCell ) {
+            const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
+            const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
+
+            if (element!=exahype::solvers::Solver::NotFound) {
+              solver->adjustSolutionDuringMeshRefinement(
+                  cellDescriptionsIndex,element);
+            }
+          }
         }
       }
       if ( localCell.isInitialised() && localCell.isEmpty() ) {
@@ -830,6 +840,8 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
   logTraceInWith5Arguments( "prepareCopyToRemoteNode(...)", localCell, toRank, cellCentre, cellSize, level );
 
   _allSolversAttainedStableState = false;
+
+  exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   if ( 
       localCell.hasToCommunicate(cellSize) && 

@@ -505,6 +505,15 @@ void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated
   }
 }
 
+void exahype::solvers::FiniteVolumesSolver::checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex,const std::string arrayName) {
+  assertion1(DataHeap::getInstance().isValidIndex(arrayIndex),cellDescription.toString());
+  if ( arrayIndex < 0 ) {
+    logError("checkDataHeapIndex(...)","The data heap array 'cellDescription."<<arrayName<<"' could not be allocated! Potential reason: Not enough memory available." <<
+             " CellDescription="<<cellDescription.toString());
+    std::abort();
+  }
+}
+
 void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
   switch (cellDescription.getType()) {
@@ -517,6 +526,8 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
         tarch::multicore::Lock lock(exahype::HeapSemaphore);
           cellDescription.setSolution(        DataHeap::getInstance().createData( patchSize, patchSize ));
           cellDescription.setPreviousSolution(DataHeap::getInstance().createData( patchSize, patchSize ));
+          checkDataHeapIndex(cellDescription,cellDescription.getSolution(),"getSolution()");
+          checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolution(),"getPreviousSolution()");
 
           cellDescription.setSolutionCompressed(-1);
           cellDescription.setPreviousSolutionCompressed(-1);
@@ -525,6 +536,8 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
               DataHeap::getInstance().createData( getNumberOfVariables()+getNumberOfParameters(), getNumberOfVariables()+getNumberOfParameters() ) );
           cellDescription.setPreviousSolutionAverages(
               DataHeap::getInstance().createData( getNumberOfVariables()+getNumberOfParameters(), getNumberOfVariables()+getNumberOfParameters() ) );
+          checkDataHeapIndex(cellDescription,cellDescription.getSolutionAverages(),"getSolutionAverages()");
+          checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAverages(),"getPreviousSolutionAverages()");
 
           // Zero out the solution and previous solution arrays. For our MUSCL-Hancock implementation which
           // does not take the corner neighbours into account e.g., it is important that the values in
@@ -536,11 +549,13 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           const int patchBoundarySize = getDataPerPatchBoundary();
           cellDescription.setExtrapolatedSolution(DataHeap::getInstance().createData( patchBoundarySize, patchBoundarySize ));
           std::fill_n( DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data(), patchBoundarySize, 0.0 );
+          checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolution(),"getExtrapolatedSolution()");
 
           cellDescription.setExtrapolatedSolutionCompressed(-1);
           cellDescription.setExtrapolatedSolutionAverages( DataHeap::getInstance().createData(
             (getNumberOfVariables()+getNumberOfParameters()) * 2 * DIMENSIONS,
             (getNumberOfVariables()+getNumberOfParameters()) * 2 * DIMENSIONS ) );
+          checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionAverages(),"getExtrapolatedSolutionAverages()");
         lock.free();
       }
       break;
@@ -683,13 +698,8 @@ double exahype::solvers::FiniteVolumesSolver::updateTimeStepSizes(
 }
 
 void exahype::solvers::FiniteVolumesSolver::zeroTimeStepSizes(
-    const int cellDescriptionsIndex,
-    const int element) const {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
-  if (cellDescription.getType()==CellDescription::Cell) {
-    cellDescription.setTimeStepSize(0.0);
-  }
+    CellDescription& cellDescription) const {
+  cellDescription.setTimeStepSize(0.0);
 }
 
 void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(CellDescription& cellDescription) const {
@@ -704,13 +714,11 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStepFused(Cell
 }
 
 void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBody(
-    const int cellDescriptionsIndex,
-    const int element,
+    CellDescription& cellDescription,
     const bool isInitialMeshRefinement) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   assertion(cellDescription.getType()==CellDescription::Cell);
 
-  zeroTimeStepSizes(cellDescriptionsIndex,element); // TODO(Dominic): Still necessary?
+  zeroTimeStepSizes(cellDescription); // TODO(Dominic): Still necessary?
   synchroniseTimeStepping(cellDescription);
 
   adjustSolution(cellDescription);
@@ -779,6 +787,19 @@ void exahype::solvers::FiniteVolumesSolver::compress(
     const bool isAtRemoteBoundary) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   compress(cellDescription,isAtRemoteBoundary);
+}
+
+void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
+    const int cellDescriptionsIndex,
+    const int element) {
+  const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+  if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
+    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
+    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
+  } else {
+    adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
+  }
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
@@ -1168,10 +1189,10 @@ void exahype::solvers::FiniteVolumesSolver::receiveDataFromMasterIfProlongating(
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
+bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithWorker(
     const int localCellDescriptionsIndex,
     const int receivedCellDescriptionsIndex, const int receivedElement) {
-  // do nothing
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendToMaster(
@@ -2121,6 +2142,35 @@ bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::operator()() {
     int& jobCounter = (_isSkeletonJob) ? NumberOfSkeletonJobs : NumberOfEnclaveJobs;
     jobCounter--;
     assertion( jobCounter>=0 );
+  }
+  lock.free();
+  return false;
+}
+
+
+
+exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
+  FiniteVolumesSolver& solver,
+  CellDescription&     cellDescription,
+  const bool           isInitialMeshRefinement):
+  _solver(solver),
+  _cellDescription(cellDescription),
+  _isInitialMeshRefinement(isInitialMeshRefinement)
+{
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfAMRBackgroundJobs++;
+  }
+  lock.free();
+}
+
+bool exahype::solvers::FiniteVolumesSolver::AdjustSolutionDuringMeshRefinementJob::operator()() {
+  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescription,_isInitialMeshRefinement);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfAMRBackgroundJobs--;
+    assertion( NumberOfAMRBackgroundJobs>=0 );
   }
   lock.free();
   return false;
