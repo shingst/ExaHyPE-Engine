@@ -86,7 +86,11 @@ exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<st
     _meshRefinements(0),
     _localRecomputations(0),
     _globalRecomputations(0),
-    _predictorReruns(0) {}
+    _predictorReruns(0) {
+  #ifdef TBBInvade
+  _shmInvade = nullptr;
+  #endif
+}
 
 exahype::runners::Runner::~Runner() {}
 
@@ -244,10 +248,14 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 
 void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
+
+  #ifdef TBBInvade
+  tarch::multicore::Core::getInstance().configure( shminvade::SHMController::getInstance().getMaxAvailableCores() );
+  #elif SharedTBB
   const int numberOfThreads = _parser.getNumberOfThreads();
-  #ifdef SharedTBB
   tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
   #elif SharedCPP
+  const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
   #else
   #error Unknown shared memory variant
@@ -343,6 +351,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
       shminvade::SHMStrategy::setStrategy( new shminvade::SHMOccupyAllCoresStrategy() );
 	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's OccupyAllCores strategy" );
+	  if ( _parser.getRanksPerNode()<=0 or _parser.getRanksPerNode()>=shminvade::SHMController::getInstance().getMaxAvailableCores()) {
+		logError( "initSharedMemoryConfiguration()", "no ranks-per-node set. Mandatory for SHMInvade" );
+	  }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
@@ -936,8 +947,29 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     case exahype::parser::Parser::TBBInvadeStrategy::Undef:
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+      {
+    	if ( _shmInvade==nullptr ) {
+    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode();
+          logInfo(
+            "preProcessTimeStepInSharedMemoryEnvironment()",
+			"try to acquire SHMInvade object for " << cores << " in runner (max cores=" <<
+			shminvade::SHMController::getInstance().getMaxAvailableCores() << ", ranks-per-node=" << _parser.getRanksPerNode() <<
+			")"
+	      );
+          _shmInvade = new shminvade::SHMInvade( cores );
+    	}
+        shminvade::SHMController::getInstance().switchOff();
+      }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+      {
+      	if ( _shmInvade==nullptr ) {
+      	  const int cores = shminvade::SHMInvade::MaxCores;
+          logInfo( "preProcessTimeStepInSharedMemoryEnvironment()", "try to acquire SHMInvade object for " << cores << " (all cores) in runner" );
+          _shmInvade = new shminvade::SHMInvade( cores );
+      	}
+        shminvade::SHMController::getInstance().switchOff();
+      }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
       {
@@ -951,11 +983,15 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
           ),
           2
         );
-        tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
+        assertion(_shmInvade==nullptr);
+        _shmInvade = new shminvade::SHMInvade( optimalNumberOfThreads );
+        shminvade::SHMController::getInstance().switchOff();
       }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
-      tarch::multicore::Core::getInstance().configure( 2, true );
+        assertion(_shmInvade==nullptr);
+      _shmInvade = new shminvade::SHMInvade( 2 );
+      shminvade::SHMController::getInstance().switchOn();
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
       {
@@ -969,7 +1005,9 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
           ),
           2
         );
-        tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
+        assertion(_shmInvade==nullptr);
+        _shmInvade = new shminvade::SHMInvade( optimalNumberOfThreads );
+        shminvade::SHMController::getInstance().switchOn();
       }
       break;
   }
@@ -997,9 +1035,13 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
      case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
        break;
      case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
-     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
      case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
        {
+      	 logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "release SHMInvade object" );
+         assertion( _shmInvade != nullptr );
+         delete _shmInvade;
+         _shmInvade = nullptr;
+
     	 // adopt my local performance model
     	 invasionWatch.stopTimer();
     	 amdahlsLaw.addMeasurement(
@@ -1024,16 +1066,14 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
          assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
        }
        break;
-  }
-
-
-  if (
-    _parser.getTBBInvadeStrategy() != exahype::parser::Parser::TBBInvadeStrategy::NoInvade
-    and
-    _parser.getTBBInvadeStrategy() != exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores
-  ) {
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "retreat from my threads/cores" );
-    tarch::multicore::Core::getInstance().configure( 1, false );
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+       {
+      	 logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "release SHMInvade object" );
+         assertion( _shmInvade != nullptr );
+         delete _shmInvade;
+         _shmInvade = nullptr;
+       }
+       break;
   }
 
   invasionWatch.startTimer();
