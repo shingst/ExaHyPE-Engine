@@ -932,17 +932,6 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
   }
 
-  // ask for an optimal number of cores for local rank
-  int optimalNumberOfThreads = std::max(
-    peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
-      myIndexWithinSharedUserData,
-      t1,f,s,
-      shminvade::SHMController::getInstance().getMaxAvailableCores(),
-      tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
-    ),
-    2
-    );
-
   switch ( _parser.getTBBInvadeStrategy() ) {
     case exahype::parser::Parser::TBBInvadeStrategy::Undef:
       break;
@@ -951,13 +940,37 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
-      tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
+      {
+        // ask for an optimal number of cores for local rank
+        int optimalNumberOfThreads = std::max(
+          peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+            myIndexWithinSharedUserData,
+            t1,f,s,
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
+            tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
+          ),
+          2
+        );
+        tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
+      }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
       tarch::multicore::Core::getInstance().configure( 2, true );
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
-      tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
+      {
+        // ask for an optimal number of cores for local rank
+        int optimalNumberOfThreads = std::max(
+          peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+            myIndexWithinSharedUserData,
+            t1,f,s,
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
+            tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
+          ),
+          2
+        );
+        tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
+      }
       break;
   }
 
@@ -978,28 +991,41 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
-  // adopt my local performance model
-  invasionWatch.stopTimer();
-  amdahlsLaw.addMeasurement(
-    tarch::multicore::Core::getInstance().getNumberOfThreads(),
-    invasionWatch.getCalendarTime()
-  );
-  amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
-  
-  //
-  //
-  //
-  double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
-  shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3);
+  switch ( _parser.getTBBInvadeStrategy() ) {
+     case exahype::parser::Parser::TBBInvadeStrategy::Undef:
+     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+       break;
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
+       {
+    	 // adopt my local performance model
+    	 invasionWatch.stopTimer();
+    	 amdahlsLaw.addMeasurement(
+    	   tarch::multicore::Core::getInstance().getNumberOfThreads(),
+    	   invasionWatch.getCalendarTime()
+    	 );
+    	 amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
 
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
+    	 //
+    	 //
+    	 //
+    	 double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
+    	 shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3);
 
-  assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
+    	 logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
+    	 logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
+    	 logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
+
+    	 assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
+    	 assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+    	 assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+         assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
+       }
+       break;
+  }
+
 
   if (
     _parser.getTBBInvadeStrategy() != exahype::parser::Parser::TBBInvadeStrategy::NoInvade
