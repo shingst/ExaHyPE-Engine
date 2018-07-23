@@ -12,7 +12,7 @@
  *
  * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Güra, Leonhard Rannabauer
  **/
-#include "exahype/solvers/ADERDGSolever.h"
+#include "exahype/solvers/ADERDGSolver.h"
 
 #include <limits>
 #include <iomanip>
@@ -1512,12 +1512,12 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         &&
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
-        (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement
+        (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement on coarse grids
           (cellDescription.getRefinementStatus()!=Pending &&
           (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
-          cellDescription.getRefinementStatus()!=_refineOrKeepOnFineGrid)))
+          cellDescription.getRefinementStatus()<=0)))
         &&
-        (cellDescription.getType()!=CellDescription::Descendant || // descendant must not have refinement status on finest level  > 0
+        (cellDescription.getType()!=CellDescription::Descendant || // descendant must not have refinement status > 0 on finest level
          cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
           cellDescription.getRefinementStatus()<=0);
   } else {
