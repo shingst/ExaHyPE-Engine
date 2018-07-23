@@ -98,6 +98,22 @@ void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
 }
 {%- endif %}
 
+{%- if useGradFlux %}
+void {{project}}::{{solver}}::flux(const double* const Q,const double* const gradQ, double** F) {
+  // Dimensions                        = {{dimensions}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  
+  // @todo Please implement/augment if required
+  {%- for d in range_0_nDim %}
+  {%- for i in range_0_nVar %}
+  F[{{d}}][{{i}}] = 0.0;
+  {%- endfor %}
+  
+  {%- endfor %}
+}
+{%- endif %}
+
+
 
 {%- if useSource %}
 //You can either implement this method or modify fusedSource

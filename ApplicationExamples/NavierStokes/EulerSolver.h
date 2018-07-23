@@ -117,6 +117,10 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
     void flux(const double* const Q,double** F) final override;
+  void flux(const double* const Q, const double* const gradQ, double** F) final override {
+    flux(Q, F);
+  }
+
 
 /* algebraicSource() function not included, as requested by the specification file */
 

@@ -7,6 +7,7 @@
 // ========================
 
 #include "EulerSolver.h"
+#include "NavierStokes.h"
 
 #include "EulerSolver_Variables.h"
 

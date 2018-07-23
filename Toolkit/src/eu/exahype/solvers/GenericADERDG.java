@@ -29,6 +29,7 @@ public class GenericADERDG implements Solver {
     
     final boolean isLinear               = kernel.isLinear();
     final boolean useFlux                = kernel.useFlux();
+    final boolean useGradientFlux        = kernel.useGradientFlux();
     final boolean useSource              = kernel.useSource();
     final boolean useNCP                 = kernel.useNCP();
     final boolean usePointSources        = kernel.usePointSources();
@@ -67,6 +68,7 @@ public class GenericADERDG implements Solver {
     context.put("isLinear"              , isLinear);
     context.put("isFortran"             , isFortran);
     context.put("useFlux"               , useFlux);
+    context.put("useGradientFLux"       , useFlux);
     context.put("useSource"             , useSource);
     context.put("useNCP"                , useNCP);
     context.put("usePointSources"       , usePointSources);
@@ -78,6 +80,7 @@ public class GenericADERDG implements Solver {
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));
+    context.put("useGradientFlux_s" , boolToTemplate(useGradientFlux));
     context.put("useSource_s"       , boolToTemplate(useSource));
     context.put("useNCP_s"          , boolToTemplate(useNCP));
     
