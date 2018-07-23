@@ -537,20 +537,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
-      logWarning("createRepository(...)",
+      logInfo("createRepository(...)",
           "scale domain size artificially to " << scaledDomainSize << " from "
           << _domainSize << " since non-cubic domain was specified");
     }
-    logWarning("createRepository(...)",
+    logInfo("createRepository(...)",
         "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
         coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
-      logWarning("createRepository(...)",
+      logInfo("createRepository(...)",
           "We will need to refine the grid " << boundingBoxMeshLevel-coarsestUserMeshLevel << " more time(s) than expected "
           " in order to satisfy user's maximum mesh size criterion while scaling the bounding box");
     }
 
-    logWarning(
+    logInfo(
         "createRepository(...)",
         "summary: create computational domain at " << _domainOffset <<
         " of width/size " << scaledDomainSize <<
