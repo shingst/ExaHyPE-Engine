@@ -24,10 +24,10 @@ tarch::logging::Log SWE::MySWESolver_ADERDG::_log( "SWE::MySWESolver_ADERDG" );
 
 void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   if (constants.isValueValidDouble( "grav" )) {
-    grav_DG = constants.getValueAsDouble("grav");
+    grav_DG = constants.getValueAsDouble("grav")/1000.0;
   }
   if (constants.isValueValidDouble( "epsilon" )) {
-    epsilon_DG = constants.getValueAsDouble( "epsilon" );
+    epsilon_DG = constants.getValueAsDouble( "epsilon" )/1000.0;;
   }
   if (constants.isValueValidInt( "scenario" )) {
     initialData= new InitialData(constants.getValueAsInt( "scenario" ));
@@ -117,7 +117,7 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
 
 
   if (vars.h() < epsilon_DG){
-    eigs.h() = 0.0;
+    eigs.h() = epsilon_DG;
     eigs.hu() = 0.0;
     eigs.hv() = 0.0;
     eigs.b() = 0.0;
@@ -187,27 +187,43 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
 
+
+
+  //limiter along coast
+  
+  double bMin;
   double hMin;
-  double hMax;
   idx3 id(Order+1,Order+1,NumberOfVariables);
-  hMin=solution[id(0,0,0)];
-  hMax=solution[id(0,0,0)];
+  bMin=std::abs(solution[id(0,0,3)]);
+  hMin=         solution[id(0,0,0)];
+ 
   for(int i = 0 ; i < Order+1 ; i++){
     for(int j = 0 ; j < Order+1 ; j++){
+      bMin=std::min(bMin, solution[id(i,j,3)]);
       hMin=std::min(hMin, solution[id(i,j,0)]);
-      hMax=std::max(hMin, solution[id(i,j,0)]);
     }
   }
 
-    if (hMin == 0 && hMax == 0){
-        return false;
+  if(bMin < 0.100){
+    //    std::cout <<center[0] << "," << center[1] <<": false" << std::endl;
+    return false;
+  }
+
+  if(hMin < epsilon_DG * 10.0){
+    return false;
+  }
+  
+  /*  for(int i = 0 ; i < Order+1 ; i++){
+    for(int j = 0 ; j < Order+1 ; j++){
+      if(solution[id(i,j,0)] < epsilon_DG * 10.0) {
+	return false;
+      }
     }
-    else if (hMin <= 1000){ // fv limiter blow 1km
-        return false;
-    }
-    else {
-        return true;
-    }
+    }*/
+  //  std::cout <<center[0] << "," << center[1] <<": true" << std::endl;
+  
+  return true;
+
 }
 
 // void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const int numberOfObservables, const double* const Q){

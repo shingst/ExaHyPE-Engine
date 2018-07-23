@@ -1,7 +1,7 @@
 !AffineMap
 matrix:
- x: [1.0, 0.0, 0.0]
- y: [0.0, 1.0, 0.0]
+ x: [1000.0, 0.0, 0.0]
+ y: [0.0, 1000.0, 0.0]
 translation:
  x: 0.0
  y: 0.0
@@ -12,6 +12,12 @@ components:
     file: data/tohoku_gebco_ucsb3_500m_hawaii_bath.nc
     parameters: [b]
     var: z
+    components:
+      !AffineMap
+      matrix:
+        b: [0.001]
+      translation:
+        b: 0.0
   [d]: 
     !Any
     components:
@@ -24,6 +30,12 @@ components:
           file: data/tohoku_gebco_ucsb3_500m_hawaii_displ.nc
           parameters: [d]
           var: z
+          components:
+            !AffineMap
+            matrix:
+              d: [0.001]
+            translation:
+              d: 0.0
       - !ConstantMap
         map:
           d: 0.0

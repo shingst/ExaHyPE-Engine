@@ -13,10 +13,10 @@ tarch::logging::Log SWE::MySWESolver_FV::_log( "SWE::MySWESolver_FV" );
 
 void SWE::MySWESolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
     if (constants.isValueValidDouble( "grav" )) {
-        grav = constants.getValueAsDouble("grav");
+        grav = constants.getValueAsDouble("grav")/1000.0;
     }
     if (constants.isValueValidDouble( "epsilon" )) {
-        epsilon = constants.getValueAsDouble( "epsilon" );
+        epsilon = constants.getValueAsDouble( "epsilon" )/1000.0;
     }
     if (constants.isValueValidInt( "scenario" )) {
       initialData= new InitialData(constants.getValueAsInt( "scenario" ));
@@ -51,6 +51,11 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
   eigs.hu() = u_n - c;
   eigs.hv() = u_n;
   eigs.b() = 0.0;
+
+  if(tarch::la::equals(u_n,0.0) && tarch::la::equals(c,0.0)){
+    eigs.h() = std::sqrt(grav * epsilon);
+  }
+
 }
 
 void SWE::MySWESolver_FV::boundaryValues(
