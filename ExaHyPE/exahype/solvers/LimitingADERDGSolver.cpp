@@ -420,11 +420,10 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
 
     determineSolverMinAndMax(solverPatch);
     if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch) ) {
-      solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
-      solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
+       solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
+       solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     } else {
-      _solver->markForRefinement(solverPatch); // TODO This code probably overwrites the
-      // refinement status during the iterations.
+      _solver->markForRefinement(solverPatch);
     }
   }
 }
@@ -733,8 +732,9 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
 
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
-  bool isTroubled = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
-                    !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  bool dmpViolated = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch);
+  bool padViolated = !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  bool isTroubled = dmpViolated || padViolated;
   if ( isTroubled ) {
     solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     if ( solverPatch.getRefinementStatus() > _solver->_minimumRefinementStatusForActiveFVPatch ) {
@@ -746,6 +746,7 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
       //logInfo("determineLimiterStatusAfterSolutionUpdate()","irregular for x="<<solverPatch.getOffset() << ", level="<<solverPatch.getLevel() << "status="<<solverPatch.getRefinementStatus()<<","<<solverPatch.getPreviousLimiterStatus()<<","<<solverPatch.getExternalLimiterStatus()<<",max status="<<max status );
     }
     if (solverPatch.getLevel()<getMaximumAdaptiveMeshLevel()) {
+      //logInfo("determineRefinementStatusAfterSolutionUpdate(...)","troubled on coarse grid. dmpViolated="<<dmpViolated<<". padViolated="<<padViolated<<". cell="<<solverPatch.toString());
       meshUpdateEvent = MeshUpdateEvent::RefinementRequested;
     }
   } else { // We cool the troubled cells down so slowly

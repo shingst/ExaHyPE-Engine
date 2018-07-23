@@ -1512,7 +1512,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         &&
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
-        (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement on coarse grids
+        (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement on coarser grids
           (cellDescription.getRefinementStatus()!=Pending &&
           (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
           cellDescription.getRefinementStatus()<=0)))
