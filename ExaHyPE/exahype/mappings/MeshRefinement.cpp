@@ -141,6 +141,8 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   } else {
     if ( solverState.getAllSolversAttainedStableStateInPreviousIteration() ) {
       _stableIterationsInARow++;
+    } else { // this is for the worker ranks, the global master was already updated in the last endIteration(...)
+      _stableIterationsInARow=0;
     }
   }
   if ( StillInRefiningMode && _stableIterationsInARow>1 ) { // experimentally found
