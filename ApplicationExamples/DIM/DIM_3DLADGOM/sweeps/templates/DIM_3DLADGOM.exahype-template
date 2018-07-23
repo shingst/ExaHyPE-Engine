@@ -41,7 +41,7 @@ exahype-project DIM
     identifier       = static_load_balancing
     configure        = {hotspot,fair,ranks-per-node:{{ranksPerNode}}}
     buffer-size      = {{bufferSize}}
-    timeout          = 60
+    timeout          = 120
   end distributed-memory
 
   global-optimisation

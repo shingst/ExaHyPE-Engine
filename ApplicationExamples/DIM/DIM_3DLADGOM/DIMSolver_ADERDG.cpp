@@ -74,8 +74,9 @@ void DIM::DIMSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
 }
 */
 exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  if ( level > getCoarsestMeshLevel() )
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  else return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
