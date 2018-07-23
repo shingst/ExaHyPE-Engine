@@ -881,6 +881,8 @@ public:
    * we simply update the limiter status using
    * the information taken from the neighbour
    * merging.
+   *
+   * \note Must be called after starting a new time step for the patch.
    */
   MeshUpdateEvent
   updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
