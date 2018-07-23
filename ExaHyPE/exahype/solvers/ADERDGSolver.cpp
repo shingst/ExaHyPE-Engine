@@ -163,9 +163,9 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   // Limiter meta data (oscillations identificator)
   newCellDescription.setRefinementFlag(false);
-  newCellDescription.setRefinementStatus(0); // 0 is CellDescription::RefinementStatus::Ok
-  newCellDescription.setPreviousRefinementStatus(0);
-  newCellDescription.setFacewiseRefinementStatus(0);  // implicit conversion
+  newCellDescription.setRefinementStatus(Pending);
+  newCellDescription.setPreviousRefinementStatus(Pending);
+  newCellDescription.setFacewiseRefinementStatus(Pending);  // implicit conversion
   newCellDescription.setSolutionMin(-1);
   newCellDescription.setSolutionMax(-1);
   newCellDescription.setIterationsToCureTroubledCell(0);

@@ -141,8 +141,6 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   } else {
     if ( solverState.getAllSolversAttainedStableStateInPreviousIteration() ) {
       _stableIterationsInARow++;
-    } else {
-      _stableIterationsInARow = 0;
     }
   }
   if ( StillInRefiningMode && _stableIterationsInARow>1 ) { // experimentally found
@@ -185,6 +183,9 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
     solverState.setAllSolversAttainedStableStateInPreviousIteration( // check if we actually reached the solver's grids 
         solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
         solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers()); // max level only available in endIteration(..>)
+    if ( !solverState.getAllSolversAttainedStableStateInPreviousIteration() ) { // reset directly
+      _stableIterationsInARow = 0;
+    }
     solverState.setMeshRefinementHasConverged(
       !StillInRefiningMode && _stableIterationsInARow > 1 && // experimentally found
       solverState.getAllSolversAttainedStableStateInPreviousIteration() ); // it's actually the currently finishing iteration

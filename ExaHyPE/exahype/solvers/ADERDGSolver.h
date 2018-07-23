@@ -179,7 +179,7 @@ private:
   /** Special Refinement Status values */
   static constexpr int BoundaryStatus             = -3;
   static constexpr int Pending                    = -2;
-  static constexpr int Erase                      = -1; // Erase must be chosen as -1. Otherwise
+  static constexpr int Erase                      = -1; // Erase must be chosen as -1.
   static constexpr int Keep                       =  0;
 
   int _refineOrKeepOnFineGrid; // can be configured by the user
