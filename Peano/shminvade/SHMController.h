@@ -45,6 +45,18 @@ namespace shminvade {
 
 
 
+/**
+ *
+ *
+ * <h2> Usage </h2>
+ *
+ * - Init your TBB environment with shminvade::SHMController::getInstance().getMaxAvailableCores()
+ *   threads.
+ * - Use shminvade::SHMStrategy::setStrategy to set a strategy if you want
+ *   another one than let all ranks invade all cores simultaneously.
+ * - Initialise shared memory regions through shminvade::SHMSharedMemoryBetweenTasks
+ *   if you want ranks to communicate via shared memory.
+ */
 class shminvade::SHMController {
   public:
     enum class ThreadType {
@@ -154,11 +166,6 @@ class shminvade::SHMController {
      * terminate.
      */
     void shutdown();
-
-    /**
-     * @return Core number a thread is pinned to
-     */
-    int getCoreOfThread(pid_t threadId) const;
 
     void retreat( int core );
 

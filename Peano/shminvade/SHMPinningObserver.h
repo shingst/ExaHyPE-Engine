@@ -84,8 +84,6 @@ class shminvade::SHMPinningObserver: public tbb::task_scheduler_observer {
      */
     tbb::atomic<int> _numThreads;
 
-    std::map<pid_t,int> _threadIdToCoreMap;
-
     /**
      * If the observer is switched on, it automatically pins all threads.
      */
@@ -102,8 +100,6 @@ class shminvade::SHMPinningObserver: public tbb::task_scheduler_observer {
     void on_scheduler_exit( bool ) override;
 
     int getNumberOfRegisteredThreads() const;
-
-    int getCoreOfThread(pid_t threadId) const;
 };
 
 #endif

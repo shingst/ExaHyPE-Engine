@@ -20,7 +20,7 @@ exahype-project  SWE
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/SWE/SWE_asagi
+  output-directory const  = ./ApplicationExamples/SWE/SWE_asagi_fv
   architecture const      = noarch
   //log-file                = mylogfile.log
 
@@ -52,21 +52,21 @@ exahype-project  SWE
       spawn-amr-background-threads         = off
       /* 0.0 und 0.8 sind schon mal zwei Faktoren */
       disable-vertex-exchange-in-time-steps = on
-      time-step-batch-factor           = 0.0
+      time-step-batch-factor           = 1.0
       disable-metadata-exchange-in-batched-time-steps = on
       double-compression = 0.0
       spawn-double-compression-as-background-thread = off
    end global-optimisation
 
-  solver Finite-Volumes MySWESolver
+  solver Finite-Volumes MySWESolver_FV
     variables const   = h:1,hu:1,hv:1,b:1
     //parameters const  = b:1
     patch-size const   = 3
-    maximum-mesh-size = 1000
+    maximum-mesh-size  = 3000.0
 //    maximum-mesh-size = 27000
     time-stepping     = global
     type const      = godunov
-    terms const = flux
+    terms const = flux,ncp
     optimisation const = generic, usestack
     language const    = C
 //    constants = grav:9.81, epsilon:1e-3, scenario:14
@@ -74,19 +74,16 @@ exahype-project  SWE
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 6
       time            = 0.0
-      repeat          = 30
-      output          = tohoku_output/conserved
+      repeat          = 30.0
+      output          = ./tohoku_output/conserved
     end plot
-
     plot probe::ascii ProbeWriter
-      variables const = 9
+      variables const = 6
       time            = 0.0
-      repeat          = 10
+      repeat          = 10.0
       output          = ./buoy
-      select          = x:545735.266126,y:62716.4740303,z:0.0
+      select          = x:545735.266126,y:62716.4740303
     end plot
-
-
   end solver
 end exahype-project
 

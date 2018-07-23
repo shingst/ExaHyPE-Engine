@@ -43,22 +43,21 @@ void shminvade::SHMLockTask::terminate() {
 
 
 tbb::task* shminvade::SHMLockTask::execute() {
-  const pid_t currentThreadId = (pid_t) syscall (__NR_gettid);
-  const int   currentCore     = SHMController::getInstance().getCoreOfThread( currentThreadId );
+  const int   currentCore     = sched_getcpu();
 
   SHMController::ThreadType state = SHMController::getInstance().getThreadType(_core);
   switch (state) {
     case SHMController::ThreadType::Master:
       // there should be no lock tasks on the master so let this one die
       #if SHM_INVADE_DEBUG>=1
-      std::cerr << SHM_DEBUG_PREFIX <<  "Core " << _core << " is the master. There should never be a lock lock task. Lock task found on thread " << currentThreadId << " (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+      std::cerr << SHM_DEBUG_PREFIX <<  "Core " << _core << " is the master. There should never be a lock lock task. Lock task found on core " << currentCore << " (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
       #endif
       terminate();
       return nullptr;
     case SHMController::ThreadType::ExclusivelyOwned:
       // we own it so let this one die
       #if SHM_INVADE_DEBUG>=8
-      std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is exclusively owned. Lock task found on thread " << currentThreadId << ". Terminate (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+      std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is exclusively owned. Lock task found on core " << currentCore << ". Terminate (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
       #endif
       terminate();
       return nullptr;
@@ -66,7 +65,7 @@ tbb::task* shminvade::SHMLockTask::execute() {
         if ( currentCore!=_core ) {
           #if SHM_INVADE_DEBUG>=8
     	  std::cout << SHM_DEBUG_PREFIX <<  "Lock task for core " << _core <<
-            " has been invoked by thread " << currentThreadId << " pinned to core " << currentCore <<
+            " has been invoked on core " << currentCore <<
     	    " so re-enqueue (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     	  #endif
     	  reenqueue();
@@ -78,7 +77,7 @@ tbb::task* shminvade::SHMLockTask::execute() {
             _sleepTime *= 2;
           }
           #if SHM_INVADE_DEBUG>=2
-          std::cout << SHM_DEBUG_PREFIX <<  "Thread " << currentThreadId << " on core " << _core << " should not be used. Make lock task sleep for " << _sleepTime << "s before we reenqueue (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+          std::cout << SHM_DEBUG_PREFIX <<  "Thread on core " << _core << " should not be used. Make lock task sleep for " << _sleepTime << "s before we reenqueue (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
           #endif
           sleep(_sleepTime);
           reenqueue();
@@ -86,7 +85,7 @@ tbb::task* shminvade::SHMLockTask::execute() {
         }
       case SHMController::ThreadType::Shutdown:
         #if SHM_INVADE_DEBUG>=4
-        std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is marked to shut down. Lock task found on thread " << currentThreadId << ". Terminate (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+        std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is marked to shut down. Lock task found on core " << currentCore << ". Terminate (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
         #endif
         // we should die anyway
         terminate();

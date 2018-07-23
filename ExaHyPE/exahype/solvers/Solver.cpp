@@ -754,47 +754,6 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpd
   );
 }
 
-void exahype::solvers::Solver::adjustSolutionDuringMeshRefinement(
-    const int cellDescriptionsIndex,
-    const int element) {
-  const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
-  if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    AdjustSolutionDuringMeshRefinementJob job(*this,cellDescriptionsIndex,element,isInitialMeshRefinement);
-    peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
-  } else {
-    adjustSolutionDuringMeshRefinementBody(cellDescriptionsIndex,element,isInitialMeshRefinement);
-  }
-}
-
-exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::AdjustSolutionDuringMeshRefinementJob(
-  Solver& solver,
-  const int     cellDescriptionsIndex,
-  const int     element,
-  const bool    isInitialMeshRefinement):
-  _solver(solver),
-  _cellDescriptionsIndex(cellDescriptionsIndex),
-  _element(element),
-  _isInitialMeshRefinement(isInitialMeshRefinement)
-{
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs++;
-  }
-  lock.free();
-}
-
-bool exahype::solvers::Solver::AdjustSolutionDuringMeshRefinementJob::operator()() {
-  _solver.adjustSolutionDuringMeshRefinementBody(_cellDescriptionsIndex,_element,_isInitialMeshRefinement);
-
-  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
-  {
-    NumberOfAMRBackgroundJobs--;
-    assertion( NumberOfAMRBackgroundJobs>=0 );
-  }
-  lock.free();
-  return false;
-}
-
 std::string exahype::solvers::Solver::toString() const {
   std::ostringstream stringstr;
   toString(stringstr);

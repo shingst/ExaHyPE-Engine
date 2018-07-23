@@ -417,6 +417,16 @@ class exahype::parser::Parser {
    **/
   std::string getTokenStreamAsString() const;
 
+  enum class TBBInvadeStrategy {
+	Undef,
+    NoInvade,
+	OccupyAllCores,
+	InvadeBetweenTimeSteps,
+	InvadeThroughoutComputation,
+	InvadeAtTimeStepStartupPlusThroughoutComputation
+  };
+
+  TBBInvadeStrategy getTBBInvadeStrategy() const;
 };
 
 #endif

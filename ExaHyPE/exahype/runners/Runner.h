@@ -22,13 +22,17 @@
 #include "tarch/multicore/MulticoreDefinitions.h"
 
 namespace exahype {
-namespace runners {
-class Runner;
+  namespace runners {
+    class Runner;
+  }
+  namespace repositories {
+    class Repository;
+  }
 }
-namespace repositories {
-class Repository;
-}
-}
+
+#ifdef TBBInvade
+#include "shminvade/SHMInvade.h"
+#endif
 
 /**
  * Runner
@@ -77,6 +81,10 @@ class exahype::runners::Runner {
   int _localRecomputations;
   int _globalRecomputations;
   int _predictorReruns;
+
+  #ifdef TBBInvade
+  shminvade::SHMInvade*  _shmInvade;
+  #endif
 
   /**
    * Updates the statistics.

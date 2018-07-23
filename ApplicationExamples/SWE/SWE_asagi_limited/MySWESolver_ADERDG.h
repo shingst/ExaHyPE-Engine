@@ -19,6 +19,7 @@
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
+#include "InitialData.h"
 
 namespace SWE{
   class MySWESolver_ADERDG;
@@ -26,12 +27,21 @@ namespace SWE{
 
 class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
   private:
+  InitialData* initialData;
     /**
      * Log device
      */
     static tarch::logging::Log _log;
   public:
-    MySWESolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
+    MySWESolver_ADERDG(
+        const double maximumMeshSize,
+        const int maximumMeshDepth,
+        const int haloCells,
+        const int regularisedFineGridLevels,
+        const exahype::solvers::Solver::TimeStepping timeStepping,
+        const int limiterHelperLayers,
+        const int DMPObservables
+        );
 
     /**
      * Initialise the solver.
@@ -64,7 +74,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
-
+    
     /**
      * Impose boundary conditions at a point on a boundary face
      * within the time interval [t,t+dt].
@@ -85,7 +95,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
-
+    
     /**
      * Evaluate the refinement criterion within a cell.
      *
@@ -101,7 +111,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
     exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
-
+    
     //PDE
 
     /**
@@ -117,7 +127,7 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
 
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
-     *
+     * 
      * This function shall return a vector BgradQ which holds the result
      * of the full term. To do so, it gets the vector Q and the matrix
      * gradQ which holds the derivative of Q in each spatial direction.
@@ -125,34 +135,25 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
      * kernels::idx2 class in order to compute the positions inside gradQ.
      *
      * @TODO: Check if the following is still right:
-     *
+     * 
      * !!! Warning: BgradQ is a vector of size NumberOfVariables if you
      * use the ADER-DG kernels for nonlinear PDEs. If you use
      * the kernels for linear PDEs, it is a tensor with dimensions
      * Dim x NumberOfVariables.
-     *
+     * 
      * \param[in]   Q   the vector of unknowns at the given position
      * \param[in]   gradQ   the gradients of the vector of unknowns,
      *                  stored in a linearized array.
-     * \param[inout]  The vector BgradQ (extends nVar), already allocated.
+     * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
      *
      **/
+    bool isPhysicallyAdmissible(const double* const solution,const double* const observablesMin,const double* const observablesMax,const bool wasTroubledInPreviousTimeStep,const tarch::la::Vector<DIMENSIONS,double>& center,	const tarch::la::Vector<DIMENSIONS,double>& dx,	const double t, const double dt) const;
+
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
 
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
-
-    void mapDiscreteMaximumPrincipleObservables(double* observables, const int numberOfObservables, const double* const Q) const override {
-    };
-
-    bool isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const override;
 };
 
 #endif // __MySWESolver_ADERDG_CLASS_HEADER__

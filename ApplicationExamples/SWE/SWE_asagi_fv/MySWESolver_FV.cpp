@@ -1,5 +1,5 @@
-#include "MySWESolver.h"
-#include "MySWESolver_Variables.h"
+#include "MySWESolver_FV.h"
+#include "MySWESolver_FV_Variables.h"
 
 #include "kernels/KernelUtils.h"
 
@@ -9,9 +9,9 @@ double grav;
 double epsilon;
 int scenario;
 
-tarch::logging::Log SWE::MySWESolver::_log( "SWE::MySWESolver" );
+tarch::logging::Log SWE::MySWESolver_FV::_log( "SWE::MySWESolver_FV" );
 
-void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+void SWE::MySWESolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
     if (constants.isValueValidDouble( "grav" )) {
         grav = constants.getValueAsDouble("grav");
     }
@@ -23,7 +23,7 @@ void SWE::MySWESolver::init(const std::vector<std::string>& cmdlineargs,const ex
     }
 }
 
-void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -37,7 +37,7 @@ void SWE::MySWESolver::adjustSolution(const double* const x,const double t,const
   }
 }
 
-void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
   // Dimensions             = 2
   // Number of variables    = 4 + #parameters
 
@@ -53,7 +53,7 @@ void SWE::MySWESolver::eigenvalues(const double* const Q, const int dIndex, doub
   eigs.b() = 0.0;
 }
 
-void SWE::MySWESolver::boundaryValues(
+void SWE::MySWESolver_FV::boundaryValues(
     const double* const x,
     const double t,const double dt,
     const int faceIndex,
@@ -88,7 +88,7 @@ void SWE::MySWESolver::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-void SWE::MySWESolver::flux(const double* const Q,double** F) {
+void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
  
@@ -112,7 +112,7 @@ void SWE::MySWESolver::flux(const double* const Q,double** F) {
  
 }
 
-double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
+double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
     double LL[NumberOfVariables] = {0.0};
     double LR[NumberOfVariables] = {0.0};
 
@@ -163,5 +163,11 @@ double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL,
     }
 
     return smax;
+}
+
+void SWE::MySWESolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+  //do nothing: Should never be called
+  std::cout << "Called fv ncp" << std::endl;
+  std::terminate();
 }
 

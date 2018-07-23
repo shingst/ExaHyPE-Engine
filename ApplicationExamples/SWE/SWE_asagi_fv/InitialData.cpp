@@ -1,11 +1,12 @@
 #include "InitialData.h"
-#include "MySWESolver_Variables.h"
-#include "MySWESolver.h"
+#include "MySWESolver_FV_Variables.h"
+#include "MySWESolver_FV.h"
 
+#if defined(USE_ASAGI)
 #include "easi/YAMLParser.h"
 #include "easi/ResultAdapter.h"
 #include "reader/asagi_reader.h"
-
+#endif
 #include <cmath>
 
 using namespace std;
@@ -49,7 +50,7 @@ InitialData::InitialData(int a_scenario)
 * Constant water height with both sides smashing together
 */
 void InitialData::ShockShockProblem(const double * const x, double* Q){
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   if(x[0] < 5) {
       vars.h() = 4.0;
@@ -68,7 +69,7 @@ void InitialData::ShockShockProblem(const double * const x, double* Q){
 * Constant water height with both sides moving away from each other
 */
 void InitialData::RareRareProblem(const double * const x, double* Q){
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   if(x[0] < 5) {
       vars.h() = 4.0;
@@ -87,7 +88,7 @@ void InitialData::RareRareProblem(const double * const x, double* Q){
 * Gaussfunktion
 */
 void InitialData::GaussFunctionProblem(const double* const x, double* Q){
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   vars.h() = exp(-pow(x[0] - 5, 2)) + 1;
   vars.hu() = 0.0;
@@ -100,7 +101,7 @@ void InitialData::GaussFunctionProblem(const double* const x, double* Q){
  * Constant water height with "exponential" hump in bathymetry.
  */
 void InitialData::ExpBreakProblem(const double* const x,double* Q) {
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
     vars.h() = 4.0;
@@ -119,7 +120,7 @@ void InitialData::ExpBreakProblem(const double* const x,double* Q) {
  * Constant water height with discontinuous jump in bathymetry.
  */
 void InitialData::DamBreakProblem(const double* const x,double* Q) {
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
     vars.h() = 4.0;
@@ -138,7 +139,7 @@ void InitialData::DamBreakProblem(const double* const x,double* Q) {
  * Sea at rest (steady state).
  */
 void InitialData::SeaAtRestProblem(const double* const x,double* Q) {
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   if(x[0] >= (10.0/3.0) && x[0]<= (20.0/3.0)) {
     vars.h() = 2 - x[0]*(3.0/10.0) + 1;
@@ -158,7 +159,7 @@ void InitialData::SeaAtRestProblem(const double* const x,double* Q) {
 * To be used with WALL boundaries.
 */
 void InitialData::SteadyRunUpLinear(const double* const x, double* Q) {
-   MySWESolver::Variables vars(Q);
+   MySWESolver_FV::Variables vars(Q);
 
    const double d =1;
    const double xr=19.85;
@@ -175,7 +176,7 @@ void InitialData::SteadyRunUpLinear(const double* const x, double* Q) {
 * To be used with WALL boundaries.
 */
 void InitialData::RunUpLinear(const double* const x, double* Q) {
-   MySWESolver::Variables vars(Q);
+   MySWESolver_FV::Variables vars(Q);
 
    const double as=0.3;
    const double d =1;
@@ -195,7 +196,7 @@ void InitialData::RunUpLinear(const double* const x, double* Q) {
 * Steady-state test case for artificial continental shelf.
 */
 void InitialData::SteadyRunUpShelf(const double* const x, double* Q) {
-   MySWESolver::Variables vars(Q);
+   MySWESolver_FV::Variables vars(Q);
 
    const double d1 = 200.0;
    const double d2 = 2000.0;
@@ -226,7 +227,7 @@ void InitialData::SteadyRunUpShelf(const double* const x, double* Q) {
 * Run-up on artificial continental shelf.
 */
 void InitialData::RunUpShelf(const double* const x, double* Q) {
-   MySWESolver::Variables vars(Q);
+   MySWESolver_FV::Variables vars(Q);
 
    const double d1 = 200.0;
    const double d2 = 2000.0;
@@ -263,7 +264,7 @@ void InitialData::RunUpShelf(const double* const x, double* Q) {
 // width = 10.0,10.0
 // offset = 0.0, 0.0
 void InitialData::WettingDryingProblem(const double* const x, double* Q){
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   if(x[0] < -5) {
       vars.h() = 2.0;
@@ -276,7 +277,7 @@ void InitialData::WettingDryingProblem(const double* const x, double* Q){
 }
 
 void InitialData::OscillatingLake(const double* const x, double* Q){
-    MySWESolver::Variables vars(Q);
+    MySWESolver_FV::Variables vars(Q);
 
     double omega = sqrt(0.2*grav);
 
@@ -289,7 +290,7 @@ void InitialData::OscillatingLake(const double* const x, double* Q){
 // width = 10.0,10.0
 // offset = 0.0, 0.0
 void InitialData::RunUpTest(const double* const x, double* Q){
-    MySWESolver::Variables vars(Q);
+    MySWESolver_FV::Variables vars(Q);
 
     if(x[0] < 7){
         vars.h() = 0.5*exp(-pow(x[0] - 3.5, 2)) + 0.5;
@@ -307,7 +308,7 @@ void InitialData::RunUpTest(const double* const x, double* Q){
 //width = 70.0,10.0
 //offset = -10.0,0.0
 void InitialData::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
-  MySWESolver::Variables vars(Q);
+  MySWESolver_FV::Variables vars(Q);
 
   const double d = 0.15;
   const double H = 0.3 * d;

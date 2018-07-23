@@ -31,6 +31,12 @@ void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,co
   if (tarch::la::equals(t,0.0)) {
     initialData(x, Q);
   }
+  else{
+    if(Q[0] < epsilon_FV){
+      Q[1] = 0;
+      Q[2] = 0;
+    }
+  }
 }
 
 void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
@@ -40,26 +46,13 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
-  if (vars.h() < epsilon_FV){
-    eigs.h() = 0.0;
-    eigs.hu() = 0.0;
-    eigs.hv() = 0.0;
-    eigs.b() = 0.0;
-    // std::cout << 0.0 << std::endl;
-  }
-  else {
-    const double c = std::sqrt(grav_FV * vars.h());
-    const double ih = 1. / vars.h();
-    double u_n = Q[dIndex + 1] * Q[0]*std::sqrt(2)/std::sqrt(std::pow(Q[0], 4) + std::pow(std::max(vars.h(), epsilon_FV), 4));
+  const double c = std::sqrt(grav_FV * vars.h());
+  double u_n = Q[dIndex + 1] * vars.h() * std::sqrt(2)/std::sqrt(std::pow(vars.h(), 4) + std::pow(std::max(vars.h(), epsilon_FV), 4));
 
-    eigs.h() = u_n + c;
-    eigs.hu() = u_n - c;
-    eigs.hv() = u_n;
-    eigs.b() = 0.0;
-    //    std::cout << eigs.h() + std::abs(c) << std::endl;
-  }
-
-
+  eigs.h() = u_n + c;
+  eigs.hu() = u_n - c;
+  eigs.hv() = u_n;
+  eigs.b() = 0.0;
 }
 
 void SWE::MySWESolver_FV::boundaryValues(
@@ -97,30 +90,18 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** F) {
   double* f = F[0];
   double* g = F[1];
 
-  if (Q[0] < epsilon_FV){
-    f[0] = 0.0;
-    f[1] = 0.0;
-    f[2] = 0.0;
-    f[3] = 0.0;
+  double u_n = vars.hu() * vars.h() *std::sqrt(2)/std::sqrt(std::pow(vars.h(), 4) + std::pow(std::max(vars.h(), epsilon_FV), 4));
+  double v_n = vars.hv() * vars.h() *std::sqrt(2)/std::sqrt(std::pow(vars.h(), 4) + std::pow(std::max(vars.h(), epsilon_FV), 4));
 
-    g[0] = 0.0;
-    g[1] = 0.0;
-    g[2] = 0.0;
-    g[3] = 0.0;
-  }
-  else {
-    const double ih = 1. / vars.h();
+  f[0] = vars.h() * u_n;
+  f[1] = vars.h() * u_n * u_n; // 0.5 * grav * vars.h() * vars.h();
+  f[2] = vars.h() * u_n * v_n;
+  f[3] = 0.0;
 
-    f[0] = vars.hu();
-    f[1] = vars.hu() * vars.hu() * ih; // 0.5 * grav_FV * vars.h() * vars.h();
-    f[2] = vars.hu() * vars.hv() * ih;
-    f[3] = 0.0;
-
-    g[0] = vars.hv();
-    g[1] = vars.hu() * vars.hv() * ih;
-    g[2] = vars.hv() * vars.hv() * ih; // 0.5 * grav_FV * vars.h() * vars.h();
-    g[3] = 0.0;
-  }
+  g[0] = vars.h() * v_n;
+  g[1] = vars.h() * u_n * v_n;
+  g[2] = vars.h() * v_n * v_n; // 0.5 * grav * vars.h() * vars.h();
+  g[3] = 0.0;
 }
 
 double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
@@ -176,4 +157,3 @@ double SWE::MySWESolver_FV::riemannSolver(double* fL, double *fR, const double* 
 
 void  SWE::MySWESolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
 }
-

@@ -360,38 +360,10 @@ class exahype::solvers::Solver {
    */
   static tarch::logging::Log _log;
 
-  /**
-   * A job that calls Solver::adjustSolutionDuringMeshRefinementBody(...).
-   */
-  class AdjustSolutionDuringMeshRefinementJob {
-  private:
-    Solver&       _solver;
-    const int     _cellDescriptionsIndex;
-    const int     _element;
-    const bool    _isInitialMeshRefinement;
-  public:
-    AdjustSolutionDuringMeshRefinementJob(
-        Solver&       solver,
-        const int     cellDescriptionsIndex,
-        const int     element,
-        const bool    isInitialMeshRefinement);
-
-    bool operator()();
-  };
-
  protected:
 
   void tearApart(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
-
-  /**
-   * \see body adjustSolutionDuringMeshRefinement(...).
-   * Must be implemented by the subclasses.
-   */
-  virtual void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isInitialMeshRefinement) = 0;
 
  public:
 
@@ -1486,35 +1458,15 @@ class exahype::solvers::Solver {
       const int element) = 0;
 
   /**
-   * Zeroes all the time step sizes.
-   * This method is used by the adaptive mesh refinement mapping.
-   * After the mesh refinement, we need to recompute
-   * the time step sizes.
-   *
-   * <h1>ADER-DG</h1>
-   * Further resets the predictor time stamp to take
-   * the value of the corrector time stamp.
-   * The fused must be initialised again after
-   * each mesh refinement.
-   *
-   * \note We do not overwrite _minNextTimeStepSize or an
-   * equivalent value since this would erase the time
-   * step size of the fixed time stepping schemes ("globalfixed" etc.)
-   */
-   // TODO(Dominic): Still neccessary?
-  virtual void zeroTimeStepSizes(const int cellDescriptionsIndex, const int element) const = 0;
-
-  /**
-   * Impose initial conditions.
+   * Impose initial conditions and mark for refinement.
    *
    * \note Make sure to reset neighbour merge
    * helper variables in this method call.
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  void adjustSolutionDuringMeshRefinement(
-      const int cellDescriptionsIndex,
-      const int element);
+  virtual void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) = 0;
 
   /**
    * Fuse algorithmic phases of the solvers.
@@ -1865,7 +1817,7 @@ class exahype::solvers::Solver {
   /**
    * Finish prolongation operations started on the master.
    */
-  virtual void progressMeshRefinementInMergeWithWorker(
+  virtual bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
       const int receivedCellDescriptionsIndex, const int receivedElement) = 0;
 

@@ -87,20 +87,6 @@ void shminvade::SHMPinningObserver::pinCurrentThread() {
     std::cerr << SHM_DEBUG_PREFIX <<  "Failed to set thread affinity!" << std::endl;
     exit( EXIT_FAILURE );
   }
-  else {
-    const pid_t currentThreadId = (pid_t) syscall (__NR_gettid);
-    _threadIdToCoreMap.insert( std::pair<pid_t,int>(currentThreadId,mapped_idx) );
-    struct rlimit l;
-    getrlimit(RLIMIT_STACK, &l);
-    #if SHM_INVADE_DEBUG>=1
-    std::cout<< SHM_DEBUG_PREFIX <<  "Set thread affinity: thread " << currentThreadId << " is pinned to CPU " << mapped_idx << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-    #endif
-    #if SHM_INVADE_DEBUG>=4
-    for (auto p: _threadIdToCoreMap) {
-      std::cout<< SHM_DEBUG_PREFIX <<  "Pin thread " << p.first << " to CPU " << p.second << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-    }
-    #endif
-  }
 
   CPU_FREE( target_mask );
 }
@@ -122,16 +108,6 @@ void shminvade::SHMPinningObserver::on_scheduler_exit( bool ) {
 
 int shminvade::SHMPinningObserver::getNumberOfRegisteredThreads() const {
   return _numThreads;
-}
-
-
-int shminvade::SHMPinningObserver::getCoreOfThread(pid_t threadId) const {
-  #if SHM_INVADE_DEBUG>=1
-  if (_threadIdToCoreMap.count(threadId)!=1) {
-    std::cerr<< SHM_DEBUG_PREFIX <<  "Thread id " << threadId << " not known, so can't clarify which core it is pinned to" << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-  }
-  #endif
-  return _threadIdToCoreMap.at(threadId);
 }
 
 
