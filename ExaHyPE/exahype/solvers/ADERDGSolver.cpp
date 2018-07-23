@@ -1464,8 +1464,8 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
 
   // TODO Dominic: This is a little inconsistent since I orignially tried to hide
   // the limiting from the pure ADER-DG scheme
-  fineGridCellDescription.setPreviousRefinementStatus(0);
-  fineGridCellDescription.setRefinementStatus(0);
+  fineGridCellDescription.setPreviousRefinementStatus(Pending);
+  fineGridCellDescription.setRefinementStatus(Pending);
 
   // TODO Dominic:
   // During the inital mesh build where we only refine
@@ -1478,7 +1478,7 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
     fineGridCellDescription.setRefinementStatus(_minimumRefinementStatusForTroubledCell);
     fineGridCellDescription.setIterationsToCureTroubledCell(coarseGridCellDescription.getIterationsToCureTroubledCell());
   }
-  fineGridCellDescription.setFacewiseRefinementStatus(0);
+  fineGridCellDescription.setFacewiseRefinementStatus(Pending);
 }
 
 bool exahype::solvers::ADERDGSolver::attainedStableState(
@@ -1512,7 +1512,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         &&
         cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
         &&
-        (cellDescription.getType()!=CellDescription::Cell || // cell must have pending refinement status and must not require refinement
+        (cellDescription.getType()!=CellDescription::Cell || // cell must not have pending refinement status and must not require refinement
           (cellDescription.getRefinementStatus()!=Pending &&
           (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
           cellDescription.getRefinementStatus()!=_refineOrKeepOnFineGrid)))
@@ -1665,7 +1665,7 @@ void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInEnt
       fineGridCellDescription.setRefinementStatus(Keep);
       fineGridCellDescription.setCommunicationStatus(0);
       fineGridCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-      fineGridCellDescription.setFacewiseRefinementStatus(0);
+      fineGridCellDescription.setFacewiseRefinementStatus(Pending);
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
       fineGridCellDescription.setRefinementEvent(CellDescription::None);
@@ -3319,7 +3319,8 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
   // reset the facewise flags
   cellDescription.setFacewiseAugmentationStatus(0);
   cellDescription.setFacewiseCommunicationStatus(0);
-  cellDescription.setFacewiseRefinementStatus(0);
+
+  cellDescription.setFacewiseRefinementStatus(Pending);
 
   // limiter flagging
   cellDescription.setIterationsToCureTroubledCell(-1);

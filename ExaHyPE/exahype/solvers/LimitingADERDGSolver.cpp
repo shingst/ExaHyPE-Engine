@@ -280,21 +280,9 @@ bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
     const int solverNumber) const {
   const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
   const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-  bool limiterRefinementDone = true;
-  if ( solverElement!=exahype::solvers::Solver::NotFound ) {
-    SolverPatch& solverPatch =
-    _solver->getCellDescription(cellDescriptionsIndex,solverElement);
-    limiterRefinementDone = 
-         !(solverPatch.getType()==SolverPatch::Type::Descendant  &&
-           solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-           (solverPatch.getRefinementStatus()>0                     ||
-           solverPatch.getPreviousRefinementStatus()>0));
-  } 
-  if ( limiterRefinementDone )
-    return 
-        _solver->attainedStableState(
+  return
+      _solver->attainedStableState(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
-  else return false;
 }
 
 void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
