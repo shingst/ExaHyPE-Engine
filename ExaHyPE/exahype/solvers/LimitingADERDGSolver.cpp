@@ -785,7 +785,7 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
       solverPatch.getSolution()).data();
 
   const int numberOfObservables = _solver->getDMPObservables();
-  if (numberOfObservables>0) {
+  if ( numberOfObservables>0 ) {
     double* observablesMin = DataHeap::getInstance().getData(
         solverPatch.getSolutionMin()).data();
     double* observablesMax = DataHeap::getInstance().getData(

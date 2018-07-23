@@ -524,13 +524,6 @@ private:
   static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
 
   /**
-   * Sets the face unknowns of a cell description of type Ancestor to zero.
-   * This is typically done before we perform a face unknowns
-   * restriction operation.
-   */
-  void prepareFaceDataOfAncestor(CellDescription& cellDescription);
-
-  /**
    * Restrict the obse
    */
   void restrictObservablesMinAndMax(
