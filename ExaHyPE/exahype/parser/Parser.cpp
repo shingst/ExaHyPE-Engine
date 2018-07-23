@@ -988,7 +988,7 @@ double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) cons
     _interpretationErrorOccured = true;
   }
 
-  logInfo("getParameters()", "found dmp-relaxation-parameter " << result);
+  logDebug("getParameters()", "found dmp-relaxation-parameter " << result);
   return result;
 }
 
@@ -1008,7 +1008,7 @@ double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const 
     _interpretationErrorOccured = true;
   }
 
-  logInfo("getDMPDifferenceScaling()", "found dmp-difference-scaling " << result);
+  logDebug("getDMPDifferenceScaling()", "found dmp-difference-scaling " << result);
   return result;
 }
 
@@ -1028,7 +1028,7 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
     _interpretationErrorOccured = true;
   }
 
-  logInfo("getDMPObservables()", "found dmp-observables " << result);
+  logDebug("getDMPObservables()", "found dmp-observables " << result);
   return result;
 }
 
@@ -1051,7 +1051,7 @@ int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
       _interpretationErrorOccured = true;
     }
 
-    logInfo("getStepsTillCured()", "found steps-till-cured " << result);
+    logDebug("getStepsTillCured()", "found steps-till-cured " << result);
   }
   return result;
 }
@@ -1074,7 +1074,7 @@ int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
                << "': 'helper-layers': Value must be integral and greater or equal to 1.");
       _interpretationErrorOccured = true;
     }
-    logInfo("getLimiterHelperLayers()", "found helper-layers " << result);
+    logDebug("getLimiterHelperLayers()", "found helper-layers " << result);
   }
   return result;
 }
