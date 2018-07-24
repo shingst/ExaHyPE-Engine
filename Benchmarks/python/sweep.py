@@ -194,15 +194,15 @@ def link():
             if len(whiteListFiles) < 1:
                 print("[WARNING]    runtime_dependencies_file appears to be empty")
             for f in whiteListFiles:
-                file   = f.strip()
+                fStripped  = f.strip()
                 source = None
-                if file.strip().startswith("/") or file.startswith("~"):
-                    source = file
+                if fStripped.startswith("/") or fStripped.startswith("~"):
+                    source = fStripped
                 else:
-                    source = os.path.join(exahypeRoot+"/"+projectPath+"/"+file)
+                    source = os.path.join(exahypeRoot+"/"+projectPath+"/"+fStripped)
                 
                 if os.path.isfile(source):
-                    dest = os.path.join(buildFolderPath,file)
+                    dest = os.path.join(buildFolderPath,fStripped)
                     os.symlink(source, dest)
                     print("Symlinked {} to {}".format(source, dest))
                 else:
