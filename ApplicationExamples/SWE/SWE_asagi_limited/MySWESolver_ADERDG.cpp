@@ -10,8 +10,10 @@
 #include "InitialData.h"
 #include "MySWESolver_ADERDG_Variables.h"
 #include "peano/utils/Loop.h"
-
+//#include "kernels/aderdg/generic/Kernels.h"
 #include "kernels/KernelUtils.h"
+
+#include "../../../ExaHyPE/kernels/GaussLegendreQuadrature.h"
 
 using namespace kernels;
 
@@ -24,10 +26,10 @@ tarch::logging::Log SWE::MySWESolver_ADERDG::_log( "SWE::MySWESolver_ADERDG" );
 
 void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   if (constants.isValueValidDouble( "grav" )) {
-    grav_DG = constants.getValueAsDouble("grav")/1000.0;
+    grav_DG = constants.getValueAsDouble("grav")*1.0e-3;
   }
   if (constants.isValueValidDouble( "epsilon" )) {
-    epsilon_DG = constants.getValueAsDouble( "epsilon" )/1000.0;;
+    epsilon_DG = constants.getValueAsDouble( "epsilon" )*1.0e-3;
   }
   if (constants.isValueValidInt( "scenario" )) {
     initialData= new InitialData(constants.getValueAsInt( "scenario" ));
@@ -38,10 +40,10 @@ void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
 void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 4 + 0
-
   if (tarch::la::equals(t,0.0)) {
     initialData->getInitialData(x, Q); 
   }
+
 }
 
 void SWE::MySWESolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
@@ -121,14 +123,14 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
     eigs.hu() = 0.0;
     eigs.hv() = 0.0;
     eigs.b() = 0.0;
-    //    std::cout << 0.0 << std::endl;
+    //    //std::cout << 0.0 << std::endl;
   }
   else {
     eigs.h() = u_n + c;
     eigs.hu() = u_n - c;
     eigs.hv() = u_n;
     eigs.b() = 0.0;
-    //    std::cout << eigs.h() + std::abs(c) << std::endl;
+    //    //std::cout << eigs.h() + std::abs(c) << std::endl;
   }
 }
 
@@ -157,13 +159,17 @@ void SWE::MySWESolver_ADERDG::flux(const double* const Q,double** F) {
   }
   else {
     f[0] = vars.hu();
-    f[1] = vars.hu() * vars.hu() * ih + 0.5 * grav_DG * vars.h() * vars.h();
+    // Moved hydrostatic pressure to ncp for well balancedness
+    //f[1] = vars.hu() * vars.hu() * ih + 0.5 * grav_DG * vars.h() * vars.h();
+    f[1] = vars.hu() * vars.hu() * ih;
     f[2] = vars.hu() * vars.hv() * ih;
     f[3] = 0.0;
 
     g[0] = vars.hv();
     g[1] = vars.hu() * vars.hv() * ih;
-    g[2] = vars.hv() * vars.hv() * ih + 0.5 * grav_DG * vars.h() * vars.h();
+    // Moved hydrostatic pressure to ncp for well balancedness
+    //g[2] = vars.hv() * vars.hv() * ih + 0.5 * grav_DG * vars.h() * vars.h();
+    g[2] = vars.hv() * vars.hv() * ih;
     g[3] = 0.0;
   }
 }
@@ -174,10 +180,11 @@ void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,cons
   idx2 idx_gradQ(DIMENSIONS,NumberOfVariables);
 
   BgradQ[0] = 0.0;
-  BgradQ[1] = grav_DG*Q[0]*gradQ[idx_gradQ(0,3)];
-  BgradQ[2] = grav_DG*Q[0]*gradQ[idx_gradQ(1,3)];
+  BgradQ[1] = grav_DG*Q[0]*gradQ[idx_gradQ(0,3)] + grav_DG*Q[0]*gradQ[idx_gradQ(0,0)]; 
+  BgradQ[2] = grav_DG*Q[0]*gradQ[idx_gradQ(1,3)] + grav_DG*Q[0]*gradQ[idx_gradQ(1,0)];
   BgradQ[3] = 0.0;
 }
+
 
 bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
@@ -187,10 +194,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
 
-
-
   //limiter along coast
-  
   double bMin;
   double hMin;
   idx3 id(Order+1,Order+1,NumberOfVariables);
@@ -199,13 +203,13 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
  
   for(int i = 0 ; i < Order+1 ; i++){
     for(int j = 0 ; j < Order+1 ; j++){
-      bMin=std::min(bMin, solution[id(i,j,3)]);
+      bMin=std::min(bMin, std::abs(solution[id(i,j,3)]));
       hMin=std::min(hMin, solution[id(i,j,0)]);
     }
   }
 
   if(bMin < 0.100){
-    //    std::cout <<center[0] << "," << center[1] <<": false" << std::endl;
+    //    //std::cout <<center[0] << "," << center[1] <<": false" << std::endl;
     return false;
   }
 
@@ -220,9 +224,120 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
       }
     }
     }*/
-  //  std::cout <<center[0] << "," << center[1] <<": true" << std::endl;
-  
+  //  //std::cout <<center[0] << "," << center[1] <<": true" << std::endl;
+
   return true;
+
+}
+
+void SWE::MySWESolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+  constexpr int numberOfVariables  = NumberOfVariables;
+  constexpr int numberOfData       = numberOfVariables;
+  constexpr int order              = Order;
+  constexpr int basisSize          = order+1;
+  bool useNCP = true;
+
+  // Compute the average variables and parameters from the left and the right
+  double QavL[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
+  double QavR[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
+  {
+    idx2 idx_QLR(basisSize, numberOfData);
+    for (int j = 0; j < basisSize; j++) {
+      const double weight = kernels::gaussLegendreWeights[order][j];
+
+      for (int k = 0; k < numberOfData; k++) {
+        QavL[k] += weight * QL[idx_QLR(j, k)];
+        QavR[k] += weight * QR[idx_QLR(j, k)];
+      }
+    }
+  }
+
+  double LL[numberOfVariables] = {0.0}; // do not need to store material parameters
+  double LR[numberOfVariables] = {0.0};
+  eigenvalues(QavL, direction, LL);
+  eigenvalues(QavR, direction, LR);
+
+  // skip parameters
+  std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
+  std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
+  const double* smax_L = std::max_element(LL, LL + numberOfVariables);
+  const double* smax_R = std::max_element(LR, LR + numberOfVariables);
+  const double smax    = std::max(*smax_L, *smax_R);
+
+  // compute fluxes (and fluctuations for non-conservative PDEs)
+  double Qavg[numberOfData];
+  idx2 idx_gradQ(DIMENSIONS, numberOfVariables);
+  double gradQ[DIMENSIONS][numberOfVariables] = {0.0};
+  double ncp[numberOfVariables]               = {0.0};
+    idx2 idx_FLR(basisSize, numberOfVariables);
+    idx2 idx_QLR(basisSize, numberOfData);
+
+    for (int j = 0; j < basisSize; j++) {
+
+      if(useNCP) { // we don't use matrixB but the NCP call here.
+        for(int l=0; l < numberOfVariables; l++) {
+          gradQ[direction][l] = QR[idx_QLR(j, l)] - QL[idx_QLR(j, l)];
+          Qavg[l] = 0.5 * (QR[idx_QLR(j, l)] + QL[idx_QLR(j, l)]);
+        }
+
+        nonConservativeProduct(Qavg, gradQ[0], ncp);
+      }
+
+      // skip parameters
+      for (int k = 0; k < numberOfVariables; k++) {
+
+        FL[idx_FLR(j, k)] =
+            0.5 * (FR[idx_FLR(j, k)] + FL[idx_FLR(j, k)]) -
+            0.5 * smax * (QR[idx_QLR(j, k)] - QL[idx_QLR(j, k)]);
+
+	//to consider the bathmetry
+	if(k == 0){
+	  FL[idx_FLR(j, k)] -= 0.5 * smax * (QR[idx_QLR(j, 3)] - QL[idx_QLR(j, 3)]);
+	}
+
+        if(useNCP) {
+          FR[idx_FLR(j, k)] = FL[idx_FLR(j, k)] - 0.5 * ncp[k];
+          FL[idx_FLR(j, k)] = FL[idx_FLR(j, k)] + 0.5 * ncp[k];
+        } else {
+          FR[idx_FLR(j, k)] = FL[idx_FLR(j, k)];
+        }
+
+	if(k == 3){
+	  //bathymetry doesn't change
+          FR[idx_FLR(j, k)] = 0.0;
+          FL[idx_FLR(j, k)] = 0.0;
+	}
+      }
+    }
+
+  std::cout << "QL" << std::endl;
+  for (int j = 0; j < basisSize; j++) {
+      for (int k = 0; k < numberOfVariables; k++) {
+	std::cout <<QL[idx_FLR(j,k)] << " ";
+      } std::cout << std::endl;
+  }
+  std::cout << "QR" << std::endl;
+  for (int j = 0; j < basisSize; j++) {
+      for (int k = 0; k < numberOfVariables; k++) {
+	std::cout <<QR[idx_FLR(j,k)] << " ";
+      } std::cout << std::endl;
+  }
+
+  std::cout << "FL" << std::endl;
+  for (int j = 0; j < basisSize; j++) {
+      for (int k = 0; k < numberOfVariables; k++) {
+	std::cout <<FL[idx_FLR(j,k)] << " ";
+      } std::cout << std::endl;
+  }
+
+  std::cout << "FR" << std::endl;
+  for (int j = 0; j < basisSize; j++) {
+      for (int k = 0; k < numberOfVariables; k++) {
+	std::cout <<FR[idx_FLR(j,k)] << " ";
+      } std::cout << std::endl;
+  }
+
+
 
 }
 
