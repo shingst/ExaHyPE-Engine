@@ -363,6 +363,8 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       break;
   }
 
+  shminvade::SHMController::getInstance().init(false,_parser.getRanksPerNode(),tarch::parallel::Node::getInstance().getRank());
+
   // This initialisation with dummies is most likely not required at all
   double localData[3] = { 0.0, 1.0, 1.0 };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
