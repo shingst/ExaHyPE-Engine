@@ -310,32 +310,32 @@ void SWE::MySWESolver_ADERDG::riemannSolver(double* FL,double* FR,const double* 
       }
     }
 
-  std::cout << "QL" << std::endl;
-  for (int j = 0; j < basisSize; j++) {
-      for (int k = 0; k < numberOfVariables; k++) {
-	std::cout <<QL[idx_FLR(j,k)] << " ";
-      } std::cout << std::endl;
-  }
-  std::cout << "QR" << std::endl;
-  for (int j = 0; j < basisSize; j++) {
-      for (int k = 0; k < numberOfVariables; k++) {
-	std::cout <<QR[idx_FLR(j,k)] << " ";
-      } std::cout << std::endl;
-  }
+//   std::cout << "QL" << std::endl;
+//   for (int j = 0; j < basisSize; j++) {
+//       for (int k = 0; k < numberOfVariables; k++) {
+// 	std::cout <<QL[idx_FLR(j,k)] << " ";
+//       } std::cout << std::endl;
+//   }
+//   std::cout << "QR" << std::endl;
+//   for (int j = 0; j < basisSize; j++) {
+//       for (int k = 0; k < numberOfVariables; k++) {
+// 	std::cout <<QR[idx_FLR(j,k)] << " ";
+//       } std::cout << std::endl;
+//   }
 
-  std::cout << "FL" << std::endl;
-  for (int j = 0; j < basisSize; j++) {
-      for (int k = 0; k < numberOfVariables; k++) {
-	std::cout <<FL[idx_FLR(j,k)] << " ";
-      } std::cout << std::endl;
-  }
+//   std::cout << "FL" << std::endl;
+//   for (int j = 0; j < basisSize; j++) {
+//       for (int k = 0; k < numberOfVariables; k++) {
+// 	std::cout <<FL[idx_FLR(j,k)] << " ";
+//       } std::cout << std::endl;
+//   }
 
-  std::cout << "FR" << std::endl;
-  for (int j = 0; j < basisSize; j++) {
-      for (int k = 0; k < numberOfVariables; k++) {
-	std::cout <<FR[idx_FLR(j,k)] << " ";
-      } std::cout << std::endl;
-  }
+//   std::cout << "FR" << std::endl;
+//   for (int j = 0; j < basisSize; j++) {
+//       for (int k = 0; k < numberOfVariables; k++) {
+// 	std::cout <<FR[idx_FLR(j,k)] << " ";
+//       } std::cout << std::endl;
+//   }
 
 
 
