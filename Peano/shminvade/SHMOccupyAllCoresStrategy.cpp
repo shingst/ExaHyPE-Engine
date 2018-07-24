@@ -21,7 +21,9 @@ std::set<int> shminvade::SHMOccupyAllCoresStrategy::invade(int wantedNumberOfCor
   std::set<int> bookedCores;
 
   for (auto p: SHMController::getInstance()._cores) {
-    if (SHMController::getInstance().tryToBookCore(p.first)) {
+    if (
+	   SHMController::getInstance().tryToBookCore(p.first)
+	) {
       bookedCores.insert(p.first);
       wantedNumberOfCores--;
       if (wantedNumberOfCores==0) break;

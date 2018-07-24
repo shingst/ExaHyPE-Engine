@@ -22,7 +22,9 @@ std::set<int> shminvade::SHMMultipleRanksPerNodeStrategy::invade(int wantedNumbe
   std::set<int> bookedCores;
 
   for (auto p: SHMController::getInstance()._cores) {
-    if ( SHMController::getInstance().tryToBookCore(p.first) ) {
+    if (
+      SHMController::getInstance().tryToBookCore(p.first)
+	) {
       const bool success = SHMSharedMemoryBetweenTasks::getInstance().tryToBookCoreForProcess(p.first);
       if (success) {
         bookedCores.insert(p.first);

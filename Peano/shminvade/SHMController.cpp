@@ -19,7 +19,7 @@ shminvade::SHMController::SHMController():
 
   InvasiveTaskGroupContext.set_priority( tbb::priority_low );
 
-  init( false, 1, 1 );
+  init( true, 1, 1 );
 }
 
 
@@ -48,13 +48,13 @@ void shminvade::SHMController::switchOff() {
 }
 
 
-int shminvade::SHMController::getMaxAvailableCores() const {
-  return std::thread::hardware_concurrency();
+int shminvade::SHMController::getMaxAvailableCores(bool useHyperthreading) const {
+  return useHyperthreading ? std::thread::hardware_concurrency() : std::thread::hardware_concurrency()/2;
 }
 
 
-int shminvade::SHMController::getFreeCores() const {
-  return getMaxAvailableCores() - getBookedCores();
+int shminvade::SHMController::getFreeCores(bool useHyperthreading) const {
+  return getMaxAvailableCores(useHyperthreading) - getBookedCores();
 }
 
 
@@ -182,18 +182,30 @@ void shminvade::SHMController::retreatFromAllCores() {
 
 
 void shminvade::SHMController::registerNewCore(int core, ThreadType initialType) {
-  assert( initialType==ThreadType::Master or initialType==ThreadType::NotOwned );
-
   ThreadState* newThread = new ThreadState(initialType);
-  _cores.insert( std::pair<pid_t, ThreadState* >(core,newThread) );
+  assert( initialType!=ThreadType::Owned );
+
+  if (_cores.count(core)==0) {
+    _cores.insert( std::pair<int, ThreadState* >(core,newThread) );
+    if ( initialType==ThreadType::NotOwned ) {
+      retreat(core);
+    }
+  }
+  else {
+    ThreadTable::accessor a;
+	_cores.find(a,core);
+    if (a->second->type==ThreadType::Master and initialType!=ThreadType::Master) {
+      a->second->type = initialType;
+      retreat(core);
+    }
+    else {
+      a->second->type = initialType;
+    }
+  }
 
   #if SHM_INVADE_DEBUG>=1
   std::cout << SHM_DEBUG_PREFIX <<  "Register new core " << core << " as " << newThread->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
-
-  if (initialType!=ThreadType::Master) {
-    retreat(core);
-  }
 }
 
 
@@ -221,7 +233,7 @@ std::string shminvade::SHMController::ThreadState::toString() const {
 
 void shminvade::SHMController::init( bool useHyperthreading, int ranksPerNode, int rank ) {
   const int localRankNumber = (rank % ranksPerNode);
-  const int coresPerRank    = (useHyperthreading ? getMaxAvailableCores() : getMaxAvailableCores()/2) /  ranksPerNode;
+  const int coresPerRank    = getMaxAvailableCores(useHyperthreading) /  ranksPerNode;
   const int masterCore      = localRankNumber * coresPerRank + coresPerRank/2;
 
   if (coresPerRank<1) {
@@ -236,28 +248,17 @@ void shminvade::SHMController::init( bool useHyperthreading, int ranksPerNode, i
 			<< std::endl;
   #endif
 
-  for (int i=0; i<getMaxAvailableCores(); i++ ) {
-    registerNewCore(i,masterCore==i ? ThreadType::Master : ThreadType::NotOwned );
-  }
-/*
+  _cores.clear();
 
-  for (auto& p: _cores) {
-    if ( p.first==masterRank ) {
-  	  p.second->type = ThreadType::Master;
-	  #if SHM_INVADE_DEBUG>=4
-	  std::cout << SHM_DEBUG_PREFIX <<  "Make core " << p.first << " the master with " << p.second->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-	  #endif
+  for (int i=0; i<getMaxAvailableCores(true); i++ ) {
+	if (i==masterCore) {
+      registerNewCore(i,ThreadType::Master);
 	}
-    if (
-      p.first!=masterRank
-	  and
-	  p.second->type == ThreadType::Master
-	) {
-  	  p.second->type = ThreadType::NotOwned;
-	  #if SHM_INVADE_DEBUG>=4
-	  std::cout << SHM_DEBUG_PREFIX <<  "Retreat from former master core " << p.first << ": " << p.second->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-	  #endif
+	else if (i<getMaxAvailableCores(useHyperthreading)) {
+      registerNewCore(i,ThreadType::NotOwned );
+	}
+	else {
+      registerNewCore(i,ThreadType::Shutdown );
 	}
   }
-*/
 }

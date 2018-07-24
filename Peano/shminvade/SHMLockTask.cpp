@@ -31,11 +31,17 @@ void shminvade::SHMLockTask::reenqueue() {
 
 
 void shminvade::SHMLockTask::terminate() {
+  #if SHM_INVADE_DEBUG>=8
+  std::cout << SHM_DEBUG_PREFIX <<  "Task for core " << _core << " terminates now (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+  #endif
+
   SHMController::ThreadTable::accessor a;
   SHMController::getInstance()._cores.find(a,_core);
   SHMController::ThreadState::Mutex::scoped_lock lock( a->second->mutex );
-  assert( a->second->numberOfExistingLockTasks>0 );
-  a->second->numberOfExistingLockTasks--;
+//  assert( a->second->numberOfExistingLockTasks>0);
+  if (a->second->numberOfExistingLockTasks>0) {
+    a->second->numberOfExistingLockTasks--;
+  }
   lock.release();
   a.release();
 }

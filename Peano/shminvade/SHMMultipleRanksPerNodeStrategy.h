@@ -31,6 +31,7 @@ namespace shminvade {
 
 
 class shminvade::SHMMultipleRanksPerNodeStrategy: public shminvade::SHMStrategy {
+  private:
   public:
     SHMMultipleRanksPerNodeStrategy();
     virtual ~SHMMultipleRanksPerNodeStrategy();

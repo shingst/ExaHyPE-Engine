@@ -157,6 +157,20 @@ class shminvade::SHMController {
      */
     void retreatFromAllCores();
 
+    /**
+     * This operation is usually never called directly by the user. It is also
+     * not called by SHMInvade but by the strategy, i.e. SHMInvade books stuff
+     * indirectly on the current rank/controller through the strategy.
+     */
+    void retreat( int core );
+
+    /**
+     * This operation is usually never called directly by the user. It is also
+     * not called by SHMInvade but by the strategy, i.e. SHMInvade books stuff
+     * indirectly on the current rank/controller through the strategy.
+     */
+    bool tryToBookCore( int core );
+
     friend class SHMLockTask;
     friend class SHMStrategy;
     friend class SHMOccupyAllCoresStrategy;
@@ -169,8 +183,8 @@ class shminvade::SHMController {
     void switchOn();
     void switchOff();
 
-    int getMaxAvailableCores() const;
-    int getFreeCores() const;
+    int getMaxAvailableCores(bool useHyperthreading) const;
+    int getFreeCores(bool useHyperthreading) const;
     int getBookedCores() const;
 
     /**
@@ -181,10 +195,6 @@ class shminvade::SHMController {
      * terminate.
      */
     void shutdown();
-
-    void retreat( int core );
-
-    bool tryToBookCore( int core );
 
     /**
      * Initialise the controller
