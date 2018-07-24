@@ -334,11 +334,9 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     print("skipped building of '"+executable+"' as it already exists.")
 
     # symlink local files into build folder
-    whitelistFileKeyName = "runtime_dependencies_file"
+    whitelistFileKeyName = "runtime_dependencies"
     if whitelistFileKeyName in general:
-        whitelistFilename = general[whitelistFileKeyName]
-        with open(whitelistFilename, "r") as f:
-            whitelistFiles = f.read().splitlines()
+        whiteListFiles = sweep_options.parseList(general[whitelistFileKeyName])
         if len(whitelistFiles) < 1:
             print("[WARNING]    runtime_dependencies_file appears to be empty")
         for f in whitelistFiles:
