@@ -22,15 +22,13 @@ exahype-project  SWE
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/SWE/SWE_asagi_limited
   architecture const      = noarch
-  log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 2
-//    width = 1500000.0, 1500000.0
-//    offset = -500000.0, -750000.0
-      width = 10.0 ,10.0
-      offset = 0.0 , 0.0
-
+    width = 1500.0, 1500.0
+    offset = -500.0, -750.0
+/*      width = 10.0 ,10.0
+      offset = 0.0 , 0.0 */
     end-time                 = 10000.0
   end computational-domain
 
@@ -64,9 +62,9 @@ exahype-project  SWE
   solver Limiting-ADER-DG MySWESolver
     variables const = h:1,hu:1,hv:1,b:1
     order const = 3
-//    maximum-mesh-size = 27000.0
-    maximum-mesh-size = 0.05
-    maximum-mesh-depth = 0
+    maximum-mesh-size = 30.0
+/*    maximum-mesh-size = 0.05*/
+    maximum-mesh-depth = 0   
     time-stepping = global
     type const = nonlinear
     terms const = flux,ncp
@@ -78,7 +76,7 @@ exahype-project  SWE
     dmp-observables const = 0
     dmp-relaxation-parameter = 100000000.0
     dmp-difference-scaling = 100000000.0
-    constants = grav:9.81, epsilon:e-1, scenario:2
+    constants = grav:9.81, epsilon:1e+1, scenario:14
     plot vtu::Cartesian::cells::limited::ascii ConservedWriter
       variables const = 6
       time            = 0.0
@@ -90,7 +88,7 @@ exahype-project  SWE
       time            = 0.0
       repeat          = 10.0
       output          = ./buoy
-      select          = x:545735.266126,y:62716.4740303
+      select          = x:545.735266126,y:62.7164740303
     end plot
   end solver
 

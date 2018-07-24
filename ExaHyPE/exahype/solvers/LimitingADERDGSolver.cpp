@@ -280,21 +280,9 @@ bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
     const int solverNumber) const {
   const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
   const int solverElement = _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-  bool limiterRefinementDone = true;
-  if ( solverElement!=exahype::solvers::Solver::NotFound ) {
-    SolverPatch& solverPatch =
-    _solver->getCellDescription(cellDescriptionsIndex,solverElement);
-    limiterRefinementDone = 
-         !(solverPatch.getType()==SolverPatch::Type::Descendant  &&
-           solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-           (solverPatch.getRefinementStatus()>0                     ||
-           solverPatch.getPreviousRefinementStatus()>0));
-  } 
-  if ( limiterRefinementDone )
-    return 
-        _solver->attainedStableState(
+  return
+      _solver->attainedStableState(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
-  else return false;
 }
 
 void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
@@ -432,11 +420,10 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
 
     determineSolverMinAndMax(solverPatch);
     if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch) ) {
-      solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
-      solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
+       solverPatch.setRefinementStatus(_solver->getMinimumRefinementStatusForTroubledCell());
+       solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     } else {
-      _solver->markForRefinement(solverPatch); // TODO This code probably overwrites the
-      // refinement status during the iterations.
+      _solver->markForRefinement(solverPatch);
     }
   }
 }
@@ -512,8 +499,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
   updateSolution(cellDescriptionsIndex,element,isFirstIterationOfBatch);
   UpdateResult result;
-  result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
-                                    cellDescriptionsIndex,element,neighbourMergePerformed);
   // This is important to memorise before calling startNewTimeStepFused
   // TODO(Dominic): Add to docu and/or make cleaner
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
@@ -521,6 +506,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   const double memorisedPredictorTimeStepSize = solverPatch.getPredictorTimeStepSize();
   result._timeStepSize = startNewTimeStepFused(
       cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._meshUpdateEvent =
+      updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
+          cellDescriptionsIndex,element,neighbourMergePerformed);
 
   if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
     _solver->performPredictionAndVolumeIntegral(
@@ -602,7 +590,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       updateSolution(cellDescriptionsIndex,element,true);
       result._timeStepSize    = startNewTimeStep(cellDescriptionsIndex,element);
       result._meshUpdateEvent = updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
-                                       cellDescriptionsIndex,element,solverPatch.getNeighbourMergePerformed());  // !!! limiter status must be updated before refinement criterion is evaluated
+                                       cellDescriptionsIndex,element,solverPatch.getNeighbourMergePerformed());
       // compress again
       if (CompressionAccuracy>0.0) {
         compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
@@ -744,8 +732,9 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
   assertion1(solverPatch.getType()==SolverPatch::Type::Cell,solverPatch.toString());
 
   MeshUpdateEvent meshUpdateEvent = MeshUpdateEvent::None;
-  bool isTroubled = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
-                    !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  bool dmpViolated = !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch);
+  bool padViolated = !evaluatePhysicalAdmissibilityCriterion(solverPatch); // after min and max was found
+  bool isTroubled = dmpViolated || padViolated;
   if ( isTroubled ) {
     solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     if ( solverPatch.getRefinementStatus() > _solver->_minimumRefinementStatusForActiveFVPatch ) {
@@ -757,6 +746,7 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
       //logInfo("determineLimiterStatusAfterSolutionUpdate()","irregular for x="<<solverPatch.getOffset() << ", level="<<solverPatch.getLevel() << "status="<<solverPatch.getRefinementStatus()<<","<<solverPatch.getPreviousLimiterStatus()<<","<<solverPatch.getExternalLimiterStatus()<<",max status="<<max status );
     }
     if (solverPatch.getLevel()<getMaximumAdaptiveMeshLevel()) {
+      //logInfo("determineRefinementStatusAfterSolutionUpdate(...)","troubled on coarse grid. dmpViolated="<<dmpViolated<<". padViolated="<<padViolated<<". cell="<<solverPatch.toString());
       meshUpdateEvent = MeshUpdateEvent::RefinementRequested;
     }
   } else { // We cool the troubled cells down so slowly
@@ -797,7 +787,7 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
       solverPatch.getSolution()).data();
 
   const int numberOfObservables = _solver->getDMPObservables();
-  if (numberOfObservables>0) {
+  if ( numberOfObservables>0 ) {
     double* observablesMin = DataHeap::getInstance().getData(
         solverPatch.getSolutionMin()).data();
     double* observablesMax = DataHeap::getInstance().getData(
