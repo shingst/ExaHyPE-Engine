@@ -19,10 +19,7 @@ shminvade::SHMController::SHMController():
 
   InvasiveTaskGroupContext.set_priority( tbb::priority_low );
 
-  int    masterCore   = sched_getcpu();
-  for (int i=0; i<getMaxAvailableCores(); i++ ) {
-    registerNewCore(i,masterCore==i ? ThreadType::Master : ThreadType::NotOwned );
-  }
+  init( false, 1, 1 );
 }
 
 
@@ -65,7 +62,7 @@ int shminvade::SHMController::getBookedCores() const {
   int result = 1;
 
   for (auto p: _cores) {
-    if ( getThreadType(p.first)==ThreadType::ExclusivelyOwned) {
+    if ( getThreadType(p.first)==ThreadType::Owned) {
       result++;
     }
   }
@@ -130,7 +127,7 @@ bool shminvade::SHMController::tryToBookCore( int core ) {
 
   ThreadState::Mutex::scoped_lock  lock( a->second->mutex);
   if ( a->second->type==SHMController::ThreadType::NotOwned ) {
-    a->second->type = SHMController::ThreadType::ExclusivelyOwned;
+    a->second->type = SHMController::ThreadType::Owned;
     result = true;
     #if SHM_INVADE_DEBUG>=4
     std::cout << SHM_DEBUG_PREFIX <<  "Invade core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
@@ -150,7 +147,7 @@ void shminvade::SHMController::retreat( int core ) {
 
   ThreadState::Mutex::scoped_lock  lock( a->second->mutex);
 
-  if ( a->second->type==ThreadType::ExclusivelyOwned ) {
+  if ( a->second->type==ThreadType::Owned ) {
     a->second->type = ThreadType::NotOwned;
     #if SHM_INVADE_DEBUG>=4
     std::cout << SHM_DEBUG_PREFIX <<  "Retreat from core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
@@ -177,7 +174,7 @@ void shminvade::SHMController::retreat( int core ) {
 
 void shminvade::SHMController::retreatFromAllCores() {
   for (auto p: _cores) {
-    if (getThreadType(p.first)==ThreadType::ExclusivelyOwned) {
+    if (getThreadType(p.first)==ThreadType::Owned) {
       retreat(p.first);
     }
   }
@@ -207,8 +204,8 @@ std::string shminvade::SHMController::ThreadState::toString() const {
     case ThreadType::Master:
       msg << "master";
       break;
-    case ThreadType::ExclusivelyOwned:
-      msg << "exclusively-owned";
+    case ThreadType::Owned:
+      msg << "owned";
       break;
     case ThreadType::NotOwned:
       msg << "not-owned";
@@ -219,4 +216,48 @@ std::string shminvade::SHMController::ThreadState::toString() const {
   }
   msg << ",no-of-existing-lock-tasks=" << numberOfExistingLockTasks << ")";
   return msg.str();
+}
+
+
+void shminvade::SHMController::init( bool useHyperthreading, int ranksPerNode, int rank ) {
+  const int localRankNumber = (rank % ranksPerNode);
+  const int coresPerRank    = (useHyperthreading ? getMaxAvailableCores() : getMaxAvailableCores()/2) /  ranksPerNode;
+  const int masterCore      = localRankNumber * coresPerRank + coresPerRank/2;
+
+  if (coresPerRank<1) {
+    std::cerr << SHM_DEBUG_PREFIX <<  "Init called with " << useHyperthreading << " hyperthreading, "
+    		  << ranksPerNode << " ranks per node on rank " << rank << " whichc yields " << coresPerRank << " cores per rank" << std::endl;
+  }
+
+  #if SHM_INVADE_DEBUG>=1
+  std::cout << SHM_DEBUG_PREFIX <<  "Init called with " << useHyperthreading << " hyperthreading, "
+  		    << ranksPerNode << " ranks per node on rank " << rank << " which yields " << coresPerRank << " cores per rank"
+			<< " (line:" << __LINE__ << ",file:" << __FILE__ << ")"
+			<< std::endl;
+  #endif
+
+  for (int i=0; i<getMaxAvailableCores(); i++ ) {
+    registerNewCore(i,masterCore==i ? ThreadType::Master : ThreadType::NotOwned );
+  }
+/*
+
+  for (auto& p: _cores) {
+    if ( p.first==masterRank ) {
+  	  p.second->type = ThreadType::Master;
+	  #if SHM_INVADE_DEBUG>=4
+	  std::cout << SHM_DEBUG_PREFIX <<  "Make core " << p.first << " the master with " << p.second->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+	  #endif
+	}
+    if (
+      p.first!=masterRank
+	  and
+	  p.second->type == ThreadType::Master
+	) {
+  	  p.second->type = ThreadType::NotOwned;
+	  #if SHM_INVADE_DEBUG>=4
+	  std::cout << SHM_DEBUG_PREFIX <<  "Retreat from former master core " << p.first << ": " << p.second->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+	  #endif
+	}
+  }
+*/
 }

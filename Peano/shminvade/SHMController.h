@@ -52,16 +52,31 @@ namespace shminvade {
  *
  * - Init your TBB environment with shminvade::SHMController::getInstance().getMaxAvailableCores()
  *   threads.
+ * - Initialise the SHMController through its init() function.
  * - Use shminvade::SHMStrategy::setStrategy to set a strategy if you want
  *   another one than let all ranks invade all cores simultaneously.
  * - Initialise shared memory regions through shminvade::SHMSharedMemoryBetweenTasks
  *   if you want ranks to communicate via shared memory.
+ *
+ *
+ * <h2> Runtime/architecture configuration</h2>
+ *
+ * SHMInvade works with hyperthreading only at the very moment, but you can
+ * enable/disable hyperthreading through some strategies. If you use SHMInvade,
+ * you explicitly have to disable the OS masking. With SLURM this works through
+ * scripts alike
+ *
+ * <pre>
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
+srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
+   </pre>
+ *
  */
 class shminvade::SHMController {
   public:
     enum class ThreadType {
       Master,
-      ExclusivelyOwned,
+      Owned,
       NotOwned,
       Shutdown
     };
@@ -170,6 +185,12 @@ class shminvade::SHMController {
     void retreat( int core );
 
     bool tryToBookCore( int core );
+
+    /**
+     * Initialise the controller
+     *
+     */
+    void init( bool useHyperthreading, int ranksPerNode, int rank );
 };
 
 #endif

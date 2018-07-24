@@ -30,12 +30,13 @@ shminvade::SHMPinningObserver::SHMPinningObserver():
   if ( _mask ) {
     #if SHM_INVADE_DEBUG>=1
     CPUSetBitfield bitfield = cpuSetMaskToBitfield( *_mask );
-    std::cout<< SHM_DEBUG_PREFIX <<  "Process mask is " << bitfield  << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << SHM_DEBUG_PREFIX <<  "Process mask is " << bitfield
+    		  << ", i.e. system has " << bitfield.count() << " logical cores (second half usually hypercores)"
+    		  << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
 
     if ( bitfield.count() != std::thread::hardware_concurrency()) {
-      std::cerr << SHM_DEBUG_PREFIX <<  "Process affinity mask has only " << bitfield.count() << " entires although hardware concurrency is " << std::thread::hardware_concurrency() << std::endl;
+      std::cerr << SHM_DEBUG_PREFIX <<  "Process affinity mask has only " << bitfield.count() << " entries although hardware concurrency is " << std::thread::hardware_concurrency() << std::endl;
     }
-
     #endif
 
     // thread 0 will be pinned twice, but I want to be sure it is in our data

@@ -39,6 +39,9 @@ namespace shminvade {
  *
  * If you call retreat() or if the object is destroyed, it tells the
  * SHMController that all booked cores are not required anymore.
+ *
+ * This class is the most important interaction object for applications, but
+ * general usage remarks are discussed in SHMController.
  */
 class shminvade::SHMInvade {
   private:

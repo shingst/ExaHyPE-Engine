@@ -50,14 +50,14 @@ tbb::task* shminvade::SHMLockTask::execute() {
     case SHMController::ThreadType::Master:
       // there should be no lock tasks on the master so let this one die
       #if SHM_INVADE_DEBUG>=1
-      std::cerr << SHM_DEBUG_PREFIX <<  "Core " << _core << " is the master. There should never be a lock lock task. Lock task found on core " << currentCore << " (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+      std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is the master. Retreat immediately as lock task found on core " << currentCore << " (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
       #endif
       terminate();
       return nullptr;
-    case SHMController::ThreadType::ExclusivelyOwned:
+    case SHMController::ThreadType::Owned:
       // we own it so let this one die
       #if SHM_INVADE_DEBUG>=8
-      std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is exclusively owned. Lock task found on core " << currentCore << ". Terminate (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
+      std::cout << SHM_DEBUG_PREFIX <<  "Core " << _core << " is owned by process. Lock task found on core " << currentCore << ". Terminate (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
       #endif
       terminate();
       return nullptr;
