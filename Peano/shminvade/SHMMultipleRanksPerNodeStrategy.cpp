@@ -22,9 +22,7 @@ std::set<int> shminvade::SHMMultipleRanksPerNodeStrategy::invade(int wantedNumbe
   std::set<int> bookedCores;
 
   for (auto p: SHMController::getInstance()._cores) {
-    if (
-      SHMController::getInstance().tryToBookCore(p.first)
-	) {
+    if ( SHMController::getInstance().tryToBookCore(p.first) ){
       const bool success = SHMSharedMemoryBetweenTasks::getInstance().tryToBookCoreForProcess(p.first);
       if (success) {
         bookedCores.insert(p.first);
@@ -35,12 +33,27 @@ std::set<int> shminvade::SHMMultipleRanksPerNodeStrategy::invade(int wantedNumbe
         SHMController::getInstance().retreat(p.first);
       }
     }
+    else if (
+      p.second->type==SHMController::ThreadType::Master
+	  and
+	  !SHMSharedMemoryBetweenTasks::getInstance().isBooked(p.first)
+	) {
+      #if SHM_INVADE_DEBUG>=1
+      std::cout << SHM_DEBUG_PREFIX <<  "Core " << p.first << " is own master but is not flagged as booked (line:" << __LINE__  << ",file: " << __FILE__ << ")" << std::endl;
+      #endif
+      const bool success = SHMSharedMemoryBetweenTasks::getInstance().tryToBookCoreForProcess(p.first);
+      if (!success) {
+        #if SHM_INVADE_DEBUG>=2
+        std::cout << SHM_DEBUG_PREFIX <<  "WARNING: Core " << p.first << " is own master but we failed to book it (line:" << __LINE__  << ",file: " << __FILE__ << ")" << std::endl;
+        #endif
+      }
+    }
   }
 
   #if SHM_INVADE_DEBUG>=4
   if (!bookedCores.empty()) {
-    std::cout << SHM_DEBUG_PREFIX <<  "invaded " << bookedCores.size() << " thread(s) in total with " << wantedNumberOfCores << " open requests (line:" << __LINE__  << ",file: " << __FILE__ << ")" << std::endl;
-    std::cout << SHM_DEBUG_PREFIX <<  "known core-process association: " << SHMSharedMemoryBetweenTasks::getInstance().getCoreProcessAssociation() << std::endl;
+    std::cout << SHM_DEBUG_PREFIX <<  "Invaded " << bookedCores.size() << " thread(s) in total with " << wantedNumberOfCores << " open requests (line:" << __LINE__  << ",file: " << __FILE__ << ")" << std::endl;
+    std::cout << SHM_DEBUG_PREFIX <<  "Known core-process association: " << SHMSharedMemoryBetweenTasks::getInstance().getCoreProcessAssociation() << std::endl;
   }
   #endif
 
