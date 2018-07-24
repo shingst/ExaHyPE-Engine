@@ -171,6 +171,45 @@ def verifyAllRequiredParametersAreGiven(specFileTemplate):
 
     return foundLimitingADERDG
 
+def unlink():
+    """
+    Remove old symlinks from the build directory.
+    """
+    if os.path.exists(buildFolderPath):
+        print("clean build directory")
+        for file in os.listdir(buildFolderPath):
+            if os.path.islink(buildFolderPath+"/"+file):
+               os.unlink(buildFolderPath+"/"+file)
+        print("")
+
+def link():
+    """
+    Add user specified symlinks to the build directory.
+    """ 
+    if os.path.exists(buildFolderPath):
+        # symlink local files into build folder
+        whitelistFileKeyName = "runtime_dependencies"
+        if whitelistFileKeyName in general:
+            whiteListFiles = sweep_options.parseList(general[whitelistFileKeyName])
+            if len(whiteListFiles) < 1:
+                print("[WARNING]    runtime_dependencies_file appears to be empty")
+            for f in whiteListFiles:
+                file   = f.strip()
+                source = None
+                if file.strip().startswith("/") or file.startswith("~"):
+                    source = file
+                else:
+                    source = os.path.join(exahypeRoot+"/"+projectPath+"/"+file)
+                
+                if os.path.isfile(source):
+                    dest = os.path.join(buildFolderPath,file)
+                    os.symlink(source, dest)
+                    print("Symlinked {} to {}".format(source, dest))
+                else:
+                    print("[ERROR]    could not find source file {} to create symlink".format(source))
+                    sys.exit(1)
+
+
 def build(buildOnlyMissing=False, skipMakeClean=False):
     """
     Build the executables.
@@ -191,14 +230,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
             print(variable+"="+os.environ[variable])
     print("")
 
-    if not os.path.exists(buildFolderPath):
-        print("create build directory "+buildFolderPath)
-        os.makedirs(buildFolderPath)
-    print("clean build directory")
-    for file in os.listdir(buildFolderPath):
-        if os.path.islink(buildFolderPath+"/"+file):
-           os.unlink(buildFolderPath+"/"+file)
-    print("")
+    unlink()
  
     oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
     
@@ -333,22 +365,8 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                 else:
                                     print("skipped building of '"+executable+"' as it already exists.")
 
-    # symlink local files into build folder
-    whitelistFileKeyName = "runtime_dependencies"
-    if whitelistFileKeyName in general:
-        whiteListFiles = sweep_options.parseList(general[whitelistFileKeyName])
-        if len(whitelistFiles) < 1:
-            print("[WARNING]    runtime_dependencies_file appears to be empty")
-        for f in whitelistFiles:
-            source = os.path.join(exahypeRoot,projectPath,f)
-            if os.path.isfile(source):
-                dest = os.path.join(buildFolderPath,f)
-                os.symlink(source, dest)
-                print("Symlinked {} to {}".format(source, dest))
-            else:
-                print("[ERROR]    could not find source file {} to create symlink".format(source))
-                sys.exit(1)
-    
+    link()   
+ 
     print("built executables: "+str(executables))
 
 
@@ -862,7 +880,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","buildLocally","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll"]
+    subprograms = ["build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -877,6 +895,7 @@ available subprograms:
 * build              - build all executables
 * buildMissing       - build only missing executables
 * buildLocally       - rebuild only the local application folder (no make clean)
+* link               - link runtime dependencies into the build folder
 * scripts            - submit the generated jobs
 * cancel             - cancel the submitted jobs
 * parseAdapters      - read the job output and parse adapter times
@@ -1004,6 +1023,9 @@ It must further contain at least one of the following sections:
         build(buildOnlyMissing=True, skipMakeClean=False)
     elif subprogram == "buildLocally":
         build(buildOnlyMissing=False, skipMakeClean=True)
+    elif subprogram == "link":
+        unlink()
+        link()
     elif subprogram == "scripts":
         generateScripts()
     elif subprogram == "submit":
