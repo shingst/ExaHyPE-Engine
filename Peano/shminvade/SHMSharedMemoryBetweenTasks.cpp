@@ -141,6 +141,11 @@ void shminvade::SHMSharedMemoryBetweenTasks::freeCore(int coreNumber) {
 }
 
 
+bool shminvade::SHMSharedMemoryBetweenTasks::isBooked(int coreNumber) const {
+  return _globalSHMData->owningProcessOfCore[coreNumber] != -1;
+}
+
+
 int shminvade::SHMSharedMemoryBetweenTasks::getNumberOfRegisteredProcesses() const {
   return _globalSHMData->noOfRegisteredProcesses;
 }
