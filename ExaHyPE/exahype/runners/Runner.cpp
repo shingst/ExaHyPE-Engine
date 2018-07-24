@@ -347,7 +347,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     case exahype::parser::Parser::TBBInvadeStrategy::Undef:
       logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
       break;
-    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
       shminvade::SHMStrategy::setStrategy( new shminvade::SHMOccupyAllCoresStrategy() );
 	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's OccupyAllCores strategy" );
@@ -355,6 +354,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 		logError( "initSharedMemoryConfiguration()", "no ranks-per-node set. Mandatory for SHMInvade" );
 	  }
       break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
