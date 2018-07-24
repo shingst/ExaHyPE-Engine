@@ -334,18 +334,23 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                                     print("skipped building of '"+executable+"' as it already exists.")
 
     # symlink local files into build folder
-    blackListedEndings = [ ".o", "bak", ".cpp", ".h", ".cpph", ".f90", ".mod", "Makefile", ".mk", ".exahype", ".log", "ExHyPE-"+projectName ]
-    print("create symlinks to project folder files in build directory. Exclude files/file endings: "+", ".join(blackListedEndings))
-    print("")
-    for file in os.listdir(exahypeRoot+"/"+projectPath):
-      if not os.path.exists(buildFolderPath+"/"+file):
-          createSymLink = True
-          for ending in blackListedEndings: 
-              createSymLink &= not file.lower().endswith(ending)
-          if createSymLink:
-              os.symlink(exahypeRoot+"/"+projectPath+"/"+file,buildFolderPath+"/"+file)
+    whitelistFileKeyName = "runtime_dependencies_file"
+    if whitelistFileKeyName in general:
+        whitelistFilename = general[whitelistFileKeyName]
+        with open(whitelistFilename, "r") as f:
+            whitelistFiles = f.read().splitlines()
+        if len(whitelistFiles) < 1:
+            print("[WARNING]    runtime_dependencies_file appears to be empty")
+        for f in whitelistFiles:
+            source = os.path.join(exahypeRoot,projectPath,f)
+            if os.path.isfile(source):
+                dest = os.path.join(buildFolderPath,f)
+                os.symlink(source, dest)
+                print("Symlinked {} to {}".format(source, dest))
+            else:
+                print("[ERROR]    could not find source file {} to create symlink".format(source))
+                sys.exit(1)
     
-
     print("built executables: "+str(executables))
 
 
