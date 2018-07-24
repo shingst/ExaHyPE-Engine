@@ -1,14 +1,12 @@
 Run:
 
-1) Symlink ExaHyPE-Engine/Benchmarks/python/sweep.py into project folder (or create an alias)
+1) Call ./sweep.py sweeps/dim_3dladgom.ini build
 
-2) Call ./sweep.py sweeps/dim_3dladgom.ini build
+2) Symlink the geometry *.bin file into the sweeps/dim_3dladgom/build/ folder
 
-3) Symlink the geometry *.bin file into the sweeps/dim_3dladgom/build/ folder
+3) Call ./sweep.py sweeps/dim_3dladgom.ini scripts
 
-4) Call ./sweep.py sweeps/dim_3dladgom.ini scripts
-
-5) Call ./sweep.py sweeps/dim_3dladgom.ini submit
+4) Call ./sweep.py sweeps/dim_3dladgom.ini submit
 
 Parse output files:
 
