@@ -62,7 +62,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int cellDesc
 
     if (solverPatch.getRefinementStatus()>=limitingADERDG->getSolver()->getMinimumRefinementStatusForActiveFVPatch()) {
       auto& limiterPatch = limitingADERDG->
-              getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
+              getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
 
       double* limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
 

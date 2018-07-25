@@ -258,7 +258,7 @@ private:
    * TODO(Dominic): A few lines are candidates for
    * being run as background job.
    */
-  int allocateLimiterPatch(
+  void allocateLimiterPatch(
       const SolverPatch&  solverPatch,
       const int cellDescriptionsIndex) const;
 
@@ -356,6 +356,21 @@ private:
       const int cellDescriptionsIndex) const;
 
   /**
+   * Uncompress solver and limiter degrees of freedom.
+   */
+  void uncompress(
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex) const;
+
+  /**
+   * Compress solver and limiter degrees of freedom.
+   */
+  void compress(
+        SolverPatch& solverPatch,
+        const int cellDescriptionsIndex,
+        const bool isAtRemoteBoundary) const;
+
+  /**
    * Copies the time stamp and the time step sizes from the solver patch
    * to the limiter patch.
    */
@@ -371,6 +386,18 @@ private:
 
   /**
    * Body of LimitingADERDGSolver::fusedTimeStep(...).
+   *
+   * <h2> Order of operations</h2>
+   * Data stored on a patch must be compressed by the last operation touching
+   * the patch. If we spawn the prediction as background job, it is very likely
+   * that it is executed last. In order to have a deterministic order of
+   * operations, we thus always run the prediction last.
+   *
+   * This decision implies that the time step data is updated before running the prediction.
+   * We thus need to memorise the prediction time stamp and time step size before performing
+   * the time step update. Fortunately, it is already memorised as it is copied
+   * into the correction time step data fields of the patch
+   * after the time step data update.
    */
   UpdateResult fusedTimeStepBody(
       const int   cellDescriptionsIndex,
@@ -649,7 +676,7 @@ public:
    * Assumes that \p solverPatch has a limiter status > 0 and thus
    * has a limiter patch assigned.
    */
-  LimiterPatch& getLimiterPatchForSolverPatch(const int cellDescriptionsIndex, const SolverPatch& solverPatch) const;
+  LimiterPatch& getLimiterPatchForSolverPatch(const SolverPatch& solverPatch,const int cellDescriptionsIndex) const;
 
   /**
    * Similar to ::getLimiterPatchforSolverPatch but does not lookup the
@@ -766,15 +793,16 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
+
   double startNewTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) final override;
+      SolverPatch& solverPatch,
+      const int cellDescriptionsIndex);
 
   double startNewTimeStepFused(
+        SolverPatch& solverPatch,
         const int cellDescriptionsIndex,
-        const int element,
         const bool isFirstIterationOfBatch,
-        const bool isLastIterationOfBatch) final override;
+        const bool isLastIterationOfBatch);
 
   double updateTimeStepSizesFused(
       const int cellDescriptionsIndex,
@@ -851,8 +879,8 @@ public:
    *
    */
   void updateSolution(
+      SolverPatch& solverPatch,
       const int cellDescriptionsIndex,
-      const int element,
       const bool backupPreviousSolution);
 
   /**
@@ -886,8 +914,8 @@ public:
    */
   MeshUpdateEvent
   updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
+      SolverPatch& solverPatch,
       const int cellDescriptionsIndex,
-      const int element,
       const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /**
@@ -991,6 +1019,7 @@ public:
 
   /**
    * Recompute the solution in cells that have been subject to a limiter status change
+   *
    * This method is invoked after the solver reinitialisation
    * (see exahype::solvers::LimitingADERDGSolver::reinitialiseSolvers).
    *
@@ -1006,38 +1035,24 @@ public:
    * |T/NT       | Evolve FV solver. Project result onto the ADER-DG space. Recompute the space-time predictor if not initial recomputation.                                                                                  |
    * |NNT        | Evolve solver and project its solution onto the limiter solution space. (We had to do a rollback beforehand in the reinitialisation phase.) |
    *
-   * Legend: O: Ok, T: Troubled, NT: NeighbourOfTroubled1..2, NNT: NeighbourOfTroubled3..4
+   * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
    */
-  void recomputeSolutionLocally(
+  void recomputeSolution(SolverPatch& solverPatch,const int cellDescriptionsIndex);
+
+  /**
+   * Invoke ::recomputeSolution(SolverPatch&)
+   * \return a time step size computed with the new solution.
+   */
+  double recomputeSolutionLocally(
       const int cellDescriptionsIndex,
       const int element);
 
   /**
-   * !!! Only for fused time stepping !!!
+   * Same as ::recomputeSolutionLocally for fused time stepping. Recomputes a new predictor as well if necessary.
    *
-   * Recompute the predictor in particular cells.
-   *
-   * We perform the following actions based on the
-   * new and old limiter status:
-   *
-   * |New Status | Old Status | Action                                                                                                                                      |
-   * ----------------------------------------------------------------------------------------------------------------------------------------------------------|
-   * |O/NNTT     | O/NT/NNT   | Do nothing. Underlying DG solution has not changed.
-   * |           | T          | Recompute predictor. Cell was skipped before in predictor computation
-   * |           |            | since it is marked T. See mapping Prediction::enterCell.
-   * |NT         | *          | Recompute predictor. DG solution has been recomputed.
-   * |T          | *          | Not necesssary to compute predictor
-   *
-   * Legend: O: Ok, T: Troubled, NT: NeighbourIsTroubledCell, NNT: NeighbourIsNeighbourOfTroubledCell
-   *
-   * We do not overwrite the old limiter status set in this method.
-   * We compute the new limiter status based on the merged limiter statuses associated
-   * with the faces.
-   *
-   * \param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
-   *                                   cell description is adjacent to a remote rank.
+   * Further see ::fusedTimeBody regarding order of operations.
    */
-  void recomputePredictorLocally(
+  double recomputeSolutionLocallyFused(
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary);

@@ -223,7 +223,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
         if (
             exahype::solvers::Solver::FuseADERDGPhases
             #ifdef Parallel
-            && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+            && tarch::parallel::Node::getInstance().isGlobalMaster()
             #endif
         ) {
           exahype::solvers::Solver::
@@ -292,23 +292,18 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
             _stateCopy.isFirstIterationOfBatchOrNoBatch()
         ) {
           auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-          limitingADERDG->recomputeSolutionLocally(
-              cellDescriptionsIndex,element);
 
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
           if ( exahype::solvers::Solver::FuseADERDGPhases ) {
-            limitingADERDG->recomputePredictorLocally(
+            admissibleTimeStepSize = limitingADERDG->recomputeSolutionLocallyFused(
                 cellDescriptionsIndex,element,
                 exahype::Cell::isAtRemoteBoundary(
-                    fineGridVertices,fineGridVerticesEnumerator)
-            );
-            admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
-                cellDescriptionsIndex,element,
-                true,true);
+                    fineGridVertices,fineGridVerticesEnumerator));
           } else {
-            admissibleTimeStepSize = limitingADERDG->startNewTimeStep(
+            admissibleTimeStepSize = limitingADERDG->recomputeSolutionLocally(
                 cellDescriptionsIndex,element);
           }
+
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
           _maxLevels[solverNumber] = std::max(

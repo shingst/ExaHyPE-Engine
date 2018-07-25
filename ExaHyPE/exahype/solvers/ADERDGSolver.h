@@ -1665,8 +1665,7 @@ public:
    * \note If this job is called by
    */
   void performPredictionAndVolumeIntegralBody(
-      const int    cellDescriptionsIndex,
-      const int    element,
+      CellDescription& cellDescription,
       const double predictorTimeStamp,
       const double predictorTimeStepSize,
       const bool   uncompressBefore,
@@ -1714,20 +1713,33 @@ public:
   double computeTimeStepSize(
       CellDescription& cellDescription);
 
-  double startNewTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) override final;
 
   /**
-   * Required by the fusedTimeStep
-   * and LimitingADERDGSolver::fusedTimeStep
-   * routines.
+   * Update the time stamps and time step sizes
+   * for a cell description when nonfused time stepping
+   * is used.
+   *
+   * \note No const modifier as kernels are not const yet.
+   */
+  double startNewTimeStep(CellDescription& cellDescription);
+
+  /**
+   * Same as \p startNewTimeStep for the fused time stepping scheme.
+   *
+   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
+   *                                    of a batch or not. Note that this must be also set to true
+   *                                    in case we run a batch of size 1, i.e. no batch at all.
+   *
+   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
+   *                                    of a batch or not. Note that this must be also set to true
+   *                                    in case we run a batch of size 1, i.e. no batch at all.
+   *
+   * \note No const modifier as kernels are not const yet.
    */
   double startNewTimeStepFused(
-      const int cellDescriptionsIndex,
-      const int element,
+      CellDescription& cellDescription,
       const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isLastIterationOfBatch);
 
   /** \copydoc Solver::updateTimeStepSizesFused
    *
@@ -1769,6 +1781,22 @@ public:
    void rollbackToPreviousTimeStepFused(
        CellDescription& cellDescription) const;
 
+  /**
+   * Perform a fused time step, i.e. perform the update, update time step data, mark
+   * for refinement and then compute the new space-time predictor.
+   *
+   * <h2> Order of operations</h2>
+   * Data stored on a patch must be compressed by the last operation touching
+   * the patch. If we spawn the prediction as background job, it is very likely
+   * that it is executed last. In order to have a deterministic order of
+   * operations, we thus always run the prediction last.
+   *
+   * This decision implies that the time step data is updated before running the prediction.
+   * We thus need to memorise the prediction time stamp and time step size before performing
+   * the time step update. Fortunately, it is already memorised as it is copied
+   * into the correction time step data fields of the patch
+   * after the time step data update.
+   */
   UpdateResult fusedTimeStepBody(
         const int cellDescriptionsIndex,
         const int element,

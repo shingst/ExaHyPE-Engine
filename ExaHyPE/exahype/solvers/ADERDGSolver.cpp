@@ -164,7 +164,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   // Limiter meta data (oscillations identificator)
   newCellDescription.setRefinementFlag(false);
   newCellDescription.setRefinementStatus(Pending);
-  newCellDescription.setPreviousRefinementStatus(Pending);
+  newCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): New cells
   newCellDescription.setFacewiseRefinementStatus(Pending);  // implicit conversion
   newCellDescription.setSolutionMin(-1);
   newCellDescription.setSolutionMax(-1);
@@ -507,6 +507,10 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
   }
+
+  std::cout << "_refineOrKeepOnFineGrid="<<_refineOrKeepOnFineGrid<<std::endl;
+  std::cout << "_limiterHelperLayers="<<_limiterHelperLayers<<std::endl;
+  std::cout << "_minimumRefinementStatusForPassiveFVPatch="<<_minimumRefinementStatusForPassiveFVPatch<<std::endl;
 
   #ifdef Parallel
   _invalidExtrapolatedPredictor.resize(getBndFaceSize());
@@ -1101,6 +1105,11 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
     cellDescription.setRefinementStatus(
         std::max( cellDescription.getRefinementStatus(), _refineOrKeepOnFineGrid ) );
     break;
+  default:
+    logError("adjustSolutionDuringMeshRefinementBody(...)",
+        "unknown refinement control value=" << static_cast<int>(refinementControl) <<
+        ". Please check the return values of your refinement criterion.");
+    std::abort();
   }
 }
 
@@ -1123,7 +1132,7 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
       fineGridCellDescription.getType()==CellDescription::Type::Descendant &&
       fineGridCellDescription.getLevel()==getMaximumAdaptiveMeshLevel() &&
       (fineGridCellDescription.getRefinementStatus()>0 ||
-      fineGridCellDescription.getPreviousRefinementStatus() > 0) // TODO(Dominic): Move into ADER-DG solver
+      fineGridCellDescription.getPreviousRefinementStatus() > 0)
   ) {
     exahype::solvers::Solver::SubcellPosition subcellPosition =
         exahype::amr::computeSubcellPositionOfDescendant<CellDescription,ADERDGSolver::Heap,true>(fineGridCellDescription);
@@ -1464,7 +1473,7 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
 
   // TODO Dominic: This is a little inconsistent since I orignially tried to hide
   // the limiting from the pure ADER-DG scheme
-  fineGridCellDescription.setPreviousRefinementStatus(Pending);
+  fineGridCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): NEW CELLS
   fineGridCellDescription.setRefinementStatus(Pending);
 
   // TODO Dominic:
@@ -1700,6 +1709,7 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     case CellDescription::RefinementEvent::ErasingChildren:
       //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+      fineGridCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): New cells
       fineGridCellDescription.setRefinementStatus(Pending);
       newComputeCell = true;
       break;
@@ -1716,6 +1726,7 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     case CellDescription::ChangeChildrenToVirtualChildren:
       fineGridCellDescription.setHasVirtualChildren(true);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
+      fineGridCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): New cells
       fineGridCellDescription.setRefinementStatus(Pending);
       newComputeCell = true;
       break;
@@ -2056,9 +2067,12 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
          refinementControl==RefinementControl::Refine ) ?
             MeshUpdateEvent::RefinementRequested : MeshUpdateEvent::None;
   } else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
+    // bottom up refinement criterion TODO(Dominic): Add to docu
+    // We allow the halo region to diffuse into the virtual subcells
+    // up to some point.
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
     if (
-        cellDescription.getRefinementStatus() > 0 &&
+        cellDescription.getRefinementStatus() > _refineOrKeepOnFineGrid-1 &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
     ) {
       cellDescription.setRefinementFlag(true);
@@ -2084,24 +2098,23 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
   // solver->synchroniseTimeStepping(cellDescription); // assumes this was done in neighbour merge
   updateSolution(cellDescription,isFirstIterationOfBatch);
 
-  // This is important to memorise before calling startNewTimeStepFused; TODO(Dominic): Add to docu and/or make cleaner
   UpdateResult result;
-  const double predictorTimeStamp    = cellDescription.getPredictorTimeStamp();
-  const double predictorTimeStepSize = cellDescription.getPredictorTimeStepSize();
-  result._timeStepSize    = startNewTimeStepFused(
-      cellDescriptionsIndex,element,isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._timeStepSize    = startNewTimeStepFused(cellDescription,isFirstIterationOfBatch,isLastIterationOfBatch);
   result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
   if (
       !SpawnPredictionAsBackgroundJob ||
       mustBeDoneImmediately
-  ) {   // TODO(Dominic): Add to docu. This will spawn or do a compression job right afterwards and must thus come last. This order is more natural anyway
+  ) {
     performPredictionAndVolumeIntegralBody(
-          cellDescriptionsIndex, element,
-          predictorTimeStamp,predictorTimeStepSize,
+          cellDescription,
+          cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
+          cellDescription.getCorrectorTimeStepSize(),
           false, isSkeletonCell );
   } else {
     PredictionJob predictionJob(
-        *this, cellDescriptionsIndex, element, predictorTimeStamp,predictorTimeStepSize,
+        *this, cellDescriptionsIndex, element,
+        cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
+        cellDescription.getCorrectorTimeStepSize(),
         false/*is uncompressed*/, isSkeletonCell );
     Solver::submitPredictionJob(predictionJob,isSkeletonCell);
   }
@@ -2151,7 +2164,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
 
     UpdateResult result;
     updateSolution(cellDescriptionsIndex,element,true);
-    result._timeStepSize    = startNewTimeStep(cellDescriptionsIndex,element);
+    result._timeStepSize    = startNewTimeStep(cellDescription);
     result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(
         cellDescription,cellDescription.getNeighbourMergePerformed());
 
@@ -2212,14 +2225,11 @@ bool exahype::solvers::ADERDGSolver::belongsToAMRSkeleton(const CellDescription&
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
-    const int    cellDescriptionsIndex,
-    const int    element,
+    CellDescription& cellDescription,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
     const bool   uncompressBefore,
     const bool   isSkeletonCell ) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
   if (uncompressBefore) {
     uncompress(cellDescription);
   }
@@ -2259,7 +2269,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     const bool   isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
@@ -2269,7 +2279,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         mustBeDoneImmediately
     ) {
       performPredictionAndVolumeIntegralBody(
-          cellDescriptionsIndex,element,
+          cellDescription,
           predictorTimeStamp,predictorTimeStepSize,
           uncompressBefore,isSkeletonCell);
     }
@@ -2300,11 +2310,9 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
 
 
 double exahype::solvers::ADERDGSolver::startNewTimeStepFused(
-    const int cellDescriptionsIndex,
-    const int element,
+    CellDescription& cellDescription,
     const bool firstBatchIteration,
     const bool lastBatchIteration) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
 
@@ -2336,8 +2344,7 @@ double exahype::solvers::ADERDGSolver::startNewTimeStepFused(
   return std::numeric_limits<double>::max();
 }
 
-double exahype::solvers::ADERDGSolver::startNewTimeStep(const int cellDescriptionsIndex,const int element) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+double exahype::solvers::ADERDGSolver::startNewTimeStep(CellDescription& cellDescription) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     double admissibleTimeStepSize = computeTimeStepSize(cellDescription);
 
@@ -4291,7 +4298,7 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::operator()() {
   _solver.performPredictionAndVolumeIntegralBody(
-      _cellDescriptionsIndex,_element,
+      getCellDescription(_cellDescriptionsIndex,_element),
       _predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob); // ignore return value
 

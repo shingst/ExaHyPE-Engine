@@ -130,7 +130,6 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
 void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
   _localState = solverState;
     
-
    //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
   // stability check
@@ -147,6 +146,9 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   }
   if ( StillInRefiningMode && _stableIterationsInARow>1 ) { // experimentally found
     StillInRefiningMode = false;
+    if (!IsInitialMeshRefinement) {
+      logInfo("beginIteration(...)","refinement converged. switch to coarsening");
+    }
   }
   // reset
   _allSolversAttainedStableState        = true;
@@ -178,19 +180,25 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   // logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
   // logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
   // logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
-  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     #ifndef TrackGridStatistics
     #error Compiler flag TrackGridStatistics must be defined!
     #endif
     solverState.setAllSolversAttainedStableStateInPreviousIteration( // check if we actually reached the solver's grids 
         solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
         solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers()); // max level only available in endIteration(..>)
+
     if ( !solverState.getAllSolversAttainedStableStateInPreviousIteration() ) { // reset directly
       _stableIterationsInARow = 0;
     }
     solverState.setMeshRefinementHasConverged(
-      !StillInRefiningMode && _stableIterationsInARow > 1 && // experimentally found
-      solverState.getAllSolversAttainedStableStateInPreviousIteration() ); // it's actually the currently finishing iteration
+        !StillInRefiningMode
+        &&
+        (IsInitialMeshRefinement ||
+          (_stableIterationsInARow > 1 && // experimentally found
+           solverState.getAllSolversAttainedStableStateInPreviousIteration()))
+      ); // it's actually the currently finishing iteration
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
