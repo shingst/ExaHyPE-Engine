@@ -321,6 +321,9 @@ class exahype::mappings::FinaliseMeshRefinement {
    * Drop messages containing meta data associated with the local cells that are
    * adjacent to this vertex sent to those adjacent remote cells that share a complete face
    * with the local cells.
+   *
+   * These messages have been sent out in eithe preceding refinement
+   * status spreading iterations or mesh refinement iterations.
    */
   void mergeWithNeighbour(exahype::Vertex& vertex,
                           const exahype::Vertex& neighbour, int fromRank,

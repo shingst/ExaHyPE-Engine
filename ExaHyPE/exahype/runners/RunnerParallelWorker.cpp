@@ -74,6 +74,7 @@ int exahype::runners::Runner::runAsWorker(
 //              logInfo("runAsWorker(...)",
 //                "\tmemoryDelta    =" << memoryUsageDelta << " MB");
 
+
               #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
               if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
                 static int dumpCounter = -1;

@@ -16,8 +16,8 @@
 {%- endif %}
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
-#include "{{ADERDGAbstractSolver}}.h"
-#include "{{FVAbstractSolver}}.h"
+#include "{{ADERDGSolver}}.h"
+#include "{{FVSolver}}.h"
 
 namespace {{project}}{
   class {{abstractSolver}};
@@ -29,7 +29,19 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSo
     static constexpr int Order              = {{project}}::{{ADERDGAbstractSolver}}::Order;
     static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
   
-    {{abstractSolver}}(std::string identifier, std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell);
+    {{abstractSolver}}(
+        std::string identifier,
+        double maximumMeshSize,
+        int maximumMeshDepth,
+        int haloCells,
+        int regularisedFineGridLevels,
+        exahype::solvers::Solver::TimeStepping timeStepping,
+        int DMPObservables,
+        int limiterHelperLayers,
+        const double DMPRelaxationParameter,
+        const double DMPDifferenceScaling,
+        const int iterationsToCureTroubledCell
+        {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
     {%- if countFlops %}
     static std::atomic_ulong total_flops;

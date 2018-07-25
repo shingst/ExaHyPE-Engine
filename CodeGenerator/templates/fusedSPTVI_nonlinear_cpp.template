@@ -69,47 +69,28 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
 
   // 0. Allocate local variable
+{% with %}
 {% if useFluxVect %}
-  // transposed flux matrix for vect flux
-
-  double Ft_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_x
-  double Ft_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_y
-{% if nDim==3 %}
-  double Ft_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed F_z
-{% endif %}
-
-  double* Ft_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_x_block+{{n*vectSize}}, {% endfor %}Ft_x_block+{{(nVar-1)*vectSize}} };
-  double* Ft_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_y_block+{{n*vectSize}}, {% endfor %}Ft_y_block+{{(nVar-1)*vectSize}} };
-{% if nDim==3 %}
-  double* Ft_z[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}Ft_z_block+{{n*vectSize}}, {% endfor %}Ft_z_block+{{(nVar-1)*vectSize}} };
-{% endif %}
-  double** Ft[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { Ft_x, Ft_y{{', Ft_z' if nDim==3 else ''}} };
+  // transposed F slice for flux_vect
+{% set array, blockedDim = 'Ft', True %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
 {% endif %}
 {% if useNCPVect or useFusedSourceVect %}
-  // transposed gradQ matrix for vect {{'fusedSource' if useFusedSourceVect else 'ncp'}}
-  double gradQt_x_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed gradQ_x
-  double gradQt_y_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed gradQ_y
-{% if nDim==3 %}
-  double gradQt_z_block[{{nVar*vectSize}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed gradQ_z
-{% endif %}
-  double* gradQt_x[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_x_block+{{n*vectSize}}, {% endfor %}gradQt_x_block+{{(nVar-1)*vectSize}} };
-  double* gradQt_y[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_y_block+{{n*vectSize}}, {% endfor %}gradQt_y_block+{{(nVar-1)*vectSize}} };
-{% if nDim==3 %}
-  double* gradQt_z[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}gradQt_z_block+{{n*vectSize}}, {% endfor %}gradQt_z_block+{{(nVar-1)*vectSize}} };
-{% endif %}
-  double** gradQt[{{nDim}}] __attribute__((aligned(ALIGNMENT))) = { gradQt_x, gradQt_y{{', gradQt_z' if nDim==3 else ''}} };
+  // transposed gradQ slice for vect ncp/source
+{% set array, blockedDim = 'gradQt', True %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
 {% endif %}
 {% if useFluxVect or useNCPVect or useSourceVect or useFusedSourceVect %}
-  //transposed state matrix 
-  double Qt_block[{{nData*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed Q
-  double* Qt[{{nData}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nDataMinusOne_seq %}Qt_block+{{n*vectSize}}, {% endfor %}Qt_block+{{(nData-1)*vectSize}} };
+  // transposed Q slice for vect PDEs
+{% set array, blockedDim = 'Qt', False %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
 {% endif %}
 {% if useNCPVect or useSourceVect or useFusedSourceVect %}
-  //transposed source matrix 
-  double St_block[{{nVar*vectSize}}]   __attribute__((aligned(ALIGNMENT))) = {0.}; //transposed S
-  double* St[{{nVar}}]   __attribute__((aligned(ALIGNMENT))) = { {% for n in nVarMinusOne_seq %}St_block+{{n*vectSize}}, {% endfor %}St_block+{{(nVar-1)*vectSize}} };
+  // transposed S slice for vect ncp/source
+{% set array, blockedDim = 'St', False %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
 {% endif %}
-
+{% endwith %}
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter

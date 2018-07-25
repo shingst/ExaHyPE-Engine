@@ -269,10 +269,26 @@ class exahype::parser::Parser {
    * \return The maximum adaptive mesh depth as specified
    * by the user.
    *
-   * \note I fthe user has not specified an adaptive
+   * \note If the user has not specified an adaptive
    * mesh depth, 0 is returned.
    */
-  double getMaximumMeshDepth(int solverNumber) const;
+  int getMaximumMeshDepth(int solverNumber) const;
+
+  /**
+   * \return The number of halo cells that are refined around a
+   * a cell on the finest allowed mesh level which wants to be kept
+   * or refined further.
+   *
+   * \note If the user has not specified this optional value, 0 is returned.
+   */
+  int getHaloCells(int solverNumber) const;
+
+  /**
+   * \return The number of regularised fine grid levels.
+   *
+   * \note If the user has not specified this optional value, 0 is returned.
+   */
+  int getRegularisedFineGridLevels(int solverNumber) const;
 
   /**
    * Prints a summary of the parameters read in for a solver.
@@ -401,6 +417,16 @@ class exahype::parser::Parser {
    **/
   std::string getTokenStreamAsString() const;
 
+  enum class TBBInvadeStrategy {
+	Undef,
+    NoInvade,
+	OccupyAllCores,
+	InvadeBetweenTimeSteps,
+	InvadeThroughoutComputation,
+	InvadeAtTimeStepStartupPlusThroughoutComputation
+  };
+
+  TBBInvadeStrategy getTBBInvadeStrategy() const;
 };
 
 #endif

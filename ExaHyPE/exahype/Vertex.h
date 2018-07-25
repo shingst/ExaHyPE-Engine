@@ -223,7 +223,8 @@ private:
    */
   void mergeWithNeighbourData(
       const int fromRank,
-      const int receivedMetadataIndex,
+      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+      const bool mergeWithNeighbourMetadata,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,

@@ -57,15 +57,19 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * A state indicating if the mesh refinement has attained a stable state
-   * for each solver.
-   *
-   * TODO(Dominic): The corresponding MPI send must (probably) not be performed
-   * per solver. _attainedStableState is a global state which is
-   * only read when deciding if we need to run more mesh setup iterations.
-   * It is not used to select certain solvers in contrast to the meshUpdateRequests.
+   * This switch is set to true in the first overall
+   * iteration in beginIteration(...).
+   * If we detect, that all solvers have
+   * attained a stable state for more than 1 iterations, we switch to
+   * erasing mode.
    */
-  std::vector<bool> _attainedStableState;
+  static bool StillInRefiningMode;
+
+  /**
+   * A state indicating if the mesh refinement has attained a stable state
+   * for all solver.
+   */
+  bool _allSolversAttainedStableState = false;
 
   /**
    * The number of iterations in a row where
@@ -77,33 +81,11 @@ private:
   int _stableIterationsInARow = 0;
 
   /**
-   * A value greater than 1 means that
-   * the adjacency maps of the vertices
-   * are up to date.
-   *
-   * We can the fall back to less costly lookups
-   * of adjacent cells from a vertex' point of view.
-   */
-  int _iterationsSinceLastErasing = 0;
-
-  /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
    * for any of the registered solvers.
    */
   bool _verticalExchangeOfSolverDataRequired = false; // TODO(Dominic): Is Parallel
-
-  /**
-   * Prepare all local variables.
-   */
-  void initialiseLocalVariables();
-
-  /**
-   * Returns false if a solvers is still progressing
-   * its mesh refinement automaton or if
-   * the rank is involved in a join or fork.
-   */
-  bool allSolversAttainedStableState() const;
 
   /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
@@ -233,6 +215,10 @@ public:
    * <h2>MPI</h2>
    * If this rank is the global master, update the
    * initial grid refinement strategy.
+   *
+   * <h2>Background Jobs</h2>
+   * Finish processing background jobs before starting
+   * the next iteration.
    */
   void endIteration(exahype::State& solverState);
 
@@ -384,8 +370,7 @@ public:
 
 
   /**
-   * Reduce the grid update requested flag up
-   * to the master.
+   * TODO(Dominic): Add docu
    */
   void prepareSendToMaster(
       exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -449,6 +434,10 @@ public:
 
   /**
    * TODO(Dominic): Add docu.
+   *
+   * <h2>Background Jobs</h2>
+   * Finish processing background jobs before sending
+   * out any data.
    */
   void prepareCopyToRemoteNode(
       exahype::Cell& localCell, int toRank,

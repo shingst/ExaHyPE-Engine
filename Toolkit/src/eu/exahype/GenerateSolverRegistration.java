@@ -215,9 +215,15 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       if (_enableProfiler) { writeProfilerCreation(); }
       
       _methodBodyWriter.write("  // Create and register solver\n");
-      _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( new " + _projectName +
-                          "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), 0, 0, parser.getTimeStepping("+_kernelNumber+")"+
-                           (_enableProfiler ? ", std::move(profiler)": ""));
+      _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( "
+            + "new " + _projectName + "::" + _solverName + "("
+                + "parser.getMaximumMeshSize("+_kernelNumber+"), "
+                + "parser.getMaximumMeshDepth("+_kernelNumber+"), "
+                + "parser.getHaloCells("+_kernelNumber+"), "
+                + "parser.getRegularisedFineGridLevels("+_kernelNumber+"), "
+                + "parser.getTimeStepping("+_kernelNumber+"), "
+                + "0, 0 "
+                + (_enableProfiler ? ", std::move(profiler)": ""));
       _methodBodyWriter.write( " ));\n");
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n\n");
       _methodBodyWriter.write("  \n");
@@ -258,9 +264,11 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       if (_enableProfiler) { writeProfilerCreation(); }
 
       _methodBodyWriter.write("  // Create and register solver\n");
-      _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( new " + _projectName +
-                          "::" + _solverName + "(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
-                          (_enableProfiler ? ", std::move(profiler)": ""));
+      _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back( "
+              + "new " + _projectName + "::" + _solverName + "("
+              + "parser.getMaximumMeshSize("+_kernelNumber+"), "
+              + "parser.getTimeStepping("+_kernelNumber+")"+
+              (_enableProfiler ? ", std::move(profiler)": ""));
       _methodBodyWriter.write( " ));\n");
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n\n");
       _methodBodyWriter.write("  \n");
@@ -305,8 +313,6 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
 
       _methodBodyWriter.write("  {\n\n");
       _methodBodyWriter.write("  // Create and register solver\n");
-      
-      _methodBodyWriter.write("  exahype::solvers::Solver* solver = nullptr;\n\n");
 
       writeVersionString("Kernel["+_kernelNumber+"].registration", "LimitingAderdgSolver");
       //writeVersionString("Kernel["+_kernelNumber+"].type", "exahype::solvers::LimitingADERDGSolver");
@@ -319,37 +325,21 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       writeVersionString("Kernel["+_kernelNumber+"].kernelADERDG", ADERDGKernel.noExceptionContructor(node).toString());
       writeVersionString("Kernel["+_kernelNumber+"].kernelLimiter", FiniteVolumesKernel.noExceptionContructor(node).toString());
       
-      // ADER-DG
-      _methodBodyWriter.write("  {\n");
-      
-      if (_enableProfiler) { writeProfilerCreation(); }
-      
-      _methodBodyWriter.write("  solver = new " + _projectName +
-                          "::" + solverNameADERDG+"(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getDMPObservables("+_kernelNumber+"), parser.getLimiterHelperLayers("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
-                           (_enableProfiler ? ", std::move(profiler)": ""));
-      _methodBodyWriter.write( ");\n");
-  
-      _methodBodyWriter.write("  }\n");
-      
-      _methodBodyWriter.write("  std::unique_ptr<exahype::solvers::ADERDGSolver> aderdgSolver(static_cast<exahype::solvers::ADERDGSolver*>(solver));\n");
-      
-      // FV
-      _methodBodyWriter.write("  {\n");
-      
-      if (_enableProfiler) { writeProfilerCreation(); }
-
-      _methodBodyWriter.write("  solver = new " + _projectName +
-                          "::" + solverNameFV+"(parser.getMaximumMeshSize("+_kernelNumber+"), parser.getMaximumMeshDepth("+_kernelNumber+"), parser.getTimeStepping("+_kernelNumber+")"+
-                          (_enableProfiler ? ", std::move(profiler)": ""));
-      _methodBodyWriter.write( ");\n");
-      _methodBodyWriter.write("  }\n");
-      
-      _methodBodyWriter.write("  std::unique_ptr<exahype::solvers::FiniteVolumesSolver> finiteVolumesSolver(static_cast<exahype::solvers::FiniteVolumesSolver*>(solver));\n");
-      
       // Limiting ADER-DG
       _methodBodyWriter.write("  \n");
       _methodBodyWriter.write("  exahype::solvers::RegisteredSolvers.push_back(\n"
-          + "    new "+ _projectName + "::" + solverNameLimiter+"(\""+_solverName+"\",std::move(aderdgSolver),std::move(finiteVolumesSolver),parser.getDMPRelaxationParameter("+_kernelNumber+"),parser.getDMPDifferenceScaling("+_kernelNumber+"),parser.getStepsTillCured("+_kernelNumber+") ));\n");
+         + "    new "+ _projectName + "::" + solverNameLimiter+"(\""
+              +_solverName+"\","
+              + "parser.getMaximumMeshSize("+_kernelNumber+"),"
+              + "parser.getMaximumMeshDepth("+_kernelNumber+"),"
+              + "parser.getHaloCells("+_kernelNumber+"),"
+              + "parser.getRegularisedFineGridLevels("+_kernelNumber+"),"
+              + "parser.getTimeStepping("+_kernelNumber+"),"
+              + "parser.getLimiterHelperLayers("+_kernelNumber+"),"
+              + "parser.getDMPObservables("+_kernelNumber+"),"
+              + "parser.getDMPRelaxationParameter("+_kernelNumber+"),"
+              + "parser.getDMPDifferenceScaling("+_kernelNumber+"),"
+              + "parser.getStepsTillCured("+_kernelNumber+") ));\n");
       
       _methodBodyWriter.write("  parser.checkSolverConsistency("+_kernelNumber+");\n");
       _methodBodyWriter.write("  }\n\n");

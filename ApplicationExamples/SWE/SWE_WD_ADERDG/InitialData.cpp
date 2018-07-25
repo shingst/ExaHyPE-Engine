@@ -63,7 +63,7 @@ void SWE::GaussFunctionProblem(const double* const x, double* Q){
 
 
 /*
- * Constant water height with "exponential" hump in bathymetry.  
+ * Constant water height with "exponential" hump in bathymetry.
  */
 void SWE::ExpBreakProblem(const double* const x,double* Q) {
   MySWESolver_ADERDG::Variables vars(Q);
@@ -82,7 +82,7 @@ void SWE::ExpBreakProblem(const double* const x,double* Q) {
 }
 
 /*
- * Constant water height with discontinuous jump in bathymetry.  
+ * Constant water height with discontinuous jump in bathymetry.
  */
 void SWE::DamBreakProblem(const double* const x,double* Q) {
   MySWESolver_ADERDG::Variables vars(Q);
@@ -101,18 +101,18 @@ void SWE::DamBreakProblem(const double* const x,double* Q) {
 }
 
 /*
- * Sea at rest (steady state).  
+ * Sea at rest (steady state).
  */
 void SWE::SeaAtRestProblem(const double* const x,double* Q) {
   MySWESolver_ADERDG::Variables vars(Q);
 
-  if((x[0] -5) *(x[0] -5) + (x[1] -5) *(x[1] -5) < 2) {
-    vars.h() = 3.0;
+  if(x[0] >= (10.0/3.0) && x[0]<= (20.0/3.0)) {
+    vars.h() = 2 - x[0]*(3.0/10.0) + 1;
     vars.hu()= 0.0;
     vars.hv()= 0.0;
-    vars.b() = 1;
+    vars.b() = x[0]*(3.0/10.0) - 1;
   } else {
-    vars.h() = 4.0;
+    vars.h() = 2.0;
     vars.hu()= 0.0;
     vars.hv()= 0.0;
     vars.b() = 0.0;
@@ -130,7 +130,7 @@ void SWE::SteadyRunUpLinear(const double* const x, double* Q) {
    const double xr=19.85;
 
    vars.b()  = (x[0]>xr) ? 0 : (-d/xr)*x[0] +d;
-   vars.h()  = (x[0]>xr) ? d : (d/xr)*x[0]; 
+   vars.h()  = (x[0]>xr) ? d : (d/xr)*x[0];
    vars.hu() = 0.0;
    vars.hv() = 0.0;
 
@@ -150,7 +150,7 @@ void SWE::RunUpLinear(const double* const x, double* Q) {
    const double xs= d/tan(alpha) + sqrt(4.0/(3.0*as))*acosh(sqrt(20.0));
 
    vars.b()  = (x[0]>xr) ? 0 : (-d/xr)*x[0] +d;
-   vars.h()  = (x[0]>xr) ? d : (d/xr)*x[0]; 
+   vars.h()  = (x[0]>xr) ? d : (d/xr)*x[0];
    vars.h()  += as*(1.0/pow(cosh(sqrt(3.0*as/4.0)*(x[0]-xs)),2));
    vars.hu() = -vars.h()* as*(1.0/pow(cosh(sqrt(3*as/4)*(x[0]-xs)),2))*sqrt(grav_DG/d);
    vars.hv() = 0.0;
@@ -272,11 +272,10 @@ void SWE::RunUpTest(const double* const x, double* Q){
 
 //width = 70.0,1.0
 //offset = -10.0,0.0
-void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
+void SWE::SolitaryWaveOnSimpleBeach(const double*const x, double* Q, double Hd, double d){
   MySWESolver_ADERDG::Variables vars(Q);
 
- const double d = 0.3;
-  const double H = 0.0185 * d;
+  const double H = Hd * d;
   const double beta = std::atan(1/19.85);
 
   double gamma = std::sqrt((3*H)/(4*d));
@@ -347,7 +346,10 @@ void SWE::initialData(const double* const x,double* Q) {
       RunUpTest(x, Q);
           break;
     case 13:
-      SolitaryWaveOnSimpleBeach(x, Q);
+      SolitaryWaveOnSimpleBeach(x, Q, 0.0185, 0.3);
+          break;
+    case 14:
+      SolitaryWaveOnSimpleBeach(x, Q, 0.3, 0.15);
           break;
     default:
       GaussFunctionProblem(x, Q);

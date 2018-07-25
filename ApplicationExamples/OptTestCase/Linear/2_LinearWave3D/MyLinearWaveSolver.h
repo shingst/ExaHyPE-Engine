@@ -29,7 +29,7 @@ class Linear::MyLinearWaveSolver : public Linear::AbstractMyLinearWaveSolver {
      */
     static tarch::logging::Log _log;
   public:
-    MyLinearWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    MyLinearWaveSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.

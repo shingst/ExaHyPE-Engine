@@ -47,8 +47,6 @@ class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
 
-  static constexpr int BoundaryStatus = -1;
-
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
@@ -178,6 +176,19 @@ private:
    */
   bool _stabilityConditionWasViolated;
 
+  /** Special Refinement Status values */
+  static constexpr int BoundaryStatus             = -3;
+  static constexpr int Pending                    = -2;
+  static constexpr int Erase                      = -1; // Erase must be chosen as -1.
+  static constexpr int Keep                       =  0;
+
+  int _refineOrKeepOnFineGrid; // can be configured by the user
+
+  /**
+   * Number of limiter helper layers in each
+   * helper cell subdomain around a troubled cell.
+   */
+  const int _limiterHelperLayers;
   /**
    * !!! LimitingADERDGSolver functionality !!!
    *
@@ -186,7 +197,7 @@ private:
    * is applied to.
    */
   const int _DMPObservables;
-  
+
   /**
    * The minimum limiter status a cell must have
    * to allocate a passive FV patch.
@@ -194,7 +205,7 @@ private:
    * All patches with limiter status smaller than this value,
    * hold no FV patch at all.
    */
-  const int _minimumLimiterStatusForPassiveFVPatch;
+  const int _minimumRefinementStatusForPassiveFVPatch;
 
   /**
    * The minimum limiter status a cell must have
@@ -203,12 +214,23 @@ private:
    * All patches with nonzero limiter status smaller than this value,
    * hold a passive FV patch.
    */
-  const int _minimumLimiterStatusForActiveFVPatch;
+  const int _minimumRefinementStatusForActiveFVPatch;
 
   /**
    * Minimum limiter status a troubled cell can have.
    */
-  const int _minimumLimiterStatusForTroubledCell;
+  const int _minimumRefinementStatusForTroubledCell;
+
+  /**
+   * The current mesh update event.
+   */
+  MeshUpdateEvent _meshUpdateEvent;
+
+  /**
+   * The mesh update event which will become active
+   * in the next iteration.
+   */
+  MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
    * Different to compress(), this operation is called automatically by
@@ -229,9 +251,8 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int cellDescriptionsIndex,
-      const int element,
-      const bool isInitialMeshRefinement) final override;
+      CellDescription& cellDescription,
+      const bool isInitialMeshRefinement);
 
   /**
    * Query the user's refinement criterion and
@@ -274,7 +295,7 @@ private:
    *
    * \note Thread-safe.
    */
-  void decideOnRefinement(CellDescription& fineGridCellDescription);
+  void decideOnRefinement(CellDescription& fineGridCellDescription, const bool stillInRefiningMode);
 
   /**
    * Performs three operations:
@@ -424,8 +445,7 @@ private:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       CellDescription& coarseGridCellDescription,
-      const int coarseGridCellDescriptionsIndex,
-      const bool initialGrid);
+      const int coarseGridCellDescriptionsIndex);
 
   /**
    * Prolongates Volume data from a parent cell description to
@@ -502,13 +522,6 @@ private:
    *   of a parent Ancestor.
    */
   static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
-
-  /**
-   * Sets the face unknowns of a cell description of type Ancestor to zero.
-   * This is typically done before we perform a face unknowns
-   * restriction operation.
-   */
-  void prepareFaceDataOfAncestor(CellDescription& cellDescription);
 
   /**
    * Restrict the obse
@@ -801,18 +814,37 @@ private:
    */
   class FusedTimeStepJob {
     private:
-      ADERDGSolver&    _solver; // TODO not const because of kernels
-      const int        _cellDescriptionsIndex;
-      const int        _element;
-      const bool       _isSkeletonJob;
+      ADERDGSolver&                            _solver; // TODO not const because of kernels
+      const int                                _cellDescriptionsIndex;
+      const int                                _element;
+      const std::bitset<DIMENSIONS_TIMES_TWO>  _neighbourMergePerformed;
+      const bool                               _isSkeletonJob;
     public:
       FusedTimeStepJob(
         ADERDGSolver& solver,
         const int     cellDescriptionsIndex,
         const int     element,
-        const bool    isAtRemoteBoundary);
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed,
+        const bool    isSkeletonJob);
 
       bool operator()();
+  };
+
+  /**
+   * A job that calls adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    ADERDGSolver&    _solver;
+    CellDescription& _cellDescription;
+    const bool       _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        ADERDGSolver&    solver,
+        CellDescription& cellDescription,
+        const bool       isInitialMeshRefinement);
+
+    bool operator()();
   };
 
 public:
@@ -902,25 +934,23 @@ public:
   /**
    * Determine a new limiter status for the given direction based on the neighbour's
    * limiter status and the cell's reduced limiter status.
-   *
-   * Computes the new limiter status \f$ L_\rm{new} \f$ per direction
-   * according to:
-   *
-   * \f[
-   *  L_\rm{new} = \begin{cases}
-   *  T & L = T \\
-   *  \max \left( 0, \max \left( L, L_\rm{neighbour} \right) -1 \right) & \rm{else}
-   *   \end{cases}
-   * \f]
-   *
-   * with \f$ L \f$, \f$ L_\rm{neighbour} \f$, denoting the current limiter status
-   * of the cell and the neighbour, respectively, and \f$  T  \f$ indicates the status
-   * of a troubled cell.
    */
-  void mergeWithLimiterStatus(
+  void mergeWithRefinementStatus(
       CellDescription& cellDescription,
       const int faceIndex,
       const int neighbourLimiterStatus) const;
+
+  /**
+   * Determine the refinement status from the face
+   * neighbour values.
+   *
+   * \note It is very important that any troubled cell indicator
+   * and any refinement criterion has been evaluated before
+   * calling this function.
+   */
+  void updateRefinementStatus(
+      CellDescription& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) const;
 
   /**
    * Construct an ADERDGSolver.
@@ -939,11 +969,16 @@ public:
    */
   ADERDGSolver(
       const std::string& identifier,
-      int numberOfVariables, int numberOfParameters, int DOFPerCoordinateAxis,
-      double maximumMeshSize, int maximumAdaptiveMeshDepth,
-      int DMPObservables,
-      int limiterHelperLayers,
-      exahype::solvers::Solver::TimeStepping timeStepping,
+      const int numberOfVariables,
+      const int numberOfParameters,
+      const int basisSize,
+      const double maximumMeshSize,
+      const int maximumAdaptiveMeshDepth,
+      const int haloCells,
+      const int regularisedFineGridLevels,
+      const exahype::solvers::Solver::TimeStepping timeStepping,
+      const int limiterHelperLayers,
+      const int DMPObservables,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));
@@ -1048,7 +1083,7 @@ public:
    * We thus have a total number of helper layers
    * which is twice the returned value.
    */
-  int getMinimumLimiterStatusForActiveFVPatch() const;
+  int getMinimumRefinementStatusForActiveFVPatch() const;
 
   /**
    * !!! LimitingADERDGSolver functionality !!!
@@ -1061,7 +1096,19 @@ public:
    * We thus have a total number of helper layers
    * which is twice the returned value.
    */
-  int getMinimumLimiterStatusForTroubledCell() const;
+  int getMinimumRefinementStatusForTroubledCell() const;
+
+  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void setNextMeshUpdateEvent() final override;
+  MeshUpdateEvent getMeshUpdateEvent() const final override;
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
+
+
+  /**
+   * Check if the heap array with index \p index could be allocated.
+   */
+  static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
 
   /**
    * Checks if no unnecessary memory is allocated for the cell description.
@@ -1325,9 +1372,12 @@ public:
    */
   virtual bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t, const double dt) const = 0;
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt
+      ) const = 0;
 
   /**
    * Maps the solution values Q to
@@ -1514,8 +1564,8 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
-      const int solverNumber) override;
+      const int  solverNumber,
+      const bool stillInRefiningMode) override;
 
   bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
@@ -1562,9 +1612,26 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   ///////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-      const int cellDescriptionsIndex,
-      const int element) override;
+
+  /**
+   * Evaluate the refinement criterion after
+   * a solution update has been performed and
+   * the patch has been advanced in time.
+   *
+   * We currently only return true if a cell requested refinement.
+   * ExaHyPE might then stop the
+   * time stepping and update the mesh
+   * before continuing. Erasing is here not considered.
+   *
+   * \note Must be called after startNewTimeStep was called
+   *
+   * \return True if mesh refinement is requested.
+   *
+   * \note Has no const modifier since kernels are not const functions yet.
+   */
+  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
+      CellDescription& cellDescription,
+      const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
    *
@@ -1678,24 +1745,29 @@ public:
         const int cellDescriptionsIndex,
         const int element) override final;
 
-  void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const override final;
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
-  void rollbackToPreviousTimeStep(
-        const int cellDescriptionsIndex,
-        const int element) const override final;
   /**
-   * !!! Only for fused time stepping !!!
-   *
-   * Rolls the solver time step data back to the
-   * previous time step for a cell description.
-   * Note that the newest time step
-   * data is lost in this process.
-   */
-  void rollbackToPreviousTimeStepFused(
-      const int cellDescriptionsIndex,
-      const int element) const override final;
+    * Rollback to the previous time step, i.e,
+    * overwrite the time step size and time stamp
+    * fields of the cell description
+    * by previous values.
+    */
+   void rollbackToPreviousTimeStep(
+       CellDescription& cellDescription) const;
+
+   /*
+    * Same as rollbackToPreviousTimeStep
+    * but for the fused time stepping scheme.
+    *
+    * Corrector time stamp and corrector time step size must
+    * add up to predictor time stamp after rollback.
+    *
+    * Corrector time step size is assumed to be used
+    * predictor time step size in batch.
+    */
+   void rollbackToPreviousTimeStepFused(
+       CellDescription& cellDescription) const;
 
   UpdateResult fusedTimeStepBody(
         const int cellDescriptionsIndex,
@@ -1703,7 +1775,8 @@ public:
         const bool isFirstIterationOfBatch,
         const bool isLastIterationOfBatch,
         const bool isSkeletonCell,
-        const bool mustBeDoneImmediately);
+        const bool mustBeDoneImmediately,
+        const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed);
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -1721,6 +1794,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Computes the surface integral contributions to the
@@ -1801,21 +1877,6 @@ public:
       const int element) override;
 
   /**
-   * Restrict the Troubled limiter status of a cell
-   * up to the parent if the parent exists.
-   *
-   * Any other limiter status is ignored.
-   *
-   * \p This operation ensures thread-safety by using a lock.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) mapping method.
-   */
-  void restrictToNextParent(
-      const CellDescription& cellDescription,
-      const int parentElement) const;
-
-  /**
    * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)
    * if and only if the fine grid cell (Cell) has a face which intersects with one of the top most parent
    * cell's faces.
@@ -1836,6 +1897,19 @@ public:
         const CellDescription& cellDescription,
         const int parentCellDescriptionsIndex,
         const int parentElement);
+
+  /**
+   * Go back to previous time step with
+   * time step data and solution.
+   *
+   * Keep the new refinement status.
+   *
+   * Allocate necessary new limiter patches.
+   */
+  void rollbackSolutionGlobally(
+         const int cellDescriptionsIndex,
+         const int element,
+         const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -2094,7 +2168,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) final override;
 
 
@@ -2121,10 +2194,9 @@ public:
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) final override;
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 
   /**
    * Finish erasing operations on the worker side and
@@ -2152,7 +2224,8 @@ public:
        const int localElement,
        const int coarseGridCellDescriptionsIndex,
        const tarch::la::Vector<DIMENSIONS, double>& x,
-       const int                                    level) final override;
+       const int                                    level,
+       const bool                                   stillInRefiningMode) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,

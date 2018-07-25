@@ -39,7 +39,7 @@ exahype-project  SWE
   end shared-memory
 
   global-optimisation
-        fuse-algorithmic-steps          = on
+        fuse-algorithmic-steps          = off
         fuse-algorithmic-steps-factor   = 0.99
         spawn-predictor-as-background-thread = off
         spawn-amr-background-threads         = off
@@ -55,8 +55,8 @@ exahype-project  SWE
     variables const = h:1,hu:1,hv:1,b:1
     //parameters const = b:1
     order const = 3
-    maximum-mesh-size = 0.15
-    maximum-mesh-depth = 1
+    maximum-mesh-size = 0.5
+    maximum-mesh-depth = 2
     time-stepping = global
     type const = nonlinear
     terms const = flux,ncp
@@ -68,13 +68,13 @@ exahype-project  SWE
     dmp-observables const = 0
     dmp-relaxation-parameter = 100000000.0
     dmp-difference-scaling = 100000000.0
-    constants = grav:9.81, epsilon:1e-7, scenario:11
+    constants = grav:9.81, epsilon:1e-3, scenario:11
 
     plot vtu::Cartesian::cells::limited::ascii ConservedWriter
       variables const = 6
       time            = 0.0
-      repeat          = 0.00000000001
-      output          = ./conserved
+      repeat          = 0.1
+      output          = ./output/conserved
     end plot
   end solver
 end exahype-project
@@ -93,5 +93,6 @@ end exahype-project
 10: WettingDryingProblem        (width = 10.0, 10.0 offset = 0.0, 0.0)
 11: OscillatingLake             (width = 4.0, 4.0 offset = -2.0, -2.0)
 12: RunUpTest                   (width = 10.0, 10.0 offset = 0.0, 0.0)
-13: SolitaryWaveOnSimpleBeach   (width = 70.0, 1.0 offset = -10.0, 0.0)
+13: SolitaryWaveOnSimpleBeach (Case = 0.0185)   (width = 70.0, 1.0 offset = -10.0, 0.0)
+14: SolitaryWaveOnSimpleBeach (Case = 0.3)      (width = 70.0, 1.0 offset = -10.0, 0.0)
 Default: GaussFunction          (width = 10.0, 10.0 offset = 0.0, 0.0)*/

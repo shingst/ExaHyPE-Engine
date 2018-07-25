@@ -81,7 +81,7 @@ def parseParameters(config):
     # always put None in order to have at least one element
     groupedParameterSpace[None] = [None] 
 
-    blackList = ["tasks","cores","backgroundTasks"]
+    blackList = ["ranksPerNode","coresPerRank","consumerTasks"]
     for key in blackList:
         if key in parameterSpace:
             print("ERROR: The following keys are reserved: "+",".join(blackList)+".",file=sys.stderr)
@@ -89,21 +89,62 @@ def parseParameters(config):
  
     return ungroupedParameterSpace,groupedParameterSpace,parameterSpace
 
-def parseCoreCounts(coreCounts):
-    myCoreCounts = [] 
-    for i,cores in enumerate(coreCounts):
-        m1 = re.search("([0-9]+)\s*\:\s*([0-9]+)",cores.strip())
-        m2 = re.search("([0-9]+)",cores.strip())
-        if m1:
-            myCoreCounts.append(m1.group(1)+":"+m1.group(2))
-        elif m2:
-            myCoreCounts.append(m2.group(1)+":"+m2.group(1)) # default
-        else:
-            print("ERROR: please use either the notation '<cores>' or '<cores>:<background threads>' on the right-hand side of"+\
-                 "'cores' or 'cores_grouped'!",file=sys.stderr)
-            sys.exit()
-    return myCoreCounts
+def compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
+    overlap = False
+    for i,tuple1 in enumerate(ranksNodesCoreCountsList):
+        for j,tuple2 in enumerate(ranksNodesCoreCountsList):
+            if i != j:
+                coresNodesIdentical = tuple1.nodes==tuple2.nodes and\
+                                      tuple1.ranks==tuple2.ranks
+                if coresNodesIdentical:
+                    for coreCount1 in tuple1.coreCounts:
+                        for coreCount2 in tuple2.coreCounts:
+                            if coreCount1.cores==coreCount2.cores and\
+                               coreCount1.consumers==coreCount2.consumers:
+                                 print("ERROR: Detected {<cores>:<consumers>} overlap for the two 'ranks_nodes_cores' entries '"+tuple1.text+"' and '"+tuple2.text+"'.",file=sys.stderr)
+                                 overlap = True;
+    return overlap
 
+def parseRanksNodesCoreCounts(jobs):
+    """
+    Returns a list of tuples of the form (ranks,nodes,coreCounts).
+    coreCounts is an ordered dict with key 'cores' and value 'background job'
+    consumer tasks.
+    """
+    RanksNodesCoreCounts = collections.namedtuple("ranksNodesCoreCounts", \
+        "nodes ranks coreCounts text")
+    CoreCount = collections.namedtuple("coreCount", \
+        "cores consumers")
+    # example: "29 x 29 x {4:2,8:4},\\n758 x 29 x {1:1}"
+    entryPattern      = re.compile(r"(\s*([0-9]+)\s*x\s*([0-9]+)\s*x\s*\{(([0-9]|\:|,|\s)+)\})");
+    # example: 4:2,8:4
+    # example: 4:2
+    coreCountsPattern = re.compile(r"([0-9]+)\s*\:\s*([0-9]+)");
+    
+    ranksNodesCoreCountsList = []
+    for entryMatch in re.findall(entryPattern, jobs["ranks_nodes_cores"]):
+        coreCountsList = []
+        for coresMatch in re.findall(coreCountsPattern,entryMatch[3]):
+            coreCountsList.append( CoreCount( cores=coresMatch[0], consumers=coresMatch[1] ) )
+        if not coreCountsList:
+            print("ERROR: the cores specification (the part in curly braces {...}) in 'ranks_nodes_cores' does not have the form: '{<cores0>:<consumertasks0>,<cores1>:<consumertasks1>',...}'.\n"\
+                  "       Valid examples: '{1:1}', '{1:1,2:2}'",file=sys.stderr)
+            sys.exit()
+        ranks = entryMatch[1]
+        nodes = entryMatch[2]
+        if int(nodes) > int(ranks):
+            print("ERROR: specified ranks ("+ranks+") must always be greater than or equal to specified nodes ("+nodes+").\n"\
+                  "       Error occured in entry: '"+entryMatch[0]+"'",file=sys.stderr) 
+            sys.exit()
+        ranksNodesCoreCountsList.append( RanksNodesCoreCounts( ranks=ranks, nodes=nodes, coreCounts=coreCountsList, text=entryMatch[0] ) )
+        
+    if not ranksNodesCoreCountsList:
+        print("ERROR: could not find any 'ranks_nodes_cores' entries in the form: '<ranks> x <nodes> x {<cores0>:<consumertasks0>,<cores1>:<consumertasks1>,...}'.\n"\
+              "       Valid examples: '29 x 29 x {1:1}', '758 x 29 x {8:4,16:8}'",file=sys.stderr)
+        sys.exit()
+    elif compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
+        sys.exit()
+    return ranksNodesCoreCountsList
 
 def parseOptionsFile(optionsFile,ignoreMetadata=False):
     configParser = configparser.ConfigParser()
@@ -132,21 +173,8 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
         jobClass = jobs["class"].strip();
     if configParser.has_option("jobs","islands"):
         islands = jobs["islands"].strip();
-
-    rankCounts = [x.strip() for x in jobs["ranks"].split(",")]
-    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
-    # cores 
-    coreCounts       =["+"]
-    coreCountsGrouped=[None]
-    if configParser.has_option("jobs","cores"):
-        coreCounts = [x.strip() for x in jobs["cores"].split(",")]
-        coreCounts = parseCoreCounts(coreCounts)
-    elif configParser.has_option("jobs","cores_grouped"):
-        coreCountsGrouped = [x.strip() for x in jobs["cores_grouped"].split(",")]
-        coreCountsGrouped = parseCoreCounts(coreCountsGrouped)
-    if configParser.has_option("jobs","cores") == configParser.has_option("jobs","cores_grouped"):
-        print("ERROR: please either specify 'cores' or 'cores_grouped'!",file=sys.stderr)
-        sys.exit()
+    
+    ranksNodesCoreCounts = parseRanksNodesCoreCounts(jobs)
     # runs
     runNumbers       =["+"]
     runNumbersGrouped=[None]
@@ -167,8 +195,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "buildFolderPath scriptsFolderPath "
             "resultsFolderPath historyFolderPath "
             "jobClass islands "
-            "rankCounts nodeCounts "
-            "coreCounts coreCountsGrouped "
+            "ranksNodesCoreCounts "
             "runNumbers runNumbersGrouped"))
     
     options = Options(
@@ -190,14 +217,11 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
       resultsFolderPath = resultsFolderPath,\
       historyFolderPath = historyFolderPath,\
       \
-      jobClass          = jobClass,\
-      islands           = islands,\
-      rankCounts        = rankCounts,\
-      nodeCounts        = nodeCounts,\
-      coreCounts        = coreCounts,\
-      coreCountsGrouped = coreCountsGrouped,\
-      runNumbers        = runNumbers,\
-      runNumbersGrouped = runNumbersGrouped\
+      jobClass             = jobClass,\
+      islands              = islands,\
+      ranksNodesCoreCounts = ranksNodesCoreCounts,\
+      runNumbers           = runNumbers,\
+      runNumbersGrouped    = runNumbersGrouped\
     )
     
     return options

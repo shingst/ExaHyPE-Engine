@@ -59,7 +59,7 @@
 #include "exahype/plotters/Plotter.h"
 
 #include "exahype/mappings/MeshRefinement.h"
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -72,6 +72,8 @@
 #ifdef TBBInvade
 #include "shminvade/SHMController.h"
 #include "shminvade/SHMSharedMemoryBetweenTasks.h"
+#include "shminvade/SHMOccupyAllCoresStrategy.h"
+#include "shminvade/SHMMultipleRanksPerNodeStrategy.h"
 #endif
 
 
@@ -84,7 +86,11 @@ exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<st
     _meshRefinements(0),
     _localRecomputations(0),
     _globalRecomputations(0),
-    _predictorReruns(0) {}
+    _predictorReruns(0) {
+  #ifdef TBBInvade
+  _shmInvade = nullptr;
+  #endif
+}
 
 exahype::runners::Runner::~Runner() {}
 
@@ -242,17 +248,23 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 
 void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
+
+  #ifdef TBBInvade
+  tarch::multicore::Core::getInstance().configure( shminvade::SHMController::getInstance().getMaxAvailableCores() );
+  #elif SharedTBB
   const int numberOfThreads = _parser.getNumberOfThreads();
-  #ifdef SharedTBB
   tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
   #elif SharedCPP
+  const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
   #else
   #error Unknown shared memory variant
   #endif
 
   if ( _parser.useManualPinning() ) {
-    #if defined(SharedTBB) || defined(SharedCPP)
+    #if defined(TBBInvade)
+    logWarning("initSharedMemoryConfiguration()", "TBBInvade always pins threads automatically, i.e. manual pinning is ignored" );
+    #elif defined(SharedTBB) || defined(SharedCPP)
     logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
     tarch::multicore::Core::getInstance().pinThreads( true );
     #else
@@ -270,16 +282,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true,  //   bool useMultithreading                  = true,
          0,     //   int  grainSizeOfUserDefinedRegions      = 0,
-
-     #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
-         false, //  bool pipelineDescendProcessing          = false,
-         false,  //   bool pipelineAscendProcessing           = false,
-		 #else
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing
-    #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
@@ -336,8 +341,31 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #endif
 
 
-
   #if  defined(TBBInvade)
+  shminvade::SHMSharedMemoryBetweenTasks::getInstance().cleanUp();
+  switch ( _parser.getTBBInvadeStrategy() ) {
+    case exahype::parser::Parser::TBBInvadeStrategy::Undef:
+      logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+      shminvade::SHMStrategy::setStrategy( new shminvade::SHMOccupyAllCoresStrategy() );
+	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's OccupyAllCores strategy" );
+	  if ( _parser.getRanksPerNode()<=0 or _parser.getRanksPerNode()>=shminvade::SHMController::getInstance().getMaxAvailableCores()) {
+		logError( "initSharedMemoryConfiguration()", "no ranks-per-node set. Mandatory for SHMInvade" );
+	  }
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
+      shminvade::SHMStrategy::setStrategy( new shminvade::SHMMultipleRanksPerNodeStrategy() );
+	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's MultipleRanksPerNode strategy" );
+      break;
+  }
+
+  shminvade::SHMController::getInstance().init(_parser.getRanksPerNode(),tarch::parallel::Node::getInstance().getRank());
+
+  // This initialisation with dummies is most likely not required at all
   double localData[3] = { 0.0, 1.0, 1.0 };
   shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
@@ -511,20 +539,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
-      logWarning("createRepository(...)",
+      logInfo("createRepository(...)",
           "scale domain size artificially to " << scaledDomainSize << " from "
           << _domainSize << " since non-cubic domain was specified");
     }
-    logWarning("createRepository(...)",
+    logInfo("createRepository(...)",
         "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
         coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
-      logWarning("createRepository(...)",
+      logInfo("createRepository(...)",
           "We will need to refine the grid " << boundingBoxMeshLevel-coarsestUserMeshLevel << " more time(s) than expected "
           " in order to satisfy user's maximum mesh size criterion while scaling the bounding box");
     }
 
-    logWarning(
+    logInfo(
         "createRepository(...)",
         "summary: create computational domain at " << _domainOffset <<
         " of width/size " << scaledDomainSize <<
@@ -593,18 +621,6 @@ void exahype::runners::Runner::parseOptimisations() const {
       _parser.getDisablePeanoNeighbourExchangeInTimeSteps();
   exahype::solvers::Solver::DisableMetaDataExchangeInBatchedTimeSteps =
       _parser.getDisableMetadataExchangeInBatchedTimeSteps();
-
-  if ( 
-       exahype::solvers::ADERDGSolver::PredictionSweeps==2 && 
-       exahype::solvers::Solver::FuseADERDGPhases          &&
-       exahype::solvers::Solver::oneSolverIsOfType(exahype::solvers::Solver::Type::LimitingADERDG) &&
-       !exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)
-  ) { 
-    logError("parseOptimisations()","It is currently not possible to use the 'Limiting-ADER-DG' solver in combination with, both turned on at the same time, " << 
-            "'fuse-algorithmic-phases' and 'spawn-predictor-as-background-job'. The only exception is if 'globalfixed' time stepping is chosen which is interpreted " <<
-            "as signal that the limiter domain does not change dynamically during the simulation.");
-    std::abort();
-  }
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     logInfo("parseOptimisations()","use the following global optimisations:");
@@ -700,8 +716,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid()
   );
   #elif defined(Asserts)
   logInfo("createGrid()",
@@ -709,8 +724,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", state=" << repository.getState().toString() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid()
   );
   #elif defined(TrackGridStatistics)
   logInfo("createGrid()",
@@ -718,17 +732,14 @@ void exahype::runners::Runner::printMeshSetupInfo(
       ", max-level=" << repository.getState().getMaxLevel() <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid()
   );
   #else
   logInfo("createGrid()",
       "grid setup iteration #" << meshSetupIterations <<
       ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes() <<
       ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired() <<
-      ", continue to construct grid=" << repository.getState().continueToConstructGrid() <<
-      ", one solver is still refining=" << exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
-  );
+      ", continue to construct grid=" << repository.getState().continueToConstructGrid() );
   #endif
 
   #if !defined(Parallel)
@@ -753,15 +764,9 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   int meshSetupIterations = 0;
   repository.switchToMeshRefinement();
 
-
+  repository.getState().setMeshRefinementHasConverged(false);
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(true);
-  while (
-    (
-      repository.getState().continueToConstructGrid() ||
-      exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
-    )
-  ) {
-    exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
+  while ( repository.getState().continueToConstructGrid() ) {
     repository.iterate(1,true);
     meshSetupIterations++;
 
@@ -866,7 +871,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
-    repository.switchToBroadcastAndRestrictLimiterStatus();
+    repository.switchToBroadcastAndDropNeighbourMessages();
     repository.iterate( 1, communicatePeanoVertices );
 
     printStatistics();
@@ -940,34 +945,75 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
   }
 
-  // ask for an optimal number of cores for local rank
-  int optimalNumberOfThreads = std::max(
-    peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
-      myIndexWithinSharedUserData,
-      t1,f,s,
-      shminvade::SHMController::getInstance().getMaxAvailableCores(),
-      tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
-    ),
-    2
-    );
+  switch ( _parser.getTBBInvadeStrategy() ) {
+    case exahype::parser::Parser::TBBInvadeStrategy::Undef:
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+      {
+    	if ( _shmInvade==nullptr ) {
+    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode() -1;
+          logInfo(
+            "preProcessTimeStepInSharedMemoryEnvironment()",
+			"try to acquire SHMInvade object for " << cores << " in runner (max cores=" <<
+			shminvade::SHMController::getInstance().getMaxAvailableCores() << ", ranks-per-node=" << _parser.getRanksPerNode() <<
+			")"
+	      );
+          _shmInvade = new shminvade::SHMInvade( cores );
+    	}
+        shminvade::SHMController::getInstance().switchOff();
+      }
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+      {
+      	if ( _shmInvade==nullptr ) {
+      	  const int cores = shminvade::SHMInvade::MaxCores;
+          logInfo( "preProcessTimeStepInSharedMemoryEnvironment()", "try to acquire SHMInvade object for " << cores << " (all cores) in runner" );
+          _shmInvade = new shminvade::SHMInvade( cores );
+      	}
+        shminvade::SHMController::getInstance().switchOff();
+      }
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+      {
+        // ask for an optimal number of cores for local rank
+        int optimalNumberOfThreads = std::max(
+          peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+            myIndexWithinSharedUserData,
+            t1,f,s,
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
+            tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
+          ),
+          2
+        );
+        assertion(_shmInvade==nullptr);
+        _shmInvade = new shminvade::SHMInvade( optimalNumberOfThreads );
+        shminvade::SHMController::getInstance().switchOff();
+      }
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+        assertion(_shmInvade==nullptr);
+      _shmInvade = new shminvade::SHMInvade( 2 );
+      shminvade::SHMController::getInstance().switchOn();
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
+      {
+        // ask for an optimal number of cores for local rank
+        int optimalNumberOfThreads = std::max(
+          peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+            myIndexWithinSharedUserData,
+            t1,f,s,
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
+            tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
+          ),
+          2
+        );
+        assertion(_shmInvade==nullptr);
+        _shmInvade = new shminvade::SHMInvade( optimalNumberOfThreads );
+        shminvade::SHMController::getInstance().switchOn();
+      }
+      break;
+  }
 
-  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
-  }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
-    //tarch::multicore::logThreadAffinities();
-  }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( 2, true );
-    //tarch::multicore::logThreadAffinities();
-  }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-at-time-step-startup-plus-throughout-computation")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
-    //tarch::multicore::logThreadAffinities();
-  }
-  else {
-    logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
-  }
   #endif
 }
 
@@ -985,33 +1031,51 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
-  // adopt my local performance model
-  invasionWatch.stopTimer();
-  amdahlsLaw.addMeasurement(
-    tarch::multicore::Core::getInstance().getNumberOfThreads(),
-    invasionWatch.getCalendarTime()
-  );
-  amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
-  
-  //
-  //
-  //
-  double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
-  shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3);
+  switch ( _parser.getTBBInvadeStrategy() ) {
+     case exahype::parser::Parser::TBBInvadeStrategy::Undef:
+     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
+       break;
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
+       {
+      	 logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "release SHMInvade object" );
+         assertion( _shmInvade != nullptr );
+         delete _shmInvade;
+         _shmInvade = nullptr;
 
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "ranksOnThisNode=" << ranksOnThisNode );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
+    	 // adopt my local performance model
+    	 invasionWatch.stopTimer();
+    	 amdahlsLaw.addMeasurement(
+    	   tarch::multicore::Core::getInstance().getNumberOfThreads(),
+    	   invasionWatch.getCalendarTime()
+    	 );
+    	 amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
 
-  assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
+    	 //
+    	 //
+    	 //
+    	 double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
+    	 shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3);
 
-  if (_parser.getSharedMemoryConfiguration().find("no-invade")==std::string::npos) {
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "retreat from my threads/cores" );
-    tarch::multicore::Core::getInstance().configure( 1, false );
+    	 logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
+    	 logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
+    	 logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
+
+    	 assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
+    	 assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+    	 assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+         assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
+       }
+       break;
+     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
+       {
+      	 logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "release SHMInvade object" );
+         assertion( _shmInvade != nullptr );
+         delete _shmInvade;
+         _shmInvade = nullptr;
+       }
+       break;
   }
 
   invasionWatch.startTimer();
@@ -1021,7 +1085,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
 
 void exahype::runners::Runner::updateStatistics() {
   _meshRefinements      += (!exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() &&
-                           exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) ? 1 : 0;
+                           exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) ? 1 : 0;
   _localRecomputations  +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) ? 1 : 0;
   _globalRecomputations +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
   _predictorReruns      +=  (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) ? 1 : 0;
@@ -1118,30 +1182,30 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
   peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-  repository.switchToBroadcastAndRestrictLimiterStatus();
+  repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
-  if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading() ) {
+  if ( exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() ) {
     logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
-    repository.switchToLimiterStatusSpreading();
+    repository.switchToRefinementStatusSpreading();
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
-        exahype::solvers::LimitingADERDGSolver::getMaxMinimumLimiterStatusForTroubledCell(),false);
+        exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
+  }
+  
+  // Only the solvers which requested a global recomputation do a rollback
+  if ( exahype::solvers::Solver::oneSolverRequestedGlobalRecomputation() ) {
+    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
 
-    // Only the solvers which requested a global recomputation do a rollback
-    if ( exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() ) {
-      logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
-
-      logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
-      peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-      repository.switchToGlobalRollback();
-      repository.iterate(1,false);
-    }
+    logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
+    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
+    repository.switchToGlobalRollback();
+    repository.iterate(1,false);
   }
 
   // 3. Perform a grid update for those solvers that requested refinement
-  if ( exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ) {
+  if ( exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ) {
     logInfo("updateMeshAndSubdomains(...)","perform mesh refinement");
     createMesh(repository);
   }
@@ -1163,7 +1227,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
   // (Note that we compute the predictor locally for the solvers performing
   // a local prediction as well. They are ready to sent here as well.)
   if (fusedTimeStepping ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+      exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
@@ -1302,15 +1366,15 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
+    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
 
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     updateMeshOrLimiterDomain(repository,true);
   }
 
@@ -1343,15 +1407,15 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
+    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
 
-  if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
+  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     updateMeshOrLimiterDomain(repository,false);
   }
 

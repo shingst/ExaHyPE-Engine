@@ -45,8 +45,10 @@ void CCZ4::CCZ4Solver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
 
 bool CCZ4::CCZ4Solver_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
 	// lower left, uppe right radius of cell
 	double l = tarch::la::norm2(center - dx/2.0);

@@ -96,7 +96,18 @@ private:
    * Width of the ghost layer used for
    * reconstruction and Riemann solves.
    */
-  int _ghostLayerWidth;
+  const int _ghostLayerWidth;
+
+  /**
+   * The current mesh update event.
+   */
+  MeshUpdateEvent _meshUpdateEvent;
+
+  /**
+   * The mesh update event which will become active
+   * in the next iteration.
+   */
+  MeshUpdateEvent _nextMeshUpdateEvent;
 
   /**
    * Synchonises the cell description time stamps
@@ -116,9 +127,8 @@ private:
    * Body of FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(int,int).
    */
   void adjustSolutionDuringMeshRefinementBody(
-      const int  cellDescriptionsIndex,
-      const int  element,
-      const bool isInitialMeshRefinement) final override;
+      CellDescription& cellDescription,
+      const bool isInitialMeshRefinement);
 
 #ifdef Parallel
   /**
@@ -216,6 +226,23 @@ private:
     bool operator()();
   };
 
+  /**
+   * A job that calls adjustSolutionDuringMeshRefinementBody(...).
+   */
+  class AdjustSolutionDuringMeshRefinementJob {
+  private:
+    FiniteVolumesSolver& _solver;
+    CellDescription&     _cellDescription;
+    const bool           _isInitialMeshRefinement;
+  public:
+    AdjustSolutionDuringMeshRefinementJob(
+        FiniteVolumesSolver& solver,
+        CellDescription&     cellDescription,
+        const bool           isInitialMeshRefinement);
+
+    bool operator()();
+  };
+
 public:
   /**
     * Returns the Finite Volumes description.
@@ -274,10 +301,14 @@ public:
    */
   static void eraseCellDescriptions(const int cellDescriptionsIndex);
 
-  FiniteVolumesSolver(const std::string& identifier, int numberOfVariables,
-      int numberOfParameters, int nodesPerCoordinateAxis, int ghostLayerWidth,
-      double maximumMeshSize, int maximumAdaptiveMeshDepth,
-      exahype::solvers::Solver::TimeStepping timeStepping,
+  FiniteVolumesSolver(
+      const std::string& identifier,
+      const int numberOfVariables,
+      const int numberOfParameters,
+      const int basisSize,
+      const int ghostLayerWidth,
+      const double maximumMeshSize,
+      const exahype::solvers::Solver::TimeStepping timeStepping,
       std::unique_ptr<profilers::Profiler> profiler =
           std::unique_ptr<profilers::Profiler>(
               new profilers::simple::NoOpProfiler("")));
@@ -287,6 +318,12 @@ public:
   // Disallow copy and assignment
   FiniteVolumesSolver(const FiniteVolumesSolver& other) = delete;
   FiniteVolumesSolver& operator=(const FiniteVolumesSolver& other) = delete;
+
+  MeshUpdateEvent getNextMeshUpdateEvent() const final override;
+  void updateNextMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
+  void setNextMeshUpdateEvent() final override;
+  MeshUpdateEvent getMeshUpdateEvent() const final override;
+  void overwriteMeshUpdateEvent(MeshUpdateEvent newMeshUpdateEvent) final override;
 
   /**
    * \brief Returns a stable time step size.
@@ -560,6 +597,11 @@ public:
       const int solverNumber);
 
   /**
+   * Check if the heap array with index \p index could be allocated.
+   */
+  static void checkDataHeapIndex(const CellDescription& cellDescription, const int arrayIndex, const std::string arrayName);
+
+  /**
    * Checks if no unnecessary memory is allocated for the cell description.
    * If this is not the case, it deallocates the unnecessarily allocated memory.
    */
@@ -581,8 +623,8 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
-      const int solverNumber) override;
+      const int  solverNumber,
+      const bool stillInRefiningMode) override;
 
   bool progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
@@ -618,10 +660,6 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  bool evaluateRefinementCriterionAfterSolutionUpdate(
-        const int cellDescriptionsIndex,
-        const int element) override;
-
   double startNewTimeStep(
       const int cellDescriptionsIndex,
       const int element) override final;
@@ -645,17 +683,11 @@ public:
           const int cellDescriptionsIndex,
           const int element) override final;
 
-  void zeroTimeStepSizes(
-      const int cellDescriptionsIndex,
-      const int solverElement) const override final;
+  void zeroTimeStepSizes(CellDescription& cellDescription) const;
 
-  void rollbackToPreviousTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) const final override;
+  void rollbackToPreviousTimeStep(CellDescription& cellDescription) const;
 
-  void rollbackToPreviousTimeStepFused(
-        const int cellDescriptionsIndex,
-        const int element) const final override;
+  void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
@@ -673,6 +705,9 @@ public:
       const int cellDescriptionsIndex,
       const int element,
       const bool isAtRemoteBoundary) const final override;
+
+  void adjustSolutionDuringMeshRefinement(
+      const int cellDescriptionsIndex,const int element) final override;
 
   /**
    * Update the solution of a cell description.
@@ -714,6 +749,10 @@ public:
   void restriction(
         const int cellDescriptionsIndex,
         const int element) override;
+
+  void rollbackSolutionGlobally(
+      const int cellDescriptionsIndex, const int solverElement,
+      const bool fusedTimeStepping) const final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -897,7 +936,6 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const bool initialGrid,
       const int solverNumber) final override;
 
   /**
@@ -921,12 +959,13 @@ public:
       const int level) const final override;
 
   /**
-   * Nop
+   * Nop as it does not support adaptivity
+   *
+   * \return false
    */
-  void progressMeshRefinementInMergeWithWorker(
+  bool progressMeshRefinementInMergeWithWorker(
       const int localCellDescriptionsIndex,
-      const int receivedCellDescriptionsIndex, const int receivedElement,
-      const bool initialGrid) final override;
+      const int receivedCellDescriptionsIndex, const int receivedElement) final override;
 
   /**
    * Nop
@@ -941,12 +980,13 @@ public:
    * Nop. TODO(Dominic): As long as no multi-solver and limiter
    */
   bool progressMeshRefinementInMergeWithMaster(
-      const int worker,
-      const int localCellDescriptionsIndex,
-      const int localElement,
-      const int coarseGridCellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) final override;
+        const int worker,
+        const int localCellDescriptionsIndex,
+        const int localElement,
+        const int coarseGridCellDescriptionsIndex,
+        const tarch::la::Vector<DIMENSIONS, double>& x,
+        const int                                    level,
+        const bool                                   stillInRefiningMode) final override;
 
   ///////////////////////////////////
   // WORKER->MASTER

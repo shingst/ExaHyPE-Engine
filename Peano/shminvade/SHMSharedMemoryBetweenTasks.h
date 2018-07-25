@@ -1,5 +1,23 @@
-// @todo Martin
+/**
+Copyright (C) 2018, Martin Schreiber and Tobias Weinzierl
 
+All rights reserved.
+
+Open Source License
+===================
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+4. Scientific and commercial work using the software should cite the authors' corresponding papers.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 #ifndef _SHMINVADE_SHM_SHARED_MEMORY_BETWEEN_TASKS_H_
 #define _SHMINVADE_SHM_SHARED_MEMORY_BETWEEN_TASKS_H_
 
@@ -29,8 +47,8 @@
 
 
 // Maximum number of cores for large NUMA systems (Ultraviolet, e.g.)
-#if !defined(SHM_INVADE_MAX_THREADS)
-#define SHM_INVADE_MAX_THREADS 1024
+#if !defined(SHM_INVADE_MAX_CORES)
+#define SHM_INVADE_MAX_CORES 1024
 #endif
 
 
@@ -40,9 +58,6 @@
 #endif
 
 
-
-
-// @todo Remove Namespace
 namespace shminvade {
   class SHMSharedMemoryBetweenTasks;
 }
@@ -54,38 +69,31 @@ class shminvade::SHMSharedMemoryBetweenTasks {
       void lock();
       void unlock();
 
-      // this value is true (1), if the shm was initialized
-      tbb::atomic<bool> is_locked;
+      tbb::atomic<bool> isLocked;
 
-      // current number of registered processs
-      tbb::atomic<int> num_registered_threads;
-      tbb::atomic<int> num_registered_processes;
+      tbb::atomic<int> noOfRegisteredProcesses;
 
-      // array with pids, unused pids are specified with -1. All the
-      // others carry the process number of their owner.
-      // (pid_t is of type int)
-      volatile pid_t registered_process_pids[SHM_INVADE_MAX_PROGRAMS];
-      volatile pid_t registered_thread_pids[SHM_INVADE_MAX_THREADS];
+      /**
+       * Array with pids. Unused pids are -1 - the array is fixed size, so we
+       * need dummies.
+       */
+      volatile pid_t    registeredProcessPids[SHM_INVADE_MAX_PROGRAMS];
 
-      tbb::atomic<int>  owning_process_of_thread[SHM_INVADE_MAX_THREADS];
+      tbb::atomic<int>  owningProcessOfCore[SHM_INVADE_MAX_CORES];
 
-      // User-specific data per process
-      char user_data_per_process[SHM_INVADE_MAX_PROGRAMS][SHMINVADE_USER_DATA_SIZE];
+      /**
+       * User-specific data per process
+       */
+      char userDataPerProcess[SHM_INVADE_MAX_PROGRAMS][SHMINVADE_USER_DATA_SIZE];
     };
 
-    SharedData* volatile  global_shm_data;
+    SharedData* volatile  _globalSHMData;
 
     SHMSharedMemoryBetweenTasks();
-
-    /**
-     * Is not const as it creates entries in the table on-the-fly.
-     */
-    int getThreadIndexInSharedDataTable(int myId = (pid_t) syscall (__NR_gettid));
   public:
     static SHMSharedMemoryBetweenTasks& getInstance();
 
     int getNumberOfRegisteredProcesses() const;
-    int getNumberOfRegisteredThreads() const;
 
     template < typename T >
     void setSharedUserData(
@@ -95,8 +103,13 @@ class shminvade::SHMSharedMemoryBetweenTasks {
       setSharedUserData((const char*)i_data,sizeof(T)*numberOfEntriesInData);
     }
 
-    bool tryToBookThreadForProcess(int threadId);
-    void freeThread(int threadId);
+    bool tryToBookCoreForProcess(int coreNumber);
+
+    /**
+     * Is not thread-safe and thus might return wrong data from time to time.
+     */
+    bool isBooked(int coreNumber) const;
+    void freeCore(int coreNumber);
 
 //    template <>
     void setSharedUserData(
@@ -120,9 +133,14 @@ class shminvade::SHMSharedMemoryBetweenTasks {
 
     void cleanUp();
 
+    /**
+     * Returns the entry in the shared table that corresponds to this very
+     * process.The routine also is a lazy initialisation. If the process is
+     * not yet known in the shared region, then it adds it to the list.
+     */
     int getProcessIndexInSharedDataTable( int myId = (pid_t) syscall (__NR_getpid) );
 
-    std::string getThreadProcessAssociation() const;
+    std::string getCoreProcessAssociation() const;
 };
 
 #endif

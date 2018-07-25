@@ -1,5 +1,5 @@
-#ifndef ASAGIREADER_H
-#define ASAGIREADER_H
+#ifndef ASAGIREADER_CLASS_HEADER
+#define ASAGIREADER_CLASS_HEADER
 
 #include <asagi.h>
 #include <easi/util/AsagiReader.h>

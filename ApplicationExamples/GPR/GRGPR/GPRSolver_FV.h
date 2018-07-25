@@ -32,7 +32,7 @@ class GRGPR::GPRSolver_FV : public GRGPR::AbstractGPRSolver_FV {
      */
     static tarch::logging::Log _log;
   public:
-    GPRSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    GPRSolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.

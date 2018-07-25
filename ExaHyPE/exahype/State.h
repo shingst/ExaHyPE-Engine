@@ -90,7 +90,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
      * Currently performing limiter status spreading. Only
      * relevant for merging metadata.
      */
-    LimiterStatusSpreading,
+    RefinementStatusSpreading,
 
     /**
      * In this section, the runner overlaps the
@@ -209,7 +209,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    *
    * @todo Clarify which stuff has to be merged
    */
-  void merge(const State& anotherState);
+  void mergeWithMaster(const State& anotherState);
 
   /**
    * Set to true if we need to exchange local solver
@@ -227,6 +227,24 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * \see setVerticalExchangeOfSolverDataRequired
    */
   bool getVerticalExchangeOfSolverDataRequired() const;
+
+  /**
+   * \see exahype/State.def
+   */
+  void setAllSolversAttainedStableStateInPreviousIteration(const bool state);
+  /**
+   * \see exahype/State.def
+   */
+  bool getAllSolversAttainedStableStateInPreviousIteration() const;
+
+  /**
+   * \see exahype/State.def
+   */
+  void setMeshRefinementHasConverged(const bool state);
+  /**
+   * \see exahype/State.def
+   */
+  bool getMeshRefinementHasConverged() const;
 
   /**
    * Has to be called after the iteration!

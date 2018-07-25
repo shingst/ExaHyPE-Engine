@@ -1,5 +1,23 @@
-// @todo Martin
+/**
+Copyright (C) 2018, Martin Schreiber and Tobias Weinzierl
 
+All rights reserved.
+
+Open Source License
+===================
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+4. Scientific and commercial work using the software should cite the authors' corresponding papers.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 #ifndef _SHMINVADE_SHMCONTROLLER_H_
 #define _SHMINVADE_SHMCONTROLLER_H_
 
@@ -9,10 +27,14 @@
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/task.h>
+// This seems to be an Intel requirement as this feature isnt' released yet officially.
+#define TBB_PREVIEW_GLOBAL_CONTROL 1
+#include <tbb/global_control.h>
 
 
+#include "SHMPinningObserver.h"
 
-// @todo Remove Namespace
+
 namespace shminvade {
   class SHMController;
   class SHMLockTask;
@@ -23,11 +45,36 @@ namespace shminvade {
 
 
 
+/**
+ *
+ *
+ * <h2> Usage </h2>
+ *
+ * - Init the controller through shminvade::SHMController::getInstance().init()
+ * - Use shminvade::SHMStrategy::setStrategy to set a strategy if you want
+ *   another one than let all ranks invade all cores simultaneously.
+ * - Initialise shared memory regions through shminvade::SHMSharedMemoryBetweenTasks
+ *   if you want ranks to communicate via shared memory.
+ *
+ *
+ * <h2> Runtime/architecture configuration</h2>
+ *
+ * SHMInvade works with hyperthreading only at the very moment, but you can
+ * enable/disable hyperthreading through some strategies. If you use SHMInvade,
+ * you explicitly have to disable the OS masking. With SLURM this works through
+ * scripts alike
+ *
+ * <pre>
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
+   </pre>
+ *
+ * The snippet above btw does not use hyperthreading as we launch exactly one thread per core.
+ */
 class shminvade::SHMController {
   public:
     enum class ThreadType {
       Master,
-      ExclusivelyOwned,
+      Owned,
       NotOwned,
       Shutdown
     };
@@ -50,9 +97,10 @@ class shminvade::SHMController {
        * be a map over bools, but I just prefer to count up and down today.
        */
       int        numberOfExistingLockTasks;
-    };
 
-    static std::string toString( ThreadState state );
+      std::string toString() const;
+   };
+
 
   private:
     /**
@@ -66,20 +114,32 @@ class shminvade::SHMController {
      */
     static tbb::task_group_context  InvasiveTaskGroupContext;
 
-    tbb::atomic<bool> _switchedOn;
+    SHMPinningObserver    _pinningObserver;
+    tbb::global_control*  _globalThreadCountControl;
+
+    tbb::atomic<bool>    _switchedOn;
 
     /**
      * I'd prefer to use the thread states directly here. However, I have to
      * work with pointers as each entry contains a mutex and TBB does not
-     * allow us to copy mutexes.
+     * allow us to copy mutexes. The table maps the core numbers to the state
+     * of the thread pinned to this very core.
      */
-    typedef tbb::concurrent_hash_map<pid_t, ThreadState*> ThreadTable;
-    ThreadTable  _threads;
+    typedef tbb::concurrent_hash_map<int, ThreadState*> ThreadTable;
+    ThreadTable  _cores;
+
+    /**
+     * This field holds redundant information, as the master is encoded in
+     * _cores. I however cache the master core here, so I don't have to s
+     * search through all of _cores everytime I want to know who the master
+     * is.
+     */
+    int          _masterCore;
 
     /**
      * Read-only operation mainly required by lock tasks
      */
-    ThreadType getThreadType( pid_t pid ) const;
+    ThreadType getThreadType( int core ) const;
 
     /**
      * Just register the master thread through registerNewThread(). This
@@ -94,14 +154,28 @@ class shminvade::SHMController {
      * Insert a new thread entry and then launch the lock task for it
      * immediately.
      *
-     * May not be called if thread already is known
+     * May not be called if thread already is known.
      */
-    void registerNewThread(int threadId, ThreadType initialstate=ThreadType::NotOwned );
+    void registerNewCore(int coreNumber, ThreadType initialstate );
 
     /**
      * Is typically used by the strategies when they go down.
      */
     void retreatFromAllCores();
+
+    /**
+     * This operation is usually never called directly by the user. It is also
+     * not called by SHMInvade but by the strategy, i.e. SHMInvade books stuff
+     * indirectly on the current rank/controller through the strategy.
+     */
+    void retreat( int core );
+
+    /**
+     * This operation is usually never called directly by the user. It is also
+     * not called by SHMInvade but by the strategy, i.e. SHMInvade books stuff
+     * indirectly on the current rank/controller through the strategy.
+     */
+    bool tryToBookCore( int core );
 
     friend class SHMLockTask;
     friend class SHMStrategy;
@@ -128,10 +202,13 @@ class shminvade::SHMController {
      */
     void shutdown();
 
+    /**
+     * Initialise the controller
+     *
+     */
+    void init( int ranksPerNode, int rank );
 
-    void retreatFromThread( pid_t pid );
-
-    bool tryToBookThread( pid_t pid );
+    int getMasterCore() const;
 };
 
 #endif
