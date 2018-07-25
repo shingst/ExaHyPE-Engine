@@ -427,8 +427,6 @@ class exahype::parser::Parser {
   };
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
-
-  bool useHyperthreading() const;
 };
 
 #endif

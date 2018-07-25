@@ -1367,8 +1367,3 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
 
   return TBBInvadeStrategy::Undef;
 }
-
-
-bool exahype::parser::Parser::useHyperthreading() const {
-  return getSharedMemoryConfiguration().find("use-hyperthreading");
-}

@@ -250,7 +250,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
 
   #ifdef TBBInvade
-  tarch::multicore::Core::getInstance().configure( shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()) );
+  tarch::multicore::Core::getInstance().configure( shminvade::SHMController::getInstance().getMaxAvailableCores() );
   #elif SharedTBB
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads,tarch::multicore::Core::UseDefaultStackSize);
@@ -350,7 +350,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
       shminvade::SHMStrategy::setStrategy( new shminvade::SHMOccupyAllCoresStrategy() );
 	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's OccupyAllCores strategy" );
-	  if ( _parser.getRanksPerNode()<=0 or _parser.getRanksPerNode()>=shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading())) {
+	  if ( _parser.getRanksPerNode()<=0 or _parser.getRanksPerNode()>=shminvade::SHMController::getInstance().getMaxAvailableCores()) {
 		logError( "initSharedMemoryConfiguration()", "no ranks-per-node set. Mandatory for SHMInvade" );
 	  }
       break;
@@ -363,7 +363,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       break;
   }
 
-  shminvade::SHMController::getInstance().init(false,_parser.getRanksPerNode(),tarch::parallel::Node::getInstance().getRank());
+  shminvade::SHMController::getInstance().init(_parser.getRanksPerNode(),tarch::parallel::Node::getInstance().getRank());
 
   // This initialisation with dummies is most likely not required at all
   double localData[3] = { 0.0, 1.0, 1.0 };
@@ -951,11 +951,11 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
       {
     	if ( _shmInvade==nullptr ) {
-    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()) / _parser.getRanksPerNode() -1;
+    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode() -1;
           logInfo(
             "preProcessTimeStepInSharedMemoryEnvironment()",
 			"try to acquire SHMInvade object for " << cores << " in runner (max cores=" <<
-			shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()) << ", ranks-per-node=" << _parser.getRanksPerNode() <<
+			shminvade::SHMController::getInstance().getMaxAvailableCores() << ", ranks-per-node=" << _parser.getRanksPerNode() <<
 			")"
 	      );
           _shmInvade = new shminvade::SHMInvade( cores );
@@ -980,7 +980,7 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
           peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
             myIndexWithinSharedUserData,
             t1,f,s,
-            shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()),
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
             tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
           ),
           2
@@ -1002,7 +1002,7 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
           peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
             myIndexWithinSharedUserData,
             t1,f,s,
-            shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()),
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
             tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
           ),
           2
