@@ -347,7 +347,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     case exahype::parser::Parser::TBBInvadeStrategy::Undef:
       logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
       break;
-    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
       shminvade::SHMStrategy::setStrategy( new shminvade::SHMOccupyAllCoresStrategy() );
 	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's OccupyAllCores strategy" );
@@ -355,6 +354,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 		logError( "initSharedMemoryConfiguration()", "no ranks-per-node set. Mandatory for SHMInvade" );
 	  }
       break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
@@ -362,6 +362,8 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 	  logInfo( "initSharedMemoryConfiguration()", "selected SHMInvade's MultipleRanksPerNode strategy" );
       break;
   }
+
+  shminvade::SHMController::getInstance().init(_parser.getRanksPerNode(),tarch::parallel::Node::getInstance().getRank());
 
   // This initialisation with dummies is most likely not required at all
   double localData[3] = { 0.0, 1.0, 1.0 };
@@ -537,20 +539,20 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
 
   if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
     if (!tarch::la::equals(_domainSize,scaledDomainSize)) {
-      logWarning("createRepository(...)",
+      logInfo("createRepository(...)",
           "scale domain size artificially to " << scaledDomainSize << " from "
           << _domainSize << " since non-cubic domain was specified");
     }
-    logWarning("createRepository(...)",
+    logInfo("createRepository(...)",
         "coarsest mesh size was chosen as " << coarsestMeshSize << " based on user's maximum mesh size "<<
         coarsestUserMeshSize << " and length of longest edge of domain " << tarch::la::max(scaledDomainSize));
     if (boundingBoxMeshLevel!=coarsestUserMeshLevel) {
-      logWarning("createRepository(...)",
+      logInfo("createRepository(...)",
           "We will need to refine the grid " << boundingBoxMeshLevel-coarsestUserMeshLevel << " more time(s) than expected "
           " in order to satisfy user's maximum mesh size criterion while scaling the bounding box");
     }
 
-    logWarning(
+    logInfo(
         "createRepository(...)",
         "summary: create computational domain at " << _domainOffset <<
         " of width/size " << scaledDomainSize <<
@@ -949,7 +951,7 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
       {
     	if ( _shmInvade==nullptr ) {
-    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode();
+    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode() -1;
           logInfo(
             "preProcessTimeStepInSharedMemoryEnvironment()",
 			"try to acquire SHMInvade object for " << cores << " in runner (max cores=" <<

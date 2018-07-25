@@ -77,7 +77,7 @@ void shminvade::SHMSharedMemoryBetweenTasks::cleanUp() {
   _globalSHMData->unlock();
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "cleaned up shared memory region (line:" << __LINE__  << ",file: " << __FILE__ <<  ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "cleaned up shared memory region (line:" << __LINE__  << ",file: " << __FILE__ <<  ")" << std::endl;
   #endif
 }
 
@@ -104,7 +104,7 @@ int shminvade::SHMSharedMemoryBetweenTasks::getProcessIndexInSharedDataTable(int
   }
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "Process " << myId << " not known yet: insert entry into shared memory region (line:" << __LINE__  << ",file: " << __FILE__ <<  ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Process " << myId << " not known yet: insert entry into shared memory region (line:" << __LINE__  << ",file: " << __FILE__ <<  ")" << std::endl;
   #endif
 
   _globalSHMData->lock();
@@ -113,7 +113,7 @@ int shminvade::SHMSharedMemoryBetweenTasks::getProcessIndexInSharedDataTable(int
   _globalSHMData->noOfRegisteredProcesses++;
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "Association: " << getCoreProcessAssociation() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Association: " << getCoreProcessAssociation() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 
   _globalSHMData->unlock();
@@ -128,7 +128,7 @@ bool shminvade::SHMSharedMemoryBetweenTasks::tryToBookCoreForProcess(int coreNum
   );
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "Tried to book core. Association: " << getCoreProcessAssociation() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Tried to book core. Association: " << getCoreProcessAssociation() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 
   return previousOwner==-1;
@@ -138,6 +138,11 @@ bool shminvade::SHMSharedMemoryBetweenTasks::tryToBookCoreForProcess(int coreNum
 
 void shminvade::SHMSharedMemoryBetweenTasks::freeCore(int coreNumber) {
   _globalSHMData->owningProcessOfCore[coreNumber] = -1;
+}
+
+
+bool shminvade::SHMSharedMemoryBetweenTasks::isBooked(int coreNumber) const {
+  return _globalSHMData->owningProcessOfCore[coreNumber] != -1;
 }
 
 

@@ -30,12 +30,13 @@ shminvade::SHMPinningObserver::SHMPinningObserver():
   if ( _mask ) {
     #if SHM_INVADE_DEBUG>=1
     CPUSetBitfield bitfield = cpuSetMaskToBitfield( *_mask );
-    std::cout<< SHM_DEBUG_PREFIX <<  "Process mask is " << bitfield  << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << getSHMDebugPrefix() <<  "Process mask is " << bitfield
+    		  << ", " << bitfield.count() << " logical cores available"
+    		  << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
 
     if ( bitfield.count() != std::thread::hardware_concurrency()) {
-      std::cerr << SHM_DEBUG_PREFIX <<  "Process affinity mask has only " << bitfield.count() << " entires although hardware concurrency is " << std::thread::hardware_concurrency() << std::endl;
+      std::cerr << getSHMDebugPrefix() <<  "Process affinity mask has only " << bitfield.count() << " entries although hardware concurrency is " << std::thread::hardware_concurrency() << std::endl;
     }
-
     #endif
 
     // thread 0 will be pinned twice, but I want to be sure it is in our data
@@ -45,7 +46,7 @@ shminvade::SHMPinningObserver::SHMPinningObserver():
     _numThreads--;
   }
   else {
-    std::cerr << SHM_DEBUG_PREFIX <<  "Failed to obtain process affinity mask" << std::endl;
+    std::cerr << getSHMDebugPrefix() <<  "Failed to obtain process affinity mask" << std::endl;
   }
 }
 
@@ -84,7 +85,7 @@ void shminvade::SHMPinningObserver::pinCurrentThread() {
   const int err = sched_setaffinity( 0, size, target_mask );
 
   if ( err ) {
-    std::cerr << SHM_DEBUG_PREFIX <<  "Failed to set thread affinity!" << std::endl;
+    std::cerr << getSHMDebugPrefix() <<  "Failed to set thread affinity!" << std::endl;
     exit( EXIT_FAILURE );
   }
 

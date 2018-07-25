@@ -8,7 +8,7 @@
 
 shminvade::SHMOccupyAllCoresStrategy::SHMOccupyAllCoresStrategy() {
   #if SHM_INVADE_DEBUG>=4
-  std::cout << SHM_DEBUG_PREFIX <<  "created SHMOccupyAllCoresStrategy" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "created SHMOccupyAllCoresStrategy" << std::endl;
   #endif
 }
 
@@ -21,7 +21,9 @@ std::set<int> shminvade::SHMOccupyAllCoresStrategy::invade(int wantedNumberOfCor
   std::set<int> bookedCores;
 
   for (auto p: SHMController::getInstance()._cores) {
-    if (SHMController::getInstance().tryToBookCore(p.first)) {
+    if (
+	   SHMController::getInstance().tryToBookCore(p.first)
+	) {
       bookedCores.insert(p.first);
       wantedNumberOfCores--;
       if (wantedNumberOfCores==0) break;

@@ -104,6 +104,11 @@ class shminvade::SHMSharedMemoryBetweenTasks {
     }
 
     bool tryToBookCoreForProcess(int coreNumber);
+
+    /**
+     * Is not thread-safe and thus might return wrong data from time to time.
+     */
+    bool isBooked(int coreNumber) const;
     void freeCore(int coreNumber);
 
 //    template <>

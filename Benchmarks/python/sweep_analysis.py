@@ -318,37 +318,39 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         row.append(fileName)
                         csvwriter.writerow(row)
                 else:
-                    row=[]
-                    for key in sorted(environmentDict):
-                        row.append(environmentDict[key])
-                    for key in knownParameters:
-                        row.append(parameterDict[key])
-                    for key in sorted(parameterDict):
-                        if key not in knownParameters:
+                    try: 
+                        row=[]
+                        for key in sorted(environmentDict):
+                            row.append(environmentDict[key])
+                        for key in knownParameters:
                             row.append(parameterDict[key])
-                    row.append(ranks)
-                    row.append(nodes)
-                    row.append(ranksPerNode)
-                    row.append(cores)
-                    row.append(consumerTasks)
-                    row.append(run)
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append("missing")
-                    row.append(fileName)
-                    csvwriter.writerow(row)
-
+                        for key in sorted(parameterDict):
+                            if key not in knownParameters:
+                                row.append(parameterDict[key])
+                        row.append(ranks)
+                        row.append(nodes)
+                        row.append(ranksPerNode)
+                        row.append(cores)
+                        row.append(consumerTasks)
+                        row.append(run)
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append("missing")
+                        row.append(fileName)
+                        csvwriter.writerow(row)
+                    except:
+                        pass
                     unfinishedRuns.append(resultsFolderPath+"/"+fileName)
 
         if len(unfinishedRuns):

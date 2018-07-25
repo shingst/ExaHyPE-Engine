@@ -50,18 +50,31 @@ namespace shminvade {
  *
  * <h2> Usage </h2>
  *
- * - Init your TBB environment with shminvade::SHMController::getInstance().getMaxAvailableCores()
- *   threads.
+ * - Init the controller through shminvade::SHMController::getInstance().init()
  * - Use shminvade::SHMStrategy::setStrategy to set a strategy if you want
  *   another one than let all ranks invade all cores simultaneously.
  * - Initialise shared memory regions through shminvade::SHMSharedMemoryBetweenTasks
  *   if you want ranks to communicate via shared memory.
+ *
+ *
+ * <h2> Runtime/architecture configuration</h2>
+ *
+ * SHMInvade works with hyperthreading only at the very moment, but you can
+ * enable/disable hyperthreading through some strategies. If you use SHMInvade,
+ * you explicitly have to disable the OS masking. With SLURM this works through
+ * scripts alike
+ *
+ * <pre>
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
+   </pre>
+ *
+ * The snippet above btw does not use hyperthreading as we launch exactly one thread per core.
  */
 class shminvade::SHMController {
   public:
     enum class ThreadType {
       Master,
-      ExclusivelyOwned,
+      Owned,
       NotOwned,
       Shutdown
     };
@@ -101,8 +114,8 @@ class shminvade::SHMController {
      */
     static tbb::task_group_context  InvasiveTaskGroupContext;
 
-    SHMPinningObserver   _pinningObserver;
-    tbb::global_control  _globalThreadCountControl;
+    SHMPinningObserver    _pinningObserver;
+    tbb::global_control*  _globalThreadCountControl;
 
     tbb::atomic<bool>    _switchedOn;
 
@@ -114,6 +127,14 @@ class shminvade::SHMController {
      */
     typedef tbb::concurrent_hash_map<int, ThreadState*> ThreadTable;
     ThreadTable  _cores;
+
+    /**
+     * This field holds redundant information, as the master is encoded in
+     * _cores. I however cache the master core here, so I don't have to s
+     * search through all of _cores everytime I want to know who the master
+     * is.
+     */
+    int          _masterCore;
 
     /**
      * Read-only operation mainly required by lock tasks
@@ -142,6 +163,20 @@ class shminvade::SHMController {
      */
     void retreatFromAllCores();
 
+    /**
+     * This operation is usually never called directly by the user. It is also
+     * not called by SHMInvade but by the strategy, i.e. SHMInvade books stuff
+     * indirectly on the current rank/controller through the strategy.
+     */
+    void retreat( int core );
+
+    /**
+     * This operation is usually never called directly by the user. It is also
+     * not called by SHMInvade but by the strategy, i.e. SHMInvade books stuff
+     * indirectly on the current rank/controller through the strategy.
+     */
+    bool tryToBookCore( int core );
+
     friend class SHMLockTask;
     friend class SHMStrategy;
     friend class SHMOccupyAllCoresStrategy;
@@ -167,9 +202,13 @@ class shminvade::SHMController {
      */
     void shutdown();
 
-    void retreat( int core );
+    /**
+     * Initialise the controller
+     *
+     */
+    void init( int ranksPerNode, int rank );
 
-    bool tryToBookCore( int core );
+    int getMasterCore() const;
 };
 
 #endif
