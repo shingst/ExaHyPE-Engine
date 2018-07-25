@@ -459,7 +459,7 @@ void exahype::mappings::MeshRefinement::enterCell(
       #ifdef Parallel
       !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
       #endif
-      exahype::mappings::MeshRefinement::IsFirstIteration);     // It has to be the first overall iteration
+      exahype::mappings::MeshRefinement::IsFirstIteration;     // It has to be the first overall iteration
 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
