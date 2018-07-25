@@ -951,7 +951,7 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
       {
     	if ( _shmInvade==nullptr ) {
-    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()) / _parser.getRanksPerNode();
+    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores(_parser.useHyperthreading()) / _parser.getRanksPerNode() -1;
           logInfo(
             "preProcessTimeStepInSharedMemoryEnvironment()",
 			"try to acquire SHMInvade object for " << cores << " in runner (max cores=" <<
