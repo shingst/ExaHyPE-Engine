@@ -114,8 +114,8 @@ class shminvade::SHMController {
      */
     static tbb::task_group_context  InvasiveTaskGroupContext;
 
-    SHMPinningObserver   _pinningObserver;
-    tbb::global_control  _globalThreadCountControl;
+    SHMPinningObserver    _pinningObserver;
+    tbb::global_control*  _globalThreadCountControl;
 
     tbb::atomic<bool>    _switchedOn;
 

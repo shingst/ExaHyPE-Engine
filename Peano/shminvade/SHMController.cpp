@@ -13,13 +13,11 @@ tbb::task_group_context  shminvade::SHMController::InvasiveTaskGroupContext;
 
 shminvade::SHMController::SHMController():
   _pinningObserver(),
-  _globalThreadCountControl(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency()),
+  _globalThreadCountControl( new tbb::global_control(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency()) ),
   _switchedOn( true ) {
   _pinningObserver.observe(true);
 
   InvasiveTaskGroupContext.set_priority( tbb::priority_low );
-
-  init( true, 1, 1 );
 }
 
 
@@ -29,6 +27,8 @@ shminvade::SHMController::~SHMController() {
   #endif
 
   shutdown();
+
+  delete _globalThreadCountControl;
 }
 
 
@@ -242,16 +242,20 @@ void shminvade::SHMController::init( bool useHyperthreading, int ranksPerNode, i
   }
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << getSHMDebugPrefix() <<  "Init called with " << useHyperthreading << " hyperthreading, "
+  std::cout << getSHMDebugPrefix() <<  "Init called. Use " << (useHyperthreading ? "" : "no") << " hyperthreading, "
   		    << ranksPerNode << " ranks per node on rank " << rank << " which yields " << coresPerRank << " cores per rank"
 			<< " (line:" << __LINE__ << ",file:" << __FILE__ << ")"
 			<< std::endl;
-  std::cout << getSHMDebugPrefix() <<  "Create " << getMaxAvailableCores(true) << " threads " << std::endl;
   #endif
 
-  _globalThreadCountControl = tbb::global_control(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency());
+  delete _globalThreadCountControl;
+  _globalThreadCountControl = new tbb::global_control(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency());
 
   _cores.clear();
+
+  #if SHM_INVADE_DEBUG>=1
+  std::cout << getSHMDebugPrefix() <<  "Create " << getMaxAvailableCores(true) << " threads " << std::endl;
+  #endif
 
   for (int i=0; i<getMaxAvailableCores(true); i++ ) {
 	if (i==masterCore) {
