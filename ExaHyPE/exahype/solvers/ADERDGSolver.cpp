@@ -164,7 +164,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   // Limiter meta data (oscillations identificator)
   newCellDescription.setRefinementFlag(false);
   newCellDescription.setRefinementStatus(Pending);
-  newCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): New cells
+  newCellDescription.setPreviousRefinementStatus(Pending); 
   newCellDescription.setFacewiseRefinementStatus(Pending);  // implicit conversion
   newCellDescription.setSolutionMin(-1);
   newCellDescription.setSolutionMax(-1);
@@ -1295,6 +1295,9 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   CellDescription& fineGridCellDescription =
       getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
   ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+  
+  fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback 
+  fineGridCellDescription.setRefinementStatus(Pending); 
 
   #ifdef Asserts
   fineGridCellDescription.setCreation(CellDescription::Creation::UniformRefinement);
@@ -1390,7 +1393,6 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       CellDescription& fineGridCellDescription =
           getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setRefinementEvent(CellDescription::Prolongating);
-      fineGridCellDescription.setRefinementStatus(Pending);
       #ifdef Asserts
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
       #endif
@@ -1411,13 +1413,14 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
 
       fineGridCellDescription.setType(CellDescription::Type::Cell);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::Prolongating);
-      fineGridCellDescription.setRefinementStatus(Pending);
       fineGridCellDescription.setCommunicationStatus(CellCommunicationStatus);
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       #ifdef Asserts
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
       #endif
+      fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback 
+      fineGridCellDescription.setRefinementStatus(Pending);
     }
     return true;
   }
@@ -1706,7 +1709,7 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     case CellDescription::RefinementEvent::ErasingChildren:
       //logInfo("progressCollectiveRefinementOperationsInLeaveCell(...)","ErasingChildren done");
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      fineGridCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): New cells
+      fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
       fineGridCellDescription.setRefinementStatus(Pending);
       newComputeCell = true;
       break;
@@ -1723,7 +1726,7 @@ bool exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLea
     case CellDescription::ChangeChildrenToVirtualChildren:
       fineGridCellDescription.setHasVirtualChildren(true);
       fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-      fineGridCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): New cells
+      fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
       fineGridCellDescription.setRefinementStatus(Pending);
       newComputeCell = true;
       break;
@@ -2296,6 +2299,7 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
     validateCellDescriptionData(cellDescription,false,false,"computeTimeStepSizes(...)");
     double admissibleTimeStepSize = stableTimeStepSize(luh,cellDescription.getSize());
     assertion2(admissibleTimeStepSize>0,admissibleTimeStepSize,cellDescription.toString());
+    
     assertion3(admissibleTimeStepSize<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),admissibleTimeStepSize,cellDescription.toString());
     assertion2(std::isfinite(admissibleTimeStepSize),admissibleTimeStepSize,cellDescription.toString());
 
