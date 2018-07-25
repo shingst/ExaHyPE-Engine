@@ -640,20 +640,11 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
     const int element) {
   const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
-    // If we spawn background jobs, the children cannot directly continue with their
-    // mesh refinement
-    solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::AdjustingSolutionAndMarking);
-  }
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
     AdjustSolutionDuringMeshRefinementJob job(*this,solverPatch,cellDescriptionsIndex,isInitialMeshRefinement);
     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
   } else {
     adjustSolutionDuringMeshRefinementBody(solverPatch,cellDescriptionsIndex,isInitialMeshRefinement);
-    if ( solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::AdjustingSolutionAndMarking ) {
-      // can be reset directly
-      solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
-    }
   }
 }
 

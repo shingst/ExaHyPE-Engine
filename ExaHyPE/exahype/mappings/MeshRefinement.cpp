@@ -455,10 +455,17 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   assertion(fineGridCell.isInside());
 
+  const bool firstMeshRefinementIteration =
+      #ifdef Parallel
+      !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+      #endif
+      exahype::mappings::MeshRefinement::IsFirstIteration);     // It has to be the first overall iteration
+
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if ( solver->hasRequestedMeshRefinement() ) {
       const bool newComputeCell =
+          !firstMeshRefinementIteration && // skip in first iteration
           solver->progressMeshRefinementInEnterCell(
               fineGridCell,
               fineGridVertices,
@@ -470,12 +477,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
-          (
-          #ifdef Parallel
-          !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
-          #endif
-          exahype::mappings::MeshRefinement::IsFirstIteration)     // It has to be the first overall iteration
-          ||
+          firstMeshRefinementIteration ||
           newComputeCell
       ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();

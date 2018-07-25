@@ -1003,9 +1003,6 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
-    if ( fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::AdjustingSolutionAndMarking ) {
-      fineGridCellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-    }
     assertion5(tarch::la::equals(fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize()),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
     assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
     // ensure that the fine grid cell descriptions's parent index is pointing to the
@@ -1075,7 +1072,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());
   assertion1(
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::AdjustingSolutionAndMarking,
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None,
       cellDescription.toString());
 
   double* solution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -2448,20 +2445,11 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
     const int element) {
   const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
-    // If we spawn background jobs, the children cannot directly continue with their
-    // mesh refinement
-    cellDescription.setRefinementEvent(CellDescription::RefinementEvent::AdjustingSolutionAndMarking);
-  }
   if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
     AdjustSolutionDuringMeshRefinementJob job(*this,cellDescription,isInitialMeshRefinement);
     peano::datatraversal::TaskSet spawnedSet( job, peano::datatraversal::TaskSet::TaskType::Background  );
   } else {
     adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
-    if ( cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::AdjustingSolutionAndMarking ) {
-      // can be reset directly
-      cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
-    }
   }
 }
 
@@ -2472,6 +2460,11 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
   synchroniseTimeStepping(cellDescription);
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
+    assertion1(
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None ||
+        cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating
+        ,cellDescription.toString());
+
     if (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::Prolongating) {
       prolongateVolumeData(cellDescription,isInitialMeshRefinement);
       cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
@@ -2485,8 +2478,8 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
   assertion1(cellDescription.getType()==CellDescription::Type::Cell,cellDescription.toString());    
   assertion1(
-      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::AdjustingSolutionAndMarking,
-      cellDescription.toString());
+      cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+      ,cellDescription.toString());
 
   double* solution = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   adjustSolution(
