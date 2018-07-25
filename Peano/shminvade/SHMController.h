@@ -50,9 +50,7 @@ namespace shminvade {
  *
  * <h2> Usage </h2>
  *
- * - Init your TBB environment with shminvade::SHMController::getInstance().getMaxAvailableCores()
- *   threads.
- * - Initialise the SHMController through its init() function.
+ * - Init the controller through shminvade::SHMController::getInstance().init()
  * - Use shminvade::SHMStrategy::setStrategy to set a strategy if you want
  *   another one than let all ranks invade all cores simultaneously.
  * - Initialise shared memory regions through shminvade::SHMSharedMemoryBetweenTasks
@@ -67,10 +65,10 @@ namespace shminvade {
  * scripts alike
  *
  * <pre>
-export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
-srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
    </pre>
  *
+ * The snippet above btw does not use hyperthreading as we launch exactly one thread per core.
  */
 class shminvade::SHMController {
   public:

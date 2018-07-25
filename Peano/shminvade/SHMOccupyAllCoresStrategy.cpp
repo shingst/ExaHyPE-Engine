@@ -8,7 +8,7 @@
 
 shminvade::SHMOccupyAllCoresStrategy::SHMOccupyAllCoresStrategy() {
   #if SHM_INVADE_DEBUG>=4
-  std::cout << SHM_DEBUG_PREFIX <<  "created SHMOccupyAllCoresStrategy" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "created SHMOccupyAllCoresStrategy" << std::endl;
   #endif
 }
 
