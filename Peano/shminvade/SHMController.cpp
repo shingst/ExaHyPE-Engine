@@ -264,11 +264,8 @@ void shminvade::SHMController::init( int ranksPerNode, int rank ) {
 	if (i==_masterCore) {
       registerNewCore(i,ThreadType::Master);
 	}
-	else if (i<getMaxAvailableCores()) {
-      registerNewCore(i,ThreadType::NotOwned );
-	}
 	else {
-      registerNewCore(i,ThreadType::Shutdown );
+      registerNewCore(i,ThreadType::NotOwned );
 	}
   }
 }
