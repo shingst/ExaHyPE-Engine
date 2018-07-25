@@ -129,6 +129,14 @@ class shminvade::SHMController {
     ThreadTable  _cores;
 
     /**
+     * This field holds redundant information, as the master is encoded in
+     * _cores. I however cache the master core here, so I don't have to s
+     * search through all of _cores everytime I want to know who the master
+     * is.
+     */
+    int          _masterCore;
+
+    /**
      * Read-only operation mainly required by lock tasks
      */
     ThreadType getThreadType( int core ) const;
@@ -181,8 +189,8 @@ class shminvade::SHMController {
     void switchOn();
     void switchOff();
 
-    int getMaxAvailableCores(bool useHyperthreading) const;
-    int getFreeCores(bool useHyperthreading) const;
+    int getMaxAvailableCores() const;
+    int getFreeCores() const;
     int getBookedCores() const;
 
     /**
@@ -198,7 +206,9 @@ class shminvade::SHMController {
      * Initialise the controller
      *
      */
-    void init( bool useHyperthreading, int ranksPerNode, int rank );
+    void init( int ranksPerNode, int rank );
+
+    int getMasterCore() const;
 };
 
 #endif
