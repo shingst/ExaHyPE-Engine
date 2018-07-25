@@ -16,7 +16,7 @@ exahype-project Euler
 	maximum-mesh-size = 0.1
 	time-stepping = global
 	type const = nonlinear
-	terms const = flux
+	terms const = flux, gradientFlux
 	optimisation const = generic
 	language const = C
 

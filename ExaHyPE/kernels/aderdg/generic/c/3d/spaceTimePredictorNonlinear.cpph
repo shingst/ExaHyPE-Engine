@@ -153,8 +153,7 @@ namespace {
                 F[1] = lFi + idx_lFi(i, j, k, l, 1, 0);
                 F[2] = lFi + idx_lFi(i, j, k, l, 2, 0);
 		if (useGradientFlux) {
-		  // TODO(Lukas) actually implement this!
-		  // Is the index correct here?
+		  // TODO(Lukas) Is the index correct here?
 		  solver.flux(Q, gradQ + idx_gradQ(j, k, l,0, 0), F);
 		} else {
 		  solver.flux(Q, F);
