@@ -421,6 +421,7 @@ class exahype::parser::Parser {
 	Undef,
     NoInvade,
 	OccupyAllCores,
+	NoInvadeButAnalyseDistribution,
 	InvadeBetweenTimeSteps,
 	InvadeThroughoutComputation,
 	InvadeAtTimeStepStartupPlusThroughoutComputation

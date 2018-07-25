@@ -99,22 +99,23 @@ void shminvade::SHMSharedMemoryBetweenTasks::SharedData::unlock() {
 int shminvade::SHMSharedMemoryBetweenTasks::getProcessIndexInSharedDataTable(int myId) {
   int numberOfProcesses = _globalSHMData->noOfRegisteredProcesses;
 
+  #if SHM_INVADE_DEBUG>=1
+  std::cout << getSHMDebugPrefix() <<  "Association: " << getCoreProcessAssociation() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  #endif
+
   for (int i=0; i<numberOfProcesses; i++) {
     if (_globalSHMData->registeredProcessPids[i] == myId) return i;
   }
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << getSHMDebugPrefix() <<  "Process " << myId << " not known yet: insert entry into shared memory region (line:" << __LINE__  << ",file: " << __FILE__ <<  ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Process " << myId
+		    << " not known yet: insert entry into shared memory region (line:" << __LINE__  << ",file: " << __FILE__ <<  ")" << std::endl;
   #endif
 
   _globalSHMData->lock();
   numberOfProcesses = _globalSHMData->noOfRegisteredProcesses;
   _globalSHMData->registeredProcessPids[numberOfProcesses] = myId;
   _globalSHMData->noOfRegisteredProcesses++;
-
-  #if SHM_INVADE_DEBUG>=1
-  std::cout << getSHMDebugPrefix() <<  "Association: " << getCoreProcessAssociation() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-  #endif
 
   _globalSHMData->unlock();
 
