@@ -355,6 +355,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 	  }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::NoInvade:
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvadeButAnalyseDistribution:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeThroughoutComputation:
     case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
@@ -929,8 +930,16 @@ int exahype::runners::Runner::determineNumberOfBatchedTimeSteps(const int& curre
 
 void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
   #if defined(TBBInvade)
-  int ranksOnThisNode              = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getNumberOfRegisteredProcesses();
-  int myIndexWithinSharedUserData  = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getProcessIndexInSharedDataTable();
+  const int myIndexWithinSharedUserData  = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getProcessIndexInSharedDataTable();
+  const int ranksOnThisNode              = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getNumberOfRegisteredProcesses();
+
+  #ifdef Asserts
+  logInfo(
+    "preProcessTimeStepInSharedMemoryEnvironment()",
+	"ranks on this node=" << ranksOnThisNode <<
+	", my index=" << myIndexWithinSharedUserData
+  );
+  #endif
 
   std::vector<double>  t1;
   std::vector<double>  f;
@@ -940,9 +949,11 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     f.push_back(  shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1) );
     s.push_back(  shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2) );
 
-    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0)) );
-    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1)) );
-    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
+    #ifdef Asserts
+    logInfo( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0)) );
+    logInfo( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1)) );
+    logInfo( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
+    #endif
   }
 
   switch ( _parser.getTBBInvadeStrategy() ) {
@@ -954,13 +965,44 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode() -1;
           logInfo(
             "preProcessTimeStepInSharedMemoryEnvironment()",
-			"try to acquire SHMInvade object for " << cores << " in runner (max cores=" <<
+			"try to acquire SHMInvade object for " << cores << " core(s) in runner (max cores=" <<
 			shminvade::SHMController::getInstance().getMaxAvailableCores() << ", ranks-per-node=" << _parser.getRanksPerNode() <<
 			")"
 	      );
           _shmInvade = new shminvade::SHMInvade( cores );
     	}
         shminvade::SHMController::getInstance().switchOff();
+      }
+      break;
+    case exahype::parser::Parser::TBBInvadeStrategy::NoInvadeButAnalyseDistribution:
+      {
+    	if ( _shmInvade==nullptr ) {
+    	  const int cores = shminvade::SHMController::getInstance().getMaxAvailableCores() / _parser.getRanksPerNode() -1;
+          logInfo(
+            "preProcessTimeStepInSharedMemoryEnvironment()",
+			"try to acquire SHMInvade object for " << cores << " core(s) in runner (max cores=" <<
+			shminvade::SHMController::getInstance().getMaxAvailableCores() << ", ranks-per-node=" << _parser.getRanksPerNode() <<
+			")"
+	      );
+          _shmInvade = new shminvade::SHMInvade( cores );
+    	}
+        shminvade::SHMController::getInstance().switchOff();
+
+        // ask for an optimal number of cores for local rank
+        int optimalNumberOfThreads = std::max(
+          peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+            myIndexWithinSharedUserData,
+            t1,f,s,
+            shminvade::SHMController::getInstance().getMaxAvailableCores(),
+            tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
+          ),
+          2
+        );
+
+        logInfo(
+          "preProcessTimeStepInSharedMemoryEnvironment()",
+			"optimal number of cores would be " << optimalNumberOfThreads
+	      );
       }
       break;
     case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
@@ -1037,6 +1079,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
      case exahype::parser::Parser::TBBInvadeStrategy::OccupyAllCores:
        break;
      case exahype::parser::Parser::TBBInvadeStrategy::InvadeBetweenTimeSteps:
+     case exahype::parser::Parser::TBBInvadeStrategy::NoInvadeButAnalyseDistribution:
      case exahype::parser::Parser::TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation:
        {
       	 logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "release SHMInvade object" );
