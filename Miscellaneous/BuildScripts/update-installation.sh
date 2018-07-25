@@ -47,7 +47,7 @@ for cmd in "$@"; do
 		"peano") # Updates the Peano subversion repository
 			info "Updating Peano"
 			cd Peano
-			exec ./checkout-update-peano.sh
+			exec ./updatePeano.sh
 			;;
 		"toolkit") # Compiles the toolkit with ant and javac
 			info "Creating Toolkit"
