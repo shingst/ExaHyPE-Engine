@@ -1,3 +1,13 @@
 #!/bin/bash
+#
+# Peano is nowadays managed as a git submodule. That makes it easy
+# to keep in sync. However, you also need access to the Peano
+# repository (you find the URL in the file ../.gitmodules).
+#
+# If you don't have (read) access to the repository, you can use
+# the script ./fetchSnapshot.sh  to download a public available
+# tarball instead.
+#
 
-git submodule update --init --remote
+set -e
+exec git submodule update --init --remote
