@@ -47,6 +47,14 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 public:
   enum class InterfaceType { None, Interior, Boundary };
 
+  /**
+   * Compare if two vectors are equal up to a relative
+   * tolerance.
+   */
+  static bool equalUpToRelativeTolerance(
+      const tarch::la::Vector<DIMENSIONS,double>& first,
+      const tarch::la::Vector<DIMENSIONS,double>& second);
+
 private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
@@ -56,14 +64,6 @@ private:
    * The log device of this class.
    */
   static tarch::logging::Log _log;
-
-  /**
-   * Compare if two vectors are equal up to a relative
-   * tolerance.
-   */
-  static bool equalUpToRelativeTolerance(
-      const tarch::la::Vector<DIMENSIONS,double>& first,
-      const tarch::la::Vector<DIMENSIONS,double>& second);
 
 
   /**

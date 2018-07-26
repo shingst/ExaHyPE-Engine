@@ -366,17 +366,6 @@ bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
          getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
 }
 
-double exahype::solvers::Solver::computeRelativeTolerance(
-    const tarch::la::Vector<DIMENSIONS,double>& vec1,
-    const tarch::la::Vector<DIMENSIONS,double>& vec2) {
-  return
-      tarch::la::NUMERICAL_ZERO_DIFFERENCE *
-      std::max(
-          1.0, std::max( tarch::la::maxAbs(vec1), tarch::la::maxAbs(vec2)
-          )
-      );
-}
-
 bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
   bool result = false;
   for (auto* solver : RegisteredSolvers) {

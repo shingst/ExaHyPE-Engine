@@ -1131,9 +1131,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
   auto& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   #ifdef Asserts
   const tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
-  const double tolerance = Solver::computeRelativeTolerance(x,center);
   #endif
-  assertion6(tarch::la::equals(x,center,tolerance),x,center,tolerance,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+  assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
   assertion(cellDescription.getType()==CellDescription::Cell);
 

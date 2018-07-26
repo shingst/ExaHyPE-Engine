@@ -656,14 +656,6 @@ class exahype::solvers::Solver {
   static constexpr int NotFound = -1;
 
   /**
-   * Computes a relative tolerance for numerical comparsisons based on the
-   * maximum absolute value of the two vectors.
-   */
-  static double computeRelativeTolerance(
-      const tarch::la::Vector<DIMENSIONS,double>& vec1,
-      const tarch::la::Vector<DIMENSIONS,double>& vec2);
-
-  /**
    * Checks if one of the solvers is of a certain
    * type.
    */
