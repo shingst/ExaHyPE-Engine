@@ -137,21 +137,23 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     solverState.setAllSolversAttainedStableStateInPreviousIteration(false);
     _stableIterationsInARow = 0;
     StillInRefiningMode     = true;
+    
+    _allSolversAttainedStableState = false;
   } else {
     if ( solverState.getAllSolversAttainedStableStateInPreviousIteration() ) {
       _stableIterationsInARow++;
     } else { // this is for the worker ranks, the global master was already updated in the last endIteration(...)
       _stableIterationsInARow=0;
     }
+    
+    _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>1 ) { // experimentally found
-    StillInRefiningMode = false;
+  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {    StillInRefiningMode = false;
     if (!IsInitialMeshRefinement) {
       logInfo("beginIteration(...)","refinement converged. switch to coarsening");
     }
   }
   // reset
-  _allSolversAttainedStableState        = true;
   _verticalExchangeOfSolverDataRequired = false;
   
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -516,11 +518,17 @@ void exahype::mappings::MeshRefinement::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
+  const bool firstMeshRefinementIteration =
+      #ifdef Parallel
+      !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+      #endif
+      exahype::mappings::MeshRefinement::IsFirstIteration;     // It has to be the first overall iteration
+ 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    if (solver->hasRequestedMeshRefinement()) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       const bool newComputeCell =
+          firstMeshRefinementIteration &&
           solver->progressMeshRefinementInLeaveCell(
               fineGridCell,
               fineGridVertices,

@@ -1512,10 +1512,10 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         flaggingHasConverged &=
             std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
         flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1)    - cellDescription.getFacewiseRefinementStatus(2*d+0))    <= 2;
+            std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1)    - cellDescription.getFacewiseRefinementStatus(2*d+0))    <= 2;;
       }
     }
-
+ 
     return
         flaggingHasConverged
         &&
