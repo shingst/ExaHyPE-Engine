@@ -508,10 +508,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag);
   }
 
-  std::cout << "_refineOrKeepOnFineGrid="<<_refineOrKeepOnFineGrid<<std::endl;
-  std::cout << "_limiterHelperLayers="<<_limiterHelperLayers<<std::endl;
-  std::cout << "_minimumRefinementStatusForPassiveFVPatch="<<_minimumRefinementStatusForPassiveFVPatch<<std::endl;
-
   #ifdef Parallel
   _invalidExtrapolatedPredictor.resize(getBndFaceSize());
   _invalidFluctuations.resize(getBndFluxSize());
