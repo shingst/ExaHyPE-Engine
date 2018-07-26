@@ -230,6 +230,11 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
             print(variable+"="+os.environ[variable])
     print("")
 
+    if not os.path.exists(buildFolderPath):
+        print("create build directory "+buildFolderPath)
+        os.makedirs(buildFolderPath)
+    print("")
+
     unlink()
  
     oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
