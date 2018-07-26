@@ -8,8 +8,8 @@
 # stop on error
 set -e
 
-# download the grid generation framework Peano
-bash ./Peano/checkout-update-peano.sh
+# download the grid generation framework Peano.
+./Peano/updatePeano || ./Peano/fetchSnapshot.sh
 
 # compile the Java toolkit
 bash ./Toolkit/build.sh

@@ -130,7 +130,6 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
 void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverState ) {
   _localState = solverState;
     
-
    //logInfo("beginIteration(...)","solverState.getAllSolversAttainedStableStateInPreviousIteration()="<<solverState.getAllSolversAttainedStableStateInPreviousIteration());
 
   // stability check
@@ -138,18 +137,23 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
     solverState.setAllSolversAttainedStableStateInPreviousIteration(false);
     _stableIterationsInARow = 0;
     StillInRefiningMode     = true;
+    
+    _allSolversAttainedStableState = false;
   } else {
     if ( solverState.getAllSolversAttainedStableStateInPreviousIteration() ) {
       _stableIterationsInARow++;
     } else { // this is for the worker ranks, the global master was already updated in the last endIteration(...)
       _stableIterationsInARow=0;
     }
+    
+    _allSolversAttainedStableState = true;
   }
-  if ( StillInRefiningMode && _stableIterationsInARow>1 ) { // experimentally found
-    StillInRefiningMode = false;
+  if ( StillInRefiningMode && _stableIterationsInARow>1 ) {    StillInRefiningMode = false;
+    if (!IsInitialMeshRefinement) {
+      logInfo("beginIteration(...)","refinement converged. switch to coarsening");
+    }
   }
   // reset
-  _allSolversAttainedStableState        = true;
   _verticalExchangeOfSolverDataRequired = false;
   
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -178,19 +182,25 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   // logInfo("endIteration(...)","_stableIterationsInARow="<<_stableIterationsInARow);
   // logInfo("endIteration(...)","solverState.getMaxLevel()="<<solverState.getMaxLevel());
   // logInfo("endIteration(...)","getFinestUniformMeshLevelOfAllSolvers()="<<solvers::Solver::getFinestUniformMeshLevelOfAllSolvers());
-  if ( tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     #ifndef TrackGridStatistics
     #error Compiler flag TrackGridStatistics must be defined!
     #endif
     solverState.setAllSolversAttainedStableStateInPreviousIteration( // check if we actually reached the solver's grids 
         solverState.getAllSolversAttainedStableStateInPreviousIteration() &&
         solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers()); // max level only available in endIteration(..>)
+
     if ( !solverState.getAllSolversAttainedStableStateInPreviousIteration() ) { // reset directly
       _stableIterationsInARow = 0;
     }
     solverState.setMeshRefinementHasConverged(
-      !StillInRefiningMode && _stableIterationsInARow > 1 && // experimentally found
-      solverState.getAllSolversAttainedStableStateInPreviousIteration() ); // it's actually the currently finishing iteration
+        !StillInRefiningMode
+        &&
+        (IsInitialMeshRefinement ||
+          (_stableIterationsInARow > 1 && // experimentally found
+           solverState.getAllSolversAttainedStableStateInPreviousIteration()))
+      ); // it's actually the currently finishing iteration
   }
 
   exahype::mappings::MeshRefinement::IsFirstIteration=false;
@@ -447,10 +457,17 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   assertion(fineGridCell.isInside());
 
+  const bool firstMeshRefinementIteration =
+      #ifdef Parallel
+      !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+      #endif
+      exahype::mappings::MeshRefinement::IsFirstIteration;     // It has to be the first overall iteration
+
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if ( solver->hasRequestedMeshRefinement() ) {
       const bool newComputeCell =
+          !firstMeshRefinementIteration && // skip in first iteration
           solver->progressMeshRefinementInEnterCell(
               fineGridCell,
               fineGridVertices,
@@ -462,12 +479,7 @@ void exahype::mappings::MeshRefinement::enterCell(
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
-          (
-          #ifdef Parallel
-          !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
-          #endif
-          exahype::mappings::MeshRefinement::IsFirstIteration)     // It has to be the first overall iteration
-          ||
+          firstMeshRefinementIteration ||
           newComputeCell
       ) {
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
@@ -506,11 +518,17 @@ void exahype::mappings::MeshRefinement::leaveCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
+  const bool firstMeshRefinementIteration =
+      #ifdef Parallel
+      !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
+      #endif
+      exahype::mappings::MeshRefinement::IsFirstIteration;     // It has to be the first overall iteration
+ 
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    if (solver->hasRequestedMeshRefinement()) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       const bool newComputeCell =
+          firstMeshRefinementIteration &&
           solver->progressMeshRefinementInLeaveCell(
               fineGridCell,
               fineGridVertices,

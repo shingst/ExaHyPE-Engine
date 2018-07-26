@@ -13,22 +13,23 @@ tbb::task_group_context  shminvade::SHMController::InvasiveTaskGroupContext;
 
 shminvade::SHMController::SHMController():
   _pinningObserver(),
-  _globalThreadCountControl(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency()),
-  _switchedOn( true ) {
+  _globalThreadCountControl( new tbb::global_control(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency()) ),
+  _switchedOn( true ),
+  _masterCore(0) {
   _pinningObserver.observe(true);
 
   InvasiveTaskGroupContext.set_priority( tbb::priority_low );
-
-  init( true, 1, 1 );
 }
 
 
 shminvade::SHMController::~SHMController() {
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "Destroy SHMController (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Destroy SHMController (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 
   shutdown();
+
+  delete _globalThreadCountControl;
 }
 
 
@@ -48,13 +49,13 @@ void shminvade::SHMController::switchOff() {
 }
 
 
-int shminvade::SHMController::getMaxAvailableCores(bool useHyperthreading) const {
-  return useHyperthreading ? std::thread::hardware_concurrency() : std::thread::hardware_concurrency()/2;
+int shminvade::SHMController::getMaxAvailableCores() const {
+  return std::thread::hardware_concurrency();
 }
 
 
-int shminvade::SHMController::getFreeCores(bool useHyperthreading) const {
-  return getMaxAvailableCores(useHyperthreading) - getBookedCores();
+int shminvade::SHMController::getFreeCores() const {
+  return getMaxAvailableCores() - getBookedCores();
 }
 
 
@@ -83,7 +84,7 @@ void shminvade::SHMController::shutdown() {
   _switchedOn = false;
 
   #if SHM_INVADE_DEBUG>=2
-  std::cout << SHM_DEBUG_PREFIX <<  "start to instruct all threads to shut down (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "start to instruct all threads to shut down (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 
   for (auto p: _cores) {
@@ -107,13 +108,13 @@ void shminvade::SHMController::shutdown() {
   }
   if (totalNumberOfLockTasks>0) {
     #if SHM_INVADE_DEBUG>=1
-    std::cout << SHM_DEBUG_PREFIX <<  "wait for all lock threads to terminate as lock tasks seem to be alive (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << getSHMDebugPrefix() <<  "wait for all lock threads to terminate as lock tasks seem to be alive (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     #endif
     sleep(SHM_MAX_SLEEP);
   }
 
   #if SHM_INVADE_DEBUG>=2
-  std::cout << SHM_DEBUG_PREFIX <<  "Assume all threads have terminated (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Assume all threads have terminated (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 }
 
@@ -130,7 +131,7 @@ bool shminvade::SHMController::tryToBookCore( int core ) {
     a->second->type = SHMController::ThreadType::Owned;
     result = true;
     #if SHM_INVADE_DEBUG>=4
-    std::cout << SHM_DEBUG_PREFIX <<  "Invade core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << getSHMDebugPrefix() <<  "Invade core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     #endif
   }
 
@@ -142,6 +143,8 @@ bool shminvade::SHMController::tryToBookCore( int core ) {
 
 
 void shminvade::SHMController::retreat( int core ) {
+  assert(_masterCore!=core);
+
   ThreadTable::accessor a;
   _cores.find(a,core);
 
@@ -150,7 +153,7 @@ void shminvade::SHMController::retreat( int core ) {
   if ( a->second->type==ThreadType::Owned ) {
     a->second->type = ThreadType::NotOwned;
     #if SHM_INVADE_DEBUG>=4
-    std::cout << SHM_DEBUG_PREFIX <<  "Retreat from core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << getSHMDebugPrefix() <<  "Retreat from core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     #endif
   }
 
@@ -163,7 +166,7 @@ void shminvade::SHMController::retreat( int core ) {
     tbb::task &t = *new(tbb::task::allocate_root(InvasiveTaskGroupContext)) SHMLockTask(core);
     tbb::task::enqueue(t);
     #if SHM_INVADE_DEBUG>=4
-    std::cout << SHM_DEBUG_PREFIX <<  "Issue new lock task for core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << getSHMDebugPrefix() <<  "Issue new lock task for core " << core << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     #endif
   }
 
@@ -204,7 +207,7 @@ void shminvade::SHMController::registerNewCore(int core, ThreadType initialType)
   }
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "Register new core " << core << " as " << newThread->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << getSHMDebugPrefix() <<  "Register new core " << core << " as " << newThread->toString() << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 }
 
@@ -231,34 +234,43 @@ std::string shminvade::SHMController::ThreadState::toString() const {
 }
 
 
-void shminvade::SHMController::init( bool useHyperthreading, int ranksPerNode, int rank ) {
+void shminvade::SHMController::init( int ranksPerNode, int rank ) {
   const int localRankNumber = (rank % ranksPerNode);
-  const int coresPerRank    = getMaxAvailableCores(useHyperthreading) /  ranksPerNode;
-  const int masterCore      = localRankNumber * coresPerRank + coresPerRank/2;
+  const int coresPerRank    = getMaxAvailableCores() /  ranksPerNode;
+  _masterCore               = localRankNumber * coresPerRank + coresPerRank/2;
 
   if (coresPerRank<1) {
-    std::cerr << SHM_DEBUG_PREFIX <<  "Init called with " << useHyperthreading << " hyperthreading, "
+    std::cerr << getSHMDebugPrefix() <<  "Init called with "
     		  << ranksPerNode << " ranks per node on rank " << rank << " whichc yields " << coresPerRank << " cores per rank" << std::endl;
   }
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "Init called with " << useHyperthreading << " hyperthreading, "
+  std::cout << getSHMDebugPrefix() <<  "Init called. Use "
   		    << ranksPerNode << " ranks per node on rank " << rank << " which yields " << coresPerRank << " cores per rank"
 			<< " (line:" << __LINE__ << ",file:" << __FILE__ << ")"
 			<< std::endl;
   #endif
 
+  delete _globalThreadCountControl;
+  _globalThreadCountControl = new tbb::global_control(tbb::global_control::max_allowed_parallelism,std::thread::hardware_concurrency());
+
   _cores.clear();
 
-  for (int i=0; i<getMaxAvailableCores(true); i++ ) {
-	if (i==masterCore) {
+  #if SHM_INVADE_DEBUG>=1
+  std::cout << getSHMDebugPrefix() <<  "Create " << getMaxAvailableCores() << " threads " << std::endl;
+  #endif
+
+  for (int i=0; i<getMaxAvailableCores(); i++ ) {
+	if (i==_masterCore) {
       registerNewCore(i,ThreadType::Master);
 	}
-	else if (i<getMaxAvailableCores(useHyperthreading)) {
+	else {
       registerNewCore(i,ThreadType::NotOwned );
 	}
-	else {
-      registerNewCore(i,ThreadType::Shutdown );
-	}
   }
+}
+
+
+int shminvade::SHMController::getMasterCore() const {
+  return _masterCore;
 }

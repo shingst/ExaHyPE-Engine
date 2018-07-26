@@ -11,7 +11,7 @@ shminvade::SHMInvade::SHMInvade(int cores):
   assert(cores>0 || cores==MaxCores);
 
   if (cores==MaxCores) {
-    cores = SHMController::getInstance().getMaxAvailableCores(true);
+    cores = SHMController::getInstance().getMaxAvailableCores();
   }
 
   _occupiedCores = SHMStrategy::getInstance().invade(cores);

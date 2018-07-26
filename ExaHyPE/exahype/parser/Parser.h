@@ -421,14 +421,13 @@ class exahype::parser::Parser {
 	Undef,
     NoInvade,
 	OccupyAllCores,
+	NoInvadeButAnalyseDistribution,
 	InvadeBetweenTimeSteps,
 	InvadeThroughoutComputation,
 	InvadeAtTimeStepStartupPlusThroughoutComputation
   };
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
-
-  bool useHyperthreading() const;
 };
 
 #endif

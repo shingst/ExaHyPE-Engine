@@ -50,9 +50,7 @@ namespace shminvade {
  *
  * <h2> Usage </h2>
  *
- * - Init your TBB environment with shminvade::SHMController::getInstance().getMaxAvailableCores()
- *   threads.
- * - Initialise the SHMController through its init() function.
+ * - Init the controller through shminvade::SHMController::getInstance().init()
  * - Use shminvade::SHMStrategy::setStrategy to set a strategy if you want
  *   another one than let all ranks invade all cores simultaneously.
  * - Initialise shared memory regions through shminvade::SHMSharedMemoryBetweenTasks
@@ -67,10 +65,10 @@ namespace shminvade {
  * scripts alike
  *
  * <pre>
-export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
-srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so srun --threads-per-core=1 --cpu_bind=cores ./myexecutable
    </pre>
  *
+ * The snippet above btw does not use hyperthreading as we launch exactly one thread per core.
  */
 class shminvade::SHMController {
   public:
@@ -116,8 +114,8 @@ class shminvade::SHMController {
      */
     static tbb::task_group_context  InvasiveTaskGroupContext;
 
-    SHMPinningObserver   _pinningObserver;
-    tbb::global_control  _globalThreadCountControl;
+    SHMPinningObserver    _pinningObserver;
+    tbb::global_control*  _globalThreadCountControl;
 
     tbb::atomic<bool>    _switchedOn;
 
@@ -129,6 +127,14 @@ class shminvade::SHMController {
      */
     typedef tbb::concurrent_hash_map<int, ThreadState*> ThreadTable;
     ThreadTable  _cores;
+
+    /**
+     * This field holds redundant information, as the master is encoded in
+     * _cores. I however cache the master core here, so I don't have to s
+     * search through all of _cores everytime I want to know who the master
+     * is.
+     */
+    int          _masterCore;
 
     /**
      * Read-only operation mainly required by lock tasks
@@ -183,8 +189,8 @@ class shminvade::SHMController {
     void switchOn();
     void switchOff();
 
-    int getMaxAvailableCores(bool useHyperthreading) const;
-    int getFreeCores(bool useHyperthreading) const;
+    int getMaxAvailableCores() const;
+    int getFreeCores() const;
     int getBookedCores() const;
 
     /**
@@ -200,7 +206,9 @@ class shminvade::SHMController {
      * Initialise the controller
      *
      */
-    void init( bool useHyperthreading, int ranksPerNode, int rank );
+    void init( int ranksPerNode, int rank );
+
+    int getMasterCore() const;
 };
 
 #endif

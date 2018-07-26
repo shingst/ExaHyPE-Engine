@@ -258,26 +258,21 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Loop over the solver and update the solver state.
-   * If at least one of the solvers requested refinement,
-   * try to refine the fine grid cell hosting the solvers
-   * or postpone this operation to the next iteration.
+   * TODO(Dominic) Update docu.
    *
-   * Further update the gridUpdateRequested flag
-   * of each solver.
+   * <h2>Adjust solution for existing cells</h2>
+   * For already existing cells, we only adjust the solution and mark cells for refinement in
+   * the first mesh refinement iteration.
    *
-   * Further synchronise the time stepping of the patches
-   * with the solver and zero the time step sizes.
+   * <h2>Adjust solution for newly introduced cells</h2>
+   * We adjust the solution and evaluate the refinement criterion for
+   * newly introduced cells during all mesh refinement iterations.
    *
-   * TODO(Dominic): Update the docu
-   *
-   * In this refinement mode, we evaluate the user's refinement criterion
-   * as well as the limiter's physical admissibility detection (PAD) criterion
-   * if a LimitingADERDGSolver is employed.
-   * LimitingADERDGSolver We aggressively refine all cells that do not satisfy the PAD down
-   * to the finest level specified by the user for a solver.
-   * The user's refinement criterion is used
-   * to resolve other features of the solution more accurately.
+   * <h2>Solution adjustment background jobs</h2>
+   * All spawned background jobs must be completed before a new worker rank
+   * can be forked or the next iteration begins.
+   * We thus place ensure that all spawned background jobs are processed
+   * in endIteration(...) and prepareCopyToRemoteNode(...).
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -288,15 +283,17 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Loop over the solver and update the solver state.
-   * If all of the solvers hosted by the cell requested erasing,
-   * erase the fine grid cell.
+   * TODO(Dominic): Update docu.
    *
-   * Further update the gridUpdateRequested flag
-   * of each solver.In contrast to the grid update request handling
-   * during the time stepping, we set the flag here also for erasing requests.
-   * The rationale is that we do only stop the time
-   * stepping if the problem is not well resolved anymore.
+   * <h2>Adjust solution for newly introduced cells</h2>
+   * We adjust the solution and evaluate the refinement criterion for
+   * newly introduced cells during all mesh refinement iterations.
+   *
+   * <h2>Solution adjustment background jobs</h2>
+   * All spawned background jobs must be completed before a new worker rank
+   * can be forked or the next iteration begins.
+   * We thus place ensure that all spawned background jobs are processed
+   * in endIteration(...) and prepareCopyToRemoteNode(...).
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

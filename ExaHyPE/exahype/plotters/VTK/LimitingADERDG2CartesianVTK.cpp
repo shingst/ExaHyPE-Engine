@@ -317,6 +317,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotVertexData(
                  u[iGauss * _solverUnknowns + unknown];
         assertion3(interpoland[unknown] == interpoland[unknown], offsetOfPatch, sizeOfPatch, iGauss);
       }
+      if ( !std::isfinite(interpoland[unknown]) ) {
+        logError("plotVertexData(...)","plotted value not finite.");
+        std::abort();
+      }
     }
 
     assertion(sizeOfPatch(0)==sizeOfPatch(1));
