@@ -3674,7 +3674,7 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     const int                                     level) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   #ifdef Asserts
-  tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  const tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
   const double tolerance = Solver::computeRelativeTolerance(x,center);
   #endif
   assertion6(tarch::la::equals(x,center,tolerance),x,center,tolerance,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());

@@ -367,8 +367,8 @@ bool exahype::solvers::Solver::hasRequestedMeshRefinement() const {
 }
 
 double exahype::solvers::Solver::computeRelativeTolerance(
-    tarch::la::Vector<DIMENSIONS,double>& vec1,
-    tarch::la::Vector<DIMENSIONS,double>& vec2) {
+    const tarch::la::Vector<DIMENSIONS,double>& vec1,
+    const tarch::la::Vector<DIMENSIONS,double>& vec2) {
   return
       tarch::la::NUMERICAL_ZERO_DIFFERENCE *
       std::max(
