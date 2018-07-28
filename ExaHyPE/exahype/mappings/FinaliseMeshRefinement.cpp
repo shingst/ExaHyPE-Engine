@@ -218,7 +218,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
         if ( exahype::solvers::Solver::FuseADERDGPhases ) {
           #ifdef Parallel
-          if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+          if (tarch::parallel::Node::getInstance().isGlobalMaster() ) {
             exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(solver);
           }
           #endif

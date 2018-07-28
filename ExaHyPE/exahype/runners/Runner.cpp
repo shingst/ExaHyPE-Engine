@@ -1090,7 +1090,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
     	 // adopt my local performance model
     	 invasionWatch.stopTimer();
     	 amdahlsLaw.addMeasurement(
-    	   tarch::multicore::Core::getInstance().getNumberOfThreads(),
+           shminvade::SHMController::getInstance().getBookedCores(),
     	   invasionWatch.getCalendarTime()
     	 );
     	 amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
@@ -1122,6 +1122,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   }
 
   invasionWatch.startTimer();
+  shminvade::SHMController::getInstance().switchOn();
   #endif
 }
 
