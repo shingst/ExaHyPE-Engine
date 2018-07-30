@@ -64,6 +64,17 @@ public:
      */
   virtual void eigenvalues(const double* const Q,const int d,double* lambda) = 0;
 
+  /**
+     * Compute the eigenvalues of the gradient flux tensor per coordinate direction \p d.
+     *
+     * \param[in] Q  the conserved variables associated with a quadrature node
+     *               as C array (already allocated).
+     * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
+     * \param[inout] lambda the eigenvalues as C array (already allocated).
+     */
+  virtual void diffusiveEigenvalues(const double* const Q,const int d,double* lambda) = 0;
+
+
  /**
   * @defgroup User PDE
   */
