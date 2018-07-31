@@ -319,6 +319,14 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     DataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorAverages());
     cellDescription.setExtrapolatedPredictorAverages(-1);
 
+    // gradient of extrapolated predictor
+    if ( cellDescription.getExtrapolatedPredictorGradient() <= 0) {
+      assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradient()));
+      assertion(cellDescription.getExtrapolatedPredictorGradient()==-1);
+      CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradient());
+      cellDescription.setExtrapolatedPredictorGradient(-1);
+    }
+
     // fluctuations
     if ( cellDescription.getFluctuation()>=0 ) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
@@ -415,6 +423,10 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     cellDescription.setExtrapolatedPredictorAverages( DataHeap::getInstance().createData( boundaryData,  boundaryData  ) );
     checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedPredictor(),"getExtrapolatedPredictor()");
     checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedPredictorAverages(),"getExtrapolatedPredictorAverages()");
+
+    // gradients of extrapolated predictor
+    const int gradientSizePerBnd = dataPerBnd * getNumberOfVariables();
+    cellDescription.setExtrapolatedPredictorGradient( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
 
     // fluctuations
     const int dofPerBnd  = getBndFluxTotalSize();
@@ -2243,6 +2255,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
   double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
+  double* lGradQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictorGradient()).data();
   double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
 
   #if defined(Debug) || defined(Asserts)
@@ -2252,7 +2265,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   #endif
 
   fusedSpaceTimePredictorVolumeIntegral(
-      lduh,lQhbnd,lFhbnd,
+      lduh,lQhbnd,lGradQhbnd,lFhbnd,
       luh,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
       cellDescription.getSize(),
@@ -3136,12 +3149,16 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   assertion1(p.getType()==CellDescription::Type::Cell,p.toString());
   assertion1(p.getRefinementEvent()==CellDescription::None,p.toString());
   assertion1(DataHeap::getInstance().isValidIndex(p.getExtrapolatedPredictor()),p.toString());
+  assertion1(DataHeap::getInstance().isValidIndex(p.getExtrapolatedPredictorGradient()),p.toString());
   assertion1(DataHeap::getInstance().isValidIndex(p.getFluctuation()),p.toString());
 
   const int dataPerFace = getBndFaceSize();
+  const int gradientDataPerFace = getBndFaceSize() * getNumberOfVariables();
   const int dofPerFace  = getBndFluxSize();
   double* QIn = DataHeap::getInstance().getData(p.getExtrapolatedPredictor()).data() +
       (faceIndex * dataPerFace);
+  double* gradQIn = DataHeap::getInstance().getData(p.getExtrapolatedPredictorGradient()).data() +
+      (faceIndex * gradientDataPerFace);
   double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
       (faceIndex * dofPerFace);
   const double* luh = DataHeap::getInstance().getData(p.getSolution()).data();

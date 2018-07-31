@@ -616,7 +616,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   _setNcpAndMatrixBToZero = true;
   kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,false, true,false,GenericEulerKernelTest>(
       *this,
-      lQhbnd, lFhbnd,
+      lQhbnd, nullptr, lFhbnd,
       lQi, rhs, lFi, gradQ, lQhi, lFhi,
       luh,
       tarch::la::invertEntries(dx), timeStepSize

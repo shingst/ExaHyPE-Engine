@@ -1263,7 +1263,7 @@ public:
    * space-time predictor computation kernel.
    */
   virtual int fusedSpaceTimePredictorVolumeIntegral(
-      double* lduh, double*  lQhbnd, double* lFhbnd,
+      double* lduh, double*  lQhbnd, double* lGradQhbnd, double* lFhbnd,
       const double* const luh,
       const tarch::la::Vector<DIMENSIONS, double>& center,
       const tarch::la::Vector<DIMENSIONS, double>& dx,
