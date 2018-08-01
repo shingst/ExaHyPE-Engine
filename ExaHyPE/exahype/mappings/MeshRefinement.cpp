@@ -224,7 +224,11 @@ void exahype::mappings::MeshRefinement::refineSafely(
       fineGridVertex.refine();
       break;
     case State::RefinementAnswer::EnforceRefinement:
+      #ifdef Parallel // TODO hotfix
+      fineGridVertex.refine();
+      #else
       fineGridVertex.enforceRefine();
+      #endif
       break;
     }
   }
