@@ -88,33 +88,7 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
-    
-    /**
-     * Impose boundary conditions at a point on a boundary face
-     * within the time interval [t,t+dt].
-     *
-     * \param[in]    x         the physical coordinate on the face.
-     * \param[in]    t         the start of the time interval.
-     * \param[in]    dt        the width of the time interval.
-     * \param[in]    faceIndex indexing of the face (0 -- {x[0]=xmin}, 1 -- {x[1]=xmax}, 2 -- {x[1]=ymin}, 3 -- {x[2]=ymax}, and so on,
-     *                         where xmin,xmax,ymin,ymax are the bounds of the cell containing point x.
-     * \param[in]    d         the coordinate direction the face normal is pointing to.
-     * \param[in]    CellSize  the size of the cell, used to compute derivatives
-     * \param[in]    QIn       the conserved variables at point x from inside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
-     * \param[in]    FIn       the normal fluxes at point x from inside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
-     * \param[inout] QOut      the conserved variables at point x from outside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
-     * \param[inout] FOut      the normal fluxes at point x from outside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
-     */
-  // TODO(Lukas) implement this in superclass
-  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
-  		      const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
-                        
- 
+  void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,double *fluxOut,double* stateOut) final override;
   
     /**
      * Evaluate the refinement criterion within a cell.
@@ -145,6 +119,8 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
   void flux(const double* const Q, const double* const gradQ, double** F) final override;
 
   double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) final override;
+  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) final override;
+
 
 
 

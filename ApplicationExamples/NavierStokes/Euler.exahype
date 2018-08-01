@@ -7,12 +7,12 @@ exahype-project Euler
 	dimension const          = 3
 	width                    = 1.0, 1.0, 1.0
 	offset                   = 0.0, 0.0, 0.0
-	end-time                 = 0.16
+	end-time                 = 0.05
     end computational-domain
 
     solver ADER-DG EulerSolver
 	variables const = rho:1, j:3, E:1
-	order const = 2
+	order const = 1
 	maximum-mesh-size = 0.1
 	time-stepping = global
 	type const = nonlinear

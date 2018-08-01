@@ -27,7 +27,7 @@ public:
   }
 
   double evaluateTemperature(double rho, double pressure) const {
-    return pressure/(gasConstant + rho);
+    return pressure/(gasConstant * rho);
   }
   
   double evaluateHeatConductionCoeff(double viscosity) const {
@@ -37,7 +37,7 @@ public:
   }
   
   double evaluatePressure(double E, double rho, tarch::la::Vector<3,double> j) const {
-    return (GAMMA-1) * (rho * E - 0.5 * rho * j * j);
+    return (GAMMA-1) * (E - 0.5 * (1.0/rho) * j * j);
   }
 
   double evaluateViscosity(double T) const {
@@ -52,12 +52,11 @@ public:
     ReadOnlyVariables vars(Q);
     Variables eigs(lambda);
 
-    const double inv_rho = 1./vars.rho();
-    const auto p = evaluatePressure(vars.E(), inv_rho, vars.j());
+    const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
 
-    double u_n = vars.j(d)/vars.rho();
-    // c^2 = gamma * RT = gamma * (pressure/rho)
-    double c = std::sqrt(GAMMA * (p/vars.rho()));
+    const double u_n = vars.j(d)/vars.rho();
+    const double temperature = evaluateTemperature(vars.rho(), p);
+    double c = std::sqrt(GAMMA * gasConstant * temperature);
 
     eigs.rho() = u_n - c;
     eigs.E() = u_n + c;
@@ -96,8 +95,7 @@ public:
       0, 1, 0,
       0, 0, 1;
 
-    const double inv_rho = 1./vars.rho();
-    const auto p = evaluatePressure(vars.E(), inv_rho, vars.j());
+    const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
 
     // gradQ: dim, variable
     kernels::idx2 idx_gradQ(DIMENSIONS, vars.variables());
@@ -108,7 +106,8 @@ public:
     const auto vz = vars.j(2) / vars.rho();
 
     // TODO: What if rho is tiny? Possibly add epsilon here for stability.
-    const auto invRho = 1. / vars.rho();
+    //assert(vars.rho() > 10e-6);
+    const auto invRho = 1. /vars.rho();
 
     // Derivatives of velocities.
     const auto vx_dx = invRho * (-gradQ[idx_gradQ(0, 1)] + vx * gradQ[(idx_gradQ(0,0))]);
@@ -131,18 +130,18 @@ public:
   
     const auto div_v = vx_dx + vy_dy + vz_dz;
 
-    const double viscosity = 0.01; // TODO(Lukas) compute visc.
-    const auto stressTensor = (2./3.) * div_v * I - 
-      viscosity * (gradV + tarch::la::transpose(gradV));
-
     // Temperature: TODO, kappa currently set to 0
     // T = (p)/(vars.rho() * Pr)
-    // Compute derivatives of T with quotient rule
     // Tn = numerator of T, Td = denominator of T
-
     const double Tn = p;
-    const double Td = vars.rho() * Pr;
+    const double Td = vars.rho() * gasConstant;
+    const double temperature = Tn/Td;
 
+    const double viscosity = evaluateViscosity(temperature); // TODO(Lukas) compute visc.
+    const auto stressTensor = viscosity * ((2./3.) * div_v * I - 
+      gradV + tarch::la::transpose(gradV));
+
+    // Compute derivatives of T with quotient rule:
     const double normV = vx*vx + vy*vy + vz * vz;
 
     // Derivative of squared velocities.
@@ -183,7 +182,7 @@ public:
   
 
     f.rho(vars.j());
-    f.j(inv_rho * outerDot(vars.j(), vars.j()) + p*I + stressTensor);
+    f.j(invRho * outerDot(vars.j(), vars.j()) + p*I + stressTensor);
     f.E(
 	((I * vars.E() + I * p + stressTensor) * (invRho * vars.j())) - kappa * gradT);
   }
