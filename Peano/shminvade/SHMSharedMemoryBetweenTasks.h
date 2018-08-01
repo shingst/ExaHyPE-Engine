@@ -93,6 +93,17 @@ class shminvade::SHMSharedMemoryBetweenTasks {
   public:
     static SHMSharedMemoryBetweenTasks& getInstance();
 
+    /**
+     * Returns the number of registered processes. We follow a lazy evaluation
+     * pattern which inserts rank counts if and only if you call
+     * getProcessIndexInSharedDataTable(). So I strongly recommend that you use
+     * getProcessIndexInSharedDataTable() before you invoke
+     * getNumberOfRegisteredProcesses().
+     *
+     * This operation furthermore is not thread-safe, i.e. if another process
+     * is registering at this very moment, this routine might return a value
+     * that's too small.
+     */
     int getNumberOfRegisteredProcesses() const;
 
     template < typename T >

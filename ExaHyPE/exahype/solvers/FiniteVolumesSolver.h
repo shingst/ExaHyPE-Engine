@@ -660,9 +660,7 @@ public:
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
-  double startNewTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) override final;
+  double startNewTimeStep(CellDescription& cellDescription);
 
   /**
    * Required by the fusedTimeStep routine.
@@ -670,10 +668,9 @@ public:
    * routine.
    */
   double startNewTimeStepFused(
-      const int cellDescriptionsIndex,
-      const int element,
+      CellDescription& cellDescription,
       const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch) final override;
+      const bool isLastIterationOfBatch);
 
   double updateTimeStepSizes(
         const int cellDescriptionsIndex,
@@ -721,8 +718,8 @@ public:
    *                                   we overwrite it by the updated solution.
    */
   void updateSolution(
+      CellDescription& cellDescription,
       const int cellDescriptionsIndex,
-      const int element,
       const bool backupPreviousSolution);
 
   /**

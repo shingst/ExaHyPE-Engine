@@ -78,8 +78,9 @@ exahype-project {{ project.project_name }}
     fuse-algorithmic-steps          = {{ project.optimisation.fuse_algorithmic_steps }}
     fuse-algorithmic-steps-factor   = {{ project.optimisation.fuse_algorithmic_steps_factor }}
     spawn-predictor-as-background-thread = {{ project.optimisation.spawn_predictor_as_background_thread }}
+    spawn-amr-background-threads = {{ project.optimisation.spawn_amr_background_threads }}
+    disable-vertex-exchange-in-time-steps = {{ project.optimisation.disable_vertex_exchange_in_time_steps }}
     time-step-batch-factor           = {{ project.optimisation.timestep_batch_factor }}
-    skip-reduction-in-batched-time-steps = {{ project.optimisation.skip_reduction_in_batched_time_steps }}
     disable-metadata-exchange-in-batched-time-steps = {{ project.optimisation.disable_metadata_exchange_in_batched_time_steps }}
     double-compression = {{ project.optimisation.double_compression }}
     spawn-double-compression-as-background-thread = {{ project.optimisation.spawn_double_compression_as_background_thread }}

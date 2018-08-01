@@ -1380,59 +1380,6 @@ class exahype::solvers::Solver {
   /////////////////////////////////////
 
   /**
-   * Compute and return a new admissible time step
-   * size for the cell description
-   * \p element in the array at address
-   * \p cellDescriptionsIndex.
-   *
-   * Then, update the time stamps and time step
-   * sizes on the cell description accordingly.
-   *
-   * \return The new admissible time step size if the
-   * cell description is of type Cell or
-   * std::numeric_limits<double>::max().
-   *
-   * \note The update of the time stamps
-   * and the time step sizes of the cell description
-   * performed in this method can be revoked by the
-   * solver's time stepping synchronisation mode.
-   * If a time stepping mode like global or globalfixed
-   * is chosen, then the changes made here are simply
-   * overwritten. You might want to take a look
-   * into method synchroniseTimeStepping().
-   *
-   * \note Peano only copies the calling mapping
-   * for each thread. The solvers in the solver registry are
-   * not copied once for each thread.
-   *
-   * \see startNewTimeStep(),
-   *      synchroniseTimeStepping(int,int),
-   *      synchroniseTimeStepping(CellDescription&)
-   *
-   * \note Has no const modifier since kernels are not const functions yet.
-   */
-  virtual double startNewTimeStep(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
-
-  /**
-   * Same as \p startNewTimeStep for the fused time stepping scheme.
-   *
-   * \param[in] isFirstIterationOfBatch indicates that we are in the first iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   *
-   * \param[in] isLastIterationOfBatch indicates that we are in the last iteration
-   *                                    of a batch or not. Note that this must be also set to true
-   *                                    in case we run a batch of size 1, i.e. no batch at all.
-   */
-  virtual double startNewTimeStepFused(
-        const int cellDescriptionsIndex,
-        const int element,
-        const bool isFirstIterationOfBatch,
-        const bool isLastIterationOfBatch) = 0;
-
-  /**
    * Computes a new time step size and overwrites
    * a cell description's time stamps and time step sizes
    * with it.
@@ -1984,6 +1931,26 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
   #endif
+
+  /** @defgroup userHooks User Hooks
+   *  Hooks for user solvers
+   *  @{
+   */
+  /**
+   * Signals a user solver that ExaHyPE just started a new time step.
+   *
+   * \param[in] minTimeStamp the minimum time stamp (over all cells)
+   *
+   * \note Do not use global MPI collectives in this method
+   * as this operation is not invoked by all ranks at the same time.
+   *
+   * \note This function is invoked before the first predictor computation
+   * when the nonfused time stepping is run. Otherwise, it is invoked after
+   * the first predictor computation. It will always be called before
+   * "adjustSolution" is invoked.
+   */
+  virtual void beginTimeStep(const double minTimeStamp) {}
+  /** @} */ // end of userHooks
 };
 
 #endif

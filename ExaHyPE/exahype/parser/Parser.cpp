@@ -1360,6 +1360,7 @@ exahype::parser::ParserView exahype::parser::Parser::createParserView(const int 
 
 exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvadeStrategy() const {
   if ( getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvade;
+  if ( getSharedMemoryConfiguration().find("analyse-optimal-static-distribution-but-do-not-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvadeButAnalyseDistribution;
   if ( getSharedMemoryConfiguration().find("occupy-all-cores")!=std::string::npos) return TBBInvadeStrategy::OccupyAllCores;
   if ( getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) return TBBInvadeStrategy::InvadeBetweenTimeSteps;
   if ( getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeThroughoutComputation;
