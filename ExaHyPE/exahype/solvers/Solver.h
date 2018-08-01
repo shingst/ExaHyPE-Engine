@@ -1943,6 +1943,11 @@ class exahype::solvers::Solver {
    *
    * \note Do not use global MPI collectives in this method
    * as this operation is not invoked by all ranks at the same time.
+   *
+   * \note This function is invoked before the first predictor computation
+   * when the nonfused time stepping is run. Otherwise, it is invoked after
+   * the first predictor computation. It will always be called before
+   * "adjustSolution" is invoked.
    */
   virtual void beginTimeStep(const double minTimeStamp) {}
   /** @} */ // end of userHooks
