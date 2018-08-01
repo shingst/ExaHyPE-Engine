@@ -194,7 +194,7 @@ public:
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-  virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) = 0;
+  virtual void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,const double* const gradStateIn, double *fluxOut,double* stateOut) = 0;
 };
 
 class exahype::solvers::UserFiniteVolumesSolverInterface : public exahype::solvers::UserSolverInterface {

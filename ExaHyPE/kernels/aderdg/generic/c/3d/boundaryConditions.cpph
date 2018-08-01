@@ -24,16 +24,18 @@
 
 #include "kernels/DGMatrices.h"
 #include "kernels/KernelUtils.h"
+#include "kernels/aderdg/generic/c/computeGradients.cpph"
 
 #if DIMENSIONS == 3
 
-template <typename SolverType>
+template <bool useGradientFlux, typename SolverType>
 void kernels::aderdg::generic::c::boundaryConditions(
                         SolverType& solver,
                         double* FOut,
                         double* QOut,
                         const double* const FIn,
                         const double* const QIn,
+                        const double* const gradQIn,
                         const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                         const tarch::la::Vector<DIMENSIONS,double>& cellSize,
                         const double t,const double dt,
@@ -71,6 +73,7 @@ void kernels::aderdg::generic::c::boundaryConditions(
   }
   
   idx3 idx_Q(basisSize, basisSize, numberOfData);
+  idx4 idx_gradQ(basisSize, basisSize, DIMENSIONS, numberOfData);
     
   idx3 idx_F(basisSize, basisSize, numberOfVariables);
 
@@ -91,11 +94,23 @@ void kernels::aderdg::generic::c::boundaryConditions(
 #endif  
       x[d1] = cellCentre[d1] + cellSize[d1] * (node - 0.5); 
       
-      solver.boundaryValues(
-          x,t,dt,faceIndex,normalNonZero,
-          FIn  + idx_F(i,j,0), QIn  + idx_Q(i,j,0),
-          FOut + idx_F(i,j,0), QOut + idx_Q(i,j,0)
-      );
+      if (useGradientFlux) {
+	// TODO(Lukas) Make more efficient if NOT using gradient.
+	solver.boundaryValues(
+			      x,t,dt,faceIndex,normalNonZero,
+			      FIn  + idx_F(i,j,0), QIn  + idx_Q(i,j,0), gradQIn + idx_gradQ(i,j,0,0),
+			      FOut + idx_F(i,j,0), QOut + idx_Q(i,j,0)
+			      );
+      } else {
+	/*
+	// TODO(Lukas) implement this!
+	solver.boundaryValues(
+			      x,t,dt,faceIndex,normalNonZero,
+			      FIn  + idx_F(i,j,0), QIn  + idx_Q(i,j,0),
+			      FOut + idx_F(i,j,0), QOut + idx_Q(i,j,0)
+			      );
+	*/
+      }
     }
   }
 }

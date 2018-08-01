@@ -3179,8 +3179,8 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
   boundaryConditions(
       update, // also refered to as dluh
-      FIn,QIn,
-      luh,
+      FIn,QIn, gradQIn,
+      luh
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
       p.getCorrectorTimeStamp(),
