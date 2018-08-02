@@ -554,7 +554,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
                   lGradQi[idx_lGradQi(i, j, l, dim, k)] *
                   kernels::FLCoeff[order][l];
 
-              lGradQhbnd[idx_lGradQhbnd(1, i, j, k, dim)] +=
+              lGradQhbnd[idx_lGradQhbnd(1, i, j, dim, k)] +=
                   lGradQi[idx_lGradQi(i, j, l, dim, k)] *
                   kernels::FRCoeff[order][l];
             }
