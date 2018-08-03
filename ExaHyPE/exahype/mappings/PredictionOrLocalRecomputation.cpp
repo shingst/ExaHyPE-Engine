@@ -587,7 +587,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
       _stateCopy.isLastIterationOfBatchOrNoBatch() &&
       exahype::solvers::Solver::FuseADERDGPhases
   ) {
-   vertex.sendToNeighbour(toRank,true,x,h,level); 
+   vertex.sendToNeighbour(toRank,true,x,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
