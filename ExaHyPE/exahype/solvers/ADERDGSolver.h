@@ -1224,6 +1224,7 @@ public:
    *                             Can be overwritten/reused as it is updated anyway after
    *                             the next predictor computation.
    * \param[in]    stateIn       boundary-extraplolated (space-time) predictor
+   * \param[in]    luh           the solution values in the patch, for read acces
    * \param[in]    cellCentre    cell centre.
    * \param[in]    cellSize      cell size.
    * \param[in]    t             The time.
@@ -1238,6 +1239,7 @@ public:
   virtual void boundaryConditions(double* const update,
                                   double* const fluxIn,
                                   const double* const stateIn,
+                                  const double* const luh,
                                   const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
                                   const tarch::la::Vector<DIMENSIONS,double>& cellSize,
                                   const double t,const double dt,

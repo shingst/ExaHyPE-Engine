@@ -365,7 +365,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 
 
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
 {%- endif %}

@@ -3144,7 +3144,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
       (faceIndex * dataPerFace);
   double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
       (faceIndex * dofPerFace);
-
+  const double* luh = DataHeap::getInstance().getData(p.getSolution()).data();
   double* update = DataHeap::getInstance().getData(p.getUpdate()).data();
 
   const int orientation = faceIndex % 2;
@@ -3161,8 +3161,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
   boundaryConditions(
-      update,
+      update, // also refered to as dluh
       FIn,QIn,
+      luh,
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
       p.getCorrectorTimeStamp(),
