@@ -56,10 +56,10 @@ pipeline {
 	    cleanWs()
 	}
 	success {
-	    updateGitlabCommitStatus(name: 'jenkins', state: 'success')
+	    updateGitlabCommitStatus(name: 'master', state: 'success')
 	}
 	failure {
-	    updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
+	    updateGitlabCommitStatus(name: 'master', state: 'failed')
 	}
     }
     options {
