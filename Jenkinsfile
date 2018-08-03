@@ -3,9 +3,9 @@ import jenkins.model.Jenkins
 
 pipeline {
     agent { label 'Linux-Cluster' }
-    // triggers {
-    // 	cron('H H * * *')
-    // }
+    triggers {
+     	cron('H H * * *')
+    }
     stages {
 	stage ('Checkout') {
 	    steps {
