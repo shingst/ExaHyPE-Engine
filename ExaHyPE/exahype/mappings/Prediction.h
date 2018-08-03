@@ -179,6 +179,9 @@ private:
   #endif
 
   /**
+   * Signal the solvers that we start a new time step when
+   * running the nonfused time stepping variant.
+   *
    * Turns ITAC on if required
    * Turn the broadcast off at the end of the first iteration.
    */
