@@ -23,8 +23,8 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSo
   public:
     static constexpr int NumberOfVariables    = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
     static constexpr int Order                = {{project}}::{{ADERDGAbstractSolver}}::Order;
-    static constexpr int NumberOfObservables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfObservables;
     static constexpr int GhostLayerWidth      = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
+    static constexpr int NumberOfObservables  = {{numberOfObservables}};
       
     {{abstractSolver}}(
         const std::string identifier,
