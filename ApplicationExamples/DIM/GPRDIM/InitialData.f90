@@ -39,6 +39,10 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 			!	up(15)=200.0
 			!	up(16)=100.0
 			!end if
+			if(abs(xGP(1))<0.49794239582487282 .and. abs(xGP(2))<0.09958848025146097) then
+				up(15)=200.0
+				up(16)=100.0
+			end if
 			
 			up(5:13)= GPRsigma2A(LEsigma,0.0,up(15),up(16),up(1),1.e-8) ! Assign Aij from sigma and theta
 			up(2)	= -2.0*ICA*exp(-0.5*(xGP(1)-ICsig-c0*t)**2/ICxd**2)     	! Assign the velocity
@@ -49,7 +53,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 			
 			r = abs(xGP(2))
 			DIsize=0.01 !(ymax-ymin)/JMAX*1.0/(MaxRefFactor**MAXREFLEVEL)/2.0
-			!up(14)=SmoothInterface(-0.5+r,DIsize,0.0,1.0)
+			up(14)=SmoothInterface(-0.5+r,DIsize,0.0,1.0)
 			
 			USEFrictionLaw=.FALSE.  ! Do not use friction law
 			up(24)=1.0            ! Set the friction value mu to be constant
@@ -72,7 +76,7 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	INTEGER, INTENT(OUT)              :: limiter_value        !
 	REAL, INTENT(IN)					:: observablesMin(numberOfObservables), observablesMax(numberOfObservables)
 	LOGICAL :: dmpresult
-	real	:: rr,ldx	
+	real	:: rr,ldx(3)	
 
    if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
 		dmpresult=.FALSE.

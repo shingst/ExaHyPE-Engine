@@ -26,8 +26,8 @@ exahype-project GPRDIM
 
   computational-domain
     dimension const         = 2
-    width                   = 2.0, 1.0
-    offset                  = -1.0, -0.5
+    width                   = 2.0, 1.2
+    offset                  = -1.0, -0.6
     end-time                = 0.25
   end computational-domain
   
@@ -61,8 +61,8 @@ exahype-project GPRDIM
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,A:9,alpha:1,lambda:1,mu:1,Y0:1,xi:1,rhoE:1,dDisp:3,Disp:1,muf:1
     order const                    = 3
-    maximum-mesh-size              = 0.01
-    maximum-mesh-depth             = 0
+    maximum-mesh-size              = 0.05
+    maximum-mesh-depth             = 1
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source

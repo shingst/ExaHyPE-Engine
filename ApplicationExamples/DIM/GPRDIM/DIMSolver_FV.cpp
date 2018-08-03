@@ -24,6 +24,8 @@ void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,c
   if (tarch::la::equals(t,0.0)) {
 	initialdata_(x, &t, Q);
   }
+  
+  dynamicrupture_(x, &t, Q);
   // Place here the code for the dynamic rupture
 }
 
