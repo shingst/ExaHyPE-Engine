@@ -468,7 +468,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
   if (
       _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation &&
-      vertex.hasToCommunicate(fineGridH)
+      vertex.hasToCommunicate(level)
   ) {
     dfor2(myDest)
       dfor2(mySrc)

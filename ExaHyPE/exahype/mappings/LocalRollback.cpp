@@ -181,7 +181,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   if (
       OneSolverRequestedLocalRecomputation &&
-      vertex.hasToCommunicate(h)
+      vertex.hasToCommunicate(level)
   ) {
     dfor2(dest)
       dfor2(src)
