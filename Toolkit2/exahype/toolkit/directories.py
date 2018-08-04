@@ -1,4 +1,4 @@
-from . import BadSpecificationFile
+from helper import BadSpecificationFile
 
 class DirectoryAndPathChecker:
 	def check(self, human_readable, pathInstance, required_subdirs=[], verbose_show_path=True, makedirs=False):
@@ -33,7 +33,7 @@ class DirectoryAndPathChecker:
 		#check("Peano kernel path tarch sources", Path(paths["peanoKernelPath"]).joinpath("tarch/"))
 		check("Peano toolboxes path", Path(peanoToolboxPath), required_subdirs=["multiscalelinkedcell", "sharedmemoryoracles", "mpibalancing"])
 		
-		check("ExaHyPE path", Path(paths["exahypePath"))
+		check("ExaHyPE path", Path(paths["exahypePath"]))
 		check("Output directory", Path(paths["outputDirectory"]), makedirs=True)
 	
 		# TODO (from Toolkit1): Initialize the CodeGeneratorHelper path (static)

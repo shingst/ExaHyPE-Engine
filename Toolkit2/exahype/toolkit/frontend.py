@@ -9,15 +9,14 @@ from os.path import isdir, isfile
 from pathlib import Path
 from collections import OrderedDict
 
-from . import BadSpecificationFile
-
+from helper import BadSpecificationFile
 from directories import DirectoryAndPathChecker
 from solver import SolverClassGenerator
 from plotter import PlotterGenerator
 from kernelcalls import KernelCallsGenerator
 
-class ClassicFrontend():
 
+class ClassicFrontend():
 	def wait_interactive(self, msg):
 		if self.interactive:
 			print("\n\n\n\n")
@@ -28,8 +27,8 @@ class ClassicFrontend():
 	def info(self, msg):
 		if self.verbose:
 			print(msg)
-
-	def main(self):
+			
+	def __init__(self):
 		parser = argparse.ArgumentParser(
 			description="ExaHyPE's new python-based toolkit",
 			epilog="See http://www.exahype.eu and the Guidebook for more help."
@@ -62,7 +61,7 @@ class ClassicFrontend():
 		
 		try:
 			d = DirectoryAndPathChecker(spec, verbose)
-		except BadSpecificationFile e:
+		except BadSpecificationFile as e:
 			print("Some directories did not exist and/or could not be created.")
 			print(e)
 			sys.exit(-4)
@@ -71,7 +70,7 @@ class ClassicFrontend():
 		
 		try:
 			SolverGenerator(spec, verbose)
-		except BadSpecificationFile e:
+		except BadSpecificationFile as e:
 			print("Could not create applications solver classes.")
 			print(e)
 			sys.exit(-6)
@@ -95,7 +94,7 @@ class ClassicFrontend():
 		try:
 			# kernel calls
 			KernelCallsGenerator(spec, verbose)
-		except BadSpecificationFile e:
+		except BadSpecificationFile as e:
 			print("Could not create ExaHyPE's kernel calls")
 			print(e)
 			sys.exit(-10)
@@ -111,3 +110,8 @@ class ClassicFrontend():
 		#setupBuildEnvironment(spec, verbose)
 		#
 		#self.wait_interactive("setup build environment")
+
+
+
+if __name__ == '__main__':
+	ClassicFrontend().run()

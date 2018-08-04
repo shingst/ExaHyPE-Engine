@@ -1,0 +1,3 @@
+
+class BadSpecificationFile(Exception):
+	pass
