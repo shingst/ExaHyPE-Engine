@@ -14,7 +14,7 @@ else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; f
 
 # check that all required modules are there.
 # Could probably postpone that because it is slow to call python so many times.
-for module in jinja2; do
+for module in jinja2 jsonschema; do
 	if ! $PYTHON3 -c "import $module" 2>&1 >/dev/null; then
 		echo "$0: Required python3 module '$module', not available." >&2
 		exit -1
