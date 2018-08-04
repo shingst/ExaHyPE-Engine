@@ -1,1 +1,2 @@
-KernelCallsGenerator = 1
+def KernelCallsGenerator(a,b):
+	pass

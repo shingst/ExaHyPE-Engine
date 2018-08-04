@@ -4,14 +4,23 @@
 This is the exahype.toolkit package and holds the code of the "toolkit2", also called
 "toolkit NG", the successor of the java-based ExaHyPE toolkit which itself is the
 main glue code generator for ExaHyPE supposed to be runned by users.
+
+You can run the frontend on the command line with something like
+
+$ python3 -m exahype.toolkit.frontend
 """
 
-# somehow this runnable-module thing is not working for me.
-# I wanted to have something like "python -m exahype_toolkit" or sos
 
-#from frontend import ClassicFrontend
+# Python does not like me when it comes to packages.
+# Maybe we can get rid of this...
+import sys
+from os.path import join, dirname, basename
+sys.path.append(join(dirname(__file__),"..","toolkit"))
 
-#run = ClassicFrontend().run
-#
-#if __name__ == '__main__':
-#	run()
+from helper import BadSpecificationFile
+from directories import DirectoryAndPathChecker
+from solver import SolverGenerator
+from plotter import PlotterGenerator
+from kernelcalls import KernelCallsGenerator
+
+#__all__ = [ "helper", "directories", "solver", "plotter", "kernelcalls"  ]

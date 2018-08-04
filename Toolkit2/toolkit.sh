@@ -12,7 +12,8 @@ if has python3; then PYTHON3="python3";
 elif python --version | grep -qi "python 3"; then PYTHON3="python"
 else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; fi
 
-# check that all required modules are there
+# check that all required modules are there.
+# Could probably postpone that because it is slow to call python so many times.
 for module in jinja2; do
 	if ! $PYTHON3 -c "import $module" 2>&1 >/dev/null; then
 		echo "$0: Required python3 module '$module', not available." >&2
@@ -20,4 +21,5 @@ for module in jinja2; do
 	fi
 done
 
-exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
+#exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
+PYTHONPATH="$Toolkit2" $PYTHON3 -m exahype.toolkit.frontend $@

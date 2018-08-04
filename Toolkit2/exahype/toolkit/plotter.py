@@ -1,1 +1,3 @@
-PlotterGenerator = 1
+class PlotterGenerator():
+	def __init__(a,b):
+		pass

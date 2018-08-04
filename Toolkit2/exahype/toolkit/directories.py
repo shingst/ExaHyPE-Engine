@@ -1,3 +1,10 @@
+"""
+Roughly a 1:1 translation from the Java DirectoryAndPathChecker. It is something one could offload
+in theory onto the JSON-Schema, but it is not really something which belongs to a schema.
+"""
+
+import os
+from pathlib import Path
 from helper import BadSpecificationFile
 
 class DirectoryAndPathChecker:
@@ -5,13 +12,12 @@ class DirectoryAndPathChecker:
 		valid = pathInstance.is_dir()
 		human_status = "ok" if valid else "not found"
 		if verbose_show_path or not valid:
-			human_readable +=  ": " + pathInstance.resolve()
+			human_readable +=  ": " + str(pathInstance.resolve())
 		if makedirs:
 			if valid:
 				human_status = "does exist (will not be overwritten)"
 			else:
-				
-				os.makedirs(pathInstance) # todo, catch exceptions
+				os.makedirs(str(pathInstance)) # todo, catch exceptions
 				human_status = "created"
 
 		if self.verbose:
@@ -21,20 +27,20 @@ class DirectoryAndPathChecker:
 			raise BadSpecificationFile("%s (relative to directory %s)" % (human_readable, os.getcwd()))
 		
 		for subdir in required_subdirs:
-			check("%s holds %s",  pathInstance.joinpath(subdir), verbose_show_path=False, makedirs=makedirs)
+			self.check("%s holds %s" % (human_readable, subdir),  pathInstance.joinpath(subdir), verbose_show_path=False, makedirs=makedirs)
 
 	def __init__(self, spec, verbose):
 		self.verbose = verbose
 		
 		paths = spec["paths"]
-		peanoToolboxPath = paths["peanoKernelPath"] # sic, from old toolkit
+		peanoToolboxPath = paths["peano_kernel_path"] # sic, from old toolkit
 		
-		check("Peano kernel path", Path(paths["peanoKernelPath"]), required_subdirs=["tarch", "peano"])
+		self.check("Peano kernel path", Path(paths["peano_kernel_path"]), required_subdirs=["tarch", "peano"])
 		#check("Peano kernel path tarch sources", Path(paths["peanoKernelPath"]).joinpath("tarch/"))
-		check("Peano toolboxes path", Path(peanoToolboxPath), required_subdirs=["multiscalelinkedcell", "sharedmemoryoracles", "mpibalancing"])
+		self.check("Peano toolboxes path", Path(peanoToolboxPath), required_subdirs=["multiscalelinkedcell", "sharedmemoryoracles", "mpibalancing"])
 		
-		check("ExaHyPE path", Path(paths["exahypePath"]))
-		check("Output directory", Path(paths["outputDirectory"]), makedirs=True)
+		self.check("ExaHyPE path", Path(paths["exahype_path"]))
+		self.check("Output directory", Path(paths["output_directory"]), makedirs=True)
 	
 		# TODO (from Toolkit1): Initialize the CodeGeneratorHelper path (static)
 		# CodeGeneratorHelper.setPaths(this);
