@@ -1,0 +1,431 @@
+{
+	"$comment": "This is the JSON-Schema for an ExaHyPE specification file 2.0",
+	"$id": "http://dev.exahype.eu/exahype-specfile.schema.json",
+	"type": "object", 
+	"definitions": {}, 
+	"$schema": "http://json-schema.org/draft-07/schema#", 
+	"properties": {
+		"project_name": {
+			"type": "string", 
+			"title": "The name of the application or PDE, will get a C++ namespace", 
+			"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+			"scope": "compile-time",
+			"used-by": "toolkit",
+			"required": true,
+			"examples": [
+				"EulerFlow"
+			]
+		},
+		"paths": {
+			"type": "object", 
+			"required": false,
+			"scope": "compile-time",
+			"used-by": "toolkit",
+			"properties": {
+				"output_directory": {
+					"type": "string", 
+					"title": "The directory name where to put the generated code into (relevant only for compile time)", 
+					"required": false,					
+					"examples": [
+						"GMRHD_cpp",
+						"foo/bar/baz/"
+					]
+				}, 
+				"peano_kernel_path": {
+					"type": "string", 
+					"title": "The directory where the Peano directory is installed in (relevant only for compile time)", 
+					"default": "./Peano", 
+					"required": false,
+					"examples": [
+						"./Peano"
+					]
+				}, 
+				"log_file": {
+					"type": "string", 
+					"title": "The path or name of the ExaHyPE runtime logfile", 
+					"default": "output.log", 
+					"required": false,
+					"examples": [
+						"whatever.log",
+						"/path/to/somewhere.log"
+					]
+				}, 
+				"exahype_path": {
+					"type": "string", 
+					"title": "The path to the ExaHyPE code", 
+					"default": "./ExaHyPE",
+					"required": false,
+					"examples": [
+						"./ExaHyPE",
+						"/your/installation/to/ExaHyPE/"
+					]
+				}
+			}
+		},
+		"architecture": {
+			"type": "string", 
+			"title": "Computational target architecture", 
+			"default": "noarch", 
+			"required": false,
+			"scope": "compile-time",
+			"used-by": "toolkit",
+			"enum": [
+				"noarch",
+				"list-available-architectures-here"
+			]
+		}, 
+		"computational_domain": {
+			"type": "object", 
+			"scope": "run-time",
+			"properties": {
+				"dimension": {
+					"type": "integer", 
+					"title": "Spatial dimensions of the code and problem", 
+					"required": true,
+					"enum": [ 2, 3 ]
+				}, 
+				"width": {
+					"type": "array",
+					"required": true,
+					"items": {
+						"type": "number", 
+						"title": "The extends of the computational domain in each spatial direction",
+						"minimum": 0,
+						"exclusiveMinimum": true
+					}
+				}, 
+				"offset": {
+					"type": "array",
+					"required": false,
+					"default": [0.0, 0.0, 0.0],
+					"items": {
+						"type": "number", 
+						"title": "The offset of the origin for the computational domain"
+					}
+				}, 
+				"end_time": {
+					"type": "number", 
+					"title": "The end time of the simulation"
+				}
+			}
+		}, 
+		"shared_memory": {
+			"type": "object", 
+			"required": false,
+			"used-by": "toolkit",
+			"scope": "run-time",
+			"properties": {
+				"cores": {
+					"type": "integer", 
+					"title": "Number of shared-memory cores per node", 
+					"default": 1, 
+					"minimum": 1,
+					"exclusiveMinimum": false,
+					"required": false
+				}, 
+				"identifier": {
+					"type": "string", 
+					"title": "An identifier for the algorithm to use", 
+					"default": "dummy", 
+					"required": false
+				}, 
+				"properties_file": {
+					"type": "string", 
+					"title": "Path to a properties file", 
+					"default": "sharedmemory.properties", 
+					"required": false
+				}
+			}
+		}, 
+		"distributed_memory": {
+			"type": "object", 
+			"required": false,
+			"used-by": "toolkit",
+			"scope": "run-time",
+			"properties": {
+				"identifier": {
+					"type": "string", 
+					"title": "An identifier for the algorithm",
+					"default": "static_load_balancing", 
+					"required": false
+				}, 
+				"configure": {
+					"type": "array", 
+					"required": false,
+					"default": ["hotspot","fair"],
+					"items": {
+						"type": "string", 
+						"title": "Configuration flags for the algorithm", 
+						"enum": ["hotspot","fair","whatever","TODO","extend","here","if","neccessary"]
+					}
+				}, 
+				"timeout": {
+					"type": "number", 
+					"title": "Timeout for MPI packages in seconds before the simulation is killed", 
+					"default": 60,
+					"required": false
+				}, 
+				"buffer_size": {
+					"type": "integer", 
+					"title": "Buffer size in bytes per MPI package", 
+					"default": 64,
+					"required": false
+				}
+			}
+		}, 
+		"optimisation": {
+			"type": "object",
+			"required": false,
+			"scope": "run-time",
+			"used-by": "toolkit",
+			"properties": {
+				"spawn_predictor_as_background_thread": {
+					"type": "boolean", 
+					"title": "Wether to spawn the predictor as a background thread, or so.",
+					"default": false
+				}, 
+				"timestep_batch_factor": {
+					"type": "number", 
+					"title": "Some factor, I don't know what it is good for", 
+					"default": 1
+				}, 
+				"spawn_double_compression": {
+					"type": "boolean", 
+					"title": "Whether to use double compression to save data in MPI communication", 
+					"default": false
+				}, 
+				"spawn_double_compression_as_background_thread": {
+					"type": "boolean", 
+					"title": "Wether to do double compression in the background", 
+					"default": false
+				}, 
+				"double_compression": {
+					"type": "integer",
+					"title": "Erhm... yeah, did I say double compression?", 
+					"default": 0
+				}, 
+				"disable_amr_if_grid_has_been_stationary_in_previous_iteration": {
+					"type": "boolean",
+					"default": false
+				}, 
+				"fuse_algorithmic_steps": {
+					"type": "boolean", 
+					"default": false
+				}, 
+				"fuse_algorithmic_steps_factor": {
+					"type": "number", 
+					"title": "The Fuse_algorithmic_steps_factor Schema ",
+					"default": 0.9912345
+				}, 
+				"batch_timesteps": {
+					"type": "integer", 
+					"title": "The Batch_timesteps Schema "
+				}, 
+				"skip_reduction_in_batched_time_steps": {
+					"type": "boolean", 
+					"default": false
+				}, 
+				"skip_reduction": {
+					"type": "boolean", 
+					"default": false
+				}
+			}
+		}, 
+		"solvers": {
+			"type": "array",
+			"$comment": "Each simulation has an ordered list of solvers assigned",
+			"items": {
+				"type": "object", 
+				"properties": {
+					"name": {
+						"type": "string", 
+						"title": "The solver name", 
+						"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+						"required": true,
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"examples": [
+							"GRMHDSolver_DG",
+							"HydroSolver",
+							"TheoryOfEverythingSolver_FV"
+						]
+					}, 
+					"type": {
+						"type": "string", 
+						"title": "The solver type", 
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"enum": ["ADER-DG","Finite-Volumes","Limiting-ADER-DG"]
+					}, 
+					"variables": {
+						"required": true,
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+						"anyOf": [
+							{
+								"type": "integer",
+								"minimum": 1,
+								"exclusiveMinimum": false
+							},
+							{
+								"type": "array",
+								"$comment": "Named variables",
+								"items": {
+									"type": "object",
+									"properties": {
+										"name": {
+											"type": "string", 
+											"title": "Name of variable",
+											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+										}, 
+										"multiplicity": {
+											"type": "integer", 
+											"title": "Multiplicity of variables", 
+											"default": 1
+										}
+									}
+								}
+							}
+						]
+					}, 
+					"maximum_mesh_depth": {
+						"type": "number", 
+						"title": "Maximum number of levels of AMR grid", 
+						"required": true,
+						"scope": "run-time"
+					}, 
+					"maximum_mesh_size": {
+						"type": "number", 
+						"title": "Minimum size of finest cell in the overall grid",
+						"required": true,
+						"scope": "run-time"
+					}, 
+					"time_stepping": {
+						"type": "string", 
+						"default": "global",
+						"enum": ["global","local","whatever"],
+						"scope": "run-time"
+					}, 
+					"order": {
+						"type": "integer", 
+						"title": "Convergence order of the scheme",
+						"scope": "compile-time"
+					}, 
+					"kernel": {
+						"type": "object",
+						"scope": "compile-time",
+						"properties": {
+							"optimisation": {
+								"type": "string", 
+								"title": "Optimization flags", 
+								"$comment": "Should be an enum"
+							}, 
+							"terms": {
+								"type": "array", 
+								"title": "PDE terms to generate code for",
+								"items": {
+									"type": "string", 
+									"enum": ["flux","ncp","source","please-append-here","what","more"]
+								}
+							}, 
+							"language": {
+								"type": "string", 
+								"title": "The walking dead",
+								"enum": ["C","Fortran"]
+							}, 
+							"type": {
+								"type": "string", 
+								"title": "Type of solver", 
+								"enum": ["nonlinear","linear"]
+							}
+						}
+					}, 
+					"plotters": {
+						"$comment": "Each solver has an ordered list of plotters assigned. The order and name of plotters is a compile time constant",
+						"type": "array", 
+						"items": {
+							"type": "object", 
+							"properties": {
+								"name": {
+									"type": "string", 
+									"title": "Name of the plotter, will be generated as filename and C++ type name (compile-time constant)",
+									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+									"required": true,
+									"scope": "compile-time",
+									"used-by": "toolkit"
+								},
+								"type": {
+									"title": "Which plotter device to adopt", 
+									"scope": "run-time",
+									"required": true,
+									"anyOf": [
+										{
+											"type": "string",
+											"$comment": "Something like vtk::Cartesian::vertices::ascii"
+										},
+										{
+											"type": "array",
+											"$comment": "All keywords as list",
+											"items": { "type": "string" }
+										}
+									],
+									"examples": [
+										"vtk::Cartesian::vertices::ascii",
+										["vtk","Cartesian","vertices","ascii"]
+									]
+								},
+								"output": {
+									"type": "string", 
+									"title": "(Base) filename where to output results to", 
+									"scope": "run-time",
+									"required": true,
+									"examples": [
+										"./vtk-output/conserved",
+										"data/someFields"
+									]
+								}, 
+								"variables": {
+									"type": "integer", 
+									"title": "How much variables the plotter writes (Runtime quantitiy)",
+									"minimum": 0,
+									"exclusiveMinimum": true,
+									"scope": "run-time",
+									"required": true
+									
+								}, 
+								"repeat": {
+									"type": "number", 
+									"title": "Request periodic plotting repeated every t, in coordinate time",
+									"required": true,
+									"minimum": 0,
+									"exclusiveMinimum": true,
+									"examples": [
+										0.0010513,
+										100000.0
+									]
+								}, 
+								"time": {
+									"type": "number", 
+									"title": "Time at which periodic plotting should start, in coordinate time", 
+									"default": 0
+								},
+								"parameters": {
+									"type": "object",
+									"title": "Free runtime parameters for postprocessing-codes",
+									"scope": "run-time"
+								}
+
+							}
+						}
+					}, 
+					"parameters": {
+						"type": "object",
+						"title": "Free runtime parameters, however compile-time in terms of parameters support to be compiled in by toolkit",
+						"scope": "compile-time"
+					}
+				}
+			}
+		}
+	}
+}
