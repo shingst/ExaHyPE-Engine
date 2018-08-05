@@ -16,8 +16,12 @@ else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; f
 # check that all required modules are there.
 # Could probably postpone that because it is slow to call python so many times.
 
-# You need to modify this url on SuperMUC
-GITHUB=https://github.com
+
+GITHUB=git://github.com
+
+# Uncomment if you use port forwarding a la
+# ssh -R 19489:github.com:9418 <Your Login>@<SuperMUC Login Node>
+#GITHUB=git://localhost:19489
 
 modules=(\
       attr\
@@ -30,7 +34,7 @@ modules=(\
 repos=(\
       $GITHUB/python-attrs/attrs.git\
       $GITHUB/tobgu/pyrsistent.git\
-      $GITHUB/pallets/markupsafe.git
+      $GITHUB/pallets/markupsafe.git\
       $GITHUB/pallets/jinja.git\
       $GITHUB/Julian/jsonschema.git\
       )
