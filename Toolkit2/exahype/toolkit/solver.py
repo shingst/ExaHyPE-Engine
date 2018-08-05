@@ -14,6 +14,9 @@ def parseVariables(solver,field):
 		return [{"name" : "Q", "multiplicity" : 0}]
 
 def numberOfVariables(variables):
+	"""
+	Sum up the multiplicities.
+	"""
 	number = 0;
 	for variable in variables:
 		number += variable["multiplicity"]
@@ -44,21 +47,20 @@ class SolverGenerator():
 			
 			context["dimension"]=domain["dimension"]
 			
-			context["solver" ]          = solver["name"]
-			context["abstractSolver" ]  ="Abstract"+solver["name"]
-			context["linearOrNonlinear"]= "Linear"  if ( kernels["type"]=="linear" ) else "Nonlinear"
-			context["language"]         = "fortran" if ( kernels["language"]=="Fortran" ) else "c"
+			context["solver" ]           = solver["name"]
+			context["abstractSolver" ]   = "Abstract"+solver["name"]
+			context["linearOrNonlinear"] = "Linear"  if ( kernels["type"]=="linear" ) else "Nonlinear"
+			context["language"]          = "fortran" if ( kernels["language"]=="Fortran" ) else "c"
 			
-			print(numberOfVariables(parseVariables(solver,"variables")))
-			print(numberOfVariables(parseVariables(solver,"material_parameters")))
-			print(numberOfVariables(parseVariables(solver,"global_observables")))
-			
-#			context["numberOfVariables"   , numberOfVariables);
-#			context["numberOfParameters"  , numberOfParameters);
-#			context["numberOfObservables" , numberOfObservables);
-#			context["numberOfPointSources", numberOfPointSources);
+			context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
+			context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
+			context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
+			context["numberOfDMPObservables"]     = solver.get("dmp_observables",0);
+			context["numberOfPointSources"]       = solver.get("point_sources",0);
 
-			context["order"]            = solver["order"]; # solver specific
+			context["order"]     = solver.get("order",0);
+			context["patchSize"] = solver.get("patchSize",0);
+			print(context)
 
 #//int
 

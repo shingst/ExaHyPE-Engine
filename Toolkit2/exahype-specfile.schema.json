@@ -375,12 +375,6 @@
 						"title": "Minimum size of finest cell in the overall grid",
 						"scope": "run-time"
 					}, 
-					"maximum_mesh_depth": {
-						"type": "number", 
-						"title": "Maximum number of levels of AMR grid", 
-						"scope": "run-time",
-						"default": 0
-					}, 
 					"time_stepping": {
 						"type": "string", 
 						"default": "global",
