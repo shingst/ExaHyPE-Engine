@@ -7,6 +7,7 @@
 Toolkit2="$(dirname $0)"
 has() { type $@ &>/dev/null; } # a way to check if command is available
 
+
 # find suitable python on the path
 if has python3; then PYTHON3="python3";
 elif python --version | grep -qi "python 3"; then PYTHON3="python"
@@ -14,6 +15,10 @@ else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; f
 
 # check that all required modules are there.
 # Could probably postpone that because it is slow to call python so many times.
+
+# You need to modify this url on SuperMUC
+GITHUB=https://github.com
+
 modules=(\
       attr\
       pyrsistent\
@@ -21,19 +26,18 @@ modules=(\
       jinja2\
       jsonschema\
       )
-urls=(\
-      https://github.com/python-attrs/attrs/archive/master.zip\
-      https://github.com/tobgu/pyrsistent/archive/master.zip\
-      https://github.com/pallets/markupsafe/archive/master.zip\
-      https://github.com/pallets/jinja/archive/master.zip\
-      https://github.com/Julian/jsonschema/archive/master.zip\
+
+repos=(\
+      $GITHUB/python-attrs/attrs.git\
+      $GITHUB/tobgu/pyrsistent.git\
+      $GITHUB/pallets/markupsafe.git
+      $GITHUB/pallets/jinja.git\
+      $GITHUB/Julian/jsonschema.git\
       )
-dependencies=$Toolkit2/dependencies
 
 errors=false
 for i in ${!modules[*]}; do
         module=${modules[$i]}
-        url=${urls[$i]}
 	if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $module" 2>&1 >/dev/null; then
                 echo "$0: Required python3 module '$module', not available." >&2
                 errors=true
@@ -52,26 +56,28 @@ else
 	read -p "$0: Do you want to install dependencies in local subfolder (y/n)?" yn
 	case $yn in
 		[Yy]* ) 
-			if [ ! -d $dependencies ]; then
+                        dependencies=$Toolkit2/dependencies
+			
+                        if [ ! -d $dependencies ]; then
 				mkdir $dependencies
 			else
-				rm -r $dependencies/*
+				rm -rf $dependencies/*
                 	fi
 			
 			for i in ${!modules[*]}; do
 			        module=${modules[$i]}
-			        url=${urls[$i]}
+			        repo=${repos[$i]}
                 	        
                                 # symlink dependencies into top level dir 
-                	        ( cd $dependencies && wget $url && unzip master.zip && rm master.zip ) # returns to work dir afterwards
+                	        ( cd $dependencies && git clone $repo ) # returns to work dir afterwards
 				
-                	        if [ "$module" == "attrs" ]; then
-                	        	(cd $Toolkit2 && ln -sf dependencies/attrs-master/src/attr ./)
-                	        elif [ -d $dependencies/$module-master/$module ]; then
-                	        	(cd $Toolkit2 && ln -sf dependencies/$module-master/$module ./)
-                	        elif [ -d $dependencies/$module-master ]; then
-                	        	(cd $Toolkit2 && ln -sf dependencies/$module-master ./ && mv $module-master $module)
-                	        fi
+                	        if [ "$module" == "attr" ]; then
+                	        	(cd $Toolkit2 && ln -sf dependencies/attrs ./ && mv attrs attr)
+                	        elif [ "$module" == "jinja2" ]; then
+                	        	(cd $Toolkit2 && ln -sf dependencies/jinja/jinja2 ./)
+                	        else
+                	        	(cd $Toolkit2 && ln -sf dependencies/$module/$module ./)
+				fi
                 	        
                                 # remove last two lines of jsonschema __init__.py file as module might not be registered when installed locally 
                                 # (head cannot use same file for input and output)
