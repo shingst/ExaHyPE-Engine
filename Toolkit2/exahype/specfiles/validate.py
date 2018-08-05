@@ -12,11 +12,14 @@ It will raise an Exception if the file is not valid.
 """
 
 # python-included ("batteries")
-import json, pathlib
+import sys, json, pathlib
 
 # https://pypi.org/project/jsonschema/
 # Current stable version is 2.6, version 3.0 brings Draft6Validator,
 # but that's still alpha.
+
+sys.path.append("../../")     # in case of local installation
+
 from jsonschema import Draft4Validator, validators, validate
 
 exahype_schema_filename = "../../exahype-specfile.schema.json"

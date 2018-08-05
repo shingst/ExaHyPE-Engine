@@ -14,12 +14,72 @@ else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; f
 
 # check that all required modules are there.
 # Could probably postpone that because it is slow to call python so many times.
-for module in jinja2 jsonschema; do
-	if ! $PYTHON3 -c "import $module" 2>&1 >/dev/null; then
-		echo "$0: Required python3 module '$module', not available." >&2
-		exit -1
+modules=(\
+      attr\
+      pyrsistent\
+      jinja2\
+      jsonschema\
+      )
+urls=(\
+      https://github.com/python-attrs/attrs/archive/master.zip
+      https://github.com/tobgu/pyrsistent/archive/master.zip\
+      https://github.com/pallets/jinja/archive/master.zip\
+      https://github.com/Julian/jsonschema/archive/master.zip\
+      )
+dependencies=$Toolkit2/dependencies
+
+errors=false
+for i in ${!modules[*]}; do
+        module=${modules[$i]}
+        url=${urls[$i]}
+	if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $module" 2>&1 >/dev/null; then
+                echo "$0: Required python3 module '$module', not available." >&2
+                errors=true
 	fi
 done
 
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
-PYTHONPATH="$Toolkit2" $PYTHON3 -m exahype.toolkit.frontend $@
+if [ "$errors" = "false" ]; then
+	PYTHONPATH="$Toolkit2" $PYTHON3 -m exahype.toolkit.frontend $@
+else
+	echo "$0: There are missing dependencies." >&2
+        echo "$0:"
+	echo "$0: Either run (as root): pip3 install attr pyrsistent jinja2 jsonschema" >&2
+        echo "$0:"
+	echo "$0: Or install dependencies in local subfolder." >&2
+	read -p "$0: Do you want to install dependencies in local subfolder (y/n)?" yn
+	case $yn in
+		[Yy]* ) 
+			if [ ! -d $dependencies ]; then
+				mkdir $dependencies
+			else
+				rm -r $dependencies/*
+                	fi
+			
+			for i in ${!modules[*]}; do
+			        module=${modules[$i]}
+			        url=${urls[$i]}
+                	        
+                                # symlink dependencies into top level dir 
+                	        ( cd $dependencies && wget $url && unzip master.zip && rm master.zip ) # returns to work dir afterwards
+				
+                	        if [ "$module" == "attrs" ]; then
+                	        	(cd $Toolkit2 && ln -sf dependencies/attrs-master/src/attr ./)
+                	        elif [ -d $dependencies/$module-master/$module ]; then
+                	        	(cd $Toolkit2 && ln -sf dependencies/$module-master/$module ./)
+                	        elif [ -d $dependencies/$module-master ]; then
+                	        	(cd $Toolkit2 && ln -sf dependencies/$module-master ./ && mv $module-master $module)
+                	        fi
+                	        
+                                # remove last two lines of jsonschema __init__.py file as module might not be registered when installed locally 
+                                # (head cannot use same file for input and output)
+                                if [ "$module" == "jsonschema" ]; then
+                	        	head -n -2 $Toolkit2/jsonschema/__init__.py > $Toolkit2/jsonschema/__init__.py.tmp  
+                                        mv $Toolkit2/jsonschema/__init__.py.tmp $Toolkit2/jsonschema/__init__.py
+                	        fi
+			done
+                        ;;
+		[Nn]* ) errors=true;;
+		* ) errors=true; echo "Answer considered as 'n'.";;
+	esac
+fi
