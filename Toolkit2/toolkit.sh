@@ -72,7 +72,7 @@ else
                 	        ( cd $dependencies && git clone $repo ) # returns to work dir afterwards
 				
                 	        if [ "$module" == "attr" ]; then
-                	        	(cd $Toolkit2 && ln -sf dependencies/attrs ./ && mv attrs attr)
+                	        	(cd $Toolkit2 && ln -sf dependencies/attrs/src/attr ./)
                 	        elif [ "$module" == "jinja2" ]; then
                 	        	(cd $Toolkit2 && ln -sf dependencies/jinja/jinja2 ./)
                 	        else
