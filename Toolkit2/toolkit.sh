@@ -17,12 +17,14 @@ else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; f
 modules=(\
       attr\
       pyrsistent\
+      markupsafe\
       jinja2\
       jsonschema\
       )
 urls=(\
-      https://github.com/python-attrs/attrs/archive/master.zip
+      https://github.com/python-attrs/attrs/archive/master.zip\
       https://github.com/tobgu/pyrsistent/archive/master.zip\
+      https://github.com/pallets/markupsafe/archive/master.zip\
       https://github.com/pallets/jinja/archive/master.zip\
       https://github.com/Julian/jsonschema/archive/master.zip\
       )
