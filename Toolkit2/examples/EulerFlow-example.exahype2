@@ -1,7 +1,7 @@
 {
 	"project_name": "GRMHD",
 	"paths": {
-		"output_directory": "GMRHD_cpp",
+		"output_directory": "ApplicationExamples/GRMHD/GRMHD_cpp",
 		"peano_kernel_path": "./Peano",
 		"log_file": "whatever.log",
 		"exahype_path": "./ExaHyPE"

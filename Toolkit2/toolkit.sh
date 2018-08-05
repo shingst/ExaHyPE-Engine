@@ -39,22 +39,25 @@ repos=(\
       $GITHUB/Julian/jsonschema.git\
       )
 
+
 errors=false
 for i in ${!modules[*]}; do
         module=${modules[$i]}
-	if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $module" 2>&1 >/dev/null; then
+       if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $module" 2>&1 >/dev/null; then
                 echo "$0: Required python3 module '$module', not available." >&2
                 errors=true
-	fi
+       fi
 done
 
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
 if [ "$errors" = "false" ]; then
-	PYTHONPATH="$Toolkit2" $PYTHON3 -m exahype.toolkit.frontend $@
+	PYTHONPATH="$Toolkit2" $PYTHON3 -m exahype.toolkit.frontend $@   # RUN PROGRAM
 else
 	echo "$0: There are missing dependencies." >&2
         echo "$0:"
-	echo "$0: Either run (as root): pip3 install attr pyrsistent jinja2 jsonschema" >&2
+	echo "$0: Either run as root: " >&2
+        echo "$0:"
+        echo "$0: pip3 install ${modules[@]}" >&2
         echo "$0:"
 	echo "$0: Or install dependencies in local subfolder." >&2
 	read -p "$0: Do you want to install dependencies in local subfolder (y/n)?" yn
