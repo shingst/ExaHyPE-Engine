@@ -72,10 +72,10 @@
 				"list-available-architectures-here"
 			]
 		}, 
-		"computational_domain": {
+		"computationail_domain": {
 			"type": "object", 
 			"scope": "run-time",
-			"required:": [ "dimension", "width", "end_time" ],
+			"required:": [ "dimension", "width" ],
 			"properties": {
 				"dimension": {
 					"type": "integer", 
@@ -99,10 +99,16 @@
 						"title": "The offset of the origin for the computational domain"
 					}
 				}, 
-				"end_time": {
-					"type": "number", 
-					"title": "The end time of the simulation"
-				}
+				"oneOf": [{
+					"end_time" : {
+						"type": "number", 
+						"title": "The end time of the simulation"
+					},
+					"time_steps" : {
+						"type": "integer", 
+						"title": "The number of steps the simulation is run"
+					}
+					}]
 			}
 		}, 
 		"shared_memory": {
@@ -222,9 +228,7 @@
 			"items": {
 				"type": "object", 
 				"required": [
-					"name", "type", "variables",
-					"maximum_mesh_depth", "maximum_mesh_size",
-					"order"
+					"name", "type", "variables","maximum_mesh_size","order"
 				],
 				"properties": {
 					"name": {
@@ -281,6 +285,86 @@
 								"items": {
 									"type": "string",
 									"title": "Name of variable",
+									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+								}
+							}
+						]
+					},
+					"material_parameters": {
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+						"anyOf": [
+							{
+								"type": "integer",
+								"minimum": 1,
+								"exclusiveMinimum": false
+							},
+							{
+								"type": "array",
+								"$comment": "Named variables with lengths (like vectors)",
+								"items": {
+									"type": "object",
+									"properties": {
+										"name": {
+											"type": "string", 
+											"title": "Name of material parameter",
+											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+										}, 
+										"multiplicity": {
+											"type": "integer", 
+											"title": "Multiplicity of material parameter", 
+											"default": 1
+										}
+									}
+								}
+							},
+							{
+								"type": "array",
+								"$comment": "Named scalar material parameters",
+								"items": {
+									"type": "string",
+									"title": "Name of material parameter",
+									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+								}
+							}
+						]
+					}, 
+					"global_observables": {
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "global observables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+						"anyOf": [
+							{
+								"type": "integer",
+								"minimum": 1,
+								"exclusiveMinimum": false
+							},
+							{
+								"type": "array",
+								"$comment": "Named variables with lengths (like vectors)",
+								"items": {
+									"type": "object",
+									"properties": {
+										"name": {
+											"type": "string", 
+											"title": "Name of global observable",
+											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+										}, 
+										"multiplicity": {
+											"type": "integer", 
+											"title": "Multiplicity of global observable", 
+											"default": 1
+										}
+									}
+								}
+							},
+							{
+								"type": "array",
+								"$comment": "Named scalar global observables",
+								"items": {
+									"type": "string",
+									"title": "Name of global observable",
 									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
 								}
 							}

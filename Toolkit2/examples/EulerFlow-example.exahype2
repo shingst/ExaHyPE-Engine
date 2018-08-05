@@ -44,6 +44,7 @@
 	"solvers": [
 		{
 			"name": "GRMHDSolver_DG",
+			"type": "ADER-DG",
 			"variables": [
 				{ "name": "rho",         "multiplicity": 1 },
 				{ "name": "vel",         "multiplicity": 3 },
@@ -56,11 +57,16 @@
 				{ "name": "coordinates", "multiplicity": 3 },
 				{ "name": "check",       "multiplicity": 1 }
 			],
-			"maximum_mesh_depth": 0,
-			"maximum_mesh_size": 5,
-			"time_stepping": "global",
-			"type": "ADER-DG",
+			"material_parameters": [
+				{ "name": "test",         "multiplicity": 3 }
+			],
+			"global_observables": [
+				{ "name": "energy",         "multiplicity": 1 }
+			],
 			"order": 3,
+			"maximum_mesh_size": 5,
+			"maximum_mesh_depth": 0,
+			"time_stepping": "global",
 			"kernel": {
 				"optimisation": "generic",
 				"terms": [

@@ -92,7 +92,7 @@ class ClassicFrontend():
 
 		try:
 			spec = self.load(args.specfile)
-		except e:
+		except Exception as e:
 			print("Could not properly read specfile")
 			print(e)
 			sys.exit(-3)
