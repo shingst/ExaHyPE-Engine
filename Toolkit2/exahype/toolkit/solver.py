@@ -1,5 +1,24 @@
 import jinja2
 
+def parseVariables(solver,field):
+	"""
+	Parse the 'variables' parameter and similarly
+	structured parameters ('material_parameters','global_observables')
+	"""
+	if field in solver:
+		if type(solver[field]) is int:
+			return [{"name" : "Q", "multiplicity" : solver[field]}]
+		else:
+			return solver[field]
+	else:
+		return [{"name" : "Q", "multiplicity" : 0}]
+
+def numberOfVariables(variables):
+	number = 0;
+	for variable in variables:
+		number += variable["multiplicity"]
+	return number
+
 class SolverGenerator():
 	def generate_plotter(self, solver_num, solver):
 		plotters = solver["plotters"]
@@ -17,19 +36,29 @@ class SolverGenerator():
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))
 			
 			solverType = solver["type"]
-			kernel     = solver["kernel"]
-			print(solver["kernel"])
+			kernels    = solver["kernel"]
+			#print(solver["kernel"])
 			
 			context = { }
-			context["project"]=spec["project_name"];
+			context["project"]=spec["project_name"]
 			
-			context["dimension"]=domain["dimension"];
+			context["dimension"]=domain["dimension"]
 			
-			context["solver" ]          =solver["name"];
-			context["abstractSolver" ]  ="Abstract"+solver["name"];
-			#context["linearOrNonlinear"]= , isLinear? "Linear" : "Nonlinear");
-			#context["language"]         = isFortran? "fortran" : "c");
-			#context["order"]            = solver["order"]); # solver specific
+			context["solver" ]          = solver["name"]
+			context["abstractSolver" ]  ="Abstract"+solver["name"]
+			context["linearOrNonlinear"]= "Linear"  if ( kernels["type"]=="linear" ) else "Nonlinear"
+			context["language"]         = "fortran" if ( kernels["language"]=="Fortran" ) else "c"
+			
+			print(numberOfVariables(parseVariables(solver,"variables")))
+			print(numberOfVariables(parseVariables(solver,"material_parameters")))
+			print(numberOfVariables(parseVariables(solver,"global_observables")))
+			
+#			context["numberOfVariables"   , numberOfVariables);
+#			context["numberOfParameters"  , numberOfParameters);
+#			context["numberOfObservables" , numberOfObservables);
+#			context["numberOfPointSources", numberOfPointSources);
+
+			context["order"]            = solver["order"]; # solver specific
 
 #//int
 

@@ -108,7 +108,7 @@
 						"type": "integer", 
 						"title": "The number of steps the simulation is run"
 					}
-					}]
+				}]
 			}
 		}, 
 		"shared_memory": {
@@ -370,15 +370,16 @@
 							}
 						]
 					}, 
-					"maximum_mesh_depth": {
-						"type": "number", 
-						"title": "Maximum number of levels of AMR grid", 
-						"scope": "run-time"
-					}, 
 					"maximum_mesh_size": {
 						"type": "number", 
 						"title": "Minimum size of finest cell in the overall grid",
 						"scope": "run-time"
+					}, 
+					"maximum_mesh_depth": {
+						"type": "number", 
+						"title": "Maximum number of levels of AMR grid", 
+						"scope": "run-time",
+						"default": 0
 					}, 
 					"time_stepping": {
 						"type": "string", 
@@ -386,11 +387,18 @@
 						"enum": ["global","local","whatever"],
 						"scope": "run-time"
 					}, 
-					"order": {
-						"type": "integer", 
-						"title": "Convergence order of the scheme",
-						"scope": "compile-time"
-					}, 
+					"oneOf" : [{
+						"order": {
+							"type": "integer", 
+							"title": "Approximation order of the scheme",
+							"scope": "compile-time"
+						}, 
+						"patchSize": {
+							"type": "integer", 
+							"title": "Number of subcells per coordinate direction (no ghost ",
+							"scope": "compile-time"
+						}
+					}],
 					"kernel": {
 						"type": "object",
 						"scope": "compile-time",
