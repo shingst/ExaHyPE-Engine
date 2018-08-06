@@ -8,6 +8,43 @@
 		"computational_domain",
 		"solvers"
 	],
+	"variable" : {
+		"oneOf": [
+			{
+				"type": "integer",
+				"minimum": 1,
+				"exclusiveMinimum": false
+			},
+			{
+				"type": "array",
+				"$comment": "Named variables with lengths (like vectors)",
+				"items": {
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string", 
+							"title": "Name of variable",
+							"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+						}, 
+						"multiplicity": {
+							"type": "integer", 
+							"title": "Multiplicity of variables", 
+							"default": 1
+						}
+					}
+				}
+			},
+			{
+				"type": "array",
+				"$comment": "Named scalar variables",
+				"items": {
+					"type": "string",
+					"title": "Name of variable",
+					"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+				}
+			}
+		]
+	},
 	"additionalProperties" : false,
 	"properties": {
 		"project_name": {
@@ -254,19 +291,19 @@
 						"properties": {
 							"type": { "enum": ["ADER-DG"] }
 						},
-						"required": [ "name", "type", "variables","maximum_mesh_size", "order" ]
+						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "aderdg_kernel" ]
 					},
 					{
 						"properties": {
 							"type": { "enum": ["Limiting-ADER-DG"] }
 						},
-						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "limiter_kernel", "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ]
+						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "aderdg_kernel", "fv_kernel", "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ]
 					},
 					{
 						"properties": {
 							"type": { "enum": ["Finite-Volumes"] }
 						},
-						"required": [ "name", "type", "variables","maximum_mesh_size", "patch_size" ]
+						"required": [ "name", "type", "variables","maximum_mesh_size", "patch_size", "fv_kernel" ]
 					}
 				],
 				"properties": {
@@ -289,20 +326,32 @@
 						"used-by": "toolkit",
 						"enum": ["ADER-DG","Finite-Volumes","Limiting-ADER-DG"]
 					},
-					"kernel": {
+					"aderdg_kernel": {
 						"type": "object",
 						"scope": "compile-time",
+						"required" : [ "terms" ],
+						"additionalProperties" : "false",
 						"properties": {
 							"optimisations": {
-								"type": "array", 
+								"type": "array",
 								"title": "Optimization flags",
-								"items": { "type": "string" }
+								"items": { 
+									"oneOf" : [ 
+										{ "enum" : ["generic", "optimised", "notimeavg", "patchwiseadjust", "usestack", "fusedsource", "fluxvect", "fusedsourcevect", "cerkguess", "converter", "flops"] },
+										{ "type" : "object", "required" : ["maxpicarditer"], "additionalProperties": false, "properties" : { "maxpicarditer" : { "type" : "number" } } }
+									]
+								}
 							}, 
 							"terms": {
 								"type": "array", 
 								"title": "PDE terms to generate code for",
-								"items": { "type": "string" }
-							}, 
+								"items": { 
+									"oneOf" : [ 
+										{ "enum" : ["flux", "source", "ncp", "materialparameters"] },
+										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
+									]
+								}
+							},
 							"language": {
 								"type": "string", 
 								"title": "The walking dead",
@@ -314,128 +363,69 @@
 								"title": "Type of solver", 
 								"enum": ["nonlinear","linear"],
 								"default": "nonlinear"
+							},
+							"basis": {
+								"type": "string", 
+								"title": "Basis functions", 
+								"enum": ["Legendre","Lobatto"],
+								"default": "Legendre"
 							}
 						}
 					},
+					"fv_kernel": {
+						"type": "object",
+						"scope": "compile-time",
+						"required" : [ "terms" ],
+						"additionalProperties" : "false",
+						"properties": {
+							"optimisations": {
+								"type": "array",
+								"title": "Optimization flags",
+								"items": { 
+									"enum" : [ "generic", "optimised", "usestack" ]
+								}
+							}, 
+							"terms": {
+								"type": "array", 
+								"title": "PDE terms to generate code for",
+								"items": { 
+									"oneOf" : [ 
+										{ "enum" : ["flux", "source", "ncp" ] },
+										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
+									]
+								}
+							},
+							"language": {
+								"type": "string", 
+								"title": "The walking dead",
+								"enum": ["C","Fortran"],
+								"default": "C"
+							}, 
+							"type": {
+								"type": "string", 
+								"title": "Type of solver", 
+								"enum": ["musclhancock","godunov"],
+								"default": "godunov"
+							}
+						}
+					}, 
 					"variables": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
 						"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"oneOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of variable",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of variables", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar variables",
-								"items": {
-									"type": "string",
-									"title": "Name of variable",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
+						"properties" : { "$ref" : "#/definitions/variables" }
 					},
 					"material_parameters": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
 						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"oneOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of material parameter",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of material parameter", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar material parameters",
-								"items": {
-									"type": "string",
-									"title": "Name of material parameter",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
+						"properties" : { "$ref" : "#/definitions/variables" }
 					}, 
 					"global_observables": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
 						"$comment": "global observables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"oneOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of global observable",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of global observable", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar global observables",
-								"items": {
-									"type": "string",
-									"title": "Name of global observable",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
+						"properties" : { "$ref" : "#/definitions/variables" }
 					}, 
 					"maximum_mesh_size": {
 						"type": "number", 
@@ -457,35 +447,6 @@
 						"title": "Number of subcells per coordinate direction (no ghost ",
 						"scope": "compile-time"
 					},
-					"limiter_kernel": {
-						"id" : "limiter_kernel",
-						"type": "kernel",
-						"scope": "compile-time",
-						"properties": {
-							"optimisations": {
-								"type": "array", 
-								"title": "Optimization flags",
-								"items": { "type": "string" }
-							}, 
-							"terms": {
-								"type": "array", 
-								"title": "PDE terms to generate code for",
-								"items": { "type": "string" }
-							}, 
-							"language": {
-								"type": "string", 
-								"title": "The walking dead",
-								"enum": ["C","Fortran"],
-								"default": "C"
-							}, 
-							"type": {
-								"type": "string", 
-								"title": "Type of solver", 
-								"enum": ["nonlinear","linear"],
-								"default": "nonlinear"
-							}
-						}
-					}, 
 					"halo_cells" : {
 						"type": "integer", 
 						"title": "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",

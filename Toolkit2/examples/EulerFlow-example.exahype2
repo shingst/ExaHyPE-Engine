@@ -63,11 +63,12 @@
 			"maximum_mesh_size": 5.0,
 			"maximum_mesh_depth": 0,
 			"time_stepping": "global",
-			"kernel": {
-				"optimisations": [ "generic" ],
+			"aderdg_kernel": {
+				"optimisations": [ "generic", { "maxpicarditer" : 1 } ],
 				"terms": [ "flux", "ncp", "source" ],
-				"language": "C",
-				"type": "nonlinear"
+				"language" : "C",
+				"type"  : "nonlinear",
+				"basis" : "Lobatto"
 			},
 			"plotters": [
 				{
