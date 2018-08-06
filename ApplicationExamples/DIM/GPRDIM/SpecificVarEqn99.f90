@@ -4248,6 +4248,7 @@ end select
                 if(     ( (abs(lxb(2)-0.1)<(ldx(2)) .or. abs(lxb(2)+0.1)<(ldx(2)))  .and. (lxb(1)>-0.5-(ldx(1)) .and. lxb(1)<0.5+(ldx(1)))) ) then
                      dmpresult = .FALSE.
                 end if
+			CASE DEFAULT
         END SELECT
         
     end subroutine StaticLimiterEQ99

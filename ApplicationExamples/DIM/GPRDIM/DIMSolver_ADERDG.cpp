@@ -72,8 +72,9 @@ void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double
 }
 
 exahype::solvers::Solver::RefinementControl GPRDIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+	int rupture_flag;
 	return exahype::solvers::Solver::RefinementControl::Keep;
-
+	//ruptureflag_(rupture_flag,luh)
 	//if ( level > getCoarsestMeshLevel() )
 	//	return exahype::solvers::Solver::RefinementControl::Erase;
 	//	else return exahype::solvers::Solver::RefinementControl::Keep;
@@ -150,7 +151,7 @@ void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 	assertion(numberOfObservables==1);
 	ReadOnlyVariables vars(Q);
 	observables[0]=Q[13];
-	//observables[1]=Q[17];
+	observables[1]=Q[16];
 }
 
 bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(

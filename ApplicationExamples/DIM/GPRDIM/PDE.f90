@@ -219,15 +219,15 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
         tau = ee*min(1.0,(1.0-Q(18)))   
     end if
 	
-	S(6)= -psiM(1,1)/tau*detA**(8./3.)
-	S(7)= -psiM(1,2)/tau*detA**(8./3.)
-	S(8)= -psiM(1,3)/tau*detA**(8./3.)
-	S(9)= -psiM(2,1)/tau*detA**(8./3.)
-	S(10)=-psiM(2,2)/tau*detA**(8./3.)
-	S(11)=-psiM(2,3)/tau*detA**(8./3.)
-	S(12)=-psiM(3,1)/tau*detA**(8./3.)
-	S(13)=-psiM(3,2)/tau*detA**(8./3.)
-	S(14)=-psiM(3,3)/tau*detA**(8./3.)
+	S(5)= -psiM(1,1)/tau*detA**(8./3.)
+	S(6)= -psiM(1,2)/tau*detA**(8./3.)
+	S(7)= -psiM(1,3)/tau*detA**(8./3.)
+	S(8)= -psiM(2,1)/tau*detA**(8./3.)
+	S(9)=-psiM(2,2)/tau*detA**(8./3.)
+	S(10)=-psiM(2,3)/tau*detA**(8./3.)
+	S(11)=-psiM(3,1)/tau*detA**(8./3.)
+	S(12)=-psiM(3,2)/tau*detA**(8./3.)
+	S(13)=-psiM(3,3)/tau*detA**(8./3.)
 	  
 END SUBROUTINE PDESource
 
@@ -469,8 +469,11 @@ RECURSIVE SUBROUTINE DynamicRupture(x, t, Q)
 	call computeGPRLEstress(stressnorm,sigma_vec,Q,.true.)
 	IF( stressnorm > Q(17) ) THEN
 		! If the normal stress is greater than the illness stress Y0 (stored in Q(17), then broke the material
-		Q(18)=0.
+		Q(18)=0.!0.
 		! Now in the this DoF it follows the NS friction law with mu proportional to mu_f ( stored in Q(24) )
+		!print *, 'Crack!'
+	ELSE
+		!Q(18)=1. ! Reattach 
 	END IF
 	! Add here some static rupture (like for the SSCRACK test case
 	!
@@ -509,6 +512,7 @@ RECURSIVE SUBROUTINE HLLEMRiemannSolver(basisSize,NormalNonZero,lFbndL,lFbndR,lQ
   REAL, INTENT(INOUT)  :: lFbndL(nVar,basisSize,basisSize)
   REAL, INTENT(INOUT)  :: lFbndR(nVar,basisSize,basisSize)
     ! Local variables 
+	REAL :: f(nVar), g(nVar), h(nVar)
 INTEGER           :: i,j,k,l, ml(1)  
 REAL              :: aux(nDim), Id(nVar,nVar), smax, Qav(nVar),QavL(nVar), QavR(nVar) 
 REAL              ::  xGP, yGP, xdeb, ydeb  
@@ -521,7 +525,7 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
   
   nv(:)=0.
   nv(NormalNonZero+1)=1.
-  !print *, "Normal non zero in fortran=" NormalNonZero
+  !print *, "Normal non zero in fortran=", NormalNonZero
   !print *, "basisSize=", basisSize
   !print *, "NormalNonZero=", NormalNonZero
   !print *, "QavR=",QavR(1)
@@ -532,6 +536,12 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
 	flattener=1.
 	lFbndL=0.
 	lFbndR=0.
+	CALL PDEflux(f,g,h,QavL)
+	lFbndL(:,1,1)=f*nv(1)+g*nv(2)*h*nv(3)
+
+	CALL PDEflux(f,g,h,QavR)
+	lFbndR(:,1,1)=f*nv(1)+g*nv(2)*h*nv(3)	
+
     CALL PDEEigenvalues(LL,QavL,nv) 
     CALL PDEEigenvalues(LR,QavR,nv) 
     smax = MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) )
@@ -629,8 +639,8 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
                 Qav = 0.5*(lQbndR(:,j,k)+lQbndL(:,j,k)) 
                 gradQ(:,NormalNonZero+1) = lQbndR(:,j,k) - lQbndL(:,j,k) 
                 CALL PDENCP(ncp,Qav,gradQ)
-				!lFbndL(:,j,k) = sL*sR/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )
-                lFbndL(:,j,k) = ( sR*lFbndL(:,j,k) - sL*lFbndR(:,j,k) )/(sR-sL) + sR*sL/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )   ! purely conservative flux 
+				lFbndL(:,j,k) = sL*sR/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )
+                !lFbndL(:,j,k) = ( sR*lFbndL(:,j,k) - sL*lFbndR(:,j,k) )/(sR-sL) + sR*sL/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )   ! purely conservative flux 
                 lFbndR(:,j,k) = lFbndL(:,j,k) - sR/(sR-sL)*ncp(:)                                                                   ! subtract the non-conservative product 
                 lFbndL(:,j,k) = lFbndL(:,j,k) - sL/(sR-sL)*ncp(:)                                                                   ! add the non-conservative product 
             ENDDO
@@ -643,6 +653,7 @@ RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
 	INTEGER :: N_in,M_in
 	CALL SetMainParameters(N_in,M_in)
 END SUBROUTINE InitTECPLOT
+
 
 
 

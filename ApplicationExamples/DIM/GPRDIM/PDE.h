@@ -26,6 +26,7 @@ void testriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, dou
 
 void inittecplot_(const int* N_in,const int* M_in);
 void dynamicrupture_(const double* x, const double* const t, double* Q);
+//void ruptureflag_(int* rupture_flag, const double* luh);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

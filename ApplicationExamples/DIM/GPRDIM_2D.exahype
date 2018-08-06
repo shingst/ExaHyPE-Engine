@@ -61,9 +61,9 @@ exahype-project GPRDIM
   solver Limiting-ADER-DG DIMSolver
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,A:9,alpha:1,lambda:1,mu:1,Y0:1,xi:1,rhoE:1,dDisp:3,Disp:1,muf:1
-    order const                    = 3
+    order const                    = 5
     maximum-mesh-size              = 0.05
-    maximum-mesh-depth             = 1
+    maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source
@@ -72,7 +72,7 @@ exahype-project GPRDIM
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         = 1
+    dmp-observables  const         = 2
     dmp-relaxation-parameter       = 1e+3 
     dmp-difference-scaling         = 1e+4 
     steps-till-cured           = 5

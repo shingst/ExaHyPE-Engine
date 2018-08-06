@@ -12,10 +12,56 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 	! Local variables
 	REAL :: up(nVar),LEsigma(6)
 	REAL :: ICA, ICsig, ICxd, r, DIsize,c0
+	REAL :: rho0, lambda0, mu0, ICx0(3)
 
 	select case(ICType)
-		case('StiffInclusion')
+		case('DRupture')
+			! ============================ DYNAMIC RUPTURE TEST CASE =====================================
+			! Debug test for dynamic rupture. We introduce two zones with different velocities that generate
+			! a stress sufficient to break the material
+			
+			! ---------- DEFINE THE PARAMETERS -----------
+			lambda0=2.0
+			mu0=1.0
+			rho0=1.0
+			ICsig=0.01 ! Velocity
+			! --------------------------------------------
+			
+			up=0.
+			up(2:4) = 0.0	
+			if(xGP(1)<0) then! .and. xGP(1)<0.6) then
+				up(3) = ICsig  
+			else
+				up(3) = -ICsig	
+			end if
+			
+			up(5)=1.            ! A_11
+			up(9)=1.            ! A_22
+			up(13)=1.           ! A_33
+			
+			up(14)=1.           ! alpha
+			
+			up(15)=lambda0   ! Lambda
+			up(16)=mu0       ! mu
+			up(1)=rho0       ! mu
+			
+			up(18)=1        ! xi, 1 -> not broken, 0 -> broken with friction law
+			
+			up(17)=1!.e+6     ! Y0
+			if(xGP(2)>0) then
+				up(17)=1-1.0*EXP(-0.5*(xGP(2)-2.0*xGP(1))**2/0.1**2)
+				up(17)=min(up(17),1-1.0*EXP(-0.5*(xGP(2)+2.0*xGP(1))**2/0.1**2))
+			else
+				up(17)=min(up(17),1-1.0*EXP(-0.5*(xGP(1))**2/0.05**2))   
+			end if
+			
+			! Friction parametersUSEFrictionLaw=.FALSE.  ! Do not use friction law
+			up(24)=0.001            ! Set the friction value mu to be constant
+			case('StiffInclusion')
 			! ============================ STIFF INCLUSION TEST CASE =====================================
+			! p-wave travelling through a still material with p-wave speed 10 times larger. This test was
+			! taken from gij1 and was modified so the wall is identify by a DI instead of physical boundaries
+			!
 			! ---------- DEFINE THE PARAMETERS -----------
 			ICsig=-0.8
 			ICxd=0.01
@@ -84,6 +130,13 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx_in,numberOfObservables, ob
    else
 		dmpresult=.TRUE.
    ENDIF 
+   
+   !if(abs(observablesMax(2)-observablesMin(2)) .gt. 1.e-2) then
+	!dmpresult=.FALSE.
+   !end if
+	!if(abs(observablesMin(2)) .lt. 1.e-2) then
+	!	dmpresult=.FALSE.
+	!end if   
    ldx=0.01
    call StaticLimiterEQ99(dmpresult,xx,ldx)
 

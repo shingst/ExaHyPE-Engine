@@ -110,7 +110,7 @@ void  GPRDIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const d
 	pdencp_(BgradQ, Q, gradQ);
 }
 
-double GPRDIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) {
+double GPRDIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
   const int numberOfVariables  = GPRDIM::AbstractDIMSolver_FV::NumberOfVariables;
   const int numberOfParameters = GPRDIM::AbstractDIMSolver_FV::NumberOfParameters;
   const int numberOfData       = numberOfVariables+numberOfParameters;
@@ -133,9 +133,10 @@ double GPRDIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double*
     }
 	
 // Call the Fortran routine
-hllemriemannsolver_(&basisSize, &normalNonZero, fL,fR,qL, qR,QavL, QavR);
+hllemriemannsolver_(&basisSize, &direction, fL,fR,qL, qR,QavL, QavR);
 //testriemannsolver_(&basisSize, &normalNonZero, fL,fR,qL, qR,QavL, QavR);
-return 2;
+return 1;
 }
+
 
 
