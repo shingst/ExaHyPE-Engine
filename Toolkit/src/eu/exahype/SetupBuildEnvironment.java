@@ -111,6 +111,8 @@ public class SetupBuildEnvironment extends DepthFirstAdapter {
 
   @Override
   public void outAProject(AProject node) {
+    if(!valid)
+      return; // don't try to write if not valid
     try {      
       context.put("project",           node.getName());
       context.put("executableName",   "ExaHyPE-" + node.getName());
