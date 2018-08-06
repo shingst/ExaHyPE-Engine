@@ -65,19 +65,20 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 		CALL PDEPrim2Cons(Q,up)
 END SUBROUTINE InitialData
 
-RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, observablesMin, observablesMax)
+RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx_in,numberOfObservables, observablesMin, observablesMax)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim,ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xx(nDim)        ! 
+	REAL, INTENT(IN)               :: xx_in(nDim)        ! 
 	INTEGER, INTENT(IN)					:: numberOfObservables
 	INTEGER, INTENT(OUT)              :: limiter_value        !
 	REAL, INTENT(IN)					:: observablesMin(numberOfObservables), observablesMax(numberOfObservables)
 	LOGICAL :: dmpresult
-	real	:: rr,ldx(3)	
-
+	real	:: rr,ldx(3),xx(3)
+	xx=0.
+	xx(1:nDim)=xx_in(1:nDim)
    if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
 		dmpresult=.FALSE.
    else
@@ -85,6 +86,7 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
    ENDIF 
    ldx=0.01
    call StaticLimiterEQ99(dmpresult,xx,ldx)
+
    
    if(dmpresult) then
 	limiter_value=0
