@@ -42,7 +42,7 @@
 	"solvers": [
 		{
 			"name": "GRMHDSolver_DG",
-			"type": "Limiting-ADER-DG",
+			"type": "ADER-DG",
 			"variables": [
 				{ "name": "rho",				 "multiplicity": 1 },
 				{ "name": "vel",				 "multiplicity": 3 },
@@ -60,17 +60,12 @@
 			],
 			"global_observables": 1,
 			"order": 3,
-			"patch_size" : 4,
 			"maximum_mesh_size": 5.0,
 			"maximum_mesh_depth": 0,
 			"time_stepping": "global",
 			"kernel": {
-				"optimisation": "generic",
-				"terms": [
-					"flux",
-					"ncp",
-					"source"
-				],
+				"optimisations": [ "generic" ],
+				"terms": [ "flux", "ncp", "source" ],
 				"language": "C",
 				"type": "nonlinear"
 			},

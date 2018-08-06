@@ -23,6 +23,56 @@ def numberOfVariables(variables):
 	return number
 
 class SolverGenerator():
+	ADERDG_TYPES=[\
+		"linear",\
+		"nonlinear",\
+		"Legendre",\
+		"Lobatto"\
+		"user"\
+	]
+		
+	ADERDG_TERMS=[\
+		"flux",\
+		"source",\
+		"ncp",\
+		"pointsources",\
+		"materialparameters"\
+	]
+		
+	ADERDG_OPTIMISATIONS=[\
+		"generic",\
+		"optimised",\
+		"notimeavg",\
+		"patchwiseadjust",\
+		"usestack",\
+		"maxpicarditer",\
+		"fusedsource",\
+		"fluxvect",\
+		"fusedsourcevect",\
+		"cerkguess",\
+		"converter",\
+		"flops"\
+	]
+	
+	FV_TYPES=[\
+		"godunov",
+		"musclhancock",
+		"user",
+	]
+	FV_TERMS=[\
+		"flux",
+		"source",
+		"ncp",
+		"pointsources",
+		"materialparameters"
+	]
+	FV_OPTIMISATIONS=[\
+		"generic",
+		"optimised",
+		"patchwiseadjust",
+		"usestack",
+	]
+	
 	def generate_plotter(self, solver_num, solver):
 		plotters = solver["plotters"]
 		for j, plotter in enumerate(plotters):
@@ -38,9 +88,12 @@ class SolverGenerator():
 		for i, solver in enumerate(solvers):
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))
 			
-			solverType = solver["type"]
-			kernels    = solver["kernel"]
-			#print(solver["kernel"])
+			solverType  = solver["type"]
+			kernels      = solver["kernel"]
+			kernel_type         = kernels["type"]
+			kernel_terms        = kernels["terms"]
+			kernel_optimisation = kernels["optimisations"]
+			print(solver["kernel"])
 			
 			context = { }
 			context["project"]=spec["project_name"]
@@ -58,8 +111,9 @@ class SolverGenerator():
 			context["numberOfDMPObservables"]     = solver.get("dmp_observables",0);
 			context["numberOfPointSources"]       = solver.get("point_sources",0);
 
-			context["order"]     = solver.get("order",0);
-			context["patchSize"] = solver.get("patch_size",0);
+			context["order"]     = solver.get("order",-1);
+			context["patchSize"] = solver.get("patch_size",-1);
+			
 			print(context)
 
 #//int
