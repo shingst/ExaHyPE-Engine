@@ -59,7 +59,7 @@ class SolverGenerator():
 			context["numberOfPointSources"]       = solver.get("point_sources",0);
 
 			context["order"]     = solver.get("order",0);
-			context["patchSize"] = solver.get("patchSize",0);
+			context["patchSize"] = solver.get("patch_size",0);
 			print(context)
 
 #//int

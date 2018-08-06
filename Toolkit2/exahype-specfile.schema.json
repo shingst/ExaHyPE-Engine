@@ -2,7 +2,190 @@
 	"$comment": "This is the JSON-Schema for an ExaHyPE specification file 2.0",
 	"$id": "http://dev.exahype.eu/exahype-specfile.schema.json",
 	"type": "object", 
-	"definitions": {}, 
+	"definitions": {
+		"base_solver" : {
+			"type": "object", 
+			"required": [
+				"name", "type", "variables","maximum_mesh_size"
+			],
+			"properties": {
+				"name": {
+					"type": "string", 
+					"title": "The solver name", 
+					"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+					"scope": "compile-time",
+					"used-by": "toolkit",
+					"examples": [
+						"GRMHDSolver_DG",
+						"HydroSolver",
+						"TheoryOfEverythingSolver_FV"
+					]
+				}, 
+				"type": {
+					"type": "string", 
+					"title": "The solver type", 
+					"scope": "compile-time",
+					"used-by": "toolkit",
+					"enum": ["ADER-DG","Finite-Volumes","Limiting-ADER-DG"]
+				},
+				"kernel": {
+					"type": "object",
+					"scope": "compile-time",
+					"properties": {
+						"optimisation": {
+							"title": "Optimization flags",
+							"anyOf": [
+								{ "type": "array" },
+								{ "type": "string" }
+							]
+						}, 
+						"terms": {
+							"type": "array", 
+							"title": "PDE terms to generate code for",
+							"items": { "type": "string" }
+						}, 
+						"language": {
+							"type": "string", 
+							"title": "The walking dead",
+							"enum": ["C","Fortran"],
+							"default": "C"
+						}, 
+						"type": {
+							"type": "string", 
+							"title": "Type of solver", 
+							"enum": ["nonlinear","linear"],
+							"default": "nonlinear"
+						}
+					}
+				},
+				"variables": {
+					"scope": "compile-time",
+					"used-by": "toolkit",
+					"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+					"anyOf": [
+						{
+							"type": "integer",
+							"minimum": 1,
+							"exclusiveMinimum": false
+						},
+						{
+							"type": "array",
+							"$comment": "Named variables with lengths (like vectors)",
+							"items": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string", 
+										"title": "Name of variable",
+										"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+									}, 
+									"multiplicity": {
+										"type": "integer", 
+										"title": "Multiplicity of variables", 
+										"default": 1
+									}
+								}
+							}
+						},
+						{
+							"type": "array",
+							"$comment": "Named scalar variables",
+							"items": {
+								"type": "string",
+								"title": "Name of variable",
+								"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+							}
+						}
+					]
+				},
+				"material_parameters": {
+					"scope": "compile-time",
+					"used-by": "toolkit",
+					"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+					"anyOf": [
+						{
+							"type": "integer",
+							"minimum": 1,
+							"exclusiveMinimum": false
+						},
+						{
+							"type": "array",
+							"$comment": "Named variables with lengths (like vectors)",
+							"items": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string", 
+										"title": "Name of material parameter",
+										"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+									}, 
+									"multiplicity": {
+										"type": "integer", 
+										"title": "Multiplicity of material parameter", 
+										"default": 1
+									}
+								}
+							}
+						},
+						{
+							"type": "array",
+							"$comment": "Named scalar material parameters",
+							"items": {
+								"type": "string",
+								"title": "Name of material parameter",
+								"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+							}
+						}
+					]
+				}, 
+				"global_observables": {
+					"scope": "compile-time",
+					"used-by": "toolkit",
+					"$comment": "global observables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+					"anyOf": [
+						{
+							"type": "integer",
+							"minimum": 1,
+							"exclusiveMinimum": false
+						},
+						{
+							"type": "array",
+							"$comment": "Named variables with lengths (like vectors)",
+							"items": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string", 
+										"title": "Name of global observable",
+										"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+									}, 
+									"multiplicity": {
+										"type": "integer", 
+										"title": "Multiplicity of global observable", 
+										"default": 1
+									}
+								}
+							}
+						},
+						{
+							"type": "array",
+							"$comment": "Named scalar global observables",
+							"items": {
+								"type": "string",
+								"title": "Name of global observable",
+								"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+							}
+						}
+					]
+				}, 
+				"maximum_mesh_size": {
+					"type": "number", 
+					"title": "Minimum size of finest cell in the overall grid",
+					"scope": "run-time"
+				}
+			}
+		}
+	}, 
 	"$schema": "http://json-schema.org/draft-07/schema#", 
 	"required": [
 		"project_name",
@@ -245,183 +428,10 @@
 			"items": {
 				"type": "object", 
 				"required": [
-					"name", "type", "variables","maximum_mesh_size","order"
+					"name", "type", "variables","maximum_mesh_size"
 				],
+				"base_solver" : { "$ref": "#/definitions/base_solver" },
 				"properties": {
-					"name": {
-						"type": "string", 
-						"title": "The solver name", 
-						"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"examples": [
-							"GRMHDSolver_DG",
-							"HydroSolver",
-							"TheoryOfEverythingSolver_FV"
-						]
-					}, 
-					"type": {
-						"type": "string", 
-						"title": "The solver type", 
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"enum": ["ADER-DG","Finite-Volumes","Limiting-ADER-DG"]
-					},
-					"kernel": {
-						"type": "object",
-						"scope": "compile-time",
-						"properties": {
-							"optimisation": {
-								"title": "Optimization flags",
-								"anyOf": [
-									{ "type": "array" },
-									{ "type": "string" }
-								]
-							}, 
-							"terms": {
-								"type": "array", 
-								"title": "PDE terms to generate code for",
-								"items": { "type": "string" }
-							}, 
-							"language": {
-								"type": "string", 
-								"title": "The walking dead",
-								"enum": ["C","Fortran"],
-								"default": "C"
-							}, 
-							"type": {
-								"type": "string", 
-								"title": "Type of solver", 
-								"enum": ["nonlinear","linear"],
-								"default": "nonlinear"
-							}
-						}
-					},
-					"variables": {
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"anyOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of variable",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of variables", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar variables",
-								"items": {
-									"type": "string",
-									"title": "Name of variable",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
-					},
-					"material_parameters": {
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"anyOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of material parameter",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of material parameter", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar material parameters",
-								"items": {
-									"type": "string",
-									"title": "Name of material parameter",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
-					}, 
-					"global_observables": {
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"$comment": "global observables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"anyOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of global observable",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of global observable", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar global observables",
-								"items": {
-									"type": "string",
-									"title": "Name of global observable",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
-					}, 
-					"maximum_mesh_size": {
-						"type": "number", 
-						"title": "Minimum size of finest cell in the overall grid",
-						"scope": "run-time"
-					}, 
 					"maximum_mesh_depth": {
 						"type": "integer", 
 						"title": "Maximum number of adaptive refinement levels.",
@@ -472,6 +482,16 @@
 							}
 						}
 					}, 
+					"halo_cells" : {
+						"type": "integer", 
+						"title": "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
+						"scope": "run-time"
+					},
+					"regularised_fine_grid_levels" : {
+						"type": "integer", 
+						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
+						"scope": "run-time"
+					},
 					"dmp_observables": {
 						"type": "integer", 
 						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
