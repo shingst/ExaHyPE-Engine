@@ -15,16 +15,14 @@
 	},
 	"shared_memory": {
 		"cores": 1,
-		"identifier": "dummy",
+		"autotuning_strategy": "dummy",
 		"properties_file": "sharedmemory.properties"
 	},
 	"distributed_memory": {
-		"identifier": "static_load_balancing",
-		"configure": [
-		"hotspot",
-		"fair",
-		{ "ranks_per_node": 1 }
-		],
+		"load_balancing_type": "static",
+		"load_balancing_strategy" : "fair",
+		"node_pool_strategy" : "hotspot",
+		"ranks_per_node": 1,
 		"timeout": 60,
 		"buffer_size": 64
 	},

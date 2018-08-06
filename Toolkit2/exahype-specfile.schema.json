@@ -171,17 +171,26 @@
 			"type": "object", 
 			"used-by": "toolkit",
 			"scope": "run-time",
+			"additionalProperties" : false,
 			"properties": {
 				"cores": {
 					"type": "integer", 
 					"title": "Number of shared-memory cores per node", 
-					"default": 1, 
 					"minimum": 1,
-					"exclusiveMinimum": false
+					"exclusiveMinimum": false,
+					"default": 1
+				},
+				"background_job_consumer_threads": {
+					"type": "integer", 
+					"title": "Number of background job consumer threads to start", 
+					"minimum": -2,
+					"exclusiveMinimum": false,
+					"default": 1
 				}, 
-				"identifier": {
+				"autotuning_strategy": {
 					"type": "string", 
-					"title": "An identifier for the algorithm to use", 
+					"title": "Autotuning algorithm to use", 
+					"enum" : ["dummy","autotuning","autotuning_without_learning","autotuning_without_restart","sampling"],
 					"default": "dummy"
 				}, 
 				"properties_file": {
@@ -189,25 +198,58 @@
 					"title": "Path to a properties file", 
 					"default": "sharedmemory.properties"
 				}
+			},
+			"dependencies": {
+				"background_job_consumer_threads" : ["cores"]
 			}
 		}, 
 		"distributed_memory": {
 			"type": "object", 
 			"used-by": "toolkit",
 			"scope": "run-time",
+			"additionalProperties" : false,
+			"required" : ["ranks_per_node"],
+			"anyOf": [
+				{
+					"properties": {
+						"node_pool_strategy" : { "enum": ["sfc_diffusion"] }
+					},
+					"required": [ "ranks_per_node", "primary_ranks_per_node" ]
+				},
+				{
+					"properties": {
+						"node_pool_strategy" : { "enum": ["hotspot","FCFS"] }
+					},
+					"required": [ "ranks_per_node" ]
+				}
+			],
 			"properties": {
-				"identifier": {
+				"load_balancing_type": {
 					"type": "string", 
-					"title": "An identifier for the algorithm",
-					"default": "static_load_balancing"
+					"title": "The load balancing type",
+					"enum" : ["static","dynamic"],
+					"default": "static"
 				}, 
-				"configure": {
-					"type": "array", 
-					"default": ["hotspot","fair"],
-					"examples": [
-						"hotspot", "fair", { "ranks_per_node": 1 }
-					]
+				"load_balancing_strategy": {
+					"type": "string", 
+					"title": "Determines ranks with too much load",
+					"enum" : ["fair","greedy_naive","greedy_regular"],
+					"default": "fair"
 				}, 
+				"node_pool_strategy" : {
+					"type": "string", 
+					"title": "Determines how requests for ranks are dealt with",
+					"enum" : ["hotspot","FCFS","sfc_diffusion"],
+					"default": "hotspot"
+				},
+				"ranks_per_node" : {
+					"type": "integer", 
+					"title": "MPI ranks used per node"
+				},
+				"primary_ranks_per_node" : {
+					"type": "integer", 
+					"title": "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)"
+				},
 				"timeout": {
 					"type": "number", 
 					"title": "Timeout for MPI packages in seconds before the simulation is killed", 
