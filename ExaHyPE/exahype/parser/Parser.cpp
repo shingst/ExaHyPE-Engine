@@ -327,52 +327,58 @@ std::string exahype::parser::Parser::getTokenAfter(std::string token0, int occur
     return _noTokenFound;
 }
 
-int exahype::parser::Parser::getNumberOfThreads() const {
+int exahype::parser::Parser::getIntFromPath(std::string path) const {
   assertion(isValid());
   try {
-    return _impl->data.at("shared_memory").at("cores");
+    return _impl->data.at(json::json_pointer(path));
   } catch (json::type_error& e) {
-    logError("getNumberOfThreads()", "Number of cores is not an integer (" << e.what() << ")");
+    logError("getIntFromPath()", path << " is not an integer (" << e.what() << ")");
   } catch(json::out_of_range& e) {
-    logError("getNumberOfThreads()", "Missing shared-memory section (" << e.what() << ")");
+    logError("getIntFromPath()", "Missing entry " << path << " (" << e.what() << ")");
   }
   _interpretationErrorOccured = true;
   return 1;
+}
+
+tarch::la::Vector<DIMENSIONS,double> exahype::parser::Parser::getVectorFromPath(std::string path) const {
+  tarch::la::Vector<DIMENSIONS,double> result;
+  try {
+    json::json_pointer p(path);
+    result(0) = _impl->data.at(p).at(0);
+    result(1) = _impl->data.at(p).at(1);
+    if(DIMENSIONS == 3)
+      result(2) = _impl->data.at(p).at(2);
+    return result;
+  } catch(json::type_error& e) {
+    logError("getVectorFromPath()", path << " holds not a double-vector of size " << DIMENSIONS << " (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("getVectorFromPath()", "Missing entry " << path << " (" << e.what() << ")");
+  }
+
+  _interpretationErrorOccured = true;
+  return result;
+}
+
+int exahype::parser::Parser::getNumberOfThreads() const {
+  return getIntFromPath("/shared_memory/cores");
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
   assertion(isValid());
   tarch::la::Vector<DIMENSIONS, double> result;
   
-  try {
-    int dim = _impl->data.at("computational_domain").at("dimension");
-    if(dim != DIMENSIONS) {
-      logError("getDomainSize()",
-               "dimension: value "<< dim << " in specification file" <<
-               " does not match -DDim"<<DIMENSIONS<<" switch in Makefile. Rerun toolkit!");
-      _interpretationErrorOccured = true;
-      return result;
-    }
-  } catch(json::type_error& e) {
-    logError("getDomainSize()", "Dimension is not an integer (" << e.what() << ")");
-  } catch(json::out_of_range& e) {
-    logError("getDomainSize()", "Missing computational_domain or dimension in specification file (" << e.what() << ").");
-  }
-
-  try {
-    result(0) = _impl->data.at("computational_domain").at("width").at(0);
-    result(1) = _impl->data.at("computational_domain").at("width").at(1);
-    if(DIMENSIONS == 3)
-      result(2) = _impl->data.at("computational_domain").at("width").at(2);
-    logDebug("getDomainSize()", "found size " << result);
+  int dim = getIntFromPath("/computational_domain/dimension");
+  
+  if(dim != DIMENSIONS) {
+    logError("getDomainSize()",
+              "dimension: value "<< dim << " in specification file" <<
+              " does not match -DDim"<<DIMENSIONS<<" switch in Makefile. Rerun toolkit!");
+    _interpretationErrorOccured = true;
     return result;
-  } catch(json::type_error& e) {
-    logError("getDomainSize()", "Width is not a double (" << e.what() << ")");
-  } catch(json::out_of_range& e) {
-    logError("getDomainSize()", "Missing computational_domain or width in specification file (" << e.what() << ")");
   }
-
-  _interpretationErrorOccured = true;
+  
+  result = getVectorFromPath("/computational_domain/width");
+  logDebug("getDomainSize()", "found size " << result);
   return result;
 }
 

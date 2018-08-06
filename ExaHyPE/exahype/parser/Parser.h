@@ -79,6 +79,12 @@ class exahype::parser::Parser {
   static bool _interpretationErrorOccured;
 
   /**
+   * \defgroup OldFrontend High-level API to read from tolen stream
+   * Will be removed
+   * @{
+   **/
+  
+  /**
    * \return "notoken" if not found.
    */
   std::string getTokenAfter(std::string token,
@@ -92,11 +98,38 @@ class exahype::parser::Parser {
                             int additionalTokensToSkip = 0) const;
 
   /**
+   * @}
+   **/
+  
+  /**
    * Holds the filename of the specification file parsed by this parser
    **/
   std::string _filename;
 
  public:
+  /**
+   * \defgroup JsonFrontend High-level API to read from JSON data
+   * Can be public, why not?
+   * @{
+   **/
+   
+  /**
+   * Read and integer from a JSON path from the configuration file.
+   * Will logError in case of errors and invalidate the parser.
+   **/
+  int getIntFromPath(std::string path) const;
+  // TODO: Could include caller method name for better speaking logWarning
+  
+  /**
+   * Read a double-Vector from a JSON path from the configuration file.
+   * Will logError in case of errors and invalidate the parser.
+   **/
+  tarch::la::Vector<DIMENSIONS,double> getVectorFromPath(std::string path) const;
+  
+  /**
+   * @}
+   **/
+   
   /**
    * Property strings in ExaHyPE are string alike "{all,left=0.5,Q4}". This
    * operation returns the value of a property, i.e. if you invoke
