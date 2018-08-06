@@ -69,17 +69,22 @@
 			"used-by": "toolkit",
 			"enum": [
 				"noarch",
-				"list-available-architectures-here"
+				"snb",
+				"hsw",
+				"knl"
 			]
 		}, 
-		"computationail_domain": {
+		"computational_domain": {
 			"type": "object", 
-			"scope": "run-time",
-			"required:": [ "dimension", "width" ],
+			"oneOf": [
+				{ "required": [ "dimension", "width", "offset", "end_time"] },
+				{ "required": [ "dimension", "width", "offset", "time_steps"] }
+			],
 			"properties": {
 				"dimension": {
 					"type": "integer", 
 					"title": "Spatial dimensions of the code and problem", 
+					"scope": "compile-time",
 					"enum": [ 2, 3 ]
 				}, 
 				"width": {
@@ -87,26 +92,39 @@
 					"items": {
 						"type": "number", 
 						"title": "The extends of the computational domain in each spatial direction",
+						"scope": "run-time",
 						"minimum": 0,
 						"exclusiveMinimum": true
-					}
+					},
+					"$comment": "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
+					"minItems": 2,
+					"maxItems": 3
 				}, 
 				"offset": {
 					"type": "array",
 					"default": [0.0, 0.0, 0.0],
 					"items": {
 						"type": "number", 
-						"title": "The offset of the origin for the computational domain"
-					}
+						"title": "The offset of the origin for the computational domain",
+						"scope": "run-time"
+					},
+					"minItems": 2,
+					"maxItems": 3
 				}, 
 				"oneOf": [{
 					"end_time" : {
 						"type": "number", 
-						"title": "The end time of the simulation"
+						"title": "The end time of the simulation",
+						"scope": "run-time",
+						"minimum": 0,
+						"exclusiveMinimum": false
 					},
 					"time_steps" : {
 						"type": "integer", 
-						"title": "The number of steps the simulation is run"
+						"title": "The number of steps the simulation is run",
+						"scope": "run-time",
+						"minimum": 0,
+						"exclusiveMinimum": false
 					}
 				}]
 			}
@@ -403,6 +421,11 @@
 					"maximum_mesh_size": {
 						"type": "number", 
 						"title": "Minimum size of finest cell in the overall grid",
+						"scope": "run-time"
+					}, 
+					"maximum_mesh_depth": {
+						"type": "integer", 
+						"title": "Maximum number of adaptive refinement levels.",
 						"scope": "run-time"
 					}, 
 					"order": {
