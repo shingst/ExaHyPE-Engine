@@ -1,14 +1,51 @@
 {
 	"$comment": "This is the JSON-Schema for an ExaHyPE specification file 2.0",
 	"$id": "http://dev.exahype.eu/exahype-specfile.schema.json",
-	"type": "object", 
-	"definitions": {}, 
-	"$schema": "http://json-schema.org/draft-07/schema#", 
+	"type": "object",
+	"$schema": "http://json-schema.org/draft-04/hyper-schema", 
 	"required": [
 		"project_name",
 		"computational_domain",
 		"solvers"
 	],
+	"variable" : {
+		"oneOf": [
+			{
+				"type": "integer",
+				"minimum": 1,
+				"exclusiveMinimum": false
+			},
+			{
+				"type": "array",
+				"$comment": "Named variables with lengths (like vectors)",
+				"items": {
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string", 
+							"title": "Name of variable",
+							"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+						}, 
+						"multiplicity": {
+							"type": "integer", 
+							"title": "Multiplicity of variables", 
+							"default": 1
+						}
+					}
+				}
+			},
+			{
+				"type": "array",
+				"$comment": "Named scalar variables",
+				"items": {
+					"type": "string",
+					"title": "Name of variable",
+					"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+				}
+			}
+		]
+	},
+	"additionalProperties" : false,
 	"properties": {
 		"project_name": {
 			"type": "string", 
@@ -24,6 +61,8 @@
 			"type": "object", 
 			"scope": "compile-time",
 			"used-by": "toolkit",
+			"required" : [ "output_directory", "peano_kernel_path", "exahype_path" ],
+			"additionalProperties" : false,
 			"properties": {
 				"output_directory": {
 					"type": "string", 
@@ -80,17 +119,23 @@
 			"used-by": "toolkit",
 			"enum": [
 				"noarch",
-				"list-available-architectures-here"
+				"snb",
+				"hsw",
+				"knl"
 			]
 		}, 
 		"computational_domain": {
-			"type": "object", 
-			"scope": "run-time",
-			"required:": [ "dimension", "width" ],
+			"type": "object",
+			"oneOf": [
+				{ "required": [ "dimension", "width", "offset", "end_time"] },
+				{ "required": [ "dimension", "width", "offset", "time_steps"] }
+			],
+			"additionalProperties" : false,
 			"properties": {
 				"dimension": {
 					"type": "integer", 
 					"title": "Spatial dimensions of the code and problem", 
+					"scope": "compile-time",
 					"enum": [ 2, 3 ]
 				}, 
 				"width": {
@@ -98,45 +143,65 @@
 					"items": {
 						"type": "number", 
 						"title": "The extends of the computational domain in each spatial direction",
+						"scope": "run-time",
 						"minimum": 0,
 						"exclusiveMinimum": true
-					}
+					},
+					"$comment": "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
+					"minItems": 2,
+					"maxItems": 3
 				}, 
 				"offset": {
 					"type": "array",
 					"default": [0.0, 0.0, 0.0],
 					"items": {
 						"type": "number", 
-						"title": "The offset of the origin for the computational domain"
-					}
-				}, 
-				"oneOf": [{
-					"end_time" : {
-						"type": "number", 
-						"title": "The end time of the simulation"
+						"title": "The offset of the origin for the computational domain",
+						"scope": "run-time"
 					},
-					"time_steps" : {
+					"minItems": 2,
+					"maxItems": 3
+				}, 
+				"end_time" : {
+						"type": "number", 
+						"title": "The end time of the simulation",
+						"scope": "run-time",
+						"minimum": 0,
+						"exclusiveMinimum": false
+				},
+				"time_steps" : {
 						"type": "integer", 
-						"title": "The number of steps the simulation is run"
-					}
-				}]
+						"title": "The number of steps the simulation is run",
+						"scope": "run-time",
+						"minimum": 0,
+						"exclusiveMinimum": false
+				}
 			}
 		}, 
 		"shared_memory": {
 			"type": "object", 
 			"used-by": "toolkit",
 			"scope": "run-time",
+			"additionalProperties" : false,
 			"properties": {
 				"cores": {
 					"type": "integer", 
 					"title": "Number of shared-memory cores per node", 
-					"default": 1, 
 					"minimum": 1,
-					"exclusiveMinimum": false
+					"exclusiveMinimum": false,
+					"default": 1
+				},
+				"background_job_consumer_threads": {
+					"type": "integer", 
+					"title": "Number of background job consumer threads to start", 
+					"minimum": -2,
+					"exclusiveMinimum": false,
+					"default": 1
 				}, 
-				"identifier": {
+				"autotuning_strategy": {
 					"type": "string", 
-					"title": "An identifier for the algorithm to use", 
+					"title": "Autotuning algorithm to use", 
+					"enum" : ["dummy","autotuning","autotuning_without_learning","autotuning_without_restart","sampling"],
 					"default": "dummy"
 				}, 
 				"configure": {
@@ -156,18 +221,39 @@
 					"title": "Path to a properties file", 
 					"default": "sharedmemory.properties"
 				}
+			},
+			"dependencies": {
+				"background_job_consumer_threads" : ["cores"]
 			}
 		}, 
 		"distributed_memory": {
 			"type": "object", 
 			"used-by": "toolkit",
 			"scope": "run-time",
+			"additionalProperties" : false,
+			"required" : ["ranks_per_node"],
+			"anyOf": [
+				{
+					"properties": {
+						"node_pool_strategy" : { "enum": ["sfc_diffusion"] }
+					},
+					"required": [ "ranks_per_node", "primary_ranks_per_node" ]
+				},
+				{
+					"properties": {
+						"node_pool_strategy" : { "enum": ["hotspot","FCFS"] }
+					},
+					"required": [ "ranks_per_node" ]
+				}
+			],
 			"properties": {
-				"identifier": {
+				"load_balancing_type": {
 					"type": "string", 
-					"title": "An identifier for the algorithm",
-					"default": "static_load_balancing"
+					"title": "The load balancing type",
+					"enum" : ["static","dynamic"],
+					"default": "static"
 				}, 
+<<<<<<< HEAD
 				"configure": {
 					"type": "array", 
 					"default": ["hotspot","fair"],
@@ -194,6 +280,27 @@
 					"$comment": "Former member of configure, but I find it here better placed",
 					"type": "number",
 					"default": 1e-2
+=======
+				"load_balancing_strategy": {
+					"type": "string", 
+					"title": "Determines ranks with too much load",
+					"enum" : ["fair","greedy_naive","greedy_regular"],
+					"default": "fair"
+				}, 
+				"node_pool_strategy" : {
+					"type": "string", 
+					"title": "Determines how requests for ranks are dealt with",
+					"enum" : ["hotspot","FCFS","sfc_diffusion"],
+					"default": "hotspot"
+				},
+				"ranks_per_node" : {
+					"type": "integer", 
+					"title": "MPI ranks used per node"
+				},
+				"primary_ranks_per_node" : {
+					"type": "integer", 
+					"title": "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)"
+>>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 				},
 				"timeout": {
 					"type": "number", 
@@ -211,71 +318,96 @@
 			"type": "object",
 			"scope": "run-time",
 			"used-by": "toolkit",
-			"$comment": "This could also just be an open object where anything could be stored and content is not enforced by the Schema.",
+			"$comment": "This could also just be an open object where anything could be stored and content is not enforced by the schema.",
+			"additionalProperties" : false,
 			"properties": {
+				"fuse_algorithmic_steps": {
+					"type": "boolean", 
+					"default": false
+				}, 
+				"fuse_algorithmic_steps_factor": {
+					"type": "number", 
+					"title": "The weight used for estimating the next time step size",
+					"default": 0.99
+				},
 				"spawn_predictor_as_background_thread": {
 					"type": "boolean", 
 					"title": "Wether to spawn the predictor as a background thread, or so.",
 					"default": false
-				}, 
-				"timestep_batch_factor": {
-					"type": "number", 
-					"title": "Some factor, I don't know what it is good for", 
-					"default": 1
-				}, 
-				"spawn_double_compression": {
+				},
+				"spawn_amr_background_threads": {
 					"type": "boolean", 
-					"title": "Whether to use double compression to save data in MPI communication", 
+					"title": "Wether to spawn the predictor as a background thread, or so.",
 					"default": false
 				}, 
-				"spawn_double_compression_as_background_thread": {
+				"disable_vertex_exchange_in_time_steps": {
 					"type": "boolean", 
-					"title": "Wether to do double compression in the background", 
+					"title": "Turn off the Peano vertex exchange during time stepping iterations",
 					"default": false
-				}, 
-				"double_compression": {
-					"type": "integer",
-					"title": "Erhm... yeah, did I say double compression?", 
-					"default": 0
-				}, 
-				"disable_amr_if_grid_has_been_stationary_in_previous_iteration": {
-					"type": "boolean",
-					"default": false
-				}, 
-				"fuse_algorithmic_steps": {
-					"type": "boolean", 
-					"default": false
+<<<<<<< HEAD
 				},
 				"disable_metadata_exchange_in_batched_time_steps": {
 					"type": "boolean",
 					"default": false
 				},
 				"fuse_algorithmic_steps_factor": {
+=======
+				}, 
+				"time_step_batch_factor": {
+>>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 					"type": "number", 
-					"title": "The Fuse_algorithmic_steps_factor Schema ",
-					"default": 0.9912345
-				}, 
-				"batch_timesteps": {
-					"type": "integer", 
-					"title": "The Batch_timesteps Schema "
-				}, 
-				"skip_reduction_in_batched_time_steps": {
+					"title": "This factor determines how many time steps are run as a batch", 
+					"default": 0.0
+				},
+				"disable_metadata_exchange_in_batched_time_steps" : {
 					"type": "boolean", 
+					"title": "Turn off the exchange of ExaHyPE solver metadata during batched time steps",
 					"default": false
-				}, 
-				"skip_reduction": {
+				},
+				"double_compression": {
+					"type": "number",
+					"title": "The double compression factor. 0.0 turns double compression off.", 
+					"default": 0.0
+				},
+				"spawn_double_compression_as_background_thread": {
 					"type": "boolean", 
+					"title": "Whether to do double compression in the background", 
 					"default": false
 				}
+			},
+			"dependencies": {
+				"spawn_double_compression_as_background_thread" : ["double_compression"],
+				"fuse_algorithmic_steps_factor" : ["fuse_algorithmic_steps"],
+				"disable_metadata_exchange_in_batched_time_steps" : ["time_step_batch_factor"]
 			}
 		}, 
 		"solvers": {
 			"type": "array",
 			"$comment": "Each simulation has an ordered list of solvers assigned",
+			"additionalProperties" : false,
 			"items": {
 				"type": "object", 
-				"required": [
-					"name", "type", "variables","maximum_mesh_size","order"
+				"additionalProperties" : false,
+				"required": [ "type" ],
+				"anyOf": [
+					{
+						"properties": {
+							"type": { "enum": ["ADER-DG"] }
+						},
+						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "aderdg_kernel" ]
+					},
+					{
+						"properties": {
+							"type": { "enum": ["Limiting-ADER-DG"] }
+						},
+						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "aderdg_kernel", "fv_kernel", "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ]
+					},
+					{
+						"properties": {
+							"type": { "enum": ["Finite-Volumes"] }
+						},
+						"required": [ "name", "type", "variables","maximum_mesh_size", "patch_size", "fv_kernel" ]
+					}
 				],
 				"properties": {
 					"name": {
@@ -297,84 +429,33 @@
 						"scope": "compile-time",
 						"used-by": "toolkit",
 						"enum": ["ADER-DG","Finite-Volumes","Limiting-ADER-DG"]
-					}, 
-					"variables": {
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"anyOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of variable",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of variables", 
-											"default": 1
-										}
-									}
-								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar variables",
-								"items": {
-									"type": "string",
-									"title": "Name of variable",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
-							}
-						]
 					},
-					"material_parameters": {
+					"aderdg_kernel": {
+						"type": "object",
 						"scope": "compile-time",
-						"used-by": "toolkit",
-						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"anyOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-							},
-							{
+						"required" : [ "terms" ],
+						"additionalProperties" : "false",
+						"properties": {
+							"optimisations": {
 								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of material parameter",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of material parameter", 
-											"default": 1
-										}
-									}
+								"title": "Optimization flags",
+								"items": { 
+									"oneOf" : [ 
+										{ "enum" : ["generic", "optimised", "notimeavg", "patchwiseadjust", "usestack", "fusedsource", "fluxvect", "fusedsourcevect", "cerkguess", "converter", "flops"] },
+										{ "type" : "object", "required" : ["maxpicarditer"], "additionalProperties": false, "properties" : { "maxpicarditer" : { "type" : "number" } } }
+									]
 								}
-							},
-							{
-								"type": "array",
-								"$comment": "Named scalar material parameters",
-								"items": {
-									"type": "string",
-									"title": "Name of material parameter",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+							}, 
+							"terms": {
+								"type": "array", 
+								"title": "PDE terms to generate code for",
+								"items": { 
+									"oneOf" : [ 
+										{ "enum" : ["flux", "source", "ncp", "materialparameters"] },
+										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
+									]
 								}
+<<<<<<< HEAD
 							}
 						]
 					},
@@ -420,35 +501,28 @@
 								"type": "integer",
 								"minimum": 1,
 								"exclusiveMinimum": false
+=======
+>>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 							},
-							{
-								"type": "array",
-								"$comment": "Named variables with lengths (like vectors)",
-								"items": {
-									"type": "object",
-									"properties": {
-										"name": {
-											"type": "string", 
-											"title": "Name of global observable",
-											"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-										}, 
-										"multiplicity": {
-											"type": "integer", 
-											"title": "Multiplicity of global observable", 
-											"default": 1
-										}
-									}
-								}
+							"language": {
+								"type": "string", 
+								"title": "The walking dead",
+								"enum": ["C","Fortran"],
+								"default": "C"
+							}, 
+							"type": {
+								"type": "string", 
+								"title": "Type of solver", 
+								"enum": ["nonlinear","linear"],
+								"default": "nonlinear"
 							},
-							{
-								"type": "array",
-								"$comment": "Named scalar global observables",
-								"items": {
-									"type": "string",
-									"title": "Name of global observable",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
-								}
+							"basis": {
+								"type": "string", 
+								"title": "Basis functions", 
+								"enum": ["Legendre","Lobatto"],
+								"default": "Legendre"
 							}
+<<<<<<< HEAD
 						]
 					}, 
 					"maximum_mesh_size": {
@@ -472,24 +546,33 @@
 							"type": "integer", 
 							"title": "For a FV solver: Number of subcells per coordinate direction (no ghost; convergence order is always k=3 in ExaHyPE)",
 							"scope": "compile-time"
+=======
+>>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 						}
-					}],
-					"kernel": {
+					},
+					"fv_kernel": {
 						"type": "object",
 						"scope": "compile-time",
+						"required" : [ "terms" ],
+						"additionalProperties" : "false",
 						"properties": {
-							"optimisation": {
+							"optimisations": {
+								"type": "array",
 								"title": "Optimization flags",
-								"anyOf": [
-									{ "type": "array" },
-									{ "type": "string" }
-								]
+								"items": { 
+									"enum" : [ "generic", "optimised", "usestack" ]
+								}
 							}, 
 							"terms": {
 								"type": "array", 
 								"title": "PDE terms to generate code for",
-								"items": { "type": "string" }
-							}, 
+								"items": { 
+									"oneOf" : [ 
+										{ "enum" : ["flux", "source", "ncp" ] },
+										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
+									]
+								}
+							},
 							"language": {
 								"type": "string", 
 								"title": "The walking dead",
@@ -499,11 +582,97 @@
 							"type": {
 								"type": "string", 
 								"title": "Type of solver", 
-								"enum": ["nonlinear","linear"],
-								"default": "nonlinear"
+								"enum": ["musclhancock","godunov"],
+								"default": "godunov"
 							}
 						}
 					}, 
+					"variables": {
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+						"properties" : { "$ref" : "#/definitions/variables" }
+					},
+					"material_parameters": {
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+						"properties" : { "$ref" : "#/definitions/variables" }
+					}, 
+					"global_observables": {
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "global observables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
+						"properties" : { "$ref" : "#/definitions/variables" }
+					}, 
+					"maximum_mesh_size": {
+						"type": "number", 
+						"title": "Minimum size of finest cell in the overall grid",
+						"scope": "run-time"
+					},
+					"maximum_mesh_depth": {
+						"type": "integer", 
+						"title": "Maximum number of adaptive refinement levels.",
+						"scope": "run-time"
+					}, 
+					"order": {
+							"type": "integer", 
+							"title": "Approximation order of the scheme",
+							"scope": "compile-time"
+					}, 
+					"patch_size": {
+						"type": "integer", 
+						"title": "Number of subcells per coordinate direction (no ghost ",
+						"scope": "compile-time"
+					},
+					"halo_cells" : {
+						"type": "integer", 
+						"title": "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
+						"scope": "run-time"
+					},
+					"regularised_fine_grid_levels" : {
+						"type": "integer", 
+						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
+						"scope": "run-time"
+					},
+					"dmp_observables": {
+						"id"  : "dmp_observables",
+						"type": "integer", 
+						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
+						"scope": "compile-time"
+					},
+					"dmp_relaxation_parameter": {
+						"id"  : "dmp_relaxation_parameter",
+						"type": "number", 
+						"title": "The difference scaling used by the discrete maximum principle (only Limiting-ADER-DG solver)",
+						"scope": "run-time",
+						"default" : 1e-3
+					},
+					"dmp_difference_scaling": {
+						"id"  : "dmp_difference_scaling",
+						"type": "number", 
+						"title": "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
+						"scope": "run-time",
+						"default" : 1e-4
+					},
+					"helper_layers": {
+						"type": "integer", 
+						"title": "Number of limiter helper layers (only Limiting-ADER-DG solver)",
+						"scope": "run-time",
+						"default" : 1
+					},
+					"steps_till_cured": {
+						"type": "integer", 
+						"title": "Number of iterations to wait until a cured cell loses the 'troubled' flag (only Limiting-ADER-DG solver)",
+						"scope": "run-time",
+						"default" : 0
+					},
+					"time_stepping": {
+						"type": "string", 
+						"default": "global",
+						"enum": ["global","local","whatever"],
+						"scope": "run-time"
+					},
 					"plotters": {
 						"$comment": "Each solver has an ordered list of plotters assigned. The order and name of plotters is a compile time constant",
 						"type": "array",
@@ -582,7 +751,11 @@
 									"type": "object",
 									"title": "Free runtime parameters for postprocessing-codes",
 									"scope": "run-time"
+<<<<<<< HEAD
 								},
+=======
+								}
+>>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 							}
 						}
 					}, 

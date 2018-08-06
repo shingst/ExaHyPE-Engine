@@ -23,6 +23,71 @@ def numberOfVariables(variables):
 	return number
 
 class SolverGenerator():
+	aderdg_template_bool_map = {
+		"linear"          : "isLinear",
+		"nonlinear"       : "isNonlinear",
+		"Fortran"         : "isFortran",
+		"flux"            : "useFlux",
+		"source"          : "useSource",
+		"ncp"             : "useNCP",
+		"pointsources"    : "usePointSources",
+		"notimeavg"       : "noTimeAveraging",
+		"patchwiseadjust" : "patchwiseAdjust",
+		"usestack"        : "tempVarsOnStack",
+		"maxpicarditer"   : "useMaxPicardIterations",
+		"flops"           : "countFlops"
+	}
+	
+	aderdg_types=[\
+		"linear",\
+		"nonlinear",\
+		"Legendre",\
+		"Lobatto",\
+		"user"\
+	]
+	
+	aderdg_terms=[\
+		"flux",\
+		"source",\
+		"ncp",\
+		"pointsources",\
+		"materialparameters"\
+	]
+	
+	aderdg_optimisations=[\
+		"generic",\
+		"optimised",\
+		"notimeavg",\
+		"patchwiseadjust",\
+		"usestack",\
+		"maxpicarditer",\
+		"fusedsource",\
+		"fluxvect",\
+		"fusedsourcevect",\
+		"cerkguess",\
+		"converter",\
+		"flops"\
+	]
+	
+	FV_TYPES=[\
+		"godunov",\
+		"musclhancock",\
+		"user",\
+	]
+	FV_TERMS=[\
+		"flux",\
+		"source",\
+		"ncp",\
+		"pointsources",\
+		"materialparameters"\
+	]
+	FV_OPTIMISATIONS=[\
+		"generic",\
+		"optimised",\
+		"patchwiseadjust",\
+		"usestack",\
+	]
+	
 	def generate_plotter(self, solver_num, solver):
 		plotters = solver["plotters"]
 		for j, plotter in enumerate(plotters):
@@ -39,8 +104,12 @@ class SolverGenerator():
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))
 			
 			solverType = solver["type"]
-			kernels    = solver["kernel"]
-			#print(solver["kernel"])
+			
+			kernels             = solver["aderdg_kernel"]
+			kernel_type         = kernels["type"]
+			kernel_terms        = kernels["terms"]
+			kernel_optimisation = kernels["optimisations"]
+			print(solver["aderdg_kernel"])
 			
 			context = { }
 			context["project"]=spec["project_name"]
@@ -55,11 +124,12 @@ class SolverGenerator():
 			context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
 			context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
 			context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
-			context["numberOfDMPObservables"]     = solver.get("dmp_observables",0);
-			context["numberOfPointSources"]       = solver.get("point_sources",0);
+#			context["numberOfDMPObservables"]     = solver.get("dmp_observables",0);
+#			context["numberOfPointSources"]       = solver.get("point_sources",0);
 
-			context["order"]     = solver.get("order",0);
-			context["patchSize"] = solver.get("patchSize",0);
+#			context["order"]     = solver.get("order",-1);
+#			context["patchSize"] = solver.get("patch_size",-1);
+			
 			print(context)
 
 #//int

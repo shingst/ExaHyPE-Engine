@@ -8,72 +8,65 @@
 	},
 	"architecture": "noarch",
 	"computational_domain": {
-	  "dimension": 2,
-	  "width": [ 20, 20 ],
-	  "offset": [ 0, 0, 0 ],
-	  "end_time": 20
+		"dimension": 2,
+		"width": [ 20, 20, 20 ],
+		"offset": [ 0, 0, 0 ],
+		"end_time": 20
 	},
 	"shared_memory": {
-	  "cores": 1,
-	  "identifier": "dummy",
-	  "properties_file": "sharedmemory.properties"
+		"cores": 1,
+		"autotuning_strategy": "dummy",
+		"properties_file": "sharedmemory.properties"
 	},
 	"distributed_memory": {
-	  "identifier": "static_load_balancing",
-	  "configure": [
-		"hotspot",
-		"fair",
-		{ "ranks_per_node": 1 }
-	  ],
-	  "timeout": 60,
-	  "buffer_size": 64
+		"load_balancing_type": "static",
+		"load_balancing_strategy" : "fair",
+		"node_pool_strategy" : "hotspot",
+		"ranks_per_node": 1,
+		"timeout": 60,
+		"buffer_size": 64
 	},
 	"optimisation": {
-	  "spawn_predictor_as_background_thread": false,
-	  "timestep_batch_factor": 1,
-	  "spawn_double_compression": false,
-	  "spawn_double_compression_as_background_thread": false,
-	  "double_compression": 0,
-	  "disable_amr_if_grid_has_been_stationary_in_previous_iteration": false,
-	  "fuse_algorithmic_steps": true,
-	  "fuse_algorithmic_steps_factor": 0.99,
-	  "batch_timesteps": 0,
-	  "skip_reduction_in_batched_time_steps": false,
-	  "skip_reduction": true
+		"fuse_algorithmic_steps" : false,
+		"fuse_algorithmic_steps_factor" : 0.99,
+		"spawn_predictor_as_background_thread" : false,
+		"spawn_amr_background_threads" : false,
+		"disable_vertex_exchange_in_time_steps" : true,
+		"time_step_batch_factor" : 0.8,
+		"disable_metadata_exchange_in_batched_time_steps" : false,
+		"double_compression" : 0.0,
+		"spawn_double_compression_as_background_thread" : false
 	},
 	"solvers": [
 		{
 			"name": "GRMHDSolver_DG",
 			"type": "ADER-DG",
 			"variables": [
-				{ "name": "rho",         "multiplicity": 1 },
-				{ "name": "vel",         "multiplicity": 3 },
-				{ "name": "E",           "multiplicity": 1 },
-				{ "name": "B",           "multiplicity": 3 },
-				{ "name": "psi",         "multiplicity": 1 },
-				{ "name": "lapse",       "multiplicity": 1 },
-				{ "name": "shift",       "multiplicity": 3 },
-				{ "name": "gij",         "multiplicity": 6 },
+				{ "name": "rho",				 "multiplicity": 1 },
+				{ "name": "vel",				 "multiplicity": 3 },
+				{ "name": "E",					 "multiplicity": 1 },
+				{ "name": "B",					 "multiplicity": 3 },
+				{ "name": "psi",				 "multiplicity": 1 },
+				{ "name": "lapse",			 "multiplicity": 1 },
+				{ "name": "shift",			 "multiplicity": 3 },
+				{ "name": "gij",				 "multiplicity": 6 },
 				{ "name": "coordinates", "multiplicity": 3 },
-				{ "name": "check",       "multiplicity": 1 }
+				{ "name": "check",			 "multiplicity": 1 }
 			],
 			"material_parameters": [
-				{ "name": "test",         "multiplicity": 3 }
+				{ "name": "test",				 "multiplicity": 3 }
 			],
 			"global_observables": 1,
 			"order": 3,
-			"maximum_mesh_size": 5,
+			"maximum_mesh_size": 5.0,
 			"maximum_mesh_depth": 0,
 			"time_stepping": "global",
-			"kernel": {
-				"optimisation": "generic",
-				"terms": [
-					"flux",
-					"ncp",
-					"source"
-				],
-				"language": "C",
-				"type": "nonlinear"
+			"aderdg_kernel": {
+				"optimisations": [ "generic", { "maxpicarditer" : 1 } ],
+				"terms": [ "flux", "ncp", "source" ],
+				"language" : "C",
+				"type"  : "nonlinear",
+				"basis" : "Lobatto"
 			},
 			"plotters": [
 				{
@@ -179,7 +172,7 @@
 						"merge_seperation": 1.5,
 						"collapse_seperation": -1,
 						"initial_positions": [
-							[ 0, 0,  20 ],
+							[ 0, 0,	20 ],
 							[ 0, 0, -20 ]
 						]
 					},
