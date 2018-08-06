@@ -127,7 +127,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;

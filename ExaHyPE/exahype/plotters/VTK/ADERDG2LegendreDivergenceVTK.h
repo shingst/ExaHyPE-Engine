@@ -15,6 +15,7 @@
 #define _EXAHYPE_PLOTTERS_ADERDG_2_LEGENDRE_DIVERGENCE_VTK_H_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/Slicer.h"
 
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
 #include "tarch/plotter/griddata/unstructured/UnstructuredGridWriter.h"
@@ -50,7 +51,7 @@ class exahype::plotters::ADERDG2LegendreDivergenceVTK: public exahype::plotters:
   int           _order;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  std::string   _select;
+  exahype::parser::ParserView   _select;
 
 
   /**
@@ -62,9 +63,12 @@ class exahype::plotters::ADERDG2LegendreDivergenceVTK: public exahype::plotters:
    * To memorise the time argument from startPlotter(). We need it when we close the plotter for the time series.
    */
   double _time;
+  
+  static tarch::logging::Log _log;
+  exahype::plotters::Slicer *slicer;
 
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestLeftBottomFront;
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestRightTopBack;
+//  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestLeftBottomFront;
+//  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestRightTopBack;
 
   tarch::plotter::griddata::unstructured::UnstructuredGridWriter*                    _gridWriter;
 
@@ -92,7 +96,7 @@ class exahype::plotters::ADERDG2LegendreDivergenceVTK: public exahype::plotters:
   ADERDG2LegendreDivergenceVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType isBinary);
   virtual ~ADERDG2LegendreDivergenceVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

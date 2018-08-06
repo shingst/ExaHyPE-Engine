@@ -170,7 +170,7 @@ void exahype::plotters::Patch2VTK::init(
   int                numberOfCellsPerAxis,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ){
 	_filename             = filename;
 	_solverUnknowns       = unknowns; // not even needed

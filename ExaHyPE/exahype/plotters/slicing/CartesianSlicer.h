@@ -24,6 +24,7 @@ namespace exahype {
 #include <algorithm>
 #include "exahype/plotters/slicing/Slicer.h"
 #include "tarch/la/Vector.h"
+#include "exahype/parser/ParserView.h"
 #include <iostream>
 
 /**
@@ -84,7 +85,7 @@ struct exahype::plotters::CartesianSlicer : public exahype::plotters::Slicer {
 	 * Parse an ExaHyPE specfile query string and construct a CartesianSlicer object.
 	 * The syntax is described in the class documentation.
 	 **/
-	static CartesianSlicer* fromSelectionQuery(const std::string& select);
+	static CartesianSlicer* fromSelectionQuery(const exahype::parser::ParserView select);
 	
 	/// The inverse of the attribute "active".
 	int running(int d) const { return active(d) ? 0 : 1; }

@@ -136,7 +136,7 @@ void exahype::plotters::ADERDG2LegendreVTK::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;

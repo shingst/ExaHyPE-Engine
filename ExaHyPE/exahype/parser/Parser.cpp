@@ -24,6 +24,9 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <typeinfo>
+#include <exception>
+#include <cstdarg>
 
 #include "tarch/la/ScalarOperations.h"
 
@@ -32,6 +35,66 @@
 
 #include "json.hpp" // this is an ~1MB header file which is included here exclusively
 using json = nlohmann::json;
+
+tarch::logging::Log exahype::parser::Parser::_log("exahype::parser::Parser");
+
+namespace exahype {
+namespace parser {
+namespace tools {
+
+// Using a local namespace to avoid conflicts with these common function names.
+
+// a buffer-overflow-safe version of sprintf
+// source: http://stackoverflow.com/a/69911
+std::string vformat (const char *fmt, va_list ap) {
+  using namespace std;
+  // Allocate a buffer on the stack that's big enough for us almost
+  // all the time.  Be prepared to allocate dynamically if it doesn't fit.
+  size_t size = 1024;
+  char stackbuf[1024];
+  std::vector<char> dynamicbuf;
+  char *buf = &stackbuf[0];
+  va_list ap_copy;
+
+  while (1) {
+      // Try to vsnprintf into our buffer.
+      va_copy(ap_copy, ap);
+      int needed = vsnprintf (buf, size, fmt, ap);
+      va_end(ap_copy);
+
+      // NB. C99 (which modern Linux and OS X follow) says vsnprintf
+      // failure returns the length it would have needed.  But older
+      // glibc and current Windows return -1 for failure, i.e., not
+      // telling us how much was needed.
+
+      if (needed <= (int)size && needed >= 0) {
+          // It fit fine so we're done.
+          return std::string (buf, (size_t) needed);
+      }
+
+      // vsnprintf reported that it wanted to write more characters
+      // than we allotted.  So try again using a dynamic buffer.  This
+      // doesn't happen very often if we chose our initial size well.
+      size = (needed > 0) ? (needed+1) : (size*2);
+      dynamicbuf.resize (size);
+      buf = &dynamicbuf[0];
+  }
+}
+
+std::string sformat(const char *fmt, ...) {
+  using namespace std;
+  va_list ap;
+  va_start (ap, fmt);
+  std::string buf = vformat (fmt, ap);
+  va_end (ap);
+  return buf;
+}
+
+} // ns tools
+} // ns parser
+} // ns exahype
+
+using namespace exahype::parser::tools;
 
 struct exahype::parser::ParserImpl {
   json data;
@@ -47,9 +110,28 @@ struct exahype::parser::ParserImpl {
   bool isValid() {
     return true; // TODO: Wether json holds something or not
   }
-};
 
-tarch::logging::Log exahype::parser::Parser::_log("exahype::parser::Parser");
+  /**
+   * Generic method to extract various types (like int,double,bool,string,vector),
+   * throws std::runtime_error in case of error.
+   **/
+  template<typename T>
+  T getFromPath(std::string path, T defaultValue, bool isOptional=false) const {
+    std::stringstream ss;
+    try {
+      return data.at(json::json_pointer(path));
+    } catch (json::type_error& e) {
+      ss << path << " is not a " << typeid(T).name()   << " (" << e.what() << ")";
+    } catch(json::out_of_range& e) {
+      if(isOptional)
+        return defaultValue;
+      else
+        ss << "Missing entry " << path << " (" << e.what() << ")";
+    }
+    throw std::runtime_error(ss.str());
+  }
+
+};
 
 bool exahype::parser::Parser::_interpretationErrorOccured(false);
 
@@ -112,115 +194,6 @@ void exahype::parser::Parser::readFile(const std::string& filename) {
 void exahype::parser::Parser::readFile(std::istream& inputFile, std::string filename) {
   _filename = filename;
   _impl->read(inputFile);
-  
-   /*
-   try {
-    const int MAX_CHARS_PER_LINE = 65536;
-
-    std::regex SL_COMMENT(R"(^\s*(\/\/)+)");
-    std::regex ML_COMMENT_BEGIN(R"((\/\*))"); // Covers all cases /*,/**,/***,... .
-    std::regex ML_COMMENT_END(R"((\*\/))"); //
-    std::regex GROUP_BEGIN_OR_END(R"(^(\s|\t)*([a-zA-Z][^\=]+)+)");
-    std::regex CONST_PARAMETER(R"(^\s*([A-Za-z](\w|[^a-zA-Z\d\s\t])*)\s+const\s*=\s*(([^\,]+\,)*([^\,]+)))");
-    std::regex PARAMETER(R"(^\s*([A-Za-z](\w|[^a-zA-Z\d\s\t])*)\s*=\s*(([^\,]+\,)*([^\,]+)))");
-    std::regex NO_SPLITTING(R"(\}|\{)");
-    std::regex COMMA_SEPARATED(R"((\w|[^a-zA-Z\,\s\t])+)");
-    std::regex WHITESPACE_SEPARATED(R"(([^\s\t]+))");
-    std::smatch match;
-    
-    _tokenStream.clear();
-    _filename = filename;
-
-    int currentlyReadsMultilineComment = 0;
-    int lineNumber            = 0;
-    while (!inputFile.eof() && inputFile) {
-      char lineBuffer[MAX_CHARS_PER_LINE];
-      inputFile.getline(lineBuffer, MAX_CHARS_PER_LINE);
-      std::string line(lineBuffer);
-
-      // ignore single-line and multi-line comments
-      if (std::regex_search(line, match, ML_COMMENT_BEGIN) && match.size() > 1) {
-        currentlyReadsMultilineComment += 1;
-      }
-      if (std::regex_search(line, match, ML_COMMENT_END) && match.size() > 1) {
-        currentlyReadsMultilineComment -= 1;
-      }
-      bool currentlyReadsSinglineComment =
-          std::regex_search(line, SL_COMMENT, std::regex_constants::match_continuous);
-
-      // Runtime parameters
-      if (
-          !currentlyReadsSinglineComment &&
-          currentlyReadsMultilineComment==0 &&
-          std::regex_search(line, match, PARAMETER) && match.size() > 1
-      ) {
-        _tokenStream.push_back(match.str(1)); // Subgroup 1 is left-hand side (trimmed)
-        std::string rightHandSide = match.str(3);
-
-        if (!std::regex_search(rightHandSide, match, NO_SPLITTING)) {
-          std::regex_iterator<std::string::iterator> regex_it ( rightHandSide.begin(), rightHandSide.end(), COMMA_SEPARATED );
-          std::regex_iterator<std::string::iterator> rend;
-          while(regex_it!=rend) {
-            _tokenStream.push_back(regex_it->str());
-            ++regex_it;
-          }
-        } else {
-          _tokenStream.push_back(rightHandSide);
-        }
-      // Compile time parameters (Do not push the token const on the stream)
-      } else if (
-          !currentlyReadsSinglineComment &&
-          currentlyReadsMultilineComment==0 &&
-          std::regex_search(line, match, CONST_PARAMETER) && match.size() > 1
-      ) {
-        _tokenStream.push_back(match.str(1)); // Subgroup 1 is left-hand side (trimmed)
-        std::string rightHandSide = match.str(3);
-
-        if (!std::regex_search(rightHandSide, match, NO_SPLITTING)) {
-          std::regex_iterator<std::string::iterator> regex_it ( rightHandSide.begin(), rightHandSide.end(), COMMA_SEPARATED );
-          std::regex_iterator<std::string::iterator> rend;
-          while(regex_it!=rend) {
-            _tokenStream.push_back(regex_it->str());
-            ++regex_it;
-          }
-        } else {
-          _tokenStream.push_back(rightHandSide);
-        }
-      } else if (
-          !currentlyReadsSinglineComment &&
-          currentlyReadsMultilineComment==0 &&
-          std::regex_search(line, match, GROUP_BEGIN_OR_END) && match.size() > 1
-      ) {
-        std::regex_iterator<std::string::iterator> regex_it ( line.begin(), line.end(), WHITESPACE_SEPARATED );
-        std::regex_iterator<std::string::iterator> rend;
-        if (regex_it->str().compare("end")!=0) { // first token should not be end
-          while(regex_it!=rend) {
-            _tokenStream.push_back(regex_it->str());
-            ++regex_it;
-          }
-        } // else do nothing
-      } else if (currentlyReadsMultilineComment<0) {
-        logError("readFile(istream)",
-             "Please remove additional multi-line comment end(s) in line '" << lineNumber << "'.");
-         _interpretationErrorOccured = true;
-      }
-      lineNumber++;
-    }
-
-    if (currentlyReadsMultilineComment>0) {
-      logError("readFile(istream)",
-               "A multi-line comment was not closed after line " << lineNumber);
-      _interpretationErrorOccured = true;
-    }
-   }
-  catch (const std::regex_error& e) {
-    logError("readFile(istream)", "catched exception " << e.what() <<
-        ". This usually indicates that you are linking against a C++ standard library implementation which does not" <<
-        " provide a proper implementation of the std::regex functionality. In particular," <<
-        " if you use GCC or your compiler relies on GCC, please make sure that you use a GCC version >= 4.9.0." );
-    _interpretationErrorOccured = true;
-  }
-  */
 
   //  For debugging purposes
   if(std::getenv("EXAHYPE_VERBOSE_PARSER")) { // runtime debugging
@@ -252,111 +225,156 @@ void exahype::parser::Parser::invalidate() {
   _interpretationErrorOccured = true;
 }
 
-std::string exahype::parser::Parser::getTokenAfter(std::string token,
-                                           int additionalTokensToSkip) const {
+bool exahype::parser::Parser::hasPath(std::string path) const {
+  // Q: I'm not sure whethe the iterator end() is also true for nested structures (path pointer)
+  bool found = _impl->data.find(json::json_pointer(path)) != _impl->data.end();
+  return found;
+}
+
+std::string exahype::parser::Parser::dumpPath(std::string path) const {
+  std::abort(); // TODO implement (easy)
+}
+
+bool exahype::parser::Parser::isValueValidBool(const std::string& path) const {
+  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_boolean();
+}
+
+bool exahype::parser::Parser::isValueValidInt(const std::string& path) const {
+  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_number_integer();
+}
+
+bool exahype::parser::Parser::isValueValidDouble(const std::string& path) const {
+  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_number();
+}
+
+bool exahype::parser::Parser::isValueValidString(const std::string& path) const {
+  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_string();
+}
+
+std::string exahype::parser::Parser::getStringFromPath(std::string path, std::string defaultValue, bool isOptional) const {
   assertion(isValid());
-  int currentToken = 0;
-  while (currentToken < static_cast<int>(_tokenStream.size()) &&
-         _tokenStream[currentToken] != token) {
-    currentToken++;
+  try {
+    return _impl->getFromPath(path, defaultValue, isOptional);
+  } catch(std::runtime_error& e) {
+    logError("getStringFromPath()", e.what());
+    _interpretationErrorOccured = true;
+    return defaultValue; /* I don't like returning something here */
   }
-  currentToken += (additionalTokensToSkip + 1);
-  if (currentToken < static_cast<int>(_tokenStream.size())) {
-    return _tokenStream[currentToken];
-  } else
-    return _noTokenFound;
-}
-
-std::string exahype::parser::Parser::getTokenAfter(std::string token0,
-                                           std::string token1,
-                                           int additionalTokensToSkip) const {
-  int currentToken = 0;
-  while (currentToken < static_cast<int>(_tokenStream.size()) &&
-         _tokenStream[currentToken] != token0) {
-    currentToken++;
-  }
-  while (currentToken < static_cast<int>(_tokenStream.size()) &&
-         _tokenStream[currentToken] != token1) {
-    currentToken++;
-  }
-  currentToken += (additionalTokensToSkip + 1);
-  if (currentToken < static_cast<int>(_tokenStream.size())) {
-    return _tokenStream[currentToken];
-  } else
-    return _noTokenFound;
-}
-
-std::string exahype::parser::Parser::getTokenAfter(std::string token0, int occurance0,
-                                           int additionalTokensToSkip) const {
-  assertion(isValid());
-  assertion(occurance0 > 0);
-  int currentToken = 0;
-  while (currentToken < static_cast<int>(_tokenStream.size()) &&
-         (_tokenStream[currentToken] != token0 || occurance0 > 1)) {
-    if (_tokenStream[currentToken] == token0) occurance0--;
-    currentToken++;
-  }
-  currentToken += (additionalTokensToSkip + 1);
-  if (currentToken < static_cast<int>(_tokenStream.size())) {
-    return _tokenStream[currentToken];
-  } else
-    return _noTokenFound;
-}
-
-std::string exahype::parser::Parser::getTokenAfter(std::string token0, int occurance0,
-                                           std::string token1, int occurance1,
-                                           int additionalTokensToSkip) const {
-  assertion(isValid());
-  assertion(occurance0 > 0);
-  assertion(occurance1 > 0);
-  int currentToken = 0;
-  while (currentToken < static_cast<int>(_tokenStream.size()) &&
-         (_tokenStream[currentToken] != token0 || occurance0 > 1)) {
-    if (_tokenStream[currentToken] == token0) occurance0--;
-    currentToken++;
-  }
-  while (currentToken < static_cast<int>(_tokenStream.size()) &&
-         (_tokenStream[currentToken] != token1 || occurance1 > 1)) {
-    if (_tokenStream[currentToken] == token1) occurance1--;
-    currentToken++;
-  }
-  currentToken += (additionalTokensToSkip + 1);
-  if (currentToken < static_cast<int>(_tokenStream.size())) {
-    return _tokenStream[currentToken];
-  } else
-    return _noTokenFound;
-}
-
-int exahype::parser::Parser::getIntFromPath(std::string path) const {
+  /*
   assertion(isValid());
   try {
     return _impl->data.at(json::json_pointer(path));
   } catch (json::type_error& e) {
-    logError("getIntFromPath()", path << " is not an integer (" << e.what() << ")");
+    logError("getStringFromPath()", path << " is not a string (" << e.what() << ")");
   } catch(json::out_of_range& e) {
-    logError("getIntFromPath()", "Missing entry " << path << " (" << e.what() << ")");
+    logError("getStringFromPath()", "Missing entry " << path << " (" << e.what() << ")");
   }
   _interpretationErrorOccured = true;
-  return 1;
+  return "";
+  */
 }
 
-tarch::la::Vector<DIMENSIONS,double> exahype::parser::Parser::getVectorFromPath(std::string path) const {
+int exahype::parser::Parser::getIntFromPath(std::string path, int defaultValue, bool isOptional) const {
+  assertion(isValid());
+  try {
+    return _impl->getFromPath(path, defaultValue, isOptional);
+  } catch(std::runtime_error& e) {
+    logError("getIntFromPath()", e.what());
+    _interpretationErrorOccured = true;
+    return defaultValue; /* I don't like returning something here */
+  }
+}
+
+double exahype::parser::Parser::getDoubleFromPath(std::string path, double defaultValue, bool isOptional) const {
+  assertion(isValid());
+  try {
+    return _impl->getFromPath(path, defaultValue, isOptional);
+  } catch(std::runtime_error& e) {
+    logError("getIntFromPath()", e.what());
+    _interpretationErrorOccured = true;
+    return defaultValue; /* I don't like returning something here */
+  }
+}
+
+bool exahype::parser::Parser::getBoolFromPath(std::string path, bool defaultValue, bool isOptional) const {
+  assertion(isValid());
+  try {
+    return _impl->getFromPath(path, defaultValue, isOptional);
+  } catch(std::runtime_error& e) {
+    logError("getBoolFromPath()", e.what());
+    _interpretationErrorOccured = true;
+    return defaultValue; /* I don't like returning something here */
+  }
+}
+
+tarch::la::Vector<DIMENSIONS,double> exahype::parser::Parser::getDimVectorFromPath(std::string path) const {
+  assertion(isValid());
   tarch::la::Vector<DIMENSIONS,double> result;
+  // Here we do not rely on _impl->getFromPath because we don't want to
+  // copy from a STL vector. Somehow.
   try {
     json::json_pointer p(path);
     result(0) = _impl->data.at(p).at(0);
+    if(_impl->data.at(p).size() != DIMENSIONS) {
+      logError("getDimVectorFromPath()", path << " holds a vector of size " << _impl->data.at(p).size() << ", however we have " << DIMENSIONS << " spatial dimensions");
+    }
     result(1) = _impl->data.at(p).at(1);
     if(DIMENSIONS == 3)
       result(2) = _impl->data.at(p).at(2);
     return result;
   } catch(json::type_error& e) {
-    logError("getVectorFromPath()", path << " holds not a double-vector of size " << DIMENSIONS << " (" << e.what() << ")");
+    logError("getDimVectorFromPath()", path << " holds not a double-vector of size " << DIMENSIONS << " (" << e.what() << ")");
   } catch(json::out_of_range& e) {
-    logError("getVectorFromPath()", "Missing entry " << path << " (" << e.what() << ")");
+    logError("getDimVectorFromPath()", "Missing entry " << path << " (" << e.what() << ")");
   }
 
   _interpretationErrorOccured = true;
   return result;
+}
+
+std::vector<int> exahype::parser::Parser::getIntVectorFromPath(std::string path) const {
+  assertion(isValid());
+  std::vector<int> empty;
+  try {
+    return _impl->getFromPath(path, empty, isMandatory);
+  } catch(std::runtime_error& e) {
+    logError("getIntVectorFromPath()", e.what());
+    _interpretationErrorOccured = true;
+    return empty; /* I don't like returning something here */
+  }
+}
+
+bool exahype::parser::Parser::flagListContains(std::string path, std::string keyword) const {
+  assertion(isValid());
+  try {
+    auto p = json::json_pointer(path);
+    if(_impl->data.count(p)) {
+      auto j = _impl->data.at(p);
+      if(!j.is_array()) {
+        logError("flagListContains()", "Expected " << path << " to hold an array, but this is not the case.");
+        _interpretationErrorOccured = true;
+        return false;
+      }
+      for (json::iterator it = j.begin(); it != j.end(); ++it) {
+        if(! it->is_string() ) {
+          logError("flagListContains()", path << " holds a non-string element in its array-content.");
+          _interpretationErrorOccured = true;
+          return false;
+        }
+        if( it->get<std::string>().compare(keyword) == 0) return true;
+      }
+      return false; // not found
+    } else {
+      logDebug("flagListContains()", "Flag array " << path << " is not existing, defaulting to empty.");
+    }
+  } catch(json::type_error& e) {
+    logError("flagListContains()", path << " holds weird data (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("flagListContains()", "Missing something below or at  " << path << " (" << e.what() << ")");
+  }
+  
+  _interpretationErrorOccured = true;
+  return false; // Should not return data
 }
 
 int exahype::parser::Parser::getNumberOfThreads() const {
@@ -377,7 +395,7 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() c
     return result;
   }
   
-  result = getVectorFromPath("/computational_domain/width");
+  result = getDimVectorFromPath("/computational_domain/width");
   logDebug("getDomainSize()", "found size " << result);
   return result;
 }
@@ -386,38 +404,19 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getOffset() const
   assertion(isValid());
   std::string token;
   tarch::la::Vector<DIMENSIONS, double> result;
-
-  try {
-    token = getTokenAfter("computational-domain", "offset", 0);
-    result(0) = std::stod(token);
-    token = getTokenAfter("computational-domain", "offset", 1);
-    result(1) = std::stod(token);
-    #if DIMENSIONS == 3
-    token = getTokenAfter("computational-domain", "offset", 2);
-    if (token.compare("end-time")==0) {
-      logError("getOffset()",
-               "offset: not enough values specified for " <<
-               DIMENSIONS<< " dimensions");
-      _interpretationErrorOccured = true;
-      return result;
-    }
-    token = getTokenAfter("computational-domain", "offset", 2);
-    result(2) = std::stod(token);
-    #endif
-  } catch (const std::invalid_argument& ia) {}
-
+  result = getDimVectorFromPath("/computational_domain/offset");
   logDebug("getOffset()", "found offset " << result);
   return result;
 }
 
 std::string exahype::parser::Parser::getMulticorePropertiesFile() const {
-  std::string result = getTokenAfter("shared-memory", "properties-file");
-  logDebug("getMulticorePropertiesFile()", "found token " << result);
+  std::string result = getStringFromPath("/shared_memory/properties_file");
+  logDebug("getMulticorePropertiesFile()", "found " << result);
   return result;
 }
 
 exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoadBalancingType() const {
-  std::string token = getTokenAfter("distributed-memory", "identifier");
+  std::string token = getStringFromPath("/distributed_memory/identifier");
   exahype::parser::Parser::MPILoadBalancingType result = MPILoadBalancingType::Static;
   if (token.compare("static_load_balancing") == 0) {
     result = MPILoadBalancingType::Static;
@@ -430,69 +429,58 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
 }
 
 
-std::string exahype::parser::Parser::getMPIConfiguration() const {
-  return getTokenAfter("distributed-memory", "configure");
+bool exahype::parser::Parser::MPIConfigurationContains(std::string flag) const {
+  return flagListContains("/distributed_memory/configure", flag);
 }
 
-
-std::string exahype::parser::Parser::getSharedMemoryConfiguration() const {
-  return getTokenAfter("shared-memory", "configure");
+bool exahype::parser::Parser::SharedMemoryConfigurationContains(std::string flag) const {
+  return flagListContains("/shared_memory/configure", flag);
 }
 
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
-  const std::string token         = "max-node-pool-answering-time";
-  const double      defaultResult = 1e-2;
-  if (getMPIConfiguration().find( token )!=std::string::npos ) {
-    const double result = static_cast<double>(exahype::parser::Parser::getValueFromPropertyString(getMPIConfiguration(),token));
-    if (result<0.0) {
-      logWarning( "getNodePoolAnsweringTimeout()", "token " << token << " not specified for MPI configuration so use default timeout of " << defaultResult );
-      return defaultResult;
-    }
-    else return result;
+  const std::string path = "/distributed_memory/max_node_pool_answering_time";
+  const double defaultResult = 1e-2;
+  double result = getDoubleFromPath(path, defaultResult, true);
+  if(tarch::la::equals(defaultResult, result)) {
+    logWarning( "getNodePoolAnsweringTimeout()", path << " not specified for MPI configuration so use default timeout of " << defaultResult );
   }
-  else {
-    logWarning( "getNodePoolAnsweringTimeout()", "token " << token << " not specified for MPI configuration so use default timeout of " << defaultResult );
-    return defaultResult;
-  }
+  return result;
 }
 
 
 int exahype::parser::Parser::getMPIBufferSize() const {
-  std::string token = getTokenAfter("distributed-memory", "buffer-size");
+  int result = getIntFromPath("distributed_memory/buffer_size");
 
-  int result = -1;
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
+  // Apparently, in former days an invalid value just yielded in a non-fatal error.
+  // all non-castable ints resulted in negative numbers.
 
-  if (result <= 0) {
-    logError("getMPIBufferSize()", "Invalid MPI buffer size " << token);
+  if(result <= 0) {
+    logError("getMPIBufferSize()", "Invalid MPI buffer size " << result);
     result = 64;
     _interpretationErrorOccured = true;
   }
+
   return result;
 }
 
 int exahype::parser::Parser::getMPITimeOut() const {
-  std::string token = getTokenAfter("distributed-memory", "timeout");
+  double result = getIntFromPath("distributed_memory/timeout");
 
-  int result = -1;
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
+  // Apparently, in former days an invalid value just yielded in a non-fatal error.
+  // all non-castable doubles resulted in negative numbers.
 
   if (result <= 0) {
-    logError("getMPIBufferSize()", "Invalid MPI timeout value " << token);
+    logError("getMPIBufferSize()", "Invalid MPI timeout value " << result);
     result = 0;
     _interpretationErrorOccured = true;
   }
+  
   return result;
 }
 
-exahype::parser::Parser::MulticoreOracleType exahype::parser::Parser::getMulticoreOracleType()
-    const {
-  std::string token = getTokenAfter("shared-memory", "identifier");
+exahype::parser::Parser::MulticoreOracleType exahype::parser::Parser::getMulticoreOracleType() const {
+  std::string token = getStringFromPath("shared-memory/identifier");
   exahype::parser::Parser::MulticoreOracleType result = MulticoreOracleType::Dummy;
   if (token.compare("dummy") == 0) {
     result = MulticoreOracleType::Dummy;
@@ -514,17 +502,15 @@ exahype::parser::Parser::MulticoreOracleType exahype::parser::Parser::getMultico
 }
 
 double exahype::parser::Parser::getSimulationEndTime() const {
-  std::string token = getTokenAfter("computational-domain", "end-time");
-  logDebug("getSimulationEndTime()", "found token " << token);
-
-  double result = -1.0;
-  try {
-    result = std::stod(token);
-  } catch (const std::invalid_argument& ia) {}
+  double result = getDoubleFromPath("computational_domain/end_time");
+  logDebug("getSimulationEndTime()", "found end time " << result);
+  
+  // Apparently, in former days an invalid value just yielded in a non-fatal error.
+  // all non-castable doubles resulted in negative numbers.
 
   if (result <= 0) {
     logError("getSimulationEndTime()",
-             "Invalid simulation end-time: " << token);
+             "Invalid simulation end-time: " << result);
     result = 1.0;
     _interpretationErrorOccured = true;
   }
@@ -532,172 +518,84 @@ double exahype::parser::Parser::getSimulationEndTime() const {
 }
 
 bool exahype::parser::Parser::foundSimulationEndTime() const {
-  bool found = false;
-  for (auto& token : _tokenStream ) {
-    if ( token.compare("end-time")==0 ) {
-      found = true;
-      break;
-    }
-  }
+  const double not_there = -43;
+  double result = getDoubleFromPath("computational_domain/end_time", not_there, isOptional);
+  bool found = !tarch::la::equals(result, not_there);
   return found;
 }
 
 int exahype::parser::Parser::getSimulationTimeSteps() const {
-  std::string token = getTokenAfter("computational-domain", "time-steps");
-  logDebug("getSimulationEndTime()", "found token " << token);
-
-  int result = -1;
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
+  int result = getIntFromPath("computational_domain/time_steps");
+  logDebug("getSimulationEndTime()", "found result " << result);
+  
+  // Apparently, in former days an invalid value just yielded in a non-fatal error.
+  // all non-castable ints resulted in negative numbers.
 
   if (result < 0) {
     logError("getSimulationEndTime()",
-             "Invalid simulation timestep: " << token);
+             "Invalid simulation timestep: " << result);
     _interpretationErrorOccured = true;
   }
   return result;
 }
 
 bool exahype::parser::Parser::getFuseAlgorithmicSteps() const {
-  std::string token = getTokenAfter("global-optimisation", "fuse-algorithmic-steps");
-  logDebug("getFuseAlgorithmicSteps()", "found fuse-algorithmic-steps"
-                                            << token);
-  if (
-      token.compare("on") != 0 &&
-      token.compare("off") != 0 &&
-      token.compare(_noTokenFound) != 0
-  ) {
-    logError("getFuseAlgorithmicSteps()",
-             "fuse-algorithmic-steps in the "
-             "global-optimisation segment has to be either on or off: "
-                 << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("on")==0;
+  const bool default_value = false;
+  bool result = getBoolFromPath("optimisation/fuse_algorithmic_steps", default_value, isOptional);
+  return result;
 }
 
 
 
 double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
-  if (hasOptimisationSegment()) {
-      std::string token =
-          getTokenAfter("global-optimisation", "fuse-algorithmic-steps-factor");
-
-      char* pEnd;
-      double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
-      logDebug("getFuseAlgorithmicStepsFactor()",
-               "found fuse-algorithmic-steps-factor " << token);
-
-      if (result < 0.0 || result > 1.0 || pEnd == token.c_str()) {
-        logError("getFuseAlgorithmicStepsFactor()",
-                 "'fuse-algorithmic-steps-factor': Value must be greater than zero "
-                 "and smaller than one: "
-                     << result);
-        result = 0.0;
-        _interpretationErrorOccured = true;
-      }
-
-      return result;
+  const double default_value = 0.0;
+  double result = getDoubleFromPath("optimisation/fuse_algorithmic_steps_factor", default_value, isOptional);
+  logDebug("getFuseAlgorithmicStepsFactor()", "found fuse-algorithmic-steps-factor " << result);
+  if(result < 0.0 || result > 1.0) {
+    logError("getFuseAlgorithmicStepsFactor()",
+              "'fuse-algorithmic-steps-factor': Value must be greater than zero "
+              "and smaller than one: "
+                  << result);
+    result = 0.0;
+    _interpretationErrorOccured = true;
   }
-  else return 0.0;
+  return result;
 }
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
-  std::string token = getTokenAfter("global-optimisation", "spawn-predictor-as-background-thread");
-  logDebug("getSpawnPredictorAsBackgroundTask()", "found spawn-predictor-as-background-thread"
-                                            << token);
-  if (
-      token.compare("on") != 0 &&
-      token.compare("off") != 0 &&
-      token.compare(_noTokenFound) != 0
-  ) {
-    logError("getSpawnPredictorAsBackgroundTask()",
-             "spawn-predictor-as-background-thread is required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("on")==0;
+  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
-  std::string token = getTokenAfter("global-optimisation", "spawn-amr-background-threads");
-  logDebug("getSpawnAMRBackgroundThreads()", "found spawn-amr-background-threads"
-                                            << token);
-  if (
-      token.compare("on") != 0 &&
-      token.compare("off") != 0 &&
-      token.compare(_noTokenFound) != 0
-  ) {
-    logError("getSpawnAMRBackgroundThreads()",
-             "spawn-amr-background-threads is required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("on")==0;
+  return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
 }
 
 bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
-  std::string token = getTokenAfter("global-optimisation", "disable-metadata-exchange-in-batched-time-steps");
-  logDebug("getDisableMetaDataExchangeInBatchedTimeSteps()", "found metadata-exchange-in-batched-time-steps"
-                                            << token);
-  if (
-      token.compare("on") != 0 &&
-      token.compare("off") != 0 &&
-      token.compare(_noTokenFound) != 0
-  ) {
-    logError("getDisableMetaDataExchangeInBatchedTimeSteps()",
-             "metadata-exchange-in-batched-time-steps in the "
-             "global-optimisation segment has to be either on or off: "
-                 << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("on")==0;
+  return getBoolFromPath("/optimisation/disable_metadata_exchange_in_batched_time_steps", false, isOptional);
 }
 
 bool exahype::parser::Parser::getDisablePeanoNeighbourExchangeInTimeSteps() const {
-  std::string token = getTokenAfter(
-      "global-optimisation",
-      "disable-vertex-exchange-in-time-steps");
-  if (
-      token.compare("on") != 0 &&
-      token.compare("off") != 0 &&
-      token.compare(_noTokenFound) != 0
-  ) {
-    logError("getDisablePeanoNeighbourExchangeInTimeSteps()",
-        "disable-vertex-exchange-in-time-steps in the "
-        "global-optimisation segment has to be either on or off: "
-        << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("on")==0;
+  return getBoolFromPath("/optimisation/disable_vertex_exchange_in_time_steps", false, isOptional);
 }
 
 double exahype::parser::Parser::getTimestepBatchFactor() const {
-  if(hasOptimisationSegment()) {
-    std::string token = getTokenAfter("global-optimisation", "time-step-batch-factor");
-    char* pEnd;
-    double result = std::strtod(token.c_str(), &pEnd);
-    logDebug("getFuseAlgorithmicStepsFactor()", "found time-step-batch-factor " << token);
+  double result = getDoubleFromPath("/optimisation/time_step_batch_factor", 0.0, isOptional);
+  logDebug("getFuseAlgorithmicStepsFactor()", "found time-step-batch-factor " << result);
 
-    if (result < 0.0 || result > 1.0 || pEnd == token.c_str()) {
-      logError("getFuseAlgorithmicStepsFactor()",
-               "'time-step-batch-factor': Value is required in global-optimisation "
-               "section and must be greater than zero and smaller than one: "
-                   << result);
-      result = 0.0;
-      _interpretationErrorOccured = true;
-    }
-    return result;
-  } else return 0.0;
+  if (result < 0.0 || result > 1.0) {
+    logError("getFuseAlgorithmicStepsFactor()",
+              "'time-step-batch-factor': Value is required in global-optimisation "
+              "section and must be greater than zero and smaller than one: "
+                  << result);
+    result = 0.0;
+    _interpretationErrorOccured = true;
+  }
+  return result;
 }
 
 
 bool exahype::parser::Parser::hasOptimisationSegment() const {
-  std::string token = getTokenAfter("global-optimisation");
-  return token.compare(_noTokenFound)!=0;
+  return hasPath("/optimisation");
 }
 
 
@@ -710,59 +608,33 @@ bool exahype::parser::Parser::getSkipReductionInBatchedTimeSteps() const {
 
 
 double exahype::parser::Parser::getDoubleCompressionFactor() const {
-  std::string token = getTokenAfter("global-optimisation", "double-compression");
+  double result = getDoubleFromPath("optimisation/double_compression", 0.0, isOptional);
 
-  if (token.compare(_noTokenFound) == 0) {
-    return 0.0;  // default value
+  if (result < 0.0) {
+    logError("getDoubleCompressionFactor()",
+            "'double-compression': Value is required in global-optimisation "
+            "section and must be greater than or equal to zero: " << result);
+    result = 0.0;
+    _interpretationErrorOccured = true;
   }
-  else {
-    char* pEnd;
-    double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
-    logDebug("getDoubleCompressionFactor()", "found double-compression "
-                                                  << token);
 
-    if (result < 0.0 || pEnd == token.c_str()) {
-      logError("getDoubleCompressionFactor()",
-             "'double-compression': Value is required in global-optimisation "
-             "section and must be greater than or equal to zero: " << result);
-      result = 0.0;
-      _interpretationErrorOccured = true;
-    }
-
-    return result;
-  }
+  return result;
 }
 
 
-bool   exahype::parser::Parser::getSpawnDoubleCompressionAsBackgroundTask() const {
-  std::string token =
-      getTokenAfter("global-optimisation", "spawn-double-compression-as-background-thread");
-
-  if (
-      token.compare("on") != 0 &&
-      token.compare("off") != 0 &&
-      token.compare(_noTokenFound) != 0
-  ) {
-    logError("getSpawnDoubleCompressionAsBackgroundTask()",
-        "spawn-double-compression-as-background-thread in the "
-        "global-optimisation segment has to be either on or off: "
-        << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("on") == 0;
+bool exahype::parser::Parser::getSpawnDoubleCompressionAsBackgroundTask() const {
+  return getBoolFromPath("optimisation/spawn_double_compression_as_background_thread");
 }
 
 
 exahype::solvers::Solver::Type exahype::parser::Parser::getType(
     int solverNumber) const {
-  std::string token;
   exahype::solvers::Solver::Type result =
       exahype::solvers::Solver::Type::ADERDG;
-  token = getTokenAfter("solver", solverNumber + 1, 0);
+  std::string token = getStringFromPath(sformat("solver/%d/type", solverNumber+1));
   if (_identifier2Type.find(token) != _identifier2Type.end()) {
     result = _identifier2Type.at(token);
-    // logDebug("getType()", "found type " << result);
-    logDebug("getType()", "found type ");
+    logDebug("getType()", "found type " << exahype::solvers::Solver::toString(result));
   } else {
     logError(
         "getType()",
@@ -774,115 +646,72 @@ exahype::solvers::Solver::Type exahype::parser::Parser::getType(
 }
 
 std::string exahype::parser::Parser::getIdentifier(int solverNumber) const {
-  std::string token;
-  token = getTokenAfter("solver", solverNumber + 1, 1);
+  std::string token = getStringFromPath(sformat("solver/%d/name", solverNumber+1));
   logDebug("getIdentifier()", "found identifier " << token);
   return token;
 }
 
 int exahype::parser::Parser::getVariables(int solverNumber) const {
-  std::string token;
-  std::regex COLON_SEPARATED(R"(([A-Za-z]\w*):([0-9]+))");
-  std::smatch match;
-
-  // first check if we read in a number
-  int result = -1;
-  token = getTokenAfter("solver", solverNumber + 1, "variables", 1);
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
-
-  if (result < 1) { // token is not a number
-    result = 0;
-    int i = 1;
-    std::regex_search(token, match, COLON_SEPARATED);
-    while (match.size() > 1) {
-      int multiplicity = atoi(match.str(2).c_str());
-      result +=multiplicity; // std::string name = match.str(1);
-
-      // logInfo("getVariables(...)","token="<<token<<",name="<<match.str(1)<<",n="<<match.str(2));
-      token = getTokenAfter("solver", solverNumber + 1, "variables", 1, i++);
-      std::regex_search(token, match, COLON_SEPARATED);
+  std::string path = sformat("solver/%d/variables", solverNumber+1);
+  auto j = _impl->data.at(path);
+  if(j.is_primitive()) {
+    // variables=N
+    return getIntFromPath(path);
+  } else if(j.is_array()) {
+    // variables=["foo","bar","baz"], meaning variables=3
+    return j.size();
+  } else {
+    // count multiplicities
+    int result = 0;
+    for (json::iterator it = j.begin(); it != j.end(); ++it) {
+      // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
+      result += getIntFromPath(sformat("solver/%d/variables/%d/multiplicity", solverNumber+1, it - j.begin()));
     }
-
-    if (result < 1) { // token is still 0
+    if(result == 0) {
       logError("getVariables()",
                "'" << getIdentifier(solverNumber)
                << "': 'variables': Value must be greater than zero.");
           _interpretationErrorOccured = true;
     }
+    return result;
   }
-
-  logDebug("getVariables()", "found variables " << result);
-  return result;
 }
 
 int exahype::parser::Parser::getParameters(int solverNumber) const {
-  std::string token;
-  std::regex COLON_SEPARATED(R"(([A-Za-z]\w*):([0-9]+))");
-  std::smatch match;
-
-  // first check if we read in a number
-  int result = -1;
-  token = getTokenAfter("solver", solverNumber + 1, "parameters", 1);
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
-
-  if (result < 1) { // token is not a number
-    result = 0;
-
-    int i = 1;
-    std::regex_search(token, match, COLON_SEPARATED);
-    while (match.size() > 1) {
-      int multiplicity = atoi(match.str(2).c_str());
-      result +=multiplicity; // std::string name = match.str(1);
-
-      // logInfo("getVariables(...)","token="<<token<<",name="<<match.str(1)<<",n="<<match.str(2));
-      token = getTokenAfter("solver", solverNumber + 1, "parameters", 1, i++);
-      std::regex_search(token, match, COLON_SEPARATED);
+  // Copied the getVariables code here.
+  
+  std::string path = sformat("solver/%d/parameters", solverNumber+1);
+  auto j = _impl->data.at(path);
+  if(j.is_primitive()) {
+    // variables=N
+    return getIntFromPath(path);
+  } else if(j.is_array()) {
+    // variables=["foo","bar","baz"], meaning variables=3
+    return j.size();
+  } else {
+    // count multiplicities
+    int result = 0;
+    for (json::iterator it = j.begin(); it != j.end(); ++it) {
+      // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
+      result += getIntFromPath(sformat("solver/%d/parameters/%d/multiplicity", solverNumber+1, it - j.begin()));
     }
-
-    if (result < 0) { // token is still 0
+    if(result == 0) {
       logError("getParameters()",
                "'" << getIdentifier(solverNumber)
-               << "': 'parameters': Value must be non-negative.");
+               << "': 'parameters': Value must be greater than zero.");
           _interpretationErrorOccured = true;
     }
+    return result;
   }
-
-  logDebug("getVariables()", "found variables " << result);
-  return result;
 }
 
 int exahype::parser::Parser::getOrder(int solverNumber) const {
-  std::string token;
-
-  int result;
-  token = getTokenAfter("solver", solverNumber + 1, "order", 1);
-  try {
-    result = std::stoi(token);
-  }
-  catch (const std::invalid_argument& ia) {
-    logError("getOrder()", "'" << getIdentifier(solverNumber)
-        << "': 'order': Value must not be negative.");
-    _interpretationErrorOccured = true;
-    result = -1;
-  }
-
-  logDebug("getOrder()", "found order " << result);
-  return result;
+  return getIntFromPath(sformat("solver/%d/order", solverNumber+1));
 }
 
 
 double exahype::parser::Parser::getMaximumMeshSize(int solverNumber) const {
-  std::string token;
-
-  double result = -1.0;
-  token = getTokenAfter("solver", solverNumber + 1, "maximum-mesh-size", 1, 0);
-  try {
-    result = std::stod(token);
-  } catch (const std::invalid_argument& ia) {}
+  double result = getDoubleFromPath(sformat("solver/%d/maximum_mesh_size", solverNumber+1));
 
   if (tarch::la::smallerEquals(result, 0.0)) {
     logError("getMaximumMeshSize(int)",
@@ -896,18 +725,7 @@ double exahype::parser::Parser::getMaximumMeshSize(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
-  std::string token;
-
-  int result = 0;
-  token = getTokenAfter("solver", solverNumber + 1, "maximum-mesh-depth", 1, 0);
-  if (token==_noTokenFound) {
-    return result;
-  }
-
-  result = -1;
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
+  int result = getIntFromPath(sformat("solver/%d/maximum_mesh_depth", solverNumber+1));
 
   if (tarch::la::smaller(result, 0)) {
     logError("getMaximumMeshDepth(int)",
@@ -921,18 +739,7 @@ int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getHaloCells(int solverNumber) const {
-  std::string token;
-
-  int result = 0;
-  token = getTokenAfter("solver", solverNumber + 1, "halo-cells", 1, 0);
-  if (token==_noTokenFound) {
-    return result;
-  }
-
-  result = -1;
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
+  int result = getIntFromPath(sformat("solver/%d/halo_cells", solverNumber+1));
 
   if (tarch::la::smaller(result, 0)) {
     logError("getHaloCells(int)",
@@ -946,19 +753,8 @@ int exahype::parser::Parser::getHaloCells(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) const {
-  std::string token;
-
-  int result = 0;
-  token = getTokenAfter("solver", solverNumber + 1, "regularised-fine-grid-levels", 1, 0);
-  if (token==_noTokenFound) {
-    return result;
-  }
-
-  result = -1;
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
-
+  int result = getIntFromPath(sformat("solver/%d/regularised_fine_grid_levels", solverNumber+1));
+  
   if (tarch::la::smaller(result, 0)) {
     logError("getRegularisedFineGridLevels(int)",
              "'" << getIdentifier(solverNumber)
@@ -972,9 +768,9 @@ int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) cons
 
 exahype::solvers::Solver::TimeStepping exahype::parser::Parser::getTimeStepping(
     int solverNumber) const {
-  std::string token;
   exahype::solvers::Solver::TimeStepping result;
-  token = getTokenAfter("solver", solverNumber + 1, "time-stepping", 1);
+  const std::string default_value = "global";
+  std::string token = getStringFromPath(sformat("solver/%d/time_stepping", solverNumber+1), default_value, isOptional);
   if (_identifier2TimeStepping.find(token) != _identifier2TimeStepping.end()) {
     result = _identifier2TimeStepping.at(token);
     // logDebug("getTimeStepping()", "found TimeStepping " << result);
@@ -988,17 +784,11 @@ exahype::solvers::Solver::TimeStepping exahype::parser::Parser::getTimeStepping(
             << "' is invalid. See the ExaHyPE documentation for valid values.");
     _interpretationErrorOccured = true;
   }
-  return exahype::solvers::Solver::TimeStepping::Global;
+  return exahype::solvers::Solver::TimeStepping::Global; /* keep in sync with default_value above */
 }
 
 double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) const {
-  std::string token;
-
-  double result = -1.0;
-  token = getTokenAfter("solver", solverNumber + 1, "dmp-relaxation-parameter", 1);
-  try {
-    result = std::stod(token);
-  } catch (const std::invalid_argument& ia) {}
+  double result = getDoubleFromPath(sformat("solver/%d/dmp_relaxation_parameter", solverNumber+1));
 
   if (result < 0) {
     logError("getDMPRelaxationParameter()",
@@ -1012,13 +802,7 @@ double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) cons
 }
 
 double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const {
-  std::string token;
-
-  double result = -1.0;
-  token = getTokenAfter("solver", solverNumber + 1, "dmp-difference-scaling", 1);
-  try {
-    result = std::stod(token);
-  } catch (const std::invalid_argument& ia) {}
+  double result = getDoubleFromPath(sformat("solver/%d/dmp_difference_scaling", solverNumber+1));
 
   if (result < 0) {
     logError("getDMPDifferenceScaling()",
@@ -1032,13 +816,7 @@ double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const 
 }
 
 int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
-  std::string token;
-
-  int result = -1; // is required
-  token = getTokenAfter("solver", solverNumber + 1, "dmp-observables", 1);
-  try {
-    result = std::stoi(token);
-  } catch (const std::invalid_argument& ia) {}
+  int result = getIntFromPath(sformat("solver/%d/dmp_observables", solverNumber+1));
 
   if (result < 0) {
     logError("getDMPObservables()",
@@ -1052,188 +830,78 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
-  std::string token;
+  const int default_value = 0;
+  int result = getIntFromPath(sformat("solver/%d/steps_till_cured", solverNumber+1), default_value, isOptional);
 
-  int result = 0; // default value
-  token = getTokenAfter("solver", solverNumber + 1, "steps-till-cured", 1);
-  if (token.compare(_noTokenFound)!=0) {
-    try {
-      result = std::stoi(token);
-    } catch (const std::invalid_argument& ia) {
-      result = -1;
-    }
-
-    if (result < 0) {
-      logError("getStepsTillCured()",
-               "'" << getIdentifier(solverNumber)
-               << "': 'steps-till-cured': Value must be integral and not negative.");
-      _interpretationErrorOccured = true;
-    }
-
-    logDebug("getStepsTillCured()", "found steps-till-cured " << result);
+  if (result < 0) {
+    logError("getStepsTillCured()",
+              "'" << getIdentifier(solverNumber)
+              << "': 'steps-till-cured': Value must be integral and not negative.");
+    _interpretationErrorOccured = true;
   }
+
+  logDebug("getStepsTillCured()", "found steps-till-cured " << result);
   return result;
 }
 
 int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
-  std::string token;
-  int result = 1; // default value
-  token = getTokenAfter("solver", solverNumber + 1, "helper-layers", 1);
-
-  if (token.compare(_noTokenFound)!=0) {
-    try {
-      result = std::stoi(token);
-    } catch (const std::invalid_argument& ia) {
-      result = -1;
-    }
-
-    if (result < 1) {
-      logError("getLimiterHelperLayers()",
-               "'" << getIdentifier(solverNumber)
-               << "': 'helper-layers': Value must be integral and greater or equal to 1.");
-      _interpretationErrorOccured = true;
-    }
-    logDebug("getLimiterHelperLayers()", "found helper-layers " << result);
-  }
-  return result;
+  return getIntFromPath(sformat("solver/%d/help_layers", solverNumber+1), 1, isOptional);
 }
 
 std::string exahype::parser::Parser::getIdentifierForPlotter(int solverNumber,
                                                      int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1);
-  logDebug("getIdentifierForPlotter()", "found token " << token);
-  assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
-             plotterNumber);
-  return token;
+  return getStringFromPath(sformat("solver/%d/plotters/%d/name", solverNumber+1, plotterNumber+1));
 }
 
 std::string exahype::parser::Parser::getNameForPlotter(int solverNumber,
                                                int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1, 1);
-  logDebug("getIdentifierForPlotter()", "found token " << token);
-  assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
-             plotterNumber);
-  return token;
+  return getStringFromPath(sformat("solver/%d/plotters/%d/type", solverNumber+1, plotterNumber+1));
 }
 
 int exahype::parser::Parser::getUnknownsForPlotter(int solverNumber,
                                            int plotterNumber) const {
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1, 3);
-  logDebug("getUnknownsForPlotter()", "found token " << token);
-  assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
-             plotterNumber);
-  try {
-    return std::stoi(token);
-  } catch (const std::invalid_argument& ia) {
-    return 0;
-  }
+  return getIntFromPath(sformat("solver/%d/plotters/%d/variables", solverNumber+1, plotterNumber+1));
 }
 
 double exahype::parser::Parser::getFirstSnapshotTimeForPlotter(
     int solverNumber, int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1, 5);
-  logDebug("getFirstSnapshotTimeForPlotter()", "found token " << token);
-  assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
-             plotterNumber);
-
-  try {
-    return std::stod(token);
-  } catch (const std::invalid_argument& ia) {
-    logError("getFirstSnapshotTimeForPlotter()",
-        "'" << getIdentifier(solverNumber)
-        << "' - plotter "<<plotterNumber<<": 'time' value must be a float.");
-    _interpretationErrorOccured = true;
-    return std::numeric_limits<double>::max();
-  }
+  return getDoubleFromPath(sformat("solver/%d/plotters/%d/time", solverNumber+1, plotterNumber+1));
 }
 
 double exahype::parser::Parser::getRepeatTimeForPlotter(int solverNumber,
                                                 int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1, 7);
-  logDebug("getRepeatTimeForPlotter()", "found token " << token);
-  assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
-             plotterNumber);
-
-  try {
-    return std::stod(token);
-  } catch (const std::invalid_argument& ia) {
-    logError("getRepeatTimeForPlotter()",
-        "'" << getIdentifier(solverNumber)
-        << "' - plotter "<<plotterNumber<<": 'repeat' value must be a float.");
-    _interpretationErrorOccured = true;
-    return std::numeric_limits<double>::max();
-  }
+  return getDoubleFromPath(sformat("solver/%d/plotters/%d/repeat", solverNumber+1, plotterNumber+1));
 }
 
 std::string exahype::parser::Parser::getFilenameForPlotter(int solverNumber,
                                                    int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1, 9);
-  logDebug("getFilenameForPlotter()", "found token " << token);
-  assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
-             plotterNumber);
-  return token;
+  return getStringFromPath(sformat("solver/%d/plotters/%d/output", solverNumber+1, plotterNumber+1));
 }
 
-std::string exahype::parser::Parser::getSelectorForPlotter(int solverNumber,
+exahype::parser::ParserView exahype::parser::Parser::getSelectorForPlotter(int solverNumber,
                                                    int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
-  std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
-                                    plotterNumber + 1, 11);
-  token += "," + getTokenAfter("solver", solverNumber + 1, "plot",
-                                      plotterNumber + 1, 12);
-  #if DIMENSIONS==3
-  token += "," + getTokenAfter("solver",solverNumber + 1, "plot",
-                                 plotterNumber + 1, 13);
-  #endif
-
-  logDebug("getSelectorForPlotter()", "found token " << token);
-  return (token != _noTokenFound) ? token : "";
+  return exahype::parser::ParserView(this,sformat("/solver/%d/plotters/%d/select", solverNumber+1, plotterNumber+1));
 }
 
 std::string exahype::parser::Parser::getLogFileName() const {
-  std::string token = getTokenAfter("log-file");
-  logDebug("getLogFileName()", "found token " << token);
-  return (token != _noTokenFound) ? token : "";
+  return getStringFromPath("/paths/log_file", "", isOptional);
 }
 
 std::string exahype::parser::Parser::getProfilerIdentifier() const {
-  std::string token = getTokenAfter("profiling", "profiler");
-  logDebug("getProfilerIdentifier()", "found token " << token);
-  return (token != _noTokenFound) ? token : "NoOpProfiler";
+  return getStringFromPath("/profiling/profiler", "NoOpProfiler", isOptional);
 }
 
 std::string exahype::parser::Parser::getMetricsIdentifierList() const {
-  std::string token = getTokenAfter("profiling", "metrics");
-  logDebug("getMetricsIdentifierList()", "found token " << token);
-  return (token != _noTokenFound) ? token : "{}";
+  return getStringFromPath("/profiling/metrics", "{}", isOptional);
 }
 
 std::string exahype::parser::Parser::getProfilingOutputFilename() const {
-  std::string token = getTokenAfter("profiling", "profiling-output");
-  logDebug("getProfilingOutputFilename()", "found token " << token);
-  return (token != _noTokenFound) ? token : "";
+  return getStringFromPath("/profiling/profiling_output", "", isOptional);
 }
 
 void exahype::parser::Parser::logSolverDetails(int solverNumber) const {
   logInfo("logSolverDetails()",
-          "Solver " << getTokenAfter("solver", solverNumber + 1, 0) << " "
+          "Solver " << exahype::solvers::Solver::toString(getType(solverNumber)) << " "
                     << getIdentifier(solverNumber) << ":");
   logInfo("logSolverDetails()", "variables:\t\t" << getVariables(solverNumber));
   logInfo("logSolverDetails()", "parameters:\t" << getParameters(solverNumber));
@@ -1241,8 +909,7 @@ void exahype::parser::Parser::logSolverDetails(int solverNumber) const {
   logInfo("logSolverDetails()", "maximum-mesh-size:\t"
                                     << getMaximumMeshSize(solverNumber));
   logInfo("logSolverDetails()",
-          "time-stepping:\t" << getTokenAfter("solver", solverNumber + 1,
-                                              "time-stepping", 1));
+          "time-stepping:\t" << exahype::solvers::Solver::toString(getTimeStepping(solverNumber)));
 }
 
 void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
@@ -1319,16 +986,16 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
 
   if (runToolkitAgain) {
     logError("checkSolverConsistency",
-             "Please (1) run the Toolkit again, and (2) recompile!");
+             "Please (1) run the Toolkit again for " << getSpecfileName() << ", and (2) recompile!");
     _interpretationErrorOccured = true;
   }
 
   if (recompile) {
     logError(
         "checkSolverConsistency",
-        "Please (1) adjust the specification file (*.exahype) or the file '"
+        "Please (1) adjust the specification file (" << getSpecfileName() <<  ") or the file '"
             << solver->getIdentifier()
-            << ".cpp' accordingly, and (2) recompile!");
+            << ".cpp' (and similar) accordingly, and (2) recompile!");
     _interpretationErrorOccured = true;
   }
 }
@@ -1337,26 +1004,14 @@ std::string exahype::parser::Parser::getSpecfileName() const {
   return _filename;
 }
 
-std::string exahype::parser::Parser::getTokenStreamAsString() const {
-  std::stringstream ret;
-  ret << "Parser _tokenStream=" << std::endl;
-  for (std::string str : _tokenStream) {
-    ret << "["<<str<<"]" << std::endl;
-  }
-  return ret.str();
-}
-
 int exahype::parser::Parser::getRanksPerNode() {
-  const std::string RanksPerNode = "ranks-per-node";
-
-  return static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(getMPIConfiguration(),RanksPerNode));
+  return getIntFromPath("/distributed_memory/ranks_per_node");
 }
 
 
 int exahype::parser::Parser::getNumberOfBackgroundTasks() {
-  const std::string Search = "background-tasks";
+  int result = getIntFromPath("/shared_memory/background_tasks");
 
-  int result = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
   if (result<-2) {
     logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
       "set or no number at all. Use default (1). See BackgroundTasks.h for documentation.");
@@ -1367,23 +1022,21 @@ int exahype::parser::Parser::getNumberOfBackgroundTasks() {
 
 
 bool exahype::parser::Parser::useManualPinning() {
-  const std::string Search = "manual-pinning";
-
-  return getSharedMemoryConfiguration().find(Search) != std::string::npos;
+  return flagListContains("/shared_memory/configure", "manual_pinning");
 }
 
 exahype::parser::ParserView exahype::parser::Parser::createParserView(const int solverNumberInSpecificationFile) {
-  return exahype::parser::ParserView(*this,solverNumberInSpecificationFile);
+  return exahype::parser::ParserView(this,sformat("/solver/%d/constants", solverNumberInSpecificationFile));
 }
 
 
 exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvadeStrategy() const {
-  if ( getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvade;
-  if ( getSharedMemoryConfiguration().find("analyse-optimal-static-distribution-but-do-not-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvadeButAnalyseDistribution;
-  if ( getSharedMemoryConfiguration().find("occupy-all-cores")!=std::string::npos) return TBBInvadeStrategy::OccupyAllCores;
-  if ( getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) return TBBInvadeStrategy::InvadeBetweenTimeSteps;
-  if ( getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeThroughoutComputation;
-  if ( getSharedMemoryConfiguration().find("invade-at-time-step-startup-plus-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
+  if (flagListContains("/shared_memory/configure", "no_invade")) return TBBInvadeStrategy::NoInvade;
+  if (flagListContains("/shared_memory/configure", "analyse_optimal_static_distribution_but_do_not_invade")) return TBBInvadeStrategy::NoInvadeButAnalyseDistribution;
+  if (flagListContains("/shared_memory/configure", "occupy_all_cores")) return TBBInvadeStrategy::OccupyAllCores;
+  if (flagListContains("/shared_memory/configure", "invade_between_time_steps")) return TBBInvadeStrategy::InvadeBetweenTimeSteps;
+  if (flagListContains("/shared_memory/configure", "invade_throughout_computation")) return TBBInvadeStrategy::InvadeThroughoutComputation;
+  if (flagListContains("/shared_memory/configure", "invade_at_time_step_startup_plus_throughout_computation")) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
 
   return TBBInvadeStrategy::Undef;
 }

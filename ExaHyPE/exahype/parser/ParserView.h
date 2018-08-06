@@ -54,17 +54,24 @@ class ParserView;
 class exahype::parser::ParserView {
 private:
   static tarch::logging::Log _log;
-  exahype::parser::Parser& _parser;
-  int _solverNumberInSpecificationFile;
-
-  /**
-   * @return Value for given key. Returns the empty string if there is no
-   *         value. Returns empty string "" if the key does not exist.
-   */
-  std::string getValue(const std::string& key) const;
+  const exahype::parser::Parser* _parser;
+  std::string _basePath;
 
 public:
-  ParserView(exahype::parser::Parser& parser, int solverNumberInSpecificationFile);
+  ParserView(const exahype::parser::Parser* parser, std::string basePath);
+  
+  /** These two functions had to be introduced since ParserView
+   *  was quickly introduced to all the plotters. It is in principle
+   *  not something one really wants -.-
+   **/
+  
+  // This is certainly not something we want, but copying Parser is cheap
+  // and basePath is a string, so it's not too bad.
+  ParserView(const ParserView& b) = default;
+  
+  ParserView() : _parser(nullptr), _basePath("undefParserView") {}
+  
+  std::string getPath(const std::string& key) const;
 
   /**
    * You may use keys without a value. This operation allows you to check
@@ -135,6 +142,11 @@ public:
    * \see toString()
    **/
   void toString(std::ostream& out) const;
+  
+  /**
+   * Not a short but a long string
+   **/
+  std::string dump() const;
 };
 
 #endif

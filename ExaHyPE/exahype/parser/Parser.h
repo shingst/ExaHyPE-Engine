@@ -16,8 +16,8 @@
 
 namespace exahype {
 namespace parser {
-class Parser;
-class ParserImpl;
+  class Parser;
+  class ParserImpl; // pimpl idiom, forward declaration
 }
 }
 
@@ -40,6 +40,14 @@ class ParserImpl;
  *
  * Under the hood, the old Specfile parser was replaced here by
  * a JSON parser.
+ * 
+ * This parser is a singleton "by concept", i.e. to keep all methods
+ * const, it stores the internal state statically and thus it only 
+ * makes sense to use it as a singleton. The state is the validity of
+ * the plotter, ie. holds a flag whether an error occured. The idea
+ * of this was probably lazy error reporting but I don't see how.
+ * (Well, one thing is that you can copy it freely but it will behave
+ * like a singleton)
  *
  * @author Tobias Weinzierl, Dominic Etienne Charrier, Sven Koeppel
  */
@@ -50,7 +58,6 @@ class exahype::parser::Parser {
 
   static const std::string   _noTokenFound;
 
-  std::vector<std::string> _tokenStream; // will be now replaced by:
   ParserImpl* _impl;
 
   /**
@@ -79,29 +86,6 @@ class exahype::parser::Parser {
   static bool _interpretationErrorOccured;
 
   /**
-   * \defgroup OldFrontend High-level API to read from tolen stream
-   * Will be removed
-   * @{
-   **/
-  
-  /**
-   * \return "notoken" if not found.
-   */
-  std::string getTokenAfter(std::string token,
-                            int additionalTokensToSkip = 0) const;
-  std::string getTokenAfter(std::string token0, std::string token1,
-                            int additionalTokensToSkip = 0) const;
-  std::string getTokenAfter(std::string token0, int occurance0,
-                            int additionalTokensToSkip) const;
-  std::string getTokenAfter(std::string token0, int occurance0,
-                            std::string token1, int occurance1,
-                            int additionalTokensToSkip = 0) const;
-
-  /**
-   * @}
-   **/
-  
-  /**
    * Holds the filename of the specification file parsed by this parser
    **/
   std::string _filename;
@@ -109,28 +93,83 @@ class exahype::parser::Parser {
  public:
   /**
    * \defgroup JsonFrontend High-level API to read from JSON data
-   * Can be public, why not?
+   * 
+   * These functions allow to use JSON pointers (RFC 6901), hereby
+   * called "paths", to address anything in nested data structures.
+   * An example of such a path is "/solvers/0/name". Obviously, it
+   * allows to mix dictionary/object and array/list indices.
+   * 
+   * Suppport for all native data types (bool,int,double,string) is
+   * provided.
+   * 
+   * For the readers, if isOptional is given, will return defaultValue
+   * if not found. However, if found but not of the requested type
+   * (not castable), will logError().
+   * If not isOptional is given, will logError also if path is not
+   * found. Will not throw exception but return a nonsense value
+   * instead and invalidate the Parser. This follows the old
+   * Parser idiom.
+   * 
+   * There are also functions for high level access to vectors
+   * and simple versions of ExaHyPE's favourite "property lists",
+   * i.e. arrays containing flag keywords.
+   * 
    * @{
    **/
-   
-  /**
-   * Read and integer from a JSON path from the configuration file.
-   * Will logError in case of errors and invalidate the parser.
-   **/
-  int getIntFromPath(std::string path) const;
-  // TODO: Could include caller method name for better speaking logWarning
+  
+  /// Checks whether a path is present, irrelevant from it's type
+  bool hasPath(std::string path) const;
+  
+  /// Will spill out JSON
+  std::string dumpPath(std::string path) const;
+  
+  bool isValueValidBool(const std::string& path) const;
+  bool isValueValidInt(const std::string& path) const;
+  bool isValueValidDouble(const std::string& path) const;
+  bool isValueValidString(const std::string& path) const;
   
   /**
-   * Read a double-Vector from a JSON path from the configuration file.
+   * Read a string from a JSON path from the configuration file.
+    Will logError in case of errors and invalidate the parser.
+   **/
+  std::string getStringFromPath(std::string path, std::string defaultValue="", bool isOptional=false) const;
+  int getIntFromPath(std::string path, int defaultValue=-1, bool isOptional=false) const;
+  double getDoubleFromPath(std::string path, double defaultValue=-1, bool isOptional=false) const;
+  bool getBoolFromPath(std::string path, bool defaultValue=true, bool isOptional=false) const;
+  
+  /**
+   * Read a double-Vector of length DIMENSIONS from a JSON path from the configuration file.
    * Will logError in case of errors and invalidate the parser.
    **/
-  tarch::la::Vector<DIMENSIONS,double> getVectorFromPath(std::string path) const;
+  tarch::la::Vector<DIMENSIONS,double> getDimVectorFromPath(std::string path) const;
   
+  /**
+   * Get a STL int-vector with any length from a JSON path from the configuration file.
+   * Will logError in case of errors and invalidate the parser.
+   **/
+  std::vector<int> getIntVectorFromPath(std::string path) const;
+  
+  
+  /**
+   * Returns true if a flag list (i.e. an array of strings) contains a keyword, at the 
+   * JSON path position.
+   * A nonexisting array is interpreted as false.
+   **/
+  bool flagListContains(std::string path, std::string keyword) const;
+  
+  /// Readable boolean "enums"
+  static constexpr bool isOptional = true;
+  static constexpr bool isMandatory = false;
   /**
    * @}
    **/
    
   /**
+   * This is old and shout no more be used, since it requires parsing of strings.
+   * TODO: Detect any usage of getValueFromPropertyString and replace it with
+   * a proper ParserView, map or list where they can look up the value by their
+   * selves, or something else.
+   *
    * Property strings in ExaHyPE are string alike "{all,left=0.5,Q4}". This
    * operation returns the value of a property, i.e. if you invoke
    * getvalueFromProperyString( "left" ), you obtain 0.5 in the example
@@ -159,11 +198,6 @@ class exahype::parser::Parser {
 
 
   void readFile(const std::string& filename);
-
-  /**
-   *
-   *
-   **/
   void readFile(std::istream& inputFile, std::string filename="");
 
   bool isValid() const;
@@ -183,8 +217,22 @@ class exahype::parser::Parser {
   MulticoreOracleType getMulticoreOracleType() const;
 
   MPILoadBalancingType getMPILoadBalancingType() const;
+
+  /*
+  // Note: These two functions are deprecated, we no more store property strings
+  //   which secretly also can be key-value-storages. Instead, use the
+  //   functions   MPIConfigurationContains(keyword)
+  //               SharedMemoryConfigurationContains(keyword)
+  //   and to access actual values, call the parser directly like
+  //     int primaryRanksPerNode = _parser.getIntFromPath("/distributed_memory/primary_ranks_per_node"));
+  //
   std::string getMPIConfiguration() const;
   std::string getSharedMemoryConfiguration() const;
+  */
+
+  bool MPIConfigurationContains(std::string flag) const;
+  bool SharedMemoryConfigurationContains(std::string flag) const;
+  
   int getMPIBufferSize() const;
   int getMPITimeOut() const;
 
@@ -407,13 +455,17 @@ class exahype::parser::Parser {
                                         int plotterNumber) const;
   double getRepeatTimeForPlotter(int solverNumber, int plotterNumber) const;
   std::string getFilenameForPlotter(int solverNumber, int plotterNumber) const;
-  std::string getSelectorForPlotter(int solverNumber, int plotterNumber) const;
+  exahype::parser::ParserView getSelectorForPlotter(int solverNumber, int plotterNumber) const;
 
   std::string getProfilerIdentifier() const;
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
 
+  /**
+   * This function should be renamed to createParserViewForSolver
+   **/
   exahype::parser::ParserView createParserView(int solverNumber);
+  exahype::parser::ParserView createParserView(std::string basePath);
 
   /**
    * Returns an empty string if no log file is specified in the file.
@@ -436,19 +488,14 @@ class exahype::parser::Parser {
    **/
   std::string getSpecfileName() const;
 
-  /**
-   * Returns the token stream as string. This is helpful for debugging.
-   **/
-  std::string getTokenStreamAsString() const;
-
   enum class TBBInvadeStrategy {
-	Undef,
+    Undef,
     NoInvade,
-	OccupyAllCores,
-	NoInvadeButAnalyseDistribution,
-	InvadeBetweenTimeSteps,
-	InvadeThroughoutComputation,
-	InvadeAtTimeStepStartupPlusThroughoutComputation
+    OccupyAllCores,
+    NoInvadeButAnalyseDistribution,
+    InvadeBetweenTimeSteps,
+    InvadeThroughoutComputation,
+    InvadeAtTimeStepStartupPlusThroughoutComputation
   };
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;

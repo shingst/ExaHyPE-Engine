@@ -19,6 +19,7 @@
 #include <cstdlib>
 
 #include "exahype/parser/Parser.h"
+#include "exahype/parser/ParserView.h"
 
 #include "peano/utils/Globals.h"
 
@@ -215,7 +216,7 @@ class exahype::plotters::Plotter {
      * Configure the plotter device. Is invoked directly after the constructor is
      * called.
      */
-    virtual void init(const std::string& filename, int order, int unknowns, int writtenUnknowns, const std::string& select) = 0;
+    virtual void init(const std::string& filename, int order, int unknowns, int writtenUnknowns, const exahype::parser::ParserView select) = 0;
 
 
     /**
@@ -245,7 +246,7 @@ class exahype::plotters::Plotter {
   double                 _solverTimeStamp;
   const double           _repeat;
   std::string            _filename;
-  const std::string      _select;
+  const exahype::parser::ParserView _select;
   bool                   _isActive;
 
   Device*                _device;

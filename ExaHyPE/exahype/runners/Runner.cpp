@@ -103,13 +103,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     // Configure answering behaviour of global node pool
     // =================================================
     //
-    if (configuration.find( "FCFS" )!=std::string::npos ) {
+    if ( _parser.MPIConfigurationContains( "FCFS" ) ) {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new tarch::parallel::FCFSNodePoolStrategy()
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
     }
-    else if (configuration.find( "fair" )!=std::string::npos ) {
+    else if (_parser.MPIConfigurationContains( "fair" )) {
       int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << _parser.getRanksPerNode() << ":XXX\". Read value " << ranksPerNode << " is invalid" );
@@ -124,7 +124,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
-    else if (configuration.find( "sfc-diffusion" )!=std::string::npos ) {
+    else if (_parser.MPIConfigurationContains( "sfc-diffusion" )) {
       int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
@@ -138,7 +138,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
+      int primaryRanksPerNode = _parser.getIntFromPath("/distributed_memory/primary_ranks_per_node"));
       if (primaryRanksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
@@ -160,13 +160,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
   }
 
-  if ( configuration.find( "greedy-naive" )!=std::string::npos ) {
+  if ( _parser.MPIConfigurationContains( "greedy-naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
   }
-  else if ( configuration.find( "greedy-regular" )!=std::string::npos ) {
+  else if ( _parser.MPIConfigurationContains( "greedy-regular" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::GreedyWithRegularityAnalysis );
   }
-  else if ( configuration.find( "hotspot" )!=std::string::npos ) {
+  else if ( _parser.MPIConfigurationContains( "hotspot" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Hotspot );
   }
   else {

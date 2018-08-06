@@ -56,7 +56,7 @@ private:
   int           _order           = -1;
   int           _solverUnknowns  = -1;
   int           _writtenUnknowns = -1;
-  std::string   _select          = "";
+  exahype::parser::ParserView   _select ;
   /**
    * The ghost layer width the finite volumes patch is using.
    */
@@ -118,7 +118,7 @@ public:
 
   virtual ~LimitingADERDG2CartesianVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

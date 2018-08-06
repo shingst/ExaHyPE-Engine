@@ -60,18 +60,19 @@ CartesianSlicer::CartesianSlicer(const dvec& _req, const ivec& _active, int _bas
 	}
 }
 	
-CartesianSlicer* CartesianSlicer::fromSelectionQuery(const std::string& select) {
-	dvec r;
-	r(0) = exahype::parser::Parser::getValueFromPropertyString(select, "x");
-	r(1) = exahype::parser::Parser::getValueFromPropertyString(select, "y");
+CartesianSlicer* CartesianSlicer::fromSelectionQuery(const exahype::parser::ParserView select) {
+	dvec r; ivec v;
+	v(0) = select.isValueValidDouble("x");
+	r(0) = select.getValueAsDouble("x");
+	v(1) = select.isValueValidDouble("y");
+	r(1) = select.getValueAsDouble("y");
 	#if DIMENSIONS==3
-	r(2) = exahype::parser::Parser::getValueFromPropertyString(select, "z");
+	v(2) = select.isValueValidDouble("z");
+	r(2) = select.getValueAsDouble("z");
 	#endif
-	ivec ron;
-	// NaN means the property was not present in the select string
-	for(int i=0; i<DIMENSIONS; i++) { ron(i) = (r(i)!=r(i)) ? 0 : 1; }
-	
-	return new CartesianSlicer(r, ron);
+
+	// v(i) == true == 1 means that value was provided, v(i) == false == 0 means that not.
+	return new CartesianSlicer(r, v);
 }
 
 /**
@@ -136,39 +137,40 @@ std::string CartesianSlicer::planeLabel() const {
 	return "unknowns";
 }
 
-RegionSlicer* RegionSlicer::fromSelectionQuery(const std::string& select) {
+RegionSlicer* RegionSlicer::fromSelectionQuery(const exahype::parser::ParserView select) {
 	dvec regionOfInterestLeftBottomFront, regionOfInterestRightTopBack;
 	double x;
-	x = exahype::parser::Parser::getValueFromPropertyString( select, "left" );
-	regionOfInterestLeftBottomFront(0) = x!=x ? defaultLeftBottomFront : x; // "-", min
-	x = exahype::parser::Parser::getValueFromPropertyString( select, "bottom" );
-	regionOfInterestLeftBottomFront(1) = x!=x ? defaultLeftBottomFront : x; // "-", min
+	
+	x = select.getValueAsDouble("left");
+	regionOfInterestLeftBottomFront(0) = select.isValueValidString("left") ? x : defaultLeftBottomFront; // "-", min
+	x = select.getValueAsDouble( "bottom" );
+	regionOfInterestLeftBottomFront(1) = select.isValueValidString("bottom") ? x : defaultLeftBottomFront; // "-", min
 	#if DIMENSIONS==3
-	x = exahype::parser::Parser::getValueFromPropertyString( select, "front" );
-	regionOfInterestLeftBottomFront(2) = x!=x ? defaultLeftBottomFront : x; // "-", min
+	x = select.getValueAsDouble( "front" );
+	regionOfInterestLeftBottomFront(2) = select.isValueValidString("front") ? x : defaultLeftBottomFront; // "-", min
 	#endif
 	
-	x = exahype::parser::Parser::getValueFromPropertyString( select, "right" );
-	regionOfInterestRightTopBack(0) = x!=x ? defaultRightTopBack : x;
-	x = exahype::parser::Parser::getValueFromPropertyString( select, "top" );
-	regionOfInterestRightTopBack(1) = x!=x ? defaultRightTopBack : x;
+	x = select.getValueAsDouble( "right" );
+	regionOfInterestRightTopBack(0) = select.isValueValidString("right") ? x : defaultRightTopBack;
+	x = select.getValueAsDouble( "top" );
+	regionOfInterestRightTopBack(1) = select.isValueValidString("top") ? x : defaultRightTopBack;
 	#if DIMENSIONS==3
-	x = exahype::parser::Parser::getValueFromPropertyString( select, "back" );
-	regionOfInterestRightTopBack(2) = x!=x ? defaultRightTopBack : x;
+	x = select.getValueAsDouble( "back" );
+	regionOfInterestRightTopBack(2) = select.isValueValidString("back") ? x : defaultRightTopBack;
 	#endif
 	
 	return new RegionSlicer(regionOfInterestLeftBottomFront, regionOfInterestRightTopBack);
 }
 
-Slicer* Slicer::bestFromSelectionQuery(const std::string& select) {
-	logInfo("bestFromSelectionQuery", "Scanning plotting selection query '"<<select<<"'");
+Slicer* Slicer::bestFromSelectionQuery(const exahype::parser::ParserView select) {
+	logInfo("bestFromSelectionQuery", "Scanning plotting selection query '"<<select.dump()<<"'");
 	
 	// Build up the registry:
 	Slicer *a = CartesianSlicer::fromSelectionQuery(select);
 	Slicer *b = RegionSlicer::fromSelectionQuery(select);
 
 	if(a->clips() && b->clips()) {
-		logError("bestFromSelectionQuery", "Warning: Several slicing strategies apply to the given arguments '"<<select<<"'. I choose " << a->getIdentifier());
+		logError("bestFromSelectionQuery", "Warning: Several slicing strategies apply to the given arguments '"<<select.dump()<<"'. I choose " << a->getIdentifier());
 	}
 
 	if(a->clips()) { delete b; return a;}

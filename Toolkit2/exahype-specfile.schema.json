@@ -61,6 +61,17 @@
 				}
 			}
 		},
+		"profiling": {
+			"profiler": {
+				"type": "string",
+				"default": "NoOpProfiler"
+			},
+			"metrics": {
+				"type": "string",
+				"$comment": "Actually seems to be a property list again. Subject to fix!"
+			}
+			
+		},
 		"architecture": {
 			"type": "string", 
 			"title": "Computational target architecture", 
@@ -72,7 +83,7 @@
 				"list-available-architectures-here"
 			]
 		}, 
-		"computationail_domain": {
+		"computational_domain": {
 			"type": "object", 
 			"scope": "run-time",
 			"required:": [ "dimension", "width" ],
@@ -128,6 +139,18 @@
 					"title": "An identifier for the algorithm to use", 
 					"default": "dummy"
 				}, 
+				"configure": {
+					"type": "array", 
+					"default": ["dont","know","fixme"],
+					"examples": [
+						"please-provide-here",
+					]
+				},
+				"background_tasks": {
+					"$comment": "Used to be a part of 'configure'",
+					"type": "integer",
+					"default": 1
+				},
 				"properties_file": {
 					"type": "string", 
 					"title": "Path to a properties file", 
@@ -149,9 +172,29 @@
 					"type": "array", 
 					"default": ["hotspot","fair"],
 					"examples": [
-						"hotspot", "fair", { "ranks_per_node": 1 }
+						"FCFS",
+						"fair",
+						"sfc-diffusion",
+						"greedy-naive",
+						"greedy-regular",
+						"hotspot"
 					]
-				}, 
+				},
+				"primary_ranks_per_node": {
+					"$comment": "Former member of configure, but I find it here better placed",
+					"type": "integer",
+					"default": -1
+				},
+				"ranks_per_node": {
+					"$comment": "Former member of configure, but I find it here better placed",
+					"type": "integer",
+					"default": 1
+				},
+				"max_node_pool_answering_time": {
+					"$comment": "Former member of configure, but I find it here better placed",
+					"type": "number",
+					"default": 1e-2
+				},
 				"timeout": {
 					"type": "number", 
 					"title": "Timeout for MPI packages in seconds before the simulation is killed", 
@@ -202,7 +245,11 @@
 				"fuse_algorithmic_steps": {
 					"type": "boolean", 
 					"default": false
-				}, 
+				},
+				"disable_metadata_exchange_in_batched_time_steps": {
+					"type": "boolean",
+					"default": false
+				},
 				"fuse_algorithmic_steps_factor": {
 					"type": "number", 
 					"title": "The Fuse_algorithmic_steps_factor Schema ",
@@ -234,6 +281,7 @@
 					"name": {
 						"type": "string", 
 						"title": "The solver name", 
+						"$comment": "Is also called 'identifier' in some contexts",
 						"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
 						"scope": "compile-time",
 						"used-by": "toolkit",
@@ -329,7 +377,40 @@
 								}
 							}
 						]
-					}, 
+					},
+					"halo_cells": {
+						"type": "integer",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
+					"regularised_fine_grid_levels": {
+						"type": "integer",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
+					"dmp_relaxation_parameters": {
+						"type": "number",
+						"svens_tag": "limiter, required?",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
+					"dmp_difference_scaling": {
+						"type": "number",
+						"svens_tag": "limiter, required?",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
+					"dmp_observables": {
+						"type": "integer",
+						"svens_tag": "limiter, required!",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
+					"steps_till_cured": {
+						"type": "integer",
+						"svens_tag": "limiter",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
+					"help_layers": {
+						"type": "integer",
+						"svens_tag": "limiter",
+						"$comment": "TODO: Found in Solver, please describe me"
+					},
 					"global_observables": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
@@ -378,18 +459,18 @@
 					"time_stepping": {
 						"type": "string", 
 						"default": "global",
-						"enum": ["global","local","whatever"],
+						"enum": ["global","local","TODO: whatever"],
 						"scope": "run-time"
 					}, 
 					"oneOf" : [{
 						"order": {
 							"type": "integer", 
-							"title": "Approximation order of the scheme",
+							"title": "For a DG solver: Approximation (convergence) order of the scheme",
 							"scope": "compile-time"
 						}, 
 						"patchSize": {
 							"type": "integer", 
-							"title": "Number of subcells per coordinate direction (no ghost ",
+							"title": "For a FV solver: Number of subcells per coordinate direction (no ghost; convergence order is always k=3 in ExaHyPE)",
 							"scope": "compile-time"
 						}
 					}],
@@ -439,6 +520,7 @@
 								},
 								"type": {
 									"title": "Which plotter device to adopt", 
+									"$comment": "Also refered to as identifier",
 									"scope": "run-time",
 									"anyOf": [
 										{
@@ -468,6 +550,7 @@
 								"variables": {
 									"type": "integer", 
 									"title": "How much variables the plotter writes (Runtime quantitiy)",
+									"$comment": "Named variables could be quite handy here, too",
 									"minimum": 0,
 									"exclusiveMinimum": true,
 									"scope": "run-time"
@@ -488,12 +571,18 @@
 									"title": "Time at which periodic plotting should start, in coordinate time", 
 									"default": 0
 								},
+								"select": {
+									"$comment": "Spatial dimensional slicing, invented by Tobias for seismic probes",
+									"type": "object",
+									"examples": [
+										{ "x": 0, "y": 1 }
+									]
+								},
 								"parameters": {
 									"type": "object",
 									"title": "Free runtime parameters for postprocessing-codes",
 									"scope": "run-time"
-								}
-
+								},
 							}
 						}
 					}, 
