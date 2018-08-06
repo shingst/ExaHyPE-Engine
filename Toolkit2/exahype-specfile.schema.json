@@ -75,11 +75,12 @@
 			]
 		}, 
 		"computational_domain": {
-			"type": "object", 
+			"type": "object",
 			"oneOf": [
 				{ "required": [ "dimension", "width", "offset", "end_time"] },
 				{ "required": [ "dimension", "width", "offset", "time_steps"] }
 			],
+			"additionalProperties" : false,
 			"properties": {
 				"dimension": {
 					"type": "integer", 
@@ -111,22 +112,20 @@
 					"minItems": 2,
 					"maxItems": 3
 				}, 
-				"oneOf": [{
-					"end_time" : {
+				"end_time" : {
 						"type": "number", 
 						"title": "The end time of the simulation",
 						"scope": "run-time",
 						"minimum": 0,
 						"exclusiveMinimum": false
-					},
-					"time_steps" : {
+				},
+				"time_steps" : {
 						"type": "integer", 
 						"title": "The number of steps the simulation is run",
 						"scope": "run-time",
 						"minimum": 0,
 						"exclusiveMinimum": false
-					}
-				}]
+				}
 			}
 		}, 
 		"shared_memory": {
@@ -186,58 +185,58 @@
 			"type": "object",
 			"scope": "run-time",
 			"used-by": "toolkit",
-			"$comment": "This could also just be an open object where anything could be stored and content is not enforced by the Schema.",
+			"$comment": "This could also just be an open object where anything could be stored and content is not enforced by the schema.",
+			"additionalProperties" : false,
 			"properties": {
-				"spawn_predictor_as_background_thread": {
-					"type": "boolean", 
-					"title": "Wether to spawn the predictor as a background thread, or so.",
-					"default": false
-				}, 
-				"timestep_batch_factor": {
-					"type": "number", 
-					"title": "Some factor, I don't know what it is good for", 
-					"default": 1
-				}, 
-				"spawn_double_compression": {
-					"type": "boolean", 
-					"title": "Whether to use double compression to save data in MPI communication", 
-					"default": false
-				}, 
-				"spawn_double_compression_as_background_thread": {
-					"type": "boolean", 
-					"title": "Wether to do double compression in the background", 
-					"default": false
-				}, 
-				"double_compression": {
-					"type": "integer",
-					"title": "Erhm... yeah, did I say double compression?", 
-					"default": 0
-				}, 
-				"disable_amr_if_grid_has_been_stationary_in_previous_iteration": {
-					"type": "boolean",
-					"default": false
-				}, 
 				"fuse_algorithmic_steps": {
 					"type": "boolean", 
 					"default": false
 				}, 
 				"fuse_algorithmic_steps_factor": {
 					"type": "number", 
-					"title": "The Fuse_algorithmic_steps_factor Schema ",
-					"default": 0.9912345
-				}, 
-				"batch_timesteps": {
-					"type": "integer", 
-					"title": "The Batch_timesteps Schema "
-				}, 
-				"skip_reduction_in_batched_time_steps": {
+					"title": "The weight used for estimating the next time step size",
+					"default": 0.99
+				},
+				"spawn_predictor_as_background_thread": {
 					"type": "boolean", 
+					"title": "Wether to spawn the predictor as a background thread, or so.",
+					"default": false
+				},
+				"spawn_amr_background_threads": {
+					"type": "boolean", 
+					"title": "Wether to spawn the predictor as a background thread, or so.",
 					"default": false
 				}, 
-				"skip_reduction": {
+				"disable_vertex_exchange_in_time_steps": {
 					"type": "boolean", 
+					"title": "Turn off the Peano vertex exchange during time stepping iterations",
+					"default": false
+				}, 
+				"time_step_batch_factor": {
+					"type": "number", 
+					"title": "This factor determines how many time steps are run as a batch", 
+					"default": 0.0
+				},
+				"disable_metadata_exchange_in_batched_time_steps" : {
+					"type": "boolean", 
+					"title": "Turn off the exchange of ExaHyPE solver metadata during batched time steps",
+					"default": false
+				},
+				"double_compression": {
+					"type": "number",
+					"title": "The double compression factor. 0.0 turns double compression off.", 
+					"default": 0.0
+				},
+				"spawn_double_compression_as_background_thread": {
+					"type": "boolean", 
+					"title": "Whether to do double compression in the background", 
 					"default": false
 				}
+			},
+			"dependencies": {
+				"spawn_double_compression_as_background_thread" : ["double_compression"],
+				"fuse_algorithmic_steps_factor" : ["fuse_algorithmic_steps"],
+				"disable_metadata_exchange_in_batched_time_steps" : ["time_step_batch_factor"]
 			}
 		}, 
 		"solvers": {
@@ -433,7 +432,7 @@
 							"title": "Approximation order of the scheme",
 							"scope": "compile-time"
 					}, 
-					"patchSize": {
+					"patch_size": {
 						"type": "integer", 
 						"title": "Number of subcells per coordinate direction (no ghost ",
 						"scope": "compile-time"
