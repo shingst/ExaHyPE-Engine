@@ -17,6 +17,7 @@
 namespace exahype {
 namespace parser {
 class Parser;
+class ParserImpl;
 }
 }
 
@@ -35,21 +36,10 @@ class Parser;
 #include "exahype/solvers/Solver.h"
 
 /**
- * ExaHyPE command line parser
+ * ExaHyPE Specification file (Parameters)
  *
- * A simple parser that creates a linear token stream
- * from a given ExaHyPE specification file.
- *
- * The parser can deal with C and doxygen style comments as
- * long as not two multi-line comment blocks are opened/closed
- * in the same line.
- * 
- * <h2>Parser Limitations</h2>
- * Requires a proper implementation of the
- * C++11 regex routines (GCC>=4.9.0).
- *
- * Cannot deal with multiple openings/closings of comments
- * in the same line.
+ * Under the hood, the old Specfile parser was replaced here by
+ * a JSON parser.
  *
  * @author Tobias Weinzierl, Dominic Etienne Charrier, Sven Koeppel
  */
@@ -60,7 +50,8 @@ class exahype::parser::Parser {
 
   static const std::string   _noTokenFound;
 
-  std::vector<std::string> _tokenStream;
+  std::vector<std::string> _tokenStream; // will be now replaced by:
+  ParserImpl* _impl;
 
   /**
    * Takes certain parameters from the

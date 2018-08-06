@@ -22,10 +22,32 @@
 #include <regex>
 #include <cstdlib> // getenv, exit
 #include <sstream>
+#include <iostream>
+#include <iomanip>
 
 #include "tarch/la/ScalarOperations.h"
 
 #include "exahype/parser/ParserView.h"
+
+
+#include "json.hpp" // this is an ~1MB header file which is included here exclusively
+using json = nlohmann::json;
+
+struct exahype::parser::ParserImpl {
+  json data;
+
+  void read(std::istream& is) {
+    data = json::parse(is);
+  }
+
+  void print() {
+      std::cout << std::setw(4) << data << std::endl;
+  }
+  
+  bool isValid() {
+    return true; // TODO: Wether json holds something or not
+  }
+};
 
 tarch::logging::Log exahype::parser::Parser::_log("exahype::parser::Parser");
 
@@ -54,6 +76,8 @@ double exahype::parser::Parser::getValueFromPropertyString(
 }
 
 exahype::parser::Parser::Parser() {
+  _impl = new exahype::parser::ParserImpl();
+
   _identifier2Type.insert(
       std::pair<std::string, exahype::solvers::Solver::Type>(
           "ADER-DG", exahype::solvers::Solver::Type::ADERDG));
@@ -79,7 +103,6 @@ void exahype::parser::Parser::readFile(const std::string& filename) {
     inputFile.open(filename.c_str());
     if (!inputFile.good()) {
       logError("readFile(String)", "cannot open file " << filename);
-      _tokenStream.clear();
       _interpretationErrorOccured = true;
       return;
     }
@@ -87,6 +110,10 @@ void exahype::parser::Parser::readFile(const std::string& filename) {
 }
 
 void exahype::parser::Parser::readFile(std::istream& inputFile, std::string filename) {
+  _filename = filename;
+  _impl->read(inputFile);
+  
+   /*
    try {
     const int MAX_CHARS_PER_LINE = 65536;
 
@@ -193,10 +220,11 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
         " if you use GCC or your compiler relies on GCC, please make sure that you use a GCC version >= 4.9.0." );
     _interpretationErrorOccured = true;
   }
+  */
 
   //  For debugging purposes
   if(std::getenv("EXAHYPE_VERBOSE_PARSER")) { // runtime debugging
-      std::cout << getTokenStreamAsString() << std::endl;
+      _impl->print();
   }
 
   checkValidity();
@@ -217,7 +245,7 @@ void exahype::parser::Parser::checkValidity() {
 }
 
 bool exahype::parser::Parser::isValid() const {
-  return !_tokenStream.empty() && !_interpretationErrorOccured;
+  return !_impl->isValid() && !_interpretationErrorOccured;
 }
 
 void exahype::parser::Parser::invalidate() {
@@ -301,65 +329,50 @@ std::string exahype::parser::Parser::getTokenAfter(std::string token0, int occur
 
 int exahype::parser::Parser::getNumberOfThreads() const {
   assertion(isValid());
-  std::string token = getTokenAfter("shared-memory", "cores");
-  logDebug("getNumberOfThreads()", "found token " << token);
-
-  int result = 0;
   try {
-    result = std::stoi(token);
+    return _impl->data.at("shared_memory").at("cores");
+  } catch (json::type_error& e) {
+    logError("getNumberOfThreads()", "Number of cores is not an integer (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("getNumberOfThreads()", "Missing shared-memory section (" << e.what() << ")");
   }
-  catch (const std::invalid_argument& ia) {}
-
-  if (result <= 0) {
-    logError("getNumberOfThreads()",
-        "Invalid number of cores set or token shared-memory missing: "
-        << token);
-    result = 1;
-    _interpretationErrorOccured = true;
-  }
-  return result;
+  _interpretationErrorOccured = true;
+  return 1;
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() const {
   assertion(isValid());
-  std::string token;
   tarch::la::Vector<DIMENSIONS, double> result;
-
-  token = getTokenAfter("computational-domain", "dimension", 0);	
-
-  int dim = -1;
+  
   try {
-    dim = std::stoi(token);
-  }
-  catch (const std::invalid_argument& ia) {}
-
-  if (dim < DIMENSIONS) {
-    logError("getDomainSize()",
-             "dimension: value "<< token << " in specification file" <<
-             " does not match -DDim"<<DIMENSIONS<<" switch in Makefile");
-    _interpretationErrorOccured = true;
-    return result;
-  }
-
-  try {
-    token = getTokenAfter("computational-domain", "width", 0);
-    result(0) = std::stod(token);
-    token = getTokenAfter("computational-domain", "width", 1);
-    result(1) = std::stod(token);
-    #if DIMENSIONS == 3
-    token = getTokenAfter("computational-domain", "width", 2);
-    if (token.compare("offset")==0) {
+    int dim = _impl->data.at("computational_domain").at("dimension");
+    if(dim != DIMENSIONS) {
       logError("getDomainSize()",
-          "width: not enough values specified for " <<
-          DIMENSIONS<< " dimensions");
+               "dimension: value "<< dim << " in specification file" <<
+               " does not match -DDim"<<DIMENSIONS<<" switch in Makefile. Rerun toolkit!");
       _interpretationErrorOccured = true;
       return result;
     }
-    result(2) = std::stod(token);
-    #endif
-  } catch (const std::invalid_argument& ia) {}
+  } catch(json::type_error& e) {
+    logError("getDomainSize()", "Dimension is not an integer (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("getDomainSize()", "Missing computational_domain or dimension in specification file (" << e.what() << ").");
+  }
 
-  logDebug("getDomainSize()", "found size " << result);
+  try {
+    result(0) = _impl->data.at("computational_domain").at("width").at(0);
+    result(1) = _impl->data.at("computational_domain").at("width").at(1);
+    if(DIMENSIONS == 3)
+      result(2) = _impl->data.at("computational_domain").at("width").at(2);
+    logDebug("getDomainSize()", "found size " << result);
+    return result;
+  } catch(json::type_error& e) {
+    logError("getDomainSize()", "Width is not a double (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("getDomainSize()", "Missing computational_domain or width in specification file (" << e.what() << ")");
+  }
+
+  _interpretationErrorOccured = true;
   return result;
 }
 
