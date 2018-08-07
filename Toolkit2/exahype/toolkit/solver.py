@@ -21,53 +21,23 @@ def numberOfVariables(variables):
 	for variable in variables:
 		number += variable["multiplicity"]
 	return number
+
+def convert_to_dict(list_of_str_or_dict):
+	"""
+	Example:
 	
+	Converts '[ 'generic', 'usestack', { 'maxpicarditer' : 1 } ]' to
+	'{ 'generic' : True , 'usestack' : True , 'maxpicarditer' : 1 }'
+	"""
+	result = {}
+	for i,item in enumerate(list_of_str_or_dict):
+		if type(item) is str:
+			result[item] = True
+		elif type(item) is dict:
+			result[list(item.keys())[0]] = list(item.values())[0]
+	return result
+
 class SolverGenerator():
-	aderdg_template_bool_map = {
-		"linear"          : "isLinear",
-		"nonlinear"       : "isNonlinear",
-		"Fortran"         : "isFortran",
-		"flux"            : "useFlux",
-		"source"          : "useSource",
-		"ncp"             : "useNCP",
-		"pointsources"    : "usePointSources",
-		"notimeavg"       : "noTimeAveraging",
-		"patchwiseadjust" : "patchwiseAdjust",
-		"usestack"        : "tempVarsOnStack",
-		"maxpicarditer"   : "useMaxPicardIterations",
-		"flops"           : "countFlops"
-	}
-	
-	aderdg_types=[\
-		"linear",\
-		"nonlinear",\
-		"Legendre",\
-		"Lobatto",\
-		"user"\
-	]
-	
-	aderdg_terms=[\
-		"flux",\
-		"source",\
-		"ncp",\
-		"pointsources",\
-		"materialparameters"\
-	]
-	
-	aderdg_optimisations=[\
-		"generic",\
-		"optimised",\
-		"notimeavg",\
-		"patchwiseadjust",\
-		"usestack",\
-		"maxpicarditer",\
-		"fusedsource",\
-		"fluxvect",\
-		"fusedsourcevect",\
-		"cerkguess",\
-		"converter",\
-		"flops"\
-	]
 	
 	FV_TYPES=[\
 		"godunov",\
@@ -95,43 +65,106 @@ class SolverGenerator():
 		
 			# stub, do something
 	
-	def create_aderdg_kernel_context(self,kernels):
-		kernel_type         = kernels["type"]
-		kernel_terms        = kernels["terms"]
-		kernel_optimisation = kernels["optimisations"]
-		return {}
-		
-	def create_fv_kernel_context(self,kernels):
-		kernel_type         = kernels["type"]
-		kernel_terms        = kernels["terms"]
-		kernel_optimisation = kernels["optimisations"]
-		return {}
 	
-	def create_solver_context(self,solverName):
+	def create_aderdg_kernel_context(self,kernel):
+		context = {}
+		kernel_type          = kernel["type"]
+		kernel_terms         = convert_to_dict(kernel["terms"])
+		kernel_optimisations = convert_to_dict(kernel["optimisations"])
+		
+		template_bool_map = {
+			"linear"             : "isLinear",
+			"nonlinear"          : "isNonlinear",
+			"Fortran"            : "isFortran",
+			"flux"               : "useFlux",
+			"source"             : "useSource",
+			"ncp"                : "useNCP",
+			"pointsources"       : "usePointSources",
+			"materialparameters" : "useMaterialParam",
+			"notimeavg"          : "noTimeAveraging",
+			"patchwiseadjust"    : "patchwiseAdjust",
+			"usestack"           : "tempVarsOnStack",
+			"maxpicarditer"      : "useMaxPicardIterations",
+			"flops"              : "countFlops"
+		}
+		
+		template_int_map = {
+			"pointsources"    : "numberOfPointSources",
+			"maxpicarditer"   : "maxPicardIterations"
+		}
+		
+		for key in template_bool_map:
+			context[template_bool_map[key]] = \
+				key in kernel_optimisations or key in kernel_terms
+		for key in template_int_map:
+			context[template_int_map[key]] = \
+				max(kernel_optimisations.get(key,0),kernel_terms.get(key,0))
+		
+		return context
+		
+	def create_fv_kernel_context(self,kernel):
+		kernel_type          = kernel["type"]
+		kernel_terms         = convert_to_dict(kernel["terms"])
+		kernel_optimisations = convert_to_dict(kernel["optimisations"])
+		
+		fv_template_bool_map = {
+			"flux"               : "useFlux",
+			"source"             : "useSource",
+			"ncp"                : "useNCP",
+			"pointsources"       : "usePointSources",
+			"materialparameters" : "useMaterialParam", # todo not implemented yet
+			"patchwiseadjust"    : "patchwiseAdjust",  # todo not implemented yet
+			"usestack"           : "tempVarsOnStack",
+			"flops"              : "countFlops"        # todo not implemented yet
+		}
+		
+		fv_template_int_map = {
+			"pointsources"    : "numberOfPointSources"
+		}
+		
+		for key in template_bool_map:
+			context[template_bool_map[key]] = \
+				key in kernel_optimisations or key in kernel_terms
+		for key in template_int_map:
+			context[template_int_map[key]] = \
+				max(kernel_optimisations.get(key,0),kernel_terms.get(key,0))
+		return context
+	
+	def create_solver_context(self,solver,solverName):
 		context = {}
 		context["project"]        =self._project_name
 		context["dimensions"]     =self._dimensions
 		context["solver"]         = solverName
 		context["abstractSolver"] = "Abstract"+solverName
+		
+		context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
+		context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
+		context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
 		return context
 	
 	def generate_aderdg_solver_files(self,solver):
-		aderdg_context = self.create_solver_context(solver["name"])
+		#aderdg_types=[\
+		#	"Legendre",\
+		#	"Lobatto",\
+		#	"user"\
+		#]
+		aderdg_context = self.create_solver_context(solver,solver["name"])
 		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
+		print(aderdg_context)
 
 	def generate_fv_solver_files(self,solver):
-		fv_context = self.create_solver_context(solver["name"])
+		fv_context = self.create_solver_context(solver,solver["name"])
 		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"],verbose))
 		
 	def generate_limiting_aderdg_solver_files(self,solver):
 		# aderdg
-		aderdg_context = self.create_solver_context(solver["name"]+"_ADERDG")
+		aderdg_context = self.create_solver_context(solver,solver["name"]+"_ADERDG")
 		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
 		# fv
-		fv_context = self.create_solver_context(solver["name"]+"_FV")
+		fv_context = self.create_solver_context(solver,solver["name"]+"_FV")
 		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"]))
 		# limiter
-		limiting_context = self.create_solver_context(solver["name"])
+		limiting_context = self.create_solver_context(solver,solver["name"])
 	
 	_project_name = "unknown"
 	_dimensions   = -1
