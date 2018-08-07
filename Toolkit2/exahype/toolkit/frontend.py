@@ -76,9 +76,9 @@ class ClassicFrontend():
 		parser.add_argument('specfile',
 			type=argparse.FileType('r'),
 			help="The specification file to work on (can be .exahype, .exahype2, .json)")
-
+		
 		args = parser.parse_args()
-
+		
 		self.interactive = args.interactive or not args.not_interactive
 		self.verbose = args.verbose or self.interactive
 		
@@ -108,15 +108,16 @@ class ClassicFrontend():
 		self.wait_interactive("validated and configured pathes")
 		
 		try:
-			SolverGenerator(spec, self.verbose)
+			s = SolverGenerator(spec, self.verbose)
+			s.generate_all_solvers(spec)
 		except BadSpecificationFile as e:
 			print("Could not create applications solver classes.")
 			print(e)
 			sys.exit(-6)
-	
+		
 		self.wait_interactive("generated application-specific solver classes")
-
-
+		
+		
 		# This is no more possible:
 		# We need to generate the plotters straight when looping over the Solvers,
 		# since otherwise we lack information to which solvers they belong to

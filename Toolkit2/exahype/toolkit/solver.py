@@ -21,7 +21,7 @@ def numberOfVariables(variables):
 	for variable in variables:
 		number += variable["multiplicity"]
 	return number
-
+	
 class SolverGenerator():
 	aderdg_template_bool_map = {
 		"linear"          : "isLinear",
@@ -95,42 +95,84 @@ class SolverGenerator():
 		
 			# stub, do something
 	
-	def __init__(self,spec,verbose):
-		project_name = spec["project_name"]
-		solvers = spec["solvers"]
-		domain  = spec["computational_domain"]
+	def create_aderdg_kernel_context(self,kernels):
+		kernel_type         = kernels["type"]
+		kernel_terms        = kernels["terms"]
+		kernel_optimisation = kernels["optimisations"]
+		return {}
 		
-		for i, solver in enumerate(solvers):
+	def create_fv_kernel_context(self,kernels):
+		kernel_type         = kernels["type"]
+		kernel_terms        = kernels["terms"]
+		kernel_optimisation = kernels["optimisations"]
+		return {}
+	
+	def create_solver_context(self,solverName):
+		context = {}
+		context["project"]        =self._project_name
+		context["dimensions"]     =self._dimensions
+		context["solver"]         = solverName
+		context["abstractSolver"] = "Abstract"+solverName
+		return context
+	
+	def generate_aderdg_solver_files(self,solver):
+		aderdg_context = self.create_solver_context(solver["name"])
+		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
+
+	def generate_fv_solver_files(self,solver):
+		fv_context = self.create_solver_context(solver["name"])
+		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"],verbose))
+		
+	def generate_limiting_aderdg_solver_files(self,solver):
+		# aderdg
+		aderdg_context = self.create_solver_context(solver["name"]+"_ADERDG")
+		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
+		# fv
+		fv_context = self.create_solver_context(solver["name"]+"_FV")
+		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"]))
+		# limiter
+		limiting_context = self.create_solver_context(solver["name"])
+	
+	_project_name = "unknown"
+	_dimensions   = -1
+	_verbose      = False
+	
+	def __init__(self,spec,verbose):
+		self._project_name = spec["project_name"]
+		self._dimensions   = spec["computational_domain"]["dimension"]
+		self._verbose      = verbose
+	
+	def generate_all_solvers(self,spec):
+		for i, solver in enumerate(spec["solvers"]):
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))
 			
-			solverType = solver["type"]
+			if solver["type"]=="ADER-DG":
+				self.generate_aderdg_solver_files(solver)
+			elif solver["type"]=="Finite-Volumes":
+				self.generate_FV_fv_files(solver)
+			elif solver["type"]=="Limiting-ADER-DG":
+				self.generate_limiting_aderdg_solver_files(solver)
 			
-			kernels             = solver["aderdg_kernel"]
-			kernel_type         = kernels["type"]
-			kernel_terms        = kernels["terms"]
-			kernel_optimisation = kernels["optimisations"]
-			print(solver["aderdg_kernel"])
-			
-			context = { }
-			context["project"]=spec["project_name"]
-			
-			context["dimension"]=domain["dimension"]
-			
-			context["solver" ]           = solver["name"]
-			context["abstractSolver" ]   = "Abstract"+solver["name"]
-			context["linearOrNonlinear"] = "Linear"  if ( kernels["type"]=="linear" ) else "Nonlinear"
-			context["language"]          = "fortran" if ( kernels["language"]=="Fortran" ) else "c"
-			
-			context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
-			context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
-			context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
+#			kernels             = solver["aderdg_kernel"]
+#			kernel_type         = kernels["type"]
+#			kernel_terms        = kernels["terms"]
+#			kernel_optimisation = kernels["optimisations"]
+#			print(solver["aderdg_kernel"])
+#			
+#			
+#			context["solver" ]           = solver["name"]
+#			context["abstractSolver" ]   = "Abstract"+solver["name"]
+#			context["linearOrNonlinear"] = "Linear"  if ( kernels["type"]=="linear" ) else "Nonlinear"
+#			context["language"]          = "fortran" if ( kernels["language"]=="Fortran" ) else "c"
+#			
+#			context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
+#			context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
+#			context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
 #			context["numberOfDMPObservables"]     = solver.get("dmp_observables",0);
 #			context["numberOfPointSources"]       = solver.get("point_sources",0);
 
 #			context["order"]     = solver.get("order",-1);
 #			context["patchSize"] = solver.get("patch_size",-1);
-			
-			print(context)
 
 #//int
 
