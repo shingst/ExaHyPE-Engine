@@ -39,8 +39,8 @@
 	},
 	"solvers": [
 		{
-			"name": "GRMHDSolver_ADERDG",
-			"type": "ADER-DG",
+			"name": "GRMHDSolver_FV",
+			"type": "Finite-Volumes",
 			"variables": [
 				{ "name": "rho",				 "multiplicity": 1 },
 				{ "name": "vel",				 "multiplicity": 3 },
@@ -61,17 +61,14 @@
 				[ 0.0, 0.0, 0.0 ],
 				[ 0.5, 0.5, 0.5 ]
 			],
-			"order": 3,
+			"patch_size": 3,
 			"maximum_mesh_size": 5.0,
 			"maximum_mesh_depth": 0,
 			"time_stepping": "global",
-			"aderdg_kernel": {
+			"fv_kernel": {
 				"implementation": "generic",
-				"space_time_predictor" : { "maxpicarditer" : 1 },
 				"terms": [ "flux", "ncp", "source", "point_sources" ],
-				"language" : "C",
-				"nonlinear"  : true,
-				"basis" : "Lobatto"
+				"scheme"  : "godunov"
 			},
 			"plotters": [
 				{
