@@ -57,13 +57,18 @@
 				{ "name": "test",				 "multiplicity": 3 }
 			],
 			"global_observables": 1,
+			"point_sources": [
+				[ 0.0, 0.0, 0.0 ],
+				[ 0.5, 0.5, 0.5 ]
+			],
 			"order": 3,
 			"maximum_mesh_size": 5.0,
 			"maximum_mesh_depth": 0,
 			"time_stepping": "global",
 			"aderdg_kernel": {
-				"optimisations": [ "generic", { "maxpicarditer" : 1 } ],
-				"terms": [ "flux", "ncp", "source" ],
+				"code": "generic",
+				"space_time_predictor" : { "maxpicarditer" : 1 },
+				"terms": [ "flux", "ncp", "source", "point_sources" ],
 				"language" : "C",
 				"type"  : "nonlinear",
 				"basis" : "Lobatto"

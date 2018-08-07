@@ -159,6 +159,7 @@
 						"title": "The offset of the origin for the computational domain",
 						"scope": "run-time"
 					},
+					"$comment": "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
 					"minItems": 2,
 					"maxItems": 3
 				}, 
@@ -391,21 +392,21 @@
 						"required" : [ "terms" ],
 						"additionalProperties" : "false",
 						"properties": {
-							"code": {
-								"type": "boolean",
-								"title": "Wether to turn use optimized kernels",
+							"code" : {
+								"type": "string",
+								"title": "Wether to use optimised kernels",
 								"enum": ["generic", "optimised" ],
 								"default": "generic"
 							},
-							"solutionadjustment": {
+							"adjust_solution": {
 								"type": "string",
-								"title": "Wether to adjust solutions on a patch or point",
+								"title": "Wether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
 								"enum": ["patchwise", "pointwise"],
 								"default": "pointwise"
 							},
-							"allocation": {
+							"allocate_temporary_arrays": {
 								"type": "string",
-								"title": "where to allocate storage in the Solver-Kernel interface. Heap known to be safer for large PDEs",
+								"title": "Where to allocate storage in the solver kernel interface. Heap known to be safer for large PDEs",
 								"enum": ["stack","heap"],
 								"default": "heap"
 							},
@@ -433,28 +434,26 @@
 							"optimised_kernel_debugging": {
 								"type": "array",
 								"title": "Various flags for debugging/developing the optimised kernels",
-								"properties": {
+								"items": {
 									"type": "string",
 									"enum": ["converter", "flops"]
 								}
-							},							
+							},
 							"terms": {
 								"type": "array", 
 								"title": "PDE terms to generate code for",
+								"$comment" : "'material_parameters' should be renamed",
 								"items": { 
-									"oneOf" : [ 
-										{ "enum" : ["flux", "source", "ncp", "materialparameters"] }
-									]
-								},
-								"default": ["flux"]
+									"type" : "string", 
+									"enum" : ["flux", "source", "ncp", "material_parameters", "point_sources" ]
+								}
 							},
-							"optimized_terms": {
+							"optimised_terms": {
 								"type": "array",
-								"title": "Only optimized kernels: For which PDE terms should be code generated",
+								"title": "Only optimised kernels: For which PDE terms should be code generated",
 								"items": {
-									"oneOf" : [ 
-										{ "enum" : ["fusedsource", "fluxvect", "fusedsourcevect"] }
-									]
+									"type" : "string",
+									"enum" : ["fusedsource", "fluxvect", "fusedsourcevect"]
 								}
 							},
 							"language": {
@@ -483,21 +482,31 @@
 						"required" : [ "terms" ],
 						"additionalProperties" : "false",
 						"properties": {
-							"optimisations": {
-								"type": "array",
-								"title": "Optimization flags",
-								"items": { 
-									"enum" : [ "generic", "optimised", "usestack" ]
-								}
-							}, 
+							"code": {
+								"type": "string",
+								"title": "Wether to use optimised kernels",
+								"enum": ["generic", "optimised" ],
+								"default": "generic"
+							},
+							"adjust_solution": {
+								"type": "string",
+								"title": "Wether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
+								"enum": ["patchwise", "pointwise"],
+								"default": "pointwise"
+							},
+							"allocate_temporary_arrays": {
+								"type": "string",
+								"title": "Where to allocate storage in the solver kernel interface. Heap known to be safer for large PDEs",
+								"enum": ["stack","heap"],
+								"default": "heap"
+							},
 							"terms": {
 								"type": "array", 
-								"title": "PDE terms to generate code for",
+								"title": "PDE terms to generate code for ",
+								"$comment" : "material_parameters not supported yet",
 								"items": { 
-									"oneOf" : [ 
-										{ "enum" : ["flux", "source", "ncp" ] },
-										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
-									]
+									"type" : "string", 
+									"enum" : ["flux", "source", "ncp", "point_sources" ]
 								}
 							},
 							"language": {
@@ -526,12 +535,25 @@
 						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
 						"properties" : { "$ref" : "#/definitions/variables" }
 					}, 
-					"pointsources": {
+					"point_sources": {
+						"type" : "array",
 						"scope": "compile-time",
 						"used-by": "toolkit",
-						"$comment": "Used to be part of the optimisations section. Note that point sources are optional.",
-						"properties" : { "$ref" : "#/definitions/variables" }
-					},
+						"$comment": "Specify point source locations",
+						"items" : {
+							"x": {
+								"type": "array",
+								"title": "Point source location",
+								"default": [0.0, 0.0, 0.0],
+								"items": {
+									"type": "number", 
+									"scope": "compile-time"
+								},
+								"minItems": 2,
+								"maxItems": 3
+							}
+						}
+					}, 
 					"global_observables": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
@@ -660,7 +682,6 @@
 									]
 								}, 
 								"variables": {
-									"type": "object", 
 									"title": "How much variables the plotter writes (Runtime quantitiy)",
 									"$comment": "Named variables could be once passed to the plotters to have speaking output",
 									"scope": "run-time",
