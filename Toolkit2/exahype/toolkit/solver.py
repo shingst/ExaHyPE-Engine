@@ -124,13 +124,13 @@ class SolverGenerator():
 		
 		return context
 	
-	def generate_aderdg_solver_files(self,solver):
+	def generate_aderdg_solver_files(self,solver,solver_name,dmp_observables):
 		#aderdg_basis = solver["aderdg_kernel"]["basis"]
-		solver_name          = solver["name"]
 		abstract_solver_name = "Abstract"+solver_name
-		
-		aderdg_context = self.create_solver_context(solver,solver["name"])
+		aderdg_context = self.create_solver_context(solver,solver_name)
 		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
+		aderdg_context["order"]=solver["order"];
+		aderdg_context["numberOfDMPObservables"]=dmp_observables;
 		
 		aderdg_solver_map = {
 			self._output_directory+"/"+solver_name+".h"               : "solvers/ADERDGSolverHeader.template", 
@@ -157,29 +157,36 @@ class SolverGenerator():
 			else:
 				print("File '"+file_path+"' already exists. Is not overwritten.")
 		for file_path in aderdg_abstract_solver_map[code]:
-			if not os.path.exists(file_path):
-				try:
-					template = self._jinja2_env.get_template(aderdg_abstract_solver_map[code][file_path])
-					rendered_output = template.render(aderdg_context)
-					with open(file_path,"w") as file_handle:
-						file_handle.write(rendered_output)
-					print("Generated abstract solver file '"+file_path+"'")
-				except Exception as e:
-					raise helper.TemplateNotFound(aderdg_solver_map[file_path])
-		print(aderdg_context)
+			try:
+				template = self._jinja2_env.get_template(aderdg_abstract_solver_map[code][file_path])
+				rendered_output = template.render(aderdg_context)
+				with open(file_path,"w") as file_handle:
+					file_handle.write(rendered_output)
+				print("Generated abstract solver file '"+file_path+"'")
+			except Exception as e:
+				raise helper.TemplateNotFound(aderdg_solver_map[file_path])
+		
+		if code=="optimised":
+			print("ERROR: not implemented yet '"+file_path+"'",file=sys.stderr)
+			sys.exit(-1)
 
-	def generate_fv_solver_files(self,solver):
-		fv_context = self.create_solver_context(solver,solver["name"])
+	def generate_fv_solver_files(self,solver,solver_name,patch_size):
+		abstract_solver_name = "Abstract"+solver_name
+		fv_context = self.create_solver_context(solver,solver_name)
 		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"],verbose))
+		fv_context["patch_size"]=patch_size
 		
 	def generate_limiting_aderdg_solver_files(self,solver):
 		# aderdg
-		aderdg_basis = solver["aderdg_kernel"]["basis"]
-		aderdg_context = self.create_solver_context(solver,solver["name"]+"_ADERDG")
-		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
+		self.generate_aderdg_solver_files(
+			solver=solver,\
+			solver_name=solver["name"]+"_ADERDG",\
+			dmp_observables=solver["limiter"].get("dmp_observables",0))
 		# fv
-		fv_context = self.create_solver_context(solver,solver["name"]+"_FV")
-		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"]))
+		self.generate_fv_solver_files(
+			solver=solver,\
+			solver_name=solver["name"]+"_FV",\
+			patch_size=2*solver["order"]+1)
 		# limiter
 		limiter_context = self.create_solver_context(solver,solver["name"])
 		limiter_context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
@@ -197,9 +204,15 @@ class SolverGenerator():
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))
 			
 			if solver["type"]=="ADER-DG":
-				self.generate_aderdg_solver_files(solver)
+				self.generate_aderdg_solver_files(
+					solver=solver,\
+					solver_name=solver["name"],\
+					dmp_observables=0)
 			elif solver["type"]=="Finite-Volumes":
-				self.generate_FV_fv_files(solver)
+				self.generate_aderdg_solver_files(
+					solver=solver,\
+					solver_name=solver["name"],\
+					patch_size=solver["patch_size"])
 			elif solver["type"]=="Limiting-ADER-DG":
 				self.generate_limiting_aderdg_solver_files(solver)
 			

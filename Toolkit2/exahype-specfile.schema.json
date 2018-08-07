@@ -653,7 +653,8 @@
 								"id"  : "dmp_observables",
 								"type": "integer", 
 								"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
-								"scope": "compile-time"
+								"scope": "compile-time",
+								"default" : 0
 							},
 							"dmp_relaxation_parameter": {
 								"id"  : "dmp_relaxation_parameter",

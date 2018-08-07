@@ -30,13 +30,14 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
   public:
-    static constexpr int NumberOfVariables       = {{numberOfVariables}};
-    static constexpr int NumberOfParameters      = {{numberOfParameters}};
-    static constexpr int Order                   = {{order}};
-    static constexpr int NumberOfObservables     = {{numberOfObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
-    static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
-    static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
-    static constexpr double CFL                  = 0.9;
+    static constexpr int Order                     = {{order}};
+    static constexpr int NumberOfVariables         = {{numberOfVariables}};
+    static constexpr int NumberOfParameters        = {{numberOfMaterialParameters}};
+    static constexpr int NumberOfGlobalObservables = {{numberOfGlobalObservables}};
+    static constexpr int NumberOfDMPObservables    = {{numberOfDMPObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
+    static constexpr int MaxPicardIterations       = {{maxPicardIterations}};
+    static constexpr bool UseMaxPicardIterations   = {{useMaxPicardIterations}};
+    static constexpr double CFL                    = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
