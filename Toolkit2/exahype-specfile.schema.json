@@ -9,6 +9,7 @@
 		"solvers"
 	],
 	"variable" : {
+		"$comment": "The variables type",
 		"oneOf": [
 			{
 				"type": "integer",
@@ -48,11 +49,12 @@
 	"additionalProperties" : false,
 	"properties": {
 		"project_name": {
-			"type": "string", 
-			"title": "The name of the application or PDE, will get a C++ namespace", 
+			"type": "string",
+			"title": "The name of the application or PDE, will get a C++ namespace",
 			"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
 			"scope": "compile-time",
 			"used-by": "toolkit",
+			"old_format": {"token_after": "exahype-project"},
 			"examples": [
 				"EulerFlow"
 			]
@@ -66,7 +68,8 @@
 			"properties": {
 				"output_directory": {
 					"type": "string", 
-					"title": "The directory name where to put the generated code into (relevant only for compile time)", 				
+					"title": "The directory name where to put the generated code into (relevant only for compile time)",
+					"old_format": { "token_after": "output-directory" },
 					"examples": [
 						"GMRHD_cpp",
 						"foo/bar/baz/"
@@ -76,6 +79,7 @@
 					"type": "string", 
 					"title": "The directory where the Peano directory is installed in (relevant only for compile time)", 
 					"default": "./Peano", 
+					"old_format": { "token_after": "peano-kernel-path" },
 					"examples": [
 						"./Peano"
 					]
@@ -84,6 +88,7 @@
 					"type": "string", 
 					"title": "The path or name of the ExaHyPE runtime logfile", 
 					"default": "output.log", 
+					"old_format": { "token_after": "log-file" },
 					"examples": [
 						"whatever.log",
 						"/path/to/somewhere.log"
@@ -93,6 +98,7 @@
 					"type": "string", 
 					"title": "The path to the ExaHyPE code", 
 					"default": "./ExaHyPE",
+					"old_format": { "token_after": "exahype-path" },					
 					"examples": [
 						"./ExaHyPE",
 						"/your/installation/to/ExaHyPE/"
@@ -117,6 +123,7 @@
 			"default": "noarch", 
 			"scope": "compile-time",
 			"used-by": "toolkit",
+			"old_format": { "token_after": "architecture" },
 			"enum": [
 				"noarch",
 				"snb",
@@ -131,11 +138,13 @@
 				{ "required": [ "dimension", "width", "offset", "time_steps"] }
 			],
 			"additionalProperties" : false,
+			"old_format_prepend": { "within_section": "computational-domain" },
 			"properties": {
 				"dimension": {
 					"type": "integer", 
 					"title": "Spatial dimensions of the code and problem", 
 					"scope": "compile-time",
+					"old_format": { "token_after": "dimension"  },
 					"enum": [ 2, 3 ]
 				}, 
 				"width": {
@@ -149,7 +158,8 @@
 					},
 					"$comment": "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
 					"minItems": 2,
-					"maxItems": 3
+					"maxItems": 3,
+					"old_format": { "all_numeric_tokens_after": "width" }
 				}, 
 				"offset": {
 					"type": "array",
@@ -160,21 +170,24 @@
 						"scope": "run-time"
 					},
 					"minItems": 2,
-					"maxItems": 3
+					"maxItems": 3,
+					"old_format": { "all_numeric_tokens_after": "offset" }
 				}, 
 				"end_time" : {
-						"type": "number", 
-						"title": "The end time of the simulation",
-						"scope": "run-time",
-						"minimum": 0,
-						"exclusiveMinimum": false
+					"type": "number", 
+					"title": "The end time of the simulation",
+					"scope": "run-time",
+					"minimum": 0,
+					"exclusiveMinimum": false,
+					"old_format": { "token_after": "end-time" }
 				},
 				"time_steps" : {
-						"type": "integer", 
-						"title": "The number of steps the simulation is run",
-						"scope": "run-time",
-						"minimum": 0,
-						"exclusiveMinimum": false
+					"type": "integer", 
+					"title": "The number of steps the simulation is run",
+					"scope": "run-time",
+					"minimum": 0,
+					"exclusiveMinimum": false,
+					"old_format": { "token_after": "time-steps" }
 				}
 			}
 		}, 
@@ -183,36 +196,46 @@
 			"used-by": "toolkit",
 			"scope": "run-time",
 			"additionalProperties" : false,
+			"old_format_prepend": { "within_section": "shared-memory" },
 			"properties": {
 				"cores": {
 					"type": "integer", 
 					"title": "Number of shared-memory cores per node", 
 					"minimum": 1,
 					"exclusiveMinimum": false,
-					"default": 1
+					"default": 1,
+					"old_format": { "token_after": "cores" }
 				},
 				"background_job_consumer_threads": {
 					"type": "integer", 
 					"title": "Number of background job consumer threads to start", 
 					"minimum": -2,
 					"exclusiveMinimum": false,
-					"default": 1
+					"default": 1,
+					"old_format": { "token_after": "background-job-consumer-threads" }
 				}, 
 				"autotuning_strategy": {
 					"type": "string", 
 					"title": "Autotuning algorithm to use", 
 					"enum" : ["dummy","autotuning","autotuning_without_learning","autotuning_without_restart","sampling"],
-					"default": "dummy"
+					"default": "dummy",
+					"old_format": { "token_after": "identifier" }
 				},
 				"background_tasks": {
 					"$comment": "Used to be a part of 'configure'",
 					"type": "integer",
-					"default": 1
+					"default": 1,
+					"old_format": { "token_after": "background-tasks" }
 				},
 				"properties_file": {
 					"type": "string", 
 					"title": "Path to a properties file", 
 					"default": "sharedmemory.properties"
+				},
+				"manual_pinning":{
+					"type": "boolean",
+					"default": false,
+					"old_format": { "set_if_token_exists": "manual-pinning" }
 				}
 			},
 			"dependencies": {
@@ -225,6 +248,7 @@
 			"scope": "run-time",
 			"additionalProperties" : false,
 			"required" : ["ranks_per_node"],
+			"old_format_prepend": { "within_section": "distributed-memory" },
 			"anyOf": [
 				{
 					"properties": {
@@ -244,37 +268,53 @@
 					"type": "string", 
 					"title": "The load balancing type",
 					"enum" : ["static","dynamic"],
-					"default": "static"
+					"default": "static",
+					"old_format": [
+						{ "token_after": "identifier" },
+						{ "map_token": {"static_load_balancing":"static", "dynamic_load_balancing":"dynamic" } }
+					]
 				},
 				"load_balancing_strategy": {
 					"type": "string", 
 					"title": "Determines ranks with too much load",
 					"enum" : ["fair","greedy_naive","greedy_regular"],
-					"default": "fair"
+					"default": "fair",
+					"old_format" : [
+						{ "token_after": "configure" },
+						{ "filter_token": ["fair", "greedy-naive", "greedy-regular"] }
+					]
 				}, 
 				"node_pool_strategy" : {
 					"type": "string", 
 					"title": "Determines how requests for ranks are dealt with",
 					"enum" : ["hotspot","FCFS","sfc_diffusion"],
-					"default": "hotspot"
+					"default": "hotspot",
+					"old_format" : [
+						{ "token_after": "configure" },
+						{ "filter_token": ["hotspot", "FCFS", "sfc-diffusion"] }
+					]
 				},
 				"ranks_per_node" : {
 					"type": "integer", 
-					"title": "MPI ranks used per node"
+					"title": "MPI ranks used per node",
+					"old_format": { "token_after": "ranks-per-node" }
 				},
 				"primary_ranks_per_node" : {
 					"type": "integer", 
-					"title": "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)"
+					"title": "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)",
+					"old_format": { "token_after": "primary-ranks-per-node" }
 				},
 				"timeout": {
 					"type": "number", 
 					"title": "Timeout for MPI packages in seconds before the simulation is killed", 
-					"default": 60
+					"default": 60,
+					"old_format": { "token_after": "timeout" }
 				}, 
 				"buffer_size": {
 					"type": "integer", 
 					"title": "Buffer size in bytes per MPI package", 
-					"default": 64
+					"default": 64,
+					"old_format": { "token_after": "buffer-size" }
 				}
 			}
 		}, 
@@ -284,50 +324,60 @@
 			"used-by": "toolkit",
 			"$comment": "This could also just be an open object where anything could be stored and content is not enforced by the schema.",
 			"additionalProperties" : false,
+			"old_format_prepend": { "within_section": "optimisation" },
 			"properties": {
 				"fuse_algorithmic_steps": {
 					"type": "boolean", 
-					"default": false
+					"default": false,
+					"old_format": { "token_after": "fuse-algorithmic-steps" }
 				}, 
 				"fuse_algorithmic_steps_factor": {
 					"type": "number", 
 					"title": "The weight used for estimating the next time step size",
-					"default": 0.99
+					"default": 0.99,
+					"old_format": { "token_after": "fuse-algorithmic-steps-factor" }
 				},
 				"spawn_predictor_as_background_thread": {
 					"type": "boolean", 
 					"title": "Wether to spawn the predictor as a background thread, or so.",
-					"default": false
+					"default": false,
+					"old_format": { "token_after": "spawn-predictor-as-background-thread" }
 				},
 				"spawn_amr_background_threads": {
 					"type": "boolean", 
 					"title": "Wether to spawn the predictor as a background thread, or so.",
-					"default": false
+					"default": false,
+					"old_format": { "token_after": "spawn-amr-background-threads" }
 				}, 
 				"disable_vertex_exchange_in_time_steps": {
 					"type": "boolean", 
 					"title": "Turn off the Peano vertex exchange during time stepping iterations",
-					"default": false
+					"default": false,
+					"old_format": { "token_after": "disable-vertex-exchange-in-time-steps" }
 				}, 
 				"time_step_batch_factor": {
 					"type": "number", 
 					"title": "This factor determines how many time steps are run as a batch", 
-					"default": 0.0
+					"default": 0.0,
+					"old_format": { "token_after": "disable-vertex-exchange-in-time-steps" }
 				},
 				"disable_metadata_exchange_in_batched_time_steps" : {
 					"type": "boolean", 
 					"title": "Turn off the exchange of ExaHyPE solver metadata during batched time steps",
-					"default": false
+					"default": false,
+					"old_format": { "token_after": "disable-metadata-exchange-in-batched-time-steps" }
 				},
 				"double_compression": {
 					"type": "number",
 					"title": "The double compression factor. 0.0 turns double compression off.", 
-					"default": 0.0
+					"default": 0.0,
+					"old_format": { "token_after": "double-compression" }
 				},
 				"spawn_double_compression_as_background_thread": {
 					"type": "boolean", 
 					"title": "Whether to do double compression in the background", 
-					"default": false
+					"default": false,
+					"old_format": { "token_after": "spawn-double-compresion-as-background-thread" }
 				}
 			},
 			"dependencies": {
@@ -340,6 +390,7 @@
 			"type": "array",
 			"$comment": "Each simulation has an ordered list of solvers assigned",
 			"additionalProperties" : false,
+			"old_format_prepend": { "within_section": "" },
 			"items": {
 				"type": "object", 
 				"additionalProperties" : false,
