@@ -44,7 +44,7 @@ void exahype::plotters::ADERDG2ProbeAscii::finishPlotting() {
 }
 
 
-void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int orderPlusOne, int unknowns, int writtenUnknowns, const std::string& select) {
+void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int orderPlusOne, int unknowns, int writtenUnknowns, exahype::parser::ParserView select) {
   _order           = orderPlusOne-1;
   _solverUnknowns  = unknowns;
   _writtenUnknowns = writtenUnknowns;
@@ -52,13 +52,17 @@ void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int
   _filename        = filename;
   _time            = 0.0;
 
-  _x(0) = exahype::parser::Parser::getValueFromPropertyString( select, "x" );
-  _x(1) = exahype::parser::Parser::getValueFromPropertyString( select, "y" );
+  if (!select.isValueValidDouble("x") || !select.isValueValidDouble("y") || ( DIMENSIONS==3 &&!select.isValueValidDouble("z"))) {
+    logError("init()", "Probe location is invalid. Require x,y,z values. Have " << select.dump());
+  }
+  
+  _x(0) = select.getValueAsDouble("x");
+  _x(1) = select.getValueAsDouble("y");
   #if DIMENSIONS==3
-  _x(2) = exahype::parser::Parser::getValueFromPropertyString( select, "z" );
+  _x(2) = select.getValueAsDouble("z");
   #endif
 
-  logDebug( "init(...)", "probe at location " << _x << "(select=\""+select+"\")");
+  logDebug( "init(...)", "probe at location " << _x << "(select=\"" << select.dump() << "\")");
 
   if (!tarch::la::equals(_x,_x)) {
     logError( "init(...)", "Probe location is invalid." );

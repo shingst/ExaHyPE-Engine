@@ -201,7 +201,7 @@ class exahype::parser::Parser {
   void readFile(std::istream& inputFile, std::string filename="");
 
   bool isValid() const;
-  void invalidate();
+  void invalidate() const;
 
   /**
    * \return How many threads is the code supposed to use?

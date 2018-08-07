@@ -55,7 +55,7 @@ class exahype::plotters::ADERDG2CarpetHDF5 : public exahype::plotters::Plotter::
 
   virtual ~ADERDG2CarpetHDF5();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
 
   virtual void plotPatch(
         const int cellDescriptionsIndex,

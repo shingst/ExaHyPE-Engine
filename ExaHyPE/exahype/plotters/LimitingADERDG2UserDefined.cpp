@@ -39,7 +39,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::init(
   int                orderPlusOne,
   int                variables,
   int                writtenVariables,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename         = filename;
   _order            = orderPlusOne-1;

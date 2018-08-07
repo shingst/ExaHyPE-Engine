@@ -49,7 +49,7 @@ class exahype::plotters::FiniteVolumes2PeanoPatchFileFormat: public exahype::plo
   int           _ghostLayerWidth;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  std::string   _select;
+  exahype::parser::ParserView   _select;
 
 
   /**
@@ -79,7 +79,7 @@ class exahype::plotters::FiniteVolumes2PeanoPatchFileFormat: public exahype::plo
   FiniteVolumes2PeanoPatchFileFormat(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth, PlotterType plotterType);
   virtual ~FiniteVolumes2PeanoPatchFileFormat();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns,exahype::parser::ParserView select);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

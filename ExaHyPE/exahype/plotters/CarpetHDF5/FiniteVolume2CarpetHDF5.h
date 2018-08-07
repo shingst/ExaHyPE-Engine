@@ -57,7 +57,7 @@ class exahype::plotters::FiniteVolume2CarpetHDF5 : public exahype::plotters::Plo
 
   virtual ~FiniteVolume2CarpetHDF5();
 
-  virtual void init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  select);
 
   virtual void plotPatch(
         const int cellDescriptionsIndex,

@@ -75,7 +75,7 @@ void exahype::plotters::FiniteVolumes2PeanoPatchFileFormat::init(
   int                numberOfCellsPerAxis,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename             = filename;
   _numberOfCellsPerAxis = numberOfCellsPerAxis;

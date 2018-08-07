@@ -38,7 +38,6 @@
 
 #include "exahype/plotters/slicing/Slicer.h"
 
-
 std::string exahype::plotters::ADERDG2LegendreVerticesPeanoFileFormatAscii::getIdentifier() {
   return "Peano::Legendre::vertices::ascii";
 }
@@ -114,7 +113,7 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;
@@ -127,26 +126,6 @@ void exahype::plotters::ADERDG2LegendrePeanoPatchFileFormat::init(
   if(slicer) {
     logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
   }
-
-  double x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "left" );
-  _regionOfInterestLeftBottomFront(0) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "bottom" );
-  _regionOfInterestLeftBottomFront(1) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "front" );
-  _regionOfInterestLeftBottomFront(2) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#endif
-
-
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "right" );
-  _regionOfInterestRightTopBack(0) = x!=x ? std::numeric_limits<double>::max() : x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "top" );
-  _regionOfInterestRightTopBack(1) = x!=x ? std::numeric_limits<double>::max() : x;
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "back" );
-  _regionOfInterestRightTopBack(2) = x!=x ? std::numeric_limits<double>::max() : x;
-#endif
 }
 
 

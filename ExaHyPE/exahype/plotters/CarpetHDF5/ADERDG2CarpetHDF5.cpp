@@ -40,7 +40,7 @@ exahype::plotters::ADERDG2CarpetHDF5::ADERDG2CarpetHDF5(
 
 // all other methods are stubs
 exahype::plotters::ADERDG2CarpetHDF5::~ADERDG2CarpetHDF5() {}
-void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select) {
+void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  select) {
 	logError("init()", "Compile with -DHDF5, otherwise you cannot use the HDF5 plotter. There will be no output going to " << filename << " today.");
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
@@ -91,7 +91,7 @@ exahype::plotters::ADERDG2CarpetHDF5::~ADERDG2CarpetHDF5() {
 	if(writer) delete writer;
 }
 
-void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, const std::string& select) {
+void exahype::plotters::ADERDG2CarpetHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  select) {
 	bool oneFilePerTimestep = true;
 	bool allUnknownsInOneFile = true;
 

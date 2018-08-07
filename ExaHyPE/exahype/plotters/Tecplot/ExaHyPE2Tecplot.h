@@ -56,7 +56,7 @@ class exahype::plotters::ExaHyPE2Tecplot : public exahype::plotters::Plotter::De
 
   virtual ~ExaHyPE2Tecplot();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
 
   virtual void plotPatch(
         const int cellDescriptionsIndex,

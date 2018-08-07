@@ -59,7 +59,7 @@ class exahype::plotters::ADERDG2LegendreCSV: public exahype::plotters::Plotter::
   static std::string getIdentifier();
   ADERDG2LegendreCSV(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
   virtual ~ADERDG2LegendreCSV();
-  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select) override;
+  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) override;
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
   void plotPatch(

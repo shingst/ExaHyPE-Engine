@@ -31,6 +31,8 @@
 
 #include "kernels/DGBasisFunctions.h"
 
+tarch::logging::Log exahype::plotters::ADERDG2CartesianPeanoFileFormat::_log("exahype::plotters::ADERDG2CartesianPeanoFileFormat");
+
 
 std::string exahype::plotters::ADERDG2CartesianVerticesPeanoFileFormatAscii::getIdentifier() {
   return "Peano::Cartesian::vertices::ascii";
@@ -103,7 +105,7 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;
@@ -112,25 +114,11 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::init(
   _writer            = nullptr;
   _writtenUnknowns   = writtenUnknowns;
 
-  double x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "left" );
-  _regionOfInterestLeftBottomFront(0) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "bottom" );
-  _regionOfInterestLeftBottomFront(1) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "front" );
-  _regionOfInterestLeftBottomFront(2) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#endif
+  slicer = Slicer::bestFromSelectionQuery(select);
 
-
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "right" );
-  _regionOfInterestRightTopBack(0) = x!=x ? std::numeric_limits<double>::max() : x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "top" );
-  _regionOfInterestRightTopBack(1) = x!=x ? std::numeric_limits<double>::max() : x;
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "back" );
-  _regionOfInterestRightTopBack(2) = x!=x ? std::numeric_limits<double>::max() : x;
-#endif
+  if(slicer) {
+    logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
+  }
 }
 
 
@@ -348,11 +336,7 @@ void exahype::plotters::ADERDG2CartesianPeanoFileFormat::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u,
     double timeStamp) {
-  if (
-    tarch::la::allSmaller(_regionOfInterestLeftBottomFront,offsetOfPatch+sizeOfPatch)
-    &&
-    tarch::la::allGreater(_regionOfInterestRightTopBack,offsetOfPatch)
-  ) {
+  if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     assertion( _writtenUnknowns==0 || _writer!=nullptr );
 
     std::pair<int,int> vertexAndCellIndex(0,0);

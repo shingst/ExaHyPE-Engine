@@ -521,7 +521,7 @@ std::string exahype::plotters::Plotter::toString() const {
       << ",time=" << _time
       << ",repeat=" << _repeat
       << ",file name=" << _filename
-      << ",select statement=" << _select
+      << ",select statement=" << _select.dump()
       << ",device configured=" << (_device!=nullptr)
       << ")";
 

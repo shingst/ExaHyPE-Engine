@@ -185,7 +185,7 @@ void exahype::parser::Parser::readFile(const std::string& filename) {
     inputFile.open(filename.c_str());
     if (!inputFile.good()) {
       logError("readFile(String)", "cannot open file " << filename);
-      _interpretationErrorOccured = true;
+      invalidate();
       return;
     }
     readFile(inputFile, filename);
@@ -221,8 +221,8 @@ bool exahype::parser::Parser::isValid() const {
   return !_impl->isValid() && !_interpretationErrorOccured;
 }
 
-void exahype::parser::Parser::invalidate() {
-  _interpretationErrorOccured = true;
+void exahype::parser::Parser::invalidate() const {
+  invalidate();
 }
 
 bool exahype::parser::Parser::hasPath(std::string path) const {
@@ -232,7 +232,15 @@ bool exahype::parser::Parser::hasPath(std::string path) const {
 }
 
 std::string exahype::parser::Parser::dumpPath(std::string path) const {
-  std::abort(); // TODO implement (easy)
+  try {
+    return _impl->data.find(json::json_pointer(path))->dump();
+  } catch (json::type_error& e) {
+    logError("dumpPath()", "Path " << path << " contains a non-UTF-8-encodable string (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("dumpPath()", "Path " << path << " not found (" << e.what() << ")");
+  }
+  invalidate();
+  return "{'dumpPath':'error'}";
 }
 
 bool exahype::parser::Parser::isValueValidBool(const std::string& path) const {
@@ -257,7 +265,7 @@ std::string exahype::parser::Parser::getStringFromPath(std::string path, std::st
     return _impl->getFromPath(path, defaultValue, isOptional);
   } catch(std::runtime_error& e) {
     logError("getStringFromPath()", e.what());
-    _interpretationErrorOccured = true;
+    invalidate();
     return defaultValue; /* I don't like returning something here */
   }
   /*
@@ -269,7 +277,7 @@ std::string exahype::parser::Parser::getStringFromPath(std::string path, std::st
   } catch(json::out_of_range& e) {
     logError("getStringFromPath()", "Missing entry " << path << " (" << e.what() << ")");
   }
-  _interpretationErrorOccured = true;
+  invalidate();
   return "";
   */
 }
@@ -280,7 +288,7 @@ int exahype::parser::Parser::getIntFromPath(std::string path, int defaultValue, 
     return _impl->getFromPath(path, defaultValue, isOptional);
   } catch(std::runtime_error& e) {
     logError("getIntFromPath()", e.what());
-    _interpretationErrorOccured = true;
+    invalidate();
     return defaultValue; /* I don't like returning something here */
   }
 }
@@ -291,7 +299,7 @@ double exahype::parser::Parser::getDoubleFromPath(std::string path, double defau
     return _impl->getFromPath(path, defaultValue, isOptional);
   } catch(std::runtime_error& e) {
     logError("getIntFromPath()", e.what());
-    _interpretationErrorOccured = true;
+    invalidate();
     return defaultValue; /* I don't like returning something here */
   }
 }
@@ -302,7 +310,7 @@ bool exahype::parser::Parser::getBoolFromPath(std::string path, bool defaultValu
     return _impl->getFromPath(path, defaultValue, isOptional);
   } catch(std::runtime_error& e) {
     logError("getBoolFromPath()", e.what());
-    _interpretationErrorOccured = true;
+    invalidate();
     return defaultValue; /* I don't like returning something here */
   }
 }
@@ -328,7 +336,7 @@ tarch::la::Vector<DIMENSIONS,double> exahype::parser::Parser::getDimVectorFromPa
     logError("getDimVectorFromPath()", "Missing entry " << path << " (" << e.what() << ")");
   }
 
-  _interpretationErrorOccured = true;
+  invalidate();
   return result;
 }
 
@@ -339,7 +347,7 @@ std::vector<int> exahype::parser::Parser::getIntVectorFromPath(std::string path)
     return _impl->getFromPath(path, empty, isMandatory);
   } catch(std::runtime_error& e) {
     logError("getIntVectorFromPath()", e.what());
-    _interpretationErrorOccured = true;
+    invalidate();
     return empty; /* I don't like returning something here */
   }
 }
@@ -352,13 +360,13 @@ bool exahype::parser::Parser::flagListContains(std::string path, std::string key
       auto j = _impl->data.at(p);
       if(!j.is_array()) {
         logError("flagListContains()", "Expected " << path << " to hold an array, but this is not the case.");
-        _interpretationErrorOccured = true;
+        invalidate();
         return false;
       }
       for (json::iterator it = j.begin(); it != j.end(); ++it) {
         if(! it->is_string() ) {
           logError("flagListContains()", path << " holds a non-string element in its array-content.");
-          _interpretationErrorOccured = true;
+          invalidate();
           return false;
         }
         if( it->get<std::string>().compare(keyword) == 0) return true;
@@ -373,7 +381,7 @@ bool exahype::parser::Parser::flagListContains(std::string path, std::string key
     logError("flagListContains()", "Missing something below or at  " << path << " (" << e.what() << ")");
   }
   
-  _interpretationErrorOccured = true;
+  invalidate();
   return false; // Should not return data
 }
 
@@ -391,7 +399,7 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getDomainSize() c
     logError("getDomainSize()",
               "dimension: value "<< dim << " in specification file" <<
               " does not match -DDim"<<DIMENSIONS<<" switch in Makefile. Rerun toolkit!");
-    _interpretationErrorOccured = true;
+    invalidate();
     return result;
   }
   
@@ -423,7 +431,7 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
   } else {
     logError("getMPILoadBalancingType()",
              "Invalid distributed memory identifier " << token);
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -458,7 +466,7 @@ int exahype::parser::Parser::getMPIBufferSize() const {
   if(result <= 0) {
     logError("getMPIBufferSize()", "Invalid MPI buffer size " << result);
     result = 64;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   return result;
@@ -473,7 +481,7 @@ int exahype::parser::Parser::getMPITimeOut() const {
   if (result <= 0) {
     logError("getMPIBufferSize()", "Invalid MPI timeout value " << result);
     result = 0;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   
   return result;
@@ -496,7 +504,7 @@ exahype::parser::Parser::MulticoreOracleType exahype::parser::Parser::getMultico
     logError("getMulticoreOracleType()", "Invalid shared memory identifier "
                                              << token);
     result = MulticoreOracleType::Dummy;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -512,7 +520,7 @@ double exahype::parser::Parser::getSimulationEndTime() const {
     logError("getSimulationEndTime()",
              "Invalid simulation end-time: " << result);
     result = 1.0;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -534,7 +542,7 @@ int exahype::parser::Parser::getSimulationTimeSteps() const {
   if (result < 0) {
     logError("getSimulationEndTime()",
              "Invalid simulation timestep: " << result);
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -557,7 +565,7 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
               "and smaller than one: "
                   << result);
     result = 0.0;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -588,7 +596,7 @@ double exahype::parser::Parser::getTimestepBatchFactor() const {
               "section and must be greater than zero and smaller than one: "
                   << result);
     result = 0.0;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -615,7 +623,7 @@ double exahype::parser::Parser::getDoubleCompressionFactor() const {
             "'double-compression': Value is required in global-optimisation "
             "section and must be greater than or equal to zero: " << result);
     result = 0.0;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   return result;
@@ -640,7 +648,7 @@ exahype::solvers::Solver::Type exahype::parser::Parser::getType(
         "getType()",
         "'" << getIdentifier(solverNumber) << "': 'type': Value '" << token
             << "' is invalid. See the ExaHyPE documentation for valid values.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return result;
 }
@@ -671,7 +679,7 @@ int exahype::parser::Parser::getVariables(int solverNumber) const {
       logError("getVariables()",
                "'" << getIdentifier(solverNumber)
                << "': 'variables': Value must be greater than zero.");
-          _interpretationErrorOccured = true;
+          invalidate();
     }
     return result;
   }
@@ -699,7 +707,7 @@ int exahype::parser::Parser::getParameters(int solverNumber) const {
       logError("getParameters()",
                "'" << getIdentifier(solverNumber)
                << "': 'parameters': Value must be greater than zero.");
-          _interpretationErrorOccured = true;
+          invalidate();
     }
     return result;
   }
@@ -717,7 +725,7 @@ double exahype::parser::Parser::getMaximumMeshSize(int solverNumber) const {
     logError("getMaximumMeshSize(int)",
              "'" << getIdentifier(solverNumber)
                  << "': 'maximum-mesh-size': Value must be greater than zero.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getMaximumMeshSize()", "found maximum mesh size " << result);
@@ -731,7 +739,7 @@ int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
     logError("getMaximumMeshDepth(int)",
              "'" << getIdentifier(solverNumber)
                  << "': 'maximum-mesh-depth': Value must be greater than or equal to zero.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getMaximumMeshDepth()", "found maximum mesh size " << result);
@@ -745,7 +753,7 @@ int exahype::parser::Parser::getHaloCells(int solverNumber) const {
     logError("getHaloCells(int)",
              "'" << getIdentifier(solverNumber)
                  << "': 'halo-cells': Value must be greater than or equal to zero.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getHaloCells()", "found halo-cells " << result);
@@ -759,7 +767,7 @@ int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) cons
     logError("getRegularisedFineGridLevels(int)",
              "'" << getIdentifier(solverNumber)
                  << "': 'regularised-fine-grid-levels': Value must be greater than or equal to zero.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getRegularisedFineGridLevels()", "found regularised-fine-grid-levels " << result);
@@ -782,7 +790,7 @@ exahype::solvers::Solver::TimeStepping exahype::parser::Parser::getTimeStepping(
         "'" << getIdentifier(solverNumber) << "': 'time-stepping': Value '"
             << token
             << "' is invalid. See the ExaHyPE documentation for valid values.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
   return exahype::solvers::Solver::TimeStepping::Global; /* keep in sync with default_value above */
 }
@@ -794,7 +802,7 @@ double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) cons
     logError("getDMPRelaxationParameter()",
              "'" << getIdentifier(solverNumber)
                  << "': 'dmp-relaxation-parameter': Value must not be negative.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getParameters()", "found dmp-relaxation-parameter " << result);
@@ -808,7 +816,7 @@ double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const 
     logError("getDMPDifferenceScaling()",
              "'" << getIdentifier(solverNumber)
                  << "': 'dmp-difference-scaling': Value must not be negative.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getDMPDifferenceScaling()", "found dmp-difference-scaling " << result);
@@ -822,7 +830,7 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
     logError("getDMPObservables()",
              "'" << getIdentifier(solverNumber)
                  << "': 'dmp-observables': Value must not be negative.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getDMPObservables()", "found dmp-observables " << result);
@@ -837,7 +845,7 @@ int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
     logError("getStepsTillCured()",
               "'" << getIdentifier(solverNumber)
               << "': 'steps-till-cured': Value must be integral and not negative.");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   logDebug("getStepsTillCured()", "found steps-till-cured " << result);
@@ -929,7 +937,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
                  << "differs from solver type used in implementation "
 		 << "('" << exahype::solvers::Solver::toString(solver->getType()) << "').");
     recompile = true;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   if (solver->getIdentifier().compare(getIdentifier(solverNumber))) {
@@ -940,7 +948,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
                  << "') differs from identifier used in implementation ('"
                  << solver->getIdentifier() << "').");
     recompile = true;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   if (solver->getNumberOfVariables() != getVariables(solverNumber)) {
@@ -952,7 +960,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
                     "implementation file ('"
                  << solver->getNumberOfVariables() << "').");
     recompile = true;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   if (solver->getNumberOfParameters() != getParameters(solverNumber)) {
@@ -964,7 +972,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
                     "implementation file ('"
                  << solver->getNumberOfParameters() << "').");
     recompile = true;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   if (solver->getType() == exahype::solvers::Solver::Type::ADERDG &&
@@ -976,7 +984,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
                  << "') differs from value used in implementation file ('"
                  << solver->getNodesPerCoordinateAxis() - 1 << "'). ");
     runToolkitAgain = true;
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   // @todo We should add checks for FV as well
@@ -987,7 +995,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
   if (runToolkitAgain) {
     logError("checkSolverConsistency",
              "Please (1) run the Toolkit again for " << getSpecfileName() << ", and (2) recompile!");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 
   if (recompile) {
@@ -996,7 +1004,7 @@ void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
         "Please (1) adjust the specification file (" << getSpecfileName() <<  ") or the file '"
             << solver->getIdentifier()
             << ".cpp' (and similar) accordingly, and (2) recompile!");
-    _interpretationErrorOccured = true;
+    invalidate();
   }
 }
 

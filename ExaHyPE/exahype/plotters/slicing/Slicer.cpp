@@ -142,21 +142,21 @@ RegionSlicer* RegionSlicer::fromSelectionQuery(const exahype::parser::ParserView
 	double x;
 	
 	x = select.getValueAsDouble("left");
-	regionOfInterestLeftBottomFront(0) = select.isValueValidString("left") ? x : defaultLeftBottomFront; // "-", min
+	regionOfInterestLeftBottomFront(0) = select.getValueAsDouble("left") ? x : defaultLeftBottomFront; // "-", min
 	x = select.getValueAsDouble( "bottom" );
-	regionOfInterestLeftBottomFront(1) = select.isValueValidString("bottom") ? x : defaultLeftBottomFront; // "-", min
+	regionOfInterestLeftBottomFront(1) = select.getValueAsDouble("bottom") ? x : defaultLeftBottomFront; // "-", min
 	#if DIMENSIONS==3
 	x = select.getValueAsDouble( "front" );
-	regionOfInterestLeftBottomFront(2) = select.isValueValidString("front") ? x : defaultLeftBottomFront; // "-", min
+	regionOfInterestLeftBottomFront(2) = select.getValueAsDouble("front") ? x : defaultLeftBottomFront; // "-", min
 	#endif
 	
 	x = select.getValueAsDouble( "right" );
-	regionOfInterestRightTopBack(0) = select.isValueValidString("right") ? x : defaultRightTopBack;
+	regionOfInterestRightTopBack(0) = select.getValueAsDouble("right") ? x : defaultRightTopBack;
 	x = select.getValueAsDouble( "top" );
-	regionOfInterestRightTopBack(1) = select.isValueValidString("top") ? x : defaultRightTopBack;
+	regionOfInterestRightTopBack(1) = select.getValueAsDouble("top") ? x : defaultRightTopBack;
 	#if DIMENSIONS==3
 	x = select.getValueAsDouble( "back" );
-	regionOfInterestRightTopBack(2) = select.isValueValidString("back") ? x : defaultRightTopBack;
+	regionOfInterestRightTopBack(2) = select.getValueAsDouble("back") ? x : defaultRightTopBack;
 	#endif
 	
 	return new RegionSlicer(regionOfInterestLeftBottomFront, regionOfInterestRightTopBack);
