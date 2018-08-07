@@ -622,15 +622,17 @@
 									"default": 0
 								},
 								"select": {
-									"$comment": "Spatial dimensional slicing, invented by Tobias for seismic probes",
+									"$comment": "Spatial dimensional slicing, invented by Tobias for seismic probes. This is always an object, if users set 'dummy', they should remove the statement instead.",
 									"type": "object",
 									"examples": [
-										{ "x": 0, "y": 1 }
+										{ "x": 0 },
+										{ "x": 0, "y": 1 },
+										{ "x": 3.14, "y": 2.7, "z": 1.4 }
 									]
 								},
 								"parameters": {
 									"type": "object",
-									"title": "Free runtime parameters for postprocessing-codes",
+									"title": "Free runtime parameters for postprocessing-codes. This should actually be merged into the select statement.",
 									"scope": "run-time"
 								}
 							}

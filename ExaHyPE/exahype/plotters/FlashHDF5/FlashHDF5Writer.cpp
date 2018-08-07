@@ -140,7 +140,7 @@ exahype::plotters::FlashHDF5Writer::FlashHDF5Writer(
 	int _basisSize,
 	int _solverUnknowns,
 	int _writtenUnknowns,
-	const std::string& _select,
+	exahype::parser::ParserView  _select,
 	char** _writtenQuantitiesNames,
 	bool _oneFilePerTimestep,
 	bool _allUnknownsInOneFile)
