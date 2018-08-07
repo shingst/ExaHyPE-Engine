@@ -21,6 +21,7 @@
         REAL    :: V         ! Rupture velocity
         REAL    :: t0        ! Rupture initial time
         REAL    :: L        ! Nucleation size
+		REAL    :: dx
         ! ------------------------------------------------------------------
     END TYPE tFriction
     TYPE(tFriction) :: SSCRACKFL

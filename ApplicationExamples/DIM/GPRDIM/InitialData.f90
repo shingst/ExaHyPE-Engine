@@ -15,17 +15,64 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 	REAL :: rho0, lambda0, mu0, ICx0(3)
 
 	select case(ICType)
+		case('SSCRACK')
+			! ============================ SELF-SIMILAR RUPTURE TEST =====================================
+			
+			! ---------- DEFINE THE PARAMETERS -----------
+			lambda0=1.3333333333333333333e+10
+			mu0=1.333333333333333333333e+10
+			rho0=2500.000000
+			ICsig=0.5 ! Velocity
+			! --------------------------------------------
+			
+			
+			up=0.
+			! Set the lamè constants ------ !
+			up(15)=lambda0   ! Lambda    !
+			up(16)=mu0      ! mu        !
+			up(1)= rho0     ! rho       !
+			! ----------------------------- !
+			! Initial velocity vector ----- !
+			up(2) = 0.0                     !
+			up(3) = 0.0                     ! 
+			up(4) = 0.0                     !
+			! ----------------------------- ! 
+			LEsigma=0.
+			LEsigma(1)=0.!40.0*1.e+6
+			LEsigma(2)=40.0*1.e+6!/1.e+6
+			LEsigma(3)=0.!40.0*1.e+6
+			LEsigma(4)=20.0*1.e+6!/1.e+6
+			up(5:13)= GPRsigma2A(LEsigma,0.0,up(15),up(16),up(1),1.e-3)
+			! ----------------------------- !
+			up(14)=1     ! alpha
+			up(17)=1.e+16! Y0
+			up(18)=1     ! xi
+			! ----------------------------- !
+			! Friction parameters -----------
+			SSCRACKFL%mu_s=0.5
+			SSCRACKFL%mu_d=0.25
+			SSCRACKFL%DynamicFL= .false.
+			SSCRACKFL%V=2000.0  ! m/s
+			SSCRACKFL%t0=0.0    !s
+			SSCRACKFL%L=250     ! m
+			
+			SSCRACKFL%dx=150.0/3.0	! m
+			! ------------------------------
+			if(abs(xGP(1)).lt.10000.0) then
+				!up(18)=1.0-EXP(-0.5*xGP(2)**2/100.0**2)
+				if(abs(xGP(2))<200) then
+				!   up(18)=0.0 
+				end if
+			end if
+			!up(20:22)=xGP(1:3)
+			USEFrictionLaw=.true.  ! Do not use friction law
+			up(24)=LEfriction_mu(xGP(1:3),0.0,up(2:4),0.0,SSCRACKFL)
 		case('DRupture')
 			! ============================ DYNAMIC RUPTURE TEST CASE =====================================
 			! Debug test for dynamic rupture. We introduce two zones with different velocities that generate
 			! a stress sufficient to break the material
 			
-			! ---------- DEFINE THE PARAMETERS -----------
-			lambda0=2.0
-			mu0=1.0
-			rho0=1.0
-			ICsig=0.01 ! Velocity
-			! --------------------------------------------
+
 			
 			up=0.
 			up(2:4) = 0.0	
@@ -134,9 +181,9 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx_in,numberOfObservables, ob
    !if(abs(observablesMax(2)-observablesMin(2)) .gt. 1.e-2) then
 	!dmpresult=.FALSE.
    !end if
-	!if(abs(observablesMin(2)) .lt. 1.e-2) then
-	!	dmpresult=.FALSE.
-	!end if   
+	if(abs(observablesMin(2)) .lt. 1.e-2) then
+		dmpresult=.FALSE.
+	end if   
    ldx=0.01
    call StaticLimiterEQ99(dmpresult,xx,ldx)
 

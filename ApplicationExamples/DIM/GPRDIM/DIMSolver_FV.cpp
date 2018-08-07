@@ -14,6 +14,14 @@ tarch::logging::Log GPRDIM::DIMSolver_FV::_log( "GPRDIM::DIMSolver_FV" );
 void GPRDIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
   // Place here some initialization functions (like read DTM file)
+	//std::cout << " ==================================================================================" << std::endl;
+	//std::cout << " ==================================================================================" << std::endl;
+	//std::cout << " ==================================================================================" << std::endl;
+	//std::cout << _maximumMeshSize << std::endl;
+	//std::cout << _coarsestMeshLevel << std::endl;
+	//std::cout << _coarsestMeshSize << std::endl;
+	//std::cout << _maximumAdaptiveMeshDepth << std::endl;
+	//std::cout << _maxLevel << std::endl;
 }
 
 void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
