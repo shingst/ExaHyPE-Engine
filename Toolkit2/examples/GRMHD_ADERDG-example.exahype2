@@ -39,7 +39,7 @@
 	},
 	"solvers": [
 		{
-			"name": "GRMHDSolver_DG",
+			"name": "GRMHDSolver_ADERDG",
 			"type": "ADER-DG",
 			"variables": [
 				{ "name": "rho",				 "multiplicity": 1 },
