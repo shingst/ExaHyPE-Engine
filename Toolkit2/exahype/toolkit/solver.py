@@ -65,10 +65,20 @@ class SolverGenerator():
 		
 			# stub, do something
 	
-	
-	def create_aderdg_kernel_context(self,kernel):
+	def create_kernel_context(self,kernel_optimisations,kernel_terms,template_bool_map,template_int_map):
+		"""
+		Helper function.
+		"""
 		context = {}
-		kernel_type          = kernel["type"]
+		for key in template_bool_map:
+			context[template_bool_map[key]] = \
+				key in kernel_optimisations or key in kernel_terms
+		for key in template_int_map:
+			context[template_int_map[key]] = \
+				max(kernel_optimisations.get(key,0),kernel_terms.get(key,0))
+		return context
+		
+	def create_aderdg_kernel_context(self,kernel):
 		kernel_terms         = convert_to_dict(kernel["terms"])
 		kernel_optimisations = convert_to_dict(kernel["optimisations"])
 		
@@ -93,13 +103,12 @@ class SolverGenerator():
 			"maxpicarditer"   : "maxPicardIterations"
 		}
 		
-		for key in template_bool_map:
-			context[template_bool_map[key]] = \
-				key in kernel_optimisations or key in kernel_terms
-		for key in template_int_map:
-			context[template_int_map[key]] = \
-				max(kernel_optimisations.get(key,0),kernel_terms.get(key,0))
+		context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
 		
+		print(" ".join([str(x) for x in range(0,10)]))
+		
+		context[template_bool_map[kernel["type"]]] = True
+		context["isFortran"]                       = True if kernel["language"] is "Fortran" else False;
 		return context
 		
 	def create_fv_kernel_context(self,kernel):
@@ -107,7 +116,7 @@ class SolverGenerator():
 		kernel_terms         = convert_to_dict(kernel["terms"])
 		kernel_optimisations = convert_to_dict(kernel["optimisations"])
 		
-		fv_template_bool_map = {
+		template_bool_map = {
 			"flux"               : "useFlux",
 			"source"             : "useSource",
 			"ncp"                : "useNCP",
@@ -118,16 +127,11 @@ class SolverGenerator():
 			"flops"              : "countFlops"        # todo not implemented yet
 		}
 		
-		fv_template_int_map = {
+		template_int_map = {
 			"pointsources"    : "numberOfPointSources"
 		}
 		
-		for key in template_bool_map:
-			context[template_bool_map[key]] = \
-				key in kernel_optimisations or key in kernel_terms
-		for key in template_int_map:
-			context[template_int_map[key]] = \
-				max(kernel_optimisations.get(key,0),kernel_terms.get(key,0))
+		context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
 		return context
 	
 	def create_solver_context(self,solver,solverName):
