@@ -38,6 +38,10 @@ def convert_to_dict(list_of_str_or_dict):
 	return result
 
 class SolverGenerator():
+	_project_name = "unknown"
+	_dimensions   = -1
+	_verbose      = False
+	
 	def generate_plotter(self, solver_num, solver):
 		plotters = solver["plotters"]
 		for j, plotter in enumerate(plotters):
@@ -59,66 +63,70 @@ class SolverGenerator():
 		return context
 		
 	def create_aderdg_kernel_context(self,kernel):
-		kernel_terms         = convert_to_dict(kernel["terms"])
-		kernel_optimisations = convert_to_dict(kernel["optimisations"])
+		if kernel["type"] != "user":
+			kernel_terms         = convert_to_dict(kernel["terms"])
+			kernel_optimisations = convert_to_dict(kernel["optimisations"])
 		
-		template_bool_map = {
-			"linear"             : "isLinear",
-			"nonlinear"          : "isNonlinear",
-			"Fortran"            : "isFortran",
-			"flux"               : "useFlux",
-			"source"             : "useSource",
-			"ncp"                : "useNCP",
-			"pointsources"       : "usePointSources",
-			"materialparameters" : "useMaterialParam",
-			"notimeavg"          : "noTimeAveraging",
-			"patchwiseadjust"    : "patchwiseAdjust",
-			"usestack"           : "tempVarsOnStack",
-			"maxpicarditer"      : "useMaxPicardIterations",
-			"flops"              : "countFlops"
-		}
+			template_bool_map = {
+				"linear"             : "isLinear",
+				"nonlinear"          : "isNonlinear",
+				"Fortran"            : "isFortran",
+				"flux"               : "useFlux",
+				"source"             : "useSource",
+				"ncp"                : "useNCP",
+				"pointsources"       : "usePointSources",
+				"materialparameters" : "useMaterialParam",
+				"notimeavg"          : "noTimeAveraging",
+				"patchwiseadjust"    : "patchwiseAdjust",
+				"usestack"           : "tempVarsOnStack",
+				"maxpicarditer"      : "useMaxPicardIterations",
+				"flops"              : "countFlops"
+			}
 		
-		template_int_map = {
-			"pointsources"    : "numberOfPointSources",
-			"maxpicarditer"   : "maxPicardIterations"
-		}
+			template_int_map = {
+				"pointsources"    : "numberOfPointSources",
+				"maxpicarditer"   : "maxPicardIterations"
+			}
 		
-		context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
-		context["range_0_numberOfPointSources"] = " ".join([str(x) for x in range(0,context["numberOfPointSources"])]) # upper bound might be 0
+			context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
+			context["range_0_numberOfPointSources"] = " ".join([str(x) for x in range(0,context["numberOfPointSources"])]) # upper bound might be 0
 		
-		context[template_bool_map[kernel["type"]]] = True
-		context["isFortran"]                       = True if kernel["language"] is "Fortran" else False;
-		
-		return context
+			context[template_bool_map[kernel["type"]]] = True
+			context["isFortran"]                       = True if kernel["language"] is "Fortran" else False;
+			return context
+		else:
+			return {}
 		
 	def create_fv_kernel_context(self,kernel):
-		kernel_type          = kernel["type"]
-		kernel_terms         = convert_to_dict(kernel["terms"])
-		kernel_optimisations = convert_to_dict(kernel["optimisations"])
+		if kernel["type"] != "user":
+			kernel_terms         = convert_to_dict(kernel["terms"])
+			kernel_optimisations = convert_to_dict(kernel["optimisations"])
 		
-		template_bool_map = {
-			"flux"               : "useFlux",
-			"source"             : "useSource",
-			"ncp"                : "useNCP",
-			"pointsources"       : "usePointSources",
-			"materialparameters" : "useMaterialParam", # todo not implemented yet
-			"patchwiseadjust"    : "patchwiseAdjust",  # todo not implemented yet
-			"usestack"           : "tempVarsOnStack",
-			"flops"              : "countFlops"        # todo not implemented yet
-		}
+			template_bool_map = {
+				"flux"               : "useFlux",
+				"source"             : "useSource",
+				"ncp"                : "useNCP",
+				"pointsources"       : "usePointSources",
+				"materialparameters" : "useMaterialParam", # todo not implemented yet
+				"patchwiseadjust"    : "patchwiseAdjust",  # todo not implemented yet
+				"usestack"           : "tempVarsOnStack",
+				"flops"              : "countFlops"        # todo not implemented yet
+			}
 		
-		template_int_map = {
-			"pointsources"    : "numberOfPointSources"
-		}
-		context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
-		context["range_0_numberOfPointSources"] = " ".join([str(x) for x in range(0,context["numberOfPointSources"])]) # upper bound might be 0
+			template_int_map = {
+				"pointsources"    : "numberOfPointSources"
+			}
+			context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
+			context["range_0_numberOfPointSources"] = " ".join([str(x) for x in range(0,context["numberOfPointSources"])]) # upper bound might be 0
 		
-		context["finiteVolumesType"] = kernel["type"]
-		return context
+			context["finiteVolumesType"] = kernel["type"]
+			return context
+		else 
+			return {}
 	
 	def create_solver_context(self,solver,solverName):
 		context = {}
-		context["project"]        =self._project_name
+		context["project"]        = self._project_name
 		context["solver"]         = solverName
 		context["abstractSolver"] = "Abstract"+solverName
 		
@@ -140,11 +148,8 @@ class SolverGenerator():
 		return context
 	
 	def generate_aderdg_solver_files(self,solver):
-		#aderdg_types=[\
-		#	"Legendre",\
-		#	"Lobatto",\
-		#	"user"\
-		#]
+		aderdg_basis = solver["aderdg_kernel"]["basis"]
+		
 		aderdg_context = self.create_solver_context(solver,solver["name"])
 		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
 		print(aderdg_context)
@@ -155,6 +160,7 @@ class SolverGenerator():
 		
 	def generate_limiting_aderdg_solver_files(self,solver):
 		# aderdg
+		aderdg_basis = solver["aderdg_kernel"]["basis"]
 		aderdg_context = self.create_solver_context(solver,solver["name"]+"_ADERDG")
 		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
 		# fv
@@ -162,10 +168,6 @@ class SolverGenerator():
 		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"]))
 		# limiter
 		limiting_context = self.create_solver_context(solver,solver["name"])
-	
-	_project_name = "unknown"
-	_dimensions   = -1
-	_verbose      = False
 	
 	def __init__(self,spec,verbose):
 		self._project_name = spec["project_name"]
@@ -182,58 +184,5 @@ class SolverGenerator():
 				self.generate_FV_fv_files(solver)
 			elif solver["type"]=="Limiting-ADER-DG":
 				self.generate_limiting_aderdg_solver_files(solver)
-			
-#			kernels             = solver["aderdg_kernel"]
-#			kernel_type         = kernels["type"]
-#			kernel_terms        = kernels["terms"]
-#			kernel_optimisation = kernels["optimisations"]
-#			print(solver["aderdg_kernel"])
-#			
-#			
-#			context["solver" ]           = solver["name"]
-#			context["abstractSolver" ]   = "Abstract"+solver["name"]
-#			context["linearOrNonlinear"] = "Linear"  if ( kernels["type"]=="linear" ) else "Nonlinear"
-#			context["language"]          = "fortran" if ( kernels["language"]=="Fortran" ) else "c"
-#			
-#			context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
-#			context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
-#			context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
-#			context["numberOfDMPObservables"]     = solver.get("dmp_observables",0);
-#			context["numberOfPointSources"]       = solver.get("point_sources",0);
-
-#			context["order"]     = solver.get("order",-1);
-#			context["patchSize"] = solver.get("patch_size",-1);
-
-#//int
-
-#context["numberOfVariables"   , numberOfVariables);
-#context["numberOfParameters"  , numberOfParameters);
-#context["numberOfObservables" , numberOfObservables);
-#context["numberOfPointSources", numberOfPointSources);
-#context["maxPicardIterations" , maxPicardIterations);
-#
-#//boolean
-#context["enableProfiler"##, enableProfiler);
-#// context["hasConstants"##  , hasConstants);
-#context["isLinear"###  , isLinear);
-#context["isFortran"### , isFortran);
-#context["useFlux"###   , useFlux);
-#context["useSource"### , useSource);
-#context["useNCP"####, useNCP);
-#context["usePointSources"#   , usePointSources);
-#context["useMaterialParam"#  , useMaterialParam);
-#context["noTimeAveraging"#   , noTimeAveraging);
-#context["patchwiseAdjust"#   , patchwiseAdjust);
-#context["tempVarsOnStack"#   , tempVarsOnStack);
-#context["useMaxPicardIterations", useMaxPicardIterations);
-#
-#//boolean as String
-#context["useFlux_s"## , boolToTemplate(useFlux));
-#context["useSource_s"#   , boolToTemplate(useSource));
-#context["useNCP_s"##  , boolToTemplate(useNCP));
-			
-			
-			
-			# stub, do something
 			
 			self.generate_plotter(i, solver)
