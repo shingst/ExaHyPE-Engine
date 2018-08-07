@@ -458,17 +458,19 @@ INTEGER :: j
     END SUBROUTINE PDEEigenvectors 
     
 	
-RECURSIVE SUBROUTINE DynamicRupture(x, t, Q)
+RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim, ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: x(nDim), t     ! 
+	REAL, INTENT(IN)               :: x_in(nDim), t     ! 
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 	! Local variables
-	REAL :: stressnorm, sigma_vec(6),ee,u(3)
+	REAL :: stressnorm, sigma_vec(6),ee,u(3),x(3)
 	! Compute the normal stress using the Formula by Barton (IJNMF 2009)
+	x=0.
+	x(1:nDim)=x_in(1:nDim)
 	call computeGPRLEstress(stressnorm,sigma_vec,Q,.true.)
 	IF( stressnorm > Q(17) ) THEN
 		! If the normal stress is greater than the illness stress Y0 (stored in Q(17), then broke the material
