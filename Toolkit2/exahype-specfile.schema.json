@@ -355,7 +355,7 @@
 						"properties": {
 							"type": { "enum": ["Limiting-ADER-DG"] }
 						},
-						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "aderdg_kernel", "fv_kernel", "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ]
+						"required": [ "name", "type", "variables","maximum_mesh_size", "order", "aderdg_kernel", "fv_kernel", "limiter" ]
 					},
 					{
 						"properties": {
@@ -391,23 +391,69 @@
 						"required" : [ "terms" ],
 						"additionalProperties" : "false",
 						"properties": {
-							"optimisations": {
-								"type": "array",
-								"title": "Optimization flags",
-								"items": { 
-									"oneOf" : [ 
-										{ "enum" : ["generic", "optimised", "notimeavg", "patchwiseadjust", "usestack", "fusedsource", "fluxvect", "fusedsourcevect", "cerkguess", "converter", "flops"] },
-										{ "type" : "object", "required" : ["maxpicarditer"], "additionalProperties": false, "properties" : { "maxpicarditer" : { "type" : "number" } } }
-									]
+							"code": {
+								"type": "boolean",
+								"title": "Wether to turn use optimized kernels",
+								"enum": ["generic", "optimised" ],
+								"default": "generic"
+							},
+							"solutionadjustment": {
+								"type": "string",
+								"title": "Wether to adjust solutions on a patch or point",
+								"enum": ["patchwise", "pointwise"],
+								"default": "pointwise"
+							},
+							"allocation": {
+								"type": "string",
+								"title": "where to allocate storage in the Solver-Kernel interface. Heap known to be safer for large PDEs",
+								"enum": ["stack","heap"],
+								"default": "heap"
+							},
+							"space_time_predictor": {
+								"type": "object",
+								"title": "Turn certain features on/off for the space time predictor",
+								"properties": {
+									"notimeavg": {
+										"type": "boolean",
+										"available-for": ["optimised","generic"],
+										"title": "I have no clue, but generic kernels support it."
+									},
+									"maxpicarditer": {
+										"type": "number",
+										"available-for": ["optimised","generic"],
+										"title": "Maximum Picard Iterations to run"
+									},
+									"cerkguess": {
+										"type": "boolean",
+										"available-for": ["optimised"],
+										"title": "Use the continous extrapolated Runge Kutta initial guess for the space time predictor"
+									}
 								}
-							}, 
+							},
+							"optimised_kernel_debugging": {
+								"type": "array",
+								"title": "Various flags for debugging/developing the optimised kernels",
+								"properties": {
+									"type": "string",
+									"enum": ["converter", "flops"]
+								}
+							},							
 							"terms": {
 								"type": "array", 
 								"title": "PDE terms to generate code for",
 								"items": { 
 									"oneOf" : [ 
-										{ "enum" : ["flux", "source", "ncp", "materialparameters"] },
-										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
+										{ "enum" : ["flux", "source", "ncp", "materialparameters"] }
+									]
+								},
+								"default": ["flux"]
+							},
+							"optimized_terms": {
+								"type": "array",
+								"title": "Only optimized kernels: For which PDE terms should be code generated",
+								"items": {
+									"oneOf" : [ 
+										{ "enum" : ["fusedsource", "fluxvect", "fusedsourcevect"] }
 									]
 								}
 							},
@@ -480,6 +526,12 @@
 						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
 						"properties" : { "$ref" : "#/definitions/variables" }
 					}, 
+					"pointsources": {
+						"scope": "compile-time",
+						"used-by": "toolkit",
+						"$comment": "Used to be part of the optimisations section. Note that point sources are optional.",
+						"properties" : { "$ref" : "#/definitions/variables" }
+					},
 					"global_observables": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
@@ -497,13 +549,15 @@
 						"scope": "run-time"
 					}, 
 					"order": {
-							"type": "integer", 
-							"title": "Approximation order of the scheme",
-							"scope": "compile-time"
+						"type": "integer", 
+						"title": "Approximation order of the scheme",
+						"$comment": "With pure FV, this value is ignored. With Limiter, this value determines the patch_size",
+						"scope": "compile-time"
 					}, 
 					"patch_size": {
 						"type": "integer", 
-						"title": "Number of subcells per coordinate direction (no ghost ",
+						"title": "Number of subcells per coordinate direction (no ghost)",
+						"$comment": "With pure DG, this value is ignored. With Limiter, this value is determined by the order",
 						"scope": "compile-time"
 					},
 					"halo_cells" : {
@@ -511,42 +565,50 @@
 						"title": "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
 						"scope": "run-time"
 					},
-					"regularised_fine_grid_levels" : {
-						"type": "integer", 
-						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
-						"scope": "run-time"
-					},
-					"dmp_observables": {
-						"id"  : "dmp_observables",
-						"type": "integer", 
-						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
-						"scope": "compile-time"
-					},
-					"dmp_relaxation_parameter": {
-						"id"  : "dmp_relaxation_parameter",
-						"type": "number", 
-						"title": "The difference scaling used by the discrete maximum principle (only Limiting-ADER-DG solver)",
-						"scope": "run-time",
-						"default" : 1e-3
-					},
-					"dmp_difference_scaling": {
-						"id"  : "dmp_difference_scaling",
-						"type": "number", 
-						"title": "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
-						"scope": "run-time",
-						"default" : 1e-4
-					},
-					"helper_layers": {
-						"type": "integer", 
-						"title": "Number of limiter helper layers (only Limiting-ADER-DG solver)",
-						"scope": "run-time",
-						"default" : 1
-					},
-					"steps_till_cured": {
-						"type": "integer", 
-						"title": "Number of iterations to wait until a cured cell loses the 'troubled' flag (only Limiting-ADER-DG solver)",
-						"scope": "run-time",
-						"default" : 0
+					"limiter": {
+						"title": "Limiting-ADER-DG-specific settings",
+						"type": "object",
+						"required": [ "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ],
+						"additionalProperties" : "false",
+						"properties": {
+							"regularised_fine_grid_levels" : {
+								"type": "integer", 
+								"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
+								"scope": "run-time"
+							},
+							"dmp_observables": {
+								"id"  : "dmp_observables",
+								"type": "integer", 
+								"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
+								"scope": "compile-time"
+							},
+							"dmp_relaxation_parameter": {
+								"id"  : "dmp_relaxation_parameter",
+								"type": "number", 
+								"title": "The difference scaling used by the discrete maximum principle (only Limiting-ADER-DG solver)",
+								"scope": "run-time",
+								"default" : 1e-3
+							},
+							"dmp_difference_scaling": {
+								"id"  : "dmp_difference_scaling",
+								"type": "number", 
+								"title": "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
+								"scope": "run-time",
+								"default" : 1e-4
+							},
+							"helper_layers": {
+								"type": "integer", 
+								"title": "Number of limiter helper layers (only Limiting-ADER-DG solver)",
+								"scope": "run-time",
+								"default" : 1
+							},
+							"steps_till_cured": {
+								"type": "integer", 
+								"title": "Number of iterations to wait until a cured cell loses the 'troubled' flag (only Limiting-ADER-DG solver)",
+								"scope": "run-time",
+								"default" : 0
+							}
+						}
 					},
 					"time_stepping": {
 						"type": "string", 
@@ -598,12 +660,11 @@
 									]
 								}, 
 								"variables": {
-									"type": "integer", 
+									"type": "object", 
 									"title": "How much variables the plotter writes (Runtime quantitiy)",
-									"$comment": "Named variables could be quite handy here, too",
-									"minimum": 0,
-									"exclusiveMinimum": true,
-									"scope": "run-time"
+									"$comment": "Named variables could be once passed to the plotters to have speaking output",
+									"scope": "run-time",
+									"properties" : { "$ref" : "#/definitions/variables" }
 									
 								}, 
 								"repeat": {
