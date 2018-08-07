@@ -478,7 +478,7 @@ RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 		if(USEFrictionLaw) then
 			! Compute the proper friction coefficient according to the prescribed friction law
 			u=Q(2:4)/Q(1)
-			ee=LEfriction_mu(x,t,u(2:4),Q(23),SSCRACKFL)
+			ee=LEfriction_mu(x,t,u(1:3),Q(23),SSCRACKFL)
 			Q(24)=ee*2.0*SSCRACKFL%dx
 		end if
 		! Now in the this DoF it follows the NS friction law with mu proportional to mu_f ( stored in Q(24) )
@@ -491,7 +491,7 @@ RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 	!
 	if(.not. SSCRACKFL%DynamicFL .and. USEFrictionLaw) then ! Static marker
 	    u=Q(2:4)/Q(1)
-		ee=LEfriction_mu(x,t,u(2:4),Q(23),SSCRACKFL)
+		ee=LEfriction_mu(x,t,u(1:3),Q(23),SSCRACKFL)
 		if(ee<SSCRACKFL%mu_s*0.999) then
 			if(abs(x(1)).le.10000 .and. abs(x(2)).le.SSCRACKFL%dx) then
 				Q(18)=0.
@@ -505,6 +505,37 @@ RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 	!
 END SUBROUTINE DynamicRupture	
 	
+RECURSIVE SUBROUTINE ruptureflag(rupture_flag,order,luh,x_in,dx_in)
+	USE Parameters, ONLY: nVar, nDim, ICType
+	implicit none
+	INTEGER :: rupture_flag, order
+	REAL    :: luh(nVar,(order+1)**nDim),uMax,uMin,x_in(nDim),dx_in(nDim)
+	
+	rupture_flag=0
+	
+	uMax=maxval(luh(18,:))			! xi value
+	uMin=minval(luh(18,:))
+	if(abs(uMax-uMin)>1.e-2) then
+		rupture_flag=1
+	end if
+	
+	!uMax=maxval(luh(17,:))			! Y0 value
+	!uMin=minval(luh(17,:))
+	!if(abs(uMax-uMin)>1.e-2) then
+	!	rupture_flag=1
+	!end if
+	
+	! Static part
+	select case(ICType)
+		case('SSCRACK')
+			if (abs(x_in(1)).le. 10000.0 .and. abs(x_in(2)).le. dx_in(2)) then
+				rupture_flag=1
+			end if
+		case default
+	end select
+		
+	!print *, uMin, uMax
+END SUBROUTINE ruptureflag	
 	
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
@@ -674,6 +705,8 @@ RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
 	INTEGER :: N_in,M_in
 	CALL SetMainParameters(N_in,M_in)
 END SUBROUTINE InitTECPLOT
+
+
 
 
 

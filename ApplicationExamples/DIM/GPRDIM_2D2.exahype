@@ -63,7 +63,7 @@ exahype-project GPRDIM
     variables const                = rho:1,vel:3,A:9,alpha:1,lambda:1,mu:1,Y0:1,xi:1,rhoE:1,dDisp:3,Disp:1,muf:1
     order const                    = 3
     maximum-mesh-size              = 300.0
-    maximum-mesh-depth             = 1
+    maximum-mesh-depth             = 2
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp,source

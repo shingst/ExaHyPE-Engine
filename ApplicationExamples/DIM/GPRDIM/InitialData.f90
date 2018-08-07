@@ -1,19 +1,19 @@
 ! DIM Initial Data
 
 
-RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
+RECURSIVE SUBROUTINE InitialData(xGP, t, Q,maxAMR,CoarseLen, order)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim, ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xGP(nDim), t        ! 
+	INTEGER, INTENT(IN)			   :: maxAMR, order
+	REAL, INTENT(IN)               :: xGP(nDim), t,CoarseLen        ! 
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 	! Local variables
 	REAL :: up(nVar),LEsigma(6)
 	REAL :: ICA, ICsig, ICxd, r, DIsize,c0
 	REAL :: rho0, lambda0, mu0, ICx0(3)
-
 	select case(ICType)
 		case('SSCRACK')
 			! ============================ SELF-SIMILAR RUPTURE TEST =====================================
@@ -56,7 +56,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 			SSCRACKFL%t0=0.0    !s
 			SSCRACKFL%L=250     ! m
 			
-			SSCRACKFL%dx=150.0/3.0	! m
+			SSCRACKFL%dx=CoarseLen/(3.0**maxAMR)/(order+1)	! m
 			! ------------------------------
 			if(abs(xGP(1)).lt.10000.0) then
 				!up(18)=1.0-EXP(-0.5*xGP(2)**2/100.0**2)

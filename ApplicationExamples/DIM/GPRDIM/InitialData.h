@@ -5,7 +5,7 @@
 extern "C" {
 
 // FORTRAN functions called by C
-void initialdata_(const double* x, const double* const t, double* Q);
+void initialdata_(const double* x, const double* const t, double* Q, int* md, double * cms, const int* const order);
 
 // only initialdata_ is used, no more.
 void readcgfile_(const double* const MyOffset, const double* const MyDomain);

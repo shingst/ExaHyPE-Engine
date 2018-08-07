@@ -22,6 +22,9 @@ void GPRDIM::DIMSolver_FV::init(const std::vector<std::string>& cmdlineargs,cons
 	//std::cout << _coarsestMeshSize << std::endl;
 	//std::cout << _maximumAdaptiveMeshDepth << std::endl;
 	//std::cout << _maxLevel << std::endl;
+	std::cout << " ==================================================================================" << std::endl;
+	const int md = exahype::solvers::Solver::getMaximumAdaptiveMeshDepth();
+	std::cout << md << std::endl;
 }
 
 void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -30,9 +33,11 @@ void GPRDIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,c
   
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-	initialdata_(x, &t, Q);
-  }
-  
+		int md = exahype::solvers::Solver::getMaximumAdaptiveMeshDepth();
+		double cms = exahype::solvers::Solver::getCoarsestMeshSize();
+		const int order = 0;
+		initialdata_(x, &t, Q,&md,&cms,&order);
+  } 
   dynamicrupture_(x, &t, Q);
   // Place here the code for the dynamic rupture
 }
@@ -57,9 +62,13 @@ void GPRDIM::DIMSolver_FV::boundaryValues(
 	// Local variables
 	const int nVar = GPRDIM::AbstractDIMSolver_FV::NumberOfVariables;	
 	double Qgp[nVar];
+	int md=0;
+	double cms=0;
+	const int order=0;
+	
 	double ti = t + 0.5 * dt;
 	// Compute the outer state according to the initial condition
-	initialdata_(x, &ti, Qgp);
+	initialdata_(x, &ti, Qgp,&md,&cms,&order);
 	// Assign the proper outer state
 	for(int m=0; m < nVar; m++) {
         stateOutside[m] = Qgp[m];
