@@ -38,26 +38,6 @@ def convert_to_dict(list_of_str_or_dict):
 	return result
 
 class SolverGenerator():
-	
-	FV_TYPES=[\
-		"godunov",\
-		"musclhancock",\
-		"user",\
-	]
-	FV_TERMS=[\
-		"flux",\
-		"source",\
-		"ncp",\
-		"pointsources",\
-		"materialparameters"\
-	]
-	FV_OPTIMISATIONS=[\
-		"generic",\
-		"optimised",\
-		"patchwiseadjust",\
-		"usestack",\
-	]
-	
 	def generate_plotter(self, solver_num, solver):
 		plotters = solver["plotters"]
 		for j, plotter in enumerate(plotters):
@@ -104,11 +84,11 @@ class SolverGenerator():
 		}
 		
 		context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
-		
-		print(" ".join([str(x) for x in range(0,10)]))
+		context["range_0_numberOfPointSources"] = " ".join([str(x) for x in range(0,context["numberOfPointSources"])]) # upper bound might be 0
 		
 		context[template_bool_map[kernel["type"]]] = True
 		context["isFortran"]                       = True if kernel["language"] is "Fortran" else False;
+		
 		return context
 		
 	def create_fv_kernel_context(self,kernel):
@@ -130,20 +110,33 @@ class SolverGenerator():
 		template_int_map = {
 			"pointsources"    : "numberOfPointSources"
 		}
-		
 		context = self.create_kernel_context(kernel_optimisations,kernel_terms,template_bool_map,template_int_map)
+		context["range_0_numberOfPointSources"] = " ".join([str(x) for x in range(0,context["numberOfPointSources"])]) # upper bound might be 0
+		
+		context["finiteVolumesType"] = kernel["type"]
 		return context
 	
 	def create_solver_context(self,solver,solverName):
 		context = {}
 		context["project"]        =self._project_name
-		context["dimensions"]     =self._dimensions
 		context["solver"]         = solverName
 		context["abstractSolver"] = "Abstract"+solverName
 		
-		context["numberOfVariables"]          = numberOfVariables(parseVariables(solver,"variables"));
-		context["numberOfMaterialParameters"] = numberOfVariables(parseVariables(solver,"material_parameters"));
-		context["numberOfGlobalObservables"]  = numberOfVariables(parseVariables(solver,"global_observables"));
+		context["dimensions"] = self._dimensions
+		
+		nVar       = numberOfVariables(parseVariables(solver,"variables"))
+		nParam     = numberOfVariables(parseVariables(solver,"material_parameters"))
+		nGlobalObs = numberOfVariables(parseVariables(solver,"global_observables"))
+		
+		context["numberOfVariables"]             = nVar
+		context["numberOfMaterialParameters"]    = nParam
+		context["numberOfGlobalObservables"]     = nGlobalObs
+		
+		context["range_0_nDim"]                  = " ".join([str(x) for x in range(0,self._dimensions)])
+		context["range_0_nVar"]                  = " ".join([str(x) for x in range(0,nVar)])
+		context["range_0_nVarParam"]             = " ".join([str(x) for x in range(0,nVar+nParam)])
+		context["range_0_nGlobalObs"]            = " ".join([str(x) for x in range(0,nGlobalObs)]) # nGlobalObs might be 0
+		
 		return context
 	
 	def generate_aderdg_solver_files(self,solver):
