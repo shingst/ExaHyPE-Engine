@@ -3,6 +3,8 @@ import jinja2
 
 import helper
 
+import plotter
+
 class SolverGenerator():
 	"""
 	Generates the solver files
@@ -60,6 +62,7 @@ class SolverGenerator():
 					raise helper.TemplateNotFound(solver_map[file_path])
 			else:
 				print("File '"+file_path+"' already exists. Is not overwritten.")
+		print(abstract_solver_map[implementation])
 		for file_path in abstract_solver_map[implementation]:
 			try:
 				template = self._jinja2_env.get_template(abstract_solver_map[implementation][file_path])
@@ -177,8 +180,8 @@ class SolverGenerator():
 		implementation = solver["aderdg_kernel"].get("implementation","generic")
 		try:
 			self.write_solver_files(solver_map,abstract_solver_map,implementation,aderdg_context)
-		except Exception as e:
-			pass
+		except Exception:
+			raise
 		
 		if implementation=="optimised":
 			print("ERROR: not implemented yet '"+file_path+"'",file=sys.stderr)
@@ -191,7 +194,10 @@ class SolverGenerator():
 		abstract_solver_name = "Abstract"+solver_name
 		fv_context = self.create_solver_context(solver,solver_name)
 		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"]))
-		fv_context["patch_size"]=patch_size
+		
+		fv_context["patchSize"]=patch_size
+		ghost_layer_width = { "godunov" : 1, "musclhancock" : 2 }
+		fv_context["ghostLayerWidth"]=ghost_layer_width[solver["fv_kernel"]["scheme"]]
 		
 		solver_map = {
 			"user"    : { self._output_directory+"/"+solver_name+".h"               : "solvers/MinimalFiniteVolumesSolverHeader.template", 
@@ -201,20 +207,20 @@ class SolverGenerator():
 		}
 		abstract_solver_map  = { 
 			"user"      :  { },
-			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericFiniteVolumesSolverSolverImplementation.template", 
-			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractGenericFiniteVolumesSolverSolverHeader.template" }
+			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
+			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
 		}
 		
 		implementation = solver["fv_kernel"].get("implementation","generic")
 		try:
 			self.write_solver_files(solver_map,abstract_solver_map,implementation,fv_context)
-		except Exception as e:
-			pass
+		except Exception:
+			raise
 		
 		if implementation=="optimised":
 			print("ERROR: not implemented yet '"+file_path+"'",file=sys.stderr)
 			sys.exit(-1)
-		
+	
 	def generate_limiting_aderdg_solver_files(self,solver):
 		solver_name          = solver["name"]
 		abstract_solver_name = "Abstract"+solver_name
@@ -246,14 +252,14 @@ class SolverGenerator():
 		implementation = solver["fv_kernel"].get("implementation","generic")
 		try:
 			self.write_solver_files(solver_map,abstract_solver_map,implementation,limiter_context)
-		except Exception as e:
-			pass
+		except Exception:
+			raise
 	
 	def generate_all_plotters(self, solver_num, solver):
 		plotters = solver["plotters"]
 		for j,plotter in enumerate(solver.get("plotters",[])):
 			print("Generating plotter[%d] = %s for solver" % (j, plotter["name"]))
-		
+	
 	def generate_all_solvers(self,spec):
 		for i, solver in enumerate(spec.get("solvers",[])):
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))

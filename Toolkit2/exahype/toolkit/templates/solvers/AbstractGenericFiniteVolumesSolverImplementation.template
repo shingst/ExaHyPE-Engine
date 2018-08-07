@@ -85,7 +85,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch
   boundaryLayerExtraction(luhbndInside,luh,posBoundary-posCell);
   kernels::finitevolumes::commons::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),luhbndOutside,luhbndInside,cellCentre,cellSize,t,dt,faceIndex,direction);
   ghostLayerFillingAtBoundary(luh,luhbndOutside,posBoundary-posCell);
-  {%- if !tempVarsOnStack %}
+  {%- if tempVarsOnStack is none %}
   
   exahype::DataHeap::getInstance().deleteData(indexLuhbndInside,true);
   exahype::DataHeap::getInstance().deleteData(indexLuhbndOutside,true);

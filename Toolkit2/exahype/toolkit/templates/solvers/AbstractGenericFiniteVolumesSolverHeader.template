@@ -29,7 +29,8 @@ namespace {{project}}{
 class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSolver, public exahype::solvers::UserFiniteVolumesSolverInterface  {
   public:
     static constexpr int NumberOfVariables  = {{numberOfVariables}};
-    static constexpr int NumberOfParameters = {{numberOfParameters}};
+    static constexpr int NumberOfParameters = {{numberOfMaterialParameters}};
+    static constexpr int NumberOfGlobalObservables = {{numberOfGlobalObservables}};
     static constexpr int PatchSize          = {{patchSize}};
     static constexpr int GhostLayerWidth    = {{ghostLayerWidth}};
     static constexpr double CFL             = 0.9;
@@ -73,19 +74,19 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
     
-    {%- if !useNCP %}
+    {%- if useNCP is none %}
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final {}
     {%- endif %}
     
-    {%- if !useSource %}
+    {%- if useSource is none %}
     void algebraicSource(const double* const Q,double* S)  final {}
     {%- endif %}
     
-    {%- if !useFlux %}
+    {%- if useFlux is none %}
     void flux(const double* const Q,double** F)  final {}
     {%- endif %}
     
-    {%- if !usePointSources %}
+    {%- if usePointSources is none %}
     void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n)  final {}
     /* Please check if this is at the correct place: */
     virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
