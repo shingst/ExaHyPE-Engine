@@ -203,13 +203,6 @@
 					"title": "Autotuning algorithm to use", 
 					"enum" : ["dummy","autotuning","autotuning_without_learning","autotuning_without_restart","sampling"],
 					"default": "dummy"
-				}, 
-				"configure": {
-					"type": "array", 
-					"default": ["dont","know","fixme"],
-					"examples": [
-						"please-provide-here",
-					]
 				},
 				"background_tasks": {
 					"$comment": "Used to be a part of 'configure'",
@@ -252,35 +245,7 @@
 					"title": "The load balancing type",
 					"enum" : ["static","dynamic"],
 					"default": "static"
-				}, 
-<<<<<<< HEAD
-				"configure": {
-					"type": "array", 
-					"default": ["hotspot","fair"],
-					"examples": [
-						"FCFS",
-						"fair",
-						"sfc-diffusion",
-						"greedy-naive",
-						"greedy-regular",
-						"hotspot"
-					]
 				},
-				"primary_ranks_per_node": {
-					"$comment": "Former member of configure, but I find it here better placed",
-					"type": "integer",
-					"default": -1
-				},
-				"ranks_per_node": {
-					"$comment": "Former member of configure, but I find it here better placed",
-					"type": "integer",
-					"default": 1
-				},
-				"max_node_pool_answering_time": {
-					"$comment": "Former member of configure, but I find it here better placed",
-					"type": "number",
-					"default": 1e-2
-=======
 				"load_balancing_strategy": {
 					"type": "string", 
 					"title": "Determines ranks with too much load",
@@ -300,7 +265,6 @@
 				"primary_ranks_per_node" : {
 					"type": "integer", 
 					"title": "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)"
->>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 				},
 				"timeout": {
 					"type": "number", 
@@ -344,17 +308,8 @@
 					"type": "boolean", 
 					"title": "Turn off the Peano vertex exchange during time stepping iterations",
 					"default": false
-<<<<<<< HEAD
-				},
-				"disable_metadata_exchange_in_batched_time_steps": {
-					"type": "boolean",
-					"default": false
-				},
-				"fuse_algorithmic_steps_factor": {
-=======
 				}, 
 				"time_step_batch_factor": {
->>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 					"type": "number", 
 					"title": "This factor determines how many time steps are run as a batch", 
 					"default": 0.0
@@ -455,54 +410,6 @@
 										{ "type" : "object", "required" : ["pointsources"], "additionalProperties": false, "properties" : { "pointsources" : { "type" : "number" } } }
 									]
 								}
-<<<<<<< HEAD
-							}
-						]
-					},
-					"halo_cells": {
-						"type": "integer",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"regularised_fine_grid_levels": {
-						"type": "integer",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"dmp_relaxation_parameters": {
-						"type": "number",
-						"svens_tag": "limiter, required?",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"dmp_difference_scaling": {
-						"type": "number",
-						"svens_tag": "limiter, required?",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"dmp_observables": {
-						"type": "integer",
-						"svens_tag": "limiter, required!",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"steps_till_cured": {
-						"type": "integer",
-						"svens_tag": "limiter",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"help_layers": {
-						"type": "integer",
-						"svens_tag": "limiter",
-						"$comment": "TODO: Found in Solver, please describe me"
-					},
-					"global_observables": {
-						"scope": "compile-time",
-						"used-by": "toolkit",
-						"$comment": "global observables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"anyOf": [
-							{
-								"type": "integer",
-								"minimum": 1,
-								"exclusiveMinimum": false
-=======
->>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 							},
 							"language": {
 								"type": "string", 
@@ -522,32 +429,6 @@
 								"enum": ["Legendre","Lobatto"],
 								"default": "Legendre"
 							}
-<<<<<<< HEAD
-						]
-					}, 
-					"maximum_mesh_size": {
-						"type": "number", 
-						"title": "Minimum size of finest cell in the overall grid",
-						"scope": "run-time"
-					}, 
-					"time_stepping": {
-						"type": "string", 
-						"default": "global",
-						"enum": ["global","local","TODO: whatever"],
-						"scope": "run-time"
-					}, 
-					"oneOf" : [{
-						"order": {
-							"type": "integer", 
-							"title": "For a DG solver: Approximation (convergence) order of the scheme",
-							"scope": "compile-time"
-						}, 
-						"patchSize": {
-							"type": "integer", 
-							"title": "For a FV solver: Number of subcells per coordinate direction (no ghost; convergence order is always k=3 in ExaHyPE)",
-							"scope": "compile-time"
-=======
->>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 						}
 					},
 					"fv_kernel": {
@@ -751,11 +632,7 @@
 									"type": "object",
 									"title": "Free runtime parameters for postprocessing-codes",
 									"scope": "run-time"
-<<<<<<< HEAD
-								},
-=======
 								}
->>>>>>> aac4a5ba12b63e1cf35eb212c2f5218a6cba1e70
 							}
 						}
 					}, 
