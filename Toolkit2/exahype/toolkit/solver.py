@@ -25,7 +25,10 @@ class SolverGenerator():
 		self._jinja2_env       = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True)
 		
 		if not os.path.exists(self._output_directory):
-			raise BadSpecificationFile()
+			print("Created output directory '"+self._output_directory+"'")
+			os.mkdir(self._output_directory)
+		else:
+			print("Output directory '"+self._output_directory+"' already exists.")
 	
 	def parseVariables(self,solver,field):
 		"""
@@ -51,11 +54,11 @@ class SolverGenerator():
 	
 	def write_solver_files(self,solver_map,abstract_solver_map,implementation,context):
 		for file_path in solver_map.get(implementation,{}):
-			if not os.path.exists(file_path):
+			if not helper.find(self._output_directory,file_path):
 				try:
 					template = self._jinja2_env.get_template(solver_map[file_path])
 					rendered_output = template.render(context)
-					with open(file_path,"w") as file_handle:
+					with open(self._output_directory+"/"+file_path,"w") as file_handle:
 						file_handle.write(rendered_output)
 					print("Generated user solver file '"+file_path+"'")
 				except Exception as e:
@@ -66,7 +69,7 @@ class SolverGenerator():
 			try:
 				template = self._jinja2_env.get_template(abstract_solver_map[implementation][file_path])
 				rendered_output = template.render(context)
-				with open(file_path,"w") as file_handle:
+				with open(self._output_directory+"/"+file_path,"w") as file_handle:
 					file_handle.write(rendered_output)
 				print("Generated abstract solver file '"+file_path+"'")
 			except Exception as e:
@@ -163,19 +166,19 @@ class SolverGenerator():
 		aderdg_context["numberOfDMPObservables"]=dmp_observables;
 		
 		solver_map = {
-			"user"    :  { self._output_directory+"/"+solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
-			               self._output_directory+"/"+solver_name+".cpp"             : "solvers/EmptyADERDGSolverImplementation.template" },
-			"generic" : { self._output_directory+"/"+solver_name+".h"               : "solvers/ADERDGSolverHeader.template", 
-			              self._output_directory+"/"+solver_name+".cpp"             : "solvers/ADERDGSolverInCUserCode.template"},
+			"user"    :  { solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
+			               solver_name+".cpp"             : "solvers/EmptyADERDGSolverImplementation.template" },
+			"generic" : {  solver_name+".h"               : "solvers/ADERDGSolverHeader.template", 
+			               solver_name+".cpp"             : "solvers/ADERDGSolverInCUserCode.template"},
 		}
 		solver_map["optimised"] = solver_map["generic"]
 		
 		abstract_solver_map  = { 
 			"user"      :  { },
-			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericADERDGSolverImplementation.template", 
-			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractGenericADERDGSolverHeader.template" },
-			"optimised" :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractOptimisedADERDGSolverImplementation.template", 
-			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractOptimisedADERDGSolverHeader.template" }
+			"generic"   :  { abstract_solver_name+".cpp"    : "solvers/AbstractGenericADERDGSolverImplementation.template", 
+			                 abstract_solver_name+".h"      : "solvers/AbstractGenericADERDGSolverHeader.template" },
+			"optimised" :  { abstract_solver_name+".cpp"    : "solvers/AbstractOptimisedADERDGSolverImplementation.template", 
+			                 abstract_solver_name+".h"      : "solvers/AbstractOptimisedADERDGSolverHeader.template" }
 		}
 		
 		implementation = solver["aderdg_kernel"].get("implementation","generic")
@@ -203,14 +206,14 @@ class SolverGenerator():
 		fv_context["ghostLayerWidth"]=ghost_layer_width[solver["fv_kernel"]["scheme"]]
 		
 		solver_map = {
-			"user"    : { self._output_directory+"/"+solver_name+".h"               : "solvers/MinimalFiniteVolumesSolverHeader.template", 
-			              self._output_directory+"/"+solver_name+".cpp"             : "solvers/EmptyFiniteVolumesSolverImplementation.template" },
-			"generic" : { self._output_directory+"/"+solver_name+".h"               : "solvers/FiniteVolumesHeader.template", 
-			              self._output_directory+"/"+solver_name+".cpp"             : "solvers/FiniteVolumesInCUserCode.template"},
+			"user"    : { solver_name+".h"               : "solvers/MinimalFiniteVolumesSolverHeader.template", 
+			              solver_name+".cpp"             : "solvers/EmptyFiniteVolumesSolverImplementation.template" },
+			"generic" : { solver_name+".h"               : "solvers/FiniteVolumesHeader.template", 
+			              solver_name+".cpp"             : "solvers/FiniteVolumesInCUserCode.template"},
 		}
 		abstract_solver_map  = { 
-			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
-			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
+			"generic"   :  { abstract_solver_name+".cpp"    : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
+			                 abstract_solver_name+".h"      : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
 		}
 		
 		implementation = solver["fv_kernel"].get("implementation","generic")
@@ -253,10 +256,10 @@ class SolverGenerator():
 		solver_map = {  }
 		abstract_solver_map  = { 
 			"user"      :  { },
-			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericLimiterSolverImplementation.template", 
-			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractGenericLimiterSolverHeader.template" },
-			"optimised" :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractOptimisedLimiterSolverImplementation.template", 
-			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractOptimisedLimiterSolverHeader.template" }
+			"generic"   :  { abstract_solver_name+".cpp"    : "solvers/AbstractGenericLimiterSolverImplementation.template", 
+			                 abstract_solver_name+".h"      : "solvers/AbstractGenericLimiterSolverHeader.template" },
+			"optimised" :  { abstract_solver_name+".cpp"    : "solvers/AbstractOptimisedLimiterSolverImplementation.template", 
+			                 abstract_solver_name+".h"      : "solvers/AbstractOptimisedLimiterSolverHeader.template" }
 		}
 		implementation = solver["fv_kernel"].get("implementation","generic")
 		try:
@@ -270,6 +273,10 @@ class SolverGenerator():
 			print("Generating plotter[%d] = %s for solver" % (j, plotter["name"]))
 	
 	def generate_all_solvers(self,spec):
+		"""
+		Generate user and abstract solver files for all solvers found in the
+		specification.
+		"""
 		for i, solver in enumerate(spec.get("solvers",[])):
 			print("Generating solver[%d] = %s..." % (i, solver["name"]))
 			
@@ -287,3 +294,24 @@ class SolverGenerator():
 				self.generate_limiting_aderdg_solver_files(solver)
 			
 			p = self.generate_all_plotters(i, solver)
+			
+			
+	def generate_solver_registration(self,spec):
+		"""
+		Write the solver registration (KernelCalls.cpp).
+		"""
+		for i, solver in enumerate(spec.get("solvers",[])):
+			print("Generating solver[%d] = %s..." % (i, solver["name"]))
+			
+			if solver["type"]=="ADER-DG":
+				self.generate_aderdg_solver_files(
+					solver=solver,\
+					solver_name=solver["name"],\
+					dmp_observables=0)
+			elif solver["type"]=="Finite-Volumes":
+				self.generate_fv_solver_files(
+					solver=solver,\
+					solver_name=solver["name"],\
+					patch_size=solver["patch_size"])
+			elif solver["type"]=="Limiting-ADER-DG":
+				self.generate_limiting_aderdg_solver_files(solver)
