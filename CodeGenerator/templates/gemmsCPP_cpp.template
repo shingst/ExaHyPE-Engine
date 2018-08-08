@@ -26,4 +26,4 @@
 // Limiter gemms
 #include "{{pathToOptKernel}}/asm_limiter.c"
 {% endif %}
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}

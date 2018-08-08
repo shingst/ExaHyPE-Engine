@@ -35,7 +35,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
 
   double lQhbndFineTemp[{{nDof*nDof3D*nDataPad}}] __attribute__((aligned(ALIGNMENT)));
   double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
-{% if nDim == 3 and useLibxsmm %} 
+{% if nDim == 3 and useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
 
@@ -119,7 +119,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
         }
       }
 {% endif %}
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       // singleLevelFaceUnknownsProlongation<{{nDataPad}}>(pointerQhbnd1, lQhbndCoarse, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
         for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -154,7 +154,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     } else { // l!= 1
 {% if useLibxsmm %}
 {% if nDim==2 %}
@@ -186,7 +186,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
         }
       }
-{% endif %}      
+{% endif %}
 {% else%}
       // singleLevelFaceUnknownsProlongation<{{nDataPad}}>(pointerQhbnd1, pointerQhbnd2, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
@@ -222,7 +222,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
           }
         }
       }     
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     }
 
     // Prepare next iteration.
@@ -263,7 +263,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
   double lQhbndCoarseTemp2[{{nDof*nDof3D*nDataPad}}] __attribute__((aligned(ALIGNMENT)));
   double lFhbndCoarseTemp2[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
   
-{% if nDim == 3 and useLibxsmm %} 
+{% if nDim == 3 and useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
 
@@ -335,7 +335,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
         }
       }
 {% endif %}
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       //singleLevelFaceUnknownsRestriction<{{nDataPad}}>(pointerQhbnd1, lQhbndFine, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
         for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -344,7 +344,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerQhbnd1[(m2*{{nDof}}+m1)*{{nDataPad}}+d] +=
                                  lQhbndFine[(n2*{{nDof}}+n1)*{{nDataPad}}+d]
-{% if nDim==3 %}                             
+{% if nDim==3 %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
@@ -361,7 +361,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
                                  lFhbndFine[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
-{% if nDim==3 %}                             
+{% if nDim==3 %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
@@ -370,7 +370,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     } else { // l!= 1
 {% if useLibxsmm %}
 {% if nDim==2 %}
@@ -402,8 +402,8 @@ void {{codeNamespace}}::faceUnknownsRestriction(
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
         }
       }
-{% endif %} 
-{% else %} {# useLibxsmm #}  
+{% endif %}
+{% else %}{# useLibxsmm #}  
       //singleLevelFaceUnknownsRestriction<{{nDataPad}}>(pointerQhbnd1, pointerQhbnd2, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
         for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -412,7 +412,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerQhbnd1[(m2*{{nDof}}+m1)*{{nDataPad}}+d] +=
                                  pointerQhbnd2[(n2*{{nDof}}+n1)*{{nDataPad}}+d]
-{% if nDim==3 %}                             
+{% if nDim==3 %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
@@ -429,7 +429,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
                                  pointerFhbnd2[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
-{% if nDim==3 %}                             
+{% if nDim==3 %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
@@ -438,7 +438,7 @@ void {{codeNamespace}}::faceUnknownsRestriction(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     }
 
     // Prepare next iteration.
@@ -477,7 +477,7 @@ void {{codeNamespace}}::faceFluxRestriction(
   double lFhbndCoarseTemp1[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
   double lFhbndCoarseTemp2[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
   
-{% if nDim == 3 and useLibxsmm %} 
+{% if nDim == 3 and useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
 
@@ -537,7 +537,7 @@ void {{codeNamespace}}::faceFluxRestriction(
         }
       }
 {% endif %}
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       //singleLevelFaceUnknownsRestriction<{{nVarPad }}>(pointerFhbnd1, lFhbndFine, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
         for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -546,7 +546,7 @@ void {{codeNamespace}}::faceFluxRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
                                  lFhbndFine[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
-{% if nDim==3 %}                             
+{% if nDim==3 %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
@@ -555,7 +555,7 @@ void {{codeNamespace}}::faceFluxRestriction(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     } else { // l!= 1
 {% if useLibxsmm %}
 {% if nDim==2 %}
@@ -579,8 +579,8 @@ void {{codeNamespace}}::faceFluxRestriction(
           {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
         }
       }
-{% endif %} 
-{% else %} {# useLibxsmm #}  
+{% endif %}
+{% else %}{# useLibxsmm #}  
       //singleLevelFaceUnknownsRestriction<{{nVarPad }}>(pointerFhbnd1, pointerFhbnd2, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
         for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -589,7 +589,7 @@ void {{codeNamespace}}::faceFluxRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
                                  pointerFhbnd2[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
-{% if nDim==3 %}                             
+{% if nDim==3 %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
                                  * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
@@ -598,7 +598,7 @@ void {{codeNamespace}}::faceFluxRestriction(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     }
 
     // Prepare next iteration.
@@ -694,9 +694,9 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
               #pragma vector aligned
               for(int it=0; it<{{nDof*nDofPad}}; it++) {
                 coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                           * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_2][m3*{{nDofPad}}+n3]
-{% endif %} 
+{% endif %}
                           * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
@@ -710,7 +710,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
           }
         }
       }
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       for (int m3=0; m3<{{nDof3D}}; m3++) {
         for (int m2=0; m2<{{nDof}}; m2++) {
           for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -720,7 +720,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
                   for (int n1 = 0; n1<{{nDof}}; n1++) {  
                     pointerUh1[((m3*{{nDof}}+m2)*{{nDof}}+m1)*{{nData}}+d]
                             += luhCoarse[((n3*{{nDof}}+n2)*{{nDof}}+n1)*{{nData}}+d] *
-{% if nDim==3 %} 
+{% if nDim==3 %}
                             {{codeNamespace}}::fineGridProjector1d[subintervalIndex_2][m3*{{nDofPad}}+n3] *
 {% endif %}
                             {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2] *
@@ -732,7 +732,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     } else {
       //singleLevelVolumeUnknownsProlongation<{{nData}}>(pointerUh1, pointerUh2, subintervalIndex);
 {% if useLibxsmm %}
@@ -743,9 +743,9 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
               #pragma vector aligned
               for(int it=0; it<{{nDof*nDofPad}}; it++) {
                 coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                           * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_2][m3*{{nDofPad}}+n3]
-{% endif %} 
+{% endif %}
                           * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
@@ -759,7 +759,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
           }
         }
       }
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       for (int m3=0; m3<{{nDof3D}}; m3++) {
         for (int m2=0; m2<{{nDof}}; m2++) {
           for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -769,7 +769,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
                   for (int n1 = 0; n1<{{nDof}}; n1++) {  
                     pointerUh1[((m3*{{nDof}}+m2)*{{nDof}}+m1)*{{nData}}+d]
                             += pointerUh2[((n3*{{nDof}}+n2)*{{nDof}}+n1)*{{nData}}+d] *
-{% if nDim==3 %} 
+{% if nDim==3 %}
                             {{codeNamespace}}::fineGridProjector1d[subintervalIndex_2][m3*{{nDofPad}}+n3] *
 {% endif %}
                             {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2] *
@@ -781,13 +781,13 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     }
 
     // Prepare next iteration.
     subcellIndexPrevious_0 = subcellIndexCurrent_0;
     subcellIndexPrevious_1 = subcellIndexCurrent_1;
-{% if nDim==3 %} 
+{% if nDim==3 %}
     subcellIndexPrevious_2 = subcellIndexCurrent_2;
 {% endif %}
 
@@ -866,9 +866,9 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
               #pragma vector aligned
               for(int it=0; it<{{nDof*nDofPad}}; it++) {
                 coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                           * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_2][m3*{{nDofPad}}+n3]
-{% endif %} 
+{% endif %}
                           * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
@@ -882,7 +882,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
           }
         }
       }
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       for (int m3=0; m3<{{nDof3D}}; m3++) {
         for (int m2=0; m2<{{nDof}}; m2++) {
           for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -904,7 +904,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     } else {
       //singleLevelVolumeUnknownsRestriction<{{nData}}>(pointerUh1, pointerUh2, subintervalIndex);
 {% if useLibxsmm %}
@@ -915,9 +915,9 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
               #pragma vector aligned
               for(int it=0; it<{{nDof*nDofPad}}; it++) {
                 coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                           * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_2][m3*{{nDofPad}}+n3]
-{% endif %} 
+{% endif %}
                           * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
               }
 #ifdef USE_IPO
@@ -931,7 +931,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
           }
         }
       }
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
       for (int m3=0; m3<{{nDof3D}}; m3++) {
         for (int m2=0; m2<{{nDof}}; m2++) {
           for (int m1 = 0; m1<{{nDof}}; m1++) {
@@ -953,7 +953,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
           }
         }
       }
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
     }
 
     // Prepare next iteration.

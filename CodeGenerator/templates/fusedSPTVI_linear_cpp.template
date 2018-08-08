@@ -81,13 +81,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFluxVect %}
   // transposed F slice for flux_vect
 {% with array='Ft', blockedDim=True %}
-{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
 {% if useFluxVect %}
   // transposed Q slice for flux_vect
 {% with array='Qt', blockedDim=False %}
-{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
 
@@ -107,7 +107,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
     double tn;
     double x1[{{nDim}}];
-    const double volume = dx * dx{%if nDim == 3%} * dx {% endif %};
+    const double volume = dx * dx{{' * dx' if nDim==3}};
     double forceVectorSource[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
     std::memset(forceVectorSource, 0, {{nVarPad}}*sizeof(double));
 
@@ -294,7 +294,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
     }
 {% endif %}
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
 
 {% if useNCP %}
 {% if useNCP %}
@@ -372,7 +372,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         }
       }
     }
-{% endif %} {# useNCP #}
+{% endif %}{# useNCP #}
 
 {% if useMaterialParam %}
     //materialParam
@@ -392,7 +392,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       std::copy_n(tmpArray+{{2*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}); //z
 {% endif %}
     }
-{% endif %} {# useMaterialParam #}
+{% endif %}{# useMaterialParam #}
 
 {% if useSource %}
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
@@ -401,7 +401,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 #endif
       solver.{{solverName}}::algebraicSource(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, lSi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
     }
-{% endif %} {# useSource #}
+{% endif %}{# useSource #}
 
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       #pragma simd

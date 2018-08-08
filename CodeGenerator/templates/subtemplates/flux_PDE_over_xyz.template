@@ -50,7 +50,7 @@ for (int xyz = 0; xyz < {{(nDof**nDim)-((nDof**nDim)%vectSize)}}; xyz+={{vectSiz
   SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_y_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{1*outputF_BlockSize}});
 {% if nDim == 3 %}
   SoA2AoS<{{nVar}}, {{nVarPad}}>(Ft_z_block, {{outputF}}+{{nVarPad}}*(xyz{% if useTime %}+{{nDof**nDim}}*{{time_var}}{% endif %})+{{2*outputF_BlockSize}});
-{% endif %}        
+{% endif %}
 }
 {% if rest_size != 0 %}
 // rest

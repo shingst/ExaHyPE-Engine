@@ -35,7 +35,7 @@ void {{codeNamespace}}::freeQuadratureNodesAndWeights(const std::set<int>& order
   _mm_free(uh2lob);
   _mm_free(dg2fv);
   _mm_free(fv2dg);
-{% endif %}  
+{% endif %}
 }
 
 void {{codeNamespace}}::initQuadratureNodesAndWeights(const std::set<int>& orders) {

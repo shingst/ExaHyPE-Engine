@@ -48,7 +48,7 @@ void {{codeNamespace}}::surfaceIntegral(
   // y faces
   for (int xz = 0; xz < {{nDof*nDof3D}}; xz++) {
     const double weight = weights2[xz] * inverseDx[1];
-{% if nDim == 3 %} {# // xz in [0..nDof*nDof-1], need to extract x and z to compute the correct shift for luh #}
+{% if nDim == 3 %}{# // xz in [0..nDof*nDof-1], need to extract x and z to compute the correct shift for luh #}
     const int xzLuhIndex = ((xz/{{nDof}})*{{nDof*nDof}} + xz % {{nDof}}) *{{nVarPad}};
 {% else %}
     const int xzLuhIndex = xz*{{nVarPad}};

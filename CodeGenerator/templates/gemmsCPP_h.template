@@ -28,6 +28,6 @@ void {{gemm}}(const double* A, const double* B, double* C);
 }
 {% endfor %}
 
-{% endif %} {# useLibxsmm #}
+{% endif %}{# useLibxsmm #}
 
 #endif //EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_

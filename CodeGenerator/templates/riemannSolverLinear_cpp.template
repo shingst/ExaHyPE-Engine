@@ -89,7 +89,7 @@ void {{codeNamespace}}::riemannSolver(
   std::copy_n(Qavg+{{nVar}},{{nDataPad-nVar}}, Qdiff+{{nVar}});
 {% endif %}
   
-{% if useNCP %}  
+{% if useNCP %}
   double ncp[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); //no pad for function call
   double gradQ[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); //no pad for function call
 {% endif %}
@@ -125,12 +125,12 @@ void {{codeNamespace}}::riemannSolver(
     #pragma forceinline recursive
 #endif
     solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, ncp);
-{% endif %} {# useMaterialParam #}
+{% endif %}{# useMaterialParam #}
     #pragma simd
     for (int n = 0; n < {{nVar}}; n++) {
       FL[ij*{{nVarPad}}+n] += ncp[direction*{{nVar}}+n]; 
     }
-{% endif %} {# useNCP #}
+{% endif %}{# useNCP #}
     
 {% if useFlux %}
     //Flux
@@ -143,12 +143,12 @@ void {{codeNamespace}}::riemannSolver(
     #pragma forceinline recursive
 #endif
     solver.{{solverName}}::multiplyMaterialParameterMatrix(Qavg, flux_vec);
-{% endif %} {# useMaterialParam #}
+{% endif %}{# useMaterialParam #}
     #pragma simd
     for (int n = 0; n < {{nVar}}; n++) {
       FL[ij*{{nVarPad}}+n] += flux_vec[direction*{{nVar}}+n];
     }
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
 
     #pragma simd
     for (int n = 0; n < {{nVar}}; n++) {

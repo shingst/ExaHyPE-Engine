@@ -90,7 +90,7 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double dt,
     std::vector<int>* pointSources // will be deleted in the end if set
   );
-{% endif %}  
+{% endif %}
 {% else %}
   int fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,

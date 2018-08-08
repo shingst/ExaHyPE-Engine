@@ -196,9 +196,9 @@ for(int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
 {% if useNCP %}
   #pragma simd
   for(int n = 0; n<{{nVarPad}}; n++) {
-    {{sourceArray}}[n{{addShift}}] {{ '-=' if useSource else '= -'}} tmp_ncp_output[n];{# if not useSource set and update lSi #} 
-  }      
-{% endif %} 
+    {{sourceArray}}[n{{addShift}}] {{ '-=' if useSource else '= -'}} tmp_ncp_output[n];{# if not useSource set and update lSi #}
+  }
+{% endif %}
 {% endif %}{# useFusedSource #}
 
   // Update {{output}}

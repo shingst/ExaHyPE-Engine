@@ -27,7 +27,7 @@ void {{codeNamespace}}::solutionAdjustment(
   double x0[{{nDim}}];
   int pos = 0;
 
-{% if nDim == 3 %} 
+{% if nDim == 3 %}
   for (int z = 0; z < {{nDof}}; z++) {
     x0[2] = center[2] + dx[2] * (nodes[z] - 0.5);
 {% endif %}
@@ -40,7 +40,7 @@ void {{codeNamespace}}::solutionAdjustment(
         pos++;
       }
     }
-{% if nDim == 3 %} 
+{% if nDim == 3 %}
   }
 {% endif %}
 

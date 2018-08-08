@@ -39,7 +39,7 @@ namespace {{namespaceName}} {
   constexpr int getNumberOfObservable()      {return {{nObs}};}
 {% endif %}
 
-{% if isLinear %}  
+{% if isLinear %}
   {% set lQiSize = nDataPad*(nDof**nDim)*(1+nDof) %}
   {% set lFiSize = nVarPad*(nDof**(nDim+1))*(2*nDim+1) %}
 {% else %}
@@ -99,16 +99,16 @@ namespace {{namespaceName}} {
   constexpr int getUpdateSize() {return {{(nDof**nDim)*nVarPad}};} // == lduh size
 
   //Shifts for fusedSTPVI local memory
-{% set shift = 0 %}  
+{% set shift = 0 %}
   constexpr int getlQiShift()   {return {{shift}};}
-{% set shift = shift+lQiSize %}  
+{% set shift = shift+lQiSize %}
 {%- if useFlux %}
   constexpr int getlFiShift()   {return {{shift}};}
-{% set shift = shift+lFiSize %} 
+{% set shift = shift+lFiSize %}
 {%- endif %}
 {%- if (not isLinear and useNCP) or useSource %}
   constexpr int getlSiShift()   {return {{shift}};}
-{% set shift = shift+lSiSize %} 
+{% set shift = shift+lSiSize %}
 {%- endif %}
   constexpr int getlQhiShift()  {return {{shift}};}
 {% set shift = shift+lQhiSize %}
@@ -126,23 +126,23 @@ namespace {{namespaceName}} {
 {%- endif %}
 {%- if not isLinear %}
   constexpr int getrhsShift()   {return {{shift}};} //Same size as lQi
-{% set shift = shift+lQiSize %} 
+{% set shift = shift+lQiSize %}
 {% endif %}
-{%- if usePointSources %} 
+{%- if usePointSources %}
   constexpr int getPSiShift()   {return {{shift}};}
 {% set shift = shift+PSiSize %}
   constexpr int getPSderivativesShift() {return {{shift}};} //same size as PSi
-{% set shift = shift+PSiSize %} 
+{% set shift = shift+PSiSize %}
 {%- endif %}
 
   constexpr int getFusedSTPVISize() {return {{shift}};}
   
   //Shifts for BoundaryConditions
-{% set shift2 = 0 %} 
+{% set shift2 = 0 %}
   constexpr int getBndFaceShift() {return {{shift2}};}
-{% set shift2 = shift2+BndFaceSize %}   
+{% set shift2 = shift2+BndFaceSize %}
   constexpr int getBndFluxShift()  {return {{shift2}};}
-{% set shift2 = shift2+BndFluxSize %}  
+{% set shift2 = shift2+BndFluxSize %}
   
   constexpr int getBoundaryConditionsSize() {return {{shift2}};}
   

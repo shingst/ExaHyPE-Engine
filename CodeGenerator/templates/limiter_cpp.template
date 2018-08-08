@@ -41,9 +41,9 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
           #pragma vector aligned
           for (int it = 0; it < {{nDofLim*nDofPad}}; it++) {
             coeff[it] = dg2fv[it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                       * dg2fv[z*{{nDofPad}}+iz]
-{% endif %} 
+{% endif %}
                       * dg2fv[y*{{nDofPad}}+iy];
           }
 #ifdef USE_IPO
@@ -64,7 +64,7 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
       std::memset(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, 0, sizeof(double)*{{nVar*nDofLim}}); //delete the memory block that was moved to ensure ghostlayers are set at 0.
     }
   }
-{% else %} {# useLibxsmm #}
+{% else %}{# useLibxsmm #}
   for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // We can skip x,y,z>=basisSizeLim+ghostLayerWidth
     for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
       for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
@@ -85,7 +85,7 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
       }
     }
   }
-{% endif %} {# useLibxsmm #}  
+{% endif %}{# useLibxsmm #}  
 
 }
 
@@ -104,9 +104,9 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
           #pragma vector aligned
           for (int it = 0; it < {{nDof*nDofLimPad}}; it++) {
             coeff[it] = fv2dg[it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                       * fv2dg[z*{{nDofLimPad}}+iz]
-{% endif %} 
+{% endif %}
                       * fv2dg[y*{{nDofLimPad}}+iy];
           }
 #ifdef USE_IPO
@@ -280,9 +280,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
           #pragma vector aligned
           for(int it=0; it<{{nDof*nDofPad}}; it++) {
             coeff[it] = uh2lob[it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                       * uh2lob[z*{{nDofPad}}+iz]
-{% endif %} 
+{% endif %}
                       * uh2lob[y*{{nDofPad}}+iy];
           }
 #ifdef USE_IPO
@@ -365,9 +365,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
           #pragma vector aligned
           for(int it=0; it<{{nDofLim*nDofPad}}; it++) {
             coeff[it] = dg2fv[it] 
-{% if nDim==3 %} 
+{% if nDim==3 %}
                       * dg2fv[z*{{nDofPad}}+iz]
-{% endif %} 
+{% endif %}
                       * dg2fv[y*{{nDofPad}}+iy];
           }
 #ifdef USE_IPO
