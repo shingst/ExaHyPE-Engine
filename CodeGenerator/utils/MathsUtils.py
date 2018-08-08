@@ -24,85 +24,27 @@ import math
 #****************************************
 #****************************************
 
-#transpose a matrix M  
 def matrixTranspose(M):
+    """Transpose a matrix M"""
     return [[M[j][i] for j in range(len(M))] for i in range(len(M[0]))]
 
 
-#A dot B  
 def matrixDot(A,B):
+    """A dot B"""
     return [[sum([A[n][k]*B[k][m] for k in range(len(B))]) for m in range(len(B[0]))] for n in range(len(A))]
 
 
-#extract matrix minor without i^th row and j^th column
-def matrixMinor(M,i,j):
-    return [row[:j] + row[j+1:] for row in (M[:i]+M[i+1:])]    
-
-
-#compute matrix determinant    
-def matrixDeterminant(M):
-    if len(M) == 4: # apply Leibniz formula using permutation group S_4
-        return (  M[0][0]*M[1][1]*M[2][2]*M[3][3] # id
-                - M[0][0]*M[1][1]*M[2][3]*M[3][2] # (23) 
-                - M[0][0]*M[1][2]*M[2][1]*M[3][3] # (12) 
-                + M[0][0]*M[1][2]*M[2][3]*M[3][1] # (123)
-                + M[0][0]*M[1][3]*M[2][1]*M[3][2] # (132)
-                - M[0][0]*M[1][3]*M[2][2]*M[3][1] # (13)
-                - M[0][1]*M[1][0]*M[2][2]*M[3][3] # (01)
-                + M[0][1]*M[1][0]*M[2][3]*M[3][2] # (01)(23)
-                + M[0][1]*M[1][2]*M[2][0]*M[3][3] # (012)
-                - M[0][1]*M[1][2]*M[2][3]*M[3][0] # (0123) = (23)o(12)o(01)
-                - M[0][1]*M[1][3]*M[2][0]*M[3][2] # (0132) = (23)o(13)o(01)
-                + M[0][1]*M[1][3]*M[2][2]*M[3][0] # (013)
-                + M[0][2]*M[1][0]*M[2][1]*M[3][3] # (021)
-                - M[0][2]*M[1][0]*M[2][3]*M[3][1] # (0231) = (13)o(23)o(02)
-                - M[0][2]*M[1][1]*M[2][0]*M[3][3] # (02)
-                + M[0][2]*M[1][1]*M[2][3]*M[3][0] # (023)
-                + M[0][2]*M[1][3]*M[2][0]*M[3][1] # (02)(13)
-                - M[0][2]*M[1][3]*M[2][1]*M[3][0] # (0213) = (13)o(12)o(02)
-                - M[0][3]*M[1][0]*M[2][1]*M[3][2] # (0321) = (12)o(23)o(03)
-                + M[0][3]*M[1][0]*M[2][2]*M[3][1] # (031)
-                + M[0][3]*M[1][1]*M[2][0]*M[3][2] # (032)
-                - M[0][3]*M[1][1]*M[2][2]*M[3][0] # (03)
-                - M[0][3]*M[1][2]*M[2][0]*M[3][1] # (0312) = (12)o(13)o(03)
-                + M[0][3]*M[1][2]*M[2][1]*M[3][0] # (03)(12)
-               )
-    if len(M) == 3:
-        return M[0][0]*M[1][1]*M[2][2] + M[0][1]*M[1][2]*M[2][0] + M[0][2]*M[1][0]*M[2][1] - M[0][1]*M[1][0]*M[2][2] - M[0][0]*M[1][2]*M[2][1] - M[0][2]*M[1][1]*M[2][0]
-    if len(M) == 2:
-        return M[0][0]*M[1][1] - M[0][1]*M[1][0]
-    if len(M) == 1:
-        return M[0][0]
-    determinant = 0   
-    for j in range(len(M)):
-        determinant += ((-1)**j)*M[0][j]*matrixDeterminant(matrixMinor(M,0,j))
-    return determinant    
-
-
-#inverse matrix M
 def matrixInverse(M):
-    #return matrixInverse_cofactor(M)
+    """M^-1"""
     return matrixInverse_Pivot(M)
 
-def matrixInverse_cofactor(M):
-    determinant = matrixDeterminant(M)
-    cofactors = []
-    for i in range(len(M)):
-        cofactorRow = []
-        for j in range(len(M)):
-            minor = matrixMinor(M,i,j)
-            cofactorRow.append(((-1)**(i+j)) * matrixDeterminant(minor))
-        cofactors.append(cofactorRow)
-    cofactors = matrixTranspose(cofactors)
-    for i in range(len(M)):
-        for j in range(len(M)):
-            cofactors[i][j] = cofactors[i][j]/determinant
-    return cofactors
 
 def matrixInverse_Pivot(M):
+    """Compute a matrix inverse using a pivot algorithm"""
+    
     n = len(M)
+    # c = (M|Id)
     c = [[0.0 for _ in range(2*n)] for _ in range(n)]
-  
     for i in range(n):
         for j in range(n):
             c[i][j] = M[j][i]
@@ -142,39 +84,43 @@ def matrixInverse_Pivot(M):
 
     return [[c[i][j+n] for i in range(n)] for j in range(n)]
 
-# zero-pad a vector    
+
 def vectorPad(v,padSize):
+    """zero-pad a vector"""
     if padSize <= 0:
         return v
     return v + [0. for _ in range(padSize)]
 
 
-# a b c   
-# d e f  
-# => a b c 0 d e f 0  
 def matrixPadAndFlatten_RowMajor(M, padSize):
+    """ 
+    a b c 
+    d e f 
+     => a b c 0 d e f 0 
+    """
     result = []
     for i in range(len(M)):
         result += vectorPad(M[i], padSize)
     return result
 
 
-# a b c   
-# d e f  
-# => a d 0 b e 0 c f 0    
 def matrixPadAndFlatten_ColMajor(M, padSize):
+    """ 
+    a b c 
+    d e f 
+     => a d 0 b e 0 c f 0 
+    """
     return matrixPadAndFlatten_RowMajor(matrixTranspose(M), padSize)
 
 
- 
 #****************************************
 #****************************************
 #*********** Gauss-Legendre *************
 #****************************************
 #****************************************  
 
-# return Gauss-Legendre weight, point (taken from generic GaussLegendreQuadrature.cpp)
 def getGaussLegendre(nDof):
+    """Return Gauss-Legendre weights, points"""
     if nDof < 1:
         raise ValueError("order must be positive")
         
@@ -228,8 +174,8 @@ def getGaussLegendre(nDof):
 #****************************************
 #****************************************  
 
-# return Gauss-Lobatto weight, point (taken from generic GaussLobattoQuadrature.cpp)
 def getGaussLobatto(nDof):
+    """Return Gauss-Lobatto weights, points"""
     if nDof < 1:
         raise ValueError("order must be positive")
         
@@ -281,13 +227,6 @@ def getGaussLobatto(nDof):
 #*************** ADERDG *****************
 #****************************************
 #****************************************
-
-# Code taken from:    
-# .. module:: aderdg
-# :platform: Unix, Windows, Mac
-# :synopsis: Provides routines to compute ADER-DG basis functions and operators on the unit cube.
-# .. moduleauthor:: Angelika Schwarz <angelika.schwarz@tum.de>
-# :synopsis: Provides routines to compute ADER-DG basis functions and operators on the unit cube.
 
 def BaseFunc1d(xi, xin, N):
     """
@@ -467,8 +406,8 @@ def assembleFineGridProjector1d(xGPN, j, N):
 #****************************************
 
 
-# Convert from one basis to another
 def assembleQuadratureConversion(fromQ, toQ, N):
+    """Return base conversion matrix"""
     conversionMat = [[0.0 for _ in range(N)] for _ in range(N)]
     for i in range(0, N):
         phi, _ = BaseFunc1d(toQ[i], fromQ, N)
@@ -478,6 +417,7 @@ def assembleQuadratureConversion(fromQ, toQ, N):
 
 
 def assembleDGToFV(nodes, weights, N, Nlim):
+    """Return conversion matrix from DG grid to FV grid"""
     dg2fv = [[0.0 for _ in range(Nlim)] for _ in range(N)]
     dxi = 1.0 / float(Nlim)
     xLeft = 0.0
@@ -492,6 +432,7 @@ def assembleDGToFV(nodes, weights, N, Nlim):
     return dg2fv
 
 def assembleFVToDG(dg2fv, weights, N, Nlim):
+    """Return conversion matrix from FV grid to DG grid"""
     fv2dg = [[0.0 for _ in range(N)] for _ in range(Nlim)]
     lsqm = [[0.0 for _ in range(N+1)] for _ in range(N+1)]
     lsqrhs = [[0.0 for _ in range(Nlim)] for _ in range(N+1)]
