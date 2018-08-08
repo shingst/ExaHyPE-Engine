@@ -30,13 +30,14 @@ namespace {{project}}{
 
 class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, public exahype::solvers::UserADERDGSolverInterface {
   public:
-    static constexpr int NumberOfVariables       = {{numberOfVariables}};
-    static constexpr int NumberOfParameters      = {{numberOfParameters}};
-    static constexpr int Order                   = {{order}};
-    static constexpr int NumberOfObservables     = {{numberOfObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
-    static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
-    static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
-    static constexpr double CFL                  = 0.9;
+    static constexpr int Order                     = {{order}};
+    static constexpr int NumberOfVariables         = {{numberOfVariables}};
+    static constexpr int NumberOfParameters        = {{numberOfMaterialParameters}};
+    static constexpr int NumberOfGlobalObservables = {{numberOfGlobalObservables}};
+    static constexpr int NumberOfDMPObservables    = {{numberOfDMPObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
+    static constexpr int MaxPicardIterations       = {{maxPicardIterations}};
+    static constexpr bool UseMaxPicardIterations   = {{useMaxPicardIterations}};
+    static constexpr double CFL                    = 0.9;
     {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
@@ -154,15 +155,15 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int getTempUnknownsSize()          const {return -1;} //lQhi not required
     int getTempFluxUnknownsSize()      const {return -1;} //lFhi not required
     {%- endif %}
-    {%- if !usePointSources %}
+    {%- if usePointSources is none %}
     int getTempPointForceSourcesSize() const {return -1;} //pointSource not required
     {%- endif %}
-    {%- if !useNCP %}
+    {%- if useNCP is none %}
     int getTempSpaceTimeFluxUnknowns1Size() const {return -1;} //gradQ not required
     {%- endif %}
     
     //not used PDE
-    {%- if !useMaterialParam %}
+    {%- if useMaterialParam is none %}
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
     {%- endif %}
     {%- if patchwiseAdjust %}

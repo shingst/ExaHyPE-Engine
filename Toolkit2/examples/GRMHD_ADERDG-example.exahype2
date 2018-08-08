@@ -39,7 +39,7 @@
 	},
 	"solvers": [
 		{
-			"name": "GRMHDSolver_DG",
+			"name": "GRMHDSolver_ADERDG",
 			"type": "ADER-DG",
 			"variables": [
 				{ "name": "rho",				 "multiplicity": 1 },
@@ -66,11 +66,11 @@
 			"maximum_mesh_depth": 0,
 			"time_stepping": "global",
 			"aderdg_kernel": {
-				"code": "generic",
+				"implementation": "generic",
 				"space_time_predictor" : { "maxpicarditer" : 1 },
 				"terms": [ "flux", "ncp", "source", "point_sources" ],
 				"language" : "C",
-				"type"  : "nonlinear",
+				"nonlinear"  : true,
 				"basis" : "Lobatto"
 			},
 			"plotters": [

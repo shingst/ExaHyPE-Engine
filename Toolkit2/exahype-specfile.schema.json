@@ -76,6 +76,17 @@
 						"foo/bar/baz/"
 					]
 				}, 
+				"plotter_subdirectory": {
+					"type": "string", 
+					"title": "In case you end up with a large number of plotters",
+					"pattern": "(^$|[^/].*$)",
+					"examples": [
+						"plotters",
+						"Writers",
+						""
+					],
+					"default" : ""
+				}, 
 				"peano_kernel_path": {
 					"type": "string", 
 					"title": "The directory where the Peano directory is installed in (relevant only for compile time)", 
@@ -419,6 +430,29 @@
 						"required": [ "name", "type", "variables","maximum_mesh_size", "patch_size", "fv_kernel" ]
 					}
 				],
+				"dependencies": {
+					"patch_size" : {
+						"properties" : {
+							"type" : { "enum" : ["Finite-Volumes"] }
+						}
+					},
+					"order" : {
+						"properties" : {
+							"type" : { "enum" : ["ADER-DG","Limiting-ADER-DG"] }
+						}
+					},
+					"limiter" : {
+						"properties" : {
+							"type" : { "enum" : ["Limiting-ADER-DG"] }
+						}
+					},
+					"fv_kernel" : {
+						"properties" : {
+							"type" : { "enum" : ["Finite-Volumes","Limiting-ADER-DG"] }
+						}
+					}
+					
+				},
 				"properties": {
 					"name": {
 						"type": "string", 
@@ -446,10 +480,10 @@
 						"required" : [ "terms" ],
 						"additionalProperties" : "false",
 						"properties": {
-							"code" : {
+							"implementation" : {
 								"type": "string",
-								"title": "Wether to use optimised kernels",
-								"enum": ["generic", "optimised" ],
+								"title": "Use generic or optimised kernels, or implement your own kernels",
+								"enum": ["generic", "optimised", "user" ],
 								"default": "generic"
 							},
 							"adjust_solution": {
@@ -516,11 +550,10 @@
 								"enum": ["C","Fortran"],
 								"default": "C"
 							}, 
-							"type": {
-								"type": "string", 
-								"title": "Type of solver", 
-								"enum": ["nonlinear","linear"],
-								"default": "nonlinear"
+							"nonlinear": {
+								"type": "boolean", 
+								"title": "Is the PDE nonlinear?", 
+								"default": true
 							},
 							"basis": {
 								"type": "string", 
@@ -536,10 +569,10 @@
 						"required" : [ "terms" ],
 						"additionalProperties" : "false",
 						"properties": {
-							"code": {
+							"implementation" : {
 								"type": "string",
-								"title": "Wether to use optimised kernels",
-								"enum": ["generic", "optimised" ],
+								"title": "Use generic kernels, or implement your own kernels",
+								"enum": ["generic", "user" ],
 								"default": "generic"
 							},
 							"adjust_solution": {
@@ -569,9 +602,9 @@
 								"enum": ["C","Fortran"],
 								"default": "C"
 							}, 
-							"type": {
+							"scheme": {
 								"type": "string", 
-								"title": "Type of solver", 
+								"title": "The underlying FV solver scheme", 
 								"enum": ["musclhancock","godunov"],
 								"default": "godunov"
 							}
@@ -641,22 +674,29 @@
 						"title": "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
 						"scope": "run-time"
 					},
+					"regularised_fine_grid_levels" : {
+						"type": "integer", 
+						"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
+						"scope": "run-time"
+					},
 					"limiter": {
 						"title": "Limiting-ADER-DG-specific settings",
 						"type": "object",
 						"required": [ "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ],
 						"additionalProperties" : "false",
 						"properties": {
-							"regularised_fine_grid_levels" : {
-								"type": "integer", 
-								"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
-								"scope": "run-time"
+							"implementation" : {
+								"type": "string",
+								"title": "Use generic or optimised kernels",
+								"enum": ["generic", "optimised" ],
+								"default": "generic"
 							},
 							"dmp_observables": {
 								"id"  : "dmp_observables",
 								"type": "integer", 
 								"title": "Number of quantities considered by the discrete maximum principle (only Limiting-ADER-DG solver)",
-								"scope": "compile-time"
+								"scope": "compile-time",
+								"default" : 0
 							},
 							"dmp_relaxation_parameter": {
 								"id"  : "dmp_relaxation_parameter",
