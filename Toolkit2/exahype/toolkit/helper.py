@@ -26,3 +26,37 @@ class TemplateNotFound(Exception):
 	def __init__(self,templateFile):
 		self._templateFile=templateFile
 	pass
+	
+def parse_variables(solver,field):
+	"""
+	Parse the 'variables' parameter and similarly
+	structured parameters ('material_parameters','global_observables')
+	"""
+	if field in solver:
+		if type(solver[field]) is int:
+			return [{"name" : "Q", "multiplicity" : solver[field]}]
+		else:
+			return solver[field]
+	else:
+		return [{"name" : "Q", "multiplicity" : 0}]
+		
+def variables_to_str(solver,field):
+	"""
+	Represent a variables field as string.
+	"""
+	if field in solver:
+		if type(solver[field]) is int:
+			return str(solver[field])
+		else:
+			return ", ".join([item["name"]+" : "+str(item["multiplicity"]) for item in solver[field]])
+	else:
+		return "0"
+
+def count_variables(variables_as_list):
+	"""
+	Sum up the multiplicities.
+	"""
+	number = 0;
+	for variable in variables_as_list:
+		number += variable["multiplicity"]
+	return number

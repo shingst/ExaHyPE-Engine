@@ -30,28 +30,6 @@ class SolverGenerator():
 		else:
 			print("Output directory '"+self._output_directory+"' already exists.")
 	
-	def parseVariables(self,solver,field):
-		"""
-		Parse the 'variables' parameter and similarly
-		structured parameters ('material_parameters','global_observables')
-		"""
-		if field in solver:
-			if type(solver[field]) is int:
-				return [{"name" : "Q", "multiplicity" : solver[field]}]
-			else:
-				return solver[field]
-		else:
-			return [{"name" : "Q", "multiplicity" : 0}]
-	
-	def numberOfVariables(self,variables):
-		"""
-		Sum up the multiplicities.
-		"""
-		number = 0;
-		for variable in variables:
-			number += variable["multiplicity"]
-		return number
-	
 	def write_solver_files(self,solver_map,abstract_solver_map,implementation,context):
 		for file_path in solver_map.get(implementation,{}):
 			if not os.path.exists(self._output_directory+"/"+file_path):
@@ -134,9 +112,9 @@ class SolverGenerator():
 		
 		context["dimensions"] = self._dimensions
 		
-		nVar          = self.numberOfVariables(self.parseVariables(solver,"variables"))
-		nParam        = self.numberOfVariables(self.parseVariables(solver,"material_parameters"))
-		nGlobalObs    = self.numberOfVariables(self.parseVariables(solver,"global_observables"))
+		nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
+		nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
+		nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
 		nPointSources = len(solver["point_sources"])
 		
 		context["numberOfVariables"]          = nVar

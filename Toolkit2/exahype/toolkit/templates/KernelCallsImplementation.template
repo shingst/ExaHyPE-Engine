@@ -36,7 +36,7 @@
 
 void kernels::registerSolvers(exahype::parser::Parser& parser) {
 {% for solver in data["solvers"] %}
-{%set solver_loop = loop %}
+{%set solver_class = loop %}
   // register solver '{{solver["name"]}}' (type: '{{solver["type"]}}')
   {
 {%   if solver["type"] == "ADER-DG" %}
@@ -80,14 +80,14 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
     // register plotter '{{plotter["name"]}}'
 {%     if plotter["type_as_str"] == "user::defined" %}
     exahype::plotters::RegisteredPlotters.push_back( 
-      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, 
+      new exahype::plotters::Plotter({{solver_class.index0}},{{loop.index0}},parser, 
         new {{data["project_name"]}}::{{plotter["name"]}}()
       )
     );
 {%     else %}
     exahype::plotters::RegisteredPlotters.push_back( 
-      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, new {{data["project_name"]}}::{{plotter["name"]}}(
-          *static_cast<{{data["project_name"]}}::{{solver["name"]}}*>(exahype::solvers::RegisteredSolvers[{{solver_loop.index0}}])) 
+      new exahype::plotters::Plotter({{solver_class.index0}},{{loop.index0}},parser, new {{data["project_name"]}}::{{plotter["name"]}}(
+          *static_cast<{{data["project_name"]}}::{{solver["name"]}}*>(exahype::solvers::RegisteredSolvers[{{solver_class.index0}}])) 
       )
     );
 {%     endif %}
@@ -110,32 +110,44 @@ void kernels::toString(std::ostream& ostream) {
   ostream << "inputFileName:  {{data["spec_file"]}}\n";
   ostream << "projectName:    {{data["project_name"]}}\n";
 {% for solver in data["solvers"] %}
-{%   set solverClass=data["project_name"]+"::"+solver["name"] %}
+{%   set solver_class=data["project_name"]+"::"+solver["name"] %}
   ostream << "Solver[{{loop.index0}}].type:             {{solver["type"]}}\n";
-  ostream << "Solver[{{loop.index0}}].class:            {{solverClass}}\n";
+  ostream << "Solver[{{loop.index0}}].class:            {{solver_class}}\n";
 {%   if solver["type"]=="Limiting-ADER-DG" %}
-  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solverClass}}_ADERDG\n";
+  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solver_class}}_ADERDG\n";
   ostream << "Solver[{{loop.index0}}].abstract[ADERDG]: ";
-  {{solverClass}}_ADERDG::constantsToString(ostream);
-  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solverClass}}_FV\n";
+  {{solver_class}}_ADERDG::constantsToString(ostream);
+  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solver_class}}_FV\n";
   ostream << "Solver[{{loop.index0}}].abstract[FV]: ";
-  {{solverClass}}_FV::constantsToString(ostream);
+  {{solver_class}}_FV::constantsToString(ostream);
 {%   elif solver["type"]=="ADER-DG" %}
   ostream << "Solver[{{loop.index0}}].abstract: ";
-  {{solverClass}}::constantsToString(ostream);
+  {{solver_class}}::constantsToString(ostream);
 {%   elif solver["type"]=="Finite-Volumes" %}
   ostream << "Solver[{{loop.index0}}].abstract: ";
-  {{solverClass}}::constantsToString(ostream);
+  {{solver_class}}::constantsToString(ostream);
 {%   endif %}
-  ostream << "Solver[{{loop.index0}}].variables: [ {% for v in solver["variables"] %} {{v["name"]}}:{{v["multiplicity"]}}{{ ", " if not loop.last }}{% endfor %} ]\n";
+  ostream << "Solver[{{loop.index0}}].variables:           [ {{solver["variables_as_str"]}} ]\n";
+  ostream << "Solver[{{loop.index0}}].material_parameters: [ {{solver["material_parameters_as_str"]}} ]\n";
+  ostream << "Solver[{{loop.index0}}].global_observables:  [ {{solver["global_observables_as_str"]}} ]\n";
+{%   if solver["type"]=="Limiting-ADER-DG" %}
+  ostream << "Solver[{{loop.index0}}].limiter:      [\n{% for item in solver["limiter"].items() %}    {{item[0]}} : {{item[1]}}{% if not loop.last %},{% endif %}\n{% endfor %} ]\n";
+  ostream << "Solver[{{loop.index0}}].kernelADERDG: [\n{% for item in solver["aderdg_kernel"].items() %}    {{item[0]}} : {{item[1]}}{% if not loop.last %},{% endif %}\n{% endfor %} ]\n";
+  ostream << "Solver[{{loop.index0}}].kernelFV:     [\n{% for item in solver["fv_kernel"].items() %}    {{item[0]}} : {{item[1]}}{% if not loop.last %},{% endif %}\n{% endfor %} ]\n";
+{%   elif solver["type"]=="ADER-DG" %}
+  ostream << "Solver[{{loop.index0}}].kernelADERDG: {{solver["aderdg_kernel"]}}\n";
+{%   elif solver["type"]=="Finite-Volumes" %}
+  ostream << "Solver[{{loop.index0}}].kernelFV: {{solver["fv_kernel"]}}\n";
+{%   endif %}
+{%   set solver_loop=loop %}
+{%   for plotter in solver["plotters"] %}
+  ostream << "Solver[{{solver_loop.index0}}].Plotter[{{loop.index0}}]: {{data["project_name"]}}::{{plotter["name"]}}(variables={{plotter["variables_as_str"]}})\n";
+{%   endfor %}
 {% endfor %}
  
 // TODO not used yet
 //  ostream << "\n";
 //  ostream << "Kernel[0].hasConstants: true\n";
-
-//  ostream << "Kernel[0].kernelADERDG: (type: [nonlinear ], terms: [flux ], opt: [generic ])\n";
-//  ostream << "Kernel[0].kernelLimiter: (type: [musclhancock ], terms: [flux ], opt: [generic ])\n";
 //  ostream << "Kernel[0].Plotter[0]: Euler::ErrorPlotter(variables=15)\n";
 }
 
@@ -170,6 +182,6 @@ const char* kernels::compiledSpecfile() {
   /* Run ExaHyPE with --help to learn how to view it's contents and/or run ExaHyPE with it. */
   static const char ret[] =
   {
-    '0x2F'// TODO(Sven)
+    {{data["spec_file_as_hex"]}}// TODO(Sven)
   }
 }
