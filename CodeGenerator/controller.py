@@ -335,7 +335,7 @@ class Controller:
 
 
     def generateGemms(self, outputFileName, matmulConfigList):
-        """Generate the gemms with the given config using LIBXSMM"""
+        """Generate the gemms with the given config list using LIBXSMM"""
         for matmul in matmulConfigList:
             # add the gemm name to the list of generated gemm
             self.gemmList.append(matmul.baseroutinename)

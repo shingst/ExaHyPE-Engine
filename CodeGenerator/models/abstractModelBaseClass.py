@@ -29,12 +29,24 @@ import copy
 import sys
 import os
 
+# add path to dependencies
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),"../dependencies/jinja"))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),"../dependencies/markupsafe"))
 import jinja2
 
 
 class AbstractModelBaseClass():
+    """Base class of a Models
+    
+    Render and __init__ shouldn't need to be overriden
+    
+    Override generateCode to implement your model. 
+    
+    To generate gemms, pass the controller at construction and override 
+    buildGemmsConfig() (called at initialization) to put the list of MatMult 
+    configurations into the local context. Then generate the gemm using the 
+    controler during generateCode()
+    """
 
     def __init__(self, baseContext, baseController=None):
         self.context = copy.copy(baseContext) # copy the given baseContext as base for the local context
@@ -43,10 +55,16 @@ class AbstractModelBaseClass():
     
     
     def buildGemmsConfig(self):
+        """Generates the list of MaltMult"""
         pass
     
     
     def generateCode(self):
+        """To be overriden
+        
+        Generate the code by filling self.context and calling 
+        self.render(templatePath, outputPath)
+        """
         sys.exit("Abstract method") # needs to be overriden
     
     
@@ -56,7 +74,7 @@ class AbstractModelBaseClass():
         if context == None:
             context = self.context
         loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),'..','templates')))
-        env = jinja2.Environment(loader=loader, trim_blocks=True)
+        env = jinja2.Environment(loader=loader, trim_blocks=True, lstrip_blocks=True)
         template = env.get_template(templateName)                
         with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
             output.write(template.render(context))
