@@ -54,7 +54,7 @@ class SolverGenerator():
 	
 	def write_solver_files(self,solver_map,abstract_solver_map,implementation,context):
 		for file_path in solver_map.get(implementation,{}):
-			if not helper.find(self._output_directory,file_path):
+			if not os.path.exists(self._output_directory+"/"+file_path):
 				try:
 					template = self._jinja2_env.get_template(solver_map[file_path])
 					rendered_output = template.render(context)

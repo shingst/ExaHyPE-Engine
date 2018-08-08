@@ -133,7 +133,8 @@ class ClassicFrontend():
 		
 		try:
 			# kernel calls
-			KernelCallsGenerator(spec, self.verbose)
+			k = KernelCallsGenerator(spec, self.verbose)
+			k.generate_solver_registration(spec)
 		except BadSpecificationFile as e:
 			print("Could not create ExaHyPE's kernel calls")
 			print(e)

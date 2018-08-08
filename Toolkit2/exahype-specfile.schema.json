@@ -75,6 +75,16 @@
 						"foo/bar/baz/"
 					]
 				}, 
+				"plotter_subdirectory": {
+					"type": "string", 
+					"title": "In case you end up with a large number of plotters",
+					"examples": [
+						"plotters",
+						"Writers",
+						""
+					],
+					"default" : ""
+				}, 
 				"peano_kernel_path": {
 					"type": "string", 
 					"title": "The directory where the Peano directory is installed in (relevant only for compile time)", 
