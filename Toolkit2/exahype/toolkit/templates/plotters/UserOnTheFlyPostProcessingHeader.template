@@ -4,20 +4,25 @@
 // ========================
 //   www.exahype.eu
 // ========================
+{# begin references #}
+{%set project=data["project_name"] %}
+{%set solverName=data["solver"]["name"] %}
+{%set plotterName=data["plotter"]["name"] %}
+{%set writtenUnknowns=data["plotter"]["number_of_variables"] %}
+{# end references #}
 #ifndef POSTPROCESSING_{{plotterName}}_CLASS_HEADER_
 #define POSTPROCESSING_{{plotterName}}_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
-{{FurtherIncludes}}
 
-namespace {{Project}} {
-  {{FurtherClasses}}
+namespace {{project}} {
+  class {{solverName}};
   class {{plotterName}};
 }
 
-class {{Project}}::{{plotterName}} : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class {{project}}::{{plotterName}} : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  {{plotterName}}({{PlotterConstructorSignature}});
+  {{plotterName}}({{project}}::{{solverName}}& solver);
   virtual ~{{plotterName}}();
 
   void startPlotting(double time) override;

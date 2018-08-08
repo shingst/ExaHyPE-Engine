@@ -4,16 +4,20 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef {{Device}}_CLASS_HEADER_
-#define {{Device}}_CLASS_HEADER_
+{# begin references #}
+{%set solverType=data["solver"]["type"] %}
+{%set device=data["plotter"]["name"] %}
+{# end references #}
+#ifndef {{device}}_CLASS_HEADER_
+#define {{device}}_CLASS_HEADER_
 
-#include "exahype/plotters/{{SolverType}}2UserDefined.h"
+#include "exahype/plotters/{{solverType}}2UserDefined.h"
 
 namespace {{Project}} {
-  class {{Device}};
+  class {{device}};
 }
 
-class {{Project}}::{{Device}} : public exahype::plotters::{{SolverType}}2UserDefined {
+class {{Project}}::{{device}} : public exahype::plotters::{{solverType}}2UserDefined {
  public:
   /**
    * Constructor.
@@ -22,7 +26,7 @@ class {{Project}}::{{Device}} : public exahype::plotters::{{SolverType}}2UserDef
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself. 
    */
-  {{Device}}();
+  {{device}}();
 
   /**
    * This method is invoked every time a cell 
@@ -59,4 +63,4 @@ class {{Project}}::{{Device}} : public exahype::plotters::{{SolverType}}2UserDef
   void finishPlotting() override;
 };
 
-#endif /* {{Device}}_CLASS_HEADER_ */
+#endif /* {{device}}_CLASS_HEADER_ */

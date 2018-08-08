@@ -5,26 +5,31 @@
 // ========================
 //   www.exahype.eu
 // ========================
+{# begin references #}
+{%set project=data["project_name"] %}
+{%set solverName=data["solver"]["name"] %}
+{%set plotterName=data["plotter"]["name"] %}
+{%set writtenUnknowns=data["plotter"]["number_of_variables"] %}
+{# end references #}
 #include "{{plotterName}}.h"
 
-
-{{Project}}::{{plotterName}}::{{plotterName}}({{PlotterConstructorSignature}}) {
+{{project}}::{{plotterName}}::{{plotterName}}({{project}}::{{solverName}}& solver) {
   // @TODO Please insert your code here.
 }
 
-{{Project}}::{{plotterName}}::~{{plotterName}}() {
+{{project}}::{{plotterName}}::~{{plotterName}}() {
 }
 
-void {{Project}}::{{plotterName}}::startPlotting( double time) {
+void {{project}}::{{plotterName}}::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{plotterName}}::finishPlotting() {
+void {{project}}::{{plotterName}}::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void {{Project}}::{{plotterName}}::mapQuantities(
+void {{project}}::{{plotterName}}::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,

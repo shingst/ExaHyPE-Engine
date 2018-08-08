@@ -11,24 +11,32 @@ class SolverGenerator():
 	"""
 	_exahype_root     = os.path.dirname(os.path.abspath(__file__+"/../../..")) # adjust when file is moved
 	
-	_project_name     = "unknown"
-	_output_directory = "invalid"
-	_dimensions       = -1
-	_verbose          = False
-	_jinja2_env       = None
+	_project_name      = "unknown"
+	_output_directory  = "invalid"
+	_plotter_directory = "invalid"
+	_dimensions        = -1
+	_verbose           = False
+	_jinja2_env        = None
 	
 	def __init__(self,spec,verbose):
-		self._project_name     = spec["project_name"]
-		self._output_directory = self._exahype_root+"/"+spec["paths"]["output_directory"]
-		self._dimensions       = spec["computational_domain"]["dimension"]
-		self._verbose          = verbose
-		self._jinja2_env       = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True)
+		self._project_name      = spec["project_name"]
+		self._output_directory  = self._exahype_root+"/"+spec["paths"]["output_directory"]
+		self._plotter_directory = self._output_directory+"/"+spec["paths"]["plotter_subdirectory"]
+		self._dimensions        = spec["computational_domain"]["dimension"]
+		self._verbose           = verbose
+		self._jinja2_env        = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True)
 		
 		if not os.path.exists(self._output_directory):
 			print("Created output directory '"+self._output_directory+"'")
 			os.mkdir(self._output_directory)
 		else:
 			print("Output directory '"+self._output_directory+"' already exists.")
+		
+		if not os.path.exists(self._plotter_directory):
+			print("Create plotter directory '"+self._plotter_directory+"'")
+			os.mkdirs(self._plotter_directory)
+		else:
+			print("Plotter directory '"+self._plotter_directory+"' already exists")
 	
 	def write_solver_files(self,solver_map,abstract_solver_map,implementation,context):
 		for file_path in solver_map.get(implementation,{}):
@@ -42,7 +50,7 @@ class SolverGenerator():
 				except Exception as e:
 					raise helper.TemplateNotFound(solver_map[file_path])
 			else:
-				print("File '"+file_path+"' already exists. Is not overwritten.")
+				print("User solver file '"+file_path+"' already exists. Is not overwritten.")
 		for file_path in abstract_solver_map.get(implementation,{}):
 			try:
 				template = self._jinja2_env.get_template(abstract_solver_map[implementation][file_path])
@@ -184,14 +192,14 @@ class SolverGenerator():
 		fv_context["ghostLayerWidth"]=ghost_layer_width[solver["fv_kernel"]["scheme"]]
 		
 		solver_map = {
-			"user"    : { solver_name+".h"               : "solvers/MinimalFiniteVolumesSolverHeader.template", 
-			              solver_name+".cpp"             : "solvers/EmptyFiniteVolumesSolverImplementation.template" },
-			"generic" : { solver_name+".h"               : "solvers/FiniteVolumesHeader.template", 
-			              solver_name+".cpp"             : "solvers/FiniteVolumesInCUserCode.template"},
+			"user"    : { solver_name+".h"   : "solvers/MinimalFiniteVolumesSolverHeader.template", 
+			              solver_name+".cpp" : "solvers/EmptyFiniteVolumesSolverImplementation.template" },
+			"generic" : { solver_name+".h"   : "solvers/FiniteVolumesHeader.template", 
+			              solver_name+".cpp" : "solvers/FiniteVolumesInCUserCode.template"},
 		}
 		abstract_solver_map  = { 
-			"generic"   :  { abstract_solver_name+".cpp"    : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
-			                 abstract_solver_name+".h"      : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
+			"generic"   :  { abstract_solver_name+".cpp" : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
+			                 abstract_solver_name+".h"   : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
 		}
 		
 		implementation = solver["fv_kernel"].get("implementation","generic")
@@ -233,11 +241,10 @@ class SolverGenerator():
 		
 		solver_map = {  }
 		abstract_solver_map  = { 
-			"user"      :  { },
-			"generic"   :  { abstract_solver_name+".cpp"    : "solvers/AbstractGenericLimiterSolverImplementation.template", 
-			                 abstract_solver_name+".h"      : "solvers/AbstractGenericLimiterSolverHeader.template" },
-			"optimised" :  { abstract_solver_name+".cpp"    : "solvers/AbstractOptimisedLimiterSolverImplementation.template", 
-			                 abstract_solver_name+".h"      : "solvers/AbstractOptimisedLimiterSolverHeader.template" }
+			"generic"   :  { abstract_solver_name+".cpp" : "solvers/AbstractGenericLimiterSolverImplementation.template", 
+			                 abstract_solver_name+".h"   : "solvers/AbstractGenericLimiterSolverHeader.template" },
+			"optimised" :  { abstract_solver_name+".cpp" : "solvers/AbstractOptimisedLimiterSolverImplementation.template", 
+			                 abstract_solver_name+".h"   : "solvers/AbstractOptimisedLimiterSolverHeader.template" }
 		}
 		implementation = solver["fv_kernel"].get("implementation","generic")
 		try:
@@ -246,9 +253,39 @@ class SolverGenerator():
 			raise
 	
 	def generate_all_plotters(self, solver_num, solver):
+		context = {}
+		context["project_name"]=self._project_name
+		context["solver"]=solver
+		
 		plotters = solver["plotters"]
 		for j,plotter in enumerate(solver.get("plotters",[])):
 			print("Generating plotter[%d] = %s for solver" % (j, plotter["name"]))
+			plotter["number_of_variables"]=helper.count_variables(helper.parse_variables(plotter,"variables"))
+			
+			context["plotter"]=plotter
+			
+			type_as_str  = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
+			user_defined = type_as_str=="user::defined"
+			
+			template_map = {
+				True : {	plotter["name"]+".h" : "plotters/UserDefinedDeviceHeader.template",
+									plotter["name"]+".cpp" : "plotters/UserDefinedDeviceImplementation.template" },
+				False: {	plotter["name"]+".h" : "plotters/UserOnTheFlyPostProcessingHeader.template",
+									plotter["name"]+".cpp" : "plotters/UserOnTheFlyPostProcessingImplementation.template" }
+			}
+			
+			for file_path in template_map.get(user_defined,{}):
+				if not os.path.exists(self._plotter_directory+"/"+file_path):
+					try:
+						template = self._jinja2_env.get_template(template_map[user_defined][file_path])
+						rendered_output = template.render(data=context)
+						with open(self._plotter_directory+"/"+file_path,"w") as file_handle:
+							file_handle.write(rendered_output)
+						print("Generated plotter file '"+file_path+"'")
+					except Exception as e:
+						raise helper.TemplateNotFound(template_map[user_defined][file_path])
+				else:
+					print("Plotter file '"+file_path+"' already exists. Is not overwritten.")
 	
 	def generate_all_solvers(self,spec):
 		"""
