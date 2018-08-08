@@ -5,6 +5,7 @@
 	"$schema": "http://json-schema.org/draft-04/hyper-schema", 
 	"required": [
 		"project_name",
+		"paths",
 		"computational_domain",
 		"solvers"
 	],
@@ -107,15 +108,17 @@
 			}
 		},
 		"profiling": {
-			"profiler": {
-				"type": "string",
-				"default": "NoOpProfiler"
-			},
-			"metrics": {
-				"type": "string",
-				"$comment": "Actually seems to be a property list again. Subject to fix!"
+			"type": "object",
+			"properties": {
+				"profiler": {
+					"type": "string",
+					"default": "NoOpProfiler"
+				},
+				"metrics": {
+					"type": "string",
+					"$comment": "Actually seems to be a property list again. Subject to fix!"
+				}
 			}
-			
 		},
 		"architecture": {
 			"type": "string", 
