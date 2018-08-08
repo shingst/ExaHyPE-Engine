@@ -42,6 +42,7 @@ class KernelCallsGenerator():
 			solver["header_path"] = solver["name"]+".h"
 			for plotter in solver.get("plotters",[]):
 				plotter["header_path"] = ( self._plotter_subdirectory+"/" + plotter["name"]+".h" ).strip("/")
+				plotter["type_as_str"] = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
 		
 		context = {}
 		context["subPaths"]=[]

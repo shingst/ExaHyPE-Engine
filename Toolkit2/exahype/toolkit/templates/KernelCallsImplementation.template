@@ -36,47 +36,61 @@
 
 void kernels::registerSolvers(exahype::parser::Parser& parser) {
 {% for solver in data["solvers"] %}
+{%set solver_loop = loop %}
   // register solver '{{solver["name"]}}' (type: '{{solver["type"]}}')
   {
 {%   if solver["type"] == "ADER-DG" %}
     exahype::solvers::RegisteredSolvers.push_back(\n"
-        new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
-              parser.getMaximumMeshSize({{loop.index0}}),
-              parser.getMaximumMeshDepth({{loop.index0}}),
-              parser.getHaloCells({{loop.index0}}),
-              parser.getRegularisedFineGridLevels({{loop.index0}}),
-              parser.getTimeStepping({{loop.index0}}),
-              0,
-              0
-        )
+      new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
+          parser.getMaximumMeshSize({{loop.index0}}),
+          parser.getMaximumMeshDepth({{loop.index0}}),
+          parser.getHaloCells({{loop.index0}}),
+          parser.getRegularisedFineGridLevels({{loop.index0}}),
+          parser.getTimeStepping({{loop.index0}}),
+          0,
+          0
+      )
     );
 {%   elif solver["type"] == "Limiting-ADER-DG" %}
     exahype::solvers::RegisteredSolvers.push_back(\n"
-        new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
-              parser.getMaximumMeshSize({{loop.index0}}),
-              parser.getMaximumMeshDepth({{loop.index0}}),
-              parser.getHaloCells({{loop.index0}}),
-              parser.getRegularisedFineGridLevels({{loop.index0}}),
-              parser.getTimeStepping({{loop.index0}}),
-              parser.getLimiterHelperLayers({{loop.index0}}),
-              parser.getDMPObservables({{loop.index0}}),
-              parser.getDMPRelaxationParameter({{loop.index0}}),
-              parser.getDMPDifferenceScaling({{loop.index0}}),
-              parser.getStepsTillCured({{loop.index0}})
-        )
+      new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
+          parser.getMaximumMeshSize({{loop.index0}}),
+          parser.getMaximumMeshDepth({{loop.index0}}),
+          parser.getHaloCells({{loop.index0}}),
+          parser.getRegularisedFineGridLevels({{loop.index0}}),
+          parser.getTimeStepping({{loop.index0}}),
+          parser.getLimiterHelperLayers({{loop.index0}}),
+          parser.getDMPObservables({{loop.index0}}),
+          parser.getDMPRelaxationParameter({{loop.index0}}),
+          parser.getDMPDifferenceScaling({{loop.index0}}),
+          parser.getStepsTillCured({{loop.index0}})
+      )
     );
 {%   elif solver["type"] == "Finite-Volumes" %}
     exahype::solvers::RegisteredSolvers.push_back(\n"
-        new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
-              parser.getMaximumMeshSize({{loop.index0}}),
-              parser.getTimeStepping({{loop.index0}})
-        )
+      new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
+          parser.getMaximumMeshSize({{loop.index0}}),
+          parser.getTimeStepping({{loop.index0}})
+      )
     );
 {%   endif %}
     parser.checkSolverConsistency({{loop.index0}});
     
 {%   for plotter in solver["plotters"] %}
     // register plotter '{{plotter["name"]}}'
+{%     if plotter["type_as_str"] == "user::defined" %}
+    exahype::plotters::RegisteredPlotters.push_back( 
+      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, 
+        new {{data["project_name"]}}::{{plotter["name"]}}()
+      )
+    );
+{%     else %}
+    exahype::plotters::RegisteredPlotters.push_back( 
+      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, new {{data["project_name"]}}::{{plotter["name"]}}(
+          *static_cast<{{data["project_name"]}}::{{solver["name"]}}*>(exahype::solvers::RegisteredSolvers[{{solver_loop.index0}}])) 
+      )
+    );
+{%     endif %}
 {%   endfor %}
   }
 {% endfor %}
