@@ -426,7 +426,18 @@
 						"properties" : {
 							"type" : { "enum" : ["ADER-DG","Limiting-ADER-DG"] }
 						}
+					},
+					"limiter" : {
+						"properties" : {
+							"type" : { "enum" : ["Limiting-ADER-DG"] }
+						}
+					},
+					"fv_kernel" : {
+						"properties" : {
+							"type" : { "enum" : ["Finite-Volumes","Limiting-ADER-DG"] }
+						}
 					}
+					
 				},
 				"properties": {
 					"name": {

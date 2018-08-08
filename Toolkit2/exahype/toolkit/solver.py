@@ -50,7 +50,7 @@ class SolverGenerator():
 		return number
 	
 	def write_solver_files(self,solver_map,abstract_solver_map,implementation,context):
-		for file_path in solver_map[implementation]:
+		for file_path in solver_map.get(implementation,{}):
 			if not os.path.exists(file_path):
 				try:
 					template = self._jinja2_env.get_template(solver_map[file_path])
@@ -62,8 +62,7 @@ class SolverGenerator():
 					raise helper.TemplateNotFound(solver_map[file_path])
 			else:
 				print("File '"+file_path+"' already exists. Is not overwritten.")
-		print(abstract_solver_map[implementation])
-		for file_path in abstract_solver_map[implementation]:
+		for file_path in abstract_solver_map.get(implementation,{}):
 			try:
 				template = self._jinja2_env.get_template(abstract_solver_map[implementation][file_path])
 				rendered_output = template.render(context)
@@ -153,6 +152,8 @@ class SolverGenerator():
 	def generate_aderdg_solver_files(self,solver,solver_name,dmp_observables):
 		"""
 		Generate user solver and abstract solver header and source files for an ADER-DG solver.
+		
+		Does not overwrite user solver files if they already exist.
 		"""
 		#aderdg_basis = solver["aderdg_kernel"]["basis"]
 		abstract_solver_name = "Abstract"+solver_name
@@ -190,6 +191,8 @@ class SolverGenerator():
 	def generate_fv_solver_files(self,solver,solver_name,patch_size):
 		"""
 		Generate user solver and abstract solver header and source files for an FV solver.
+		
+		Does not overwrite user solver files if they already exist.
 		"""
 		abstract_solver_name = "Abstract"+solver_name
 		fv_context = self.create_solver_context(solver,solver_name)
@@ -206,7 +209,6 @@ class SolverGenerator():
 			              self._output_directory+"/"+solver_name+".cpp"             : "solvers/FiniteVolumesInCUserCode.template"},
 		}
 		abstract_solver_map  = { 
-			"user"      :  { },
 			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
 			                 self._output_directory+"/"+abstract_solver_name+".h"      : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
 		}
@@ -222,6 +224,13 @@ class SolverGenerator():
 			sys.exit(-1)
 	
 	def generate_limiting_aderdg_solver_files(self,solver):
+		"""
+		Generate user solver and abstract solver header and source files for an Limiting-ADER-DG solver.
+		Further generate those files for the wrapped ADER-DG and FV solver coupled by 
+		the Limiting-ADER-DG solver. 
+		
+		Does not overwrite user solver files if they already exist.
+		"""
 		solver_name          = solver["name"]
 		abstract_solver_name = "Abstract"+solver_name
 		# aderdg
@@ -241,7 +250,7 @@ class SolverGenerator():
 		limiter_context["ADERDGAbstractSolver"] = "Abstract"+solver_name+"_ADERDG"
 		limiter_context["FVAbstractSolver"]     = "Abstract"+solver_name+"_FV"
 		
-		solver_map = { }
+		solver_map = {  }
 		abstract_solver_map  = { 
 			"user"      :  { },
 			"generic"   :  { self._output_directory+"/"+abstract_solver_name+".cpp"    : "solvers/AbstractGenericLimiterSolverImplementation.template", 

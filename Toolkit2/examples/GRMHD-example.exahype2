@@ -39,8 +39,8 @@
 	},
 	"solvers": [
 		{
-			"name": "GRMHDSolver_ADERDG",
-			"type": "ADER-DG",
+			"name": "GRMHDSolver",
+			"type": "Limiting-ADER-DG",
 			"variables": [
 				{ "name": "rho",				 "multiplicity": 1 },
 				{ "name": "vel",				 "multiplicity": 3 },
