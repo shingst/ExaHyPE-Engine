@@ -107,32 +107,36 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
 
 void kernels::toString(std::ostream& ostream) {
   /* Generated solver registration code by the toolkit */
-    ostream << "inputFileName: {{data["spec_file"]}}\n";
-    ostream << "projectName: {{data["project_name"]}}\n";
+  ostream << "inputFileName:  {{data["spec_file"]}}\n";
+  ostream << "projectName:    {{data["project_name"]}}\n";
 {% for solver in data["solvers"] %}
-{%   set solverClass=data["project_name"]::solver["name"] %}
-  ostream << "Kernel[{{loop.index0}}].type: {{solver["type"]}}\n";
-  ostream << "Kernel[{{loop.index0}}].class:         {{solverClass}}\n";
-  //
-  ostream << "Kernel[{{loop.index0}}].class[ADERDG]: {{solverClass}}_ADERDG\n";
-  ostream << "Kernel[0].abstract[ADERDG]: ";
-  Euler::AbstractEulerSolver_ADERDG::constantsToString(ostream);
-  ostream << "Kernel[{{loop.index0}}].class[FV]:     {{solverClass}}_FV\n";
-  ostream << "Kernel[{{loop.index0}}].abstract[FV]: ";
-  Euler::AbstractEulerSolver_FV::constantsToString(ostream);
+{%   set solverClass=data["project_name"]+"::"+solver["name"] %}
+  ostream << "Solver[{{loop.index0}}].type:             {{solver["type"]}}\n";
+  ostream << "Solver[{{loop.index0}}].class:            {{solverClass}}\n";
+{%   if solver["type"]=="Limiting-ADER-DG" %}
+  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solverClass}}_ADERDG\n";
+  ostream << "Solver[{{loop.index0}}].abstract[ADERDG]: ";
+  {{solverClass}}_ADERDG::constantsToString(ostream);
+  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solverClass}}_FV\n";
+  ostream << "Solver[{{loop.index0}}].abstract[FV]: ";
+  {{solverClass}}_FV::constantsToString(ostream);
+{%   elif solver["type"]=="ADER-DG" %}
+  ostream << "Solver[{{loop.index0}}].abstract: ";
+  {{solverClass}}::constantsToString(ostream);
+{%   elif solver["type"]=="Finite-Volumes" %}
+  ostream << "Solver[{{loop.index0}}].abstract: ";
+  {{solverClass}}::constantsToString(ostream);
+{%   endif %}
+  ostream << "Solver[{{loop.index0}}].variables: [ {% for v in solver["variables"] %} {{v["name"]}}:{{v["multiplicity"]}}{{ ", " if not loop.last }}{% endfor %} ]\n";
 {% endfor %}
-  ostream << "Kernel[0].registration: LimitingAderdgSolver\n";
-  ostream << "Kernel[0].type[FV]: Euler::EulerSolver_FV\n";
-  ostream << "Kernel[0].type[ADERDG]: Euler::EulerSolver_ADERDG\n";
-  ostream << "Kernel[0].abstract[FV]: ";
-  ostream << "\n";
  
-  ostream << "\n";
-  ostream << "Kernel[0].hasConstants: true\n";
-  ostream << "Kernel[0].variables: rho 1 j 3 E 1 \n";
-  ostream << "Kernel[0].kernelADERDG: (type: [nonlinear ], terms: [flux ], opt: [generic ])\n";
-  ostream << "Kernel[0].kernelLimiter: (type: [musclhancock ], terms: [flux ], opt: [generic ])\n";
-  ostream << "Kernel[0].Plotter[0]: Euler::ErrorPlotter(variables=15)\n";
+// TODO not used yet
+//  ostream << "\n";
+//  ostream << "Kernel[0].hasConstants: true\n";
+
+//  ostream << "Kernel[0].kernelADERDG: (type: [nonlinear ], terms: [flux ], opt: [generic ])\n";
+//  ostream << "Kernel[0].kernelLimiter: (type: [musclhancock ], terms: [flux ], opt: [generic ])\n";
+//  ostream << "Kernel[0].Plotter[0]: Euler::ErrorPlotter(variables=15)\n";
 }
 
 void kernels::finalise() {
