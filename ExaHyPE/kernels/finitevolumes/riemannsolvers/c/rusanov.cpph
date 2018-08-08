@@ -43,72 +43,23 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     const double abs_sR_i = std::abs(sR[i]);
     s_max = std::max( abs_sR_i, s_max );
   }
+  if(useParabolicFlux){ //Add contribution of hyperbolic part
+    double s_max_d = 0;
+    //TODO calculation
 
-  double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
-  double FR2[DIMENSIONS][numberOfVariables] = {0.0};
-  double* FL[DIMENSIONS]={FL2[0], FL2[1]};
-  double* FR[DIMENSIONS]={FR2[0], FR2[1]};
-  if (useFlux && !useParabolicFlux) {
-    solver.flux(qL, FL);
-    solver.flux(qR, FR);
-  }
-  if (useParabolicFlux) {
-    throw; //Wrong Riemann solver for parabolic fluxes
+    s_max += s_max_d;
   }
 
   // determine BgradQ from ncp
   double ncp[numberOfData] = {0.0};
-  if (useNCP) {
+  double gradQ[DIMENSIONS][numberOfData] = {0.0};
+  if (useNCP || useParabolicFlux) {
     double Qavg[numberOfData];
-    double gradQ[DIMENSIONS][numberOfData] = {0.0};
     for(int k=0; k < numberOfData; k++) {
        Qavg[k] = (qR[k] + qL[k]) / 2;
        gradQ[normalNonZero][k] = qR[k] - qL[k];
     }
     solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
-  }
-  
-  for (int i = 0; i < numberOfVariables; i++) {
-    fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
-    if (useFlux) {
-      fnL[i] += 0.5 * (FL2[normalNonZero][i] + FR2[normalNonZero][i]);
-    }
-
-    if(useNCP) {
-      fnR[i] = fnL[i] - 0.5 * ncp[i];
-      fnL[i] = fnL[i] + 0.5 * ncp[i];
-    } else {
-      fnR[i] = fnL[i];
-    }
-  }
-
-  return s_max;
-}
-/**
- * A simple Rusanov flux considering pointwise
- * left and right values.
- */
-template <bool useNCP, bool useFlux, bool useParabolicFlux, typename SolverType>
-double kernels::finitevolumes::riemannsolvers::c::rusanov(
-    SolverType& solver,
-    double* fnL, double *fnR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, int normalNonZero) { // TODO(Dominic): I need four of those
-  constexpr int numberOfVariables  = SolverType::NumberOfVariables;
-  constexpr int numberOfParameters = SolverType::NumberOfParameters;
-  constexpr int numberOfData       = numberOfVariables + numberOfParameters;
-
-  double sL[numberOfVariables];
-  double sR[numberOfVariables];
-  solver.eigenvalues(qL, normalNonZero, sL);
-  solver.eigenvalues(qR, normalNonZero, sR);
-
-  double s_max = -1.0;
-  for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sL_i = std::abs(sL[i]);
-    s_max = std::max( abs_sL_i, s_max );
-  }
-  for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sR_i = std::abs(sR[i]);
-    s_max = std::max( abs_sR_i, s_max );
   }
 
   double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
@@ -120,22 +71,17 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     solver.flux(qR, FR);
   }
   if (useParabolicFlux) {
-    solver.parabolicFlux(qL,gradQL, FL);
-    solver.parabolicFlux(qR,gradQR, FR);
+      //std::cout << numberOfData << std::endl;
+      double gradQ_[DIMENSIONS*numberOfData] = {0.0};
+      for(int i=0; i < DIMENSIONS; i++){
+          for(int j=0; j < numberOfData; j++){
+              gradQ_[i*numberOfData + j] = gradQ[i][j];
+          }
+      }
+    solver.parabolicFlux(qL,gradQ_, FL);
+    solver.parabolicFlux(qR,gradQ_, FR);
   }
 
-  // determine BgradQ from ncp
-  double ncp[numberOfData] = {0.0};
-  if (useNCP) {
-    double Qavg[numberOfData];
-    double gradQ[DIMENSIONS][numberOfData] = {0.0};
-    for(int k=0; k < numberOfData; k++) {
-       Qavg[k] = (qR[k] + qL[k]) / 2;
-       gradQ[normalNonZero][k] = qR[k] - qL[k];
-    }
-    solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
-  }
-  
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
     if (useFlux) {
@@ -166,7 +112,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
 //template <void PDEEigenvalues(const double* const Q, const int normalNonZero,
 //                              double* lambda),
 //          void PDEFlux(const double* const Q, double** F)>
-template <bool useNCP, bool useFlux, typename SolverType>
+template <bool useNCP, bool useFlux,bool useParabolicFlux, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, double* fnL, double *fnR, const double* qL, const double* qR,
                      int normalNonZero) { // TODO(Dominic): I need four of those
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -188,6 +134,18 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, do
     s_max = std::max( abs_sR_i, s_max );
   }
 
+  // determine BgradQ from ncp
+  double ncp[numberOfData] = {0.0};
+  double gradQ[DIMENSIONS][numberOfData] = {0.0};
+  if (useNCP || useParabolicFlux) {
+    double Qavg[numberOfData];
+    for(int k=0; k < numberOfData; k++) {
+       Qavg[k] = (qR[k] + qL[k]) / 2;
+       gradQ[normalNonZero][k] = qR[k] - qL[k];
+    }
+    solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
+  }
+
   double FL3[DIMENSIONS][numberOfVariables] = {0.0};
   double FR3[DIMENSIONS][numberOfVariables] = {0.0};
   double* FL[DIMENSIONS]={FL3[0], FL3[1], FL3[2]};
@@ -196,23 +154,19 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, do
     solver.flux(qL, FL);
     solver.flux(qR, FR);
   }
-  if (useParabolicFlux) {
-    solver.parabolicFlux(qL,0, FL); //TODO: Anne
-    solver.parabolicFlux(qR,0, FR);
+    if (useParabolicFlux) {
+      //std::cout << numberOfData << std::endl;
+      double gradQ_[DIMENSIONS*numberOfData] = {0.0};
+      for(int i=0; i < DIMENSIONS; i++){
+          for(int j=0; j < numberOfData; j++){
+              gradQ_[i*numberOfData + j] = gradQ[i][j];
+          }
+      }
+    solver.parabolicFlux(qL,gradQ_, FL);
+    solver.parabolicFlux(qR,gradQ_, FR);
   }
 
 
-  // determine BgradQ from ncp
-  double ncp[numberOfData] = {0.0};
-  if (useNCP) {
-    double Qavg[numberOfData];
-    double gradQ[DIMENSIONS][numberOfData] = {0.0};
-    for(int k=0; k < numberOfData; k++) {
-       Qavg[k] = (qR[k] + qL[k]) / 2;
-       gradQ[normalNonZero][k] = qR[k] - qL[k];
-    }
-    solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
-  }
 
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);

@@ -70,16 +70,26 @@ void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
 
 {%- if useParabolicFlux %}
 void {{project}}::{{solver}}::parabolicFlux(const double* const Q,const double* const gradQ, double** F) {
-  // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
-  
-  // @todo Please implement/augment if required
-  {%- for d in range_0_nDim %}
-  {%- for i in range_0_nVar %}
-  F[{{d}}][{{i}}] = 0.0;
-  {%- endfor %}
-  
-  {%- endfor %}
+    // Dimensions                        = {{dimensions}}
+    // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+
+    // @todo Please implement/augment if required
+    {%- for d in range_0_nDim %}
+    {%- for i in range_0_nVar %}
+    F[{{d}}][{{i}}] = 0.0;
+    {%- endfor %}
+
+    {%- endfor %}
+}
+
+void {{project}}::{{solver}}::parabolicEigenvalues(const double* const Q, const int dIndex, double* lambda) {
+    // Dimensions             = {{dimensions}}
+    // Number of variables    = {{numberOfVariables + numberOfParameters}} + #parameters
+
+    // @todo Please implement/augment if required
+    {%- for i in range_0_nVar %}
+    lambda[{{i}}] = 1.0;
+    {%- endfor %}
 }
 {%- endif %}
 

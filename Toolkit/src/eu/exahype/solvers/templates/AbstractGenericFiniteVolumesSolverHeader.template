@@ -86,6 +86,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     {%- endif %}
     {%- if !useParabolicFlux %}
     void parabolicFlux(const double* const Q,const double* const gradQ, double** F)  final {}
+    virtual void parabolicEigenvalues(const double* const Q,const int d,double* lambda) final {};
     {%- endif %}
     
     {%- if !usePointSources %}

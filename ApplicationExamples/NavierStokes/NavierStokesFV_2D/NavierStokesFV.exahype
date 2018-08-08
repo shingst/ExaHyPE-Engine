@@ -22,13 +22,13 @@
 exahype-project NavierStokesFV
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/NavierStokes/NavierStokesFV
+  output-directory const           = ./ApplicationExamples/NavierStokes/NavierStokesFV_2D
 
   computational-domain
     dimension const         = 2
-    width                   = 1.0, 1.0
+    width                   = 6.283, 6.283
     offset                  = 0.0, 0.0
-    end-time                = 0.3
+    end-time                = 1.0
   end computational-domain
  
   /*
@@ -46,7 +46,7 @@ exahype-project NavierStokesFV
   solver Finite-Volumes MyNavierStokesSolver
     variables const    = rho:1,j:3,E:1
     patch-size const   = 10
-    maximum-mesh-size  = 0.8
+    maximum-mesh-size  = 0.6
     time-stepping      = global
     type const         = godunov
     terms const        = parabolicflux
