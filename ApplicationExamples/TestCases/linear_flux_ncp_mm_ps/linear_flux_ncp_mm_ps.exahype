@@ -23,7 +23,7 @@ exahype-project  Elastic
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/TestCases/linear_flux_ncp_mm_ps
-  architecture const      = noarch
+  architecture const      = hsw
   log-file                = mylogfile.log
 
   computational-domain
@@ -63,7 +63,7 @@ exahype-project  Elastic
     time-stepping      = global
     type const         = linear, Legendre
     terms const        = flux,ncp,materialparameters,pointsources:1
-    optimisation const = generic,patchwiseadjust
+    optimisation const = optimised,patchwiseadjust,usestack
     language const     = C
 
     /* Do not need the time series for a point in the moment*/
