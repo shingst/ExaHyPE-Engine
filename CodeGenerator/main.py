@@ -28,12 +28,18 @@ import os
 import controller
 
 def main():
-    # --------------------------------------------------------
-    # Configuration parameters
-    # --------------------------------------------------------
-    pathFromHereToExaHyPERoot = "../" #path to the root of ExaHyPe from this file
-    pathToLibxsmmGemmGenerator = os.path.join("dependencies", "libxsmm", "bin", "libxsmm_gemm_generator") #path to the gemm generator from this file
+    """"Contain some configuration paramters. Call the controller and run it"""
 
+    ######################################
+    ###### Configuration parameters ######
+    ######################################
+    # Change them if required
+    
+    # path to the root of ExaHyPe from this file
+    pathFromHereToExaHyPERoot = "../"
+    # path to the gemm generator from this file
+    pathToLibxsmmGemmGenerator = os.path.join("dependencies", "libxsmm", "bin", "libxsmm_gemm_generator")
+    # simd size of the accepted architectures
     simdWidth = { "noarch" : 1,
                   "wsm"    : 2,
                   "snb"    : 4,
@@ -41,16 +47,14 @@ def main():
                   "knc"    : 8,
                   "knl"    : 8 
                 }
-
-    # --------------------------------------------------------
-    # Require python3.3
-    # --------------------------------------------------------
+    
+    # check version. Python 3.3 required
     requiredVersion = (3,3)
     currentVersion  = sys.version_info
     if(requiredVersion > currentVersion):
         sys.exit("Requires Python 3.3 or newer. Abort.")
     
-    # Absolute path to project
+    # geenrate absolute paths to project and LIBXSMM
     dir = os.path.dirname(__file__)
     absolutePathToRoot =  os.path.abspath(os.path.join(dir,pathFromHereToExaHyPERoot))
     absolutePathToLibxsmm =  os.path.abspath(os.path.join(dir,pathToLibxsmmGemmGenerator))
