@@ -57,7 +57,7 @@ void GenericEulerKernelTest::flux(const double *const Q, double **F) {
   h[4] = irho * Q[3] * (Q[4] + p);
 }
 
-void GenericEulerKernelTest::parabolicFlux(const double *Q, const double* gradQ, double **F) {}
+void GenericEulerKernelTest::parabolicFlux(const double *Q, double* gradQ, double **F) {}
 
 void GenericEulerKernelTest::algebraicSource(const double *const Q, double *S) {
   S[0] = 0.0;
@@ -616,7 +616,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   double lFhbnd[6 * nData*basisSize2] = {0.0};  // nData * nDOFy * nDOF_z * 6
 
   _setNcpAndMatrixBToZero = true;
-  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,true,false,false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<true,true,true,false,GenericEulerKernelTest>(
       *this,
       lQhbnd, lFhbnd,
       lQi, rhs, lFi, gradQ, lQhi, lFhi,
