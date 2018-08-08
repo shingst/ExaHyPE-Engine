@@ -33,7 +33,14 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
     static tarch::logging::Log _log;
     NavierStokes::NavierStokes ns;
   public:
-    EulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    EulerSolver(
+        const double maximumMeshSize,
+        const int maximumMeshDepth,
+        const int haloCells,
+        const int regularisedFineGridLevels,
+        const exahype::solvers::Solver::TimeStepping timeStepping,
+        const int limiterHelperLayers,
+        const int DMPObservables);
 
     /**
      * Initialise the solver.

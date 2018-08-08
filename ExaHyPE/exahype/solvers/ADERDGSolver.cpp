@@ -3180,7 +3180,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   boundaryConditions(
       update, // also refered to as dluh
       FIn,QIn, gradQIn,
-      luh
+      luh,
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
       p.getCorrectorTimeStamp(),
