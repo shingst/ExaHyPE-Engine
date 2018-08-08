@@ -94,4 +94,78 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
 {%   endfor %}
   }
 {% endfor %}
+  std::set<int> orders;
+  for (const auto p : exahype::solvers::RegisteredSolvers) {
+    orders.insert(p->getNodesPerCoordinateAxis()-1);
+  }
+  kernels::initGaussLegendreNodesAndWeights(orders);
+  kernels::initGaussLobattoNodesAndWeights(orders);
+  kernels::initLimiterProjectionMatrices(orders);
+  kernels::initDGMatrices(orders);
+  kernels::initBasisFunctions(orders);
+}
+
+void kernels::toString(std::ostream& ostream) {
+  /* Generated solver registration code by the toolkit */
+    ostream << "inputFileName: {{data["spec_file"]}}\n";
+    ostream << "projectName: {{data["project_name"]}}\n";
+{% for solver in data["solvers"] %}
+{%   set solverClass=data["project_name"]::solver["name"] %}
+  ostream << "Kernel[{{loop.index0}}].type: {{solver["type"]}}\n";
+  ostream << "Kernel[{{loop.index0}}].class:         {{solverClass}}\n";
+  //
+  ostream << "Kernel[{{loop.index0}}].class[ADERDG]: {{solverClass}}_ADERDG\n";
+  ostream << "Kernel[0].abstract[ADERDG]: ";
+  Euler::AbstractEulerSolver_ADERDG::constantsToString(ostream);
+  ostream << "Kernel[{{loop.index0}}].class[FV]:     {{solverClass}}_FV\n";
+  ostream << "Kernel[{{loop.index0}}].abstract[FV]: ";
+  Euler::AbstractEulerSolver_FV::constantsToString(ostream);
+{% endfor %}
+  ostream << "Kernel[0].registration: LimitingAderdgSolver\n";
+  ostream << "Kernel[0].type[FV]: Euler::EulerSolver_FV\n";
+  ostream << "Kernel[0].type[ADERDG]: Euler::EulerSolver_ADERDG\n";
+  ostream << "Kernel[0].abstract[FV]: ";
+  ostream << "\n";
+ 
+  ostream << "\n";
+  ostream << "Kernel[0].hasConstants: true\n";
+  ostream << "Kernel[0].variables: rho 1 j 3 E 1 \n";
+  ostream << "Kernel[0].kernelADERDG: (type: [nonlinear ], terms: [flux ], opt: [generic ])\n";
+  ostream << "Kernel[0].kernelLimiter: (type: [musclhancock ], terms: [flux ], opt: [generic ])\n";
+  ostream << "Kernel[0].Plotter[0]: Euler::ErrorPlotter(variables=15)\n";
+}
+
+void kernels::finalise() {
+  std::set<int> orders;
+  for (const auto p : exahype::solvers::RegisteredSolvers) {
+    orders.insert(p->getNodesPerCoordinateAxis()-1);
+  }
+  kernels::freeGaussLegendreNodesAndWeights(orders);
+  kernels::freeGaussLobattoNodesAndWeights(orders);
+  kernels::freeLimiterProjectionMatrices(orders);
+  kernels::freeDGMatrices(orders);
+  kernels::freeBasisFunctions(orders);
+
+  for (auto solver : exahype::solvers::RegisteredSolvers) {
+    delete solver;
+  }
+  exahype::solvers::RegisteredSolvers.clear();
+
+  for (auto plotter : exahype::plotters::RegisteredPlotters) {
+    delete plotter;
+  }
+  exahype::plotters::RegisteredPlotters.clear();
+  for (auto coupling : exahype::solvers::RegisteredSolverCouplings) {
+    delete coupling;
+  }
+  exahype::solvers::RegisteredSolverCouplings.clear();
+}
+
+const char* kernels::compiledSpecfile() {
+  /* This is a hexdump of the specfile which was used to create this registration file.     */
+  /* Run ExaHyPE with --help to learn how to view it's contents and/or run ExaHyPE with it. */
+  static const char ret[] =
+  {
+    '0x2F'// TODO(Sven)
+  }
 }

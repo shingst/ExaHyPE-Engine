@@ -46,7 +46,10 @@ class KernelCallsGenerator():
 		
 		context = {}
 		context["subPaths"]=[]
-		# todo optimised kernels subPaths
+		# todo(JM) optimised kernels subPaths
+		# todo(JM) profiler 
+		# todo(Sven) solver version
+		# todo(Sven) serialised spec file compiled into KernelCalls.cp
 		context["solvers"]=spec.get("solvers",[])
 		context["project_name"]=spec["project_name"]
 		self.write_files(context)
