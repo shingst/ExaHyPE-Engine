@@ -8,19 +8,17 @@ import plotter
 class KernelCallsGenerator():
 	_exahype_root     = os.path.dirname(os.path.abspath(__file__+"/../../..")) # adjust when file is moved
 	
-	_project_name     = "unknown"
 	_output_directory = "invalid"
 	_dimensions       = -1
 	_verbose          = False
 	_jinja2_env       = None
 	
 	def __init__(self,spec,verbose):
-		self._project_name      = spec["project_name"]
-		self._output_directory  = self._exahype_root+"/"+spec["paths"]["output_directory"]
-		self._plotter_directory = self._output_directory+spec["paths"].get("plotter_subdirectory","")
-		self._dimensions        = spec["computational_domain"]["dimension"]
-		self._verbose           = verbose
-		self._jinja2_env        = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True)
+		self._output_directory     = self._exahype_root+"/"+spec["paths"]["output_directory"]
+		self._plotter_subdirectory = spec["paths"].get("plotter_subdirectory","").strip()
+		self._dimensions           = spec["computational_domain"]["dimension"]
+		self._verbose              = verbose
+		self._jinja2_env           = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True)
 	
 	def write_files(self,context):
 		template_map = {
@@ -29,7 +27,7 @@ class KernelCallsGenerator():
 		for file_path in template_map:
 			try:
 				template = self._jinja2_env.get_template(template_map[file_path])
-				rendered_output = template.render(context)
+				rendered_output = template.render(data=context)
 				with open(self._output_directory+"/"+file_path,"w") as file_handle:
 					file_handle.write(rendered_output)
 				print("Generated solver registration file '"+file_path+"'")
@@ -40,17 +38,15 @@ class KernelCallsGenerator():
 		"""
 		Write the solver registration (KernelCalls.cpp).
 		"""
-		context = {}
-		context["subPaths"]=0
-		# todo optimised kernels subPaths
-		
 		for solver in spec.get("solvers",[]):
-			solver["header_path"] = self._output_directory+"/"+solver["name"]+".h"
+			solver["header_path"] = solver["name"]+".h"
 			for plotter in solver.get("plotters",[]):
-				plotter["header_path"] = self._plotter_directory+"/"+plotter["name"]+".h"
+				plotter["header_path"] = ( self._plotter_subdirectory+"/" + plotter["name"]+".h" ).strip("/")
 		
-		print(spec)
-		
-	def write_files(self,context):
-		pass
+		context = {}
+		context["subPaths"]=[]
+		# todo optimised kernels subPaths
+		context["solvers"]=spec.get("solvers",[])
+		context["project_name"]=spec["project_name"]
+		self.write_files(context)
 

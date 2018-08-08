@@ -78,6 +78,7 @@
 				"plotter_subdirectory": {
 					"type": "string", 
 					"title": "In case you end up with a large number of plotters",
+					"pattern": "(^$|[^/].*$)",
 					"examples": [
 						"plotters",
 						"Writers",
