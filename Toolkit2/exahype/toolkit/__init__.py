@@ -7,20 +7,20 @@ main glue code generator for ExaHyPE supposed to be runned by users.
 
 You can run the frontend on the command line with something like
 
-$ python3 -m exahype.toolkit.frontend
+$ python3 -m exahype.toolkit
 """
 
 
 # Python does not like me when it comes to packages.
 # Maybe we can get rid of this...
-import sys
-from os.path import join, dirname, basename
-sys.path.append(join(dirname(__file__),"..","toolkit"))
+# import sys
+# from os.path import join, dirname, basename
+# sys.path.append(join(dirname(__file__),"..","toolkit"))
 
-from helper import BadSpecificationFile
-from directories import DirectoryAndPathChecker
-from solver import SolverGenerator
-from plotter import PlotterGenerator
-from kernelcalls import KernelCallsGenerator
+# from helper import BadSpecificationFile
+# from directories import DirectoryAndPathChecker
+# from solver import SolverGenerator
+# from plotter import PlotterGenerator
+# from kernelcalls import KernelCallsGenerator
 
-#__all__ = [ "helper", "directories", "solver", "plotter", "kernelcalls"  ]
+__all__ = [ "helper", "directories", "solver", "plotter", "kernelcalls"  ]
