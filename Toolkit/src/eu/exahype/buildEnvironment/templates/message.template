@@ -1,3 +1,4 @@
+{#- This is the default message printed on stdout by the Toolkit #}
 please change into directory {{outputPath}} and type make
 ensure that you set all environment variables before:
   export COMPILER=GNU                   Select GNU compiler
