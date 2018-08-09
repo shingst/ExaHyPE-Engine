@@ -61,11 +61,10 @@ class SolverGenerator():
 			except Exception as e:
 				raise helper.TemplateNotFound(solver_map[file_path])
 	
-	def create_solver_context(self,solver,solverName):
+	def create_solver_context(self,solver):
 		context = {}
 		context["project"]        = self._project_name
-		context["solver"]         = solverName
-		context["abstractSolver"] = "Abstract"+solverName
+		context["solver"]         = solver
 		
 		context["dimensions"] = self._dimensions
 		
@@ -87,18 +86,16 @@ class SolverGenerator():
 		
 		return context
 	
-	def generate_aderdg_solver_files(self,solver,solver_name,dmp_observables):
+	def generate_aderdg_solver_files(self,solver,dmp_observables):
 		"""
 		Generate user solver and abstract solver header and source files for an ADER-DG solver.
 		
 		Does not overwrite user solver files if they already exist.
 		"""
-		#aderdg_basis = solver["aderdg_kernel"]["basis"]
+		solver_name          = solver["name"]+ ( "_ADERDG" if solver["type"]=="Limiting-ADER-DG" else "" )
 		abstract_solver_name = "Abstract"+solver_name
-		aderdg_context = self.create_solver_context(solver,solver_name)
-		aderdg_context["order"]=solver["order"];
+		aderdg_context = self.create_solver_context(solver)
 		aderdg_context["numberOfDMPObservables"]=dmp_observables;
-		aderdg_context["solver"]=solver
 		
 		solver_map = {
 			"user"    :  { solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
@@ -126,19 +123,17 @@ class SolverGenerator():
 			print("ERROR: not implemented yet '"+file_path+"'",file=sys.stderr)
 			sys.exit(-1)
 
-	def generate_fv_solver_files(self,solver,solver_name,patch_size):
+	def generate_fv_solver_files(self,solver,patch_size):
 		"""
 		Generate user solver and abstract solver header and source files for an FV solver.
 		
 		Does not overwrite user solver files if they already exist.
 		"""
+		solver_name          = solver["name"]+ ( "_FV" if solver["type"]=="Limiting-ADER-DG" else "" )
 		abstract_solver_name = "Abstract"+solver_name
-		fv_context = self.create_solver_context(solver,solver_name)
-		
-		fv_context["patchSize"]=patch_size
+		fv_context = self.create_solver_context(solver)
 		ghost_layer_width = { "godunov" : 1, "musclhancock" : 2 }
 		fv_context["ghostLayerWidth"]=ghost_layer_width[solver["fv_kernel"]["scheme"]]
-		fv_context["solver"]=solver
 		
 		solver_map = {
 			"user"    : { solver_name+".h"   : "solvers/MinimalFiniteVolumesSolverHeader.template", 
@@ -146,6 +141,8 @@ class SolverGenerator():
 			"generic" : { solver_name+".h"   : "solvers/FiniteVolumesHeader.template", 
 			              solver_name+".cpp" : "solvers/FiniteVolumesInCUserCode.template"},
 		}
+		print(solver_map)
+		
 		abstract_solver_map  = { 
 			"generic"   :  { abstract_solver_name+".cpp" : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
 			                 abstract_solver_name+".h"   : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
@@ -174,19 +171,13 @@ class SolverGenerator():
 		# aderdg
 		self.generate_aderdg_solver_files(
 			solver=solver,\
-			solver_name=solver_name+"_ADERDG",\
 			dmp_observables=solver["limiter"].get("dmp_observables",0))
 		# fv
 		self.generate_fv_solver_files(
 			solver=solver,\
-			solver_name=solver_name+"_FV",\
 			patch_size=2*solver["order"]+1)
 		# limiter
-		limiter_context = self.create_solver_context(solver,solver["name"])
-		limiter_context["ADERDGSolver"]         = solver_name+"_ADERDG"
-		limiter_context["FVSolver"]             = solver_name+"_FV"
-		limiter_context["ADERDGAbstractSolver"] = "Abstract"+solver_name+"_ADERDG"
-		limiter_context["FVAbstractSolver"]     = "Abstract"+solver_name+"_FV"
+		limiter_context = self.create_solver_context(solver)
 		
 		solver_map = {  }
 		abstract_solver_map  = { 
@@ -247,12 +238,10 @@ class SolverGenerator():
 			if solver["type"]=="ADER-DG":
 				self.generate_aderdg_solver_files(
 					solver=solver,\
-					solver_name=solver["name"],\
 					dmp_observables=0)
 			elif solver["type"]=="Finite-Volumes":
 				self.generate_fv_solver_files(
 					solver=solver,\
-					solver_name=solver["name"],\
 					patch_size=solver["patch_size"])
 			elif solver["type"]=="Limiting-ADER-DG":
 				self.generate_limiting_aderdg_solver_files(solver)
@@ -270,12 +259,10 @@ class SolverGenerator():
 			if solver["type"]=="ADER-DG":
 				self.generate_aderdg_solver_files(
 					solver=solver,\
-					solver_name=solver["name"],\
 					dmp_observables=0)
 			elif solver["type"]=="Finite-Volumes":
 				self.generate_fv_solver_files(
 					solver=solver,\
-					solver_name=solver["name"],\
 					patch_size=solver["patch_size"])
 			elif solver["type"]=="Limiting-ADER-DG":
 				self.generate_limiting_aderdg_solver_files(solver)

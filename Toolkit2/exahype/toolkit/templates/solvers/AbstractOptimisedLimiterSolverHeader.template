@@ -1,3 +1,5 @@
+{% extends "solvers/LimiterDefinitions.template" %}
+
 #ifndef __{{abstractSolver}}_CLASS_HEADER__
 #define __{{abstractSolver}}_CLASS_HEADER__
 

@@ -1,0 +1,6 @@
+{% set solver               = data["solver"]["name"]    %}
+{% set abstractSolver       = "Abstract"+solver        %}
+{% set ADERDGSolver         = solver+"_ADERDG"         %}
+{% set FVSolver             = solver+"_FV"             %}
+{% set ADERDGAbstractSolver = abstractSolver+"_ADERDG" %}
+{% set FVAbstractSolver     = abstractSolver+"_FV"     %}
