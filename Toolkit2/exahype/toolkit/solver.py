@@ -43,7 +43,7 @@ class SolverGenerator():
 			if not os.path.exists(self._output_directory+"/"+file_path):
 				try:
 					template = self._jinja2_env.get_template(solver_map[file_path])
-					rendered_output = template.render(context)
+					rendered_output = template.render(data=context)
 					with open(self._output_directory+"/"+file_path,"w") as file_handle:
 						file_handle.write(rendered_output)
 					print("Generated user solver file '"+file_path+"'")
@@ -54,63 +54,12 @@ class SolverGenerator():
 		for file_path in abstract_solver_map.get(implementation,{}):
 			try:
 				template = self._jinja2_env.get_template(abstract_solver_map[implementation][file_path])
-				rendered_output = template.render(context)
+				rendered_output = template.render(data=context)
 				with open(self._output_directory+"/"+file_path,"w") as file_handle:
 					file_handle.write(rendered_output)
 				print("Generated abstract solver file '"+file_path+"'")
 			except Exception as e:
 				raise helper.TemplateNotFound(solver_map[file_path])
-	
-	def create_kernel_terms_context(self,kernel_terms):
-		"""
-		Helper function.
-		"""
-		term_map = {
-			"flux"               : "useFlux",
-			"source"             : "useSource",
-			"ncp"                : "useNCP",
-			"pointsources"       : "usePointSources",
-			"materialparameters" : "useMaterialParam",
-		}
-		context = {}
-		for key in term_map:
-			context[term_map[key]] = key in kernel_terms
-		
-		return context
-	
-	def create_aderdg_kernel_context(self,kernel):
-		if kernel["implementation"] != "user":
-			context = self.create_kernel_terms_context(kernel["terms"])
-			
-			context["tempVarsOnStack"]        = kernel.get("allocate_temporary_arrays","heap") is "stack"
-			context["patchwiseAdjust"]        = kernel.get("adjust_solution","pointwise")      is "patchwise"
-			context["useMaxPicardIterations"] = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0
-			context["maxPicardIterations"]    = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
-			context["noTimeAveraging"]        = kernel.get("space_time_predictor",{}).get("notimeavg",False)
-			# context["useCERK"]              = kernel.get("space_time_predictor",{}).get("cerkguess",False)
-			# context["userConverter"]        = "converter" in kernel.get("optimised_kernel_debugging",[])
-			context["countFlops"]             = "flops" in kernel.get("optimised_kernel_debugging",[])
-			#context["ADERDGBasis"]           = kernel["basis"]
-			
-			context["isLinear"]    = kernel.get("nonlinear",True)==False
-			context["isNonlinear"] = kernel.get("nonlinear",True)==True
-			context["isFortran"]   = True if kernel["language"] is "Fortran" else False;
-			return context
-		else:
-			return {}
-		
-	def create_fv_kernel_context(self,kernel):
-		if kernel["implementation"] != "user":
-			context = self.create_kernel_terms_context(kernel["terms"])
-			
-			context["tempVarsOnStack"]   = kernel.get("allocate_temporary_arrays","heap") is "stack"
-			context["patchwiseAdjust"]   = kernel.get("adjust_solution","pointwise")      is "patchwise"
-			context["countFlops"]        = "flops" in kernel.get("optimised_kernel_debugging",[])
-			
-			context["finiteVolumesType"] = kernel["scheme"]
-			return context
-		else:
-			return {}
 	
 	def create_solver_context(self,solver,solverName):
 		context = {}
@@ -147,9 +96,9 @@ class SolverGenerator():
 		#aderdg_basis = solver["aderdg_kernel"]["basis"]
 		abstract_solver_name = "Abstract"+solver_name
 		aderdg_context = self.create_solver_context(solver,solver_name)
-		aderdg_context.update(self.create_aderdg_kernel_context(solver["aderdg_kernel"]))
 		aderdg_context["order"]=solver["order"];
 		aderdg_context["numberOfDMPObservables"]=dmp_observables;
+		aderdg_context["solver"]=solver
 		
 		solver_map = {
 			"user"    :  { solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
@@ -185,11 +134,11 @@ class SolverGenerator():
 		"""
 		abstract_solver_name = "Abstract"+solver_name
 		fv_context = self.create_solver_context(solver,solver_name)
-		fv_context.update(self.create_fv_kernel_context(solver["fv_kernel"]))
 		
 		fv_context["patchSize"]=patch_size
 		ghost_layer_width = { "godunov" : 1, "musclhancock" : 2 }
 		fv_context["ghostLayerWidth"]=ghost_layer_width[solver["fv_kernel"]["scheme"]]
+		fv_context["solver"]=solver
 		
 		solver_map = {
 			"user"    : { solver_name+".h"   : "solvers/MinimalFiniteVolumesSolverHeader.template", 

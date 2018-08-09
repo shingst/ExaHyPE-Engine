@@ -1,0 +1,13 @@
+{% set solver=data["solver"]["name"] + "_FV" if data["solver"]["type"]=="Limiting-ADER-DG" else "" %}
+{% set abstractSolver="Abstract"+solver %}
+{% set patchSize=data["solver"]["patch_size"] %}
+{% set kernel=data["solver"]["fv_kernel"] %}
+{% set finiteVolumesType=data["solver"]["fv_kernel"].get("scheme","godunov") %}
+{% set ghostLayerWidth=1 if finiteVolumesType=="godunov" else 2 %}
+{% set tempVarsOnStack        = kernel.get("allocate_temporary_arrays","heap")=="stack"       %}
+{% set patchwiseAdjust        = kernel.get("adjust_solution","pointwise")     =="patchwise"   %}
+{% set useFlux          = "flux" in kernel["terms"]               %}
+{% set useSource        = "source" in kernel["terms"]             %}
+{% set useNCP           = "ncp" in kernel["terms"]                %}
+{% set usePointSources  = "pointsources" in kernel["terms"]       %}
+{% set useMaterialParam = "materialparameters" in kernel["terms"] %}

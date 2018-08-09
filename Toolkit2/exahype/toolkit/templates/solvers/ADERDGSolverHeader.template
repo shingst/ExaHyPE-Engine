@@ -1,3 +1,4 @@
+{% extends "solvers/ADERDGDefinitions.template" %}
 #ifndef __{{solver}}_CLASS_HEADER__
 #define __{{solver}}_CLASS_HEADER__
 

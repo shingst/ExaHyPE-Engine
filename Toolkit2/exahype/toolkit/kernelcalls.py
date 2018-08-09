@@ -26,7 +26,7 @@ class KernelCallsGenerator():
 		
 	def write_files(self,context):
 		template_map = {
-			"KerneCalls.cpp" : "KernelCallsImplementation.template"
+			"KernelCalls.cpp" : "KernelCallsImplementation.template"
 		}
 		for file_path in template_map:
 			try:

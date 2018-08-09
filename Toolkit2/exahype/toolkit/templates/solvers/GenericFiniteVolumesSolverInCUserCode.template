@@ -1,3 +1,5 @@
+{% extends "solvers/FiniteVolumesDefinitions.template" %}
+
 #include "{{solver}}.h"
 
 #include "{{solver}}_Variables.h"

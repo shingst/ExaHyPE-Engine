@@ -1,3 +1,5 @@
+{% extends "solvers/ADERDGDefinitions.template" %}
+
 #include "{{Solver}}.h"
 
 #include "tarch/la/ScalarOperations.h"
