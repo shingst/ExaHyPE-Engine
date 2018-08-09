@@ -1,3 +1,4 @@
+{% set executableName    = "ExaHyPE-" + data["project_name"]  %}
 {% set exahypePath       = data["paths"]["exahype_path"]      %}
 {% set peanoToolboxPath  = data["paths"]["peano_kernel_path"] %}
 {% set outputPath        = data["paths"]["output_directory"]  %}
