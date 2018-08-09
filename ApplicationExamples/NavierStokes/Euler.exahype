@@ -5,20 +5,29 @@ exahype-project Euler
 
     computational-domain
 	dimension const          = 3
-	width                    = 1.0, 1.0, 1.0
+	width                    = 1.0, 1.0, 0.2
 	offset                   = 0.0, 0.0, 0.0
-	end-time                 = 0.05
+	end-time                 = 0.3
     end computational-domain
+
+    shared-memory
+         identifier               = dummy
+	 configure                = {}
+	 cores                    = 16
+	 properties-file          = sharedmemory.properties
+    end shared-memory  
 
     solver ADER-DG EulerSolver
 	variables const = rho:1, j:3, E:1
 	order const = 1
 	maximum-mesh-size = 0.1
+	maximum-mesh-depth = 2
 	time-stepping = global
 	type const = nonlinear
 	terms const = flux, gradientFlux
 	optimisation const = generic
 	language const = C
+	constants = viscosity:0.01,scenario:sod-shock-tube
 
     plot vtu::Legendre::cells::ascii Plotter
 	variables const = 5

@@ -11,6 +11,7 @@
 // ========================
 
 #include <ostream>
+#include <string>
 
 #include "AbstractEulerSolver.h"
 #include "exahype/parser/ParserView.h"
@@ -23,7 +24,12 @@
 
 namespace Euler{
   class EulerSolver;
+  enum class Scenario;
 }
+
+enum class Euler::Scenario {
+  sodShockTube, doubleShockTube, smoothWave
+    };
 
 class Euler::EulerSolver : public Euler::AbstractEulerSolver {
   private:
@@ -32,6 +38,7 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      */
     static tarch::logging::Log _log;
     NavierStokes::NavierStokes ns;
+    Scenario scenario;
   public:
     EulerSolver(
         const double maximumMeshSize,

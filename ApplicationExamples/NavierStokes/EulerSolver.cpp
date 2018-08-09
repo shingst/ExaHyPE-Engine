@@ -7,6 +7,7 @@
 // ========================
 
 #include <cmath>
+#include <map>
 
 #include "EulerSolver.h"
 #include "stableDiffusiveTimeStepSize.h"
@@ -16,47 +17,83 @@
 #include "EulerSolver_Variables.h"
 #include "kernels/KernelUtils.h"
 
-
 tarch::logging::Log Euler::EulerSolver::_log( "Euler::EulerSolver" );
 
 
-void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants)
-{
-  // TODO: Fix referenceT, referenceViscosity and sutherlandC
-  const auto referenceT = 23.;
-  const auto referenceViscosity = 0.0;
+void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+  // Check that parameters are valid.
+  assert(constants.isValueValidDouble("viscosity"));
+  assert(constants.isValueValidString("scenario"));
+
+  const std::string scenarioName = constants.getValueAsString("scenario");
+  // Convert scenario name to enum.
+  
+  const std::map<std::string, Scenario> scenarioMap {{
+    {"sod-shock-tube", Scenario::sodShockTube},
+    {"double-shock-tube", Scenario::doubleShockTube},
+    {"smooth-wave", Scenario::smoothWave}
+  }};
+  // TODO(Lukas): Error handling.
+  scenario = scenarioMap.at(scenarioName);
+
+  const auto referenceT = 0.1;
+  const auto referenceViscosity = constants.getValueAsDouble("viscosity");
   const auto sutherlandC = 0.0;
+
   ns = NavierStokes::NavierStokes(referenceT, referenceViscosity, sutherlandC);
-  // @todo Please implement/augment if required
 }
 
 void Euler::EulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 5 + 0
   // @todo Please implement/augment if required
-  if (tarch::la::equals(t,0.0)) {
-    double p = 1.0;
-    Variables vars(Q);
-    // Sod shock tube
-    if (x[0] < 0.5) {
-      vars.rho() = 1.0;
-      const double u = 0.0; 
-      vars.j(u * vars.rho(), 0.0, 0.0);
-      p  = 1.0;
-    } else {
+  if (!tarch::la::equals(t, 0.0)) {
+    return;
+  }
+  
+  Variables vars(Q);
+  double pressure = 0.0;
+
+  switch (scenario) {
+  case Scenario::sodShockTube:
+    if (x[0] < 0.45) {
       vars.rho() = 0.125;
       const double u = 0;
       vars.j(u * vars.rho(), 0.0, 0.0);
-      p  = 0.1;
+      pressure = 0.1;
+    } else {
+      vars.rho() = 1.0;
+      const double u = 0.0; 
+      vars.j(u * vars.rho(), 0.0, 0.0);
+      pressure = 1.0;
     }
+    break;
+  case Scenario::doubleShockTube:
+    if (x[0] < 0.33 || x[0] > 0.66) {
+      vars.rho() = 0.125;
+      const double u = 0;
+      vars.j(u * vars.rho(), 0.0, 0.0);
+      pressure = 0.1;
+    } else {
+      vars.rho() = 1.0;
+      const double u = 0.0; 
+      vars.j(u * vars.rho(), 0.0, 0.0);
+      pressure = 1.0;
+    }
+    break;
 
+  case Scenario::smoothWave:
+    vars.rho() = 1;
+    vars.j(0,0,0);
+    
     // Initial value for E given by equation of state!
-    const auto scale = 1.0/(vars.rho() * (ns.GAMMA - 1));
-    const auto norm = vars.j(0) * vars.j(0) + vars.j(1) * vars.j(1) + vars.j(2) * vars.j(2);
-    vars.E() = scale * (vars.rho() * p + 0.5 * (ns.GAMMA - 1) * norm);
-
+    pressure = 10*std::exp(-1 * (x[0] - 0.5)*(x[0] - 0.5));
+    break;
   }
 
+  // Initial value for E given by equation of state!
+  const auto invRho = 1./vars.rho();
+  vars.E() = pressure/(ns.GAMMA - 1) + 0.5 * (invRho * vars.j() * vars.j());
 }
 
 void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
