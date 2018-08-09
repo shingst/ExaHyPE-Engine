@@ -166,7 +166,7 @@ void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 	assertion(numberOfObservables==1);
 	ReadOnlyVariables vars(Q);
 	observables[0]=Q[13];
-	observables[1]=Q[16];
+	observables[1]=Q[13];
 }
 
 bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(

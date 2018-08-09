@@ -49,6 +49,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q,maxAMR,CoarseLen, order)
 			up(18)=1     ! xi
 			! ----------------------------- !
 			! Friction parameters -----------
+			if(t .eq. 0) then
 			SSCRACKFL%mu_s=0.5
 			SSCRACKFL%mu_d=0.25
 			SSCRACKFL%DynamicFL= .false.
@@ -56,7 +57,8 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q,maxAMR,CoarseLen, order)
 			SSCRACKFL%t0=0.0    !s
 			SSCRACKFL%L=250     ! m
 			
-			SSCRACKFL%dx=CoarseLen/(3.0**maxAMR)/(order+1)	! m
+			SSCRACKFL%dx=CoarseLen/(3.0**maxAMR)/(order+1.0)*2.0	! m
+			end if
 			! ------------------------------
 			if(abs(xGP(1)).lt.10000.0) then
 				!up(18)=1.0-EXP(-0.5*xGP(2)**2/100.0**2)

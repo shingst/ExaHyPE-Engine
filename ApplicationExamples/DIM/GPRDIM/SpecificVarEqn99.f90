@@ -3852,7 +3852,7 @@
         real :: mu_f, lambda, mu, rho, detA
         real :: cs,cs_f
         cs=sqrt(mu/rho)
-        cs_f=sqrt(2.0)
+        cs_f=0.5!sqrt(2.0)
         mu2tauFL=mu_f*6.0/rho
         mu2tauFL=6.0/(detA*rho*cs_f**2)*mu_f
         !mu2tauFL=mu2tauFL/2.0

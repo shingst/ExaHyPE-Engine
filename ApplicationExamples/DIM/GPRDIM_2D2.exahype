@@ -28,7 +28,7 @@ exahype-project GPRDIM
     dimension const         = 2
     width                   = 40000.0, 20000.0
     offset                  = -20000.0, -10000.0
-    end-time                = 5.0
+    end-time                = 1.0
   end computational-domain
 
   
@@ -62,7 +62,7 @@ exahype-project GPRDIM
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,A:9,alpha:1,lambda:1,mu:1,Y0:1,xi:1,rhoE:1,dDisp:3,Disp:1,muf:1
     order const                    = 3
-    maximum-mesh-size              = 300.0
+    maximum-mesh-size              = 500.0
     maximum-mesh-depth             = 2
     time-stepping                  = global
     type const = nonlinear
@@ -84,6 +84,42 @@ exahype-project GPRDIM
        repeat          = 0.1
        output          = ./output/tecplot
      end plot
+
+   plot probe::ascii ProbeWriter 
+      variables const = 24 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp1 
+      select          = x:0.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 24 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp2 
+      select          = x:2000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 24 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp3 
+      select          = x:4000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 24 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp4 
+      select          = x:6000.000000,y:0.000000 
+    end plot 
+   plot probe::ascii ProbeWriter 
+      variables const = 24 
+      time            = 0.0 
+      repeat          = 0.01 
+      output          = ./output/pp5 
+      select          = x:8000.000000,y:0.000000 
+    end plot 
 
   end solver
 end exahype-project

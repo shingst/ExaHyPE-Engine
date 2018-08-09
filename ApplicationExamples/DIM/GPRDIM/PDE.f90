@@ -72,6 +72,7 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,h,Q)
 	g(23)=Q(2)/Q(1)
 	h(23)=Q(2)/Q(1)
 	
+	g(23)=g(23)*SSCRACKFL%dx*2.0	! Test only
   END SUBROUTINE PDEFlux
 
 
@@ -498,6 +499,7 @@ RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 				Q(24)=ee*2.0*SSCRACKFL%dx
 			end if
 		end if
+		!print *, SSCRACKFL%dx
 	end if				
 				
 	!
