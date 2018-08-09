@@ -40,6 +40,7 @@
 #include "kernels/KernelUtils.h"
 
 #include "tarch/multicore/Jobs.h"
+#include "tarch/la/Vector.h"
 
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
@@ -3066,11 +3067,18 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     }
     #endif
     
+    // Compute distance between cell centers.
+    //const auto cellCenterL =  pLeft.getOffset() + 0.5*pLeft.getSize();
+    //const auto cellCenterR =  pRight.getOffset() + 0.5*pRight.getSize();
+    //const auto distance = tarch::la::abs<3, double>(cellCenterL - cellCenterR);
+    const auto distance = pLeft.getSize();
+    
     riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
         FL,FR,QL,QR,
         std::min(pLeft.getCorrectorTimeStepSize(),
             pRight.getCorrectorTimeStepSize()),
+	distance,
         normalDirection, false, -1);
     
     #if defined(Debug) || defined(Asserts)
@@ -3940,6 +3948,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   // @todo Doku im Header warum wir das hier brauchen,
   const int orientation = faceIndex % 2;
   const int direction   = (faceIndex-orientation)/2;
+
   if ( orientation==0 ) {
     const double* const QL = lQhbnd;
     const double* const QR = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data() +
@@ -3947,10 +3956,11 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     double* FL = const_cast<double*>(lFhbnd); // TODO const-correct kernels
     double* FR = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
         (faceIndex * dofPerFace); // TODO const-correct kernels
-    
+
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex);
+        cellDescription.getCorrectorTimeStepSize(),
+	cellDescription.getSize(), direction,false,faceIndex);
     
     #if defined(Debug) || defined(Asserts)
     for (int ii = 0; ii<dataPerFace; ii++) {
@@ -3974,10 +3984,9 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     double* FR = const_cast<double*>(lFhbnd); // TODO const-correct kernels
     double* FL = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data() +
         (faceIndex * dofPerFace); // TODO const-correct kernels
-    
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getCorrectorTimeStepSize(),direction,false,faceIndex);
+        cellDescription.getCorrectorTimeStepSize(), cellDescription.getSize(), ,direction,false,faceIndex);
     
     #if defined(Debug) || defined(Asserts)
     for (int ii = 0; ii<dataPerFace; ii++) {

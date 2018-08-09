@@ -62,49 +62,19 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
 void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
 					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
   double *fluxOut,double* stateOut) {
-  // Dimensions                        = 3
-  // Number of variables + parameters  = 5 + 0
-  // @todo Please implement/augment if required
-
-  // Set wall boundary conditions.
+  // Set reflective wall boundary conditions.
 
   // First set the state.
   std::copy_n(stateIn, NumberOfVariables, stateOut);
   stateOut[1+normalNonZero]= -stateOut[1+normalNonZero];
-
-  // Compute gradient of state.
   constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
-  auto gradStateOut = std::array<double, gradSize>{{0.0}};
+  auto gradStateOut = std::array<double, gradSize>{{0.0}};   // Then compute flux
 
-  const auto mirroredIdx = 1 + normalNonZero;
-
-  kernels::idx2 idx_gradQ(DIMENSIONS, NumberOfVariables);
-  for (int i = 0; i < DIMENSIONS; ++i) {
-    for (int j = 0; j < NumberOfVariables; ++j) {
-      const auto idx = idx_gradQ(i, j);
-      // Mirror gradient where vel. is mirrored.
-      // Mirror for all dims or only dim == normalNonZero
-      if (j == 1 + normalNonZero) {
-	gradStateOut[idx] = gradStateIn[idx];
-      } else if(j == 1 || j == 2 || j == 3) {
-       	//gradStateOut[idx] = -gradStateIn[idx];
-	assert(idx < NumberOfVariables * DIMENSIONS);
-	gradStateOut[idx] = -gradStateIn[idx];
-      } else {
-	gradStateOut[idx] = gradStateIn[idx];
-      }
-    }
-  }
-
-
-  // Compute appropiate flux.
   double _F[3][NumberOfVariables]={0.0};
   double* F[3] = {_F[0], _F[1], _F[2]};
-  // TODO(Lukas): Compute gradient for gradStateOut
   flux(stateOut, gradStateOut.data(), F);
-
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
- }
+  
 
 exahype::solvers::Solver::RefinementControl Euler::EulerSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
@@ -144,16 +114,52 @@ void Euler::EulerSolver::flux(const double* const Q,const double* const gradQ, d
 }
 
 double Euler::EulerSolver::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  //return std::min(1., stableDiffusiveTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx));
-  return kernels::aderdg::generic::c::stableTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
+  return stableDiffusiveTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
+  //return kernels::aderdg::generic::c::stableTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
 }
 
-void Euler::EulerSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) {
+void Euler::EulerSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-  const auto i = 27;
-  const auto invDx = tarch::la::Vector<DIMENSIONS, double>({i, i, i});
-  //riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,i, dt,direction);
-  kernels::aderdg::generic::c::riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,dt,direction);
+  riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,lengthScale, dt,direction);
+  //kernels::aderdg::generic::c::riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,dt,direction);
 
+}
+
+void Euler::EulerSolver::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+  constexpr int basisSize     = (Order+1)*(Order+1);
+  constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
+  constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
+  
+  constexpr int totalSize = sizeStateOut + sizeFluxOut;
+  double* block = new double[totalSize];
+  double* memory = block;
+
+  double* stateOut = memory; memory+=sizeStateOut;
+  double* fluxOut  = memory; memory+=sizeFluxOut;
+
+  const int faceIndex = 2*direction+orientation;
+  
+  kernels::aderdg::generic::c::boundaryConditions<true, EulerSolver>(*static_cast<EulerSolver*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
+
+  const auto i = 0.037037;
+  if ( orientation==0 ) {
+    double* FL = fluxOut; const double* const QL = stateOut;
+    double* FR = fluxIn;  const double* const QR = stateIn;
+  
+    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,i, dt,direction);
+    //riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+  
+    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+  }
+  else {
+    double* FL = fluxIn;  const double* const QL = stateIn;
+    double* FR = fluxOut; const double* const QR = stateOut;
+
+    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,i, dt,direction);
+    //riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    
+    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+  }
+  delete[] block;
 }

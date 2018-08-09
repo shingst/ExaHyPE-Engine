@@ -1206,11 +1206,14 @@ public:
    * \param[in]    QR             DoF of the boundary extrapolated predictor
    *                              belonging to the right cell.
    * \param[in]    direction  Index of the nonzero normal vector component,
+   * \param[in]    lenghtScale    Characteristic length scale of elements
+
    *               i.e., 0 for e_x, 1 for e_y, and 2 for e_z.
    */
   virtual void riemannSolver(double* FL, double* FR,
                              const double* const QL,const double* const QR,
                              const double dt,
+			     const tarch::la::Vector<DIMENSIONS, double>& lengthScale, 
                              const int normalNonZero,
                              bool isBoundaryFace,
                              int faceIndex) = 0;

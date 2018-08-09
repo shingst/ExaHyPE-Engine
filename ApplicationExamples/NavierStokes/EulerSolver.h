@@ -96,6 +96,7 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
   void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,double *fluxOut,double* stateOut) final override;
+    void boundaryConditions(double* const update, double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>& cellSize, const double t,const double dt, const int direction, const int orientation) final override;
   
     /**
      * Evaluate the refinement criterion within a cell.
@@ -126,10 +127,7 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
   void flux(const double* const Q, const double* const gradQ, double** F) final override;
 
   double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) final override;
-  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction, bool isBoundaryFace, int faceIndex) final override;
-
-
-
+  void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
 
 /* algebraicSource() function not included, as requested by the specification file */
 
