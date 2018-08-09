@@ -14,6 +14,8 @@ sys.path.append("../../") # to allow import exahype... work
 from exahype.toolkit import *
 from exahype.specfiles import validate
 
+from exahype.toolkit.makefile import *
+
 
 class ClassicFrontend():
 	def header(self):
@@ -108,28 +110,14 @@ class ClassicFrontend():
 		self.wait_interactive("validated and configured pathes")
 		
 		try:
-			s = SolverGenerator(spec, self.verbose)
-			s.generate_all_solvers(spec)
+			s = SolverGenerator(spec, args.specfile.name, self.verbose)
+			s.generate_all_solvers()
 		except BadSpecificationFile as e:
 			print("Could not create applications solver classes.")
 			print(e)
 			sys.exit(-6)
 		
 		self.wait_interactive("generated application-specific solver classes")
-		
-		
-		# This is no more possible:
-		# We need to generate the plotters straight when looping over the Solvers,
-		# since otherwise we lack information to which solvers they belong to
-		#
-		#try:
-		#	PlotterGenerator(spec, verbose)
-		#except BadSpecificationFile e:
-		#	print("Could not create application's plotter classes")
-		#	print(e)
-		#	sys.exit(-8)
-		#	
-		#self.wait_interactive("generate application-specific plotter classes")
 		
 		try:
 			# kernel calls
@@ -151,6 +139,17 @@ class ClassicFrontend():
 		#setupBuildEnvironment(spec, verbose)
 		#
 		#self.wait_interactive("setup build environment")
+		
+		try:
+			# kernel calls
+			m = MakefileGenerator(spec, args.specfile.name, self.verbose)
+			m.generate_makefile()
+		except BadSpecificationFile as e:
+			print("Could not create application-specific makefile")
+			print(e)
+			sys.exit(-10)
+		
+		self.wait_interactive("generated application-specific makefile")
 
 
 

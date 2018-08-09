@@ -1,3 +1,16 @@
+{% set exahypePath       = data["paths"]["exahype_path"]      %}
+{% set peanoToolboxPath  = data["paths"]["peano_kernel_path"] %}
+{% set outputPath        = data["paths"]["output_directory"]  %}
+{% set dimensions        = data["dimensions"]               %}
+{% set architecture      = data["architecture"]             %}
+{% set alignment         = data["alignment"]                %}
+{% set useOptKernel      = data["useOptKernel"]             %}
+{% set useSharedMem      = data["useSharedMem"]             %}
+{% set useDistributedMem = data["useDistributedMem"]        %}
+{% set useFortran        = data["useFortran"]               %}
+{% set useIpcm           = data["useIpcm"]                  %}
+{% set useLikwid         = data["useLikwid"]                %}
+{% set likwidInc         = data["likwidInc"]                %}
 # *********************************************************************************************
 # README
 # *********************************************************************************************
@@ -26,50 +39,50 @@ EXECUTABLE={{executableName}}
 
 PROJECT_CFLAGS+= -DDim{{dimensions}}
 
-{%- if architecture != "noarch" %}
+{% if architecture != "noarch" %}
 ARCHITECTURE={{architecture}}
 PROJECT_CFLAGS+= -DALIGNMENT={{alignment}}
-{%- else %}
+{% else %}
 ARCHITECTURE=CPU
-{%- endif %}
+{% endif %}
 
 # Default options required by the specification file
-{%- if useSharedMem %}
+{% if useSharedMem %}
 ifeq ($(SHAREDMEM),)
     SHAREDMEM=TBB
 endif
-{%- endif %}
-{%- if useDistributedMem %}
+{% endif %}
+{% if useDistributedMem %}
 ifeq ($(DISTRIBUTEDMEM),)
     DISTRIBUTEDMEM=MPI
 endif
-{%- endif %}
-{%- if useFortran %}
+{% endif %}
+{% if useFortran %}
 ifeq ($(MIXEDLANG),)
     MIXEDLANG=Yes
 endif
-{%- endif %}
-{%- if useOptKernel %}
+{% endif %}
+{% if useOptKernel %}
 PROJECT_CFLAGS += -DOPT_KERNELS
 ifneq ($(call tolower,$(MODE)),release)
 ifneq ($(call tolower,$(MODE)),)
     PROJECT_CFLAGS += -DTEST_OPT_KERNEL
 endif
 endif
-{%- endif %}
+{% endif %}
 
-{%- if useLikwid %}
+{% if useLikwid %}
 # Lib include for the profiler
 PROJECT_CFLAGS+= -DLIKWID_AVAILABLE
 PROJECT_CFLAGS+= -I{{likwidInc}}
 PROJECT_LFLAGS+= $(LIKWID_LIB)
-{%- endif %}
-{%- if useIpcm %}
+{% endif %}
+{% if useIpcm %}
 # Lib include for the profiler
 PROJECT_CFLAGS+= -DIPCM_AVAILABLE
 PROJECT_CFLAGS+= -I{{ipcmInc}}
 PROJECT_LFLAGS+= -L{{ipcmLib}} -lintelpcm
-{%- endif %}
+{% endif %}
 
 
 # Main Makefile include
