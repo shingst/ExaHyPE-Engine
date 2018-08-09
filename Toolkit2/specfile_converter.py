@@ -53,7 +53,7 @@ def spec_file_1_to_ini(spec_file_1):
 			else:
 				m_option = re.match(r"\s*((\w|-)+)\s*(const)?\s*=(.+)",line)
 				if m_option:
-					spec_file_1_ini += m_option.group(1)+"="+m_option.group(4)+"\n"
+					spec_file_1_ini += m_option.group(1).replace("-","_")+"="+m_option.group(4).strip()+"\n"
 				else: # multiline options need to be indented
 					spec_file_1_ini += "  "+line.strip()+"\n"
 					
@@ -79,7 +79,7 @@ def convert_to_dict(config):
 			plotter="solver%dplotter%d" % (i,j)
 			context["solvers"][i]["plotters"].append({})
 			for option in config.options(plotter):
-				context["solvers"][i]["plotters"][j][option.replace("-","_")] = config.get(plotter,option).replace("\s","")
+				context["solvers"][i]["plotters"][j][option] = config.get(plotter,option)
 	return context
 
 spec_file_1 = ""
