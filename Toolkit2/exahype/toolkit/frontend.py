@@ -9,8 +9,7 @@ from os.path import isdir, isfile
 from pathlib import Path
 from collections import OrderedDict
 
-sys.path.append("../../") # to allow import exahype... work
-
+sys.path.append(os.path.join(os.path.dirname(__file__),"..","..")) # to allow import exahype... work
 from exahype.toolkit import *
 from exahype.specfiles import validate
 
