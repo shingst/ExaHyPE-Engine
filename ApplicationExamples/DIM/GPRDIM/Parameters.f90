@@ -21,9 +21,10 @@
     INTEGER, PARAMETER             	:: nDim = 2                   ! The number of space dimensions
 #endif
 	CHARACTER(LEN=20), PARAMETER	:: ICType='StiffInclusion'
-    INTEGER, PARAMETER             	:: nAux = 0!8
+    INTEGER, PARAMETER             	:: nAux = 8
 	INTEGER, PARAMETER             	:: nVar = 24                           ! The number of variables of the PDE system  
     INTEGER, PARAMETER             	:: nLin = 10
 	REAL, PARAMETER             	:: epsilon1 = 1.e-3
 
   END MODULE Parameters  
+ 

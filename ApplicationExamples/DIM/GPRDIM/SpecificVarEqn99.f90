@@ -549,7 +549,6 @@
         real, intent(out) :: sigma_vec(6)
         real :: detA,stressnorm
         logical :: addp
-
         select case(GPRLEversion)
             case(0)
                 sigma_vec(1)=(Q(5) * Q(9) * Q(13) - Q(5) * Q(10) * Q(12) - Q(8) * Q(6) * Q(13) + Q(8) * Q(7) * Q(12) + Q(11) * Q(6) * Q(10) - Q(11) * Q(7) * Q(9)) * (Q(5) ** 2 + Q(8) ** 2 + Q(11) ** 2) * Q(16) * (-0.2D1 / 0.3D1 * Q(5) ** 2 - 0.2D1 / 0.3D1 * Q(8) ** 2 - 0.2D1 / 0.3D1 * Q(11) ** 2 + Q(6) ** 2 / 0.3D1 + Q(9) ** 2 / 0.3D1 + Q(12) ** 2 / 0.3D1 + Q(7) ** 2 / 0.3D1 + Q(10) ** 2 / 0.3D1 + Q(13) ** 2 / 0.3D1)
@@ -4236,7 +4235,6 @@ end select
         implicit none
         logical :: dmpresult
         real    :: lxb(3),ldx(3)
-        
         SELECT CASE(ICType)
             CASE('SSCRACK')
                 if(abs(lxb(1))<10000.0+ldx(1) .and. abs(lxb(2))<ldx(2)) then

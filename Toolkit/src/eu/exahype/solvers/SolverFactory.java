@@ -112,9 +112,9 @@ public class SolverFactory {
     try {
       switch (aderdgKernel.getKernelType()) {
         case GenericADERDG: 
-          return new eu.exahype.solvers.GenericLimiter(_projectName, solverName, ADERDGsolver, FVsolver);
+          return new eu.exahype.solvers.GenericLimiter(_projectName, solverName, ADERDGsolver, FVsolver, aderdgKernel);
         case OptimisedADERDG:
-          return new eu.exahype.solvers.OptimisedLimiter(_projectName, solverName, ADERDGsolver, FVsolver, aderdgKernel.useFlopsDebug());
+          return new eu.exahype.solvers.OptimisedLimiter(_projectName, solverName, ADERDGsolver, FVsolver, aderdgKernel);
       }
       System.err.println("ERROR: solver configuration is not supported: "+aderdgKernel.toString()+FVKernel.toString());
       return null;

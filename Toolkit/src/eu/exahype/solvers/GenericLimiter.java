@@ -12,6 +12,7 @@ import minitemp.Context;
 import minitemp.TemplateEngine;
 
 import eu.exahype.io.IOUtils;
+import eu.exahype.kernel.ADERDGKernel;
 
 
 public class GenericLimiter implements Solver {
@@ -21,10 +22,12 @@ public class GenericLimiter implements Solver {
   private Context        context;
   private TemplateEngine templateEngine;
   
-  public GenericLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver) 
+  public GenericLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver, ADERDGKernel aderdgKernel) 
       throws IOException, IllegalArgumentException {    
     
     this.solverName                 = solverName;
+    
+    final int numberOfObservables = aderdgKernel.getNumberOfObservables();
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -38,6 +41,9 @@ public class GenericLimiter implements Solver {
     context.put("FVAbstractSolver"    , FVSolver.getAbstractSolverName());
     context.put("ADERDGSolver"        , ADERDGSolver.getSolverName());
     context.put("FVSolver"            , FVSolver.getSolverName());
+    
+    //int
+    context.put("numberOfObservables" , numberOfObservables);
   }
     
   @Override

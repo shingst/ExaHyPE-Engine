@@ -268,6 +268,40 @@ RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind)
 	MyNameOUT=MyName(ind+1)
     END SUBROUTINE PDEVarName
 
+RECURSIVE SUBROUTINE PDEAuxName(MyNameOUT,ind) 
+	USE Parameters, ONLY: nVar  
+	IMPLICIT NONE     
+	CHARACTER(LEN=10):: AuxName(nVar),MyNameOUT
+	INTEGER			:: ind
+
+
+	! EQNTYPE99
+	AuxName(1) = 'sxx'
+	AuxName(2) = 'syy'
+	AuxName(3) = 'szz'
+	AuxName(4) = 'sxy'
+	AuxName(5) = 'syz'
+	AuxName(6) = 'sxz'
+	AuxName(7) = 'YY'
+	AuxName(8) = 'TT'
+
+	MyNameOUT=AuxName(ind+1)
+END SUBROUTINE PDEAuxName
+	
+RECURSIVE SUBROUTINE PDEAuxVar(aux,Q,x,time)
+    USE Parameters, ONLY : nVar,nAux
+	USE SpecificVarEqn99
+	implicit none
+	real :: aux(nAux),Q(nVar),x(3),time
+	real :: detA
+	! print *, "ENTERED HERE ------------------------------------------------------------------------------"
+	aux=0.
+	!return
+	call computeGPRLEstress(aux(7),aux(1:6),Q,.true.)
+	call ComputeAcontribution(detA,Q)
+	aux(8)=1.0/Q(1)*(Q(19)-0.5*1.0/Q(1)*(sum(Q(2:4)**2))-detA)
+END SUBROUTINE PDEAuxVar
+	
 RECURSIVE SUBROUTINE PDEJacobian(An,Q,gradQ,nv)
   USE Parameters, ONLY : nVar, nDim
   USE iso_c_binding
@@ -420,6 +454,34 @@ INTEGER :: j
 	L = 0.
     END SUBROUTINE PDEEigenvectors 
     
+	
+RECURSIVE SUBROUTINE DynamicRupture(x, t, Q)
+	USE SpecificVarEqn99
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE Parameters, ONLY : nVar, nDim, ICType
+	IMPLICIT NONE 
+	! Argument list 
+	REAL, INTENT(IN)               :: x(nDim), t     ! 
+	REAL, INTENT(OUT)              :: Q(nVar)        ! 
+	! Local variables
+	REAL :: stressnorm, sigma_vec(6)
+	! Compute the normal stress using the Formula by Barton (IJNMF 2009)
+	call computeGPRLEstress(stressnorm,sigma_vec,Q,.true.)
+	IF( stressnorm > Q(17) ) THEN
+		! If the normal stress is greater than the illness stress Y0 (stored in Q(17), then broke the material
+		Q(18)=0.
+		! Now in the this DoF it follows the NS friction law with mu proportional to mu_f ( stored in Q(24) )
+	END IF
+	! Add here some static rupture (like for the SSCRACK test case
+	!
+	!
+	
+	!
+	!
+	!
+END SUBROUTINE DynamicRupture	
+	
+	
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
   IMPLICIT NONE     
@@ -581,5 +643,7 @@ RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
 	INTEGER :: N_in,M_in
 	CALL SetMainParameters(N_in,M_in)
 END SUBROUTINE InitTECPLOT
+
+
 
 

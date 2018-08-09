@@ -46,6 +46,13 @@ public class Context {
     }
   }
   
+  /** Put only if no value is set for this key */
+  public void putIfNotSet(String key, Object value) {
+    if(getValueOrNull(key) == null) {
+      put(key, value);
+    }
+  }
+  
   /** Verify that a key is one word with normal characters ([a-zA-Z_0-9]+) */
   private void validateKey(String key) throws IllegalArgumentException {
     if(key == null || !key.matches("^\\w+$")) {

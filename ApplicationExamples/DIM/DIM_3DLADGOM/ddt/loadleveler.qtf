@@ -59,6 +59,8 @@ module switch intel/18.0
 module switch tbb/2018
 module switch gcc/5
 
+export EXAHYPE_VERBOSE_PARSER=1
+
 ## The following line will use exactly the same default settings that
 ## Arm Forge uses to launch without the queue.
 

@@ -3,9 +3,9 @@ import jenkins.model.Jenkins
 
 pipeline {
     agent { label 'Linux-Cluster' }
-    // triggers {
-    // 	cron('H H * * *')
-    // }
+    triggers {
+     	cron('H H * * *')
+    }
     stages {
 	stage ('Checkout') {
 	    steps {
@@ -56,10 +56,10 @@ pipeline {
 	    cleanWs()
 	}
 	success {
-	    updateGitlabCommitStatus(name: 'jenkins', state: 'success')
+	    updateGitlabCommitStatus(name: 'master', state: 'success')
 	}
 	failure {
-	    updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
+	    updateGitlabCommitStatus(name: 'master', state: 'failed')
 	}
     }
     options {

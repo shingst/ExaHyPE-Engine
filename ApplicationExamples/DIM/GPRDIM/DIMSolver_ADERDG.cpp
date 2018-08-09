@@ -32,6 +32,14 @@ void GPRDIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const d
 	if (tarch::la::equals(t,0.0)) {
 		initialdata_(x, &t, Q);
 	}
+	// Call the dynamic rupture subroutine
+	dynamicrupture_(x, &t, Q);
+	/*if (t>0.005) {
+		//printf("Crack!");
+		if(x[0]>0. && x[0]<0.1) {
+		Q[17]=0.0;
+		}
+	}*/
 }
 
 void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,

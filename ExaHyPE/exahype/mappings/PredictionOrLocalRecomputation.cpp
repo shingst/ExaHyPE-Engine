@@ -468,7 +468,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
   if (
       _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation &&
-      vertex.hasToCommunicate(fineGridH)
+      vertex.hasToCommunicate(level)
   ) {
     dfor2(myDest)
       dfor2(mySrc)
@@ -587,7 +587,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
       _stateCopy.isLastIterationOfBatchOrNoBatch() &&
       exahype::solvers::Solver::FuseADERDGPhases
   ) {
-   vertex.sendToNeighbour(toRank,true,x,h,level); 
+   vertex.sendToNeighbour(toRank,true,x,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
