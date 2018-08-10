@@ -13,8 +13,6 @@ import json
 # my_json_file_content = json.dumps(my_json_ob)
 #
 class SpecFile1Reader():
-  def __init__(self):
-    pass
   ##
   # Converts the original ExaHyPE spec file into an ini file.
   #
@@ -348,6 +346,9 @@ class SpecFile1Reader():
             fv_kernel_type  = context["solvers"][i].pop("type")
           if "terms" in context["solvers"][i]:
            fv_kernel_terms = context["solvers"][i].pop("terms")
+           # fv terms
+          result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
+          context["solvers"][i]["fv_kernel"]["terms"]=result
           if "optimisation" in context["solvers"][i]:
             fv_kernel_opts  = context["solvers"][i].pop("optimisation")
       if solver["solver_type"]=="Limiting-ADER-DG":
@@ -356,8 +357,8 @@ class SpecFile1Reader():
             context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("limiter_language")
           if "limiter_type" in context["solvers"][i]:
             fv_kernel_type  = context["solvers"][i].pop("limiter_type") 
-          if "limiter_terms" in context["solvers"][i]:
-            fv_kernel_terms = context["solvers"][i].pop("limiter_terms")
+          if "terms" in context["solvers"][i]["aderdg_kernel"]:
+            context["solvers"][i]["fv_kernel"]["terms"]=context["solvers"][i]["aderdg_kernel"]["terms"] # copy ADER-DG terms
           if "limiter_optimisation" in context["solvers"][i]:
             fv_kernel_opts  = context["solvers"][i].pop("limiter_optimisation")
       # fv type
@@ -365,9 +366,6 @@ class SpecFile1Reader():
         token_s = token.strip() 
         if token_s in ["godunov","musclhancock"]:
           context["solvers"][i]["fv_kernel"]["scheme"]=token_s
-      # fv terms
-      result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
-      context["solvers"][i]["fv_kernel"]["terms"]=result
       # fv opts
       context["solvers"][i]["fv_kernel"].update(self.map_fv_kernel_opts(aderdg_kernel_opts))
       
