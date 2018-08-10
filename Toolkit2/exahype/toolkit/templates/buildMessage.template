@@ -1,4 +1,4 @@
-please change into directory {{output_directory}} and type make
+please change into directory {{outputPath}} and type make
 ensure that you set all environment variables before:
   export COMPILER=GNU                   Select GNU compiler
   export COMPILER=Intel                 Select Intel compiler (default)

@@ -117,7 +117,7 @@ class Controller():
         #self.wait_interactive("setup build environment")
         
         try:
-            makefile = makefileModel.MakefileModel(self.spec)
+            makefile = makefileModel.MakefileModel(self.buildMakefileContext())
             pathToMakefile = makefile.generateCode() #generate Makefile and get path to it
             makefileMessage = makefile.getOutputMessage()
             print("Generated "+pathToMakefile)
@@ -128,6 +128,7 @@ class Controller():
         
         self.wait_interactive("generated application-specific Makefile")
         
+        self.checkEnvVariable()
         print(makefileMessage)
     
     
@@ -169,3 +170,50 @@ class Controller():
         """
         specification = validate(specfile_name)
         return specification
+    
+    
+    def buildBaseContext(self):
+        """Generate base context from spec with commonly used value"""
+        context = {}
+        # outputPath for generated file
+        context["outputPath"] = self.spec["paths"]["output_directory"]
+        # commonly used values
+        context["dimensions"] = self.spec["computational_domain"]["dimensions"]
+        context["project"] = self.spec["project_name"]
+        context["exahypePath"] = self.spec["paths"]["exahype_path"]
+        context["peanoToolboxPath"] = self.spec["paths"]["peano_kernel_path"]
+        context["alignment"] = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
+        
+        return context
+    
+    
+    def buildMakefileContext(self):
+        """Generate context for the Makefile model"""
+        context = self.getBaseContext()
+        context["useSharedMem"]      = "shared_memory" in self.spec;
+        context["useDistributedMem"] = "distributed_memory" in self.spec;
+        context["useIpcm"]   = False # TODO
+        context["useLikwid"] = False # TODO
+        context["likwidInc"] = ""    # TODO
+        # kernels
+        useOptKernel = False
+        useFortran   = False
+        for solver in self.spec["solvers"]:
+            if "aderdg_kernel" in solver:
+                useOptKernel = useOptKernel or solver["aderdg_kernel"].get("type","generic")=="optimised"
+                useFortran   = useFortran or solver["aderdg_kernel"].get("language","C")=="Fortran"
+            if "fv_kernel" in solver:
+                useOptKernel = useOptKernel or solver["fv_kernel"].get("type","generic")=="optimised"
+                useFortran   = useFortran or solver["fv_kernel"].get("language","C")=="Fortran"
+        context["useOptKernel"] = useOptKernel
+        context["useFortran"]   = useFortran
+        
+        return context
+    
+    #TODO shouldn't this be in the validation step?
+    def checkEnvVariable(self):
+        if "shared_memory" in self.spec:
+            if not "TBB_INC" in os.environ:
+                print("WARNING: environment variable TBB_INC not set but required if code is built with TBB");
+            if not "TBB_SHLIB" in os.environ:
+                print("WARNING: environment variable TBB_SHLIB not set but required if code is built with TBB");
