@@ -292,7 +292,7 @@ class SpecFile1Reader():
     context["paths"]={}
     for option in list(context.keys()):
       if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory"]:
-        context["paths"] = context.pop(option)
+        context["paths"][option] = context.pop(option)
     self.map_computational_domain(context["computational_domain"])
     if "optimisation" in context:
       for option in context["optimisation"]:

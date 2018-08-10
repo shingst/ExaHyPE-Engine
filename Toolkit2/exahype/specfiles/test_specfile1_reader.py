@@ -17,3 +17,6 @@ r = specfile1_reader.SpecFile1Reader()
 json_obj = r.read(file_path)
 
 print(json_obj)
+
+with open(file_path+"2", "w") as outfile:
+    json.dump(json_obj,outfile,indent=2)
