@@ -388,7 +388,7 @@ SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	REAL, INTENT(IN) :: wh(nVar,nDOFm)
 	INTEGER :: nSubNodes,J
 	REAL    :: LocNode(nVar,(M+1)**nDim),xvec(3),lx0(3),ldx(3)
-	REAL	:: VN(nVar),QN(nVar)
+	REAL	:: VN(nVar),QN(nVar),AuxNode(nAux)
 	integer :: limiter
 
 	nPlotElem = nPlotElem + 1
@@ -411,8 +411,15 @@ SUBROUTINE ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	   QN(:) = LocNode(:,j)
 	   xvec = lx0 + allsubxi(:,j)*ldx
 	   CALL PDECons2Prim(VN,QN)
+	   CALL PDEAuxVar(AuxNode,QN,xvec,PLOT_TIME)
+	   !AuxNode=0.
 	   !print *, 'Node of elem=',Element_c,'=', xvec(1:nDim)
-	    DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /)  
+	     
+		if(nAux>0) then
+			DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, AuxNode, REAL(nPlotElem), REAL(limiter) /) 
+		else
+			DataArray_max((Element_c-1)*(M+1)**nDim+j,:) = (/ xvec(1:nDim), VN, REAL(nPlotElem), REAL(limiter) /) 
+		end if
 	   !DataArray_max(Element_c,:) = (/ xvec(1:nDim), VN /) 	   
 	END DO
 		
@@ -491,11 +498,11 @@ SUBROUTINE FinalizeTECPLOTPLOTTER(Myrank)
 		CALL PDEVarName(varname,i)	
 		WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(varname) , ' '   
 	ENDDO
-	  
-	!DO i = 1, nAux 
-		!CALL PDEAuxName(AuxName,i)
-		!WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(AuxName()) , ' '   
-	!ENDDO
+
+	DO i = 0, nAux-1
+		CALL PDEAuxName(AuxName,i)	
+		WRITE(VarString,'(a,a,a,a)') TRIM(VarString), ' ', TRIM(AuxName) , ' '   
+	ENDDO	
 	WRITE(VarString,'(a,a)') TRIM(VarString), ' iE lim ' 
 
 	iret = TecIni112(TRIM(Title)//''//C_NULL_CHAR,TRIM(Varstring)//''//C_NULL_CHAR,TRIM(FileName)//''//C_NULL_CHAR,TRIM(ScratchDir)//''//C_NULL_CHAR,0,0,visdouble) 

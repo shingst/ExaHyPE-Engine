@@ -1,0 +1,137 @@
+{% set project=data["project"] %}
+{
+  "project_name" : {{project["project_name"]}},
+  "paths" : {
+    "output_directory"     :  {{project["output_directory"]}},
+    "plotter_subdirectory" : ".",
+    "peano_kernel_path"    : {{project["peano_kernel_path"]}},
+{% if "logfile" in project %}
+    "log_file"             : {{project["log_file"]}},
+{% endif %}
+    "exahype_path"         : {{project["exahype_path"]}}
+  },
+{% if "profiling" in project %}
+{%   set profiling=project["profiling"] %}
+  "profiling" : {
+    "profiler" : {{profiling["profiler"]}},
+    "metrics"  : {{profiling["metrics"]}}
+  },
+{% endif %}
+  "architecture" :
+{% set domain=project["computational_domain"] %}
+  "computational_domain" : {
+    "dimension"  : {{domain["dimension"]}}, 
+    "width"      : {{domain["width"]}},
+    "offset"     : {{domain["offset"]}}, 
+{% if "end_time" in domain %}
+    "end_time"   : {{domain["end_time"]}},
+{% else %}
+    "time_steps" : {{domain["time_steps"]}},
+{% endif %}
+  }
+{% if "shared_memory" in project %}
+{%   set shared_memory=project["shared_memory"] %}
+  "shared_memory" : {
+    "cores"                    : {{shared_memory["cores"]}},
+    "background_job_consumers" : {{shared_memory["background_job_consumers"]}},
+    "autotuning_strategy"      : {{shared_memory["autotuning_strategy"]}}, 
+    "properties_file"          : {{shared_memory["properties_file"]}},
+    "manual_pinning"           : {{shared_memory["manual_pinning"]}}
+  } 
+{% endif %}
+{% if "distributed_memory" in project %}
+{%   set distributed_memory=project["distributed_memory"] %}
+  "distributed_memory" : {
+    "load_balancing_type"     : {{distributed_memory["load_balancing_type"]}},
+    "load_balancing_strategy" : {{distributed_memory["load_balancing_strategy"]}},
+    "node_pool_strategy"      : {{distributed_memory["node_pool_strategy"]}}, 
+    "ranks_per_node"          : {{distributed_memory["ranks_per_node"]}},
+    "primary_ranks_per_node"  : {{distributed_memory["primary_ranks_per_node"]}},
+    "timeout"                 : {{distributed_memory["timeout"]}},
+    "buffer_size"             : {{distributed_memory["buffer_size"]}}
+  }
+{% endif %}
+{% if "distributed_memory" in project %}
+{%   set distributed_memory=project["distributed_memory"] %}
+  "optimisation" : {
+  "fuse_algorithmic_steps"                          : {{optimisation["fuse_algorithmic_steps"]}}, 
+  "fuse_algorithmic_steps_factor"                   : {{optimisation["fuse_algorithmic_steps_factor"]}}, 
+  "spawn_predictor_as_background_thread"            : {{optimisation["spawn_predictor_as_background_thread"]}}, 
+  "spawn_amr_background_threads"                    : {{optimisation["spawn_amr_background_threads"]}}, 
+  "disable_vertex_exchange_in_time_steps"           : {{optimisation["disable_vertex_exchange_in_time_steps"]}}, 
+  "time_step_batch_factor"                          : {{optimisation["time_step_batch_factor"]}}, 
+  "disable_metadata_exchange_in_batched_time_steps" : {{optimisation["disable_metadata_exchange_in_batched_time_steps"]}}, 
+  "double_compression"                              : {{optimisation["double_compression"]}}, 
+  "spawn_double_compression_as_background_thread"   : {{optimisation["spawn_double_compression_as_background_thread"]}} 
+  }
+{% endif %}
+  "solvers" : {[
+{% for solver in data["root"]["solvers"] %}
+    "name" :
+    "type" :
+{% if "aderdg_kernel" in solver %}
+    "aderdg_kernel" : {
+      "implementation" :
+      "adjust_solution" :
+      "allocate_temporary_arrays" : 
+      "space_time_predictor" : {
+          "notimeavg" : 
+          "maxpicarditer" :
+          "cerkguess" :
+      }
+      "optimised_kernel_debugging" : 
+      "terms" : 
+      "optimised_terms" : 
+      "language" : 
+      "nonlinear" :
+      "basis" : 
+    }
+{% if "fv_kernel" in solver %}
+    "fv_kernel" : {
+      "implementation" : 
+      "adjust_solution" : 
+      "allocate_temporary_arrays" : 
+      "terms" : 
+      "language" : 
+      "scheme" : 
+    }
+{% endif %}
+    "variables" : 
+{% if "material_parameters" in solver %}
+    "material_parameters" :
+{% endif %}
+{% if "point_sources" in solver %}
+    "point_sources" :
+{% endif %}
+{% if "point_sources" in solver %}
+  "global_observables" :
+{% endif %}
+    "maximum_mesh_size" :
+    "maximum_mesh_depth" :
+    "order" : 
+    "patch_size" :
+    "halo_cells" :
+    "regularised_fine_grid_levels" :
+    "limiter" : {
+      "implementation" : 
+      "dmp_observables" : 
+      "dmp_relaxation_parameter" :
+      "dmp_difference_scaling" : 
+      "helper_layers" : 
+      "steps_till_cured" :
+    }
+    "time_stepping" :
+    "plotters" : {[
+{%   for plotter in solver["plotters"] %}
+          "name" :
+          "type" :
+          "output" :
+          "variables" :
+          "repeat" :
+          "time" :
+          "select" :
+{%   endfor %}        
+    ]}
+{% endfor %}
+  ]}
+}

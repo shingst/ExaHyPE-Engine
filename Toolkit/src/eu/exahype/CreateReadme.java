@@ -46,6 +46,8 @@ public class CreateReadme {
   //---------------
   
   public void writeReadme(String outputPath) {
+    if(!valid)
+      return; // don't try to write if not valid
     try {      
       final TemplateEngine templateEngine = new TemplateEngine();
       final Context context = new Context();
@@ -54,6 +56,7 @@ public class CreateReadme {
       final String solverPartTemplate = IOUtils.convertRessourceContentToString("eu/exahype/readmeTemplates/solverPart.template");
       final List<String> renderedSolversPart = new LinkedList<String>();
       for(Context solverContext : solversContexts) {
+        fillMissingContextValues(solverContext);
         renderedSolversPart.add(templateEngine.render(solverPartTemplate, solverContext));
       }
       context.put("solverParts", renderedSolversPart);
@@ -72,5 +75,26 @@ public class CreateReadme {
       exc.printStackTrace();
       valid = false;
     }
+  }
+  
+  // fill the context with default value if not already set
+  private void fillMissingContextValues(Context context) {
+    //boolean
+    context.putIfNotSet("enableProfiler"        , false);
+    context.putIfNotSet("hasConstants"          , false);
+    context.putIfNotSet("isLinear"              , false);
+    context.putIfNotSet("useFlux"               , false);
+    context.putIfNotSet("useFluxVect"           , false);
+    context.putIfNotSet("useSource"             , false);
+    context.putIfNotSet("useFusedSource"        , false);
+    context.putIfNotSet("useFusedSourceVect"    , false);
+    context.putIfNotSet("useNCP"                , false);
+    context.putIfNotSet("usePointSources"       , false);
+    context.putIfNotSet("useMaterialParam"      , false);
+    context.putIfNotSet("noTimeAveraging"       , false);
+    context.putIfNotSet("patchwiseAdjust"       , false);
+    context.putIfNotSet("tempVarsOnStack"       , false);
+    context.putIfNotSet("useMaxPicardIterations", false);
+    context.putIfNotSet("countFlops"            , false);
   }
 }

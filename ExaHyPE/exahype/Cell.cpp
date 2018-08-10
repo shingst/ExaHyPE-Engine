@@ -361,11 +361,9 @@ int exahype::Cell::countListingsOfRemoteRankAtInsideFace(
   return result;
 }
 
-bool exahype::Cell::hasToCommunicate(
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const {
+bool exahype::Cell::hasToCommunicate( const int level ) const {
   return
-      tarch::la::allSmallerEquals(
-          cellSize,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers());
+      level >= exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
 }
 
 // MASTER->WORKER

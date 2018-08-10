@@ -10,10 +10,10 @@ ensure that you set all environment variables before:
 
   export SHAREDMEM=TBB                  Use Intel's Threading Building Blocks (TBB) for shared memory parallelisation {% if useSharedMem %}(default with the current specification){% endif %}
   export SHAREDMEM=OMP                  Use OpenMP for shared memory parallelisation
-  export SHAREDMEM=None                 Do not use shared memory {% if !useSharedMem %}(default){% endif %}
+  export SHAREDMEM=None                 Do not use shared memory {% if not useSharedMem %}(default){% endif %}
 
   export DISTRIBUTEDMEM=MPI             Use MPI {% if useDistributedMem %}(default with the current specification){% endif %}
-  export DISTRIBUTEDMEM=None            Do not use MPI {% if !useDistributedMem %}(default){% endif %}
+  export DISTRIBUTEDMEM=None            Do not use MPI {% if not useDistributedMem %}(default){% endif %}
 
   export TBB_INC=-I...                  Indicate where to find TBB headers (only required if SHAREDMEM=TBB). Please add -I (Linux) prefix to path
   export TBB_SHLIB="-L... -ltbb"        Indicate where to find TBB's shared libraries (only required if SHAREDMEM=TBB). Variable has to comprise both search path and library name

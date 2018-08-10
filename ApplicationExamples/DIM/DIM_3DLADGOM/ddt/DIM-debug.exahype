@@ -1,0 +1,94 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ DIM, Diffuse Interface Method
+
+ */
+exahype-project DIM
+
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/DIM/DIM_3DLADGOM
+  architecture const               = noarch
+
+  computational-domain
+    dimension const         = 3
+    width                   = 28000.0, 28000.0, 10000.0
+    offset                  = -14000.0, -14000.0, -5000.0
+    end-time                = 2.0
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:1}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:4}
+    buffer-size              = 64
+    timeout                  = 1200
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps                          = on
+    fuse-algorithmic-steps-factor                   = 0.99
+    spawn-predictor-as-background-thread            = on
+    spawn-amr-background-threads                    = off
+    disable-vertex-exchange-in-time-steps           = on
+    time-step-batch-factor                          = 1.0
+    disable-metadata-exchange-in-batched-time-steps = on
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread   = on
+  end global-optimisation
+
+  solver Limiting-ADER-DG DIMSolver
+    /* gamma is actually parts of a matrix... */
+    variables const                = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
+    order const                    = 3
+    maximum-mesh-size              = 5000.0
+    maximum-mesh-depth             = 2
+    time-stepping                  = global
+    type const                     = nonlinear
+    terms const                    = flux,ncp
+    optimisation const             = generic
+    language const                 = C
+    limiter-type const             = musclhancock
+    limiter-optimisation const     = generic
+    limiter-language const         = C
+    dmp-observables  const         = 0
+    dmp-relaxation-parameter       = 1e+3 
+    dmp-difference-scaling         = 1e+4 
+    steps-till-cured               = 5
+    // helper-layers               = 2
+
+     plot user::defined TecplotWriter
+       variables const = 14
+       time            = 10.0
+       repeat          = 0.05
+       output          = ./output/tecplot
+     end plot
+     
+     plot Peano::Cartesian::vertices::ascii PrimitiveWriter
+       variables const = 14
+       time            = 10.0
+       repeat          = 10.0
+       output          = ./peano-output/primitives
+     end plot
+
+  end solver
+end exahype-project

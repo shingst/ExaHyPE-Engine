@@ -301,8 +301,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * \note isInside() is not necessarily consistent on receivedCell from receiveDataFromMaster and
    * on localCell in mergeWithWorker and thus ignored here.
    */
-  bool hasToCommunicate(
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;
+  bool hasToCommunicate( const int level ) const;
 
   /**
    * Count the listings of remote ranks sharing an inside vertex

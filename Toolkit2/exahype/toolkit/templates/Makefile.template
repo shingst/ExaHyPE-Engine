@@ -22,54 +22,54 @@ PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH={{peanoToolboxPath}}/sharedmemoryoracles
 PEANO_TOOLBOX_MPI_BLANCING_PATH={{peanoToolboxPath}}/mpibalancing
 EXAHYPE_PATH={{exahypePath}}
 PROJECT_PATH={{outputPath}}
-EXECUTABLE={{executableName}}
+EXECUTABLE=ExaHyPE-{{project}}
 
 PROJECT_CFLAGS+= -DDim{{dimensions}}
 
-{%- if architecture != "noarch" %}
+{% if architecture != "noarch" %}
 ARCHITECTURE={{architecture}}
 PROJECT_CFLAGS+= -DALIGNMENT={{alignment}}
-{%- else %}
+{% else %}
 ARCHITECTURE=CPU
-{%- endif %}
+{% endif %}
 
 # Default options required by the specification file
-{%- if useSharedMem %}
+{% if useSharedMem %}
 ifeq ($(SHAREDMEM),)
     SHAREDMEM=TBB
 endif
-{%- endif %}
-{%- if useDistributedMem %}
+{% endif %}
+{% if useDistributedMem %}
 ifeq ($(DISTRIBUTEDMEM),)
     DISTRIBUTEDMEM=MPI
 endif
-{%- endif %}
-{%- if useFortran %}
+{% endif %}
+{% if useFortran %}
 ifeq ($(MIXEDLANG),)
     MIXEDLANG=Yes
 endif
-{%- endif %}
-{%- if useOptKernel %}
+{% endif %}
+{% if useOptKernel %}
 PROJECT_CFLAGS += -DOPT_KERNELS
 ifneq ($(call tolower,$(MODE)),release)
 ifneq ($(call tolower,$(MODE)),)
     PROJECT_CFLAGS += -DTEST_OPT_KERNEL
 endif
 endif
-{%- endif %}
+{% endif %}
 
-{%- if useLikwid %}
+{% if useLikwid %}
 # Lib include for the profiler
 PROJECT_CFLAGS+= -DLIKWID_AVAILABLE
 PROJECT_CFLAGS+= -I{{likwidInc}}
 PROJECT_LFLAGS+= $(LIKWID_LIB)
-{%- endif %}
-{%- if useIpcm %}
+{% endif %}
+{% if useIpcm %}
 # Lib include for the profiler
 PROJECT_CFLAGS+= -DIPCM_AVAILABLE
 PROJECT_CFLAGS+= -I{{ipcmInc}}
 PROJECT_LFLAGS+= -L{{ipcmLib}} -lintelpcm
-{%- endif %}
+{% endif %}
 
 
 # Main Makefile include

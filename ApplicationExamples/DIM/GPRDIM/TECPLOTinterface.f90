@@ -7,7 +7,7 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	integer :: limiter
 	lx0_3(1:nDim)=lx0
 	ldx_3(1:nDim)=ldx
-	CALL ElementTECPLOTPLOTTER(wh,lx0,ldx,limiter)
+	CALL ElementTECPLOTPLOTTER(wh,lx0_3,ldx_3,limiter)
 END SUBROUTINE ElementCallTECPLOTPLOTTER
 
 RECURSIVE SUBROUTINE InitializeTECPLOTPLOTTER(time)

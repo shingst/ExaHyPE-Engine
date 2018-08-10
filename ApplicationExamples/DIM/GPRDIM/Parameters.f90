@@ -20,10 +20,13 @@
 #elif defined(Dim2)
     INTEGER, PARAMETER             	:: nDim = 2                   ! The number of space dimensions
 #endif
-	CHARACTER(LEN=20), PARAMETER	:: ICType='StiffInclusion'
-    INTEGER, PARAMETER             	:: nAux = 0!8
+	!CHARACTER(LEN=20), PARAMETER	:: ICType='StiffInclusion'
+	!CHARACTER(LEN=20), PARAMETER	:: ICType='DRupture'
+	CHARACTER(LEN=20), PARAMETER	:: ICType='SSCRACK'
+    INTEGER, PARAMETER             	:: nAux = 8
 	INTEGER, PARAMETER             	:: nVar = 24                           ! The number of variables of the PDE system  
     INTEGER, PARAMETER             	:: nLin = 10
 	REAL, PARAMETER             	:: epsilon1 = 1.e-3
 
   END MODULE Parameters  
+ 
