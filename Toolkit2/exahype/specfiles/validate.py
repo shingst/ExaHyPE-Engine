@@ -14,6 +14,8 @@ It will raise an Exception if the file is not valid.
 # python-included ("batteries")
 import sys, json, pathlib
 
+import specfile1_reader
+
 # https://pypi.org/project/jsonschema/
 # Current stable version is 2.6, version 3.0 brings Draft6Validator,
 # but that's still alpha.
@@ -26,37 +28,48 @@ exahype_schema_filename = "../../exahype-specfile.schema.json"
 schema = json.load(pathlib.Path(__file__).parent.joinpath(exahype_schema_filename).open("r"))
 
 def extend_with_default(validator_class):
-	"""
-	JSON-Schema Validator which sets the default values.
-	This is a bit experimental but in genreal it is good practise to have config
-	files which only describe the deviation from reasonable default values.
-	
-	Code comes from https://python-jsonschema.readthedocs.io/en/latest/faq/#why-doesn-t-my-schema-s-default-property-set-the-default-on-my-instance
-	"""	
-	validate_properties = validator_class.VALIDATORS["properties"]
+  """
+  JSON-Schema Validator which sets the default values.
+  This is a bit experimental but in genreal it is good practise to have config
+  files which only describe the deviation from reasonable default values.
+  
+  Code comes from https://python-jsonschema.readthedocs.io/en/latest/faq/#why-doesn-t-my-schema-s-default-property-set-the-default-on-my-instance
+  """  
+  validate_properties = validator_class.VALIDATORS["properties"]
 
-	def set_defaults(validator, properties, instance, schema):
-		for property, subschema in properties.items():
-			if "default" in subschema:
-				instance.setdefault(property, subschema["default"])
+  def set_defaults(validator, properties, instance, schema):
+    for property, subschema in properties.items():
+      if "default" in subschema:
+        instance.setdefault(property, subschema["default"])
 
-		for error in validate_properties(
-			validator, properties, instance, schema,
-		):
-			yield error
+    for error in validate_properties(
+      validator, properties, instance, schema,
+    ):
+      yield error
 
-	return validators.extend(
-		validator_class, {"properties" : set_defaults},
-	)
+  return validators.extend(
+    validator_class, {"properties" : set_defaults},
+  )
 
-	
+  
 DefaultValidatingDraft6Validator = extend_with_default(Draft4Validator)
 validator = DefaultValidatingDraft6Validator(schema)
 
 def validate(json_filename_or_file):
-	if not hasattr(json_filename_or_file, "read"):
-		json_filename_or_file = open(json_filename_or_file, "r")
-	
-	input_structure = json.load(json_filename_or_file)
-	validator.validate(input_structure)
-	return input_structure
+  if not hasattr(json_filename_or_file, "read"): # is a file name then
+    json_filename_or_file = open(json_filename_or_file, "r")
+  input_structure = json.load(json_filename_or_file)
+  validator.validate(input_structure)
+  return input_structure
+  
+def validate_specfile1(specfile1_filename_or_file):
+  if hasattr(specfile1_filename_or_file, "read"): # is a file name then
+    specfile1_filename_or_file.close()
+  input_structure = specfile1_reader.SpecFile1Reader().read(specfile1_filename_or_file)
+  print("Reading legacy ExaHyPE specification file format... OK")
+  print("Translating file to JSON format ... OK")
+  print("Result:")
+  print(json.dumps(input_structure,indent=2))
+  validator.validate(input_structure)
+  return input_structure
+  

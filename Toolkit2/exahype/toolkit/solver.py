@@ -25,7 +25,7 @@ class SolverGenerator(generator.Generator):
 		nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
 		nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
 		nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
-		nPointSources = len(solver["point_sources"])
+		nPointSources = len(solver.get("point_sources",[]))
 		
 		context["numberOfVariables"]          = nVar
 		context["numberOfMaterialParameters"] = nParam

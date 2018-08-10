@@ -5,6 +5,7 @@ This mimics the classical Frontend of the ExaHyPE toolkit.
 """
 
 import os, sys, argparse, subprocess, datetime
+
 from os.path import isdir, isfile
 from pathlib import Path
 from collections import OrderedDict
@@ -12,11 +13,10 @@ from collections import OrderedDict
 sys.path.append(os.path.join(os.path.dirname(__file__),"..","..")) # to allow import exahype... work
 from exahype.toolkit import *
 from exahype.toolkit.helper import BadSpecificationFile
-from exahype.specfiles import validate
+from exahype.specfiles import validate,validate_specfile1
 
 from models import *
 from configuration import Configuration
-
 
 class Controller():
     def header(self):
@@ -169,7 +169,11 @@ class Controller():
         against the JSON-Schema and returns the native python data structure,
         enriched with default values from the schema.
         """
-        specification = validate(specfile_name)
+        specification=""
+        if specfile_name.endswith(".exahype"):
+          specification = validate_specfile1(specfile_name)
+        else:
+          specification = validate(specfile_name)
         return specification
     
     

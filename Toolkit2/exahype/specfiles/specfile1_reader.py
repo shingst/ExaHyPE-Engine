@@ -139,7 +139,6 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_computational_domain(self,domain):
-    print("pre: "+str(domain))
     for option in ["offset","width"]:
       token = domain.pop(option)
       domain[option]=[]
@@ -207,8 +206,8 @@ class SpecFile1Reader():
     opt     = "optimised_terms"
     opt_dbg = "optimised_kernel_debugging"
     context[stp]=collections.OrderedDict()
-    context[opt]=collections.OrderedDict()
-    context[opt_dbg]=collections.OrderedDict()
+    context[opt]=[]
+    context[opt_dbg]=[]
     for token in kernel_opts.split(","):
       token_s = token.strip() 
       for term in ["generic","optimised","user"]:
