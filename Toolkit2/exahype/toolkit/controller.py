@@ -97,9 +97,10 @@ class Controller():
         
         try:
             # kernel calls
-            k = kernelcalls.KernelCallsGenerator(self.spec, self.specfileName, self.verbose)
-            k.generate_solver_registration()
-        except BadSpecificationFile as e:
+            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext())
+            pathToKernelCalls = kernelCalls.generateCode()
+            print("Generated "+pathToKernelCalls)
+        except Exception as e:
             print("Could not create ExaHyPE's kernel calls")
             print(e)
             sys.exit(-10)
@@ -207,6 +208,40 @@ class Controller():
                 useFortran   = useFortran or solver["fv_kernel"].get("language","C")=="Fortran"
         context["useOptKernel"] = useOptKernel
         context["useFortran"]   = useFortran
+        
+        return context
+    
+    def buildKernelCallsContext(self):
+        """Generate context for the KernelCalls model"""
+        context = self.buildBaseContext()
+        
+        context["solvers"] = []
+        plotter_subdirectory = self.spec["paths"].get("plotter_subdirectory","").strip()
+        for solver in self.spec.get("solvers",[]):
+            solverContext = {}
+            solverContext["name"] = solver["name"]
+            solverContext["type"] = solver["type"]
+            solverContext["class"] = context["project"]+"::"+solver["name"]
+            solverContext["headerPath"] = solver["name"]+".h"
+            solverContext["variables_as_str"]            = helper.variables_to_str(solver,"variables")
+            solverContext["material_parameters_as_str"]  = helper.variables_to_str(solver,"material_parameters")
+            solverContext["global_observables_as_str"]   = helper.variables_to_str(solver,"global_observables")
+            solverContext["plotters"] = []
+            for plotter in solver.get("plotters",[]):
+                plotterContext = {}
+                plotterContext["headerPath"]      = os.path.join(plotter_subdirectory, plotter["name"]+".h" )
+                plotterContext["type_as_str"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
+                plotterContext["variables_as_str"] = helper.variables_to_str(plotter,"variables")
+                solverContext["plotters"].append(plotterContext)
+            context["solvers"].append(solverContext)
+        
+        context["specfileName"]        = self.specfileName
+        context["spec_file_as_hex"] = "0x2F" # todo(Sven) do the conversion
+        context["subPaths"]         = []
+        # todo(JM) optimised kernels subPaths
+        # todo(JM) profiler 
+        # todo(Sven) serialised spec file compiled into KernelCalls.cp
+        context["includePaths"] = []
         
         return context
     
