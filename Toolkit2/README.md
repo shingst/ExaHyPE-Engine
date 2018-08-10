@@ -6,6 +6,12 @@ specification file language.
 The need for that was finally raised by memory limitations of SableCC, as discussed
 in https://gitlab.lrz.de/exahype/ExaHyPE-Engine/issues/237
 
+To use it:
+
+```
+python3 Toolkit2/exahype/toolkit MySpecFile.exahype2
+```
+
 ## Requirements/Dependencies
 
 * Python3
