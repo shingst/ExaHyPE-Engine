@@ -79,9 +79,10 @@ class Controller():
         try:
             d = directories.DirectoryAndPathChecker(self.spec, self.verbose)
         except BadSpecificationFile as e:
-            print("Some directories did not exist and/or could not be created.")
-            print("Error message: ", e)
-            print("Failure due to bad specificaiton file, cannot continue")
+            print("ERROR: Some directories did not exist and/or could not be created.", file=sys.stderr)
+            print("ERROR: Message: %s" % e, file=sys.stderr)
+            print("ERROR: Failure due to bad specificaiton file, cannot continue", file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-4)
         
         self.wait_interactive("validated and configured pathes")
@@ -90,8 +91,9 @@ class Controller():
             s = solver.SolverGenerator(self.spec, self.specfileName, self.verbose)
             s.generate_all_solvers()
         except BadSpecificationFile as e:
-            print("Could not create applications solver classes.")
-            print(e)
+            print("ERROR: Could not create applications solver classes.", file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-6)
         
         self.wait_interactive("generated application-specific solver classes")
@@ -102,8 +104,9 @@ class Controller():
             pathToKernelCalls = kernelCalls.generateCode()
             print("Generated "+pathToKernelCalls)
         except Exception as e:
-            print("Could not create ExaHyPE's kernel calls")
-            print(e)
+            print("ERROR: Could not create ExaHyPE's kernel calls", file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-10)
             
         self.wait_interactive("generated computational kernel calls")
@@ -124,8 +127,9 @@ class Controller():
             makefileMessage = makefile.getOutputMessage()
             print("Generated "+pathToMakefile)
         except Exception as e:
-            print("Could not create application-specific Makefile")
-            print(e)
+            print("ERROR Could not create application-specific Makefile", file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-10)
         
         self.wait_interactive("generated application-specific Makefile")
@@ -159,8 +163,9 @@ class Controller():
         try:
             return self.load(self.specfileName)
         except Exception as e:
-            print("Could not properly read specfile")
-            print(e)
+            print("ERROR: Could not properly read specfile",file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-3)
     
     

@@ -78,7 +78,7 @@ class SpecFile1Reader():
     integers=[\
       "dimension",\
       "time_steps",\
-      "buffersize",\
+      "buffer_size",\
       "timeout",\
       "cores",\
       "order",\
@@ -99,12 +99,15 @@ class SpecFile1Reader():
       "dmp_relaxation_parameter",\
       "dmp_difference_scaling"\
     ]
-    if option in integers:
-      return int(value)
-    elif option in numbers:
-      return float(value)
-    else:
-      return value
+    try:
+      if option in integers:
+        return int(value)
+      elif option in numbers:
+        return float(value)
+      else:
+        return value 
+    except:
+      return value # let the JSON schema validation deal with the error handling
 
   ## 
   # Convert ini file as created by method `spec_file_1_to_ini` to nested list of dict - dist of list structure.
@@ -147,12 +150,12 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_distributed_memory(self,distributed_memory):
-    distributed_memory["load_balancing_type"]=context["distributed_memory"].pop("identifier")
-    distributed_memory["buffer_size"]        =context["distributed_memory"].pop("buffersize")
+    distributed_memory["load_balancing_type"]=distributed_memory.pop("identifier").replace("_load_balancing","")
+    distributed_memory["buffer_size"]        =distributed_memory.pop("buffer_size")
     # configure
     configure = distributed_memory.pop("configure")
-    m_ranks_per_node          = re.search(r"(^|,|\s)ranks-per-node:([0-9]+)",configure)
-    m_primary_ranks_per_node  = re.search(r"(^|,|\s)primary-ranks-per-node:([0-9]+)",configure)
+    m_ranks_per_node          = re.search(r"(^|,|\s)ranks_per_node:([0-9]+)",configure)
+    m_primary_ranks_per_node  = re.search(r"(^|,|\s)primary_ranks_per_node:([0-9]+)",configure)
     m_node_pool_strategy      = re.search(r"(hotspot|FCFS|sfc_diffusion)",configure)
     m_load_balancing_strategy = re.search(r"(fair|greedy_naive|greedy_regular)",configure)
     if m_ranks_per_node:
@@ -167,7 +170,7 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_shared_memory(self,shared_memory):
-    shared_memory["autotuning_strategy"]=context["shared_memory"].pop("identifier")
+    shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
     # configure
     configure = shared_memory.pop("configure")
     m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
@@ -270,7 +273,7 @@ class SpecFile1Reader():
   # TODO
   def map_constants(self,constants):
     result=[]
-    it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",variables)
+    it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",constants)
     for m in it:
       result.append({ m.group(2) : m.group(3) }) 
     if result:
@@ -299,7 +302,7 @@ class SpecFile1Reader():
     if "optimisation" in context:
       for option in context["optimisation"]:
         if context["optimisation"][option] in ["on","off"]:
-          context["optimisation"][option]="false" if context["optimisation"][option]=="off" else "true"
+          context["optimisation"][option]=False if context["optimisation"][option]=="off" else True
     if "distributed_memory" in context:
       self.map_distributed_memory(context["distributed_memory"])  
     if "shared_memory" in context:
@@ -376,7 +379,8 @@ class SpecFile1Reader():
         if token_s in ["godunov","musclhancock"]:
           solver["fv_kernel"]["scheme"]=token_s
       # fv opts
-      solver["fv_kernel"].update(self.map_fv_kernel_opts(aderdg_kernel_opts))
+      if "fv_kernel" in solver: 
+        solver["fv_kernel"].update(self.map_fv_kernel_opts(fv_kernel_opts))
       
       # variables, parameters, and more
       solver["variables"]=self.map_variables(solver.pop("variables"))

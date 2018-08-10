@@ -736,7 +736,7 @@
           "time_stepping": {
             "type": "string", 
             "default": "global",
-            "enum": ["global","local"],
+            "enum": ["global","globalfixed"],
             "scope": "run-time",
             "old_format": { "token_after": "time-stepping" }
           },
@@ -818,15 +818,21 @@
                   ]
                 },
                 "parameters": {
-                  "type": "object",
                   "title": "Free runtime parameters for postprocessing-codes. This should actually be merged into the select statement.",
-                  "scope": "run-time"
+                  "scope": "run-time",
+                  "anyOf" : [
+                    { "type" : "object" },
+                    { "type" : "array" }
+                  ]
                 }
               }
             }
           }, 
           "parameters": {
-            "type": "object",
+            "anyOf" : [
+              { "type" : "object" },
+              { "type" : "array" }
+            ],
             "$comment": "Should be named constants, as in the specfiles! Or runtime-constants, or user-constants.",
             "title": "Free runtime parameters, however compile-time in terms of parameters support to be compiled in by toolkit",
             "scope": "compile-time"
