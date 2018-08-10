@@ -734,8 +734,9 @@
 					"time_stepping": {
 						"type": "string", 
 						"default": "global",
-						"enum": ["global","local","whatever"],
-						"scope": "run-time"
+						"enum": ["global","local"],
+						"scope": "run-time",
+						"old_format": { "token_after": "time-stepping" }
 					},
 					"plotters": {
 						"$comment": "Each solver has an ordered list of plotters assigned. The order and name of plotters is a compile time constant",
@@ -824,6 +825,7 @@
 					}, 
 					"parameters": {
 						"type": "object",
+						"$comment": "Should be named constants, as in the specfiles! Or runtime-constants, or user-constants.",
 						"title": "Free runtime parameters, however compile-time in terms of parameters support to be compiled in by toolkit",
 						"scope": "compile-time"
 					}

@@ -5,8 +5,9 @@
 #
 
 from __future__ import print_function
-import re, numbers, logging, inspect, json, pprint, argparse, sys, collections, itertools
+import re, numbers, logging, inspect, json, pprint, argparse, sys, collections, itertools, os
 from collections import namedtuple
+from pprint import pformat
 
 from validate import schema # local namepace
 
@@ -21,6 +22,10 @@ def grouper(iterable, n, fillvalue=None):
 	# grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
 	args = [iter(iterable)] * n
 	return itertools.zip_longest(*args, fillvalue=fillvalue)
+
+def isArrayOf(something, someType):
+	return isinstance(something, collections.Iterable) and \
+		all([ isinstance(x, someType) for x in something])
 
 class TokenOrigin(namedtuple("Token", ["name", "line", "col"])): # Parser: token + information where it originates from
 	"Mimics the name it holds."
@@ -159,24 +164,33 @@ class ParserView:
 	This is view on the token stream of the Parser.
 	"""
 
-	def __init__(self, tokens, parser=None):
-		self.tokens = tokens
+	def __init__(self, parser, start=None, stop=None):
 		self.parser = parser
-		if not parser: log.warn("Some methods need parser access.")
+		self.start = start
+		self.stop = stop
+		# for convenience access. May not be fast since it makes a copy of the list...
+		self.tokens = parser.tokens[slice(start,stop)]
 		
 	def __str__(self):
-		return "ParserView(%s)" % str(self.tokens)
+		#return "ParserView(%s,start=%s,stop=%s)" % ("%d Parser tokens" % len(self.parser.tokens), str(self.start), str(self.stop))
+		return "ParserView(%s,%s)" % (str(self.start) if self.start else "",str(self.stop) if self.stop else "")
 	def __repr__(self):
 		return str(self) # whatever
 	
-	def slice(self, start, stop=None):
+	def abs_index(self, index):
+		"""
+		Convert an index relative to the self.tokens to one in the self.parser.
+		"""
+		return index - self.start
+	
+	def copy_slice(self, start, stop=None):
 		if isinstance(start, collections.Iterable):
 			if not isinstance(stop, collections.Iterable):
 				stop = [ stop for x in range(len(start)) ] # bring stop to same shape as start
-			return [ self.slice(a,b) for a,b in zip(start,stop) ] # threaden this function, return a list of ParserViews
+			return [ self.copy_slice(a,b) for a,b in zip(start,stop) ] # threaden this function, return a list of ParserViews
 		else:
-			return ParserView(self.tokens[slice(start,stop)], self.parser)
-	
+			return ParserView(self.parser, start, stop)
+		
 	def token_after(self, token, additional_tokens_to_skip=0, start=0):
 		"""
 		Lookup tokens based on a predecessor.
@@ -267,30 +281,15 @@ class ParserView:
 				log.debug("Searching for end %s, found end %s at %d, looking for next end" % (sectionname, endSectionName, endSectionNamePos))
 			else:
 				log.debug("Begin %s at %d, found end %s at %d" % (sectionname, startPos, endSectionName, endSectionNamePos))
-				return TokenPos(sectionname, startPos, endSectionNamePos)
+				return self.copy_slice(startPos, endSectionNamePos)
 		raise TokenNotFound("Found start of section %s but cannot find its end." % sectionname)
 
-	def within_deprecated_section(self, sectionname):
-		"""
-		Try out a sectionname which was superseded. That is, if it does not find anything,
-		this will return the whole parserView without modifications.
-		
-		-> Works, but makes not much sense as a filter if another section is looked up afterwards
-		-> probably deprecated
-		"""
-		try:
-			log.debug("Trying out to look for the deprecated sectionname %s" % sectionname)
-			res = self.within_section(sectionname)
-			return res
-		except TokenNotFound:
-			log.debug("Did not found the deprecated sectionname %s" % sectionname)
-			return TokenPos(None, None, None)
-	
 	def within_one_of_the_sections(self, *sectionnames):
 		for i,sectionname in enumerate(sectionnames):
 			try:
-				log.debug("Trying out different sections %s, currently %d / %d, sectionname %s" % (str(sectionnames), i, len(sectionnames), sectionname))
+				log.debug("Trying out different sections %s, currently %d / %d, sectionname %s" % (str(sectionnames), i+1, len(sectionnames), sectionname))
 				res = self.within_section(sectionname)
+				log.debug("Found %d. section %s at %s" % (i+1, sectionname,res))
 				return res
 			except TokenNotFound:
 				log.debug("Did not found sectionname %s, trying next one from selection" % sectionname)
@@ -312,8 +311,7 @@ class ParserView:
 			except TokenNotFound:
 				break # there is no more section (or none at all)
 		log.debug("Within sections %s gave %s" % (sectionname, str(sections)))
-		#import ipdb; ipdb.set_trace()
-		return TokenPos(*zip(*sections)) # return TokenPos([],[],[])
+		return sections # is a list of ParserViews
 
 	def detect_variable_list_after(self, introduction_token):
 		"""
@@ -337,19 +335,20 @@ class ParserView:
 		# belong to the original standard
 
 		variables = {} # name -> multiplicity
-
 		assert self.parser, "Requires access to the parser for heuristics"
-		token_row = self.parser.coordinateTokens[start]
+		start_token_line = self.parser.coordinateTokens[self.abs_index(start)].line
+		import ipdb; ipdb.set_trace()
 		
 		# Lookup the coordinates of the tokens from the parser
 		# Variant: "variables = foo:3,bar:1,baz:2"
-		for (i,name), (j,multiplicity) in grouper(2, enumerate(self.tokens[start:])):
+		for (i,name), (j,multiplicity) in grouper(enumerate(self.tokens[start:]), n=2):
 			if isinstance(name, str) and isinstance(multiplicity, int):
-				if token_row == self.parser.coordinateTokens[i].line and \
-				   token_row == self.parser.coordinateTokens[j].line:
+				if start_token_line == self.parser.coordinateTokens[self.abs_index(i)].line and \
+				   start_token_line == self.parser.coordinateTokens[self.abs_index(j)].line:
 					variables[name] = multiplicity
 				else:
-					log.warn("In variable list (%s), tokens %s:%d are in different line and therefore we think they no more belong to the variable list" % (introduction_token, name, multiplicity))
+					log.warning("In variable list (%s), tokens %s:%d are in different line (%d instead of %d) and therefore we think they no more belong to the variable list" % \
+						(introduction_token, name, multiplicity, self.parser.coordinateTokens[self.abs_index(i)].line, start_token_line))
 					break
 			else:
 				# the schema no more matches
@@ -361,6 +360,7 @@ class ParserView:
 		"""
 		Maps the first token in the token string according to mapping.
 		"""
+		import ipdb; ipdb.set_trace()
 		pos = 0
 		token = self.tokens[pos]
 		print("Mapping token %s according to mapping %s" % (token, str(mapping)))
@@ -423,34 +423,22 @@ class Mapper:
 			args = [something]
 			kwargs = {}
 		method = getattr(parserView, funcname)
-		log.info("Calling %s(%s,%s) on tokenstream=%s" % (funcname, str(args), str(kwargs), str(parserView)))
+		log.debug("Calling %s.%s(%s,%s)" % (str(parserView), funcname, str(args), str(kwargs)))
 		return method(*args, **kwargs)
 	
-	@staticmethod
-	def lookup(parserViewInstance, instructions_list, schema):
+	def lookup(self, instructions_list, schema):
 		"""
 		Instruction_list will be worked off,
 		Schema only to pass, just in case it is needed.
 		"""
-		parserView = parserViewInstance
+		parserView = self.parserView
 		result = None
 		log.debug("Working on instructions_list = " + str(instructions_list))
 		for instruction in instructions_list:
-			if callable(instruction):
-				# This is a hacky solution where the Mapper code himself injects callable
-				# closures. Such data cannot come from JSON.
-				log.debug("Calling lambda instruction (injected by the Mapper). Will overwrite parserView.")
-				parserView = instruction()
-				continue
-			
-			start = None
-			stop = None
-
 			if not isinstance(instruction, dict):
 				raise ValueError("Instructions must be dictionaries.")
 			if isinstance(parserView, list):
 				raise TypeError("Lists of ParserViews should not be used like that")
-
 
 			callable_funcnames = [funcname for funcname in sorted(instruction.keys()) if funcname in list_all_methods(parserView)]
 			
@@ -460,20 +448,18 @@ class Mapper:
 			funcname = callable_funcnames[0]
 			ret = Mapper.call(parserView, funcname, instruction[funcname])
 			
-			if not isinstance(ret, TokenPos):
-				raise TypeError("ParserView methods should always return a TokenPos which however might hold arrays.")
-			
-			result, start, stop = ret
-			parserView = parserView.slice(start,stop) # can also be an aray of parserViews at this point
-			
-			log.debug("%s returned %s and new parserView %s" % (funcname, result, str(parserView)))
-			
-			#if isinstance(parserView, collections.Iterable):
-			#	log.warn("parserView is a list, returning directly")
-				# This is because somehow the list property seems to be stripped afte rthe loop and I don't know why.
-			#	return (result, parserView)
+			if isinstance(ret, ParserView) or isArrayOf(ret, ParserView):
+				log.debug("%s returned %s" % (funcname, str(ret)))
+				result = None
+				parserView = ret # can also be an array of parserViews at this point
+			elif isinstance(ret, TokenPos):
+				log.debug("%s returned %s" % (funcname, str(ret)))
+				result, start, stop = ret
+				parserView = parserView.copy_slice(start,stop) # can also be an aray of parserViews at this point
+			else:
+				raise TypeError("ParserView functions are supposed to return TokenPos, ParserView or list of ParserView objects, however %s given" % str(ret))
 
-		log.debug("Lookup returns result,parserView = %s,%s" % (result,parserView))
+		log.debug("lookup() returns result=%s, parserView=%s" % (result,parserView))
 		return (result, parserView)
 		
 	@classmethod
@@ -481,10 +467,10 @@ class Mapper:
 		if not "type" in schema:
 			# sometimes the type is externalized
 			if "properties" in schema and "$ref" in schema["properties"]:
-				log.info("Won't check type of %s since it uses JSON-Pointers and so on. Won't implement.")
+				log.info("Won't check type at %s since it uses JSON-Pointers and so on. Won't implement." % path)
 				return value
 			else:
-				raise ValueError("Expect to work on a schema, but missing 'type'. Got %s" % str(schema))
+				raise ValueError("At path %s, expect to work on a schema, but missing 'type'. Got %s" % (path,str(schema)))
 		
 		if noneIsOkay and not value: # early catch None types
 			return value
@@ -493,7 +479,7 @@ class Mapper:
 		for json_type, python_type in jsontypes.items():
 			if schema["type"] == json_type:
 				if not isinstance(value, python_type):
-					raise ValueError("At %s, expected %s, but got '%s' from the specfile." % (path, json_type, str(value)))
+					raise ValueError("At path %s, expected %s, but got '%s' from the specfile." % (path, json_type, str(value)))
 				
 			# This is very basic recursion, covering only the basics of JSON-Schema.
 			# If you do something fancy in the schema, this will probably fail.
@@ -511,7 +497,8 @@ class Mapper:
 		
 	@staticmethod
 	def join_paths(path, appendix):
-		return "%s/%s" % (str(path), str(appendix))
+		# a bit of what os.path.join would do for us
+		return ("%s/%s" % (str(path), str(appendix))).replace("//","/")
 		
 	def mapSchema(self, schema, instruction_stack=[], path="/", required=None):
 		"""
@@ -524,6 +511,7 @@ class Mapper:
 			required = Required(True, "Root Schema requires value")
 		
 		if "anyOf" in schema or "allOf" in schema:
+			# should actually traverse into those.
 			pass
 		
 		if "old_format_prepend" in schema:
@@ -545,9 +533,9 @@ class Mapper:
 			else:
 				raise ValueError("Don't know what to do with instruction %s" % str(instruction))
 			
-			log.debug("Looking up scalar schema %s" % schema)
+			log.debug("Looking up scalar schema %s" % path)
 			try:
-				value, _ = self.lookup(self.parserView, instruction_stack, schema)
+				value, _ = self.lookup(instruction_stack, schema)
 				log.debug("Got scalar return value %s" % str(value))
 			except TokenNotFound as e:
 				if required.isit():
@@ -555,6 +543,7 @@ class Mapper:
 					log.error("Bad specification file, TokenNotFound by the instructions %s" % str(instruction_stack))
 					raise MapperFailure("Bad specification file, TokenNotFound by the instructions %s" % str(instruction_stack))
 				else:
+					log.debug("Scalar %s not found and not required" % path)
 					# and we even now the reason why this key is not required.
 					# Could store it for debugging.
 					return None
@@ -564,7 +553,7 @@ class Mapper:
 		if "type" in schema:
 			if schema["type"] == "object":
 				if "properties" in schema: # should be there for an object, isn't it?
-					log.debug("Mapping dict-schema %s" % schema)
+					log.debug("Mapping dict-schema %s" % path)
 					return self.notNone({ key: self.mapSchema(
 						subschema, instruction_stack,
 						required=required.copy().append(
@@ -573,39 +562,43 @@ class Mapper:
 						path=self.join_paths(path,key)
 					) for key, subschema in schema["properties"].items() })
 				else:
-					log.logInfo("Don't know what to do with object %s" % str(schema))
+					log.info("No properties in dict-schema at %s, don't know what to do with it." % path)
 					return None
 
 			if schema["type"] == "array":
-				if "items" in schema: # should be there for an array
-					log.debug("Mapping array-schema %s" % schema)
-					# We need some knowledge how much items there are awaited.
-					# The evaluation of the current instruction stack can tell us
-					# that, since it should return an array of mappers
-					result, parserViews = self.lookup(self.parserView, instruction_stack, schema)
-					if not result:
+				if "items" in schema:
+					if "old_format_prepend" in schema: # can map this array
+						log.debug("Mapping array-schema %s" % path)
+						# We need some knowledge how much items there are awaited.
+						# The evaluation of the current instruction stack can tell us
+						# that, since it should return an array of mappers
+						result, parserViews = self.lookup(instruction_stack, schema)
+						if not isArrayOf(parserViews, ParserView):
+							raise MapperFailure("For an array-type schema, expecting the mapping instructions to produce a list of parserViews. However, got %s (and just FYI a result=%s)" % (str(parserViews),str(result)))
+							
+						return self.notNone([ self.mapSchema(
+							schema["items"],
+							#instruction_stack = instruction_stack + [lambda: parserView],
+							# replace the instruction stack by the injected parserView, not using lambdas
+							instruction_stack = [ { "copy_slice": [ parserView.start, parserView.stop ] } ],
+							path=self.join_paths(path,i)
+						) for i,parserView in enumerate(parserViews)])
+					else:
+						log.info("Cannot map the array %s since it lacks a size indicator given by old_format_prepend." % path)
 						return None
 					
-					if not isinstance(parserViews, collections.Iterable):
-						raise MapperFailure("For an array-type schema, expecting the mapping instructions to produce a list of parserViews. However, got (%s,%s)" % (str(result), str(parserViews)))
-						
-					return self.notNone([ self.mapSchema(
-						schema["items"],
-						instruction_stack + [lambda: parserView],
-						path=self.join_paths(path,i)
-					) for i,parserView in enumerate(parserViews)])
 		
 			if schema["type"] in ["integer", "number","boolean", "string"]:
 				return None # no instruction how to map this native type
 		# sometimes the type is externalized
 		elif "properties" in schema and "$ref" in schema["properties"]:
-			log.info("Schema %s is currently not supported as it uses JSON-Pointers and so on.")
+			log.info("Schema at %s is currently not supported as it uses JSON-Pointers and so on." % path)
 			return None
 
 		
 		# The requirement detection will be wrong if the requirement is part of an "anyOf" or similar.
 		# This is because we don't want to implement a code which really understands JSON-Schema.
-		raise ValueError("Cannot understand this schema: %s. It is assumably required (%s)." % (str(schema),str(required)))
+		raise ValueError("Cannot understand schema at %s. It is assumably required (%s).\nSchema content is:\n%s" % (path, str(required),pformat(schema)))
 
 	# open tasks:
 	# 1) Deal with returning None's in structures
@@ -664,7 +657,7 @@ class Frontend:
 			else:
 				log.fatal(str(e))
 		
-		mapper = Mapper(parser.tokens, parser)
+		mapper = Mapper(parser)
 		
 		if args.shell:
 			self.start_interactive(parser,mapper)
