@@ -11,6 +11,7 @@ from collections import OrderedDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__),"..","..")) # to allow import exahype... work
 from exahype.toolkit import *
+from exahype.toolkit.helper import BadSpecificationFile
 from exahype.specfiles import validate
 
 from exahype.toolkit.makefile import *
@@ -99,7 +100,7 @@ class Controller():
             sys.exit(-3)
         
         try:
-            d = DirectoryAndPathChecker(spec, self.verbose)
+            d = directories.DirectoryAndPathChecker(spec, self.verbose)
         except BadSpecificationFile as e:
             print("Some directories did not exist and/or could not be created.")
             print("Error message: ", e)
@@ -109,7 +110,7 @@ class Controller():
         self.wait_interactive("validated and configured pathes")
         
         try:
-            s = SolverGenerator(spec, args.specfile.name, self.verbose)
+            s = solver.SolverGenerator(spec, args.specfile.name, self.verbose)
             s.generate_all_solvers()
         except BadSpecificationFile as e:
             print("Could not create applications solver classes.")
@@ -120,7 +121,7 @@ class Controller():
         
         try:
             # kernel calls
-            k = KernelCallsGenerator(spec, args.specfile.name, self.verbose)
+            k = kernelcalls.KernelCallsGenerator(spec, args.specfile.name, self.verbose)
             k.generate_solver_registration()
         except BadSpecificationFile as e:
             print("Could not create ExaHyPE's kernel calls")
