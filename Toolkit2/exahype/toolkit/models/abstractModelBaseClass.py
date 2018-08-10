@@ -69,10 +69,10 @@ class AbstractModelBaseClass():
         if context == None:
             context = self.context
             
-        if not "paths" in context or not "output_directory" in context["paths"]:
-            raise ValueError("couldn't find output_path")
+        if not "outputPath" in context:
+            raise ValueError("couldn't find outputPath in context")
         
-        absolutePath = os.path.join(os.path.dirname(__file__), "..", Configuration.pathToExaHyPERoot, context["paths"]["output_directory"], outputFilename)
+        absolutePath = os.path.join(os.path.dirname(__file__), "..", Configuration.pathToExaHyPERoot, context["outputPath"], outputFilename)
         canonicalPath = os.path.realpath(absolutePath)
         with open(canonicalPath, "w") as output:
             output.write(self.renderAsString(templateName, context))

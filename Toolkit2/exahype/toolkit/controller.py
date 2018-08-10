@@ -14,8 +14,8 @@ from exahype.toolkit import *
 from exahype.toolkit.helper import BadSpecificationFile
 from exahype.specfiles import validate
 
-from exahype.toolkit.makefile import *
 from models import *
+from configuration import Configuration
 
 
 class Controller():
@@ -178,7 +178,7 @@ class Controller():
         # outputPath for generated file
         context["outputPath"] = self.spec["paths"]["output_directory"]
         # commonly used values
-        context["dimensions"] = self.spec["computational_domain"]["dimensions"]
+        context["dimensions"] = self.spec["computational_domain"]["dimension"]
         context["project"] = self.spec["project_name"]
         context["exahypePath"] = self.spec["paths"]["exahype_path"]
         context["peanoToolboxPath"] = self.spec["paths"]["peano_kernel_path"]
@@ -189,7 +189,7 @@ class Controller():
     
     def buildMakefileContext(self):
         """Generate context for the Makefile model"""
-        context = self.getBaseContext()
+        context = self.buildBaseContext()
         context["useSharedMem"]      = "shared_memory" in self.spec;
         context["useDistributedMem"] = "distributed_memory" in self.spec;
         context["useIpcm"]   = False # TODO
