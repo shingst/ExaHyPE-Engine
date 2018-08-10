@@ -12,6 +12,12 @@
 
 #include "../../../ExaHyPE/kernels/KernelUtils.h"
 
+#ifdef OPT_KERNELS
+#include "kernels/MyElasticWaveSolver/converter.h"
+using namespace Elastic::MyElasticWaveSolver_kernels::aderdg;
+#endif
+
+
 
 tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveSolver" );
 
@@ -853,8 +859,26 @@ for (int j = 0; j < 9; j++)
 }
 
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
-   constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+
+#ifdef OPT_KERNELS
+  double FL[converter::getFFaceGenArraySize()];
+  double FR[converter::getFFaceGenArraySize()];
+  double QL[converter::getQFaceGenArraySize()];
+  double QR[converter::getQFaceGenArraySize()];
+  
+  converter::FFace_optimised2generic(FL_,FL);
+  converter::FFace_optimised2generic(FR_,FR);
+  converter::QFace_optimised2generic(QL_,QL);
+  converter::QFace_optimised2generic(QR_,QR);
+#else
+  double* FL=FL_;
+  double* FR=FR_;
+  const double* QL=QL_;
+  const double* QR=QR_;
+#endif
+
+  constexpr int numberOfVariables  = MyElasticWaveSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
   constexpr int numberOfParameters = MyElasticWaveSolver::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
@@ -1117,6 +1141,12 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
       FR[idx_FLR(i,j, 35)] = -n_p[2]*dp_z*norm_p_qr*(n_p[2]*FR_y + n_p[1]*FR_z);
     }    
   }
+
+#ifdef OPT_KERNELS
+  converter::FFace_generic2optimised(FL,FL_);
+  converter::FFace_generic2optimised(FR,FR_);
+#endif 
+
 }
 
 
