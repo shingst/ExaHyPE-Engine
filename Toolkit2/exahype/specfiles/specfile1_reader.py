@@ -8,8 +8,9 @@ import json
 # 
 # Sample usage:
 #```
-#r = SpecFile1Reader()
-#r.read(path_to_spec_file) 
+# r = SpecFile1Reader()
+# my_json_obj = r.read()
+# my_json_file_content = json.dumps(my_json_ob)
 #
 class SpecFile1Reader():
   def __init__(self):
@@ -166,13 +167,13 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_shared_memory(self,shared_memory):
-   shared_memory["autotuning_strategy"]=context["shared_memory"].pop("identifier")
-   # configure
-   configure = shared_memory.pop("configure")
-   m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
-   if m_background_job_consumers:
+    shared_memory["autotuning_strategy"]=context["shared_memory"].pop("identifier")
+    # configure
+    configure = shared_memory.pop("configure")
+    m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
+    if m_background_job_consumers:
      shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
-   if re.search(r"manual_pinning",configure)!=None:
+    if re.search(r"manual_pinning",configure)!=None:
      shared_memory["manual_pinning"] = True
     
   ##
@@ -276,12 +277,6 @@ class SpecFile1Reader():
       return result
     else
       return [constants]
-
-  ##
-  # TODO
-#  def map_select(kernel_opts):
-#    context = []
-#    if token=
     
   ##
   # Post processes result of `convert_to_dict`, i.e. 
@@ -388,22 +383,31 @@ class SpecFile1Reader():
       
       # plotters
       for j,plotter in enumerate(context["solvers"][i]["plotters"]):
-        
-        
+        context["solvers"][i]["plotters"][j]["variables"]=self.map_variables(context["solvers"][i]["plotters"][j].pop("variables"))
+        if "select" in context["solvers"][i]["plotters"][j]:
+          context["solvers"][i]["plotters"][j]["select"]=self.map_constants(context["solvers"][i]["plotters"][j].pop("select"))
+    
     return context
   
   ##
-  # @return dictionary representing spec file 1 content
-  def read(spec_file_path):
+  # @return dictionary storing spec file 1 content expressed
+  # in terms of a spec file 2 JSON object
+  #
+  # Sample usage:
+  #```
+  # r = SpecFile1Reader()
+  # my_json_obj = r.read()
+  # my_json_file_content = json.dumps(my_json_ob)
+  # ```
+  def read(self,spec_file_path):
     try:
       with open(spec_file_path, "r") as input_file:
         spec_file_1 = input_file.readlines()
     except Exception:
       raise
-    
-    (spec_file_1_ini, n_solvers, n_plotters) = spec_file_1_to_ini(spec_file_1)
+    (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
     
     config = configparser.ConfigParser(delimiters=('='))
     config.read_string(spec_file_1_ini)
     
-    return map_options(convert_to_dict(config,n_solvers,n_plotters))
+    return self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
