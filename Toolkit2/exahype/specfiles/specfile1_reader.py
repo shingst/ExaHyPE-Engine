@@ -261,7 +261,7 @@ class SpecFile1Reader():
       result=[]
       it = re.finditer("(\w+)\s*:\s*([0-9]+)",variables)
       for m in it:
-        result.append({ "name": m.group(1), "multiplicity" : int(m.group(2)) }) 
+        result.append(collections.OrderedDict([ ( "name",m.group(1) ), ( "multiplicity",int(m.group(2)) ) ])) 
       if result:
         return result
       else:
