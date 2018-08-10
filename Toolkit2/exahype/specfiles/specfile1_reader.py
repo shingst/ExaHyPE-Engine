@@ -104,7 +104,7 @@ class SpecFile1Reader():
       return int(value)
     elif option in numbers:
       return float(value)
-    else
+    else:
       return value
 
   ## 
@@ -181,21 +181,21 @@ class SpecFile1Reader():
   #
   # @return tuple consisting of parsed context and the number of point sources
   def map_kernel_terms(self,kernel_terms):
-    n_point_sources
-    context = {}
+    n_point_sources = 0
+    context = []
     for token in kernel_terms.split(","):
-    token_s = token.strip() 
-    for term in ["flux","source","ncp","pointsources","materialparameters"]:
-      if token_s.startswith(terms):
-        context.append(term)
-        if term=="pointsources":
-          try:
-            n_point_sources = int(token_s.split(":")[-1])
-            print("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
-          except:
-            print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
-            sys.exit()
-    return (context,n_point_sources)
+      token_s = token.strip() 
+      for term in ["flux","source","ncp","pointsources","materialparameters"]:
+        if token_s.startswith(term):
+          context.append(term)
+          if term=="pointsources":
+            try:
+              n_point_sources = int(token_s.split(":")[-1])
+              print("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
+            except:
+              print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              sys.exit()
+      return (context,n_point_sources)
   
   ##
   # Converts the "optimisation" string of a ADER-DG and Limiting-ADERDG solver found 
@@ -208,22 +208,22 @@ class SpecFile1Reader():
     context[stp]={}
     context[opt]=[]
     context[opt_dbg]=[]
-    for token in kernel_terms.split(","):
+    for token in kernel_opts.split(","):
       token_s = token.strip() 
       for term in ["generic","optimised","user"]:
         if token_s==term:
           context["implementation"]=term
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
-      if token_s=="usestack"
+      if token_s=="usestack":
         context["allocate_temporary_arrays"]="stack"
-      for term in ["fusedsource","fluxvect","fusedsourcevect"]
+      for term in ["fusedsource","fluxvect","fusedsourcevect"]:
         if token_s==term:
           context[opt].append(term)
     for term in ["converter","flops"]:
         if token_s==term:
           context[opt_debug].append(term)
-    for term in ["cerkguess","notimeavg","maxpicarditer"]
+    for term in ["cerkguess","notimeavg","maxpicarditer"]:
       if token_s.startswith(term):
         if term=="maxpicarditer":
           try:
@@ -240,14 +240,14 @@ class SpecFile1Reader():
   # found in the original spec file
   def map_fv_kernel_opts(self,kernel_opts):
     context = {}
-    for token in kernel_terms.split(","):
+    for token in kernel_opts.split(","):
       token_s = token.strip() 
       for term in ["generic","optimised","user"]:
         if token_s==term:
           context["implementation"]=term
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
-      if token_s=="usestack"
+      if token_s=="usestack":
         context["allocate_temporary_arrays"]="stack"
     return context
   
@@ -263,7 +263,7 @@ class SpecFile1Reader():
         result.append({ "name": m.group(1), "multiplicity" : int(m.group(2)) }) 
       if result:
         return result
-      else
+      else:
         return [variables]
   
   ##
@@ -275,7 +275,7 @@ class SpecFile1Reader():
       result.append({ m.group(2) : m.group(3) }) 
     if result:
       return result
-    else
+    else:
       return [constants]
     
   ##
@@ -290,7 +290,7 @@ class SpecFile1Reader():
   def map_options(self,context):
     # paths, optimisation, distributed_memory, shared_memory
     context["paths"]={}
-    for option in context:
+    for option in list(context.keys()):
       if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory"]:
         context["paths"] = context.pop(option)
     self.map_computational_domain(context["computational_domain"])
@@ -306,8 +306,8 @@ class SpecFile1Reader():
     for i,solver in enumerate(context["solvers"]):
       # kernels
       n_point_sources = 0
-      aderdg_kernel_type, aderdg_kernel_terms, aderdg_kernel_opts  = ""
-      fv_kernel_type, fv_kernel_terms, fv_kernel_opts  = ""
+      aderdg_kernel_type, aderdg_kernel_terms, aderdg_kernel_opts  = "", "", ""
+      fv_kernel_type, fv_kernel_terms, fv_kernel_opts  = "", "", ""
       # aderdg 
       if solver["solver_type"] in ["Limiting-ADER-DG","ADER-DG"]:
           context["solvers"][i]["aderdg_kernel"]={}
@@ -328,15 +328,15 @@ class SpecFile1Reader():
               context["solvers"][i]["aderdg_kernel"]["basis"]=token_s
           # terms
           result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
-          context["solvers"][i]["aderdg_kernel"].update(result)
+          context["solvers"][i]["aderdg_kernel"]["terms"]=result
           # opts
           context["solvers"][i]["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
       # limiter
       if solver["solver_type"]=="Limiting-ADER-DG":
         context["solvers"][i]["limiter"]={}
-        for option in [ "dmp_observables", "dmp_relaxation_parameter", "dmp_difference_scaling", "helper_layers", "steps_till_cured" ]
+        for option in [ "dmp_observables", "dmp_relaxation_parameter", "dmp_difference_scaling", "helper_layers", "steps_till_cured" ]:
           if option in solver:
-            context["solvers"][i]["limiter"][options] = context["solvers"][i].pop(options)
+            context["solvers"][i]["limiter"][option] = context["solvers"][i].pop(option)
         if "implementation" in context["solvers"][i]["aderdg_kernel"]:
           context["solvers"][i]["limiter"]["implementation"]=context["solvers"][i]["aderdg_kernel"]["implementation"]
       # fv
@@ -367,7 +367,7 @@ class SpecFile1Reader():
           context["solvers"][i]["fv_kernel"]["scheme"]=token_s
       # fv terms
       result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
-      context["solvers"][i]["fv_kernel"].update(result)
+      context["solvers"][i]["fv_kernel"]["terms"]=result
       # fv opts
       context["solvers"][i]["fv_kernel"].update(self.map_fv_kernel_opts(aderdg_kernel_opts))
       
