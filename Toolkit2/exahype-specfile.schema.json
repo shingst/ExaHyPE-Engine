@@ -339,7 +339,7 @@
 			"used-by": "toolkit",
 			"$comment": "This could also just be an open object where anything could be stored and content is not enforced by the schema.",
 			"additionalProperties" : false,
-			"old_format_prepend": { "within_section": "optimisation" },
+			"old_format_prepend": { "within_one_of_the_sections": ["global-optimisation", "optimisation"] },
 			"properties": {
 				"fuse_algorithmic_steps": {
 					"type": "boolean", 
@@ -405,7 +405,7 @@
 			"type": "array",
 			"$comment": "Each simulation has an ordered list of solvers assigned",
 			"additionalProperties" : false,
-			"old_format_prepend": { "within_section": "" },
+			"old_format_prepend": { "within_sections": "solver" },
 			"items": {
 				"type": "object", 
 				"additionalProperties" : false,
@@ -461,6 +461,7 @@
 						"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
 						"scope": "compile-time",
 						"used-by": "toolkit",
+						"old_format": { "token_after": { "token": "solver", "additional_tokens_to_skip": 1 } },
 						"examples": [
 							"GRMHDSolver_DG",
 							"HydroSolver",
@@ -472,6 +473,7 @@
 						"title": "The solver type", 
 						"scope": "compile-time",
 						"used-by": "toolkit",
+						"old_format": { "token_after": "solver" },
 						"enum": ["ADER-DG","Finite-Volumes","Limiting-ADER-DG"]
 					},
 					"aderdg_kernel": {
@@ -614,13 +616,15 @@
 						"scope": "compile-time",
 						"used-by": "toolkit",
 						"$comment": "Variables must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"properties" : { "$ref" : "#/definitions/variables" }
+						"properties" : { "$ref" : "#/definitions/variables" },
+						"old_format": { "detect_variable_list_after": "variables" }
 					},
 					"material_parameters": {
 						"scope": "compile-time",
 						"used-by": "toolkit",
 						"$comment": "Material parameters must be ordered, hence an array. Note that {'rho':1,'vel':3,'E':1} is hardly scheme-able",
-						"properties" : { "$ref" : "#/definitions/variables" }
+						"properties" : { "$ref" : "#/definitions/variables" },
+						"old_format": { "detect_variable_list_after": "material-parameters" }
 					}, 
 					"point_sources": {
 						"type" : "array",
@@ -628,17 +632,15 @@
 						"used-by": "toolkit",
 						"$comment": "Specify point source locations",
 						"items" : {
-							"x": {
-								"type": "array",
-								"title": "Point source location",
-								"default": [0.0, 0.0, 0.0],
-								"items": {
-									"type": "number", 
-									"scope": "compile-time"
-								},
-								"minItems": 2,
-								"maxItems": 3
-							}
+							"type": "array",
+							"title": "Point source location",
+							"default": [0.0, 0.0, 0.0],
+							"items": {
+								"type": "number", 
+								"scope": "compile-time"
+							},
+							"minItems": 2,
+							"maxItems": 3
 						}
 					}, 
 					"global_observables": {
@@ -650,18 +652,21 @@
 					"maximum_mesh_size": {
 						"type": "number", 
 						"title": "Minimum size of finest cell in the overall grid",
-						"scope": "run-time"
+						"scope": "run-time",
+						"old_format": { "token_after": "maximum-mesh-size" }
 					},
 					"maximum_mesh_depth": {
 						"type": "integer", 
 						"title": "Maximum number of adaptive refinement levels.",
-						"scope": "run-time"
+						"scope": "run-time",
+						"old_format": { "token_after": "maximum-mesh-depth" }
 					}, 
 					"order": {
 						"type": "integer", 
 						"title": "Approximation order of the scheme",
 						"$comment": "With pure FV, this value is ignored. With Limiter, this value determines the patch_size",
-						"scope": "compile-time"
+						"scope": "compile-time",
+						"old_format": { "token_after": "order" }
 					}, 
 					"patch_size": {
 						"type": "integer", 
@@ -736,20 +741,15 @@
 						"$comment": "Each solver has an ordered list of plotters assigned. The order and name of plotters is a compile time constant",
 						"type": "array",
 						"required": [ "name", "type", "output", "variables", "repeat" ],
+						"old_format_prepend": { "within_sections": "plot" },
 						"items": {
 							"type": "object", 
 							"properties": {
-								"name": {
-									"type": "string", 
-									"title": "Name of the plotter, will be generated as filename and C++ type name (compile-time constant)",
-									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
-									"scope": "compile-time",
-									"used-by": "toolkit"
-								},
 								"type": {
 									"title": "Which plotter device to adopt", 
 									"$comment": "Also refered to as identifier",
 									"scope": "run-time",
+									"old_format": { "token_after": "plot" },
 									"anyOf": [
 										{
 											"type": "string",
@@ -765,6 +765,14 @@
 										"vtk::Cartesian::vertices::ascii",
 										["vtk","Cartesian","vertices","ascii"]
 									]
+								},
+								"name": {
+									"type": "string", 
+									"title": "Name of the plotter, will be generated as filename and C++ type name (compile-time constant)",
+									"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+									"scope": "compile-time",
+									"used-by": "toolkit",
+									"old_format": { "token_after": { "token": "plot", "additional_tokens_to_skip": 1 } }
 								},
 								"output": {
 									"type": "string", 
