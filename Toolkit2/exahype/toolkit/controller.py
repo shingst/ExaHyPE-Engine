@@ -15,6 +15,7 @@ from exahype.toolkit.helper import BadSpecificationFile
 from exahype.specfiles import validate
 
 from exahype.toolkit.makefile import *
+from models import *
 
 
 class Controller():
@@ -51,16 +52,8 @@ class Controller():
     def info(self, msg):
         if self.verbose:
             print(msg)
-            
-    def load(self, specfile_name):
-        """
-        Given a specfile name, it assumes it to be JSON, reads it, validates it
-        against the JSON-Schema and returns the native python data structure,
-        enriched with default values from the schema.
-        """
-        specification = validate(specfile_name)
-        return specification
-            
+    
+    
     def __init__(self):
         # parse command line arguments
         args = self.parseArgs()
@@ -79,6 +72,7 @@ class Controller():
         else:    self.info("Read from stdin (%s)" % str(args.specfile))
         
         self.spec = self.getSpec(args.specfile)
+    
     
     def run(self):
         try:
@@ -123,17 +117,20 @@ class Controller():
         #self.wait_interactive("setup build environment")
         
         try:
-            # kernel calls
-            m = MakefileGenerator(self.spec, self.specfileName, self.verbose)
-            m.generate_makefile()
-        except BadSpecificationFile as e:
-            print("Could not create application-specific makefile")
+            makefile = makefileModel.MakefileModel(self.spec)
+            pathToMakefile = makefile.generateCode() #generate Makefile and get path to it
+            makefileMessage = makefile.getOutputMessage()
+            print("Generated "+pathToMakefile)
+        except Exception as e:
+            print("Could not create application-specific Makefile")
             print(e)
             sys.exit(-10)
         
-        self.wait_interactive("generated application-specific makefile")
+        self.wait_interactive("generated application-specific Makefile")
         
-        
+        print(makefileMessage)
+    
+    
     def parseArgs(self):
         parser = argparse.ArgumentParser(
             description="ExaHyPE's new python-based toolkit",
@@ -153,7 +150,8 @@ class Controller():
             help="The specification file to work on (can be .exahype, .exahype2, .json)")
         
         return parser.parse_args()
-        
+    
+    
     def getSpec(self, specfilePath):
         try:
             return self.load(self.specfileName)
@@ -162,5 +160,12 @@ class Controller():
             print(e)
             sys.exit(-3)
     
-    def generateBaseContexts(self, spec):
-        pass #TODO JMG
+    
+    def load(self, specfile_name):
+        """
+        Given a specfile name, it assumes it to be JSON, reads it, validates it
+        against the JSON-Schema and returns the native python data structure,
+        enriched with default values from the schema.
+        """
+        specification = validate(specfile_name)
+        return specification

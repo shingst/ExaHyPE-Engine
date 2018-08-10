@@ -1,17 +1,3 @@
-{% set executableName    = "ExaHyPE-" + data["project_name"]  %}
-{% set exahypePath       = data["paths"]["exahype_path"]      %}
-{% set peanoToolboxPath  = data["paths"]["peano_kernel_path"] %}
-{% set outputPath        = data["paths"]["output_directory"]  %}
-{% set dimensions        = data["dimensions"]               %}
-{% set architecture      = data["architecture"]             %}
-{% set alignment         = data["alignment"]                %}
-{% set useOptKernel      = data["useOptKernel"]             %}
-{% set useSharedMem      = data["useSharedMem"]             %}
-{% set useDistributedMem = data["useDistributedMem"]        %}
-{% set useFortran        = data["useFortran"]               %}
-{% set useIpcm           = data["useIpcm"]                  %}
-{% set useLikwid         = data["useLikwid"]                %}
-{% set likwidInc         = data["likwidInc"]                %}
 # *********************************************************************************************
 # README
 # *********************************************************************************************
@@ -29,16 +15,16 @@
 # USE_IPO             Off               On, Unsafe                   IPO during compilation (intel only)
 # ******************************************************************************************************
 
-PEANO_KERNEL_PEANO_PATH={{peanoToolboxPath}}/peano
-PEANO_KERNEL_TARCH_PATH={{peanoToolboxPath}}/tarch
-PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH={{peanoToolboxPath}}/multiscalelinkedcell
-PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH={{peanoToolboxPath}}/sharedmemoryoracles
-PEANO_TOOLBOX_MPI_BLANCING_PATH={{peanoToolboxPath}}/mpibalancing
-EXAHYPE_PATH={{exahypePath}}
-PROJECT_PATH={{outputPath}}
-EXECUTABLE={{executableName}}
+PEANO_KERNEL_PEANO_PATH={{paths.peano_kernel_path}}/peano
+PEANO_KERNEL_TARCH_PATH={{paths.peano_kernel_path}}/tarch
+PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH={{paths.peano_kernel_path}}/multiscalelinkedcell
+PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH={{paths.peano_kernel_path}}/sharedmemoryoracles
+PEANO_TOOLBOX_MPI_BLANCING_PATH={{paths.peano_kernel_path}}/mpibalancing
+EXAHYPE_PATH={{paths.exahype_path}}
+PROJECT_PATH={{paths.output_directory}}
+EXECUTABLE=ExaHyPE-{{project_name}}
 
-PROJECT_CFLAGS+= -DDim{{dimensions}}
+PROJECT_CFLAGS+= -DDim{{computational_domain.dimensions}}
 
 {% if architecture != "noarch" %}
 ARCHITECTURE={{architecture}}

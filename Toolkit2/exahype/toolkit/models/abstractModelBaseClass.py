@@ -30,7 +30,7 @@ import sys
 import os
 
 # add path to dependencies
-sys.path.append('..')
+sys.path.append("..")
 from configuration import Configuration
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),"..",Configuration.pathToJinja2))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),"..",Configuration.pathToMarkupsafe))
@@ -46,8 +46,8 @@ class AbstractModelBaseClass():
     Override generateCode to implement your model. 
     """
 
-    def __init__(self, baseContext):
-        self.context = copy.copy(baseContext) # copy the given baseContext as base for the local context
+    def __init__(self, baseContext, verbose=False):
+        self.context = copy.copy(baseContext)
     
     
     def generateCode(self):
@@ -61,11 +61,32 @@ class AbstractModelBaseClass():
     
     # render a template to outputFilename using the given context (default = local context)
     def render(self, templateName, outputFilename, context=None):
+        """Render a template to outputFilename using the given context (local context if none given)
+        
+        Return the path to the generated file
+        """
         # set default context to local context if none given
         if context == None:
             context = self.context
-        loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),'..','templates')))
+            
+        if not "paths" in context or not "output_directory" in context["paths"]:
+            raise ValueError("couldn't find output_path")
+        
+        absolutePath = os.path.join(os.path.dirname(__file__), "..", Configuration.pathToExaHyPERoot, context["paths"]["output_directory"], outputFilename)
+        canonicalPath = os.path.realpath(absolutePath)
+        with open(canonicalPath, "w") as output:
+            output.write(self.renderAsString(templateName, context))
+        
+        return canonicalPath
+    
+    
+    def renderAsString(self, templateName, context=None):
+        """Return a template rendered as a String using the given context (local context if none given)"""
+        # set default context to local context if none given
+        if context == None:
+            context = self.context
+        loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),"..","templates")))
         env = jinja2.Environment(loader=loader, trim_blocks=True, lstrip_blocks=True)
-        template = env.get_template(templateName)                
-        with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
-            output.write(template.render(context))
+        template = env.get_template(templateName)
+        
+        return template.render(context)
