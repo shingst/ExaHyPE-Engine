@@ -129,7 +129,7 @@
           "type": "array",
           "$comment": "A list of metrics",
           "items" : {
-            type : "string"
+            "type" : "string"
           }
         },
         "profiling_output"  : { "type": "string" },
