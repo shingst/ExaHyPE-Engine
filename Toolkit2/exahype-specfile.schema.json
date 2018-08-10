@@ -221,13 +221,13 @@
 					"default": 1,
 					"old_format": { "token_after": "cores" }
 				},
-				"background_job_consumer_threads": {
+				"background_job_consumers": {
 					"type": "integer", 
-					"title": "Number of background job consumer threads to start", 
+					"title": "Number of background job consumer threads to run during a mesh traversal", 
 					"minimum": -2,
 					"exclusiveMinimum": false,
 					"default": 1,
-					"old_format": { "token_after": "background-job-consumer-threads" }
+					"old_format": { "token_after": "background-tasks" }
 				}, 
 				"autotuning_strategy": {
 					"type": "string", 
@@ -235,12 +235,6 @@
 					"enum" : ["dummy","autotuning","autotuning_without_learning","autotuning_without_restart","sampling"],
 					"default": "dummy",
 					"old_format": { "token_after": "identifier" }
-				},
-				"background_tasks": {
-					"$comment": "Used to be a part of 'configure'",
-					"type": "integer",
-					"default": 1,
-					"old_format": { "token_after": "background-tasks" }
 				},
 				"properties_file": {
 					"type": "string", 
