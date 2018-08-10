@@ -321,7 +321,7 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(
     cellDescription.setExtrapolatedPredictorAverages(-1);
 
     // gradient of extrapolated predictor
-    if ( cellDescription.getExtrapolatedPredictorGradient() <= 0) {
+    if ( cellDescription.getExtrapolatedPredictorGradient() >= 0) {
       assertion(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorGradient()));
       assertion(cellDescription.getExtrapolatedPredictorGradient()==-1);
       CompressedDataHeap::getInstance().deleteData(cellDescription.getExtrapolatedPredictorGradient());
@@ -426,7 +426,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
     checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedPredictorAverages(),"getExtrapolatedPredictorAverages()");
 
     // gradients of extrapolated predictor
-    const int gradientSizePerBnd = dataPerBnd * getNumberOfVariables();
+    // TODO(Lukas): Actually only variables, not data!
+    const int gradientSizePerBnd = dataPerBnd * DIMENSIONS;
     cellDescription.setExtrapolatedPredictorGradient( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
 
     // fluctuations
@@ -3161,7 +3162,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   assertion1(DataHeap::getInstance().isValidIndex(p.getFluctuation()),p.toString());
 
   const int dataPerFace = getBndFaceSize();
-  const int gradientDataPerFace = getBndFaceSize() * getNumberOfVariables();
+  const int gradientDataPerFace = getBndFaceSize() * DIMENSIONS;
   const int dofPerFace  = getBndFluxSize();
   double* QIn = DataHeap::getInstance().getData(p.getExtrapolatedPredictor()).data() +
       (faceIndex * dataPerFace);
