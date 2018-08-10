@@ -132,11 +132,11 @@
             type : "string"
           }
         },
-        "profiling_output  : { "type": "string" },
-        "likwid_inc"       : { "type": "string" },
-        "likwid_lib"       : { "type": "string" },
-        "ipcm_inc"         : { "type": "string" },
-        "ipcm_lib"         : { "type": "string" }
+        "profiling_output"  : { "type": "string" },
+        "likwid_inc"        : { "type": "string" },
+        "likwid_lib"        : { "type": "string" },
+        "ipcm_inc"          : { "type": "string" },
+        "ipcm_lib"          : { "type": "string" }
       }
     },
     "architecture": {

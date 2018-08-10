@@ -70,10 +70,44 @@ class SpecFile1Reader():
             spec_file_1_ini += "  "+line.strip()+"\n"
       reads_multiline_comment -= 1 if line.strip().endswith("*/") else 0 
     return (spec_file_1_ini, solver, plotter[0:-1])
+  
+  ##
+  # Tries to convert certain options to the expected type.
+  # Returns string if it fails
+  def convert(self,option,value):
+    integers=[\
+      "dimension",\
+      "time_steps",\
+      "buffersize",\
+      "timeout",\
+      "cores",\
+      "order",\
+      "patch_size",\
+      "maximum_mesh_depth",\
+      "dmp_observables",\
+      "steps_till_cured",\
+      "helper_layers"\
+    ]
+    numbers=[\
+      "end_time",\
+      "maximum_mesh_size",\
+      "time",\
+      "repeat",\
+      "fuse_algorithmic_steps_factor",\
+      "time_step_batch_factor",\
+      "double_compression",\
+      "dmp_relaxation_parameter",\
+      "dmp_difference_scaling"\
+    ]
+    if option in integers:
+      return int(value)
+    elif option in numbers:
+      return float(value)
+    else
+      return value
 
   ## 
   # Convert ini file as created by method `spec_file_1_to_ini` to nested list of dict - dist of list structure.
-  '
   def convert_to_dict(self,config,n_solvers,n_plotters):
     context = {}
     # root node
@@ -86,26 +120,66 @@ class SpecFile1Reader():
       if not section.startswith("solver") and not section=="project":
         context[section] = {}
         for option in config.options(section):
-            context[section][option.replace("-","_")] = config.get(section, option)
+            context[section][option.replace("-","_")] = self.convert(option, config.get(section, option))
     context["solvers"]=[]
     for i in range(0,n_solvers):
       solver="solver%d" % i
       context["solvers"].append({})
       for option in config.options(solver):
-        context["solvers"][i][option.replace("-","_")] = config.get(solver,option)
+        context["solvers"][i][option.replace("-","_")] = self.convert(option, config.get(solver,option))
       context["solvers"][i]["plotters"]=[]
       for j in range(0,n_plotters[i]):
         plotter="solver%dplotter%d" % (i,j)
         context["solvers"][i]["plotters"].append({})
         for option in config.options(plotter):
-          context["solvers"][i]["plotters"][j][option] = config.get(plotter,option)
+          context["solvers"][i]["plotters"][j][option] = self.convert(option, config.get(plotter,option))
     return context
   
   ##
-  # Convets the kernel terms of a solver entry in the original spec file
+  # TODO
+  def map_computational_domain(self,domain):
+    for option in ["offset","width"]:
+      token = domain.pop(option)
+      domain[option]=[]
+      for value in token.split(","):
+        domain[option].append(float(value))
+  ##
+  # TODO
+  def map_distributed_memory(self,distributed_memory):
+    distributed_memory["load_balancing_type"]=context["distributed_memory"].pop("identifier")
+    distributed_memory["buffer_size"]        =context["distributed_memory"].pop("buffersize")
+    # configure
+    configure = distributed_memory.pop("configure")
+    m_ranks_per_node          = re.search(r"(^|,|\s)ranks-per-node:([0-9]+)",configure)
+    m_primary_ranks_per_node  = re.search(r"(^|,|\s)primary-ranks-per-node:([0-9]+)",configure)
+    m_node_pool_strategy      = re.search(r"(hotspot|FCFS|sfc_diffusion)",configure)
+    m_load_balancing_strategy = re.search(r"(fair|greedy_naive|greedy_regular)",configure)
+    if m_ranks_per_node:
+      distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(2))
+    if m_primary_ranks_per_node:
+      distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(2))
+    if m_node_pool_strategy:
+      distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
+    if m_load_balancing_strategy:
+      distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+  
+  ##
+  # TODO
+  def map_shared_memory(self,shared_memory):
+   shared_memory["autotuning_strategy"]=context["shared_memory"].pop("identifier")
+   # configure
+   configure = shared_memory.pop("configure")
+   m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
+   if m_background_job_consumers:
+     shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
+   if re.search(r"manual_pinning",configure)!=None:
+     shared_memory["manual_pinning"] = True
+    
+  ##
+  # Converts the kernel terms of a solver entry in the original spec file
   #
   # @return tuple consisting of parsed context and the number of point sources
-  def map_kernel_terms(kernel_terms):
+  def map_kernel_terms(self,kernel_terms):
     n_point_sources
     context = {}
     for token in kernel_terms.split(","):
@@ -125,7 +199,7 @@ class SpecFile1Reader():
   ##
   # Converts the "optimisation" string of a ADER-DG and Limiting-ADERDG solver found 
   # in the original spec file
-  def map_aderdg_kernel_opts(kernel_opts):
+  def map_aderdg_kernel_opts(self,kernel_opts):
     context = {}
     stp     = "space_time_predictor"
     opt     = "optimised_terms"
@@ -163,7 +237,7 @@ class SpecFile1Reader():
   ##
   # Converts the "optimisation" string of a Finite-Volumes and the "limiter-optimisation" string of Limiting-ADERDG solver 
   # found in the original spec file
-  def map_fv_kernel_opts(kernel_opts):
+  def map_fv_kernel_opts(self,kernel_opts):
     context = {}
     for token in kernel_terms.split(","):
       token_s = token.strip() 
@@ -175,6 +249,39 @@ class SpecFile1Reader():
       if token_s=="usestack"
         context["allocate_temporary_arrays"]="stack"
     return context
+  
+  ##
+  # TODO
+  def map_variables(self,variables):
+    if re.match("\s*([0-9]+)\s*",variables):
+      return int(variables.strip())
+    else:
+      result=[]
+      it = re.finditer("(\w+)\s*:\s*([0-9]+)",variables)
+      for m in it:
+        result.append({ "name": m.group(1), "multiplicity" : int(m.group(2)) }) 
+      if result:
+        return result
+      else
+        return [variables]
+  
+  ##
+  # TODO
+  def map_constants(self,constants):
+    result=[]
+    it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",variables)
+    for m in it:
+      result.append({ m.group(2) : m.group(3) }) 
+    if result:
+      return result
+    else
+      return [constants]
+
+  ##
+  # TODO
+#  def map_select(kernel_opts):
+#    context = []
+#    if token=
     
   ##
   # Post processes result of `convert_to_dict`, i.e. 
@@ -185,112 +292,104 @@ class SpecFile1Reader():
   #
   # @param context the specfile as dict
   # 
-  def post_process_options(self,context):
-    # paths 
+  def map_options(self,context):
+    # paths, optimisation, distributed_memory, shared_memory
     context["paths"]={}
     for option in context:
       if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory"]:
         context["paths"] = context.pop(option)
-    # optimisation
+    self.map_computational_domain(context["computational_domain"])
     if "optimisation" in context:
       for option in context["optimisation"]:
         if context["optimisation"][option] in ["on","off"]:
           context["optimisation"][option]="false" if context["optimisation"][option]=="off" else "true"
-    # distributed_memory
     if "distributed_memory" in context:
-      context["distributed_memory"]["load_balancing_type"]=context["distributed_memory"].pop("identifier")
-      context["distributed_memory"]["buffer_size"]        =context["distributed_memory"].pop("buffersize")
-      # configure
-      configure = context["distributed_memory"].pop("configure")
-      m_ranks_per_node          = re.search(r"(^|,|\s)ranks-per-node:([0-9]+)",configure)
-      m_primary_ranks_per_node  = re.search(r"(^|,|\s)primary-ranks-per-node:([0-9]+)",configure)
-      m_node_pool_strategy      = re.search(r"(hotspot|FCFS|sfc_diffusion)",configure)
-      m_load_balancing_strategy = re.search(r"(fair|greedy_naive|greedy_regular)",configure)
-      if m_ranks_per_node:
-        context["distributed_memory"]["ranks_per_node"]=m_ranks_per_node.group(2)
-      if m_node_pool_strategy:
-        context["distributed_memory"]["node_pool_strategy"]=m_node_pool_strategy.group(1)
-      if m_load_balancing_strategy:
-        context["distributed_memory"]["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
-    # shared_memory
+      self.map_distributed_memory(context["distributed_memory"])  
     if "shared_memory" in context:
-       context["shared_memory"]["autotuning_strategy"]=context["shared_memory"].pop("identifier")
-       # configure
-       configure = context["shared_memory"].pop("configure")
-       m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
-       if m_background_job_consumers:
-         context["shared_memory"]["background_job_consumers"] = m.background_job_consumers.group(1)
-       if re.search(r"manual_pinning",configure)!=None:
-         context["shared_memory"]["manual_pinning"] = True
-     for i,solver in enumerate(context["solvers"]):
-        if solver["solver_type"]=="Limiting-ADER-DG":
-          context["solvers"][i]["limiter"]={}
-          for option in [ "dmp_observables", "dmp_relaxation_parameter", "dmp_difference_scaling", "helper_layers", "steps_till_cured" ]
-            if option in solver:
-              context["solvers"][i]["limiter"][options] = context["solvers"][i].pop(options)
-          # kernels
-          n_point_sources = 0
-          aderdg_kernel_type, aderdg_kernel_terms, aderdg_kernel_opts  = ""
-          fv_kernel_type, fv_kernel_terms, fv_kernel_opts  = ""
-          # aderdg 
-          if solver["solver_type"] in ["Limiting-ADER-DG","ADER-DG"]:
-              context["solvers"][i]["aderdg_kernel"]={}
-              if "language" in context["solvers"][i]:
-                context["solvers"][i]["aderdg_kernel"]["language"]=context["solvers"][i].pop("language")
-              if "type" in context["solvers"][i]:
-                aderdg_kernel_type  = context["solvers"][i].pop("type") 
-              if "terms" in context["solvers"][i]:
-                aderdg_kernel_terms = context["solvers"][i].pop("terms")
-              if "optimisation" in context["solvers"][i]:
-                aderdg_kernel_opts  = context["solvers"][i].pop("optimisation")
-              # type
-              for token in aderdg_kernel_type.split(","):
-                token_s = token.strip() 
-                if token_s in ["linear","nonlinear"]:
-                  context["solvers"][i]["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
-                if token_s in ["Legendre","Lobatto"]:
-                  context["solvers"][i]["aderdg_kernel"]["basis"]=token_s
-              # terms
-              result, n_point_sources = map_kernel_terms(aderdg_kernel_terms)
-              context["solvers"][i]["aderdg_kernel"].update(result)
-              # opts
-              context["solvers"][i]["aderdg_kernel"].update(map_aderdg_kernel_opts(aderdg_kernel_opts))
-              
-          # fv
-          if solver["solver_type"]=="Finite-Volumes":
-              context["solvers"][i]["fv_kernel"]={}
-              if "language" in context["solvers"][i]:
-                context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("language")
-              if "type" in context["solvers"][i]:
-                fv_kernel_type  = context["solvers"][i].pop("type")
-              if "terms" in context["solvers"][i]:
-               fv_kernel_terms = context["solvers"][i].pop("terms")
-              if "optimisation" in context["solvers"][i]:
-                fv_kernel_opts  = context["solvers"][i].pop("optimisation")
-          if solver["solver_type"]=="Limiting-ADER-DG":
-              context["solvers"][i]["fv_kernel"]={}
-              if "language" in context["solvers"][i]:
-                context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("limiter-language")
-              if "type" in context["solvers"][i]:
-                fv_kernel_type  = context["solvers"][i].pop("limiter-type") 
-              if "type" in context["solvers"][i]:
-                fv_kernel_terms = context["solvers"][i].pop("limiter-terms")
-              if "type" in context["solvers"][i]:
-                fv_kernel_opts  = context["solvers"][i].pop("limiter-optimisation")
-          # fv type
-          for token in fv_kernel_type.split(","):
+      self.map_shared_memory(context["shared_memory"])
+    # solvers
+    for i,solver in enumerate(context["solvers"]):
+      # kernels
+      n_point_sources = 0
+      aderdg_kernel_type, aderdg_kernel_terms, aderdg_kernel_opts  = ""
+      fv_kernel_type, fv_kernel_terms, fv_kernel_opts  = ""
+      # aderdg 
+      if solver["solver_type"] in ["Limiting-ADER-DG","ADER-DG"]:
+          context["solvers"][i]["aderdg_kernel"]={}
+          if "language" in context["solvers"][i]:
+            context["solvers"][i]["aderdg_kernel"]["language"]=context["solvers"][i].pop("language")
+          if "type" in context["solvers"][i]:
+            aderdg_kernel_type  = context["solvers"][i].pop("type") 
+          if "terms" in context["solvers"][i]:
+            aderdg_kernel_terms = context["solvers"][i].pop("terms")
+          if "optimisation" in context["solvers"][i]:
+            aderdg_kernel_opts  = context["solvers"][i].pop("optimisation")
+          # type
+          for token in aderdg_kernel_type.split(","):
             token_s = token.strip() 
-            if token_s in ["godunov","musclhancock"]:
-              context["solvers"][i]["fv_kernel"]["scheme"]=token_s
-          # fv terms
-          result, n_point_sources = map_kernel_terms(fv_kernel_terms)
-          context["solvers"][i]["fv_kernel"].update(result)
-          # fv opts
-          context["solvers"][i]["fv_kernel"].update(map_aderdg_kernel_opts(aderdg_kernel_opts))
-    }
-    
-     
-         
+            if token_s in ["linear","nonlinear"]:
+              context["solvers"][i]["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
+            if token_s in ["Legendre","Lobatto"]:
+              context["solvers"][i]["aderdg_kernel"]["basis"]=token_s
+          # terms
+          result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
+          context["solvers"][i]["aderdg_kernel"].update(result)
+          # opts
+          context["solvers"][i]["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+      # limiter
+      if solver["solver_type"]=="Limiting-ADER-DG":
+        context["solvers"][i]["limiter"]={}
+        for option in [ "dmp_observables", "dmp_relaxation_parameter", "dmp_difference_scaling", "helper_layers", "steps_till_cured" ]
+          if option in solver:
+            context["solvers"][i]["limiter"][options] = context["solvers"][i].pop(options)
+        if "implementation" in context["solvers"][i]["aderdg_kernel"]:
+          context["solvers"][i]["limiter"]["implementation"]=context["solvers"][i]["aderdg_kernel"]["implementation"]
+      # fv
+      if solver["solver_type"]=="Finite-Volumes":
+          context["solvers"][i]["fv_kernel"]={}
+          if "language" in context["solvers"][i]:
+            context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("language")
+          if "type" in context["solvers"][i]:
+            fv_kernel_type  = context["solvers"][i].pop("type")
+          if "terms" in context["solvers"][i]:
+           fv_kernel_terms = context["solvers"][i].pop("terms")
+          if "optimisation" in context["solvers"][i]:
+            fv_kernel_opts  = context["solvers"][i].pop("optimisation")
+      if solver["solver_type"]=="Limiting-ADER-DG":
+          context["solvers"][i]["fv_kernel"]={}
+          if "language" in context["solvers"][i]:
+            context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("limiter-language")
+          if "type" in context["solvers"][i]:
+            fv_kernel_type  = context["solvers"][i].pop("limiter-type") 
+          if "type" in context["solvers"][i]:
+            fv_kernel_terms = context["solvers"][i].pop("limiter-terms")
+          if "type" in context["solvers"][i]:
+            fv_kernel_opts  = context["solvers"][i].pop("limiter-optimisation")
+      # fv type
+      for token in fv_kernel_type.split(","):
+        token_s = token.strip() 
+        if token_s in ["godunov","musclhancock"]:
+          context["solvers"][i]["fv_kernel"]["scheme"]=token_s
+      # fv terms
+      result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
+      context["solvers"][i]["fv_kernel"].update(result)
+      # fv opts
+      context["solvers"][i]["fv_kernel"].update(self.map_fv_kernel_opts(aderdg_kernel_opts))
+      
+      # type
+      context["solvers"][i]["type"]=context["solvers"][i].pop("solver_type")
+      
+      # variables, parameters, and 
+      context["solvers"][i]["variables"]=self.map_variables(context["solvers"][i].pop("variables"))
+      if "parameters" in context["solvers"][i]:
+        context["solvers"][i]["material_parameters"]=self.map_variables(context["solvers"][i].pop("parameters"))
+      if "constants" in context["solvers"][i]:
+        context["solvers"][i]["parameters"]=self.map_constants(context["solvers"][i].pop("constants"))
+      
+      # plotters
+      for j,plotter in enumerate(context["solvers"][i]["plotters"]):
+        
+        
     return context
   
   ##
@@ -307,4 +406,4 @@ class SpecFile1Reader():
     config = configparser.ConfigParser(delimiters=('='))
     config.read_string(spec_file_1_ini)
     
-    return post_process_options(convert_to_dict(config,n_solvers,n_plotters))
+    return map_options(convert_to_dict(config,n_solvers,n_plotters))
