@@ -14,6 +14,7 @@ def main():
     
     # create controller and run it (input parsed with argparse)
     control = Controller()
+    control.run()
 
 
 if __name__ == "__main__":

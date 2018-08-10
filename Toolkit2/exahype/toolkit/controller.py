@@ -62,6 +62,79 @@ class Controller():
         return specification
             
     def __init__(self):
+        # parse command line arguments
+        args = self.parseArgs()
+        
+        #set member values from args
+        self.specfileName = args.specfile.name
+        self.interactive = args.interactive or not args.not_interactive
+        self.verbose = args.verbose or self.interactive
+        
+        if self.verbose: # otherwise no need to call git, etc. 
+            self.info(self.header())
+        
+        inpath = Path(self.specfileName)
+        if inpath.exists():
+            self.info("Read input file %s." % inpath.resolve())
+        else:    self.info("Read from stdin (%s)" % str(args.specfile))
+        
+        self.spec = self.getSpec(args.specfile)
+    
+    def run(self):
+        try:
+            d = directories.DirectoryAndPathChecker(self.spec, self.verbose)
+        except BadSpecificationFile as e:
+            print("Some directories did not exist and/or could not be created.")
+            print("Error message: ", e)
+            print("Failure due to bad specificaiton file, cannot continue")
+            sys.exit(-4)
+        
+        self.wait_interactive("validated and configured pathes")
+        
+        try:
+            s = solver.SolverGenerator(self.spec, self.specfileName, self.verbose)
+            s.generate_all_solvers()
+        except BadSpecificationFile as e:
+            print("Could not create applications solver classes.")
+            print(e)
+            sys.exit(-6)
+        
+        self.wait_interactive("generated application-specific solver classes")
+        
+        try:
+            # kernel calls
+            k = kernelcalls.KernelCallsGenerator(self.spec, self.specfileName, self.verbose)
+            k.generate_solver_registration()
+        except BadSpecificationFile as e:
+            print("Could not create ExaHyPE's kernel calls")
+            print(e)
+            sys.exit(-10)
+            
+        self.wait_interactive("generated computational kernel calls")
+        
+        # blah
+        #CreateReadme(self.spec,self.verbose)
+        #
+        #self.wait_interactive("generated README")
+        #
+        # makefiles, etc.
+        #setupBuildEnvironment(self.spec, self.verbose)
+        #
+        #self.wait_interactive("setup build environment")
+        
+        try:
+            # kernel calls
+            m = MakefileGenerator(self.spec, self.specfileName, self.verbose)
+            m.generate_makefile()
+        except BadSpecificationFile as e:
+            print("Could not create application-specific makefile")
+            print(e)
+            sys.exit(-10)
+        
+        self.wait_interactive("generated application-specific makefile")
+        
+        
+    def parseArgs(self):
         parser = argparse.ArgumentParser(
             description="ExaHyPE's new python-based toolkit",
             epilog="See http://www.exahype.eu and the Guidebook for more help."
@@ -79,74 +152,15 @@ class Controller():
             type=argparse.FileType('r'),
             help="The specification file to work on (can be .exahype, .exahype2, .json)")
         
-        args = parser.parse_args()
+        return parser.parse_args()
         
-        self.interactive = args.interactive or not args.not_interactive
-        self.verbose = args.verbose or self.interactive
-        
-        if self.verbose: # otherwise no need to call git, etc. 
-            self.info(self.header())
-        
-        inpath = Path(args.specfile.name)
-        if inpath.exists():
-            self.info("Read input file %s." % inpath.resolve())
-        else:    self.info("Read from stdin (%s)" % str(args.specfile))
-
+    def getSpec(self, specfilePath):
         try:
-            spec = self.load(args.specfile)
+            return self.load(self.specfileName)
         except Exception as e:
             print("Could not properly read specfile")
             print(e)
             sys.exit(-3)
-        
-        try:
-            d = directories.DirectoryAndPathChecker(spec, self.verbose)
-        except BadSpecificationFile as e:
-            print("Some directories did not exist and/or could not be created.")
-            print("Error message: ", e)
-            print("Failure due to bad specificaiton file, cannot continue")
-            sys.exit(-4)
-        
-        self.wait_interactive("validated and configured pathes")
-        
-        try:
-            s = solver.SolverGenerator(spec, args.specfile.name, self.verbose)
-            s.generate_all_solvers()
-        except BadSpecificationFile as e:
-            print("Could not create applications solver classes.")
-            print(e)
-            sys.exit(-6)
-        
-        self.wait_interactive("generated application-specific solver classes")
-        
-        try:
-            # kernel calls
-            k = kernelcalls.KernelCallsGenerator(spec, args.specfile.name, self.verbose)
-            k.generate_solver_registration()
-        except BadSpecificationFile as e:
-            print("Could not create ExaHyPE's kernel calls")
-            print(e)
-            sys.exit(-10)
-            
-        self.wait_interactive("generated computational kernel calls")
-        
-        # blah
-        #CreateReadme(spec,verbose)
-        #
-        #self.wait_interactive("generated README")
-        #
-        # makefiles, etc.
-        #setupBuildEnvironment(spec, verbose)
-        #
-        #self.wait_interactive("setup build environment")
-        
-        try:
-            # kernel calls
-            m = MakefileGenerator(spec, args.specfile.name, self.verbose)
-            m.generate_makefile()
-        except BadSpecificationFile as e:
-            print("Could not create application-specific makefile")
-            print(e)
-            sys.exit(-10)
-        
-        self.wait_interactive("generated application-specific makefile")
+    
+    def generateBaseContexts(self, spec):
+        pass #TODO JMG
