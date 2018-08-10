@@ -69,6 +69,7 @@
 {% for solver in data["root"]["solvers"] %}
     "name" :
     "type" :
+{% if "aderdg_kernel" in solver %}
     "aderdg_kernel" : {
       "implementation" :
       "adjust_solution" :
@@ -85,6 +86,7 @@
       "nonlinear" :
       "basis" : 
     }
+{% if "fv_kernel" in solver %}
     "fv_kernel" : {
       "implementation" : 
       "adjust_solution" : 
@@ -92,11 +94,18 @@
       "terms" : 
       "language" : 
       "scheme" : 
-    } 
+    }
+{% endif %}
     "variables" : 
+{% if "material_parameters" in solver %}
     "material_parameters" :
-    "point_sources" : 
-    "global_observables" :
+{% endif %}
+{% if "point_sources" in solver %}
+    "point_sources" :
+{% endif %}
+{% if "point_sources" in solver %}
+  "global_observables" :
+{% endif %}
     "maximum_mesh_size" :
     "maximum_mesh_depth" :
     "order" : 
