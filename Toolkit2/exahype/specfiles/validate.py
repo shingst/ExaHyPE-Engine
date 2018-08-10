@@ -62,10 +62,8 @@ def validate(json_filename_or_file):
   validator.validate(input_structure)
   return input_structure
   
-def validate_specfile1(specfile1_filename_or_file):
-  if hasattr(specfile1_filename_or_file, "read"): # is a file name then
-    specfile1_filename_or_file.close()
-  input_structure = specfile1_reader.SpecFile1Reader().read(specfile1_filename_or_file)
+def validate_specfile1(specfile1_filename):
+  input_structure = specfile1_reader.SpecFile1Reader().read(specfile1_filename)
   print("Reading legacy ExaHyPE specification file format... OK")
   print("Translating file to JSON format ... OK")
   print("Result:")

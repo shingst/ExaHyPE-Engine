@@ -4,7 +4,7 @@
 This mimics the classical Frontend of the ExaHyPE toolkit.
 """
 
-import os, sys, argparse, subprocess, datetime
+import os, sys, argparse, subprocess, datetime, json
 
 from os.path import isdir, isfile
 from pathlib import Path
@@ -62,6 +62,7 @@ class Controller():
         self.specfileName = args.specfile.name
         self.interactive = args.interactive or not args.not_interactive
         self.verbose = args.verbose or self.interactive
+        self.write_json=args.write_json
         
         if self.verbose: # otherwise no need to call git, etc. 
             self.info(self.header())
@@ -146,7 +147,7 @@ class Controller():
         g.add_argument("-i", "--interactive", action="store_true", default=False, help="Run interactively")
         g.add_argument("-n", "--not-interactive", action="store_true", default=True, help="Run non-interactive in non-stop-mode (default)")
         parser.add_argument("-v", "--verbose", action="store_true", help="Be verbose (off by default, triggered on by --interactive)")
-
+        parser.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file if legacy specification file is read (*.exahype) (default: no)")
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
             help="The specification file to work on (can be .exahype, .exahype2, .json)")
@@ -172,6 +173,11 @@ class Controller():
         specification=""
         if specfile_name.endswith(".exahype"):
           specification = validate_specfile1(specfile_name)
+          if self.write_json:
+            json_file_name = specfile_name.replace(".exahype",".exahype2")
+            with open(json_file_name, 'w') as outfile:
+              json.dump(specification,outfile,indent=2)
+              print("Write JSON file '%s' ... OK" % json_file_name )
         else:
           specification = validate(specfile_name)
         return specification
