@@ -352,14 +352,14 @@ class SpecFile1Reader():
             fv_kernel_opts  = context["solvers"][i].pop("optimisation")
       if solver["solver_type"]=="Limiting-ADER-DG":
           context["solvers"][i]["fv_kernel"]={}
-          if "language" in context["solvers"][i]:
-            context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("limiter-language")
-          if "type" in context["solvers"][i]:
-            fv_kernel_type  = context["solvers"][i].pop("limiter-type") 
-          if "type" in context["solvers"][i]:
-            fv_kernel_terms = context["solvers"][i].pop("limiter-terms")
-          if "type" in context["solvers"][i]:
-            fv_kernel_opts  = context["solvers"][i].pop("limiter-optimisation")
+          if "limiter_language" in context["solvers"][i]:
+            context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("limiter_language")
+          if "limiter_type" in context["solvers"][i]:
+            fv_kernel_type  = context["solvers"][i].pop("limiter_type") 
+          if "limiter_terms" in context["solvers"][i]:
+            fv_kernel_terms = context["solvers"][i].pop("limiter_terms")
+          if "limiter_optimisation" in context["solvers"][i]:
+            fv_kernel_opts  = context["solvers"][i].pop("limiter_optimisation")
       # fv type
       for token in fv_kernel_type.split(","):
         token_s = token.strip() 
