@@ -80,16 +80,16 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 }
 
 int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t ,const double dt) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
-{%- endif %}
-{%- if dimensions==3 %}
+{% endif %}
+{% if dimensions==3 %}
   constexpr int spaceBasisSize     = (Order+1)*(Order+1)*(Order+1);
-{%- else %}
+{% else %}
   constexpr int spaceBasisSize     = (Order+1)*(Order+1);
-{%- endif %}
+{% endif %}
   constexpr int spaceTimeBasisSize = spaceBasisSize*(Order+1);
-{%- if isLinear %}
+{% if isLinear %}
   constexpr int sizeLQi                = (NumberOfVariables+NumberOfParameters)*spaceBasisSize*(Order+2);
   constexpr int sizeLFi                = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
   constexpr int sizeGradQ              = DIMENSIONS*NumberOfVariables*spaceBasisSize;
@@ -103,11 +103,11 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr int totalSize = sizeLQi + sizeLFi + sizeGradQ +
                             sizePSi + sizePSderivatives + sizeTmp_PSderivatives +
                             sizeLQhi + sizeLFhi;
-{%-   if tempVarsOnStack %}
+{%   if tempVarsOnStack %}
   double block[totalSize];
-{%-   else %}  
+{%   else %}  
   double* block = new double[totalSize]; 
-{%-   endif %}
+{%   endif %}
   double* memory = block;
   
   double* lQi                = memory; memory+=sizeLQi;
@@ -122,21 +122,21 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
 const int picardIterations = 1;
 
-{%-   if usePointSources %}
+{%   if usePointSources %}
   std::vector<int>* pointSources= kernels::aderdg::generic::c::getPointSources<{{solver}}>(*static_cast<{{solver}}*>(this),center,dx);
    
   if(pointSources != nullptr) {
     kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParam_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }else{
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParam_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }
-{%- else %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
-{%-   endif %}
-  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource or useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+{% else %}
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParam_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+{%   endif %}
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s or useNCP_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
-{%- else %}
+{% else %}
   constexpr int sizeLQi   = (NumberOfVariables+NumberOfParameters)*spaceTimeBasisSize;
   constexpr int sizeRhs   = sizeLQi;
   constexpr int sizeLFi   = (DIMENSIONS + 1)*NumberOfVariables*spaceTimeBasisSize;
@@ -145,18 +145,18 @@ const int picardIterations = 1;
   constexpr int sizeLQhi = (NumberOfVariables+NumberOfParameters)*spaceBasisSize;
   constexpr int sizeLFhi = (DIMENSIONS + 1)*NumberOfVariables*spaceBasisSize;
 
-{%-   if noTimeAveraging %}
+{%   if noTimeAveraging %}
   constexpr int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ;
-{%-   else %}  
+{%   else %}  
   constexpr int totalSize = sizeLQi + sizeRhs + sizeLFi + sizeGradQ +
                         sizeLQhi + sizeLFhi;
-{%-   endif %}
+{%   endif %}
 
-{%-   if tempVarsOnStack %}
+{%   if tempVarsOnStack %}
   double block[totalSize];
-{%-   else %}  
+{%   else %}  
   double* block = new double[totalSize];
-{%-   endif %}
+{%   endif %}
   double* memory = block;
       
   double* lQi   = memory; memory+=sizeLQi;
@@ -164,107 +164,107 @@ const int picardIterations = 1;
   double* lFi   = memory; memory+=sizeLFi;
   double* gradQ = memory; memory+=sizeGradQ;
   
-{%-   if noTimeAveraging %}
+{%   if noTimeAveraging %}
   double* lQhi = lQi;
   double* lFhi = lFi;
-{%-   else %}
+{%   else %}
   double* lQhi = memory; memory+=sizeLQhi;
   double* lFhi = memory; memory+=sizeLFhi;
-{%-   endif %}
+{%   endif %}
 
-  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource or useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource_s or useNCP_s}}, {{useFlux_s}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
-{%- endif %}
-{%- if tempVarsOnStack is none %}
+{% endif %}
+{% if tempVarsOnStack is none %}
   delete[] block;
-{%- endif %}
-{%- if enableProfiler %}
+{% endif %}
+{% if enableProfiler %}
   _profiler->stop("fusedSpaceTimePredictorVolumeIntegral");
-{%- endif %}
+{% endif %}
   return picardIterations;
 }
 
 void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* const lduh,const double dt) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("solutionUpdate");
-{%- endif %}
+{% endif %}
   kernels::aderdg::generic::{{language}}::solutionUpdate<{{solver}}>(*static_cast<{{solver}}*>(this),luh,lduh,dt);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->stop("solutionUpdate");
-{%- endif %}
+{% endif %}
 }
 
 void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("faceIntegral");
-{%- endif %}
+{% endif %}
   if ( levelDelta > 0 ) {
-    {%- if dimensions==3 %}
+    {% if dimensions==3 %}
     constexpr int basisSize = (Order+1)*(Order+1);
-    {%- else %}
+    {% else %}
     constexpr int basisSize = (Order+1);
-    {%- endif %}
+    {% endif %}
     constexpr int sizeFlux  = NumberOfVariables*basisSize;
-{%- if tempVarsOnStack %}
+{% if tempVarsOnStack %}
     double lFhbndCoarse[sizeFlux];
-{%- else %}  
+{% else %}  
     double* lFhbndCoarse = new double[sizeFlux];
-{%- endif %}
+{% endif %}
     kernels::aderdg::generic::{{language}}::faceUnknownsRestriction<NumberOfVariables,Order+1>(lFhbndCoarse,lFhbnd,subfaceIndex,levelDelta);
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbndCoarse,direction,orientation,coarseGridCellSize);  
-{%- if tempVarsOnStack is none %}
+{% if tempVarsOnStack is none %}
     delete[] lFhbndCoarse;
-{%- endif %}    
+{% endif %}    
   } else {
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(lduh,lFhbnd,direction,orientation,cellSize);
   }
   
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->stop("faceIntegral");
-{%- endif %}
+{% endif %}
 }
 
 void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("riemannSolver");
-{%- endif %}
-{%- if isFortran %}
+{% endif %}
+{% if isFortran %}
   kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-{%- else %}
-  {%- if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-  {%- else %}
-    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
-  {%- endif %}
-{%- endif %}
-{%- if enableProfiler %}
+{% else %}
+  {% if isLinear %}
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParam_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+  {% else %}
+    kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+  {% endif %}
+{% endif %}
+{% if enableProfiler %}
   _profiler->stop("riemannSolver");
-{%- endif %}
+{% endif %}
 }
 
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("boundaryConditions");
-{%- endif %}
-{%- if dimensions==3 %}
+{% endif %}
+{% if dimensions==3 %}
   constexpr int basisSize     = (Order+1)*(Order+1);
-{%- else %}
+{% else %}
   constexpr int basisSize     = (Order+1);
-{%- endif %}
+{% endif %}
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
   constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
   
   constexpr int totalSize = sizeStateOut + sizeFluxOut;
-{%- if tempVarsOnStack %}
+{% if tempVarsOnStack %}
   double block[totalSize];
-{%- else %}  
+{% else %}  
   double* block = new double[totalSize];
-{%- endif %}
+{% endif %}
   double* memory = block;
 
   double* stateOut = memory; memory+=sizeStateOut;
@@ -289,65 +289,65 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
     
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
-{%- if tempVarsOnStack is none %}
+{% if tempVarsOnStack is none %}
   delete[] block;
-{%- endif %}
-{%- if enableProfiler %}
+{% endif %}
+{% if enableProfiler %}
   _profiler->stop("boundaryConditions");
-{%- endif %}
+{% endif %}
 }
 
 double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("stableTimeStepSize");
-{%- endif %}
+{% endif %}
   double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}}>(*static_cast<{{solver}}*>(this),luh,dx);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->stop("stableTimeStepSize");
-{%- endif %}
+{% endif %}
   return d;
 }
 
-{%- if patchwiseAdjust is none %}
+{% if patchwiseAdjust is none %}
 void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("solutionAdjustment");
-{%- endif %}
+{% endif %}
   kernels::aderdg::generic::{{language}}::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,center,dx,t,dt);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->stop("solutionAdjustment");
-{%- endif %}
+{% endif %}
 }
-{%- endif %}
+{% endif %}
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("faceUnknownsProlongation");
-{%- endif %}
+{% endif %}
   kernels::aderdg::generic::c::faceUnknownsProlongation<NumberOfVariables,NumberOfParameters,Order+1>(lQhbndFine,lFhbndFine,lQhbndCoarse,lFhbndCoarse,coarseGridLevel,fineGridLevel,subfaceIndex);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("false");
-{%- endif %}
+{% endif %}
 }
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("volumeUnknownsProlongation");
-{%- endif %}
+{% endif %}
   kernels::aderdg::generic::c::volumeUnknownsProlongation<NumberOfVariables,NumberOfParameters,Order+1>(luhFine,luhCoarse,coarseGridLevel,fineGridLevel,subcellIndex);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->stop("volumeUnknownsProlongation");
-{%- endif %}
+{% endif %}
 }
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->start("volumeUnknownsRestriction");
-{%- endif %}
+{% endif %}
   kernels::aderdg::generic::c::volumeUnknownsRestriction<NumberOfVariables,NumberOfParameters,Order+1>(luhCoarse,luhFine,coarseGridLevel,fineGridLevel,subcellIndex);
-{%- if enableProfiler %}
+{% if enableProfiler %}
   _profiler->stop("volumeUnknownsRestriction");
-{%- endif %}
+{% endif %}
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {

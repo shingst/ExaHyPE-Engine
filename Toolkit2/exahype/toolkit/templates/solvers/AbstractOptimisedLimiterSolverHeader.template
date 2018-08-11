@@ -16,10 +16,10 @@
 // ========================
 
 #include <string>
-{%- if countFlops %}
+{% if countFlops %}
 #include <atomic>
 #include <iostream>
-{%- endif %}
+{% endif %}
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "{{ADERDGSolver}}.h"
@@ -49,7 +49,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSo
         const int iterationsToCureTroubledCell
         {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
-    {%- if countFlops %}
+    {% if countFlops %}
     static std::atomic_ulong total_flops;
     static std::atomic_ulong total_time;
     
@@ -89,7 +89,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSo
       
       std::cout << "findCellLocalLimiterMinAndMax flops: " << findCellLocalLimiterMinAndMax_f.load() << std::endl << "findCellLocalLimiterMinAndMax time: " << ((double)findCellLocalLimiterMinAndMax_t.load()) / 1000000000.0 << std::endl << "findCellLocalLimiterMinAndMax GFlops: " <<  ((double) findCellLocalLimiterMinAndMax_f.load()) / ((double) findCellLocalLimiterMinAndMax_t.load()) << std::endl << "findCellLocalLimiterMinAndMax calls: " << findCellLocalLimiterMinAndMax_c.load() << std::endl << std::endl;
     }
-{%- endif %}
+{% endif %}
     
     void projectOnFVLimiterSpace(const double* const luh, double* const lim) const override;
     void projectOnDGSpace(const double* const lim, double* const luh) const override;

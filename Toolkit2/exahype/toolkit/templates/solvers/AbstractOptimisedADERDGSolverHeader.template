@@ -11,16 +11,16 @@
 
 #include <ostream>
 #include <algorithm>
-{%- if countFlops %}
+{% if countFlops %}
 #include <atomic>
 #include <iostream>
-{%- endif %}
+{% endif %}
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/UserSolverInterface.h"
-{%- if enableProfiler %}
+{% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
-{%- endif %}
+{% endif %}
 #include "{{optKernelPath}}/Kernels.h"
 
 /**
@@ -44,10 +44,10 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int MaxPicardIterations     = {{maxPicardIterations}};
     static constexpr bool UseMaxPicardIterations = {{useMaxPicardIterations}};
     static constexpr double CFL                  = 0.9;
-    {%- if usePointSources %}
+    {% if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
-    {%- endif %}
+    {% endif %}
     
     // virtual getters for the constexpr's
     int constexpr_getNumberOfVariables()  const override { return NumberOfVariables; };
@@ -62,9 +62,9 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     class VariableShortcuts;
     class VariableMultiplicities;
     class VariableNames;
-    {%- for className in namingSchemes %}
+    {% for className in namingSchemes %}
     class {{className}};
-    {%- endfor %}
+    {% endfor %}
     
     {{abstractSolver}}(
       double maximumMeshSize,
@@ -77,7 +77,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}
     );
     
-{%- if countFlops %}
+{% if countFlops %}
     // Change to the correct values
     static constexpr unsigned long fluxPDEFlops = 0;
     static constexpr unsigned long ncpPDEFlops = 0;
@@ -173,7 +173,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
       
       std::cout << "volumeUnknownsRestriction flops: " << volumeUnknownsRestriction_f.load() << std::endl << "volumeUnknownsRestriction time: " << ((double)volumeUnknownsRestriction_t.load()) / 1000000000.0 << std::endl << "volumeUnknownsRestriction GFlops: " <<  ((double) volumeUnknownsRestriction_f.load()) / ((double) volumeUnknownsRestriction_t.load()) << std::endl << "volumeUnknownsRestriction calls: " << volumeUnknownsRestriction_c.load() << std::endl << std::endl;
     }
-{%- endif %}
+{% endif %}
 
     /**
      * This operation should be overwritten in your application-specific 
@@ -240,11 +240,11 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     // old: void boundaryConditions(double* fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
     void boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) override;
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
-    {%- if patchwiseAdjust %}
+    {% if patchwiseAdjust %}
     // adjustSolution is implemented by the user solver as patchwise adjust option was used 
-    {%- else %}
+    {% else %}
     void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) override; 
-    {%- endif %}
+    {% endif %}
     void faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
     //old: void faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) override;
     void volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
@@ -272,12 +272,12 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     bool usePaddedData_nDoF() const {return true;}
     
     //not used PDE
-    {%- if !useMaterialParam %}
+    {% if !useMaterialParam %}
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
-    {%- endif %}
-    {%- if patchwiseAdjust %}
+    {% endif %}
+    {% if patchwiseAdjust %}
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
-    {%- endif %}
+    {% endif %}
     
     //helper function
     inline double* allocateArray(const int size) {return ((double *) _mm_malloc(sizeof(double)*size, ALIGNMENT));}

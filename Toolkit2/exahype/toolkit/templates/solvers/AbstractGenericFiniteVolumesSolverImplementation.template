@@ -73,15 +73,15 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 }
 
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  {%- if dimensions==3 %}
+  {% if dimensions==3 %}
   constexpr int cellsPerFace = PatchSize*PatchSize*GhostLayerWidth;
-  {%- else %}
+  {% else %}
   constexpr int cellsPerFace = PatchSize*GhostLayerWidth;
-  {%- endif %}
-  {%- if tempVarsOnStack %}
+  {% endif %}
+  {% if tempVarsOnStack %}
   double luhbndInside [(NumberOfVariables+NumberOfParameters)*cellsPerFace];
   double luhbndOutside[(NumberOfVariables+NumberOfParameters)*cellsPerFace];
-  {%- else %}
+  {% else %}
   constexpr int sizeLuhbnd = (NumberOfVariables+NumberOfParameters)*cellsPerFace;
   
   const int indexLuhbndInside        = exahype::DataHeap::getInstance().createData(
@@ -90,7 +90,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch
        sizeLuhbnd,sizeLuhbnd,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   double* luhbndInside               = exahype::DataHeap::getInstance().getData(indexLuhbndInside).data();
   double* luhbndOutside              = exahype::DataHeap::getInstance().getData(indexLuhbndOutside).data();
-  {%- endif %}
+  {% endif %}
   
   const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
   const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
@@ -99,11 +99,11 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* luh,const tarch
   boundaryLayerExtraction(luhbndInside,luh,posBoundary-posCell);
   kernels::finitevolumes::commons::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),luhbndOutside,luhbndInside,cellCentre,cellSize,t,dt,faceIndex,direction);
   ghostLayerFillingAtBoundary(luh,luhbndOutside,posBoundary-posCell);
-  {%- if tempVarsOnStack is none %}
+  {% if tempVarsOnStack is none %}
   
   exahype::DataHeap::getInstance().deleteData(indexLuhbndInside,true);
   exahype::DataHeap::getInstance().deleteData(indexLuhbndOutside,true);
-  {%- endif %}
+  {% endif %}
 }
 
 

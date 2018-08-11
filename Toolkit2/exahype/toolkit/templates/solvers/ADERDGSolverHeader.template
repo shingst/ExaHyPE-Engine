@@ -13,18 +13,18 @@
 #include <ostream>
 
 #include "{{abstractSolver}}.h"
-{%- if enableProfiler %}
+{% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
-{%- endif %}
+{% endif %}
 #include "exahype/parser/ParserView.h"
 
 /**
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-{%- if patchwiseAdjust %}
+{% if patchwiseAdjust %}
 #include "tarch/la/Vector.h"
-{%- endif %}
+{% endif %}
 
 namespace {{project}}{
   class {{solver}};
@@ -55,13 +55,13 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override;
     
-{%- if patchwiseAdjust %}
+{% if patchwiseAdjust %}
     /**
      * Patchwise adjust
      * @TODO LR : Document
      */
     void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
-{%- else %}
+{% else %}
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
      *
@@ -75,7 +75,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                         as C array (already allocated).
      */
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
-{%- endif %}
+{% endif %}
 
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -126,7 +126,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     
     //PDE
     
-{%- if useFlux %}
+{% if useFlux %}
     /**
      * Compute the flux tensor.
      *
@@ -135,11 +135,11 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
     void flux(const double* const Q,double** F) final override;
-{%- else -%}
+{% else %}
 /* flux() function not included, as requested in the specification file */
-{%- endif %}
+{% endif %}
     
-{%- if useSource %}
+{% if useSource %}
      /**
      * Compute the Algebraic Sourceterms.
      * 
@@ -156,11 +156,11 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[inout] S the source point as C array (already allocated).
      */
     void algebraicSource(const double* const Q,double* S) final override;
-{%- else -%}
+{% else %}
 /* algebraicSource() function not included, as requested by the specification file */
-{%- endif %}
+{% endif %}
 
-{%- if useNCP %}
+{% if useNCP %}
     /**
      * Compute the nonconservative term $B(Q) \nabla Q$.
      * 
@@ -184,11 +184,11 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *
      **/
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
-{%- else %}
+{% else %}
 /* nonConservativeProduct() function is not included, as requested in the specification file */
-{%- endif %}
+{% endif %}
 
-{%- if usePointSources %}
+{% if usePointSources %}
 
     /**
      * Initialise the locations of point sources
@@ -215,18 +215,18 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * 
     **/
      void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) override;
-{%- else -%}
+{% else %}
 /* pointSource() function not included, as requested in the specification file */
-{%- endif %}
+{% endif %}
 
-{%- if useMaterialParam %}
+{% if useMaterialParam %}
     /**
      * @TODO LR : document
      */
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
-{%- else -%}
+{% else %}
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
-{%- endif %}
+{% endif %}
 };
 
 #endif // __{{solver}}_CLASS_HEADER__

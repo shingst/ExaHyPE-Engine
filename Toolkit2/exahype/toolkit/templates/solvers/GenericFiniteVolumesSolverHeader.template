@@ -27,9 +27,9 @@
 #include <ostream>
 
 #include "{{abstractSolver}}.h"
-{%- if enableProfiler %}
+{% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
-{%- endif %}
+{% endif %}
 #include "exahype/parser/ParserView.h"
 
 /**
@@ -91,7 +91,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
     
-    {%- if useFlux %}
+    {% if useFlux %}
     /**
      * Compute the flux tensor.
      *
@@ -100,12 +100,12 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
     void flux(const double* const Q,double** F) override;
-    {%- else -%}
+    {% else %}
     /* flux() function not included, as requested in the specification file */
-    {%- endif %}
+    {% endif %}
 
 
-    {%- if useSource %}
+    {% if useSource %}
     /**
      * Compute the algebraic source (right hand side).
      *
@@ -113,11 +113,11 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[out]  S      the source term vector (already allocated, same shape as Q).
      **/
     void algebraicSource(const double* const Q,double* S) override;
-    {%- else -%}
+    {% else %}
     /* algebraicSource() function not included, as requested by the specification file */
-    {%- endif %}
+    {% endif %}
 
-    {%- if useNCP %}
+    {% if useNCP %}
     /**
      * Compute the nonconservative product at a given position.
      *
@@ -128,15 +128,15 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *
      **/
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
-    {%- else %}
+    {% else %}
     /* nonConservativeProduct() function is not included, as requested in the specification file */
-    {%- endif %}
+    {% endif %}
     
-    {%- if usePointSources %}
+    {% if usePointSources %}
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override; 
-    {%- else -%}
+    {% else %}
     /* pointSource() function not included, as requested in the specification file */
-    {%- endif %}
+    {% endif %}
 };
 
 

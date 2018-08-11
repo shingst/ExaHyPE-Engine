@@ -26,9 +26,9 @@
 
 #include "exahype/solvers/FiniteVolumesSolver.h"
 #include "exahype/solvers/UserSolverInterface.h"
-{%- if enableProfiler %}
+{% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
-{%- endif %}
+{% endif %}
 
 /**
  * We include Peano's assertion collection here.
@@ -63,9 +63,9 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     class VariableShortcuts;
     class VariableMultiplicities;
     class VariableNames;
-    {%- for className in namingSchemes %}
+    {% for className in namingSchemes %}
     class {{className}};
-    {%- endfor %}
+    {% endfor %}
     
     {{abstractSolver}}(
         const double maximumMeshSize,
@@ -88,23 +88,23 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
     
-    {%- if useNCP is none %}
+    {% if useNCP is none %}
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final {}
-    {%- endif %}
+    {% endif %}
     
-    {%- if useSource is none %}
+    {% if useSource is none %}
     void algebraicSource(const double* const Q,double* S)  final {}
-    {%- endif %}
+    {% endif %}
     
-    {%- if useFlux is none %}
+    {% if useFlux is none %}
     void flux(const double* const Q,double** F)  final {}
-    {%- endif %}
+    {% endif %}
     
-    {%- if usePointSources is none %}
+    {% if usePointSources is none %}
     void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n)  final {}
     /* Please check if this is at the correct place: */
     virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
-    {%- endif %}
+    {% endif %}
 };
 
 

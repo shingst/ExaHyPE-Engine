@@ -65,17 +65,18 @@ class SolverGenerator(generator.Generator):
         aderdg_context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
         aderdg_context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         aderdg_context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
+        aderdg_context["language"]                = kernel.get("language","C").lower()
+        aderdg_context["basis"]                   = kernel.get("basis","Legendre").lower()
         aderdg_context["isLinear"]                = not kernel.get("nonlinear",True)
         aderdg_context["isNonlinear"]             = kernel.get("nonlinear",True)
         aderdg_context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         aderdg_context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False) 
-        aderdg_context["useConverter"]           = "converter" in kernel.get("optimised_kernel_debugging",[]) 
+        aderdg_context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[]) 
         aderdg_context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[]) 
-        aderdg_context["useFlux"]                 = "flux" in kernel["terms"]
-        aderdg_context["useSource"]               = "source" in kernel["terms"]
-        aderdg_context["useNCP"]                  = "ncp" in kernel["terms"]
-        aderdg_context["usePointSources"]         = "pointsources" in kernel["terms"]
-        aderdg_context["useMaterialParam"]        = "materialparameters" in kernel["terms"]
+        for term in ["flux","source","ncp","point_sources","material_parameters"]:
+          term_s = term.replace("_s","S").replace("_p","P")
+          aderdg_context["use%s%s" % (term[0].upper(),term[1:].lower())] = term in kernel["terms"]
+          aderdg_context["use%s%s_s" % (term[0].upper(),term[1:].lower())] = "true" if term in kernel["terms"] else "false"
         
         solver_map = {
             "user"    :  { solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
