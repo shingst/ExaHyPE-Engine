@@ -158,10 +158,13 @@ class SpecFile1Reader():
       token_s = token.strip()
       m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
       m_primary_ranks_per_node  = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
-      m_node_pool_strategy      = re.match(r"(hotspot|FCFS|sfc-diffusion)",token_s)
-      m_load_balancing_strategy = re.match(r"(fair|greedy-naive|greedy-regular)",token_s)
+      m_node_pool_strategy      = re.match(r"(fair|FCFS|sfc-diffusion)",token_s)
+      m_load_balancing_strategy = re.match(r"(hotspot|greedy-naive|greedy-regular)",token_s)
       
       found_token = False
+      if token_s=="virtually-expand-domain":
+        distributed_memory["scale_bounding_box"] = True # might be better placed into the optimisation section
+        found_token = True
       if m_ranks_per_node:
         distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(1))
         found_token = True

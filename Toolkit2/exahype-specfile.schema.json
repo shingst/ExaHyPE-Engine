@@ -285,7 +285,7 @@
         },
         {
           "properties" : {
-            "node_pool_strategy" : { "enum" : ["hotspot","FCFS"] }
+            "node_pool_strategy" : { "enum" : ["fair","FCFS"] }
           },
           "required" : [ "ranks_per_node" ]
         }
@@ -304,21 +304,21 @@
         "load_balancing_strategy" : {
           "type" : "string", 
           "title" : "Determines ranks with too much load",
-          "enum" : ["fair","greedy_naive","greedy_regular"],
+          "enum" : ["hotspot","greedy_naive","greedy_regular"],
           "default" : "fair",
           "old_format" : [
             { "token_after" : "configure" },
-            { "filter_token" : ["fair", "greedy-naive", "greedy-regular"] }
+            { "filter_token" : ["hotspot", "greedy-naive", "greedy-regular"] }
           ]
         }, 
         "node_pool_strategy" : {
           "type" : "string", 
           "title" : "Determines how requests for ranks are dealt with",
-          "enum" : ["hotspot","FCFS","sfc_diffusion"],
-          "default" : "hotspot",
+          "enum" : ["fair","FCFS","sfc_diffusion"],
+          "default" : "fair",
           "old_format" : [
             { "token_after" : "configure" },
-            { "filter_token" : ["hotspot", "FCFS", "sfc-diffusion"] }
+            { "filter_token" : ["fair", "FCFS", "sfc-diffusion"] }
           ]
         },
         "ranks_per_node" : {
@@ -331,6 +331,13 @@
           "title" : "Primary MPI ranks used per node (only SFC-Diffusion node pool strategy)",
           "old_format" : { "token_after" : "primary-ranks-per-node" }
         },
+        "scale_bounding_box" : {
+          "type" : "boolean", 
+          "title" : "Scale the bounding box to remove some communication",
+          "$comment" : "The bounding box is scaled such that at least one cell is placed outside of the domain at each boundary. This option was previously known as 'virtually-expand-domain'.",
+          "old_format" : { "token_after" : "configure" },
+          "default" : false
+        },        
         "timeout" : {
           "type" : "number", 
           "title" : "Timeout for MPI packages in seconds before the simulation is killed", 
