@@ -247,6 +247,13 @@
           "default" : "dummy",
           "old_format" : { "token_after" : "identifier" }
         },
+        "invasion_strategy" : {
+          "type" : "string", 
+          "title" : "TBB invade strategy", 
+          "enum" : ["no_invade", "analyse_optimal_static_distribution_but_do_not_invade", "occupy_all_cores", "invade_between_time_steps", "invade_throughout_computation", "invade_at_time_step_startup_plus_throughout_computation"],
+          "default" : "no_invade",
+          "old_format" : { "token_after" : "configure" }
+        },
         "properties_file" : {
           "type" : "string", 
           "title" : "Path to a properties file", 

@@ -153,32 +153,55 @@ class SpecFile1Reader():
     distributed_memory["load_balancing_type"]=distributed_memory.pop("identifier").replace("_load_balancing","")
     distributed_memory["buffer_size"]        =distributed_memory.pop("buffer_size")
     # configure
-    configure = distributed_memory.pop("configure")
-    m_ranks_per_node          = re.search(r"(^|,|\s)ranks_per_node:([0-9]+)",configure)
-    m_primary_ranks_per_node  = re.search(r"(^|,|\s)primary_ranks_per_node:([0-9]+)",configure)
-    m_node_pool_strategy      = re.search(r"(hotspot|FCFS|sfc_diffusion)",configure)
-    m_load_balancing_strategy = re.search(r"(fair|greedy_naive|greedy_regular)",configure)
-    if m_ranks_per_node:
-      distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(2))
-    if m_primary_ranks_per_node:
-      distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(2))
-    if m_node_pool_strategy:
-      distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
-    if m_load_balancing_strategy:
-      distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+    configure = distributed_memory.pop("configure").replace("{","").replace("}","")
+    for token in configure.split(","):
+      token_s = token.strip()
+      m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
+      m_primary_ranks_per_node  = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
+      m_node_pool_strategy      = re.match(r"(hotspot|FCFS|sfc-diffusion)",token_s)
+      m_load_balancing_strategy = re.match(r"(fair|greedy-naive|greedy-regular)",token_s)
+      
+      found_token = False
+      if m_ranks_per_node:
+        distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(1))
+        found_token = True
+      if m_primary_ranks_per_node:
+        distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
+        found_token = True
+      if m_node_pool_strategy:
+        distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
+        found_token = True
+      if m_load_balancing_strategy:
+        distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+        found_token = True
+      if not found_token and len(token_s):
+        print("ERROR: Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
   
   ##
   # TODO
   def map_shared_memory(self,shared_memory):
     shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
     # configure
-    configure = shared_memory.pop("configure")
-    m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
-    if m_background_job_consumers:
-      shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
-    if re.search(r"manual_pinning",configure)!=None:
-      shared_memory["manual_pinning"] = True
-    
+    configure = shared_memory.pop("configure").replace("{","").replace("}","")
+    for token in configure.split(","):
+      token_s = token.strip()
+      found_token = False
+      m_background_job_consumers = re.match(r"background-tasks:([0-9]+)",token_s)
+      if m_background_job_consumers:
+        shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
+        found_token = True
+      if re.search(r"manual_pinning",configure)!=None:
+        shared_memory["manual_pinning"] = True
+        found_token = True
+      if token_s in ["no-invade", "analyse-optimal-static-distribution-but-do-not-invade", "occupy-all-cores", "invade-between-time-steps", "invade-throughout-computation", "invade-at-time-step-startup-plus-throughout-computation"]:
+        shared_memory["invasion_strategy"] = token_s.replace("-","_")
+        found_token = True
+      if not found_token and len(token_s):
+        print("ERROR: Could not map value '%s' extracted from option 'shared-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
   ##
   # Converts the kernel terms of a solver entry in the original spec file
   #
@@ -206,7 +229,7 @@ class SpecFile1Reader():
           elif token_s==term:
               found_token = True
       if not found_token:
-        print("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelled correctly?" % token_s,file=sys.stderr)
+        print("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s,file=sys.stderr)
         print("\n\n** Completed with errors **")
         sys.exit()
       
@@ -258,7 +281,7 @@ class SpecFile1Reader():
             context[stp][term]=term
             found_token=True
       if not found_token:
-        print("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelled correctly?" % token_s,file=sys.stderr)
+        print("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s,file=sys.stderr)
         print("\n\n** Completed with errors **")
         sys.exit()
     return context
@@ -271,10 +294,9 @@ class SpecFile1Reader():
     for token in kernel_opts.split(","):
       token_s = token.strip()
       found_token = False
-      for term in ["generic","optimised","user"]:
-        if token_s==term:
-          context["implementation"]=term
-          found_token = True
+      if token_s in ["generic","optimised","user"]:
+        context["implementation"]=term
+        found_token = True
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
         found_token = True
@@ -282,7 +304,7 @@ class SpecFile1Reader():
         context["allocate_temporary_arrays"]="stack"
         found_token = True
       if not found_token:
-        print("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelled correctly?" % token_s,file=sys.stderr)
+        print("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelt correctly?" % token_s,file=sys.stderr)
         print("\n\n** Completed with errors **")
         sys.exit()
     return context

@@ -63,6 +63,7 @@ class Controller():
         self.interactive = args.interactive or not args.not_interactive
         self.verbose = args.verbose or self.interactive
         self.write_json=args.write_json
+        self.debug_mode=args.debug
         
         if self.verbose: # otherwise no need to call git, etc. 
             self.info(self.header())
@@ -152,6 +153,7 @@ class Controller():
         g.add_argument("-n", "--not-interactive", action="store_true", default=True, help="Run non-interactive in non-stop-mode (default)")
         parser.add_argument("-v", "--verbose", action="store_true", help="Be verbose (off by default, triggered on by --interactive)")
         parser.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file if legacy specification file is read (*.exahype) (default: no)")
+        parser.add_argument("-d", "--debug", action="store_true", default=False, help="Turn the debug mode on: print stack traces and more detailed error messages.")
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
             help="The specification file to work on (can be .exahype, .exahype2, .json)")
@@ -166,6 +168,8 @@ class Controller():
             print("ERROR: Could not properly read specfile",file=sys.stderr)
             print("ERROR: Message: %s" % e,file=sys.stderr)
             print("\n\n** Completed with errors **")
+            if self.debug:
+              raise
             sys.exit(-3)
     
     
