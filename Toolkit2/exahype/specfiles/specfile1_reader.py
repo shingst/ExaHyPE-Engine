@@ -261,9 +261,15 @@ class SpecFile1Reader():
       return int(variables.strip())
     else:
       result=[]
-      it = re.finditer("(\w+)\s*:\s*([0-9]+)",variables)
+      it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",variables)
       for m in it:
-        result.append(collections.OrderedDict([ ( "name",m.group(1) ), ( "multiplicity",int(m.group(2)) ) ])) 
+        multiplicity = None
+        try:
+          multiplicity = int(m.group(3)) 
+        except:
+          multiplicity = m.group(3)
+          
+        result.append(collections.OrderedDict([ ( "name",m.group(2) ), ( "multiplicity", multiplicity ) ])) 
       if result:
         return result
       else:
