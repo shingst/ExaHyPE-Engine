@@ -245,19 +245,22 @@ class exahype::parser::Parser {
 
   MPILoadBalancingType getMPILoadBalancingType() const;
 
-  /*
-  // Note: These two functions are deprecated, we no more store property strings
-  //   which secretly also can be key-value-storages. Instead, use the
-  //   functions   MPIConfigurationContains(keyword)
-  //               SharedMemoryConfigurationContains(keyword)
-  //   and to access actual values, call the parser directly like
-  //     int primaryRanksPerNode = _parser.getIntFromPath("/distributed_memory/primary_ranks_per_node"));
-  //
-  std::string getMPIConfiguration() const;
-  std::string getSharedMemoryConfiguration() const;
-  */
-  
+  /**
+   * @return `true` if the parsed strategy matches the argument.
+   * @param strategy one of "FCFS" (first-come-first-served), "fair", "sfc-diffusion"
+   */
+  bool compareNodePoolStrategy(const std::string& strategy) const;
+
+  /**
+   * @return `true` if the parsed strategy matches the argument.
+   * @param strategy one of "greedy_naive", "greedy_regular", "hotspot"
+   */
+  bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
+
+  bool getScaleBoundingBox() const;
+
   int getMPIBufferSize() const;
+
   int getMPITimeOut() const;
 
   double getSimulationEndTime() const;

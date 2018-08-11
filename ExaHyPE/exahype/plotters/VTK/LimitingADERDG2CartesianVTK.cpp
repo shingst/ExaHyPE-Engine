@@ -29,7 +29,6 @@
 
 #include "kernels/DGBasisFunctions.h"
 
-#include "exahype/plotters/slicing/Slicer.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 
@@ -136,10 +135,10 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::init(
   _patchWriter       = nullptr;
   _writtenUnknowns   = writtenUnknowns;
 
-  slicer = Slicer::bestFromSelectionQuery(select);
+  _slicer = Slicer::bestFromSelectionQuery(select);
 
-  if(slicer) {
-	logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
+  if(_slicer) {
+    logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);
   }
 }
 
@@ -436,7 +435,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotADERDGPatch(
     double timeStamp,
     const int RefinementStatusAsInt,
     const int previousRefinementStatusAsInt) {
-  if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
+  if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     assertion( _writtenUnknowns==0 || _patchWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _gridWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _timeStampVertexDataWriter!=nullptr );
@@ -461,7 +460,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotFiniteVolumesPatch(
   const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
   const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
   double timeStamp) {
-  if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
+  if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     logDebug("plotPatch(...)","offset of patch: "<<offsetOfPatch
     <<", size of patch: "<<sizeOfPatch
     <<", time stamp: "<<timeStamp);

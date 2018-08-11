@@ -59,7 +59,7 @@ private:
 
 public:
   ParserView(const exahype::parser::Parser* parser, std::string basePath);
-  
+
   /** These two functions had to be introduced since ParserView
    *  was quickly introduced to all the plotters. It is in principle
    *  not something one really wants -.-
@@ -146,7 +146,7 @@ public:
   /**
    * Not a short but a long string
    **/
-  std::string dump() const;
+  std::string dump(const std::string path="") const;
 };
 
 #endif

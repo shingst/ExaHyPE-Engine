@@ -60,15 +60,15 @@ CartesianSlicer::CartesianSlicer(const dvec& _req, const ivec& _active, int _bas
 	}
 }
 	
-CartesianSlicer* CartesianSlicer::fromSelectionQuery(const exahype::parser::ParserView select) {
+CartesianSlicer* CartesianSlicer::fromSelectionQuery(const exahype::parser::ParserView& plotterParameters) {
 	dvec r; ivec v;
-	v(0) = select.isValueValidDouble("x");
-	r(0) = select.getValueAsDouble("x");
-	v(1) = select.isValueValidDouble("y");
-	r(1) = select.getValueAsDouble("y");
+	v(0) = plotterParameters.isValueValidDouble("select/x");
+	r(0) = plotterParameters.getValueAsDouble("select/x");
+	v(1) = plotterParameters.isValueValidDouble("select/y");
+	r(1) = plotterParameters.getValueAsDouble("select/y");
 	#if DIMENSIONS==3
-	v(2) = select.isValueValidDouble("z");
-	r(2) = select.getValueAsDouble("z");
+	v(2) = plotterParameters.isValueValidDouble("select/z");
+	r(2) = plotterParameters.getValueAsDouble("select/z");
 	#endif
 
 	// v(i) == true == 1 means that value was provided, v(i) == false == 0 means that not.
@@ -137,40 +137,40 @@ std::string CartesianSlicer::planeLabel() const {
 	return "unknowns";
 }
 
-RegionSlicer* RegionSlicer::fromSelectionQuery(const exahype::parser::ParserView select) {
+RegionSlicer* RegionSlicer::fromSelectionQuery(const exahype::parser::ParserView& plotterParameters) {
 	dvec regionOfInterestLeftBottomFront, regionOfInterestRightTopBack;
 	double x;
 	
-	x = select.getValueAsDouble("left");
-	regionOfInterestLeftBottomFront(0) = select.getValueAsDouble("left") ? x : defaultLeftBottomFront; // "-", min
-	x = select.getValueAsDouble( "bottom" );
-	regionOfInterestLeftBottomFront(1) = select.getValueAsDouble("bottom") ? x : defaultLeftBottomFront; // "-", min
+	x = plotterParameters.getValueAsDouble("select/left");
+	regionOfInterestLeftBottomFront(0) = plotterParameters.getValueAsDouble("select/left") ? x : defaultLeftBottomFront; // "-", min
+	x = plotterParameters.getValueAsDouble( "select/bottom" );
+	regionOfInterestLeftBottomFront(1) = plotterParameters.getValueAsDouble("select/bottom") ? x : defaultLeftBottomFront; // "-", min
 	#if DIMENSIONS==3
-	x = select.getValueAsDouble( "front" );
-	regionOfInterestLeftBottomFront(2) = select.getValueAsDouble("front") ? x : defaultLeftBottomFront; // "-", min
+	x = plotterParameters.getValueAsDouble( "select/front" );
+	regionOfInterestLeftBottomFront(2) = plotterParameters.getValueAsDouble("select/front") ? x : defaultLeftBottomFront; // "-", min
 	#endif
 	
-	x = select.getValueAsDouble( "right" );
-	regionOfInterestRightTopBack(0) = select.getValueAsDouble("right") ? x : defaultRightTopBack;
-	x = select.getValueAsDouble( "top" );
-	regionOfInterestRightTopBack(1) = select.getValueAsDouble("top") ? x : defaultRightTopBack;
+	x = plotterParameters.getValueAsDouble( "select/right" );
+	regionOfInterestRightTopBack(0) = plotterParameters.getValueAsDouble("select/right") ? x : defaultRightTopBack;
+	x = plotterParameters.getValueAsDouble( "select/top" );
+	regionOfInterestRightTopBack(1) = plotterParameters.getValueAsDouble("select/top") ? x : defaultRightTopBack;
 	#if DIMENSIONS==3
-	x = select.getValueAsDouble( "back" );
-	regionOfInterestRightTopBack(2) = select.getValueAsDouble("back") ? x : defaultRightTopBack;
+	x = plotterParameters.getValueAsDouble( "select/back" );
+	regionOfInterestRightTopBack(2) = plotterParameters.getValueAsDouble("select/back") ? x : defaultRightTopBack;
 	#endif
 	
 	return new RegionSlicer(regionOfInterestLeftBottomFront, regionOfInterestRightTopBack);
 }
 
-Slicer* Slicer::bestFromSelectionQuery(const exahype::parser::ParserView select) {
-	logInfo("bestFromSelectionQuery", "Scanning plotting selection query '"<<select.dump()<<"'");
+Slicer* Slicer::bestFromSelectionQuery(const exahype::parser::ParserView& plotterParameters) {
+	logInfo("bestFromSelectionQuery", "Scanning plotting selection query '"<<plotterParameters.dump("select")<<"'");
 	
 	// Build up the registry:
-	Slicer *a = CartesianSlicer::fromSelectionQuery(select);
-	Slicer *b = RegionSlicer::fromSelectionQuery(select);
+	Slicer *a = CartesianSlicer::fromSelectionQuery(plotterParameters);
+	Slicer *b = RegionSlicer::fromSelectionQuery(plotterParameters);
 
 	if(a->clips() && b->clips()) {
-		logError("bestFromSelectionQuery", "Warning: Several slicing strategies apply to the given arguments '"<<select.dump()<<"'. I choose " << a->getIdentifier());
+		logError("bestFromSelectionQuery", "Warning: Several slicing strategies apply to the given arguments '"<<plotterParameters.dump("select")<<"'. I choose " << a->getIdentifier());
 	}
 
 	if(a->clips()) { delete b; return a;}

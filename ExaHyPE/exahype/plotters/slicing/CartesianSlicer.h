@@ -85,7 +85,7 @@ struct exahype::plotters::CartesianSlicer : public exahype::plotters::Slicer {
 	 * Parse an ExaHyPE specfile query string and construct a CartesianSlicer object.
 	 * The syntax is described in the class documentation.
 	 **/
-	static CartesianSlicer* fromSelectionQuery(const exahype::parser::ParserView select);
+	static CartesianSlicer* fromSelectionQuery(const exahype::parser::ParserView& select);
 	
 	/// The inverse of the attribute "active".
 	int running(int d) const { return active(d) ? 0 : 1; }

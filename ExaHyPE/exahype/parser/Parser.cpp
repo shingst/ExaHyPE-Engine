@@ -133,8 +133,12 @@ struct exahype::parser::ParserImpl {
 
 };
 
-extern constexpr bool exahype::parser::Parser::isOptional;
-extern constexpr bool exahype::parser::Parser::isMandatory;
+/**
+ * static constexpr need to declared again when following a
+ * C++ standard before C++17.
+ */
+constexpr bool exahype::parser::Parser::isOptional;
+constexpr bool exahype::parser::Parser::isMandatory;
 
 bool exahype::parser::Parser::_interpretationErrorOccured(false);
 
@@ -472,6 +476,13 @@ double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
   return result;
 }
 
+bool exahype::parser::Parser::compareNodePoolStrategy(const std::string& strategy) const {
+  return getStringFromPath("distributed_memory/node_pool_strategy","fair",isOptional).compare(strategy)==0;
+}
+
+bool exahype::parser::Parser::compareMPILoadBalancingStrategy(const std::string& strategy) const {
+  return getStringFromPath("distributed_memory/load_balancing_strategy","hotspot",isOptional).compare(strategy)==0;
+}
 
 int exahype::parser::Parser::getMPIBufferSize() const {
   int result = getIntFromPath("distributed_memory/buffer_size");
@@ -561,6 +572,10 @@ int exahype::parser::Parser::getSimulationTimeSteps() const {
     invalidate();
   }
   return result;
+}
+
+bool exahype::parser::Parser::getScaleBoundingBox() const {
+  return getBoolFromPath("distributed_memory/scale_bounding_box", false, isOptional);
 }
 
 bool exahype::parser::Parser::getFuseAlgorithmicSteps() const {
@@ -676,7 +691,7 @@ std::string exahype::parser::Parser::getIdentifier(int solverNumber) const {
 }
 
 int exahype::parser::Parser::countVariablesType(const int solverNumber, const std::string& identifier, const bool isOptional) const {
-  std::string path = sformat("solver/%d/%s", solverNumber+1, identifier);
+  std::string path = sformat("solver/%d/%s", solverNumber+1, identifier.c_str());
   if ( hasPath(path) ) {
     auto j = _impl->data.at(path);
     if(j.is_primitive()) {
