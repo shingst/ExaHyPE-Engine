@@ -829,11 +829,18 @@
                   ]
                 },
                 "parameters" : {
-                  "title" : "Free runtime parameters for postprocessing-codes. This should actually be merged into the select statement.",
+                  "title" : "Run-time parameters handed over to the plotter/post-processing tool",
+                  "$comment" : "Can be used for spatial dimensional slicing, introduced by Tobias for seismic probes. This is always an object.",
                   "scope" : "run-time",
+                  "old_format" : { "token_after" : { "token" : "select", "additional_tokens_to_skip" : 1 } },
                   "anyOf" : [
                     { "type" : "object" },
                     { "type" : "array" }
+                  ],
+                  "examples" : [
+                    { "x" : 0 },
+                    { "x" : 0, "y" : 1 },
+                    { "x" : 3.14, "y" : 2.7, "z" : 1.4 }
                   ]
                 }
               }

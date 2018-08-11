@@ -333,10 +333,16 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_constants(self,constants):
-    result=[]
+    result={}
     it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",constants)
     for m in it:
-      result.append({ m.group(2) : m.group(3) }) 
+      try:
+        result[m.group(2)]=int(m.group(3))
+      except:
+        try:
+          result[m.group(2)]=float(m.group(3))
+        except:
+          result[m.group(2)]=m.group(3)
     if result:
       return result
     else:
@@ -457,7 +463,8 @@ class SpecFile1Reader():
       for j,plotter in enumerate(solver["plotters"]):
         plotter["variables"]=self.map_variables(plotter.pop("variables"))
         if "select" in plotter:
-          plotter["select"]=self.map_constants(plotter.pop("select"))
+          plotter["parameters"]={}
+          plotter["parameters"]["select"]=self.map_constants(plotter.pop("select"))
     
     return context
   

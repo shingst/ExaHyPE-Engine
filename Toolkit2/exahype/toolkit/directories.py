@@ -29,18 +29,15 @@ class DirectoryAndPathChecker:
 		for subdir in required_subdirs:
 			self.check("%s holds %s" % (human_readable, subdir),  pathInstance.joinpath(subdir), verbose_show_path=False, makedirs=makedirs)
 
-	def __init__(self, spec, verbose):
+	def __init__(self, paths, verbose):
 		self.verbose = verbose
 		
-		paths = spec["paths"]
-		peanoToolboxPath = paths["peano_kernel_path"] # sic, from old toolkit
-		
-		self.check("Peano kernel path", Path(paths["peano_kernel_path"]), required_subdirs=["tarch", "peano"])
+		self.check("Peano kernel path", Path(paths["peanoToolboxPath"]), required_subdirs=["tarch", "peano"])
 		#check("Peano kernel path tarch sources", Path(paths["peanoKernelPath"]).joinpath("tarch/"))
-		self.check("Peano toolboxes path", Path(peanoToolboxPath), required_subdirs=["multiscalelinkedcell", "sharedmemoryoracles", "mpibalancing"])
+		self.check("Peano toolboxes path", Path(paths["peanoToolboxPath"]), required_subdirs=["multiscalelinkedcell", "sharedmemoryoracles", "mpibalancing"])
 		
-		self.check("ExaHyPE path", Path(paths["exahype_path"]))
-		self.check("Output directory", Path(paths["output_directory"]), makedirs=True)
+		self.check("ExaHyPE path", Path(paths["exahypePath"]))
+		self.check("Output directory", Path(paths["outputPath"]), makedirs=True)
 	
 		# TODO (from Toolkit1): Initialize the CodeGeneratorHelper path (static)
 		# CodeGeneratorHelper.setPaths(this);

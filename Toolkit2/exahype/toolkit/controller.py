@@ -78,7 +78,7 @@ class Controller():
     
     def run(self):
         try:
-            d = directories.DirectoryAndPathChecker(self.spec, self.verbose)
+            d = directories.DirectoryAndPathChecker(self.buildBaseContext(), self.verbose)
         except BadSpecificationFile as e:
             print("ERROR: Some directories did not exist and/or could not be created.", file=sys.stderr)
             print("ERROR: Message: %s" % e, file=sys.stderr)
@@ -196,13 +196,14 @@ class Controller():
         """Generate base context from spec with commonly used value"""
         context = {}
         # outputPath for generated file
-        context["outputPath"] = self.spec["paths"]["output_directory"]
+        context["outputPath"]       = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
+        context["exahypePath"]      = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
+        context["peanoToolboxPath"] = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
+        
         # commonly used values
-        context["dimensions"] = self.spec["computational_domain"]["dimension"]
-        context["project"] = self.spec["project_name"]
-        context["exahypePath"] = self.spec["paths"]["exahype_path"]
-        context["peanoToolboxPath"] = self.spec["paths"]["peano_kernel_path"]
-        context["alignment"] = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
+        context["project"]          = self.spec["project_name"]
+        context["dimensions"]       = self.spec["computational_domain"]["dimension"]
+        context["alignment"]        = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
         
         return context
     
