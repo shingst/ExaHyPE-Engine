@@ -133,6 +133,9 @@ struct exahype::parser::ParserImpl {
 
 };
 
+extern constexpr bool exahype::parser::Parser::isOptional;
+extern constexpr bool exahype::parser::Parser::isMandatory;
+
 bool exahype::parser::Parser::_interpretationErrorOccured(false);
 
 const std::string exahype::parser::Parser::_noTokenFound("notoken");
@@ -267,6 +270,29 @@ std::string exahype::parser::Parser::getStringFromPath(std::string path, std::st
     logError("getStringFromPath()", e.what());
     invalidate();
     return defaultValue; /* I don't like returning something here */
+  }
+  /*
+  assertion(isValid());
+  try {
+    return _impl->data.at(json::json_pointer(path));
+  } catch (json::type_error& e) {
+    logError("getStringFromPath()", path << " is not a string (" << e.what() << ")");
+  } catch(json::out_of_range& e) {
+    logError("getStringFromPath()", "Missing entry " << path << " (" << e.what() << ")");
+  }
+  invalidate();
+  return "";
+  */
+}
+
+bool exahype::parser::Parser::stringFromPathEquals(const std::string& path, const std::string& defaultValue,const bool isOptional, const std::string& otherString) const {
+  assertion(isValid());
+  try {
+    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString);
+  } catch(std::runtime_error& e) {
+    logError("stringFromPathEquals()", e.what());
+    invalidate();
+    return defaultValue.compare(otherString)==0; /* I don't like returning something here */
   }
   /*
   assertion(isValid());
@@ -418,15 +444,15 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getOffset() const
 }
 
 std::string exahype::parser::Parser::getMulticorePropertiesFile() const {
-  std::string result = getStringFromPath("/shared_memory/properties_file");
+  std::string result = getStringFromPath("/shared_memory/properties_file","shared-memory.properties",isOptional);
   logDebug("getMulticorePropertiesFile()", "found " << result);
   return result;
 }
 
 exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoadBalancingType() const {
-  std::string token = getStringFromPath("/distributed_memory/identifier");
+  std::string token = getStringFromPath("/distributed_memory/loadbalancing_type","static",isOptional);
   exahype::parser::Parser::MPILoadBalancingType result = MPILoadBalancingType::Static;
-  if (token.compare("static_load_balancing") == 0) {
+  if (token.compare("static") == 0) {
     result = MPILoadBalancingType::Static;
   } else {
     logError("getMPILoadBalancingType()",
@@ -435,16 +461,6 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
   }
   return result;
 }
-
-
-bool exahype::parser::Parser::MPIConfigurationContains(std::string flag) const {
-  return flagListContains("/distributed_memory/configure", flag);
-}
-
-bool exahype::parser::Parser::SharedMemoryConfigurationContains(std::string flag) const {
-  return flagListContains("/shared_memory/configure", flag);
-}
-
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
   const std::string path = "/distributed_memory/max_node_pool_answering_time";
@@ -488,7 +504,7 @@ int exahype::parser::Parser::getMPITimeOut() const {
 }
 
 exahype::parser::Parser::MulticoreOracleType exahype::parser::Parser::getMulticoreOracleType() const {
-  std::string token = getStringFromPath("shared-memory/identifier");
+  std::string token = getStringFromPath("shared-memory/autotuning_strategy","dummy",isOptional);
   exahype::parser::Parser::MulticoreOracleType result = MulticoreOracleType::Dummy;
   if (token.compare("dummy") == 0) {
     result = MulticoreOracleType::Dummy;
@@ -534,13 +550,13 @@ bool exahype::parser::Parser::foundSimulationEndTime() const {
 
 int exahype::parser::Parser::getSimulationTimeSteps() const {
   int result = getIntFromPath("computational_domain/time_steps");
-  logDebug("getSimulationEndTime()", "found result " << result);
+  logDebug("getSimulationTimeSteps()", "found result " << result);
   
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable ints resulted in negative numbers.
 
   if (result < 0) {
-    logError("getSimulationEndTime()",
+    logError("getSimulationTimeSteps()",
              "Invalid simulation timestep: " << result);
     invalidate();
   }
@@ -659,58 +675,50 @@ std::string exahype::parser::Parser::getIdentifier(int solverNumber) const {
   return token;
 }
 
-int exahype::parser::Parser::getVariables(int solverNumber) const {
-  std::string path = sformat("solver/%d/variables", solverNumber+1);
-  auto j = _impl->data.at(path);
-  if(j.is_primitive()) {
-    // variables=N
-    return getIntFromPath(path);
-  } else if(j.is_array()) {
-    // variables=["foo","bar","baz"], meaning variables=3
-    return j.size();
-  } else {
-    // count multiplicities
-    int result = 0;
-    for (json::iterator it = j.begin(); it != j.end(); ++it) {
-      // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
-      result += getIntFromPath(sformat("solver/%d/variables/%d/multiplicity", solverNumber+1, it - j.begin()));
+int exahype::parser::Parser::countVariablesType(const int solverNumber, const std::string& identifier, const bool isOptional) const {
+  std::string path = sformat("solver/%d/%s", solverNumber+1, identifier);
+  if ( hasPath(path) ) {
+    auto j = _impl->data.at(path);
+    if(j.is_primitive()) {
+      // variables=N
+      return getIntFromPath(path);
+    } else if(j.is_array()) {
+      // variables=["foo","bar","baz"], meaning variables=3
+      return j.size();
+    } else {
+      // count multiplicities
+      int result = 0;
+      for (json::iterator it = j.begin(); it != j.end(); ++it) {
+        // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
+        result += getIntFromPath(sformat("solver/%d/identifier/%d/multiplicity", solverNumber+1, it - j.begin()));
+      }
+      if(result == 0) {
+        logError("getVariablesType()",
+                 "'" << getIdentifier(solverNumber)
+                 << "': '"<<identifier<<"': Value must be greater than zero.");
+        invalidate();
+      }
+      return result;
     }
-    if(result == 0) {
-      logError("getVariables()",
-               "'" << getIdentifier(solverNumber)
-               << "': 'variables': Value must be greater than zero.");
-          invalidate();
-    }
-    return result;
   }
+  if ( !isOptional ) {
+    logError("getVariablesType()","'" << getIdentifier(solverNumber)<< "': Field '"<<identifier<<
+             "' could not be found!");
+    invalidate();
+  }
+  return 0;
+}
+
+int exahype::parser::Parser::getVariables(int solverNumber) const {
+  return countVariablesType(solverNumber,"variables");
 }
 
 int exahype::parser::Parser::getParameters(int solverNumber) const {
-  // Copied the getVariables code here.
-  
-  std::string path = sformat("solver/%d/parameters", solverNumber+1);
-  auto j = _impl->data.at(path);
-  if(j.is_primitive()) {
-    // variables=N
-    return getIntFromPath(path);
-  } else if(j.is_array()) {
-    // variables=["foo","bar","baz"], meaning variables=3
-    return j.size();
-  } else {
-    // count multiplicities
-    int result = 0;
-    for (json::iterator it = j.begin(); it != j.end(); ++it) {
-      // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
-      result += getIntFromPath(sformat("solver/%d/parameters/%d/multiplicity", solverNumber+1, it - j.begin()));
-    }
-    if(result == 0) {
-      logError("getParameters()",
-               "'" << getIdentifier(solverNumber)
-               << "': 'parameters': Value must be greater than zero.");
-          invalidate();
-    }
-    return result;
-  }
+  return countVariablesType(solverNumber,"material_parameters",isOptional);
+}
+
+int exahype::parser::Parser::getGlobalObservables(int solverNumber) const {
+  return countVariablesType(solverNumber,"global_observables",isOptional);
 }
 
 int exahype::parser::Parser::getOrder(int solverNumber) const {
@@ -796,7 +804,7 @@ exahype::solvers::Solver::TimeStepping exahype::parser::Parser::getTimeStepping(
 }
 
 double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) const {
-  double result = getDoubleFromPath(sformat("solver/%d/dmp_relaxation_parameter", solverNumber+1));
+  double result = getDoubleFromPath(sformat("solver/%d/limiter/dmp_relaxation_parameter", solverNumber+1));
 
   if (result < 0) {
     logError("getDMPRelaxationParameter()",
@@ -810,7 +818,7 @@ double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) cons
 }
 
 double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const {
-  double result = getDoubleFromPath(sformat("solver/%d/dmp_difference_scaling", solverNumber+1));
+  double result = getDoubleFromPath(sformat("solver/%d/limiter/dmp_difference_scaling", solverNumber+1));
 
   if (result < 0) {
     logError("getDMPDifferenceScaling()",
@@ -824,7 +832,7 @@ double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const 
 }
 
 int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
-  int result = getIntFromPath(sformat("solver/%d/dmp_observables", solverNumber+1));
+  int result = getIntFromPath(sformat("solver/%d/limiter/dmp_observables", solverNumber+1));
 
   if (result < 0) {
     logError("getDMPObservables()",
@@ -839,7 +847,7 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
 
 int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
   const int default_value = 0;
-  int result = getIntFromPath(sformat("solver/%d/steps_till_cured", solverNumber+1), default_value, isOptional);
+  int result = getIntFromPath(sformat("solver/%d/limiter/steps_till_cured", solverNumber+1), default_value, isOptional);
 
   if (result < 0) {
     logError("getStepsTillCured()",
@@ -853,22 +861,19 @@ int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
-  return getIntFromPath(sformat("solver/%d/help_layers", solverNumber+1), 1, isOptional);
+  return getIntFromPath(sformat("solver/%d/limiter/help_layers", solverNumber+1), 1, isOptional);
 }
 
-std::string exahype::parser::Parser::getIdentifierForPlotter(int solverNumber,
-                                                     int plotterNumber) const {
+std::string exahype::parser::Parser::getIdentifierForPlotter(int solverNumber,int plotterNumber) const {
   return getStringFromPath(sformat("solver/%d/plotters/%d/name", solverNumber+1, plotterNumber+1));
 }
 
-std::string exahype::parser::Parser::getNameForPlotter(int solverNumber,
-                                               int plotterNumber) const {
+std::string exahype::parser::Parser::getNameForPlotter(int solverNumber,int plotterNumber) const {
   return getStringFromPath(sformat("solver/%d/plotters/%d/type", solverNumber+1, plotterNumber+1));
 }
 
-int exahype::parser::Parser::getUnknownsForPlotter(int solverNumber,
-                                           int plotterNumber) const {
-  return getIntFromPath(sformat("solver/%d/plotters/%d/variables", solverNumber+1, plotterNumber+1));
+int exahype::parser::Parser::getUnknownsForPlotter(int solverNumber,int plotterNumber) const {
+  return countVariablesType(solverNumber,sformat("plotters/%d/variables", plotterNumber+1),isOptional);
 }
 
 double exahype::parser::Parser::getFirstSnapshotTimeForPlotter(
@@ -905,19 +910,6 @@ std::string exahype::parser::Parser::getMetricsIdentifierList() const {
 
 std::string exahype::parser::Parser::getProfilingOutputFilename() const {
   return getStringFromPath("/profiling/profiling_output", "", isOptional);
-}
-
-void exahype::parser::Parser::logSolverDetails(int solverNumber) const {
-  logInfo("logSolverDetails()",
-          "Solver " << exahype::solvers::Solver::toString(getType(solverNumber)) << " "
-                    << getIdentifier(solverNumber) << ":");
-  logInfo("logSolverDetails()", "variables:\t\t" << getVariables(solverNumber));
-  logInfo("logSolverDetails()", "parameters:\t" << getParameters(solverNumber));
-  logInfo("logSolverDetails()", "order:\t\t" << getOrder(solverNumber));
-  logInfo("logSolverDetails()", "maximum-mesh-size:\t"
-                                    << getMaximumMeshSize(solverNumber));
-  logInfo("logSolverDetails()",
-          "time-stepping:\t" << exahype::solvers::Solver::toString(getTimeStepping(solverNumber)));
 }
 
 void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
@@ -1018,7 +1010,7 @@ int exahype::parser::Parser::getRanksPerNode() {
 
 
 int exahype::parser::Parser::getNumberOfBackgroundTasks() {
-  int result = getIntFromPath("/shared_memory/background_tasks");
+  int result = getIntFromPath("/shared_memory/background_job_consumers",1,isOptional);
 
   if (result<-2) {
     logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
@@ -1030,21 +1022,20 @@ int exahype::parser::Parser::getNumberOfBackgroundTasks() {
 
 
 bool exahype::parser::Parser::useManualPinning() {
-  return flagListContains("/shared_memory/configure", "manual_pinning");
+  return getBoolFromPath("/shared_memory/manual_pinning",false,isOptional);
 }
 
 exahype::parser::ParserView exahype::parser::Parser::createParserView(const int solverNumberInSpecificationFile) {
-  return exahype::parser::ParserView(this,sformat("/solver/%d/constants", solverNumberInSpecificationFile));
+  return exahype::parser::ParserView(this,sformat("/solver/%d/parameters", solverNumberInSpecificationFile));
 }
 
-
 exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvadeStrategy() const {
-  if (flagListContains("/shared_memory/configure", "no_invade")) return TBBInvadeStrategy::NoInvade;
-  if (flagListContains("/shared_memory/configure", "analyse_optimal_static_distribution_but_do_not_invade")) return TBBInvadeStrategy::NoInvadeButAnalyseDistribution;
-  if (flagListContains("/shared_memory/configure", "occupy_all_cores")) return TBBInvadeStrategy::OccupyAllCores;
-  if (flagListContains("/shared_memory/configure", "invade_between_time_steps")) return TBBInvadeStrategy::InvadeBetweenTimeSteps;
-  if (flagListContains("/shared_memory/configure", "invade_throughout_computation")) return TBBInvadeStrategy::InvadeThroughoutComputation;
-  if (flagListContains("/shared_memory/configure", "invade_at_time_step_startup_plus_throughout_computation")) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
+  if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "no_invade"))                                               return TBBInvadeStrategy::NoInvade;
+  if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "analyse_optimal_static_distribution_but_do_not_invade"))   return TBBInvadeStrategy::NoInvadeButAnalyseDistribution;
+  if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "occupy_all_cores"))                                        return TBBInvadeStrategy::OccupyAllCores;
+  if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "invade_between_time_steps"))                               return TBBInvadeStrategy::InvadeBetweenTimeSteps;
+  if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "invade_throughout_computation"))                           return TBBInvadeStrategy::InvadeThroughoutComputation;
+  if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "invade_at_time_step_startup_plus_throughout_computation")) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
 
   return TBBInvadeStrategy::Undef;
 }

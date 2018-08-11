@@ -90,6 +90,14 @@ class exahype::parser::Parser {
    **/
   std::string _filename;
 
+  /**
+   * Count the size of a field of type 'variables', 'material_parameters', 'global_observables'.
+   *
+   * @param solverNumber index of solver in registry. First solver has index '0'.
+   * @param identifier   one out of 'variables', 'material_parameters', 'global_observables'
+   */
+  int countVariablesType(const int solverNumber, const std::string& identifier, const bool isOptional=false) const;
+
  public:
   /**
    * \defgroup JsonFrontend High-level API to read from JSON data
@@ -129,14 +137,33 @@ class exahype::parser::Parser {
   bool isValueValidString(const std::string& path) const;
   
   /**
-   * Read a string from a JSON path from the configuration file.
-    Will logError in case of errors and invalidate the parser.
-   **/
+   * @return a string from a JSON path from the configuration file or the default value
+   *
+   * @note Will logError in case of errors and invalidate the parser.
+   *
+   * @param path         path to the string
+   * @param defaultValue default value
+   * @param isOptional   parameter is optional
+   */
   std::string getStringFromPath(std::string path, std::string defaultValue="", bool isOptional=false) const;
   int getIntFromPath(std::string path, int defaultValue=-1, bool isOptional=false) const;
   double getDoubleFromPath(std::string path, double defaultValue=-1, bool isOptional=false) const;
   bool getBoolFromPath(std::string path, bool defaultValue=true, bool isOptional=false) const;
   
+  /**
+   * Compare string from a JSON path from the configuration file to
+   * another string.
+   *
+   * @return `true` if the strings match.
+   *
+   * @note Will logError in case of errors and invalidate the parser.
+   *
+   * @param path         path to the string
+   * @param defaultValue default value
+   * @param isOptional   parameter is optional
+   */
+  bool stringFromPathEquals(const std::string& path, const std::string& defaultValue,const bool isOptional, const std::string& otherString) const;
+
   /**
    * Read a double-Vector of length DIMENSIONS from a JSON path from the configuration file.
    * Will logError in case of errors and invalidate the parser.
@@ -204,7 +231,7 @@ class exahype::parser::Parser {
   void invalidate() const;
 
   /**
-   * \return How many threads is the code supposed to use?
+   * @return How many threads is the code supposed to use?
    */
   int getNumberOfThreads() const;
 
@@ -229,9 +256,6 @@ class exahype::parser::Parser {
   std::string getMPIConfiguration() const;
   std::string getSharedMemoryConfiguration() const;
   */
-
-  bool MPIConfigurationContains(std::string flag) const;
-  bool SharedMemoryConfigurationContains(std::string flag) const;
   
   int getMPIBufferSize() const;
   int getMPITimeOut() const;
@@ -239,19 +263,19 @@ class exahype::parser::Parser {
   double getSimulationEndTime() const;
 
   /**
-   * \return if the simulation end time can be
+   * @return if the simulation end time can be
    * found in the parsed specification file.
    */
   bool  foundSimulationEndTime() const;
 
   /**
-   * \return the number of time steps the
+   * @return the number of time steps the
    * simulation shall be run (0 is a valid value)
    */
   int  getSimulationTimeSteps() const;
 
   /**
-   * \return Indicates if the user has chosen the fused ADER-DG time stepping
+   * @return Indicates if the user has chosen the fused ADER-DG time stepping
    * variant.
    *
    * If the parser returns _noTokenFound, we may not issue an error as this is
@@ -260,19 +284,19 @@ class exahype::parser::Parser {
   bool getFuseAlgorithmicSteps() const;
 
   /**
-   * \return Time step size underestimation factor for the fused ADER-DG time
+   * @return Time step size underestimation factor for the fused ADER-DG time
    * stepping variant.
    */
   double getFuseAlgorithmicStepsFactor() const;
 
   /**
-   * \return if the predictor should be spawned as background
+   * @return if the predictor should be spawned as background
    * thread whenever this is possible.
    */
   bool getSpawnPredictionAsBackgroundThread() const;
 
   /**
-   * \return if the mesh refinement iterations should
+   * @return if the mesh refinement iterations should
    * use background-threads whenever this is possible.
    */
   bool getSpawnAMRBackgroundThreads() const;
@@ -300,72 +324,74 @@ class exahype::parser::Parser {
    * exchange of ExaHyPE metadata if and only if no dynamic limiting
    * and no dynamic AMR is used.
    *
-   * \note That this is upgraded to all time stepping communication
+   * @note That this is upgraded to all time stepping communication
    * if you turn getDisablePeanoNeighbourExchangeDuringTimeSteps()
    * returns true as well.
    */
   bool getDisableMetadataExchangeInBatchedTimeSteps() const;
 
   /**
-   * \return The type of a solver.
+   * @return The type of a solver.
    */
   exahype::solvers::Solver::Type getType(int solverNumber) const;
 
   /**
-   * \return The identifier of a solver.
+   * @return The identifier of a solver.
    */
   std::string getIdentifier(int solverNumber) const;
 
   /**
-   * \return The number of state vaParserriables of a solver.
+   * @return The number of state variables of a solver.
    */
   int getVariables(int solverNumber) const;
 
   /**
-   * \return The number of parameters of a solver, e.g. material values etc.
+   *
+   *
+   * @return The number of parameters of a solver, e.g. material values etc.
    */
   int getParameters(int solverNumber) const;
 
   /**
-   * \return The order of the ansatz polynomials of a solver.
+   * @return The number of global observables, e.g. energies, coordinates, errors, ...
+   */
+  int getGlobalObservables(int solverNumber) const;
+
+  /**
+   * @return The order of the ansatz polynomials of a solver.
    */
   int getOrder(int solverNumber) const;
 
   /**
-   * \return The maximum extent in each coordinate direction a cell is allowed
+   * @return The maximum extent in each coordinate direction a cell is allowed
    * to have.
    */
   double getMaximumMeshSize(int solverNumber) const;
 
   /**
-   * \return The maximum adaptive mesh depth as specified
+   * @return The maximum adaptive mesh depth as specified
    * by the user.
    *
-   * \note If the user has not specified an adaptive
+   * @note If the user has not specified an adaptive
    * mesh depth, 0 is returned.
    */
   int getMaximumMeshDepth(int solverNumber) const;
 
   /**
-   * \return The number of halo cells that are refined around a
+   * @return The number of halo cells that are refined around a
    * a cell on the finest allowed mesh level which wants to be kept
    * or refined further.
    *
-   * \note If the user has not specified this optional value, 0 is returned.
+   * @note If the user has not specified this optional value, 0 is returned.
    */
   int getHaloCells(int solverNumber) const;
 
   /**
-   * \return The number of regularised fine grid levels.
+   * @return The number of regularised fine grid levels.
    *
-   * \note If the user has not specified this optional value, 0 is returned.
+   * @note If the user has not specified this optional value, 0 is returned.
    */
   int getRegularisedFineGridLevels(int solverNumber) const;
-
-  /**
-   * Prints a summary of the parameters read in for a solver.
-   */
-  void logSolverDetails(int solverNumber) const;
 
   /**
    * Checks for inconsistencies between the ExaHyPE specification file
@@ -378,7 +404,7 @@ class exahype::parser::Parser {
   void checkSolverConsistency(int solverNumber) const;
 
   /**
-   * \return The time stepping mode of a solver.
+   * @return The time stepping mode of a solver.
    */
   exahype::solvers::Solver::TimeStepping getTimeStepping(
       int solverNumber) const;
@@ -386,42 +412,42 @@ class exahype::parser::Parser {
   bool hasOptimisationSegment() const;
 
   /**
-   * \return The relaxation parameter used for the discrete maximum principle (DMP).
+   * @return The relaxation parameter used for the discrete maximum principle (DMP).
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   double getDMPRelaxationParameter(int solverNumber) const;
 
   /**
-   * \return The maximum-minimum difference scaling used for the discrete maximum principle (DMP).
+   * @return The maximum-minimum difference scaling used for the discrete maximum principle (DMP).
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   double getDMPDifferenceScaling(int solverNumber) const;
 
   /**
-   * \return The number of observables that should be considered
+   * @return The number of observables that should be considered
    * within the discrete maximum principle.
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   int getDMPObservables(int solverNumber) const;
 
   /**
-   * \return The minimum number of steps we keep a cell troubled after it has been
+   * @return The minimum number of steps we keep a cell troubled after it has been
    * considered as cured by the discrete maximum principle (DMP) and the
    * physical admissibility detection (PAD).
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   int getStepsTillCured(int solverNumber) const;
 
   /**
-   * \return the number of Limiter/FV helper layers
+   * @return the number of Limiter/FV helper layers
    * surrounding a troubled cell.
    *
    * The helper layers of the the ADER-DG solver have
@@ -429,7 +455,7 @@ class exahype::parser::Parser {
    * We thus have a total number of helper layers
    * which is twice the returned value.
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   int getLimiterHelperLayers(int solverNumber) const;
