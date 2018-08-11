@@ -175,9 +175,9 @@ class SpecFile1Reader():
     configure = shared_memory.pop("configure")
     m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
     if m_background_job_consumers:
-     shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
+      shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
     if re.search(r"manual_pinning",configure)!=None:
-     shared_memory["manual_pinning"] = True
+      shared_memory["manual_pinning"] = True
     
   ##
   # Converts the kernel terms of a solver entry in the original spec file
@@ -187,18 +187,30 @@ class SpecFile1Reader():
     n_point_sources = 0
     context = []
     for token in kernel_terms.split(","):
-      token_s = token.strip() 
+      token_s     = token.strip()
+      found_token = False
       for term in ["flux","source","ncp","pointsources","materialparameters"]:
         if token_s.startswith(term):
-          context.append(term)
+          context.append(term.\
+              replace("pointsources",      "point_sources").\
+              replace("materialparameters","material_parameters"))
           if term=="pointsources":
             try:
               n_point_sources = int(token_s.split(":")[-1])
               print("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
+              found_token = True
             except:
               print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              print("\n\n** Completed with errors **")
               sys.exit()
-      return (context,n_point_sources)
+          elif token_s==term:
+              found_token = True
+      if not found_token:
+        print("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelled correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
+      
+    return (context,n_point_sources)
   
   ##
   # Converts the "optimisation" string of a ADER-DG and Limiting-ADERDG solver found 
@@ -213,29 +225,42 @@ class SpecFile1Reader():
     context[opt_dbg]=[]
     for token in kernel_opts.split(","):
       token_s = token.strip() 
+      found_token=False
       for term in ["generic","optimised","user"]:
         if token_s==term:
           context["implementation"]=term
+          found_token=True
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
+        found_token=True
       if token_s=="usestack":
         context["allocate_temporary_arrays"]="stack"
+        found_token=True
       for term in ["fusedsource","fluxvect","fusedsourcevect"]:
         if token_s==term:
           context[opt].append(term)
-    for term in ["converter","flops"]:
+          found_token=True
+      for term in ["converter","flops"]:
         if token_s==term:
           context[opt_debug].append(term)
-    for term in ["cerkguess","notimeavg","maxpicarditer"]:
-      if token_s.startswith(term):
-        if term=="maxpicarditer":
-          try:
-            context[stp][term]=int(token_s.split(":")[-1])
-          except:
-            print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
-            sys.exit()
-        else:
-          context[stp][term]=term
+          found_token=True
+      for term in ["cerkguess","notimeavg","maxpicarditer"]:
+        if token_s.startswith(term):
+          if term=="maxpicarditer":
+            try:
+              context[stp][term]=int(token_s.split(":")[-1])
+              found_token=True
+            except:
+              print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              print("\n\n** Completed with errors **")
+              sys.exit()
+          else:
+            context[stp][term]=term
+            found_token=True
+      if not found_token:
+        print("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelled correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
     return context
     
   ##
@@ -245,13 +270,21 @@ class SpecFile1Reader():
     context = collections.OrderedDict()
     for token in kernel_opts.split(","):
       token_s = token.strip()
+      found_token = False
       for term in ["generic","optimised","user"]:
         if token_s==term:
           context["implementation"]=term
+          found_token = True
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
+        found_token = True
       if token_s=="usestack":
         context["allocate_temporary_arrays"]="stack"
+        found_token = True
+      if not found_token:
+        print("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelled correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
     return context
   
   ##
@@ -422,9 +455,16 @@ class SpecFile1Reader():
         spec_file_1 = input_file.readlines()
     except Exception:
       raise
+    print("Converting legacy specification file to INI structure... ",end="")
+    sys.stdout.flush()
     (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
+    print("OK")
     
     config = configparser.ConfigParser(delimiters=('='))
     config.read_string(spec_file_1_ini)
     
-    return self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
+    print("Mapping INI structure to JSON input object... ",end="")
+    sys.stdout.flush()
+    result=self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
+    print("OK")
+    return result 
