@@ -2,10 +2,16 @@
 # Regular Python 2
 
 """
-This is gmexa, a clean rewrite of mexa using a graph-based approach. It is a regular
-Python 2 program with no (currently only minimal: networkx) dependencies in a single
-file. It can be used as a library from other python scripts but is also shipped with
-a rich command line interface (CLI) to do all kind of parameter file mangling.
+This is the mexa implementation for the ExaHyPE Toolkit2.
+
+Mexa is a kind of non-turing-complete programming language to compose hierarchical
+configuration files. Stripping the logic, it is also a simple markup language for
+hierarchical configuration files. Last but not least, it is an idiom about how
+configuration should be done.
+
+This code is a regular python2 (should(!) be compatible with python3) program with
+minimal dependencies (networkx) in a single file. It also ships a rich command line
+interface (CLI) but is primarily supposed to be used from other python code.
 
 For more details about the Mexa language see the README file or the repository
 http://bitbucket.org/svek/mexa
@@ -886,6 +892,13 @@ class mexafile:
 		oplist = removeNone(sourceline.sourcemap(oplines, source_name).map(lang.Rel_from_textline))
 		return cls(oplist)
 	
+	@classmethod
+	def from_dict(cls, something):
+		"""
+		Create an instance of a mexafile from a nexted dict/list python structure.
+		"""
+		raise NotImplementedError("To be done")
+	
 	def query(self, root='', inplace=False, exclude_root=False):
 		"""
 		Get the assignment tree based on some root (which may be string, list, symbol).
@@ -1441,7 +1454,7 @@ class encoded_mexafile(io_mexafile):
 		fcontent = header + "\n" + mf.toPlain()
 		return cls.encodings[encoding](fcontent)
 
-@mexa_cli.register_subcommand('structured')
+@mexa_cli.register_subcommand('export')
 class structured_mexafile(io_mexafile):
 	"""
 	Exports the hierarchical key-value parameter structure into various standard
@@ -1532,7 +1545,7 @@ class structured_mexafile(io_mexafile):
 		# todo: repair the output layout.
 		visit(self.native, root)
 		return etree.tostring(root, pretty_print=True)
-	
+
 @mexa_cli.register_subcommand('specfile')
 class mexafile_to_exahype_specfile(io_mexafile):
 	"""

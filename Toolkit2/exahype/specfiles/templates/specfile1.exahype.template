@@ -25,68 +25,50 @@
   (c) 2017, 2018 SvenK for exahype.eu (GPL/BSD)
 
 -#}
-{%- for project in exahype_projects|tolist -%}
-{#-
-  The following is a way to allow comments about the spec file to be embedded
-  directly in the generating mexa file. It produces a multiline comment in the
-  specification file. You may want to choose to single line comment syntax
-   // foo bar
-  instead if you experience problems with the "**/" character.
-  Note also that you can specify comments at other places:
-    - specfile_end_comment
-    - specfile_constants_comment
--#}
-{%- if project.specfile_top_comment is defined -%}
-/**
- {%- for line in project.specfile_top_comment|tolist %}
- * {{line}}
- {%- endfor %}
- **/
-{% endif -%}
-exahype-project {{ project.project_name }}
+exahype-project {{ project_name }}
 
-  peano-kernel-path const  = {{ project.peano_kernel_path }}
-  exahype-path const       = {{ project.exahype_path }}
-  output-directory const   = {{ project.output_directory }}
-  architecture const       = {{ project.architecture }}
-  {% if project.log_file is defined -%}
-  log-file                 = {{ project.log_file }}
+  peano-kernel-path const  = {{ paths.peano_kernel_path }}
+  exahype-path const       = {{ paths.exahype_path }}
+  output-directory const   = {{ paths.output_directory }}
+  architecture const       = {{ architecture }}
+  {% if log_file is defined -%}
+  log-file                 = {{ log_file }}
   {% endif -%}
   
   computational-domain
-    dimension const  = {{ project.computational_domain.dimension }}
-    width            = {{ project.computational_domain.width|tolist|asfloat|join(", ") }}
-    offset           = {{ project.computational_domain.offset|tolist|asfloat|join(", ") }}
-    end-time         = {{ project.computational_domain.end_time|asfloat }}
+    dimension const  = {{ computational_domain.dimension }}
+    width            = {{ computational_domain.width|tolist|asfloat|join(", ") }}
+    offset           = {{ computational_domain.offset|tolist|asfloat|join(", ") }}
+    end-time         = {{ computational_domain.end_time|asfloat }}
   end computational-domain
 
   shared-memory
-    identifier       = {{ project.shared_memory.identifier }}
+    identifier       = {{ shared_memory.identifier }}
     configure        = {}
-    cores            = {{ project.shared_memory.cores }}
-    properties-file  = {{ project.shared_memory.properties_file }}
+    cores            = {{ shared_memory.cores }}
+    properties-file  = {{ shared_memory.properties_file }}
   end shared-memory  
   
   distributed-memory
-    identifier       = {{ project.distributed_memory.identifier }}
-    configure        = {{ project.distributed_memory.configure }}
-    buffer-size      = {{ project.distributed_memory.buffer_size }}
-    timeout          = {{ project.distributed_memory.timeout }}
+    identifier       = {{ distributed_memory.identifier }}
+    configure        = {{ distributed_memory.configure }}
+    buffer-size      = {{ distributed_memory.buffer_size }}
+    timeout          = {{ distributed_memory.timeout }}
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = {{ project.optimisation.fuse_algorithmic_steps }}
-    fuse-algorithmic-steps-factor   = {{ project.optimisation.fuse_algorithmic_steps_factor }}
-    spawn-predictor-as-background-thread = {{ project.optimisation.spawn_predictor_as_background_thread }}
-    spawn-amr-background-threads = {{ project.optimisation.spawn_amr_background_threads }}
-    disable-vertex-exchange-in-time-steps = {{ project.optimisation.disable_vertex_exchange_in_time_steps }}
-    time-step-batch-factor           = {{ project.optimisation.timestep_batch_factor }}
-    disable-metadata-exchange-in-batched-time-steps = {{ project.optimisation.disable_metadata_exchange_in_batched_time_steps }}
-    double-compression = {{ project.optimisation.double_compression }}
-    spawn-double-compression-as-background-thread = {{ project.optimisation.spawn_double_compression_as_background_thread }}
+    fuse-algorithmic-steps          = {{ optimisation.fuse_algorithmic_steps }}
+    fuse-algorithmic-steps-factor   = {{ optimisation.fuse_algorithmic_steps_factor }}
+    spawn-predictor-as-background-thread = {{ optimisation.spawn_predictor_as_background_thread }}
+    spawn-amr-background-threads = {{ optimisation.spawn_amr_background_threads }}
+    disable-vertex-exchange-in-time-steps = {{ optimisation.disable_vertex_exchange_in_time_steps }}
+    time-step-batch-factor           = {{ optimisation.timestep_batch_factor }}
+    disable-metadata-exchange-in-batched-time-steps = {{ optimisation.disable_metadata_exchange_in_batched_time_steps }}
+    double-compression = {{ optimisation.double_compression }}
+    spawn-double-compression-as-background-thread = {{ optimisation.spawn_double_compression_as_background_thread }}
   end global-optimisation
 
-  {% for solver in project.solvers|tolist -%}
+  {% for solver in solvers|tolist -%}
   solver {{solver.type}} {{solver.name}}
     variables const    = {{ solver.variables }}
 
@@ -128,8 +110,8 @@ exahype-project {{ project.project_name }}
     // restrictive toolkit specfile grammar.
     Instead, support any kind of user-given comment:
     -#}
-    {%- if project.specfile_constants_comment is defined -%}
-    {%- for line in project.specfile_constants_comment|tolist -%}
+    {%- if specfile_constants_comment is defined -%}
+    {%- for line in specfile_constants_comment|tolist -%}
     // {{line}}
     {% endfor %}
     {% endif -%}
@@ -153,9 +135,9 @@ exahype-project {{ project.project_name }}
   {%- endfor %}
 end exahype-project
 
-{%- if project.specfile_end_comment is defined %}
+{%- if specfile_end_comment is defined %}
 /**
- {%- for line in project.specfile_end_comment|tolist %}
+ {%- for line in specfile_end_comment|tolist %}
  * {{line}}
  {%- endfor %}
  **/

@@ -51,15 +51,18 @@ def extend_with_default(validator_class):
     validator_class, {"properties" : set_defaults},
   )
 
-  
-DefaultValidatingDraft6Validator = extend_with_default(Draft4Validator)
-validator = DefaultValidatingDraft6Validator(schema)
+SimpleValidator = Draft4Validator # should try to use Draft6Validator if available...
+ExtendingValidator = extend_with_default(Draft4Validator)
 
-def validate(json_filename_or_file):
+def get_validator(set_defaults=True):
+  validator = ExtendingValidator if set_defaults else SimpleValidator
+  return validator(schema)
+
+def validate(json_filename_or_file, set_defaults=True):
   if not hasattr(json_filename_or_file, "read"): # is a file name then
     json_filename_or_file = open(json_filename_or_file, "r")
   input_structure = json.load(json_filename_or_file)
-  validator.validate(input_structure)
+  get_validator(set_defaults).validate(input_structure)
   return input_structure
   
 def validate_specfile1(specfile1_filename):
@@ -68,6 +71,6 @@ def validate_specfile1(specfile1_filename):
   print("Translating file to JSON format ... OK")
   print("Result:")
   print(json.dumps(input_structure,indent=2))
-  validator.validate(input_structure)
+  get_validator(set_defaults).validate(input_structure)
   return input_structure
   
