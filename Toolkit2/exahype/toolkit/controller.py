@@ -207,6 +207,31 @@ class Controller():
         
         return context
     
+    def buildKernelTermsContext(self,terms):
+        context = {}
+        for term in ["flux","source","ncp","point_sources","material_parameters"]:
+          option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
+          option = "use%s%s" % ( option[0].upper(), option[1:] )
+          context[option]          = term in kernel["terms"]
+          context["%s_s" % option] = "true" if context[option] else "false"
+        return context
+    
+    def buildADERDGKernelContext(self,kernel):
+        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 
+        context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
+        context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
+        context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
+        context["language"]                = kernel.get("language","C").lower()
+        context["basis"]                   = kernel.get("basis","Legendre").lower()
+        context["isLinear"]                = not kernel.get("nonlinear",True)
+        context["isNonlinear"]             = kernel.get("nonlinear",True)
+        context["isFortran"]               = kernel.get("language",False)=="Fortran" 
+        context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
+        context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
+        context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[]) 
+        context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[])
+        context.update(self.buildKernelTermsContext(kernel["terms"]))
+        return context
     
     def buildMakefileContext(self):
         """Generate context for the Makefile model"""
