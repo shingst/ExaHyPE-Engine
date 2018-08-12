@@ -200,11 +200,11 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
   _profiler->start("faceIntegral");
 {% endif %}
   if ( levelDelta > 0 ) {
-    {% if dimensions==3 %}
+{% if dimensions==3 %}
     constexpr int basisSize = (Order+1)*(Order+1);
-    {% else %}
+{% else %}
     constexpr int basisSize = (Order+1);
-    {% endif %}
+{% endif %}
     constexpr int sizeFlux  = NumberOfVariables*basisSize;
 {% if tempVarsOnStack %}
     double lFhbndCoarse[sizeFlux];

@@ -40,7 +40,7 @@ class Generator():
     self._output_directory     = self._exahype_root+"/"+spec["paths"]["output_directory"]
     self._dimensions           = spec["computational_domain"]["dimension"]
     self._verbose              = verbose
-    self._jinja2_env           = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True)
+    self._jinja2_env           = jinja2.Environment(loader=jinja2.FileSystemLoader(self._exahype_root+"/Toolkit2/exahype/toolkit/templates"),trim_blocks=True,undefined=jinja2.StrictUndefined)
     
     if not os.path.exists(self._output_directory):
       print("Created output directory '"+self._output_directory+"'")
