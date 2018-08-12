@@ -9,14 +9,14 @@ class Configuration:
     # Change them if required
 
     #TODO Add missing path
-    # path from this file to ExaHyPE's root
-    pathToExaHyPERoot          = os.path.join("..", "..", "..")
+    # absolute path to ExaHyPE's root (we need absolute paths in generated Makefile)
+    pathToExaHyPERoot          = os.path.abspath(os.path.join(__file__,"..", "..", "..", ".."))
     
-    # path to jinja2
-    pathToJinja2               = os.path.join("..", "..", "dependencies", "jinja")
+    # absolute path to jinja2
+    pathToJinja2               = os.path.abspath(os.path.join(__file__,"..", "..", "dependencies", "jinja"))
     
-    # path to markupsafe
-    pathToMarkupsafe           = os.path.join("..", "..", "dependencies", "markupsafe")
+    # absolute path to markupsafe
+    pathToMarkupsafe           = os.path.abspath(os.path.join(__file__,"..", "..", "dependencies", "markupsafe"))
     
     alignmentPerArchitectures  = {
         "noarch" : 16,

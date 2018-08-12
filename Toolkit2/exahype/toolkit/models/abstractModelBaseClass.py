@@ -46,7 +46,7 @@ class AbstractModelBaseClass():
     Override generateCode to implement your model. 
     """
 
-    def __init__(self, baseContext, verbose=False):
+    def __init__(self, baseContext,verbose=False):
         self.context = copy.copy(baseContext)
     
     

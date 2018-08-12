@@ -14,10 +14,11 @@
 #ifndef _EXAHYPE_PLOTTERS_LIMITING_ADERDG_2_CARTESIAN_VTK_H_
 #define _EXAHYPE_PLOTTERS_LIMITING_ADERDG_2_CARTESIAN_VTK_H_
 
-#include "exahype/plotters/Plotter.h"
-
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
 #include "tarch/plotter/griddata/VTUTimeSeriesWriter.h"
+
+#include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/Slicer.h"
 
 namespace exahype {
   namespace plotters {
@@ -62,7 +63,7 @@ private:
    */
   const int     _ghostLayerWidth    = -1;
 
-  exahype::plotters::Slicer *slicer = nullptr;
+  exahype::plotters::Slicer *_slicer = nullptr;
 
   static tarch::logging::Log _log;
 

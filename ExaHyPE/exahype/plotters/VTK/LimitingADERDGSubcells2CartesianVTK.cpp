@@ -76,13 +76,12 @@ exahype::plotters::LimitingADERDGSubcells2CartesianVTK::LimitingADERDGSubcells2C
   _cellPreviousRefinementStatusWriter(nullptr)
 {}
 
-
 void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::init(
   const std::string& filename,
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView select
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;
@@ -91,25 +90,11 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::init(
   _patchWriter       = nullptr;
   _writtenUnknowns   = writtenUnknowns;
 
-  double x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "left" );
-  _regionOfInterestLeftBottomFront(0) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "bottom" );
-  _regionOfInterestLeftBottomFront(1) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "front" );
-  _regionOfInterestLeftBottomFront(2) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#endif
+  _slicer = Slicer::bestFromSelectionQuery(select);
 
-
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "right" );
-  _regionOfInterestRightTopBack(0) = x!=x ? std::numeric_limits<double>::max() : x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "top" );
-  _regionOfInterestRightTopBack(1) = x!=x ? std::numeric_limits<double>::max() : x;
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "back" );
-  _regionOfInterestRightTopBack(2) = x!=x ? std::numeric_limits<double>::max() : x;
-#endif
+  if(_slicer) {
+    logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);
+  }
 }
 
 
@@ -239,11 +224,7 @@ void exahype::plotters::LimitingADERDGSubcells2CartesianVTK::plotFiniteVolumesPa
   const double* const u,
   const double timeStamp,
   const int RefinementStatus, const int previousRefinementStatus) {
-  if (
-    tarch::la::allSmaller(_regionOfInterestLeftBottomFront,offsetOfPatch+sizeOfPatch)
-    &&
-    tarch::la::allGreater(_regionOfInterestRightTopBack,offsetOfPatch)
-  ) {
+  if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     logDebug("plotPatch(...)","offset of patch: "<<offsetOfPatch
     <<", size of patch: "<<sizeOfPatch
     <<", time stamp: "<<timeStamp);

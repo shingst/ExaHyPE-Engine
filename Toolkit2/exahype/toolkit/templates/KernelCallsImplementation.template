@@ -20,28 +20,28 @@
 #include "kernels/DGBasisFunctions.h"
 #include "buildinfo.h"
 
-{% for subPath in data["includePaths"] %}
+{% for subPath in includePaths %}
 #include "{{subPath}}/Quadrature.h"
 #include "{{subPath}}/DGMatrices.h"
 {% endfor %}
 
-{% for solver in data["solvers"] %}
-// includes for solver '{{solver["name"]}}'
-#include "{{solver["header_path"]}}"
-{% for plotter in solver["plotters"] %}
-#include "{{plotter.header_path}}"
+{% for solver in solvers %}
+// includes for solver '{{solver.name}}'
+#include "{{solver.headerPath}}"
+{% for plotter in solver.plotters %}
+#include "{{plotter.headerPath}}"
 {% endfor %}
 {% endfor %}
 
 
 void kernels::registerSolvers(exahype::parser::Parser& parser) {
-{% for solver in data["solvers"] %}
-{%set solver_class = loop %}
-  // register solver '{{solver["name"]}}' (type: '{{solver["type"]}}')
+{% for solver in solvers %}
+{%set solver_loop = loop %}
+  // register solver '{{solver.name}}' (type: '{{solver.type}}')
   {
-{%   if solver["type"] == "ADER-DG" %}
-    exahype::solvers::RegisteredSolvers.push_back(\n"
-      new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
+{% if solver.type == "ADER-DG" %}
+    exahype::solvers::RegisteredSolvers.push_back(
+      new {{project}}::{{solver.name}}("{{solver.name}}",
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
@@ -51,9 +51,9 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           0
       )
     );
-{%   elif solver["type"] == "Limiting-ADER-DG" %}
-    exahype::solvers::RegisteredSolvers.push_back(\n"
-      new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
+{% elif solver.type == "Limiting-ADER-DG" %}
+    exahype::solvers::RegisteredSolvers.push_back(
+      new {{project}}::{{solver.name}}("{{solver.name}}",
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
@@ -66,32 +66,32 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getStepsTillCured({{loop.index0}})
       )
     );
-{%   elif solver["type"] == "Finite-Volumes" %}
-    exahype::solvers::RegisteredSolvers.push_back(\n"
-      new {{data["project_name"]}}::{{solver["name"]}}("{{solver["name"]}}",
+{% elif solver.type == "Finite-Volumes" %}
+    exahype::solvers::RegisteredSolvers.push_back(
+      new {{project}}::{{solver.name}}("{{solver.name}}",
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}})
       )
     );
-{%   endif %}
+{% endif %}
     parser.checkSolverConsistency({{loop.index0}});
     
-{%   for plotter in solver["plotters"] %}
-    // register plotter '{{plotter["name"]}}'
-{%     if plotter["type_as_str"] == "user::defined" %}
+{% for plotter in solver.plotters %}
+    // register plotter '{{plotter.name}}'
+{% if plotter.type_as_str == "user::defined" %}
     exahype::plotters::RegisteredPlotters.push_back( 
-      new exahype::plotters::Plotter({{solver_class.index0}},{{loop.index0}},parser, 
-        new {{data["project_name"]}}::{{plotter["name"]}}()
+      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, 
+        new {{project}}::{{plotter.name}}()
       )
     );
-{%     else %}
+{% else %}
     exahype::plotters::RegisteredPlotters.push_back( 
-      new exahype::plotters::Plotter({{solver_class.index0}},{{loop.index0}},parser, new {{data["project_name"]}}::{{plotter["name"]}}(
-          *static_cast<{{data["project_name"]}}::{{solver["name"]}}*>(exahype::solvers::RegisteredSolvers[{{solver_class.index0}}])) 
+      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, new {{project}}::{{plotter.name}}(
+          *static_cast<{{project}}::{{solver.name}}*>(exahype::solvers::RegisteredSolvers[{{solver_loop.index0}}])) 
       )
     );
-{%     endif %}
-{%   endfor %}
+{% endif %}
+{% endfor %}
   }
 {% endfor %}
   std::set<int> orders;
@@ -107,30 +107,30 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
 
 void kernels::toString(std::ostream& ostream) {
   /* Generated solver registration code by the toolkit */
-  ostream << "inputFileName:  {{data["spec_file"]}}\n";
-  ostream << "projectName:    {{data["project_name"]}}\n";
-{% for solver in data["solvers"] %}
-{%   set solver_class=data["project_name"]+"::"+solver["name"] %}
-  ostream << "Solver[{{loop.index0}}].type:             {{solver["type"]}}\n";
-  ostream << "Solver[{{loop.index0}}].class:            {{solver_class}}\n";
-{%   if solver["type"]=="Limiting-ADER-DG" %}
-  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solver_class}}_ADERDG\n";
+  ostream << "inputFileName:  {{specfileName}}\n";
+  ostream << "projectName:    {{project}}\n";
+{% for solver in solvers %}
+  ostream << "Solver[{{loop.index0}}].type:             {{solver.type}}\n";
+  ostream << "Solver[{{loop.index0}}].class:            {{solver.class}}\n";
+{%   if solver.type=="Limiting-ADER-DG" %}
+  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solver.class}}_ADERDG\n";
   ostream << "Solver[{{loop.index0}}].abstract[ADERDG]: ";
-  {{solver_class}}_ADERDG::constantsToString(ostream);
-  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solver_class}}_FV\n";
+  {{solver.class}}_ADERDG::constantsToString(ostream);
+  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solver.class}}_FV\n";
   ostream << "Solver[{{loop.index0}}].abstract[FV]: ";
-  {{solver_class}}_FV::constantsToString(ostream);
+  {{solver.class}}_FV::constantsToString(ostream);
 {%   elif solver["type"]=="ADER-DG" %}
   ostream << "Solver[{{loop.index0}}].abstract: ";
-  {{solver_class}}::constantsToString(ostream);
-{%   elif solver["type"]=="Finite-Volumes" %}
+  {{solver.class}}::constantsToString(ostream);
+{%   elif solver.type=="Finite-Volumes" %}
   ostream << "Solver[{{loop.index0}}].abstract: ";
-  {{solver_class}}::constantsToString(ostream);
+  {{solver.class}}::constantsToString(ostream);
 {%   endif %}
-  ostream << "Solver[{{loop.index0}}].variables:           [ {{solver["variables_as_str"]}} ]\n";
-  ostream << "Solver[{{loop.index0}}].material_parameters: [ {{solver["material_parameters_as_str"]}} ]\n";
-  ostream << "Solver[{{loop.index0}}].global_observables:  [ {{solver["global_observables_as_str"]}} ]\n";
-{%   if solver["type"]=="Limiting-ADER-DG" %}
+  ostream << "Solver[{{loop.index0}}].variables:           [ {{solver.variables_as_str}} ]\n";
+  ostream << "Solver[{{loop.index0}}].material_parameters: [ {{solver.material_parameters_as_str}} ]\n";
+  ostream << "Solver[{{loop.index0}}].global_observables:  [ {{solver.global_observables_as_str}} ]\n";
+{# /* //TODO JMG
+{%   if solver.type=="Limiting-ADER-DG" %}
   ostream << "Solver[{{loop.index0}}].limiter:      [\n{% for item in solver["limiter"].items() %}    {{item[0]}} : {{item[1]}}{% if not loop.last %},{% endif %}\n{% endfor %} ]\n";
   ostream << "Solver[{{loop.index0}}].kernelADERDG: [\n{% for item in solver["aderdg_kernel"].items() %}    {{item[0]}} : {{item[1]}}{% if not loop.last %},{% endif %}\n{% endfor %} ]\n";
   ostream << "Solver[{{loop.index0}}].kernelFV:     [\n{% for item in solver["fv_kernel"].items() %}    {{item[0]}} : {{item[1]}}{% if not loop.last %},{% endif %}\n{% endfor %} ]\n";
@@ -139,9 +139,10 @@ void kernels::toString(std::ostream& ostream) {
 {%   elif solver["type"]=="Finite-Volumes" %}
   ostream << "Solver[{{loop.index0}}].kernelFV: {{solver["fv_kernel"]}}\n";
 {%   endif %}
+*/ #}
 {%   set solver_loop=loop %}
-{%   for plotter in solver["plotters"] %}
-  ostream << "Solver[{{solver_loop.index0}}].Plotter[{{loop.index0}}]: {{data["project_name"]}}::{{plotter["name"]}}(variables={{plotter["variables_as_str"]}})\n";
+{%   for plotter in solver.plotters %}
+  ostream << "Solver[{{solver_loop.index0}}].Plotter[{{loop.index0}}]: {{project}}::{{plotter.name}}(variables={{plotter.variables_as_str}})\n";
 {%   endfor %}
 {% endfor %}
  
@@ -182,6 +183,6 @@ const char* kernels::compiledSpecfile() {
   /* Run ExaHyPE with --help to learn how to view it's contents and/or run ExaHyPE with it. */
   static const char ret[] =
   {
-    {{data["spec_file_as_hex"]}}// TODO(Sven)
+    {{spec_file_as_hex}}// TODO(Sven)
   }
 }

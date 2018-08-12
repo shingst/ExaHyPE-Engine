@@ -2,19 +2,18 @@ import sys
 import configparser
 import re
 import json
+import collections
 
 ##
-# A reader for the original ExaHyPE spec file format
+# A reader for the original ExaHyPE specification file format
 # 
 # Sample usage:
 #```
 # r = SpecFile1Reader()
 # my_json_obj = r.read()
 # my_json_file_content = json.dumps(my_json_ob)
-#
+#```
 class SpecFile1Reader():
-  def __init__(self):
-    pass
   ##
   # Converts the original ExaHyPE spec file into an ini file.
   #
@@ -51,7 +50,7 @@ class SpecFile1Reader():
           spec_file_1_ini += "[%s]" % m_group.group(1).replace("-","_").replace("global_","")+"\n"
         elif m_solver:
           spec_file_1_ini += "[solver%d]" % (solver)  +"\n"
-          spec_file_1_ini += "solver_type="+m_solver.group(1)+"\n"
+          spec_file_1_ini += "solver_type="+m_solver.group(1)+"\n" # will be replaced later on
           spec_file_1_ini += "name="+m_solver.group(2)+"\n"
         elif re.match(r"^\s*end\s*solver",line):
           solver+=1
@@ -61,7 +60,7 @@ class SpecFile1Reader():
           spec_file_1_ini += "type="+m_plotter.group(1)+"\n"
           spec_file_1_ini += "name="+m_plotter.group(2)+"\n"  
           plotter[solver]+=1
-        elif line.strip().startswith("end"):
+        elif line.strip().startswith("end "):
           pass
         else:
           m_option = re.match(r"\s*((\w|-)+)\s*(const)?\s*=(.+)",line)
@@ -79,7 +78,7 @@ class SpecFile1Reader():
     integers=[\
       "dimension",\
       "time_steps",\
-      "buffersize",\
+      "buffer_size",\
       "timeout",\
       "cores",\
       "order",\
@@ -100,38 +99,42 @@ class SpecFile1Reader():
       "dmp_relaxation_parameter",\
       "dmp_difference_scaling"\
     ]
-    if option in integers:
-      return int(value)
-    elif option in numbers:
-      return float(value)
-    else
-      return value
+    try:
+      if option in integers:
+        return int(value)
+      elif option in numbers:
+        return float(value)
+      else:
+        return value 
+    except:
+      return value # let the JSON schema validation deal with the error handling
 
   ## 
   # Convert ini file as created by method `spec_file_1_to_ini` to nested list of dict - dist of list structure.
   def convert_to_dict(self,config,n_solvers,n_plotters):
-    context = {}
     # root node
     root = "project"
-    context = {}
+    context = collections.OrderedDict()
     for option in config.options(root):
       context[option.replace("-","_")] = config.get(root, option)
     # other sections
     for section in config.sections():
-      if not section.startswith("solver") and not section=="project":
-        context[section] = {}
+      if not section.startswith("solver") and not section==root:
+        context[section] = collections.OrderedDict()
         for option in config.options(section):
             context[section][option.replace("-","_")] = self.convert(option, config.get(section, option))
+    # solvers
     context["solvers"]=[]
     for i in range(0,n_solvers):
       solver="solver%d" % i
-      context["solvers"].append({})
+      context["solvers"].append(collections.OrderedDict())
       for option in config.options(solver):
         context["solvers"][i][option.replace("-","_")] = self.convert(option, config.get(solver,option))
+      # plotters
       context["solvers"][i]["plotters"]=[]
       for j in range(0,n_plotters[i]):
         plotter="solver%dplotter%d" % (i,j)
-        context["solvers"][i]["plotters"].append({})
+        context["solvers"][i]["plotters"].append(collections.OrderedDict())
         for option in config.options(plotter):
           context["solvers"][i]["plotters"][j][option] = self.convert(option, config.get(plotter,option))
     return context
@@ -147,108 +150,166 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_distributed_memory(self,distributed_memory):
-    distributed_memory["load_balancing_type"]=context["distributed_memory"].pop("identifier")
-    distributed_memory["buffer_size"]        =context["distributed_memory"].pop("buffersize")
+    distributed_memory["load_balancing_type"]=distributed_memory.pop("identifier").replace("_load_balancing","")
+    distributed_memory["buffer_size"]        =distributed_memory.pop("buffer_size")
     # configure
-    configure = distributed_memory.pop("configure")
-    m_ranks_per_node          = re.search(r"(^|,|\s)ranks-per-node:([0-9]+)",configure)
-    m_primary_ranks_per_node  = re.search(r"(^|,|\s)primary-ranks-per-node:([0-9]+)",configure)
-    m_node_pool_strategy      = re.search(r"(hotspot|FCFS|sfc_diffusion)",configure)
-    m_load_balancing_strategy = re.search(r"(fair|greedy_naive|greedy_regular)",configure)
-    if m_ranks_per_node:
-      distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(2))
-    if m_primary_ranks_per_node:
-      distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(2))
-    if m_node_pool_strategy:
-      distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
-    if m_load_balancing_strategy:
-      distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+    configure = distributed_memory.pop("configure").replace("{","").replace("}","")
+    for token in configure.split(","):
+      token_s = token.strip()
+      m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
+      m_primary_ranks_per_node  = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
+      m_node_pool_strategy      = re.match(r"(fair|FCFS|sfc-diffusion)",token_s)
+      m_load_balancing_strategy = re.match(r"(hotspot|greedy-naive|greedy-regular)",token_s)
+      
+      found_token = False
+      if token_s=="virtually-expand-domain":
+        distributed_memory["scale_bounding_box"] = True # might be better placed into the optimisation section
+        found_token = True
+      if m_ranks_per_node:
+        distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(1))
+        found_token = True
+      if m_primary_ranks_per_node:
+        distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
+        found_token = True
+      if m_node_pool_strategy:
+        distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
+        found_token = True
+      if m_load_balancing_strategy:
+        distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+        found_token = True
+      if not found_token and len(token_s):
+        print("ERROR: Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
   
   ##
   # TODO
   def map_shared_memory(self,shared_memory):
-    shared_memory["autotuning_strategy"]=context["shared_memory"].pop("identifier")
+    shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
     # configure
-    configure = shared_memory.pop("configure")
-    m_background_job_consumers = re.search(r"background_task:([0-9]+)",configure)
-    if m_background_job_consumers:
-     shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
-    if re.search(r"manual_pinning",configure)!=None:
-     shared_memory["manual_pinning"] = True
-    
+    configure = shared_memory.pop("configure").replace("{","").replace("}","")
+    for token in configure.split(","):
+      token_s = token.strip()
+      found_token = False
+      m_background_job_consumers = re.match(r"background-tasks:([0-9]+)",token_s)
+      if m_background_job_consumers:
+        shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
+        found_token = True
+      if re.search(r"manual_pinning",configure)!=None:
+        shared_memory["manual_pinning"] = True
+        found_token = True
+      if token_s in ["no-invade", "analyse-optimal-static-distribution-but-do-not-invade", "occupy-all-cores", "invade-between-time-steps", "invade-throughout-computation", "invade-at-time-step-startup-plus-throughout-computation"]:
+        shared_memory["invasion_strategy"] = token_s.replace("-","_")
+        found_token = True
+      if not found_token and len(token_s):
+        print("ERROR: Could not map value '%s' extracted from option 'shared-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
   ##
   # Converts the kernel terms of a solver entry in the original spec file
   #
   # @return tuple consisting of parsed context and the number of point sources
   def map_kernel_terms(self,kernel_terms):
-    n_point_sources
-    context = {}
+    n_point_sources = 0
+    context = []
     for token in kernel_terms.split(","):
-    token_s = token.strip() 
-    for term in ["flux","source","ncp","pointsources","materialparameters"]:
-      if token_s.startswith(terms):
-        context.append(term)
-        if term=="pointsources":
-          try:
-            n_point_sources = int(token_s.split(":")[-1])
-            print("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
-          except:
-            print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
-            sys.exit()
+      token_s     = token.strip()
+      found_token = False
+      for term in ["flux","source","ncp","pointsources","materialparameters"]:
+        if token_s.startswith(term):
+          context.append(term.\
+              replace("pointsources",      "point_sources").\
+              replace("materialparameters","material_parameters"))
+          if term=="pointsources":
+            try:
+              n_point_sources = int(token_s.split(":")[-1])
+              print("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
+              found_token = True
+            except:
+              print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              print("\n\n** Completed with errors **")
+              sys.exit()
+          elif token_s==term:
+              found_token = True
+      if not found_token:
+        print("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
+      
     return (context,n_point_sources)
   
   ##
   # Converts the "optimisation" string of a ADER-DG and Limiting-ADERDG solver found 
   # in the original spec file
   def map_aderdg_kernel_opts(self,kernel_opts):
-    context = {}
+    context = collections.OrderedDict()
     stp     = "space_time_predictor"
     opt     = "optimised_terms"
     opt_dbg = "optimised_kernel_debugging"
-    context[stp]={}
+    context[stp]=collections.OrderedDict()
     context[opt]=[]
     context[opt_dbg]=[]
-    for token in kernel_terms.split(","):
+    for token in kernel_opts.split(","):
       token_s = token.strip() 
+      found_token=False
       for term in ["generic","optimised","user"]:
         if token_s==term:
           context["implementation"]=term
+          found_token=True
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
-      if token_s=="usestack"
+        found_token=True
+      if token_s=="usestack":
         context["allocate_temporary_arrays"]="stack"
-      for term in ["fusedsource","fluxvect","fusedsourcevect"]
+        found_token=True
+      for term in ["fusedsource","fluxvect","fusedsourcevect"]:
         if token_s==term:
           context[opt].append(term)
-    for term in ["converter","flops"]:
+          found_token=True
+      for term in ["converter","flops"]:
         if token_s==term:
           context[opt_debug].append(term)
-    for term in ["cerkguess","notimeavg","maxpicarditer"]
-      if token_s.startswith(term):
-        if term=="maxpicarditer":
-          try:
-            context[stp][term]=int(token_s.split(":")[-1])
-          except:
-            print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
-            sys.exit()
-        else:
-          context[stp][term]=term
+          found_token=True
+      for term in ["cerkguess","notimeavg","maxpicarditer"]:
+        if token_s.startswith(term):
+          if term=="maxpicarditer":
+            try:
+              context[stp][term]=int(token_s.split(":")[-1])
+              found_token=True
+            except:
+              print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              print("\n\n** Completed with errors **")
+              sys.exit()
+          else:
+            context[stp][term]=term
+            found_token=True
+      if not found_token:
+        print("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
     return context
     
   ##
   # Converts the "optimisation" string of a Finite-Volumes and the "limiter-optimisation" string of Limiting-ADERDG solver 
   # found in the original spec file
   def map_fv_kernel_opts(self,kernel_opts):
-    context = {}
-    for token in kernel_terms.split(","):
-      token_s = token.strip() 
-      for term in ["generic","optimised","user"]:
-        if token_s==term:
-          context["implementation"]=term
+    context = collections.OrderedDict()
+    for token in kernel_opts.split(","):
+      token_s = token.strip()
+      found_token = False
+      if token_s in ["generic","optimised","user"]:
+        context["implementation"]=term
+        found_token = True
       if token_s=="patchwiseadjust":
         context["adjust_solution"]="patchwise"
-      if token_s=="usestack"
+        found_token = True
+      if token_s=="usestack":
         context["allocate_temporary_arrays"]="stack"
+        found_token = True
+      if not found_token:
+        print("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelt correctly?" % token_s,file=sys.stderr)
+        print("\n\n** Completed with errors **")
+        sys.exit()
     return context
   
   ##
@@ -258,24 +319,36 @@ class SpecFile1Reader():
       return int(variables.strip())
     else:
       result=[]
-      it = re.finditer("(\w+)\s*:\s*([0-9]+)",variables)
+      it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",variables)
       for m in it:
-        result.append({ "name": m.group(1), "multiplicity" : int(m.group(2)) }) 
+        multiplicity = None
+        try:
+          multiplicity = int(m.group(3)) 
+        except:
+          multiplicity = m.group(3)
+          
+        result.append(collections.OrderedDict([ ( "name",m.group(2) ), ( "multiplicity", multiplicity ) ])) 
       if result:
         return result
-      else
+      else:
         return [variables]
   
   ##
   # TODO
   def map_constants(self,constants):
-    result=[]
-    it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",variables)
+    result={}
+    it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",constants)
     for m in it:
-      result.append({ m.group(2) : m.group(3) }) 
+      try:
+        result[m.group(2)]=int(m.group(3))
+      except:
+        try:
+          result[m.group(2)]=float(m.group(3))
+        except:
+          result[m.group(2)]=m.group(3)
     if result:
       return result
-    else
+    else:
       return [constants]
     
   ##
@@ -289,103 +362,112 @@ class SpecFile1Reader():
   # 
   def map_options(self,context):
     # paths, optimisation, distributed_memory, shared_memory
-    context["paths"]={}
-    for option in context:
+    context["paths"]=collections.OrderedDict()
+    context.move_to_end("paths",last=False)        # put on top
+    context.move_to_end("project_name",last=False) # put on top
+    for option in list(context.keys()):
       if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory"]:
-        context["paths"] = context.pop(option)
+        context["paths"][option] = context.pop(option)
     self.map_computational_domain(context["computational_domain"])
     if "optimisation" in context:
       for option in context["optimisation"]:
         if context["optimisation"][option] in ["on","off"]:
-          context["optimisation"][option]="false" if context["optimisation"][option]=="off" else "true"
+          context["optimisation"][option]=False if context["optimisation"][option]=="off" else True
     if "distributed_memory" in context:
       self.map_distributed_memory(context["distributed_memory"])  
     if "shared_memory" in context:
       self.map_shared_memory(context["shared_memory"])
     # solvers
     for i,solver in enumerate(context["solvers"]):
+      # type
+      old_type = solver["type"]
+      solver["type"]=solver.pop("solver_type")
+      solver.move_to_end("type",last=False)  # put on top
+      
       # kernels
       n_point_sources = 0
-      aderdg_kernel_type, aderdg_kernel_terms, aderdg_kernel_opts  = ""
-      fv_kernel_type, fv_kernel_terms, fv_kernel_opts  = ""
+      aderdg_kernel_type, aderdg_kernel_terms, aderdg_kernel_opts  = "", "", ""
+      fv_kernel_type, fv_kernel_terms, fv_kernel_opts  = "", "", ""
       # aderdg 
-      if solver["solver_type"] in ["Limiting-ADER-DG","ADER-DG"]:
-          context["solvers"][i]["aderdg_kernel"]={}
-          if "language" in context["solvers"][i]:
-            context["solvers"][i]["aderdg_kernel"]["language"]=context["solvers"][i].pop("language")
-          if "type" in context["solvers"][i]:
-            aderdg_kernel_type  = context["solvers"][i].pop("type") 
-          if "terms" in context["solvers"][i]:
-            aderdg_kernel_terms = context["solvers"][i].pop("terms")
-          if "optimisation" in context["solvers"][i]:
-            aderdg_kernel_opts  = context["solvers"][i].pop("optimisation")
+      if solver["type"] in ["Limiting-ADER-DG","ADER-DG"]:
+          solver["aderdg_kernel"]=collections.OrderedDict()
+          if "language" in solver:
+            solver["aderdg_kernel"]["language"]=solver.pop("language")
+          if "type" in solver:
+            aderdg_kernel_type  = old_type
+          if "terms" in solver:
+            aderdg_kernel_terms = solver.pop("terms")
+          if "optimisation" in solver:
+            aderdg_kernel_opts  = solver.pop("optimisation")
           # type
           for token in aderdg_kernel_type.split(","):
             token_s = token.strip() 
             if token_s in ["linear","nonlinear"]:
-              context["solvers"][i]["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
+              solver["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
             if token_s in ["Legendre","Lobatto"]:
-              context["solvers"][i]["aderdg_kernel"]["basis"]=token_s
+              solver["aderdg_kernel"]["basis"]=token_s
           # terms
           result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
-          context["solvers"][i]["aderdg_kernel"].update(result)
+          solver["aderdg_kernel"]["terms"]=result
           # opts
-          context["solvers"][i]["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+          solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
       # limiter
-      if solver["solver_type"]=="Limiting-ADER-DG":
-        context["solvers"][i]["limiter"]={}
-        for option in [ "dmp_observables", "dmp_relaxation_parameter", "dmp_difference_scaling", "helper_layers", "steps_till_cured" ]
+      if solver["type"]=="Limiting-ADER-DG":
+        solver["limiter"]=collections.OrderedDict()
+        for option in [ "dmp_observables", "dmp_relaxation_parameter", "dmp_difference_scaling", "helper_layers", "steps_till_cured" ]:
           if option in solver:
-            context["solvers"][i]["limiter"][options] = context["solvers"][i].pop(options)
-        if "implementation" in context["solvers"][i]["aderdg_kernel"]:
-          context["solvers"][i]["limiter"]["implementation"]=context["solvers"][i]["aderdg_kernel"]["implementation"]
+            solver["limiter"][option] = solver.pop(option)
+        if "implementation" in solver["aderdg_kernel"]:
+          solver["limiter"]["implementation"]=solver["aderdg_kernel"]["implementation"]
       # fv
-      if solver["solver_type"]=="Finite-Volumes":
-          context["solvers"][i]["fv_kernel"]={}
-          if "language" in context["solvers"][i]:
-            context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("language")
-          if "type" in context["solvers"][i]:
-            fv_kernel_type  = context["solvers"][i].pop("type")
-          if "terms" in context["solvers"][i]:
-           fv_kernel_terms = context["solvers"][i].pop("terms")
-          if "optimisation" in context["solvers"][i]:
-            fv_kernel_opts  = context["solvers"][i].pop("optimisation")
-      if solver["solver_type"]=="Limiting-ADER-DG":
-          context["solvers"][i]["fv_kernel"]={}
-          if "language" in context["solvers"][i]:
-            context["solvers"][i]["fv_kernel"]["language"]=context["solvers"][i].pop("limiter-language")
-          if "type" in context["solvers"][i]:
-            fv_kernel_type  = context["solvers"][i].pop("limiter-type") 
-          if "type" in context["solvers"][i]:
-            fv_kernel_terms = context["solvers"][i].pop("limiter-terms")
-          if "type" in context["solvers"][i]:
-            fv_kernel_opts  = context["solvers"][i].pop("limiter-optimisation")
+      if solver["type"]=="Finite-Volumes":
+          solver["fv_kernel"]=collections.OrderedDict()
+          if "language" in solver:
+            solver["fv_kernel"]["language"]=solver.pop("language")
+          if "type" in solver:
+            fv_kernel_type  = old_type
+          if "terms" in solver:
+           fv_kernel_terms = solver.pop("terms")
+           # fv terms
+          result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
+          solver["fv_kernel"]["terms"]=result
+          if "optimisation" in solver:
+            fv_kernel_opts  = solver.pop("optimisation")
+      if solver["type"]=="Limiting-ADER-DG":
+          solver["fv_kernel"]=collections.OrderedDict()
+          if "limiter_language" in solver:
+            solver["fv_kernel"]["language"]=solver.pop("limiter_language")
+          if "limiter_type" in solver:
+            fv_kernel_type  = solver.pop("limiter_type") 
+          if "terms" in solver["aderdg_kernel"]:
+            solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
+          if "limiter_optimisation" in solver:
+            fv_kernel_opts  = solver.pop("limiter_optimisation")
       # fv type
       for token in fv_kernel_type.split(","):
         token_s = token.strip() 
         if token_s in ["godunov","musclhancock"]:
-          context["solvers"][i]["fv_kernel"]["scheme"]=token_s
-      # fv terms
-      result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
-      context["solvers"][i]["fv_kernel"].update(result)
+          solver["fv_kernel"]["scheme"]=token_s
       # fv opts
-      context["solvers"][i]["fv_kernel"].update(self.map_fv_kernel_opts(aderdg_kernel_opts))
+      if "fv_kernel" in solver: 
+        solver["fv_kernel"].update(self.map_fv_kernel_opts(fv_kernel_opts))
       
-      # type
-      context["solvers"][i]["type"]=context["solvers"][i].pop("solver_type")
-      
-      # variables, parameters, and 
-      context["solvers"][i]["variables"]=self.map_variables(context["solvers"][i].pop("variables"))
-      if "parameters" in context["solvers"][i]:
-        context["solvers"][i]["material_parameters"]=self.map_variables(context["solvers"][i].pop("parameters"))
-      if "constants" in context["solvers"][i]:
-        context["solvers"][i]["parameters"]=self.map_constants(context["solvers"][i].pop("constants"))
+      # variables, parameters, and more
+      solver["variables"]=self.map_variables(solver.pop("variables"))
+      if "parameters" in solver:
+        solver["material_parameters"]=self.map_variables(solver.pop("parameters"))
+      if "global_observables" in solver:
+        solver["global_observables"]=self.map_variables(solver.pop("global_observables"))
+      if "constants" in solver:
+        solver["parameters"]=self.map_constants(solver.pop("constants"))
       
       # plotters
-      for j,plotter in enumerate(context["solvers"][i]["plotters"]):
-        context["solvers"][i]["plotters"][j]["variables"]=self.map_variables(context["solvers"][i]["plotters"][j].pop("variables"))
-        if "select" in context["solvers"][i]["plotters"][j]:
-          context["solvers"][i]["plotters"][j]["select"]=self.map_constants(context["solvers"][i]["plotters"][j].pop("select"))
+      solver["plotters"] = solver.pop("plotters") # put at end
+      for j,plotter in enumerate(solver["plotters"]):
+        plotter["variables"]=self.map_variables(plotter.pop("variables"))
+        if "select" in plotter:
+          plotter["parameters"]={}
+          plotter["parameters"]["select"]=self.map_constants(plotter.pop("select"))
     
     return context
   
@@ -405,9 +487,16 @@ class SpecFile1Reader():
         spec_file_1 = input_file.readlines()
     except Exception:
       raise
+    print("Converting legacy specification file to INI structure... ",end="")
+    sys.stdout.flush()
     (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
+    print("OK")
     
     config = configparser.ConfigParser(delimiters=('='))
     config.read_string(spec_file_1_ini)
     
-    return self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
+    print("Mapping INI structure to JSON input object... ",end="")
+    sys.stdout.flush()
+    result=self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
+    print("OK")
+    return result 

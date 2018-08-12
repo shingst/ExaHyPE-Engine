@@ -14,9 +14,10 @@
 #ifndef _EXAHYPE_PLOTTERS_LIMITING_ADERDG_SUBCELLS_2_CARTESIAN_VTK_H_
 #define _EXAHYPE_PLOTTERS_LIMITING_ADERDG_SUBCELLS_2_CARTESIAN_VTK_H_
 
-#include "exahype/plotters/Plotter.h"
-
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
+
+#include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/Slicer.h"
 
 namespace exahype {
   namespace plotters {
@@ -46,8 +47,7 @@ private:
 
   static tarch::logging::Log _log;
 
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestLeftBottomFront;
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestRightTopBack;
+  exahype::plotters::Slicer *_slicer = nullptr;
 
   tarch::plotter::griddata::blockstructured::PatchWriter::SinglePatchWriter* _gridWriter;
   tarch::plotter::griddata::blockstructured::PatchWriterUnstructured*        _patchWriter;

@@ -76,7 +76,7 @@ struct exahype::plotters::Slicer {
 	 * All subclasses should provide similar static methods to create instances
 	 * based on ExaHyPE specfile selection strings.
 	 **/
-	static Slicer* bestFromSelectionQuery(const exahype::parser::ParserView select);
+	static Slicer* bestFromSelectionQuery(const exahype::parser::ParserView& plotterParameters);
 };
 
 /**

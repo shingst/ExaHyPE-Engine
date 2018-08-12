@@ -96,20 +96,18 @@ exahype::runners::Runner::~Runner() {}
 
 void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   #ifdef Parallel
-  const std::string configuration = _parser.getMPIConfiguration();
-
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
     //
     // Configure answering behaviour of global node pool
     // =================================================
     //
-    if ( _parser.MPIConfigurationContains( "FCFS" ) ) {
+    if ( _parser.compareNodePoolStrategy( "FCFS" ) ) {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new tarch::parallel::FCFSNodePoolStrategy()
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
     }
-    else if (_parser.MPIConfigurationContains( "fair" )) {
+    else if (_parser.compareNodePoolStrategy( "fair" )) {
       int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << _parser.getRanksPerNode() << ":XXX\". Read value " << ranksPerNode << " is invalid" );
@@ -124,7 +122,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
-    else if (_parser.MPIConfigurationContains( "sfc-diffusion" )) {
+    else if (_parser.compareNodePoolStrategy( "sfc-diffusion" )) {
       int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
@@ -138,7 +136,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = _parser.getIntFromPath("/distributed_memory/primary_ranks_per_node"));
+      int primaryRanksPerNode = _parser.getIntFromPath("/distributed_memory/primary_ranks_per_node");
       if (primaryRanksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
@@ -160,13 +158,14 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
   }
 
-  if ( _parser.MPIConfigurationContains( "greedy-naive" )) {
+  // basically a switch-case
+  if ( _parser.compareMPILoadBalancingStrategy( "greedy-naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
   }
-  else if ( _parser.MPIConfigurationContains( "greedy-regular" )) {
+  else if ( _parser.compareMPILoadBalancingStrategy( "greedy-regular" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::GreedyWithRegularityAnalysis );
   }
-  else if ( _parser.MPIConfigurationContains( "hotspot" )) {
+  else if ( _parser.compareMPILoadBalancingStrategy( "hotspot" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Hotspot );
   }
   else {
@@ -178,7 +177,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   // Configure answering behaviour of global node pool
   // =================================================
   //
-  if (_parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static) {
+  if ( _parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static ) {
     switch ( exahype::mappings::LoadBalancing::getLoadBalancingAnalysis() ) {
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy:
         logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins");
@@ -650,10 +649,9 @@ int exahype::runners::Runner::run() {
     initHeaps();
 
     #ifdef Parallel
-    exahype::State::VirtuallyExpandBoundingBox =
-        _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
-    exahype::State::BroadcastInThisIteration = true;
-    exahype::State::ReduceInThisIteration    = false;
+    exahype::State::VirtuallyExpandBoundingBox =_parser.getScaleBoundingBox();
+    exahype::State::BroadcastInThisIteration   = true;
+    exahype::State::ReduceInThisIteration      = false;
     #endif
 
     auto* repository = createRepository();

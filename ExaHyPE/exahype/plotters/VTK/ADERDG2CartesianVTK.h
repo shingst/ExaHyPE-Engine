@@ -69,7 +69,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
    */
   double _time = 0;
 
-  exahype::plotters::Slicer *slicer = nullptr;
+  exahype::plotters::Slicer *_slicer = nullptr;
 
   static tarch::logging::Log _log;
 

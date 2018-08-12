@@ -127,7 +127,7 @@ void exahype::parser::ParserView::toString(std::ostream& out) const {
   out <<  ")";
 }
 
-std::string exahype::parser::ParserView::dump() const {
-  return getParser().dumpPath(_basePath);
+std::string exahype::parser::ParserView::dump(const std::string path) const {
+  return getParser().dumpPath(_basePath+"/"+path);
 }
 

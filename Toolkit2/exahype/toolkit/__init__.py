@@ -23,4 +23,4 @@ $ python3 -m exahype.toolkit
 # from plotter import PlotterGenerator
 # from kernelcalls import KernelCallsGenerator
 
-__all__ = [ "helper", "directories", "solver", "plotter", "kernelcalls"  ]
+__all__ = [ "helper", "directories", "solver", "plotter" ]

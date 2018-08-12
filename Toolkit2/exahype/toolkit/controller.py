@@ -4,7 +4,8 @@
 This mimics the classical Frontend of the ExaHyPE toolkit.
 """
 
-import os, sys, argparse, subprocess, datetime
+import os, sys, argparse, subprocess, datetime, json
+
 from os.path import isdir, isfile
 from pathlib import Path
 from collections import OrderedDict
@@ -12,11 +13,10 @@ from collections import OrderedDict
 sys.path.append(os.path.join(os.path.dirname(__file__),"..","..")) # to allow import exahype... work
 from exahype.toolkit import *
 from exahype.toolkit.helper import BadSpecificationFile
-from exahype.specfiles import validate
+from exahype.specfiles import validate,validate_specfile1
 
 from models import *
 from configuration import Configuration
-
 
 class Controller():
     def header(self):
@@ -62,6 +62,8 @@ class Controller():
         self.specfileName = args.specfile.name
         self.interactive = args.interactive or not args.not_interactive
         self.verbose = args.verbose or self.interactive
+        self.write_json=args.write_json
+        self.debug_mode=args.debug
         
         if self.verbose: # otherwise no need to call git, etc. 
             self.info(self.header())
@@ -76,11 +78,12 @@ class Controller():
     
     def run(self):
         try:
-            d = directories.DirectoryAndPathChecker(self.spec, self.verbose)
+            d = directories.DirectoryAndPathChecker(self.buildBaseContext(), self.verbose)
         except BadSpecificationFile as e:
-            print("Some directories did not exist and/or could not be created.")
-            print("Error message: ", e)
-            print("Failure due to bad specificaiton file, cannot continue")
+            print("ERROR: Some directories did not exist and/or could not be created.", file=sys.stderr)
+            print("ERROR: Message: %s" % e, file=sys.stderr)
+            print("ERROR: Failure due to bad specificaiton file, cannot continue", file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-4)
         
         self.wait_interactive("validated and configured pathes")
@@ -89,19 +92,22 @@ class Controller():
             s = solver.SolverGenerator(self.spec, self.specfileName, self.verbose)
             s.generate_all_solvers()
         except BadSpecificationFile as e:
-            print("Could not create applications solver classes.")
-            print(e)
+            print("ERROR: Could not create applications solver classes.", file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-6)
         
         self.wait_interactive("generated application-specific solver classes")
         
         try:
             # kernel calls
-            k = kernelcalls.KernelCallsGenerator(self.spec, self.specfileName, self.verbose)
-            k.generate_solver_registration()
-        except BadSpecificationFile as e:
-            print("Could not create ExaHyPE's kernel calls")
-            print(e)
+            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext())
+            pathToKernelCalls = kernelCalls.generateCode()
+            print("Generated "+pathToKernelCalls)
+        except Exception as e:
+            print("ERROR: Could not create ExaHyPE's kernel calls", file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-10)
             
         self.wait_interactive("generated computational kernel calls")
@@ -122,8 +128,9 @@ class Controller():
             makefileMessage = makefile.getOutputMessage()
             print("Generated "+pathToMakefile)
         except Exception as e:
-            print("Could not create application-specific Makefile")
-            print(e)
+            print("ERROR Could not create application-specific Makefile", file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
             sys.exit(-10)
         
         self.wait_interactive("generated application-specific Makefile")
@@ -145,7 +152,8 @@ class Controller():
         g.add_argument("-i", "--interactive", action="store_true", default=False, help="Run interactively")
         g.add_argument("-n", "--not-interactive", action="store_true", default=True, help="Run non-interactive in non-stop-mode (default)")
         parser.add_argument("-v", "--verbose", action="store_true", help="Be verbose (off by default, triggered on by --interactive)")
-
+        parser.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file if legacy specification file is read (*.exahype) (default: no)")
+        parser.add_argument("-d", "--debug", action="store_true", default=False, help="Turn the debug mode on: print stack traces and more detailed error messages.")
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
             help="The specification file to work on (can be .exahype, .exahype2, .json)")
@@ -157,8 +165,11 @@ class Controller():
         try:
             return self.load(self.specfileName)
         except Exception as e:
-            print("Could not properly read specfile")
-            print(e)
+            print("ERROR: Could not properly read specfile",file=sys.stderr)
+            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("\n\n** Completed with errors **")
+            if self.debug:
+              raise
             sys.exit(-3)
     
     
@@ -168,7 +179,16 @@ class Controller():
         against the JSON-Schema and returns the native python data structure,
         enriched with default values from the schema.
         """
-        specification = validate(specfile_name)
+        specification=""
+        if specfile_name.endswith(".exahype"):
+          specification = validate_specfile1(specfile_name)
+          if self.write_json:
+            json_file_name = specfile_name.replace(".exahype",".exahype2")
+            with open(json_file_name, 'w') as outfile:
+              json.dump(specification,outfile,indent=2)
+              print("Write JSON file '%s' ... OK" % json_file_name )
+        else:
+          specification = validate(specfile_name)
         return specification
     
     
@@ -176,16 +196,42 @@ class Controller():
         """Generate base context from spec with commonly used value"""
         context = {}
         # outputPath for generated file
-        context["outputPath"] = self.spec["paths"]["output_directory"]
+        context["outputPath"]       = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
+        context["exahypePath"]      = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
+        context["peanoToolboxPath"] = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
+        
         # commonly used values
-        context["dimensions"] = self.spec["computational_domain"]["dimension"]
-        context["project"] = self.spec["project_name"]
-        context["exahypePath"] = self.spec["paths"]["exahype_path"]
-        context["peanoToolboxPath"] = self.spec["paths"]["peano_kernel_path"]
-        context["alignment"] = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
+        context["project"]          = self.spec["project_name"]
+        context["dimensions"]       = self.spec["computational_domain"]["dimension"]
+        context["alignment"]        = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
         
         return context
     
+    def buildKernelTermsContext(self,terms):
+        context = {}
+        for term in ["flux","source","ncp","point_sources","material_parameters"]:
+          option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
+          option = "use%s%s" % ( option[0].upper(), option[1:] )
+          context[option]          = term in kernel["terms"]
+          context["%s_s" % option] = "true" if context[option] else "false"
+        return context
+    
+    def buildADERDGKernelContext(self,kernel):
+        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 
+        context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
+        context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
+        context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
+        context["language"]                = kernel.get("language","C").lower()
+        context["basis"]                   = kernel.get("basis","Legendre").lower()
+        context["isLinear"]                = not kernel.get("nonlinear",True)
+        context["isNonlinear"]             = kernel.get("nonlinear",True)
+        context["isFortran"]               = kernel.get("language",False)=="Fortran" 
+        context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
+        context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
+        context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[]) 
+        context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[])
+        context.update(self.buildKernelTermsContext(kernel["terms"]))
+        return context
     
     def buildMakefileContext(self):
         """Generate context for the Makefile model"""
@@ -207,6 +253,40 @@ class Controller():
                 useFortran   = useFortran or solver["fv_kernel"].get("language","C")=="Fortran"
         context["useOptKernel"] = useOptKernel
         context["useFortran"]   = useFortran
+        
+        return context
+    
+    def buildKernelCallsContext(self):
+        """Generate context for the KernelCalls model"""
+        context = self.buildBaseContext()
+        
+        context["solvers"] = []
+        plotter_subdirectory = self.spec["paths"].get("plotter_subdirectory","").strip()
+        for solver in self.spec.get("solvers",[]):
+            solverContext = {}
+            solverContext["name"] = solver["name"]
+            solverContext["type"] = solver["type"]
+            solverContext["class"] = context["project"]+"::"+solver["name"]
+            solverContext["headerPath"] = solver["name"]+".h"
+            solverContext["variables_as_str"]            = helper.variables_to_str(solver,"variables")
+            solverContext["material_parameters_as_str"]  = helper.variables_to_str(solver,"material_parameters")
+            solverContext["global_observables_as_str"]   = helper.variables_to_str(solver,"global_observables")
+            solverContext["plotters"] = []
+            for plotter in solver.get("plotters",[]):
+                plotterContext = {}
+                plotterContext["headerPath"]      = os.path.join(plotter_subdirectory, plotter["name"]+".h" )
+                plotterContext["type_as_str"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
+                plotterContext["variables_as_str"] = helper.variables_to_str(plotter,"variables")
+                solverContext["plotters"].append(plotterContext)
+            context["solvers"].append(solverContext)
+        
+        context["specfileName"]        = self.specfileName
+        context["spec_file_as_hex"] = "0x2F" # todo(Sven) do the conversion
+        context["subPaths"]         = []
+        # todo(JM) optimised kernels subPaths
+        # todo(JM) profiler 
+        # todo(Sven) serialised spec file compiled into KernelCalls.cp
+        context["includePaths"] = []
         
         return context
     

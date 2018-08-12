@@ -1,4 +1,17 @@
-{% extends "solvers/FiniteVolumesDefinitions.template" %}
+{% set solver            = data["solver"]["name"] + "_FV" if data["solver"]["type"]=="Limiting-ADER-DG" else "" %}
+{% set abstractSolver    = "Abstract"+solver %}
+{% set patchSize         = 2*data["solver"]["order"]+1 if data["solver"]["type"]=="Limiting-ADER-DG" else data["solver"]["patch_size"] %}
+{% set kernel            = data["solver"]["fv_kernel"] %}
+{% set finiteVolumesType = data["solver"]["fv_kernel"].get("scheme","godunov") %}
+{% set _ghostLayers      = { "godunov" : 1, "musclhancock" : 2 } %}
+{% set ghostLayerWidth   = _ghostLayers[finiteVolumesType] %}
+{% set tempVarsOnStack   = kernel.get("allocate_temporary_arrays","heap")=="stack"       %}
+{% set patchwiseAdjust   = kernel.get("adjust_solution","pointwise")     =="patchwise"   %}
+{% set useFlux           = "flux" in kernel["terms"]               %}
+{% set useSource         = "source" in kernel["terms"]             %}
+{% set useNCP            = "ncp" in kernel["terms"]                %}
+{% set usePointSources   = "pointsources" in kernel["terms"]       %}
+{% set useMaterialParam  = "materialparameters" in kernel["terms"] %}
 #ifndef __{{solver}}_CLASS_HEADER__
 #define __{{solver}}_CLASS_HEADER__
 
@@ -14,9 +27,9 @@
 #include <ostream>
 
 #include "{{abstractSolver}}.h"
-{%- if enableProfiler %}
+{% if enableProfiler %}
 #include "exahype/profilers/Profiler.h"
-{%- endif %}
+{% endif %}
 #include "exahype/parser/ParserView.h"
 
 /**
@@ -78,7 +91,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
     
-    {%- if useFlux %}
+    {% if useFlux %}
     /**
      * Compute the flux tensor.
      *
@@ -87,12 +100,12 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
     void flux(const double* const Q,double** F) override;
-    {%- else -%}
+    {% else %}
     /* flux() function not included, as requested in the specification file */
-    {%- endif %}
+    {% endif %}
 
 
-    {%- if useSource %}
+    {% if useSource %}
     /**
      * Compute the algebraic source (right hand side).
      *
@@ -100,11 +113,11 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[out]  S      the source term vector (already allocated, same shape as Q).
      **/
     void algebraicSource(const double* const Q,double* S) override;
-    {%- else -%}
+    {% else %}
     /* algebraicSource() function not included, as requested by the specification file */
-    {%- endif %}
+    {% endif %}
 
-    {%- if useNCP %}
+    {% if useNCP %}
     /**
      * Compute the nonconservative product at a given position.
      *
@@ -115,15 +128,15 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *
      **/
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
-    {%- else %}
+    {% else %}
     /* nonConservativeProduct() function is not included, as requested in the specification file */
-    {%- endif %}
+    {% endif %}
     
-    {%- if usePointSources %}
+    {% if usePointSources %}
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override; 
-    {%- else -%}
+    {% else %}
     /* pointSource() function not included, as requested in the specification file */
-    {%- endif %}
+    {% endif %}
 };
 
 
