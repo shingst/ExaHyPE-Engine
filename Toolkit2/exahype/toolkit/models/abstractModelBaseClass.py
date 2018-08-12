@@ -28,6 +28,7 @@
 import copy
 import sys
 import os
+import pprint
 
 # add path to dependencies
 sys.path.append("..")
@@ -86,7 +87,14 @@ class AbstractModelBaseClass():
         if context == None:
             context = self.context
         loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),"..","templates")))
-        env = jinja2.Environment(loader=loader, trim_blocks=True, lstrip_blocks=True)
+        env = jinja2.Environment(loader=loader, trim_blocks=True, lstrip_blocks=True, undefined=jinja2.StrictUndefined)
         template = env.get_template(templateName)
         
-        return template.render(context)
+        try:
+          return template.render(context)
+        except Exception:
+           pp = pprint.PrettyPrinter(depth=8)
+           print("ERROR: could not render template '%s'" % templateName,file=sys.stderr)
+           print("ERROR: used context:",file=sys.stderr)
+           print(pp.pformat(context),file=sys.stderr)
+           raise

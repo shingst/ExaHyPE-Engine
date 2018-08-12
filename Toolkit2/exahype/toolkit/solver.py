@@ -66,9 +66,10 @@ class SolverGenerator(generator.Generator):
         aderdg_context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         aderdg_context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
         aderdg_context["language"]                = kernel.get("language","C").lower()
-        aderdg_context["basis"]                   = kernel.get("basis","Legendre").lower()
+        aderdg_context["basis"]                   = kernel.get("basis","Legendre")
         aderdg_context["isLinear"]                = not kernel.get("nonlinear",True)
         aderdg_context["isNonlinear"]             = kernel.get("nonlinear",True)
+        aderdg_context["linearOrNonlinear"]       = "Linear" if aderdg_context["isLinear"] else "Nonlinear"
         aderdg_context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         aderdg_context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
         aderdg_context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
@@ -79,6 +80,11 @@ class SolverGenerator(generator.Generator):
           option = "use%s%s" % ( option[0].upper(), option[1:] )
           aderdg_context[option]          = term in kernel["terms"]
           aderdg_context["%s_s" % option] = "true" if aderdg_context[option] else "false"
+          
+        # TODO
+        aderdg_context["enableProfiler"]=False
+        aderdg_context["namingSchemes"]=[]
+          
         print(aderdg_context)
         
         solver_map = {

@@ -36,7 +36,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int NumberOfGlobalObservables = {{numberOfGlobalObservables}};
     static constexpr int NumberOfDMPObservables    = {{numberOfDMPObservables}}; // only of interest if this ADERDGSolver is a component of a LimitingADERDSolver 
     static constexpr int MaxPicardIterations       = {{maxPicardIterations}};
-{% if UseMaxPicardIterations %}
+{% if useMaxPicardIterations %}
     static constexpr bool UseMaxPicardIterations   = true;
 {% else %}
     static constexpr bool UseMaxPicardIterations   = false;

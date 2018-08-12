@@ -225,6 +225,7 @@ class Controller():
         context["basis"]                   = kernel.get("basis","Legendre").lower()
         context["isLinear"]                = not kernel.get("nonlinear",True)
         context["isNonlinear"]             = kernel.get("nonlinear",True)
+        context["linearOrNonlinear"]       = "Linear" if aderdg_context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
         context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
@@ -236,6 +237,8 @@ class Controller():
     def buildMakefileContext(self):
         """Generate context for the Makefile model"""
         context = self.buildBaseContext()
+        
+        context["architecture"]      = self.spec["architecture"]
         context["useSharedMem"]      = "shared_memory" in self.spec;
         context["useDistributedMem"] = "distributed_memory" in self.spec;
         context["useIpcm"]   = False # TODO
@@ -264,23 +267,24 @@ class Controller():
         plotter_subdirectory = self.spec["paths"].get("plotter_subdirectory","").strip()
         for solver in self.spec.get("solvers",[]):
             solverContext = {}
-            solverContext["name"] = solver["name"]
-            solverContext["type"] = solver["type"]
-            solverContext["class"] = context["project"]+"::"+solver["name"]
-            solverContext["headerPath"] = solver["name"]+".h"
+            solverContext["name"]                        = solver["name"]
+            solverContext["type"]                        = solver["type"]
+            solverContext["class"]                       = context["project"]+"::"+solver["name"]
+            solverContext["headerPath"]                  = solver["name"]+".h"
             solverContext["variables_as_str"]            = helper.variables_to_str(solver,"variables")
             solverContext["material_parameters_as_str"]  = helper.variables_to_str(solver,"material_parameters")
             solverContext["global_observables_as_str"]   = helper.variables_to_str(solver,"global_observables")
             solverContext["plotters"] = []
             for plotter in solver.get("plotters",[]):
                 plotterContext = {}
-                plotterContext["headerPath"]      = os.path.join(plotter_subdirectory, plotter["name"]+".h" )
+                plotterContext["name"]             = plotter["name"]
+                plotterContext["headerPath"]       = os.path.join(plotter_subdirectory, plotter["name"]+".h" )
                 plotterContext["type_as_str"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
                 plotterContext["variables_as_str"] = helper.variables_to_str(plotter,"variables")
                 solverContext["plotters"].append(plotterContext)
             context["solvers"].append(solverContext)
         
-        context["specfileName"]        = self.specfileName
+        context["specfileName"]     = self.specfileName
         context["spec_file_as_hex"] = "0x2F" # todo(Sven) do the conversion
         context["subPaths"]         = []
         # todo(JM) optimised kernels subPaths
