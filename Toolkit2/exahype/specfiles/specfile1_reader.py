@@ -53,24 +53,27 @@ class SpecFile1Reader():
     spec_file_1_ini = ""
     reads_multiline_comment = 0
     reads_singline_comment  = False
+    in_solver = False
     for line in spec_file_1:
       reads_singline_comment = line.strip().startswith("//") or line.strip().startswith("#")
       reads_multiline_comment += 1 if line.strip().startswith("/*") else 0
       if reads_multiline_comment==0 and not reads_singline_comment:
         m_project = re.match(r"\s*exahype-project\s+(\w+)",line)
-        m_group   = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|global-optimisation)",line)
+        m_group   = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|(global-)?optimisation)",line)
         m_solver  = re.match(r"\s*solver\s+([^\s]+)\s+(\w+)",line)
         m_plotter = re.match(r"\s*plot\s+([^\s]+)(\s+(\w+))?",line)
         if m_project:
           spec_file_1_ini += "[project]\n"
           spec_file_1_ini += "project_name="+m_project.group(1)+"\n"
-        elif m_group:
+        elif m_group and not in_solver:
           spec_file_1_ini += "[%s]" % m_group.group(1).replace("-","_").replace("global_","")+"\n"
         elif m_solver:
+          in_solver = True
           spec_file_1_ini += "[solver%d]" % (solver)  +"\n"
           spec_file_1_ini += "solver_type="+m_solver.group(1)+"\n" # will be replaced later on
           spec_file_1_ini += "name="+m_solver.group(2)+"\n"
         elif re.match(r"^\s*end\s*solver",line):
+          in_solver = False
           solver+=1
           plotter.append(0)
         elif m_plotter:
@@ -88,7 +91,7 @@ class SpecFile1Reader():
             option = m_option.group(1)
             spec_file_1_ini += option.replace("-","_")+"="+m_option.group(4).strip()+"\n"
             if option=="kernel":
-              raise SpecFile1ParserError("Found legacy option 'kernel const'. Please split it into ['type const','terms const','optimisation const']")
+              raise SpecFile1ParserError("Found legacy option 'kernel const'. Please split it into ['type const','terms const','optimisation const']. Further ensure")
             if option=="limiter-kernel":
               raise SpecFile1ParserError("Found legacy option 'kernel const'. Please split it into ['limiter-type const','limiter-terms const','limiter-optimisation const']")
           else: # multiline options need to be indented
