@@ -126,7 +126,8 @@ class Controller():
                     print("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
                     model = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
                     for path in model.generateCode():
-                        print("Generated '"+path+"'")
+                        if not path is None:  
+                            print("Generated '"+path+"'")
         except BadSpecificationFile as e:
             print("ERROR: Could not create applications solver classes.", file=sys.stderr)
             print("ERROR: Reason: %s" % e,file=sys.stderr)
@@ -354,9 +355,10 @@ class Controller():
         context["writtenUnknowns"] = helper.count_variables(helper.parse_variables(solver,"variables"))
         context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
         
+        context["plotterDir"]=""
         subdirOption = "plotter_subdirectory"
-        if subdirOption in self.spec["paths"]:
-            context["plotterDir"]  = self.spec["paths"][subdirOption]
+        if subdirOption in self.spec["paths"] and len(self.spec["paths"][subdirOption].strip()):
+            context["plotterDir"]  = self.spec["paths"][subdirOption]+"/"
             context["outputPath"] += self.spec["paths"][subdirOption]
         return context
     

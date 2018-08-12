@@ -37,6 +37,6 @@ class PlotterModel(AbstractModelBaseClass):
       
       result = []
       for filePath in templates.get(userDefined):
-          result.append(self.render(templates[userDefined][filePath],filePath))
+          result.append(self.render(templates[userDefined][filePath],filePath,None,False))
       
       return result # return generated files as list

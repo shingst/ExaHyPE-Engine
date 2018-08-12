@@ -5,7 +5,7 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "{{plotterDir}}/{{plotter}}.h"
+#include "{{plotterDir}}{{plotter}}.h"
 
 {{project}}::{{plotter}}::{{plotter}}({{project}}::{{solver}}& solver) {
   // @TODO Please insert your code here.

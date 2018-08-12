@@ -357,8 +357,7 @@ class SpecFile1Reader():
   # Post processes result of `convert_to_dict`, i.e. 
   # changes the structure of the dict.
   #
-  # This allows it to be passed to the jinja2 template.
-  # The template assumes a structure similar to the json file.
+  # This allows it to be passed to the jinja2 schema.
   #
   # @param context the specfile as dict
   # 
