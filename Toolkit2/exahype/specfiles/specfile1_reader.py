@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import configparser
 import re
@@ -484,13 +486,67 @@ class SpecFile1Reader():
   def read(self,file_handle):
     spec_file_1 = file_handle.readlines()
     self.log.info("Converting legacy specification file to INI structure... ")
-    (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(sec_file_as_string_lines)
+    (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
     self.log.info("OK")
+    self.log.debug("Ini file is: " + str(spec_file_1_ini))
     
     config = configparser.ConfigParser(delimiters=('='))
-    config.read_string(spec_file_1_ini)
-    
+    try:
+      config.read_string(spec_file_1_ini)
+    except configparser.Error as e:
+      raise SpecFile1ParserError(e)
+
     self.log.info("Mapping INI structure to JSON input object... ")
     result=self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
     self.log.info("OK")
     return result 
+
+  @classmethod
+  def cli(cls, parser=None):
+    """
+    A super light command line frontend using argparse
+    """
+    import argparse, json
+    if not parser:
+      parser = argparse.ArgumentParser(
+        description="A lightweight for the old original ExaHyPE specification file format to the new JSON format",
+        epilog="See http://www.exahype.eu and the Guidebook for more help."
+      )
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show all info messages and stack traces")
+    parser.add_argument("-c", "--compact", action="store_false", help="Print output compact in a single line (default is pretty print)")
+
+    parser.add_argument('specfile', nargs="?", type=argparse.FileType('r'), default=sys.stdin, help="The specification file to read in (*.exahype1), default stdin")
+    parser.add_argument('jsonfile', nargs="?", type=argparse.FileType('w'), default=sys.stdout, help="The output file to write to (*.exahype2), default stdout")
+
+    args = parser.parse_args()
+
+    logging.basicConfig(format="%(filename)s:%(levelname)s %(message)s")
+    log = logging.getLogger(cls.__name__)
+    #log.addHandler(logging.StreamHandler()) # to stderr
+
+    if args.verbose:
+      log.setLevel(logging.DEBUG)
+
+    reader = cls(log)
+
+    try:
+      json_specfile = reader.read(args.specfile)
+    except SpecFile1ParserError as e:
+      if args.verbose:
+        log.exception(e)
+      else:
+        log.fatal(str(e))
+      sys.exit(-1)
+
+    json_specfile_as_string = json.dumps(
+      json_specfile,
+      sort_keys = True,
+      indent = 4 if args.compact else None
+    )
+
+    print(json_specfile_as_string, file=args.jsonfile)
+
+
+if __name__ == '__main__':
+  SpecFile1Reader().cli()
