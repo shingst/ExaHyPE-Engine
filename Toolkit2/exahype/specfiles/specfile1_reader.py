@@ -7,7 +7,9 @@ import json
 import collections
 import logging
 
-class SpecFile1ParserError(RuntimeError): pass
+class SpecFile1ParserError(RuntimeError): 
+  def __init__(self,message):
+    super().__init__(message)
 
 ##
 # A reader for the original ExaHyPE specification file format
@@ -58,7 +60,7 @@ class SpecFile1Reader():
         m_project = re.match(r"\s*exahype-project\s+(\w+)",line)
         m_group   = re.match(r"\s*(computational-domain|shared-memory|distributed-memory|global-optimisation)",line)
         m_solver  = re.match(r"\s*solver\s+([^\s]+)\s+(\w+)",line)
-        m_plotter = re.match(r"\s*plot\s+([^\s]+)\s+(\w+)",line)
+        m_plotter = re.match(r"\s*plot\s+([^\s]+)(\s+(\w+))?",line)
         if m_project:
           spec_file_1_ini += "[project]\n"
           spec_file_1_ini += "project_name="+m_project.group(1)+"\n"
@@ -74,14 +76,21 @@ class SpecFile1Reader():
         elif m_plotter:
           spec_file_1_ini += "[solver%dplotter%d]\n" % (solver,plotter[solver])
           spec_file_1_ini += "type="+m_plotter.group(1)+"\n"
-          spec_file_1_ini += "name="+m_plotter.group(2)+"\n"  
+          if m_plotter.group(2) is None:
+            raise SpecFile1ParserError("Could not infer plotter name from tokens '%s'. Is it missing?" % line.strip())
+          spec_file_1_ini += "name="+m_plotter.group(2)+"\n"
           plotter[solver]+=1
         elif line.strip().startswith("end "):
           pass
         else:
           m_option = re.match(r"\s*((\w|-)+)\s*(const)?\s*=(.+)",line)
           if m_option:
-            spec_file_1_ini += m_option.group(1).replace("-","_")+"="+m_option.group(4).strip()+"\n"
+            option = m_option.group(1)
+            spec_file_1_ini += option.replace("-","_")+"="+m_option.group(4).strip()+"\n"
+            if option=="kernel":
+              raise SpecFile1ParserError("Found legacy option 'kernel const'. Please split it into ['type const','terms const','optimisation const']")
+            if option=="limiter-kernel":
+              raise SpecFile1ParserError("Found legacy option 'kernel const'. Please split it into ['limiter-type const','limiter-terms const','limiter-optimisation const']")
           else: # multiline options need to be indented
             spec_file_1_ini += "  "+line.strip()+"\n"
       reads_multiline_comment -= 1 if line.strip().endswith("*/") else 0 
@@ -169,54 +178,56 @@ class SpecFile1Reader():
     distributed_memory["load_balancing_type"]=distributed_memory.pop("identifier").replace("_load_balancing","")
     distributed_memory["buffer_size"]        =distributed_memory.pop("buffer_size")
     # configure
-    configure = distributed_memory.pop("configure").replace("{","").replace("}","")
-    for token in configure.split(","):
-      token_s = token.strip()
-      m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
-      m_primary_ranks_per_node  = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
-      m_node_pool_strategy      = re.match(r"(fair|FCFS|sfc-diffusion)",token_s)
-      m_load_balancing_strategy = re.match(r"(hotspot|greedy-naive|greedy-regular)",token_s)
-      
-      found_token = False
-      if token_s=="virtually-expand-domain":
-        distributed_memory["scale_bounding_box"] = True # might be better placed into the optimisation section
-        found_token = True
-      if m_ranks_per_node:
-        distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(1))
-        found_token = True
-      if m_primary_ranks_per_node:
-        distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
-        found_token = True
-      if m_node_pool_strategy:
-        distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
-        found_token = True
-      if m_load_balancing_strategy:
-        distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
-        found_token = True
-      if not found_token and len(token_s):
-        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
+    if "configure" in distributed_memory:
+      configure = distributed_memory.pop("configure").replace("{","").replace("}","")
+      for token in configure.split(","):
+        token_s = token.strip()
+        m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
+        m_primary_ranks_per_node  = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
+        m_node_pool_strategy      = re.match(r"(fair|FCFS|sfc-diffusion)",token_s)
+        m_load_balancing_strategy = re.match(r"(hotspot|greedy-naive|greedy-regular)",token_s)
+        
+        found_token = False
+        if token_s=="virtually-expand-domain":
+          distributed_memory["scale_bounding_box"] = True # might be better placed into the optimisation section
+          found_token = True
+        if m_ranks_per_node:
+          distributed_memory["ranks_per_node"]        =int(m_ranks_per_node.group(1))
+          found_token = True
+        if m_primary_ranks_per_node:
+          distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
+          found_token = True
+        if m_node_pool_strategy:
+          distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
+          found_token = True
+        if m_load_balancing_strategy:
+          distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+          found_token = True
+        if not found_token and len(token_s):
+          raise SpecFile1ParserError("Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s)
   
   ##
   # TODO
   def map_shared_memory(self,shared_memory):
     shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
     # configure
-    configure = shared_memory.pop("configure").replace("{","").replace("}","")
-    for token in configure.split(","):
-      token_s = token.strip()
-      found_token = False
-      m_background_job_consumers = re.match(r"background-tasks:([0-9]+)",token_s)
-      if m_background_job_consumers:
-        shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
-        found_token = True
-      if re.search(r"manual_pinning",configure)!=None:
-        shared_memory["manual_pinning"] = True
-        found_token = True
-      if token_s in ["no-invade", "analyse-optimal-static-distribution-but-do-not-invade", "occupy-all-cores", "invade-between-time-steps", "invade-throughout-computation", "invade-at-time-step-startup-plus-throughout-computation"]:
-        shared_memory["invasion_strategy"] = token_s.replace("-","_")
-        found_token = True
-      if not found_token and len(token_s):
-        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'shared-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
+    if "configure" in shared_memory:
+      configure = shared_memory.pop("configure").replace("{","").replace("}","")
+      for token in configure.split(","):
+        token_s = token.strip()
+        found_token = False
+        m_background_job_consumers = re.match(r"background-tasks:([0-9]+)",token_s)
+        if m_background_job_consumers:
+          shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
+          found_token = True
+        if re.search(r"manual_pinning",configure)!=None:
+          shared_memory["manual_pinning"] = True
+          found_token = True
+        if token_s in ["no-invade", "analyse-optimal-static-distribution-but-do-not-invade", "occupy-all-cores", "invade-between-time-steps", "invade-throughout-computation", "invade-at-time-step-startup-plus-throughout-computation"]:
+          shared_memory["invasion_strategy"] = token_s.replace("-","_")
+          found_token = True
+        if not found_token and len(token_s):
+          raise SpecFile1ParserError("Could not map value '%s' extracted from option 'shared-memory/configure'. Is it spelt correctly?" % token_s)
   ##
   # Converts the kernel terms of a solver entry in the original spec file
   #
@@ -235,14 +246,14 @@ class SpecFile1Reader():
           if term=="pointsources":
             try:
               n_point_sources = int(token_s.split(":")[-1])
-              self.log.warning("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
+              self.log.warning("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.")
               found_token = True
             except:
-              raise SpecFile1ParserError("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              raise SpecFile1ParserError("Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s)
           elif token_s==term:
               found_token = True
       if not found_token:
-        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s,file=sys.stderr)
+        raise SpecFile1ParserError("Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s)
       
     return (context,n_point_sources)
   
@@ -285,12 +296,12 @@ class SpecFile1Reader():
               context[stp][term]=int(token_s.split(":")[-1])
               found_token=True
             except:
-              raise SpecFile1ParserError("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
+              raise SpecFile1ParserError("Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s)
           else:
             context[stp][term]=term
             found_token=True
       if not found_token:
-        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s,file=sys.stderr)
+        raise SpecFile1ParserError("Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s)
     return context
     
   ##
@@ -311,7 +322,7 @@ class SpecFile1Reader():
         context["allocate_temporary_arrays"]="stack"
         found_token = True
       if not found_token:
-        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelt correctly?" % token_s,file=sys.stderr)
+        raise SpecFile1ParserError("Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelt correctly?" % token_s)
     return context
   
   ##

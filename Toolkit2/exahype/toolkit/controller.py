@@ -63,7 +63,7 @@ class Controller():
         self.interactive = args.interactive or not args.not_interactive
         self.verbose = args.verbose or self.interactive
         self.write_json=args.write_json
-        self.debug_mode=args.debug
+        self.debug=args.debug
         
         if self.verbose: # otherwise no need to call git, etc. 
             self.info(self.header())
