@@ -272,7 +272,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     bool usePaddedData_nDoF() const {return true;}
     
     //not used PDE
-    {% if !useMaterialParam %}
+    {% if not useMaterialParameters %}
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
     {% endif %}
     {% if patchwiseAdjust %}

@@ -184,5 +184,6 @@ const char* kernels::compiledSpecfile() {
   static const char ret[] =
   {
     {{spec_file_as_hex}}// TODO(Sven)
-  }
+  };
+  return ret;
 }

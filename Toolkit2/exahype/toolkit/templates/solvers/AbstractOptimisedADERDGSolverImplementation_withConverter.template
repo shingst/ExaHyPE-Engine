@@ -105,7 +105,7 @@ if(useGeneric) {
   
   
 {% if  isLinear %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParameters}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
 {% else %}
   kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
 {% endif %}
@@ -302,7 +302,7 @@ if(useGeneric) {
   {{optNamespace}}::converter::QFace_optimised2generic(QL,QL_g);
   {{optNamespace}}::converter::QFace_optimised2generic(QR,QR_g);
 {% if isLinear %}
-  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
+  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParameters}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
 {% else %}
   kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
 {% endif %}

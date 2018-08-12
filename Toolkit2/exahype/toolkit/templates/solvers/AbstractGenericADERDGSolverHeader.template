@@ -159,18 +159,18 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int getTempUnknownsSize()          const {return -1;} //lQhi not required
     int getTempFluxUnknownsSize()      const {return -1;} //lFhi not required
 {% endif %}
-{% if usePointSources is none %}
+{% if not usePointSources %}
     int getTempPointForceSourcesSize() const {return -1;} //pointSource not required
 {% endif %}
-{% if useNCP is none %}
+{% if not useNCP %}
     int getTempSpaceTimeFluxUnknowns1Size() const {return -1;} //gradQ not required
 {% endif %}
     
     //not used PDE
-{% if useMaterialParam is none %}
+{% if not useMaterialParameters %}
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
 {% endif %}
-{% if patchwiseAdjust %}
+{% if not patchwiseAdjust %}
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
 {% endif %}
     

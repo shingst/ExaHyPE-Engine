@@ -219,7 +219,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
 /* pointSource() function not included, as requested in the specification file */
 {% endif %}
 
-{% if useMaterialParam %}
+{% if useMaterialParameters %}
     /**
      * @TODO LR : document
      */
