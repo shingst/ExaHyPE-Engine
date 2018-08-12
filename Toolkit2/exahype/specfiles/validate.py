@@ -66,7 +66,7 @@ def validate(json_filename_or_file, set_defaults=True):
   return input_structure
   
 def validate_specfile1(specfile1_filename):
-  input_structure = specfile1_reader.SpecFile1Reader().read(specfile1_filename)
+  input_structure = specfile1_reader.SpecFile1Reader().read(open(specfile1_filename, "r"))
   print("Reading legacy ExaHyPE specification file format... OK")
   print("Translating file to JSON format ... OK")
   print("Result:")
