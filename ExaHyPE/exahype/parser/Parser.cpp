@@ -40,9 +40,8 @@ tarch::logging::Log exahype::parser::Parser::_log("exahype::parser::Parser");
 
 namespace exahype {
 namespace parser {
+/// Using a file-local namespace to avoid conflicts with these common function names.
 namespace tools {
-
-// Using a local namespace to avoid conflicts with these common function names.
 
 // a buffer-overflow-safe version of sprintf
 // source: http://stackoverflow.com/a/69911
@@ -96,24 +95,18 @@ std::string sformat(const char *fmt, ...) {
 
 using namespace exahype::parser::tools;
 
+/**
+ * Using a file-local "pimpl idiom" to avoid exposing the json.hpp header to anything
+ * including the Parser.h
+ **/
 struct exahype::parser::ParserImpl {
   json data;
-
-  void read(std::istream& is) {
-    data = json::parse(is);
-  }
-
-  void print() {
-      std::cout << std::setw(4) << data << std::endl;
-  }
-  
-  bool isValid() {
-    return true; // TODO: Wether json holds something or not
-  }
 
   /**
    * Generic method to extract various types (like int,double,bool,string,vector),
    * throws std::runtime_error in case of error.
+   * 
+   * This is a template method in ParserImpl in order to avoid templates in Parser.h
    **/
   template<typename T>
   T getFromPath(std::string path, T defaultValue, bool isOptional=false) const {
@@ -131,7 +124,7 @@ struct exahype::parser::ParserImpl {
     throw std::runtime_error(ss.str());
   }
 
-};
+}; // end of ParserImpl
 
 bool exahype::parser::Parser::_interpretationErrorOccured(false);
 
@@ -191,13 +184,24 @@ void exahype::parser::Parser::readFile(const std::string& filename) {
     readFile(inputFile, filename);
 }
 
-void exahype::parser::Parser::readFile(std::istream& inputFile, std::string filename) {
+void exahype::parser::Parser::readFile(std::istream& inputStream, std::string filename) {
   _filename = filename;
-  _impl->read(inputFile);
+  try {
+    _impl->data = json::parse(inputStream);
+  } catch(json::parse_error& e) {
+    logError("readFile()", "Could not read specification file " << filename
+      << " becaue the file is not a valid JSON file.");
+    logError("readFile()", "Syntax Error (Error type " << e.id << "): " << e.what() << " at byte position " << e.byte);
+    logError("readFile()", "Hint: Please ensure the given specification file is of the novel JSON format. We recently "
+      << "switched formats and if you have an old-style specification file, use the toolkit to translate it to JSON.");
+    std::abort(); // come on, there is no reason to invalidate and continue here.
+    invalidate();
+    return;
+  }
 
   //  For debugging purposes
   if(std::getenv("EXAHYPE_VERBOSE_PARSER")) { // runtime debugging
-      _impl->print();
+     logInfo("readFile()", std::setw(4) << _impl->data << std::endl);
   }
 
   checkValidity();
@@ -218,11 +222,12 @@ void exahype::parser::Parser::checkValidity() {
 }
 
 bool exahype::parser::Parser::isValid() const {
-  return !_impl->isValid() && !_interpretationErrorOccured;
+  bool jsonIsValid= !_impl->data.empty(); // at least a simple check to ensure the JSON holds something
+  return jsonIsValid && !_interpretationErrorOccured;
 }
 
 void exahype::parser::Parser::invalidate() const {
-  invalidate();
+  _interpretationErrorOccured = false;
 }
 
 bool exahype::parser::Parser::hasPath(std::string path) const {

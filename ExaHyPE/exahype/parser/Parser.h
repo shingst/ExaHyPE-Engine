@@ -61,8 +61,7 @@ class exahype::parser::Parser {
   ParserImpl* _impl;
 
   /**
-   * Takes certain parameters from the
-   * token stream and checks their validity.
+   * Takes certain parameters from the parameters and checks their validity.
    */
   void checkValidity();
 
@@ -462,7 +461,8 @@ class exahype::parser::Parser {
   std::string getProfilingOutputFilename() const;
 
   /**
-   * This function should be renamed to createParserViewForSolver
+   * @TODO This function should be renamed to createParserViewForSolver, as we also
+   * now also create ParserViews for plotters.
    **/
   exahype::parser::ParserView createParserView(int solverNumber);
   exahype::parser::ParserView createParserView(std::string basePath);
