@@ -70,13 +70,16 @@ class SolverGenerator(generator.Generator):
         aderdg_context["isLinear"]                = not kernel.get("nonlinear",True)
         aderdg_context["isNonlinear"]             = kernel.get("nonlinear",True)
         aderdg_context["isFortran"]               = kernel.get("language",False)=="Fortran" 
-        aderdg_context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False) 
+        aderdg_context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
+        aderdg_context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
         aderdg_context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[]) 
         aderdg_context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[]) 
         for term in ["flux","source","ncp","point_sources","material_parameters"]:
-          term_s = term.replace("_s","S").replace("_p","P")
-          aderdg_context["use%s%s" % (term[0].upper(),term[1:].lower())] = term in kernel["terms"]
-          aderdg_context["use%s%s_s" % (term[0].upper(),term[1:].lower())] = "true" if term in kernel["terms"] else "false"
+          option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
+          option = "use%s%s" % ( option[0].upper(), option[1:] )
+          aderdg_context[option]          = term in kernel["terms"]
+          aderdg_context["%s_s" % option] = "true" if aderdg_context[option] else "false"
+        print(aderdg_context)
         
         solver_map = {
             "user"    :  { solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 

@@ -127,12 +127,12 @@ const int picardIterations = 1;
    
   if(pointSources != nullptr) {
     kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), luh, t, dt, center, dx, pointSources, PSi);
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParam_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<true , {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }else{
-    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParam_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+    kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }
 {% else %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParam_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
 {%   endif %}
   kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s or useNCP_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
@@ -237,7 +237,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
   kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
 {% else %}
   {% if isLinear %}
-    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParam_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
   {% else %}
     kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,direction);
   {% endif %}
