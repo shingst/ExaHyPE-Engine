@@ -4,16 +4,16 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef {{plotterName}}_CLASS_HEADER_
-#define {{plotterName}}_CLASS_HEADER_
+#ifndef {{plotter}}_CLASS_HEADER_
+#define {{plotter}}_CLASS_HEADER_
 
 #include "exahype/plotters/{{solverType}}2UserDefined.h"
 
 namespace {{Project}} {
-  class {{plotterName}};
+  class {{plotter}};
 }
 
-class {{Project}}::{{plotterName}} : public exahype::plotters::{{solverType}}2UserDefined {
+class {{Project}}::{{plotter}} : public exahype::plotters::{{solverType}}2UserDefined {
  public:
   /**
    * Constructor.
@@ -22,11 +22,11 @@ class {{Project}}::{{plotterName}} : public exahype::plotters::{{solverType}}2Us
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself. 
    */
-  {{plotterName}}();
+  {{plotter}}();
 
   /**
    * This method is invoked every time a cell 
-   * is touched by the plotting plotterName.
+   * is touched by the plotting plotter.
    *
    * \note Use the protected variables _order, _variables to
    * determine the size of u. 
@@ -59,4 +59,4 @@ class {{Project}}::{{plotterName}} : public exahype::plotters::{{solverType}}2Us
   void finishPlotting() override;
 };
 
-#endif /* {{plotterName}}_CLASS_HEADER_ */
+#endif /* {{plotter}}_CLASS_HEADER_ */

@@ -16,8 +16,6 @@ from exahype.toolkit.helper import BadSpecificationFile
 from exahype.specfiles import validate,validate_specfile1
 
 from models import *
-from solver import *
-from plotter import *
 from configuration import Configuration
 
 class Controller():
@@ -91,18 +89,15 @@ class Controller():
         self.wait_interactive("validated and configured pathes")
         
         try:
-            s = SolverGenerator(self.spec, self.specfileName, self.verbose)
-            p = PlotterGenerator(self.spec, self.specfileName, self.verbose)
-            
             for i,solver in enumerate(self.spec.get("solvers",[])):
                 print("Generating solver[%d] = %s..." % (i, solver["name"]))
-                
+                solverFiles = []
                 if solver["type"]=="ADER-DG":
-                    context = self.buildADERDGSolverContext(solver)
-                    s.generateADERDGSolverFiles(context)
+                    model       = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
+                    solverFiles = model.generateCode()
                 elif solver["type"]=="Finite-Volumes":
-                    context = buildFVSolverContext(solver)
-                    s.generateFVSolverFiles(context)
+                    model       = solverModel.SolverModel(buildFVSolverContext(solver))
+                    solverFiles = model.generateCode()
                 elif solver["type"]=="Limiting-ADER-DG":
                     aderdgContext = self.buildADERDGSolverContext(solver)
                     fvContext     = self.buildFVSolverContext(solver)
@@ -117,14 +112,21 @@ class Controller():
                     aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                     
                     # generate all solver files
-                    s.generateFVSolverFiles(aderdgContext)
-                    s.generateADERDGSolverFiles(fvContext)
-                    s.generateLimitingADERDGSolverFiles(context)
+                    model        = solverModel.SolverModel(context)
+                    solverFiles  = model.generateCode()
+                    model        = solverModel.SolverModel(fvContext)
+                    solverFiles += model.generateCode()
+                    model        = solverModel.SolverModel(aderdgContext)
+                    solverFiles += model.generateCode()
                 
+                for path in solverFiles:
+                    if not path is None:
+                        print("Generated '"+path+"'")
                 for j,plotter in enumerate(solver.get("plotters",[])):
-                    print("Generating plotter[%d] = %s for solver" % (j, plotter["name"]))
-                    p.generatePlotter(self.buildPlotterContext(solver,plotter))
-                
+                    print("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
+                    model = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
+                    for path in model.generateCode():
+                        print("Generated '"+path+"'")
         except BadSpecificationFile as e:
             print("ERROR: Could not create applications solver classes.", file=sys.stderr)
             print("ERROR: Reason: %s" % e,file=sys.stderr)
@@ -137,7 +139,7 @@ class Controller():
             # kernel calls
             kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext())
             pathToKernelCalls = kernelCalls.generateCode()
-            print("Generated "+pathToKernelCalls)
+            print("Generated '"+pathToKernelCalls+"'")
         except Exception as e:
             print("ERROR: Could not create ExaHyPE's kernel calls", file=sys.stderr)
             print("ERROR: Reason: %s" % e,file=sys.stderr)
@@ -160,7 +162,7 @@ class Controller():
             makefile = makefileModel.MakefileModel(self.buildMakefileContext())
             pathToMakefile = makefile.generateCode() #generate Makefile and get path to it
             makefileMessage = makefile.getOutputMessage()
-            print("Generated "+pathToMakefile)
+            print("Generated '"+pathToMakefile+"'")
         except Exception as e:
             print("ERROR Could not create application-specific Makefile", file=sys.stderr)
             print("ERROR: Reason: %s" % e,file=sys.stderr)
@@ -230,9 +232,10 @@ class Controller():
         """Generate base context from spec with commonly used value"""
         context = {}
         # commonly used paths
-        context["outputPath"]       = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
-        context["exahypePath"]      = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
-        context["peanoToolboxPath"] = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
+        context["outputPath"]           = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
+        context["exahypePath"]          = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
+        context["peanoToolboxPath"]     = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
+        context["plotter_subdirectory"] = self.spec["paths"]["peano_kernel_path"]
         
         # commonly used parameters
         context["project"]          = self.spec["project_name"]
@@ -262,6 +265,7 @@ class Controller():
         
         context["order"]                  = solver["order"]
         context["numberOfDMPObservables"] = solver["limiter"]["numberOfObservables"]
+        context["implementation"]         = solver["limiter"].get("implementation","generic")
         
         context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
         context["FVSolver"]             = solver["name"]+"_FV"
@@ -327,7 +331,7 @@ class Controller():
         
     def buildFVKernelContext(self,kernel):
         context = {}
-        context["implementation"]          = kernel.get("implementation","generic")
+        context["implementation"] = kernel.get("implementation","generic")
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
         context["ghostLayerWidth"]=ghostLayerWidth[kernel["scheme"]]
         context.update(self.buildKernelTermsContext(kernel["terms"]))
@@ -346,9 +350,14 @@ class Controller():
         context = self.buildBaseContext()
         context.update(self.buildBaseSolverContext(solver))
 
-        context["plotterName"]     = plotter["name"]
+        context["plotter"]         = plotter["name"]
         context["writtenUnknowns"] = helper.count_variables(helper.parse_variables(solver,"variables"))
         context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
+        
+        subdirOption = "plotter_subdirectory"
+        if subdirOption in self.spec["paths"]:
+            context["plotterDir"]  = self.spec["paths"][subdirOption]
+            context["outputPath"] += self.spec["paths"][subdirOption]
         return context
     
     def buildMakefileContext(self):

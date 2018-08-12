@@ -4,20 +4,20 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef POSTPROCESSING_{{plotterName}}_CLASS_HEADER_
-#define POSTPROCESSING_{{plotterName}}_CLASS_HEADER_
+#ifndef POSTPROCESSING_{{plotter}}_CLASS_HEADER_
+#define POSTPROCESSING_{{plotter}}_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
 
 namespace {{project}} {
-  class {{solverName}};
-  class {{plotterName}};
+  class {{solver}};
+  class {{plotter}};
 }
 
-class {{project}}::{{plotterName}} : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class {{project}}::{{plotter}} : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  {{plotterName}}({{project}}::{{solverName}}& solver);
-  virtual ~{{plotterName}}();
+  {{plotter}}({{project}}::{{solver}}& solver);
+  virtual ~{{plotter}}();
 
   void startPlotting(double time) override;
   void finishPlotting() override;
@@ -31,4 +31,4 @@ public:
     double timeStamp) override;
 };
 
-#endif /* POSTPROCESSING_{{plotterName}}_CLASS_HEADER_ */
+#endif /* POSTPROCESSING_{{plotter}}_CLASS_HEADER_ */

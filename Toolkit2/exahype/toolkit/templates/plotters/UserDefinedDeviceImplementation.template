@@ -5,15 +5,15 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "{{plotterName}}.h"
+#include "{{plotterDir}}/{{plotter}}.h"
 
 
-{{Project}}::{{plotterName}}::{{plotterName}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
+{{Project}}::{{plotter}}::{{plotter}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{plotterName}}::plotPatch(
+void {{Project}}::{{plotter}}::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
@@ -21,11 +21,11 @@ void {{Project}}::{{plotterName}}::plotPatch(
 }
 
 
-void {{Project}}::{{plotterName}}::startPlotting( double time) {
+void {{Project}}::{{plotter}}::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{plotterName}}::finishPlotting() {
+void {{Project}}::{{plotter}}::finishPlotting() {
   // @TODO Please insert your code here.
 }

@@ -61,10 +61,11 @@ class AbstractModelBaseClass():
     
     
     # render a template to outputFilename using the given context (default = local context)
-    def render(self, templateName, outputFilename, context=None):
+    def render(self, templateName, outputFilename, context=None,overwrite=True):
         """Render a template to outputFilename using the given context (local context if none given)
         
-        Return the path to the generated file
+        Return the path to the generated file or `None` if the file exists and
+        shall not be overwritten.
         """
         # set default context to local context if none given
         if context == None:
@@ -73,12 +74,15 @@ class AbstractModelBaseClass():
         if not "outputPath" in context:
             raise ValueError("couldn't find outputPath in context")
         
-        absolutePath = os.path.join(os.path.dirname(__file__), "..", Configuration.pathToExaHyPERoot, context["outputPath"], outputFilename)
+        absolutePath = os.path.join(context["outputPath"], outputFilename)
         canonicalPath = os.path.realpath(absolutePath)
-        with open(canonicalPath, "w") as output:
-            output.write(self.renderAsString(templateName, context))
         
-        return canonicalPath
+        if not os.path.exists(canonicalPath) or overwrite:
+          with open(canonicalPath, "w") as output:
+              output.write(self.renderAsString(templateName, context))
+          return canonicalPath
+        else:
+          return None
     
     
     def renderAsString(self, templateName, context=None):
