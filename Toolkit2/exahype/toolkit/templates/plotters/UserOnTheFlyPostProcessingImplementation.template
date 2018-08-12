@@ -5,12 +5,6 @@
 // ========================
 //   www.exahype.eu
 // ========================
-{# begin references #}
-{%set project=data["project_name"] %}
-{%set solverName=data["solver"]["name"] %}
-{%set plotterName=data["plotter"]["name"] %}
-{%set writtenUnknowns=data["plotter"]["number_of_variables"] %}
-{# end references #}
 #include "{{plotterName}}.h"
 
 {{project}}::{{plotterName}}::{{plotterName}}({{project}}::{{solverName}}& solver) {

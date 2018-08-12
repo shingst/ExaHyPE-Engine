@@ -9,108 +9,41 @@ import plotter
 ##
 # Generates the solver files
 class SolverGenerator(generator.Generator):
-    _plotter_generator = None
     
-    def __init__(self,spec,spec_file,verbose):
-        generator.Generator.__init__(self,spec,spec_file,verbose)
-        self._plotter_generator = plotter.PlotterGenerator(spec,spec_file,verbose)
+    def __init__(self,spec,specFile,verbose):
+        generator.Generator.__init__(self,spec,specFile,verbose)
+        self.plotterGenerator = plotter.PlotterGenerator(spec,specFile,verbose)
     
-    def create_solver_context(self,solver):
-        context = {}
-        context["project"] = self._spec["project_name"]
-        
-        context["dimensions"] = self._dimensions
-        
-        nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
-        nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
-        nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
-        nPointSources = len(solver.get("point_sources",[]))
-        
-        context["numberOfVariables"]          = nVar
-        context["numberOfMaterialParameters"] = nParam
-        context["numberOfGlobalObservables"]  = nGlobalObs
-        context["numberOfPointSources"]       = nPointSources
-        
-        context["range_0_nDim"]          = range(0,self._dimensions)
-        context["range_0_nVar"]          = range(0,nVar)
-        context["range_0_nVarParam"]     = range(0,nVar+nParam)
-        context["range_0_nGlobalObs"]    = range(0,nGlobalObs)    # nGlobalObs might be 0
-        context["range_0_nPointSources"] = range(0,nPointSources) # nPointSources might be 0
-        
-        print(context)
-        return context
+    def writeSolverFiles(self,solverMap,abstractSolverMap,implementation,context):
+        for filePath in solverMap.get(implementation,{}):
+            generator.Generator.render_template(self,solverMap[implementation][filePath],context,filePath,"Generated user solver file",False)
+        for filePath in abstractSolverMap.get(implementation,{}):
+            generator.Generator.render_template(self,abstractSolverMap[implementation][filePath],context,filePath,"Generated abstract solver file",True)
     
-    def write_solver_files(self,solver_map,abstract_solver_map,implementation,context):
-        for file_path in solver_map.get(implementation,{}):
-            generator.Generator.render_template(self,solver_map[implementation][file_path],context,file_path,"Generated user solver file",False)
-        for file_path in abstract_solver_map.get(implementation,{}):
-            generator.Generator.render_template(self,abstract_solver_map[implementation][file_path],context,file_path,"Generated abstract solver file",True)
-    
-    ##
-    #Generate user solver and abstract solver header and source files for an ADER-DG solver.
-    #
-    # @note Does not overwrite user solver files if they already exist.
-    def generate_aderdg_solver_files(self,solver,dmp_observables):
-        solver_name                             = solver["name"]+ ( "_ADERDG" if solver["type"]=="Limiting-ADER-DG" else "" )
-        abstract_solver_name                    = "Abstract"+solver_name
-        kernel                                  = solver["aderdg_kernel"]
-        
-        aderdg_context = self.create_solver_context(solver) # baseSolverContext
-        aderdg_context["numberOfDMPObservables"]  = dmp_observables;
-        
-        aderdg_context["solver"]                  = solver_name
-        aderdg_context["abstractSolver"]          = abstract_solver_name
-        aderdg_context["order"]                   = solver["order"]
-        aderdg_context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 
-        aderdg_context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
-        aderdg_context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
-        aderdg_context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
-        aderdg_context["language"]                = kernel.get("language","C").lower()
-        aderdg_context["basis"]                   = kernel.get("basis","Legendre")
-        aderdg_context["isLinear"]                = not kernel.get("nonlinear",True)
-        aderdg_context["isNonlinear"]             = kernel.get("nonlinear",True)
-        aderdg_context["linearOrNonlinear"]       = "Linear" if aderdg_context["isLinear"] else "Nonlinear"
-        aderdg_context["isFortran"]               = kernel.get("language",False)=="Fortran" 
-        aderdg_context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
-        aderdg_context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
-        aderdg_context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[]) 
-        aderdg_context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[]) 
-        for term in ["flux","source","ncp","point_sources","material_parameters"]:
-          option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
-          option = "use%s%s" % ( option[0].upper(), option[1:] )
-          aderdg_context[option]          = term in kernel["terms"]
-          aderdg_context["%s_s" % option] = "true" if aderdg_context[option] else "false"
-          
-        # TODO
-        aderdg_context["enableProfiler"]=False
-        aderdg_context["namingSchemes"]=[]
-          
-        print(aderdg_context)
-        
-        solver_map = {
-            "user"    :  { solver_name+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
-                           solver_name+".cpp"             : "solvers/EmptyADERDGSolverImplementation.template" },
-            "generic" : {  solver_name+".h"               : "solvers/ADERDGSolverHeader.template", 
-                           solver_name+".cpp"             : "solvers/ADERDGSolverInCUserCode.template"},
+    def generateADERDGSolverFiles(self,context):
+        solverMap = {
+            "user"    :  { context["solver"]+".h"               : "solvers/MinimalADERDGSolverHeader.template", 
+                           context["solver"]+".cpp"             : "solvers/EmptyADERDGSolverImplementation.template" },
+            "generic" : {  context["solver"]+".h"               : "solvers/ADERDGSolverHeader.template", 
+                           context["solver"]+".cpp"             : "solvers/ADERDGSolverInCUserCode.template"},
         }
-        solver_map["optimised"] = solver_map["generic"]
+        solverMap["optimised"] = solverMap["generic"]
         
-        abstract_solver_map  = { 
+        abstractSolverMap  = { 
             "user"      :  { },
-            "generic"   :  { abstract_solver_name+".cpp"    : "solvers/AbstractGenericADERDGSolverImplementation.template", 
-                             abstract_solver_name+".h"      : "solvers/AbstractGenericADERDGSolverHeader.template" },
-            "optimised" :  { abstract_solver_name+".cpp"    : "solvers/AbstractOptimisedADERDGSolverImplementation.template", 
-                             abstract_solver_name+".h"      : "solvers/AbstractOptimisedADERDGSolverHeader.template" }
+            "generic"   :  { context["abstractSolver"]+".cpp"    : "solvers/AbstractGenericADERDGSolverImplementation.template", 
+                             context["abstractSolver"]+".h"      : "solvers/AbstractGenericADERDGSolverHeader.template" },
+            "optimised" :  { context["abstractSolver"]+".cpp"    : "solvers/AbstractOptimisedADERDGSolverImplementation.template", 
+                             context["abstractSolver"]+".h"      : "solvers/AbstractOptimisedADERDGSolverHeader.template" }
         }
         
-        implementation = solver["aderdg_kernel"].get("implementation","generic")
+        implementation = context["implementation"]
         try:
-            self.write_solver_files(solver_map,abstract_solver_map,implementation,aderdg_context)
+            self.writeSolverFiles(solverMap,abstractSolverMap,implementation,context)
         except Exception:
             raise
-        
         if implementation=="optimised":
-            print("ERROR: not implemented yet '"+file_path+"'",file=sys.stderr)
+            print("ERROR: not implemented yet '"+filePath+"'",file=sys.stderr)
             sys.exit(-1)
 
     ##
@@ -118,83 +51,39 @@ class SolverGenerator(generator.Generator):
     #
     # @note Does not overwrite user solver files if they already exist.
     #
-    def generate_fv_solver_files(self,solver,patch_size):
-        solver_name          = solver["name"]+ ( "_FV" if solver["type"]=="Limiting-ADER-DG" else "" )
-        abstract_solver_name = "Abstract"+solver_name
-        fv_context = self.create_solver_context(solver)
-        ghost_layer_width = { "godunov" : 1, "musclhancock" : 2 }
-        fv_context["ghostLayerWidth"]=ghost_layer_width[solver["fv_kernel"]["scheme"]]
-        
-        solver_map = {
-            "user"    : { solver_name+".h"   : "solvers/MinimalFiniteVolumesSolverHeader.template", 
-                          solver_name+".cpp" : "solvers/EmptyFiniteVolumesSolverImplementation.template" },
-            "generic" : { solver_name+".h"   : "solvers/FiniteVolumesHeader.template", 
-                          solver_name+".cpp" : "solvers/FiniteVolumesInCUserCode.template"},
+    def generateFVSolverFiles(self,context):
+        solverMap = {
+            "user"    : { context["solver"]+".h"   : "solvers/MinimalFiniteVolumesSolverHeader.template", 
+                          context["solver"]+".cpp" : "solvers/EmptyFiniteVolumesSolverImplementation.template" },
+            "generic" : { context["solver"]+".h"   : "solvers/FiniteVolumesHeader.template", 
+                          context["solver"]+".cpp" : "solvers/FiniteVolumesInCUserCode.template"},
         }
         
-        abstract_solver_map  = { 
-            "generic"   :  { abstract_solver_name+".cpp" : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
-                             abstract_solver_name+".h"   : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
+        abstractSolverMap  = { 
+            "generic"   :  { context["abstractSolver"]+".cpp" : "solvers/AbstractGenericFiniteVolumesSolverImplementation.template", 
+                             context["abstractSolver"]+".h"   : "solvers/AbstractGenericFiniteVolumesSolverHeader.template" }
         }
         
-        implementation = solver["fv_kernel"].get("implementation","generic")
+        implementation = context["implementation"]
         try:
-            self.write_solver_files(solver_map,abstract_solver_map,implementation,fv_context)
+            self.writeSolverFiles(solverMap,abstractSolverMap,implementation,context)
         except Exception:
             raise
         
         if implementation=="optimised":
-            print("ERROR: not implemented yet '"+file_path+"'",file=sys.stderr)
+            print("ERROR: not implemented yet '"+filePath+"'",file=sys.stderr)
             sys.exit(-1)
-    ##
-    # Generate user solver and abstract solver header and source files for an Limiting-ADER-DG solver.
-    # Further generate those files for the wrapped ADER-DG and FV solver coupled by 
-    # the Limiting-ADER-DG solver. 
-    #
-    # @note Does not overwrite user solver files if they already exist.
-    def generate_limiting_aderdg_solver_files(self,solver):
-        solver_name          = solver["name"]
-        abstract_solver_name = "Abstract"+solver_name
-        # aderdg
-        self.generate_aderdg_solver_files(
-            solver=solver,\
-            dmp_observables=solver["limiter"].get("dmp_observables",0))
-        # fv
-        self.generate_fv_solver_files(
-            solver=solver,\
-            patch_size=2*solver["order"]+1)
-        # limiter
-        limiter_context = self.create_solver_context(solver)
-        
-        solver_map = {  }
-        abstract_solver_map  = { 
-            "generic"   :  { abstract_solver_name+".cpp" : "solvers/AbstractGenericLimiterSolverImplementation.template", 
-                             abstract_solver_name+".h"   : "solvers/AbstractGenericLimiterSolverHeader.template" },
-            "optimised" :  { abstract_solver_name+".cpp" : "solvers/AbstractOptimisedLimiterSolverImplementation.template", 
-                             abstract_solver_name+".h"   : "solvers/AbstractOptimisedLimiterSolverHeader.template" }
+    
+    def generateLimitingADERDGSolverFiles(self,context):
+        solverMap = {  }
+        abstractSolverMap  = { 
+            "generic"   :  { context["abstractSolver"]+".cpp" : "solvers/AbstractGenericLimiterSolverImplementation.template", 
+                             context["abstractSolver"]+".h"   : "solvers/AbstractGenericLimiterSolverHeader.template" },
+            "optimised" :  { context["abstractSolver"]+".cpp" : "solvers/AbstractOptimisedLimiterSolverImplementation.template", 
+                             context["abstractSolver"]+".h"   : "solvers/AbstractOptimisedLimiterSolverHeader.template" }
         }
         implementation = solver["fv_kernel"].get("implementation","generic")
         try:
-            self.write_solver_files(solver_map,abstract_solver_map,implementation,limiter_context)
+            self.writeSolverFiles(solverMap,abstractSolverMap,implementation,context)
         except Exception:
             raise
-    ##
-    # Generate user and abstract solver files for all solvers found in the
-    # specification.
-    #
-    def generate_all_solvers(self):
-        for i, solver in enumerate(self._spec.get("solvers",[])):
-            print("Generating solver[%d] = %s..." % (i, solver["name"]))
-            
-            if solver["type"]=="ADER-DG":
-                self.generate_aderdg_solver_files(
-                    solver=solver,\
-                    dmp_observables=0)
-            elif solver["type"]=="Finite-Volumes":
-                self.generate_fv_solver_files(
-                    solver=solver,\
-                    patch_size=solver["patch_size"])
-            elif solver["type"]=="Limiting-ADER-DG":
-                self.generate_limiting_aderdg_solver_files(solver)
-            
-            self._plotter_generator.generate_all_plotters(i, solver)

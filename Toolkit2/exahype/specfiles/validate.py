@@ -71,6 +71,6 @@ def validate_specfile1(specfile1_filename):
   print("Translating file to JSON format ... OK")
   print("Result:")
   print(json.dumps(input_structure,indent=2))
-  get_validator(set_defaults).validate(input_structure)
+  get_validator(set_defaults=True).validate(input_structure)
   return input_structure
   

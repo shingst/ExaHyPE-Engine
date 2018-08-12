@@ -4,20 +4,16 @@
 // ========================
 //   www.exahype.eu
 // ========================
-{# begin references #}
-{%set solverType=data["solver"]["type"] %}
-{%set device=data["plotter"]["name"] %}
-{# end references #}
-#ifndef {{device}}_CLASS_HEADER_
-#define {{device}}_CLASS_HEADER_
+#ifndef {{plotterName}}_CLASS_HEADER_
+#define {{plotterName}}_CLASS_HEADER_
 
 #include "exahype/plotters/{{solverType}}2UserDefined.h"
 
 namespace {{Project}} {
-  class {{device}};
+  class {{plotterName}};
 }
 
-class {{Project}}::{{device}} : public exahype::plotters::{{solverType}}2UserDefined {
+class {{Project}}::{{plotterName}} : public exahype::plotters::{{solverType}}2UserDefined {
  public:
   /**
    * Constructor.
@@ -26,11 +22,11 @@ class {{Project}}::{{device}} : public exahype::plotters::{{solverType}}2UserDef
    * you if you use user defined plotting. You have
    * to declare and manage such member variables yourself. 
    */
-  {{device}}();
+  {{plotterName}}();
 
   /**
    * This method is invoked every time a cell 
-   * is touched by the plotting device.
+   * is touched by the plotting plotterName.
    *
    * \note Use the protected variables _order, _variables to
    * determine the size of u. 
@@ -63,4 +59,4 @@ class {{Project}}::{{device}} : public exahype::plotters::{{solverType}}2UserDef
   void finishPlotting() override;
 };
 
-#endif /* {{device}}_CLASS_HEADER_ */
+#endif /* {{plotterName}}_CLASS_HEADER_ */

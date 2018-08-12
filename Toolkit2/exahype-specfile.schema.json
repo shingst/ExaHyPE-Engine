@@ -804,9 +804,9 @@
                   ]
                 }, 
                 "variables" : {
-                  "title" : "How much variables the plotter writes (Runtime quantitiy)",
-                  "$comment" : "Named variables could be once passed to the plotters to have speaking output",
-                  "scope" : "run-time",
+                  "title" : "How much variables the plotter writes (Compile-time)",
+                  "$comment" : "Named variables could be once passed to the plotters to have speaking output (TODO: rename)",
+                  "scope" : "compile-time",
                   "additionalProperties" : false,
                   "properties" : { "$ref" : "#/definitions/variables" }
                   

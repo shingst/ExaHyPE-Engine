@@ -16,6 +16,8 @@ from exahype.toolkit.helper import BadSpecificationFile
 from exahype.specfiles import validate,validate_specfile1
 
 from models import *
+from solver import *
+from plotter import *
 from configuration import Configuration
 
 class Controller():
@@ -81,7 +83,7 @@ class Controller():
             d = directories.DirectoryAndPathChecker(self.buildBaseContext(), self.verbose)
         except BadSpecificationFile as e:
             print("ERROR: Some directories did not exist and/or could not be created.", file=sys.stderr)
-            print("ERROR: Message: %s" % e, file=sys.stderr)
+            print("ERROR: Reason: %s" % e, file=sys.stderr)
             print("ERROR: Failure due to bad specificaiton file, cannot continue", file=sys.stderr)
             print("\n\n** Completed with errors **")
             sys.exit(-4)
@@ -89,15 +91,47 @@ class Controller():
         self.wait_interactive("validated and configured pathes")
         
         try:
-            s = solver.SolverGenerator(self.spec, self.specfileName, self.verbose)
-            s.generate_all_solvers()
+            s = SolverGenerator(self.spec, self.specfileName, self.verbose)
+            p = PlotterGenerator(self.spec, self.specfileName, self.verbose)
+            
+            for i,solver in enumerate(self.spec.get("solvers",[])):
+                print("Generating solver[%d] = %s..." % (i, solver["name"]))
+                
+                if solver["type"]=="ADER-DG":
+                    context = self.buildADERDGSolverContext(solver)
+                    s.generateADERDGSolverFiles(context)
+                elif solver["type"]=="Finite-Volumes":
+                    context = buildFVSolverContext(solver)
+                    s.generateFVSolverFiles(context)
+                elif solver["type"]=="Limiting-ADER-DG":
+                    aderdgContext = self.buildADERDGSolverContext(solver)
+                    fvContext     = self.buildFVSolverContext(solver)
+                    context       = self.buildLimitingADERDGSolverContext(solver)
+                    # modifications
+                    fvContext["solver"]         = context["FVSolver"]
+                    fvContext["abstractSolver"] = context["AbstractFVSolver"]
+                    fvContext["patchSize"]      = 2 * aderdgContext["order"] + 1
+                    
+                    aderdgContext["solver"]                 = context["ADERDGSolver"]
+                    aderdgContext["abstractSolver"]         = context["AbstractADERDGSolver"]
+                    aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
+                    
+                    # generate all solver files
+                    s.generateFVSolverFiles(aderdgContext)
+                    s.generateADERDGSolverFiles(fvContext)
+                    s.generateLimitingADERDGSolverFiles(context)
+                
+                for j,plotter in enumerate(solver.get("plotters",[])):
+                    print("Generating plotter[%d] = %s for solver" % (j, plotter["name"]))
+                    p.generatePlotter(self.buildPlotterContext(solver,plotter))
+                
         except BadSpecificationFile as e:
             print("ERROR: Could not create applications solver classes.", file=sys.stderr)
-            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("ERROR: Reason: %s" % e,file=sys.stderr)
             print("\n\n** Completed with errors **")
             sys.exit(-6)
         
-        self.wait_interactive("generated application-specific solver classes")
+        self.wait_interactive("generated application-specific solver and plotter classes")
         
         try:
             # kernel calls
@@ -106,7 +140,7 @@ class Controller():
             print("Generated "+pathToKernelCalls)
         except Exception as e:
             print("ERROR: Could not create ExaHyPE's kernel calls", file=sys.stderr)
-            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("ERROR: Reason: %s" % e,file=sys.stderr)
             print("\n\n** Completed with errors **")
             sys.exit(-10)
             
@@ -129,7 +163,7 @@ class Controller():
             print("Generated "+pathToMakefile)
         except Exception as e:
             print("ERROR Could not create application-specific Makefile", file=sys.stderr)
-            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("ERROR: Reason: %s" % e,file=sys.stderr)
             print("\n\n** Completed with errors **")
             sys.exit(-10)
         
@@ -166,7 +200,7 @@ class Controller():
             return self.load(self.specfileName)
         except Exception as e:
             print("ERROR: Could not properly read specfile",file=sys.stderr)
-            print("ERROR: Message: %s" % e,file=sys.stderr)
+            print("ERROR: Reason: %s" % e,file=sys.stderr)
             print("\n\n** Completed with errors **")
             if self.debug:
               raise
@@ -195,28 +229,85 @@ class Controller():
     def buildBaseContext(self):
         """Generate base context from spec with commonly used value"""
         context = {}
-        # outputPath for generated file
+        # commonly used paths
         context["outputPath"]       = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
         context["exahypePath"]      = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
         context["peanoToolboxPath"] = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
         
-        # commonly used values
+        # commonly used parameters
         context["project"]          = self.spec["project_name"]
-        context["dimensions"]       = self.spec["computational_domain"]["dimension"]
+        
         context["alignment"]        = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
+        
+        context["dimensions"]   = self.spec["computational_domain"]["dimension"]
+        context["range_0_nDim"] = range(0,context["dimensions"])
+        
+        context["enableProfiler"] = False # TODO read from spec
         
         return context
     
-    def buildKernelTermsContext(self,terms):
+    def buildADERDGSolverContext(self,solver):
+        context = self.buildBaseContext()
+        context.update(self.buildBaseSolverContext(solver))
+        context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
+        
+        context["order"]                  = solver["order"]
+        context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
+        
+        return context
+        
+    def buildLimitingADERDGSolverContext(self,solver):
+        context = self.buildBaseContext()
+        context.update(self.buildBaseSolverContext(solver))
+        
+        context["order"]                  = solver["order"]
+        context["numberOfDMPObservables"] = solver["limiter"]["numberOfObservables"]
+        
+        context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
+        context["FVSolver"]             = solver["name"]+"_FV"
+        context["ADERDGAbstractSolver"] = "Abstract"+solver["name"]+"_ADERDG"
+        context["FVAbstractSolver"]     = "Abstract"+solver["name"]+"_FV"
+        
+        return context
+    
+        
+    def buildFVSolverContext(self,solver):
+        context = self.buildBaseContext()
+        context.update(self.buildBaseSolverContext(solver))
+        context.update(self.buildFVKernelContext(solver["fv_kernel"]))
+        
+        context["patchSize"] = solver["patch_size"] # overwrite if called from LimitingADERDGSolver creation
+        
+        return context
+    
+    def buildBaseSolverContext(self,solver):
         context = {}
-        for term in ["flux","source","ncp","point_sources","material_parameters"]:
-          option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
-          option = "use%s%s" % ( option[0].upper(), option[1:] )
-          context[option]          = term in kernel["terms"]
-          context["%s_s" % option] = "true" if context[option] else "false"
+        
+        context["solverType"]     = solver["type"]
+        context["solver"]         = solver["name"]
+        context["abstractSolver"] = "Abstract"+context["solver"]
+        
+        nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
+        nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
+        nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
+        nPointSources = len(solver.get("point_sources",[]))
+        
+        context["numberOfVariables"]          = nVar
+        context["numberOfMaterialParameters"] = nParam
+        context["numberOfGlobalObservables"]  = nGlobalObs
+        context["numberOfPointSources"]       = nPointSources
+        
+        context["range_0_nVar"]          = range(0,nVar)
+        context["range_0_nVarParam"]     = range(0,nVar+nParam)
+        context["range_0_nGlobalObs"]    = range(0,nGlobalObs)    # nGlobalObs might be 0
+        context["range_0_nPointSources"] = range(0,nPointSources) # nPointSources might be 0
+        
+        context["namingSchemes"]=[] # TODO read from spec
         return context
     
     def buildADERDGKernelContext(self,kernel):
+        context = {}
+        context["implementation"]          = kernel.get("implementation","generic")
         context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 
         context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
         context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
@@ -225,13 +316,39 @@ class Controller():
         context["basis"]                   = kernel.get("basis","Legendre").lower()
         context["isLinear"]                = not kernel.get("nonlinear",True)
         context["isNonlinear"]             = kernel.get("nonlinear",True)
-        context["linearOrNonlinear"]       = "Linear" if aderdg_context["isLinear"] else "Nonlinear"
+        context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
         context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
-        context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[]) 
+        context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[])
         context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[])
         context.update(self.buildKernelTermsContext(kernel["terms"]))
+        return context
+        
+    def buildFVKernelContext(self,kernel):
+        context = {}
+        context["implementation"]          = kernel.get("implementation","generic")
+        ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
+        context["ghostLayerWidth"]=ghostLayerWidth[kernel["scheme"]]
+        context.update(self.buildKernelTermsContext(kernel["terms"]))
+        return context
+    
+    def buildKernelTermsContext(self,terms):
+        context = {}
+        for term in ["flux","source","ncp","point_sources","material_parameters"]:
+            option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
+            option = "use%s%s" % ( option[0].upper(), option[1:] )
+            context[option] = term in terms
+            context["%s_s" % option] = "true" if context[option] else "false"
+        return context
+        
+    def buildPlotterContext(self,solver,plotter):
+        context = self.buildBaseContext()
+        context.update(self.buildBaseSolverContext(solver))
+
+        context["plotterName"]     = plotter["name"]
+        context["writtenUnknowns"] = helper.count_variables(helper.parse_variables(solver,"variables"))
+        context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
         return context
     
     def buildMakefileContext(self):
@@ -290,7 +407,7 @@ class Controller():
         # todo(JM) optimised kernels subPaths
         # todo(JM) profiler 
         # todo(Sven) serialised spec file compiled into KernelCalls.cp
-        context["includePaths"] = []
+        context["includePaths"] = [] #TODO
         
         return context
     

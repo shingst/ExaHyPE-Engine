@@ -5,19 +5,15 @@
 // ========================
 //   www.exahype.eu
 // ========================
-{# begin references #}
-{%set solverType=data["solver"]["type"] %}
-{%set device=data["plotter"]["name"] %}
-{# end references #}
-#include "{{device}}.h"
+#include "{{plotterName}}.h"
 
 
-{{Project}}::{{device}}::{{device}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
+{{Project}}::{{plotterName}}::{{plotterName}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{device}}::plotPatch(
+void {{Project}}::{{plotterName}}::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
@@ -25,11 +21,11 @@ void {{Project}}::{{device}}::plotPatch(
 }
 
 
-void {{Project}}::{{device}}::startPlotting( double time) {
+void {{Project}}::{{plotterName}}::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{device}}::finishPlotting() {
+void {{Project}}::{{plotterName}}::finishPlotting() {
   // @TODO Please insert your code here.
 }
