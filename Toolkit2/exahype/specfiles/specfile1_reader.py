@@ -3,6 +3,9 @@ import configparser
 import re
 import json
 import collections
+import logging
+
+class SpecFile1ParserError(RuntimeError): pass
 
 ##
 # A reader for the original ExaHyPE specification file format
@@ -14,6 +17,17 @@ import collections
 # my_json_file_content = json.dumps(my_json_ob)
 #```
 class SpecFile1Reader():
+  def __init__(self, log=None):
+    """
+    Initialize with some logging target. If none given, will setup an own one
+    """
+    if not log:
+      logging.basicConfig(format="%(filename)s:%(lineno)s(%(funcName)s):%(levelname)s %(message)s")
+      log = logging.getLogger(__name__)
+      #log.addHandler(logging.StreamHandler()) # to stderr
+      log.setLevel(logging.INFO)
+    self.log = log
+
   ##
   # Converts the original ExaHyPE spec file into an ini file.
   #
@@ -178,9 +192,7 @@ class SpecFile1Reader():
         distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
         found_token = True
       if not found_token and len(token_s):
-        print("ERROR: Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
-        print("\n\n** Completed with errors **")
-        sys.exit()
+        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
   
   ##
   # TODO
@@ -202,9 +214,7 @@ class SpecFile1Reader():
         shared_memory["invasion_strategy"] = token_s.replace("-","_")
         found_token = True
       if not found_token and len(token_s):
-        print("ERROR: Could not map value '%s' extracted from option 'shared-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
-        print("\n\n** Completed with errors **")
-        sys.exit()
+        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'shared-memory/configure'. Is it spelt correctly?" % token_s,file=sys.stderr)
   ##
   # Converts the kernel terms of a solver entry in the original spec file
   #
@@ -223,18 +233,14 @@ class SpecFile1Reader():
           if term=="pointsources":
             try:
               n_point_sources = int(token_s.split(":")[-1])
-              print("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
+              self.log.warning("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.",file=sys.stderr)
               found_token = True
             except:
-              print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
-              print("\n\n** Completed with errors **")
-              sys.exit()
+              raise SpecFile1ParserError("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
           elif token_s==term:
               found_token = True
       if not found_token:
-        print("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s,file=sys.stderr)
-        print("\n\n** Completed with errors **")
-        sys.exit()
+        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s,file=sys.stderr)
       
     return (context,n_point_sources)
   
@@ -277,16 +283,12 @@ class SpecFile1Reader():
               context[stp][term]=int(token_s.split(":")[-1])
               found_token=True
             except:
-              print("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
-              print("\n\n** Completed with errors **")
-              sys.exit()
+              raise SpecFile1ParserError("ERROR: Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s,file=sys.stderr)
           else:
             context[stp][term]=term
             found_token=True
       if not found_token:
-        print("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s,file=sys.stderr)
-        print("\n\n** Completed with errors **")
-        sys.exit()
+        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s,file=sys.stderr)
     return context
     
   ##
@@ -307,9 +309,7 @@ class SpecFile1Reader():
         context["allocate_temporary_arrays"]="stack"
         found_token = True
       if not found_token:
-        print("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelt correctly?" % token_s,file=sys.stderr)
-        print("\n\n** Completed with errors **")
-        sys.exit()
+        raise SpecFile1ParserError("ERROR: Could not map value '%s' extracted from option 'optimisation' (or 'limiter-optimisation'). Is it spelt correctly?" % token_s,file=sys.stderr)
     return context
   
   ##
@@ -481,22 +481,16 @@ class SpecFile1Reader():
   # my_json_obj = r.read()
   # my_json_file_content = json.dumps(my_json_ob)
   # ```
-  def read(self,spec_file_path):
-    try:
-      with open(spec_file_path, "r") as input_file:
-        spec_file_1 = input_file.readlines()
-    except Exception:
-      raise
-    print("Converting legacy specification file to INI structure... ",end="")
-    sys.stdout.flush()
-    (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
-    print("OK")
+  def read(self,file_handle):
+    spec_file_1 = file_handle.readlines()
+    self.log.info("Converting legacy specification file to INI structure... ")
+    (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(sec_file_as_string_lines)
+    self.log.info("OK")
     
     config = configparser.ConfigParser(delimiters=('='))
     config.read_string(spec_file_1_ini)
     
-    print("Mapping INI structure to JSON input object... ",end="")
-    sys.stdout.flush()
+    self.log.info("Mapping INI structure to JSON input object... ")
     result=self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
-    print("OK")
+    self.log.info("OK")
     return result 
