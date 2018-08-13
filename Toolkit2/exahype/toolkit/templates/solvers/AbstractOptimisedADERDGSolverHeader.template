@@ -67,13 +67,13 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     {% endfor %}
     
     {{abstractSolver}}(
-      double maximumMeshSize,
-      int maximumMeshDepth,
-      int haloCells,
-      int regularisedFineGridLevels,
-      exahype::solvers::Solver::TimeStepping timeStepping,
-      int limiterHelperLayers,
-      int DMPObservables
+      const double maximumMeshSize,
+      const int maximumMeshDepth,
+      const int haloCells,
+      const int regularisedFineGridLevels,
+      const exahype::solvers::Solver::TimeStepping timeStepping,
+      const int limiterHelperLayers,
+      const int DMPObservables
       {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}
     );
     

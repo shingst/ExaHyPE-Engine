@@ -15,7 +15,11 @@ namespace {{Project}}{
 
 class {{Project}}::{{Solver}} : public exahype::solvers::FiniteVolumesSolver {
   public:
-    {{Solver}}(int cellsPerCoordinateAxis,double maximumMeshSize,exahype::solvers::Solver::TimeStepping timeStepping{{ConstructorSignatureExtension}})
+    {{Solver}}( // TODO out of date
+      int cellsPerCoordinateAxis,
+      double maximumMeshSize,
+      exahype::solvers::Solver::TimeStepping timeStepping{{ConstructorSignatureExtension}}
+    );
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void adjustSolution(double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
     void solutionUpdate(double* luhNew,const double* luh,double** tempStateSizedArrays,double** tempUnknowns,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;

@@ -352,7 +352,7 @@ class SpecFile1Reader():
   ##
   # TODO
   def map_constants(self,constants):
-    result={}
+    result = collections.OrderedDict()
     it = re.finditer("(\s|,|^)([^\s,]+)\s*:\s*([^\s,]+)",constants)
     for m in it:
       try:

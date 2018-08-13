@@ -36,14 +36,13 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSo
     static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
   
     {{abstractSolver}}(
-        std::string identifier,
-        double maximumMeshSize,
-        int maximumMeshDepth,
-        int haloCells,
-        int regularisedFineGridLevels,
-        exahype::solvers::Solver::TimeStepping timeStepping,
-        int DMPObservables,
-        int limiterHelperLayers,
+        const double maximumMeshSize,
+        const int maximumMeshDepth,
+        const int haloCells,
+        const int regularisedFineGridLevels,
+        const exahype::solvers::Solver::TimeStepping timeStepping,
+        const int DMPObservables,
+        const int limiterHelperLayers,
         const double DMPRelaxationParameter,
         const double DMPDifferenceScaling,
         const int iterationsToCureTroubledCell

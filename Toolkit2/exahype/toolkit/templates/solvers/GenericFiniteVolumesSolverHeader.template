@@ -35,7 +35,11 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     static tarch::logging::Log _log;
   public:
-    {{solver}}(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
+    {{solver}}(
+      const double maximumMeshSize,
+      const exahype::solvers::Solver::TimeStepping timeStepping
+      {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}
+    );
     
     /**
      * Initialise the solver.

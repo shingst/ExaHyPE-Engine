@@ -41,7 +41,7 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
   {
 {% if solver.type == "ADER-DG" %}
     exahype::solvers::RegisteredSolvers.push_back(
-      new {{project}}::{{solver.name}}("{{solver.name}}",
+      new {{project}}::{{solver.name}}(
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
@@ -53,7 +53,7 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
     );
 {% elif solver.type == "Limiting-ADER-DG" %}
     exahype::solvers::RegisteredSolvers.push_back(
-      new {{project}}::{{solver.name}}("{{solver.name}}",
+      new {{project}}::{{solver.name}}(
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
@@ -68,7 +68,7 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
     );
 {% elif solver.type == "Finite-Volumes" %}
     exahype::solvers::RegisteredSolvers.push_back(
-      new {{project}}::{{solver.name}}("{{solver.name}}",
+      new {{project}}::{{solver.name}}(
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}})
       )
