@@ -33,8 +33,11 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::adjustPointSolution(const 
         Variables vars(Q);
         //Taylor Green Vortex initial conditions
         vars.rho() = 1.0;
-        vars.j(std::sin(x[0])*std::cos(x[1]), -std::cos(x[0])*std::sin(x[1]) ,0);
-        double p = c0*c0/GAMMA + (std::cos(2*x[0])+std::cos(2*x[1]))/4;
+        vars.j(0, 0 ,0);
+        /*if(std::abs(x[1]-1.0)<1e-6){
+            vars.j(0, 1.0 ,0);
+        }*/
+        double p = c0*c0/GAMMA;
         vars.E() = p/(GAMMA-1) + 0.5 * (vars.j()*vars.j())/vars.rho();
     }
 }
@@ -51,6 +54,16 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::boundaryValues(const doubl
 
   varsOutside = varsInside;
   varsFluxOutside = varsFluxInside;
+  if(faceIndex == 3){
+        stateOut[1] = 0.0 - stateIn[1];
+        stateOut[2] = 2.0 - stateIn[2];
+        stateOut[3] = 0.0 - stateIn[3];
+  }
+  else{
+        stateOut[1] = 0.0 - stateIn[1];
+        stateOut[2] = 0.0 - stateIn[2];
+        stateOut[3] = 0.0 - stateIn[3];
+  }
 }
 
 exahype::solvers::Solver::RefinementControl NavierStokesADERDG::MyNavierStokesSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {

@@ -26,7 +26,7 @@ exahype-project NavierStokesFV
 
   computational-domain
     dimension const         = 2
-    width                   = 6.283, 6.283
+    width                   = 1.0,1.0
     offset                  = 0.0,0.0
     /*-3.14159, -3.14159*/
     end-time                = 1.0
@@ -61,12 +61,5 @@ exahype-project NavierStokesFV
       output          = ./VtkOutput/variables
     end plot
 
-    plot vtu::Cartesian::cells::ascii PressureWriter
-      variables const = 1
-      time            = 0.0
-      repeat          = 0.01
-      output          = ./VtkOutput/pressure
-    end plot
-
-  end solver
+   end solver
 end exahype-project
