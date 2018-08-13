@@ -10,6 +10,7 @@ class Configuration:
 
     #TODO Add missing path
     # absolute path to ExaHyPE's root (we need absolute paths in generated Makefile)
+    # TODO: This is flawed, we have some paths in the specfile but not this one. Why?
     pathToExaHyPERoot          = os.path.abspath(os.path.join(__file__,"..", "..", "..", ".."))
     
     # absolute path to jinja2

@@ -17,4 +17,6 @@ import sys
 from os.path import join, dirname, basename
 sys.path.append(join(dirname(__file__),"..","specfiles"))
 
-from validate import validate,validate_specfile1
+from validate import validate
+
+from omni_reader import OmniReader

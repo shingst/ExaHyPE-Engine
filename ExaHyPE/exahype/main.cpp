@@ -290,14 +290,16 @@ int exahype::main(int argc, char** argv) {
 
   exahype::parser::Parser parser;
 
+  std::stringstream specfile;
+  std::string specFileName;
   if(runCompiledSpecfile) {
-    std::stringstream specfile;
-    // if this line does not compile for you, rebuild and rerun the toolkit.
+    specFileName = "builtin";
     specfile.str(std::string(kernels::compiledSpecfile()));
-    parser.readFile(specfile, "builtin");
   } else {
-    parser.readFile(firstarg);
+    specFileName = firstarg;
+    specfile.str(kernels::readSpecificationFileToJSON(specFileName));
   }
+  parser.readFile(specfile, specFileName);
 
   if (!parser.isValid()) {
     logError("main()", "invalid config file. Quit");

@@ -498,7 +498,16 @@ class SpecFile1Reader():
   # ```
   def read(self,file_handle):
     spec_file_1 = file_handle.readlines()
-    self.log.info("Converting legacy specification file to INI structure... ")
+    return self.read_lines(spec_file_1)
+
+  def read_string(self, document_as_string):
+    return self.read_lines(document_as_string.split("\n"))
+  
+  def read_lines(self, spec_file_1):
+    """
+    spec_file_1: A list of strings (one line per list element)
+    """
+    self.log.info("Converting legacy specification file (%d lines) to INI structure... " % len(spec_file_1))
     (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
     self.log.info("OK")
     self.log.debug("Ini file is: " + str(spec_file_1_ini))

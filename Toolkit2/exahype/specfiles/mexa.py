@@ -882,6 +882,11 @@ class mexafile:
 			return cls.from_filehandle(fh)
 	
 	@classmethod
+	def from_string(cls, document_as_string):
+		# hack, abuse the point that fh is translated anyway to list(fh)
+		return cls.from_filehandle(document_as_string.split("\n"))
+	
+	@classmethod
 	def from_textlines(cls, oplines, source_name="unoriginated textlines"):
 		"""
 		* List of single lines: Are parsed, source_name used as source name.

@@ -4,7 +4,7 @@
 This mimics the classical Frontend of the ExaHyPE toolkit.
 """
 
-import os, sys, argparse, subprocess, datetime, json
+import os, sys, argparse, subprocess, datetime, json, logging
 
 from os.path import isdir, isfile
 from pathlib import Path
@@ -13,7 +13,7 @@ from collections import OrderedDict
 sys.path.append(os.path.join(os.path.dirname(__file__),"..","..")) # to allow import exahype... work
 from exahype.toolkit import *
 from exahype.toolkit.helper import BadSpecificationFile
-from exahype.specfiles import validate,validate_specfile1
+from exahype.specfiles import validate, OmniReader
 
 from models import *
 from configuration import Configuration
@@ -48,49 +48,51 @@ class Controller():
             print(msg + "... ok")
             input("<pres Enter>")
             print("\n\n\n\n")
-            
-    def info(self, msg):
-        if self.verbose:
-            print(msg)
-    
     
     def __init__(self):
+        logging.basicConfig(format="%(filename)s:%(lineno)s(%(funcName)s):%(levelname)s %(message)s")
+        self.log = logging.getLogger()
+
         # parse command line arguments
         args = self.parseArgs()
         
-        #set member values from args
-        self.specfileName = args.specfile.name
+        # set member values from args
+        self.specfileName = args.specfile.name # note, this can be something like "<stdin>"
         self.interactive = args.interactive or not args.not_interactive
         self.verbose = args.verbose or self.interactive
-        self.write_json=args.write_json
+        self.write_json = args.write_json
         self.debug=args.debug
         
-        if self.verbose: # otherwise no need to call git, etc. 
-            self.info(self.header())
+        if self.verbose:
+            self.log.setLevel(logging.INFO)
+            self.log.info(self.header())
+            logging.raiseExceptions = True # development mode
+        else:
+            logging.raiseExceptions = False # production mode
         
         inpath = Path(self.specfileName)
         if inpath.exists():
-            self.info("Read input file %s." % inpath.resolve())
-        else:    self.info("Read from stdin (%s)" % str(args.specfile))
+            self.log.info("Read input file %s." % inpath.resolve())
+        else:
+            self.log.info("Read from stdin (%s)" % str(args.specfile))
         
-        self.spec = self.getSpec(args.specfile)
-    
+        self.spec = self.getSpec(args.specfile, args.format)
+        self.spec = self.validateAndSetDefaults(self.spec, args.validate_only)
     
     def run(self):
         try:
-            d = directories.DirectoryAndPathChecker(self.buildBaseContext(), self.verbose)
+            d = directories.DirectoryAndPathChecker(self.buildBaseContext(), self.log)
         except BadSpecificationFile as e:
-            print("ERROR: Some directories did not exist and/or could not be created.", file=sys.stderr)
-            print("ERROR: Reason: %s" % e, file=sys.stderr)
-            print("ERROR: Failure due to bad specificaiton file, cannot continue", file=sys.stderr)
-            print("\n\n** Completed with errors **")
+            self.log.error("Some directories did not exist and/or could not be created.")
+            self.log.exception(e)
+            self.log.error("Failure due to bad specificaiton file, cannot continue")
             sys.exit(-4)
         
         self.wait_interactive("validated and configured pathes")
         
         try:
             for i,solver in enumerate(self.spec.get("solvers",[])):
-                print("Generating solver[%d] = %s..." % (i, solver["name"]))
+                self.log.info("Generating solver[%d] = %s..." % (i, solver["name"]))
                 solverFiles = []
                 if solver["type"]=="ADER-DG":
                     model       = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
@@ -121,17 +123,16 @@ class Controller():
                 
                 for path in solverFiles:
                     if not path is None:
-                        print("Generated '"+path+"'")
+                        self.log.info("Generated '"+path+"'")
                 for j,plotter in enumerate(solver.get("plotters",[])):
-                    print("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
+                    self.log.info("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
                     model = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
                     for path in model.generateCode():
                         if not path is None:  
-                            print("Generated '"+path+"'")
+                            self.log.info("Generated '"+path+"'")
         except BadSpecificationFile as e:
-            print("ERROR: Could not create applications solver classes.", file=sys.stderr)
-            print("ERROR: Reason: %s" % e,file=sys.stderr)
-            print("\n\n** Completed with errors **")
+            self.log.error("Could not create applications solver classes: %s" % str(e))
+            self.log.exception(e)
             sys.exit(-6)
         
         self.wait_interactive("generated application-specific solver and plotter classes")
@@ -140,11 +141,10 @@ class Controller():
             # kernel calls
             kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext())
             pathToKernelCalls = kernelCalls.generateCode()
-            print("Generated '"+pathToKernelCalls+"'")
+            self.log.info("Generated '"+pathToKernelCalls+"'")
         except Exception as e:
-            print("ERROR: Could not create ExaHyPE's kernel calls", file=sys.stderr)
-            print("ERROR: Reason: %s" % e,file=sys.stderr)
-            print("\n\n** Completed with errors **")
+            self.log.error("Could not create ExaHyPE's kernel calls: %s" % str(e))
+            self.log.exception(e)
             sys.exit(-10)
             
         self.wait_interactive("generated computational kernel calls")
@@ -163,17 +163,16 @@ class Controller():
             makefile = makefileModel.MakefileModel(self.buildMakefileContext())
             pathToMakefile = makefile.generateCode() #generate Makefile and get path to it
             makefileMessage = makefile.getOutputMessage()
-            print("Generated '"+pathToMakefile+"'")
+            self.log.info("Generated '"+pathToMakefile+"'")
         except Exception as e:
-            print("ERROR Could not create application-specific Makefile", file=sys.stderr)
-            print("ERROR: Reason: %s" % e,file=sys.stderr)
-            print("\n\n** Completed with errors **")
+            self.log.error("Could not create application-specific Makefile: %s" % str(e))
+            self.log.exception(e)
             sys.exit(-10)
         
         self.wait_interactive("generated application-specific Makefile")
         
         self.checkEnvVariable()
-        print(makefileMessage)
+        self.log.info(makefileMessage)
     
     
     def parseArgs(self):
@@ -183,52 +182,66 @@ class Controller():
         )
         
         # some mandatory arguments from Toolkit1
-        parser.add_argument("-c", "--clean-opt",
+        optimized = parser.add_argument_group('Optimized kernels-specific options')
+        optimized.add_argument("-c", "--clean-opt",
             help="Clean optimized kernels (only applicable if optimized kernels are used in Specfile)")
-        g = parser.add_mutually_exclusive_group()
+
+        ui = parser.add_argument_group("Toolkit user interface-specific options")
+        g = ui.add_mutually_exclusive_group()
         g.add_argument("-i", "--interactive", action="store_true", default=False, help="Run interactively")
         g.add_argument("-n", "--not-interactive", action="store_true", default=True, help="Run non-interactive in non-stop-mode (default)")
-        parser.add_argument("-v", "--verbose", action="store_true", help="Be verbose (off by default, triggered on by --interactive)")
-        parser.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file if legacy specification file is read (*.exahype) (default: no)")
-        parser.add_argument("-d", "--debug", action="store_true", default=False, help="Turn the debug mode on: print stack traces and more detailed error messages.")
+        ui.add_argument("-v", "--verbose", action="store_true", help="Be verbose (off by default, triggered on by --interactive)")
+        ui.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file if legacy specification file is read (*.exahype) (default: no)")
+        ui.add_argument("-d", "--debug", action="store_true", default=False, help="Turn the debug mode on: print stack traces and more detailed error messages.")
+
+        formats = parser.add_argument_group("Specification-file-format specific options")
+        formats.add_argument("-o", "--validate-only", action="store_true", default=False, help="Validate input only, don't run the toolkit. Will output the correct JSON if passes.")
+        formats.add_argument("-f", "--format", choices=OmniReader.available_readers(), default=OmniReader.any_format_name, help="Specification file format of the input file. 'any' will try all built-in-formats.")
+
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
-            help="The specification file to work on (can be .exahype, .exahype2, .json)")
+            help="The specification file to work on (can be .exahype, .exahype2, .json, etc.)")
         
         return parser.parse_args()
     
     
-    def getSpec(self, specfilePath):
+    def getSpec(self, file_handle, file_format=OmniReader.any_format_name):
         try:
-            return self.load(self.specfileName)
+            reader = OmniReader(self.log)
+            spec = reader.read(file_handle.read(), required_file_format=file_format)
         except Exception as e:
-            print("ERROR: Could not properly read specfile",file=sys.stderr)
-            print("ERROR: Reason: %s" % e,file=sys.stderr)
-            print("\n\n** Completed with errors **")
-            if self.debug:
-              raise
+            self.log.error("Could not read specification file '%s': %s" % (self.specfileName, str(e)))
+            self.log.error("In order to fix this problem, please fix the format of your file with the command line flag --format=XXX where XXX is a supported specification file format.")
+            self.log.exception(e)
             sys.exit(-3)
-    
-    
-    def load(self, specfile_name):
-        """
-        Given a specfile name, it assumes it to be JSON, reads it, validates it
-        against the JSON-Schema and returns the native python data structure,
-        enriched with default values from the schema.
-        """
-        specification=""
-        if specfile_name.endswith(".exahype"):
-          specification = validate_specfile1(specfile_name)
-          if self.write_json:
-            json_file_name = specfile_name.replace(".exahype",".exahype2")
+
+        # I find this is more a debugging feature...
+        if self.specfileName.endswith(".exahype") and self.write_json:
+            json_file_name = self.specfileName.replace(".exahype",".exahype2")
             with open(json_file_name, 'w') as outfile:
-              json.dump(specification,outfile,indent=2)
-              print("Write JSON file '%s' ... OK" % json_file_name )
+              json.dump(spec,outfile,indent=2)
+              self.log.info("Write JSON file '%s' ... OK" % json_file_name)
+
+        return spec
+    
+    def validateAndSetDefaults(self, spec, validate_only=False):
+        """
+        Given a specification, validate it  against the JSON-Schema and
+        returns the native python data structure, enriched with default values from the schema.
+        """
+        try:
+            spec = validate(spec, set_defaults=True)
+        except Exception as e:
+            self.log.error("Specification file does not hold a valid ExaHyPE specification, it did not pass the schema validation step. The error message is: %s" % str(e))
+            self.log.exception(e)
+            sys.exit(-4)
+
+        if validate_only:
+            print(json.dumps(spec, sort_keys=True, indent=4))
+            sys.exit(0)
         else:
-          specification = validate(specfile_name)
-        return specification
-    
-    
+            return spec
+
     def buildBaseContext(self):
         """Generate base context from spec with commonly used value"""
         context = {}
@@ -413,7 +426,8 @@ class Controller():
             context["solvers"].append(solverContext)
         
         context["specfileName"]     = self.specfileName
-        context["spec_file_as_hex"] = "0x2F" # todo(Sven) do the conversion
+        context["spec_file_as_hex"] = kernelCallsModel.KernelCallsModel.specfile_as_hex(self.spec)
+        context["external_parser_command"], context["external_parser_strings"] = kernelCallsModel.KernelCallsModel.get_exahype_external_parser_command()
         context["subPaths"]         = []
         # todo(JM) optimised kernels subPaths
         # todo(JM) profiler 
@@ -422,10 +436,13 @@ class Controller():
         
         return context
     
-    #TODO shouldn't this be in the validation step?
     def checkEnvVariable(self):
+        """
+        Check environment variables as an ultimate step. Should only be called when actually calling the toolkit,
+        so it is distinct from the validation step.
+        """
         if "shared_memory" in self.spec:
             if not "TBB_INC" in os.environ:
-                print("WARNING: environment variable TBB_INC not set but required if code is built with TBB");
+                self.log.warning("environment variable TBB_INC not set but required if code is built with TBB");
             if not "TBB_SHLIB" in os.environ:
-                print("WARNING: environment variable TBB_SHLIB not set but required if code is built with TBB");
+                self.log.warning("environment variable TBB_SHLIB not set but required if code is built with TBB");

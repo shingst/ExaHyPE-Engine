@@ -58,19 +58,12 @@ def get_validator(set_defaults=True):
   validator = ExtendingValidator if set_defaults else SimpleValidator
   return validator(schema)
 
-def validate(json_filename_or_file, set_defaults=True):
-  if not hasattr(json_filename_or_file, "read"): # is a file name then
-    json_filename_or_file = open(json_filename_or_file, "r")
-  input_structure = json.load(json_filename_or_file)
-  get_validator(set_defaults).validate(input_structure)
-  return input_structure
-  
-def validate_specfile1(specfile1_filename):
-  input_structure = specfile1_reader.SpecFile1Reader().read(open(specfile1_filename, "r"))
-  print("Reading legacy ExaHyPE specification file format... OK")
-  print("Translating file to JSON format ... OK")
-  print("Result:")
-  print(json.dumps(input_structure,indent=2))
-  get_validator(set_defaults=True).validate(input_structure)
-  return input_structure
-  
+def validate(python_structure, set_defaults=True):
+  """
+  Validate a nested dict/list structure. If you want to validate a JSON file,
+  load it with json.load() first.
+  """
+  # python_structure is modified by reference, unfortunately. Should probably
+  # do a deep copy before.
+  get_validator(set_defaults).validate(python_structure)
+  return python_structure

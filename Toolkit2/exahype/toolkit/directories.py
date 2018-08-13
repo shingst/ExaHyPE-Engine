@@ -20,8 +20,8 @@ class DirectoryAndPathChecker:
 				os.makedirs(str(pathInstance)) # todo, catch exceptions
 				human_status = "created"
 
-		if self.verbose:
-			print(human_readable, " ... ", human_status)
+		if self.log:
+			self.log.info(human_readable + " ... " + human_status)
 		
 		if not pathInstance.is_dir(): # check again in case of makedirs
 			raise BadSpecificationFile("%s (relative to directory %s)" % (human_readable, os.getcwd()))
@@ -29,9 +29,8 @@ class DirectoryAndPathChecker:
 		for subdir in required_subdirs:
 			self.check("%s holds %s" % (human_readable, subdir),  pathInstance.joinpath(subdir), verbose_show_path=False, makedirs=makedirs)
 
-	def __init__(self, paths, verbose):
-		self.verbose = verbose
-		
+	def __init__(self, paths, log=None):
+		self.log = log.getChild(__name__)
 		self.check("Peano kernel path", Path(paths["peanoToolboxPath"]), required_subdirs=["tarch", "peano"])
 		#check("Peano kernel path tarch sources", Path(paths["peanoKernelPath"]).joinpath("tarch/"))
 		self.check("Peano toolboxes path", Path(paths["peanoToolboxPath"]), required_subdirs=["multiscalelinkedcell", "sharedmemoryoracles", "mpibalancing"])
