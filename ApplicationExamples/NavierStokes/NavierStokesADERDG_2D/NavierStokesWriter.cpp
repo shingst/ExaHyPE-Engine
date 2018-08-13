@@ -34,7 +34,9 @@ void NavierStokesADERDG::NavierStokesWriter::mapQuantities(
     double timeStamp
 ) {
   const int writtenUnknowns = 5;
-  for (int i=0; i<writtenUnknowns; i++){ 
-    outputQuantities[i] = Q[i];
-  }
+    outputQuantities[0] = Q[0];
+    outputQuantities[1] = Q[1]/Q[0];
+    outputQuantities[2] = Q[2]/Q[0];
+    outputQuantities[3] = Q[3]/Q[0];
+    outputQuantities[4] = Q[4]/Q[0];
 }

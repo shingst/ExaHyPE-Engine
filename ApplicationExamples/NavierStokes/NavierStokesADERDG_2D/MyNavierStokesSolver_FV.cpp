@@ -21,8 +21,11 @@ void NavierStokesADERDG::MyNavierStokesSolver_FV::adjustSolution(const double* c
         Variables vars(Q);
         //Taylor Green Vortex initial conditions
         vars.rho() = 1.0;
-        vars.j(std::sin(x[0])*std::cos(x[1]), -std::cos(x[0])*std::sin(x[1]) ,0);
-        double p = c0*c0/GAMMA + (std::cos(2*x[0])+std::cos(2*x[1]))/4;
+        vars.j(0, 0 ,0);
+        /*if(std::abs(x[1]-1.0)<1e-6){
+            vars.j(0, 1.0 ,0);
+        }*/
+        double p = c0*c0/GAMMA;
         vars.E() = p/(GAMMA-1) + 0.5 * (vars.j()*vars.j())/vars.rho();
     }
 }
@@ -65,12 +68,22 @@ void NavierStokesADERDG::MyNavierStokesSolver_FV::boundaryValues(
     const int d,
     const double* const stateInside,
     double* stateOutside){
-  // Dimensions             = 2
-  // Number of variables    = 5 + #parameters
-  ReadOnlyVariables varsInside(stateInside);
-  Variables         varsOutside(stateOutside);
+    // Dimensions             = 2
+    // Number of variables    = 5 + #parameters
+    ReadOnlyVariables varsInside(stateInside);
+    Variables         varsOutside(stateOutside);
 
-   varsOutside = varsInside;
+    varsOutside = varsInside;
+    if(faceIndex == 3){
+        stateOutside[1] = 0.0 - stateInside[1];
+        stateOutside[2] = 2.0 - stateInside[2];
+        stateOutside[3] = 0.0 - stateInside[3];
+    }
+    else{
+        stateOutside[1] = 0.0 - stateInside[1];
+        stateOutside[2] = 0.0 - stateInside[2];
+        stateOutside[3] = 0.0 - stateInside[3];
+    }
 }
 
 //***********************************************************

@@ -26,10 +26,10 @@ exahype-project NavierStokesADERDG
 
   computational-domain
     dimension const         = 2
-    width                   = 6.283, 6.283
+    width                   = 1.0,1.0
     offset                  = 0.0,0.0
     /*-3.14159, -3.14159*/
-    end-time                = 1.0
+    end-time                = 0.5
   end computational-domain
  
   /*
@@ -47,7 +47,7 @@ exahype-project NavierStokesADERDG
   solver Limiting-ADER-DG MyNavierStokesSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
-    maximum-mesh-size          = 2
+    maximum-mesh-size          = 0.25
     maximum-mesh-depth         = 0
     time-stepping              = global
     type const                 = nonlinear, Legendre
@@ -66,13 +66,6 @@ exahype-project NavierStokesADERDG
       time            = 0.0
       repeat          = 0.01
       output          = ./VtkOutput/variables
-    end plot
-
-    plot vtu::Cartesian::cells::ascii PressureWriter
-      variables const = 1
-      time            = 0.0
-      repeat          = 0.01
-      output          = ./VtkOutput/pressure
     end plot
 
   end solver
