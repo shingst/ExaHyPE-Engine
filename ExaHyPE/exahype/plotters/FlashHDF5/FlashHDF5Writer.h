@@ -66,7 +66,7 @@ public:
   const int           writtenUnknowns; ///< The number of written out quantities.
   const std::string   basisFilename; ///< The filename prefix as it is common in ExaHyPE plotters
   const int           basisSize; ///< this is _orderPlusOne in ADERDG context and _numberOfCellsPerAxis-2*ghostZones in FV context
-  exahype::parser::ParserView  select; ///< A selection string for passing further parameters throught the ExaHyPE specification file.
+  exahype::parser::ParserView  plotterParameters; ///< A plotterParametersion string for passing further parameters throught the ExaHyPE specification file.
 
   const bool          oneFilePerTimestep; ///< Constant deciding whether to write one file (or series of files) per timestep
   const bool          allUnknownsInOneFile; ///< Constant deciding whether all unknowns should go into a single file or split files instead.
@@ -151,7 +151,7 @@ public:
    *     as structure of arrays is to write each unknown in its own file (ie. one file per physical field).
    *
    **/
-  FlashHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, const std::string& _select,
+  FlashHDF5Writer(const std::string& _filename, int _basisSize, int _solverUnknowns, int _writtenUnknowns, const std::string& _plotterParameters,
 		   char** writtenQuantitiesNames, bool oneFilePerTimestep_=false, bool allUnknownsInOneFile_=false);
 
   void setupFile(H5::H5File* file);

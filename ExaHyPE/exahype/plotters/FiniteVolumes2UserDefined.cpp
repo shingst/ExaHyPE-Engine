@@ -39,12 +39,12 @@ void exahype::plotters::FiniteVolumes2UserDefined::init(
   int                orderPlusOne,
   int                variables,
   int                writtenVariables,
-  exahype::parser::ParserView select
+  exahype::parser::ParserView plotterParameters
 ) {
   _filename         = filename;
   _order            = orderPlusOne-1;
   _variables        = variables;
-  _select           = select;
+  _plotterParameters           = plotterParameters;
   _writtenVariables = writtenVariables;
 }
 

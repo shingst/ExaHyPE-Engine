@@ -39,45 +39,90 @@ std::string exahype::parser::ParserView::getPath(const std::string& key) const {
 }
 
 bool exahype::parser::ParserView::hasKey(const std::string& key) const {
-  assertion(getParser().isValid());
-  return getParser().hasPath(getPath(key));
+  if (_parser!=nullptr) {
+    assertion(getParser().isValid());
+    return getParser().hasPath(getPath(key));
+  } else {
+    logError("hasKey()", "No parameters found at all!");
+    std::abort();
+    return 0;
+  }
 }
 
 int exahype::parser::ParserView::getValueAsInt(const std::string& key) const {
-  return getParser().getIntFromPath(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().getIntFromPath(getPath(key));
+  } else {
+    logError("getValueAsInt()", "No parameters found at all!");
+    std::abort();
+    return 0;
+  }
 }
 
 bool exahype::parser::ParserView::getValueAsBool(const std::string& key) const {
-  return getParser().getBoolFromPath(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().getBoolFromPath(getPath(key));
+  } else {
+    logError("getValueAsBool()", "No parameters found at all!");
+    std::abort();
+    return false;
+  }
 }
 
 double exahype::parser::ParserView::getValueAsDouble(
     const std::string& key) const {
-  return getParser().getDoubleFromPath(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().getDoubleFromPath(getPath(key));
+  } else {
+    logError("getValueAsDouble()", "No parameters found at all!");
+    std::abort();
+    return 0.0;
+  }
 }
 
 std::string exahype::parser::ParserView::getValueAsString(
     const std::string& key) const {
-  return getParser().getStringFromPath(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().getStringFromPath(getPath(key));
+  } else {
+    logError("getValueAsString()", "No parameters found at all!");
+    std::abort();
+    return "";
+  }
 }
 
 bool exahype::parser::ParserView::isValueValidInt(
     const std::string& key) const {
-
-  return getParser().isValueValidInt(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().isValueValidInt(getPath(key));
+  } else {
+    logError("isValueValidInt()", "No parameters found at all!");
+    std::abort();
+    return false;
+  }
 }
 
 bool exahype::parser::ParserView::isValueValidDouble(
     const std::string& key) const {
-
-  return getParser().isValueValidDouble(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().isValueValidDouble(getPath(key));
+  } else {
+    logError("isValueValidDouble()", "No parameters found at all!");
+    std::abort();
+    return false;
+  }
 }
 
 
 bool exahype::parser::ParserView::isValueValidBool(
     const std::string& key) const {
-
-  return getParser().isValueValidBool(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().isValueValidBool(getPath(key));
+  } else {
+    logError("isValueValidBool()", "No parameters found at all!");
+    std::abort();
+    return false;
+  }
 }
 
 std::vector< std::pair<std::string, std::string> > exahype::parser::ParserView::getAllAsOrderedMap() const {
@@ -104,11 +149,20 @@ std::map<std::string, std::string> exahype::parser::ParserView::getAllAsMap() co
 
 bool exahype::parser::ParserView::isValueValidString(
     const std::string& key) const {
-  return getParser().isValueValidString(getPath(key));
+  if (_parser!=nullptr) {
+    return getParser().isValueValidString(getPath(key));
+  } else {
+    logError("isValueValidString()", "No parameters found at all!");
+    std::abort();
+    return false;
+  }
 }
 
 const exahype::parser::Parser& exahype::parser::ParserView::getParser() const {
-  if(!_parser) logError("getParser()", "Trying to use a non-initilaized parserView!"); 
+  if(!_parser) {
+    logError("getParser()", "Trying to use a non-initialised parserView!");
+    std::abort();
+  }
   return *_parser;
 }
 
@@ -120,14 +174,22 @@ std::string exahype::parser::ParserView::toString() const {
 }
 
 void exahype::parser::ParserView::toString(std::ostream& out) const {
-  out << "ParserView(";
-  out << "specfile:" << getParser().getSpecfileName();
-  out << ",";
-  out << "basePath:" <<  _basePath;
-  out <<  ")";
+  if (_parser!=nullptr) {
+    out << "ParserView(";
+    out << "specfile:" << getParser().getSpecfileName();
+    out << ",";
+    out << "basePath:" <<  _basePath;
+    out <<  ")";
+  } {
+    out << "not available";
+  }
 }
 
 std::string exahype::parser::ParserView::dump(const std::string path) const {
-  return getParser().dumpPath(_basePath+"/"+path);
+   if (_parser!=nullptr) {
+     return getParser().dumpPath( _basePath +  ( path.compare("")==0 ? "" : "/"+path ) );
+   } else {
+     return "not available";
+   }
 }
 

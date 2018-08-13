@@ -50,7 +50,7 @@ exahype::plotters::FiniteVolume2CarpetHDF5::FiniteVolume2CarpetHDF5(
 
 // all other methods are stubs
 exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {}
-void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) {}
+void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const int cellDescriptionsIndex, const int element) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::plotPatch(const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,double timeStamp) {}
 void exahype::plotters::FiniteVolume2CarpetHDF5::startPlotting(double time) {}
@@ -77,7 +77,7 @@ exahype::plotters::FiniteVolume2CarpetHDF5::~FiniteVolume2CarpetHDF5() {
 	if(writer) delete writer;
 }
 
-void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int _numberOfCellsPerAxis, int _solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  select) {
+void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filename, int _numberOfCellsPerAxis, int _solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
 	bool oneFilePerTimestep = false;
 	bool allUnknownsInOneFile = false;
 
@@ -91,7 +91,7 @@ void exahype::plotters::FiniteVolume2CarpetHDF5::init(const std::string& filenam
 	solverUnknowns = _solverUnknowns;
 
 	const int basisSize = numberOfVerticesPerAxis;
-	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, select,
+	writer = new exahype::plotters::CarpetHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
 		writtenQuantitiesNames, oneFilePerTimestep, allUnknownsInOneFile);	
 
 	if(writer->slicer && writer->slicer->getIdentifier() == "CartesianSlicer") {

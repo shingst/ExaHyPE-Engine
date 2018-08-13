@@ -53,7 +53,7 @@ exahype::plotters::ADERDG2LegendreCSV::ADERDG2LegendreCSV(exahype::plotters::Plo
 
 exahype::plotters::ADERDG2LegendreCSV::~ADERDG2LegendreCSV() {}
 
-void exahype::plotters::ADERDG2LegendreCSV::init(const std::string& filename, int orderPlusOne, int  unknowns, int writtenUnknowns,  exahype::parser::ParserView select) {
+void exahype::plotters::ADERDG2LegendreCSV::init(const std::string& filename, int orderPlusOne, int  unknowns, int writtenUnknowns,  exahype::parser::ParserView plotterParameters) {
 	this->basicFilename     = basicFilename;
 	this->order             = orderPlusOne-1;
 	this->solverUnknowns    = unknowns;

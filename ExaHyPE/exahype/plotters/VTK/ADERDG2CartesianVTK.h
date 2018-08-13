@@ -57,7 +57,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
   int           _order           = -1;
   int           _solverUnknowns  = -1;
   int           _writtenUnknowns = -1;
-  exahype::parser::ParserView   _select ;
+  exahype::parser::ParserView   _plotterParameters ;
 
   /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.
@@ -102,7 +102,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
   ADERDG2CartesianVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells);
   virtual ~ADERDG2CartesianVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

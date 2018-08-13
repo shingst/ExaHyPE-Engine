@@ -50,7 +50,7 @@ class exahype::plotters::ADERDG2CartesianPeanoFileFormat: public exahype::plotte
   int           _order;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  exahype::parser::ParserView   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
   /**
    * To memorise the time argument from startPlotter(). We need it when we close the plotter for the time series.
@@ -88,7 +88,7 @@ class exahype::plotters::ADERDG2CartesianPeanoFileFormat: public exahype::plotte
   ADERDG2CartesianPeanoFileFormat(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, bool plotCells, PlotterType type);
   virtual ~ADERDG2CartesianPeanoFileFormat();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

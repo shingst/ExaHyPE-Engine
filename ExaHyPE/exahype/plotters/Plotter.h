@@ -216,7 +216,7 @@ class exahype::plotters::Plotter {
      * Configure the plotter device. Is invoked directly after the constructor is
      * called.
      */
-    virtual void init(const std::string& filename, int order, int unknowns, int writtenUnknowns, const exahype::parser::ParserView select) = 0;
+    virtual void init(const std::string& filename, int order, int unknowns, int writtenUnknowns, const exahype::parser::ParserView plotterParameters) = 0;
 
 
     /**
@@ -234,7 +234,7 @@ class exahype::plotters::Plotter {
   static tarch::logging::Log _log;
 
   int              _solver;
-  std::string      _identifier;
+  std::string      _type;
   int              _writtenUnknowns;
   /**
    * Time of the next snapshot to be written
@@ -246,7 +246,7 @@ class exahype::plotters::Plotter {
   double                 _solverTimeStamp;
   const double           _repeat;
   std::string            _filename;
-  const exahype::parser::ParserView _select;
+  const exahype::parser::ParserView _plotterParameters;
   bool                   _isActive;
 
   Device*                _device;

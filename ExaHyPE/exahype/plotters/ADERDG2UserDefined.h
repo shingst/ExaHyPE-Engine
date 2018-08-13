@@ -31,7 +31,7 @@ class exahype::plotters::ADERDG2UserDefined: public exahype::plotters::Plotter::
   int           _order;
   int           _variables;
   int           _writtenVariables;
-  exahype::parser::ParserView   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
  public:
   static std::string getIdentifier();
@@ -39,7 +39,7 @@ class exahype::plotters::ADERDG2UserDefined: public exahype::plotters::Plotter::
   ADERDG2UserDefined();
   virtual ~ADERDG2UserDefined();
 
-  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) override;
+  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) override;
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

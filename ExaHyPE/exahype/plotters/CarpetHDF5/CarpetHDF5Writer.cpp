@@ -23,7 +23,7 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	int _basisSize,
 	int _solverUnknowns,
 	int _writtenUnknowns,
-	exahype::parser::ParserView  _select,
+	exahype::parser::ParserView  _plotterParameters,
 	char** _writtenQuantitiesNames,
 	bool _oneFilePerTimestep,
 	bool _allUnknownsInOneFile)
@@ -33,7 +33,7 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	writtenUnknowns(_writtenUnknowns),
 	basisFilename(_filename),
 	basisSize(_basisSize),
-	select(_select),
+	plotterParameters(_plotterParameters),
 	oneFilePerTimestep(_oneFilePerTimestep),
 	allUnknownsInOneFile(_allUnknownsInOneFile),
 	
@@ -49,7 +49,7 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	files(allUnknownsInOneFile ? 1 : writtenUnknowns)
 	{
 
-	// todo at this place:  allow _oneFilePerTimestep and _allUnknownsInOneFile to be read off _select.
+	// todo at this place:  allow _oneFilePerTimestep and _allUnknownsInOneFile to be read off _plotterParameters.
 
 	// just for convenience/a service, store an indexer for the actual ExaHyPE cells.
 	switch(DIMENSIONS) { // simulation dimensions
@@ -66,9 +66,9 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	}
 	writtenCellIdx = patchCellIdx; // without slicing, this is true.
 
-	slicer = Slicer::bestFromSelectionQuery(select);
-	bool isCartesianSlicer = (slicer->getIdentifier() == "CartesianSlicer");
-	if(slicer) {
+	slicer = Slicer::bestFromSelectionQuery(plotterParameters);
+	if( slicer ) {
+	  bool isCartesianSlicer = (slicer->getIdentifier() == "CartesianSlicer");
 		logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<basisFilename);
 		if(isCartesianSlicer) {
 			exahype::plotters::CartesianSlicer* cs = static_cast<CartesianSlicer*>(slicer);

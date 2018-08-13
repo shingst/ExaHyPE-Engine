@@ -239,13 +239,23 @@ void exahype::parser::Parser::invalidate() const {
 
 bool exahype::parser::Parser::hasPath(std::string path) const {
   // Q: I'm not sure whethe the iterator end() is also true for nested structures (path pointer)
-  bool found = _impl->data.find(json::json_pointer(path)) != _impl->data.end();
-  return found;
+  // Previous code: bool found = _impl->data.find(json::json_pointer(path)) != _impl->data.end();
+  // return found;
+  try {
+    auto j = _impl->data.at(json::json_pointer(path));
+    if (!j.is_null()) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch(json::out_of_range& e) {
+    return false;
+  }
 }
 
 std::string exahype::parser::Parser::dumpPath(std::string path) const {
   try {
-    return _impl->data.find(json::json_pointer(path))->dump();
+    return _impl->data.at(json::json_pointer(path)).dump();
   } catch (json::type_error& e) {
     logError("dumpPath()", "Path " << path << " contains a non-UTF-8-encodable string (" << e.what() << ")");
   } catch(json::out_of_range& e) {
@@ -256,19 +266,19 @@ std::string exahype::parser::Parser::dumpPath(std::string path) const {
 }
 
 bool exahype::parser::Parser::isValueValidBool(const std::string& path) const {
-  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_boolean();
+  return hasPath(path) && _impl->data.at(json::json_pointer(path)).is_boolean();
 }
 
 bool exahype::parser::Parser::isValueValidInt(const std::string& path) const {
-  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_number_integer();
+  return hasPath(path) && _impl->data.at(json::json_pointer(path)).is_number_integer();
 }
 
 bool exahype::parser::Parser::isValueValidDouble(const std::string& path) const {
-  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_number();
+  return hasPath(path) && _impl->data.at(json::json_pointer(path)).is_number();
 }
 
 bool exahype::parser::Parser::isValueValidString(const std::string& path) const {
-  return hasPath(path) && _impl->data.find(json::json_pointer(path))->is_string();
+  return hasPath(path) && _impl->data.at(json::json_pointer(path)).is_string();
 }
 
 std::string exahype::parser::Parser::getStringFromPath(std::string path, std::string defaultValue, bool isOptional) const {
@@ -671,8 +681,7 @@ bool exahype::parser::Parser::getSpawnDoubleCompressionAsBackgroundTask() const 
 }
 
 
-exahype::solvers::Solver::Type exahype::parser::Parser::getType(
-    int solverNumber) const {
+exahype::solvers::Solver::Type exahype::parser::Parser::getType(int solverNumber) const {
   exahype::solvers::Solver::Type result =
       exahype::solvers::Solver::Type::ADERDG;
   std::string token = getStringFromPath(sformat("/solvers/%d/type", solverNumber));
@@ -888,12 +897,12 @@ int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
   return getIntFromPath(sformat("/solvers/%d/limiter/help_layers", solverNumber), 1, isOptional);
 }
 
-std::string exahype::parser::Parser::getIdentifierForPlotter(int solverNumber,int plotterNumber) const {
-  return getStringFromPath(sformat("/solvers/%d/plotters/%d/name", solverNumber, plotterNumber));
+std::string exahype::parser::Parser::getTypeForPlotter(int solverNumber,int plotterNumber) const {
+  return getStringFromPath(sformat("/solvers/%d/plotters/%d/type", solverNumber, plotterNumber));
 }
 
 std::string exahype::parser::Parser::getNameForPlotter(int solverNumber,int plotterNumber) const {
-  return getStringFromPath(sformat("/solvers/%d/plotters/%d/type", solverNumber, plotterNumber));
+  return getStringFromPath(sformat("/solvers/%d/plotters/%d/name", solverNumber, plotterNumber));
 }
 
 int exahype::parser::Parser::getUnknownsForPlotter(int solverNumber,int plotterNumber) const {
@@ -915,9 +924,15 @@ std::string exahype::parser::Parser::getFilenameForPlotter(int solverNumber,
   return getStringFromPath(sformat("/solvers/%d/plotters/%d/output", solverNumber, plotterNumber));
 }
 
-exahype::parser::ParserView exahype::parser::Parser::getSelectorForPlotter(int solverNumber,
+exahype::parser::ParserView exahype::parser::Parser::getParametersForPlotter(int solverNumber,
                                                    int plotterNumber) const {
-  return exahype::parser::ParserView(this,sformat("/solvers/%d/plotters/%d/select", solverNumber, plotterNumber));
+  std::string path = sformat("/solvers/%d/plotters/%d/parameters", solverNumber, plotterNumber);
+  if ( hasPath(path) ) {
+    std::cout << path << std::endl;
+    return exahype::parser::ParserView(this,path);
+  } else {
+    return exahype::parser::ParserView();
+  }
 }
 
 std::string exahype::parser::Parser::getLogFileName() const {

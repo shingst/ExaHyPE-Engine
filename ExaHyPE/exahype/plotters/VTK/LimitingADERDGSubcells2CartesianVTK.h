@@ -43,7 +43,7 @@ private:
    * The ghost layer width the finite volumes patch is using.
    */
   const int     _ghostLayerWidth;
-  exahype::parser::ParserView   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
   static tarch::logging::Log _log;
 
@@ -62,7 +62,7 @@ public:
                               const int ghostLayerWidth,const bool isBinary);
   virtual ~LimitingADERDGSubcells2CartesianVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

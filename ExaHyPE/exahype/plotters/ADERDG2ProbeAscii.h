@@ -37,7 +37,7 @@ class exahype::plotters::ADERDG2ProbeAscii
   int                  _order;
   int                  _solverUnknowns;
   int                  _writtenUnknowns;
-  exahype::parser::ParserView  _select;
+  exahype::parser::ParserView  _plotterParameters;
   std::ofstream*       _out;
   bool                 _hasWrittenData;
   double               _time;
@@ -49,7 +49,7 @@ class exahype::plotters::ADERDG2ProbeAscii
   ADERDG2ProbeAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
   virtual ~ADERDG2ProbeAscii();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int unknowns, int writtenUnknowns, exahype::parser::ParserView select);
+  virtual void init(const std::string& filename, int orderPlusOne, int unknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   static std::string getIdentifier();
 

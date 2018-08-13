@@ -58,7 +58,7 @@ class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::
   int           _order;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  exahype::parser::ParserView   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
 
   /**
@@ -110,7 +110,7 @@ class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::
   ADERDG2LegendreVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType isBinary, bool plotCells);
   virtual ~ADERDG2LegendreVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

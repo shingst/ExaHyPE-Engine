@@ -35,7 +35,7 @@ exahype::plotters::ExaHyPE2Tecplot::ExaHyPE2Tecplot(
 // all other methods are stubs
 exahype::plotters::ExaHyPE2Tecplot::~ExaHyPE2Tecplot() {}
 
-void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) {
+void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {
 	logError("init()","ERROR: Compile with TECPLOT, otherwise you cannot use the Tecplot plotter. There will be no output going to " << filename << " today.");
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
@@ -81,7 +81,7 @@ exahype::plotters::ExaHyPE2Tecplot::ExaHyPE2Tecplot(exahype::plotters::Plotter::
 
 exahype::plotters::ExaHyPE2Tecplot::~ExaHyPE2Tecplot() {}
 
-void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) {
+void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {
 	// init is called at program startup.
 	
 	// Remember the parameters for later use
@@ -89,7 +89,7 @@ void exahype::plotters::ExaHyPE2Tecplot::init(const std::string& filename, int b
 	_orderPlusOne = basisSize;
 	_solverUnknowns = solverUnknowns;
 	_writtenUnknowns = writtenUnknowns;
-	// select is for query-based visualization, ignore it here.
+	// plotterParameters is for query-based visualization, ignore it here.
 	
 	// Call Fortran.
 	char filename_for_Fortran[1000];

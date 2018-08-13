@@ -126,16 +126,16 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  exahype::parser::ParserView select
+  exahype::parser::ParserView plotterParameters
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;
   _solverUnknowns    = unknowns;
-  _select            = select;
+  _plotterParameters            = plotterParameters;
   _patchWriter       = nullptr;
   _writtenUnknowns   = writtenUnknowns;
 
-  _slicer = Slicer::bestFromSelectionQuery(select);
+  _slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 
   if(_slicer) {
     logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);

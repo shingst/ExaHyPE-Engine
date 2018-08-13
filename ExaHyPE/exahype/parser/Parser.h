@@ -474,7 +474,7 @@ class exahype::parser::Parser {
    *  select    = <selector>
    * end plot
    */
-  std::string getIdentifierForPlotter(int solverNumber,
+  std::string getTypeForPlotter(int solverNumber,
                                       int plotterNumber) const;
   std::string getNameForPlotter(int solverNumber,
                                 int plotterNumber) const;
@@ -483,7 +483,15 @@ class exahype::parser::Parser {
                                         int plotterNumber) const;
   double getRepeatTimeForPlotter(int solverNumber, int plotterNumber) const;
   std::string getFilenameForPlotter(int solverNumber, int plotterNumber) const;
-  exahype::parser::ParserView getSelectorForPlotter(int solverNumber, int plotterNumber) const;
+
+  /**
+   * @return A parser view for the parameters section.
+   * Invalid parser view if no parameters section is present.
+   *
+   * @param solverNumber  index of the solver in the spec file
+   * @param plotterNumber index of the plotter in the spec file
+   */
+  exahype::parser::ParserView getParametersForPlotter(int solverNumber, int plotterNumber) const;
 
   std::string getProfilerIdentifier() const;
   std::string getMetricsIdentifierList() const;

@@ -31,7 +31,7 @@ class exahype::plotters::FiniteVolumes2UserDefined: public exahype::plotters::Pl
   int           _order;
   int           _variables;
   int           _writtenVariables;
-  exahype::parser::ParserView   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
  public:
   static std::string getIdentifier();
@@ -39,7 +39,7 @@ class exahype::plotters::FiniteVolumes2UserDefined: public exahype::plotters::Pl
   FiniteVolumes2UserDefined();
   virtual ~FiniteVolumes2UserDefined();
 
-  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) override;
+  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) override;
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

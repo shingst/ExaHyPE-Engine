@@ -58,7 +58,7 @@ class exahype::plotters::FiniteVolumes2VTK: public exahype::plotters::Plotter::D
   int           _ghostLayerWidth;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  exahype::parser::ParserView   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
   /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.
@@ -88,7 +88,7 @@ class exahype::plotters::FiniteVolumes2VTK: public exahype::plotters::Plotter::D
   FiniteVolumes2VTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, const int ghostLayerWidth, PlotterType plotterType, bool plotCells);
   virtual ~FiniteVolumes2VTK();
 
-  virtual void init(const std::string& filename, int numberOfCellsPerAxis, int unknowns, int writtenUnknowns, exahype::parser::ParserView select);
+  virtual void init(const std::string& filename, int numberOfCellsPerAxis, int unknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

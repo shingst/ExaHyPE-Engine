@@ -40,7 +40,7 @@ exahype::plotters::ADERDG2FlashHDF5::ADERDG2FlashHDF5(
 
 // all other methods are stubs
 exahype::plotters::ADERDG2FlashHDF5::~ADERDG2FlashHDF5() {}
-void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView select) {
+void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {
 	logError("init()", "Compile with -DHDF5, otherwise you cannot use the HDF5 plotter. There will be no output going to " << filename << " today.");
 	logError("init()", "Will fail gracefully. If you want to stop the program in such a case, please set the environment variable EXAHYPE_STRICT=\"Yes\".");
 }
@@ -91,7 +91,7 @@ exahype::plotters::ADERDG2FlashHDF5::~ADERDG2FlashHDF5() {
 	if(writer) delete writer;
 }
 
-void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  select) {
+void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int basisSize, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters) {
 	bool oneFilePerTimestep = true;
 	bool allUnknownsInOneFile = true;
 
@@ -100,11 +100,11 @@ void exahype::plotters::ADERDG2FlashHDF5::init(const std::string& filename, int 
 	std::fill_n(writtenQuantitiesNames, writtenUnknowns, nullptr);
 	_postProcessing->writtenQuantitiesNames(writtenQuantitiesNames);
 	
-	writer = new exahype::plotters::FlashHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, select,
+	writer = new exahype::plotters::FlashHDF5Writer(filename, basisSize, solverUnknowns, writtenUnknowns, plotterParameters,
 		writtenQuantitiesNames, oneFilePerTimestep, allUnknownsInOneFile);	
 
 	if(writer->slicer) {
-		logInfo("init", "Plotting selection "<<writer->slicer->toString()<<" to Files "<<filename);
+		logInfo("init", "Plotting plotterParametersion "<<writer->slicer->toString()<<" to Files "<<filename);
 	}
 }
 

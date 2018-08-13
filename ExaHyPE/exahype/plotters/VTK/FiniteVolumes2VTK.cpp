@@ -168,16 +168,16 @@ void exahype::plotters::FiniteVolumes2VTK::init(
   int                numberOfCellsPerAxis,
   int                unknowns,
   int                writtenUnknowns,
-  exahype::parser::ParserView select
+  exahype::parser::ParserView plotterParameters
 ){
   _filename             = filename;
   _numberOfCellsPerAxis = numberOfCellsPerAxis;
   _solverUnknowns       = unknowns;
-  _select               = select;
+  _plotterParameters               = plotterParameters;
   _patchWriter          = nullptr;
   _writtenUnknowns      = writtenUnknowns;
 
-  slicer = Slicer::bestFromSelectionQuery(select);
+  slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 
   if(slicer) {
   	logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);

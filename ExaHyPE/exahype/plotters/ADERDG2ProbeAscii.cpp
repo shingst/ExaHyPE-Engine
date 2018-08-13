@@ -44,25 +44,25 @@ void exahype::plotters::ADERDG2ProbeAscii::finishPlotting() {
 }
 
 
-void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int orderPlusOne, int unknowns, int writtenUnknowns, exahype::parser::ParserView select) {
+void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int orderPlusOne, int unknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) {
   _order           = orderPlusOne-1;
   _solverUnknowns  = unknowns;
   _writtenUnknowns = writtenUnknowns;
-  _select          = select;
+  _plotterParameters          = plotterParameters;
   _filename        = filename;
   _time            = 0.0;
 
-  if (!select.isValueValidDouble("x") || !select.isValueValidDouble("y") || ( DIMENSIONS==3 &&!select.isValueValidDouble("z"))) {
-    logError("init()", "Probe location is invalid. Require x,y,z values. Have " << select.dump());
+  if (!plotterParameters.isValueValidDouble("x") || !plotterParameters.isValueValidDouble("y") || ( DIMENSIONS==3 &&!plotterParameters.isValueValidDouble("z"))) {
+    logError("init()", "Probe location is invalid. Require x,y,z values. Have " << plotterParameters.dump());
   }
   
-  _x(0) = select.getValueAsDouble("x");
-  _x(1) = select.getValueAsDouble("y");
+  _x(0) = plotterParameters.getValueAsDouble("x");
+  _x(1) = plotterParameters.getValueAsDouble("y");
   #if DIMENSIONS==3
-  _x(2) = select.getValueAsDouble("z");
+  _x(2) = plotterParameters.getValueAsDouble("z");
   #endif
 
-  logDebug( "init(...)", "probe at location " << _x << "(select=\"" << select.dump() << "\")");
+  logDebug( "init(...)", "probe at location " << _x << "(plotterParameters=\"" << plotterParameters.dump() << "\")");
 
   if (!tarch::la::equals(_x,_x)) {
     logError( "init(...)", "Probe location is invalid." );
@@ -73,7 +73,7 @@ void exahype::plotters::ADERDG2ProbeAscii::init(const std::string& filename, int
 void exahype::plotters::ADERDG2ProbeAscii::openOutputStream() {
   if (_out == nullptr) {
     if (tarch::la::oneEquals(_x,std::numeric_limits<double>::quiet_NaN())) {
-      logError( "init(...)", "probe requires valid x, y (and z) coordinates in select statement. No plot written as plot location has been " << _x );
+      logError( "init(...)", "probe requires valid x, y (and z) coordinates in plotterParameters statement. No plot written as plot location has been " << _x );
     }
     else {
       _out = new std::ofstream;
