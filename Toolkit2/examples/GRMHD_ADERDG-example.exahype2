@@ -18,14 +18,6 @@
 		"autotuning_strategy": "dummy",
 		"properties_file": "sharedmemory.properties"
 	},
-	"distributed_memory": {
-		"load_balancing_type": "static",
-		"load_balancing_strategy" : "fair",
-		"node_pool_strategy" : "hotspot",
-		"ranks_per_node": 1,
-		"timeout": 60,
-		"buffer_size": 64
-	},
 	"optimisation": {
 		"fuse_algorithmic_steps" : false,
 		"fuse_algorithmic_steps_factor" : 0.99,

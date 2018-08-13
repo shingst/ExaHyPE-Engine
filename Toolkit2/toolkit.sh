@@ -23,10 +23,15 @@ GITHUB=git://github.com
 # ssh -R 19489:github.com:9418 <Your Login>@<SuperMUC Login Node>
 #GITHUB=git://localhost:19489
 
+# Note about this way of checking dependencies:
+# it really takes a bit time to call python so many times, this slows down
+# startup.
+
+#  attr\
+#  pyrsistent\  # why needed? I have jinja2 and jsonschema installed with apt-get and it is sufficient.
+#  markupsafe\  # why needed? I have jinja2 and jsonschema installed with apt-get and it is sufficient.
+
 modules=(\
-  attr\
-  pyrsistent\
-  markupsafe\
   jinja2\
   jsonschema\
   )
@@ -51,7 +56,8 @@ done
 
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
 if [ "$errors" = "false" ]; then
-  PYTHONPATH="$Toolkit2" $PYTHON3 $Toolkit2/exahype/toolkit $@   # RUN PROGRAM
+  # Run program using "exec", which ensures the proper return value of the shell script
+  PYTHONPATH="$Toolkit2" exec $PYTHON3 $Toolkit2/exahype/toolkit $@
 else
   echo "$0: There are missing dependencies." >&2
   echo "$0:"
