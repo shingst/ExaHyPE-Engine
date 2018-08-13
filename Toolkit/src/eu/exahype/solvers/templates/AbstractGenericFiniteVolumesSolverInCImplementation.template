@@ -50,7 +50,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luhNew,const double
 
 
 double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  double maxAdmissibleDt = kernels::finitevolumes::commons::c::stableTimeStepSize<{{solver}}>(*static_cast<{{solver}}*>(this),luh,dx);
+  double maxAdmissibleDt = kernels::finitevolumes::commons::c::stableTimeStepSize<{{solver}},{{useParabolicFlux}}>(*static_cast<{{solver}}*>(this),luh,dx);
   return maxAdmissibleDt;
 }
 

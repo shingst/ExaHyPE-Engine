@@ -22,7 +22,7 @@
 exahype-project NavierStokesFV
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/NavierStokes/NavierStokesFV_2D
+  output-directory const           = ./ApplicationExamples/NavierStokes/NavierStokesADERDG_2D
 
   computational-domain
     dimension const         = 2

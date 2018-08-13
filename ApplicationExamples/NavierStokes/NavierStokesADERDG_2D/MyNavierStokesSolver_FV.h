@@ -81,9 +81,12 @@ class NavierStokesADERDG::MyNavierStokesSolver_FV : public NavierStokesADERDG::A
      *
      * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
      *                 as C array (already allocated).
+     *               gradQ the gradient of the conserved variables (and parameters) associated with a quadrature point
+     *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
     void parabolicFlux(const double* const Q,const double* const gradQ, double** F) override;
+    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) override;
 
     /* algebraicSource() function not included, as requested by the specification file */
 
