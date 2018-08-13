@@ -696,37 +696,41 @@ std::string exahype::parser::Parser::getIdentifier(int solverNumber) const {
 }
 
 int exahype::parser::Parser::countVariablesType(const int solverNumber, const std::string& identifier, const bool isOptional) const {
-  std::string path = sformat("/solvers/%d/%s", solverNumber, identifier.c_str());
-  if ( hasPath(path) ) {
-    auto j = _impl->data.at(path);
-    if(j.is_primitive()) {
+  try {
+    std::string path = sformat("/solvers/%d/%s", solverNumber, identifier.c_str());
+    auto j = _impl->data.at(json::json_pointer(path));
+
+    int result = 0;
+    if(j.is_number_integer()) {
       // variables=N
-      return getIntFromPath(path);
-    } else if(j.is_array()) {
-      // variables=["foo","bar","baz"], meaning variables=3
-      return j.size();
-    } else {
+      result += getIntFromPath(path);
+    } else if (j.is_array()) {
       // count multiplicities
-      int result = 0;
       for (json::iterator it = j.begin(); it != j.end(); ++it) {
-        // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
-        result += getIntFromPath(sformat("/solvers/%d/identifier/%d/multiplicity", solverNumber, it - j.begin()));
+        auto variable = j.at(json::json_pointer(sformat("/%d", it - j.begin())));
+        if (variable.is_string()) {  // variables=["foo","bar","baz"], meaning variables=3
+          result++;
+        } else {
+          // the lazy way, constructing the global path again. Side note: We require multiplicity, we don't support an implicit 1.
+          result += static_cast<int>(j.at(json::json_pointer(sformat("/%d/multiplicity", it - j.begin()))));
+        }
       }
-      if(result == 0) {
-        logError("getVariablesType()",
-                 "'" << getIdentifier(solverNumber)
-                 << "': '"<<identifier<<"': Value must be greater than zero.");
-        invalidate();
-      }
-      return result;
     }
+    if(result == 0) {
+      logError("countVariablesType()", "'" << getIdentifier(solverNumber)
+               << "': '"<<identifier<<"': Value must be greater than zero (integer), "
+                   "a list of identifiers (string), or a list of objects with fields 'name' (string) and 'multiplicity' (integer).");
+      invalidate();
+    }
+    return result;
+  } catch(json::out_of_range& e) { // not found
+    if( !isOptional ) {
+      logError("countVariablesType()","'" << getIdentifier(solverNumber)<< "': Field '"<<identifier<<
+               "' could not be found or parsed! Reason: "<<e.what());
+      invalidate();
+    }
+    return 0;
   }
-  if ( !isOptional ) {
-    logError("getVariablesType()","'" << getIdentifier(solverNumber)<< "': Field '"<<identifier<<
-             "' could not be found!");
-    invalidate();
-  }
-  return 0;
 }
 
 int exahype::parser::Parser::getVariables(int solverNumber) const {
@@ -761,7 +765,7 @@ double exahype::parser::Parser::getMaximumMeshSize(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
-  int result = getIntFromPath(sformat("/solvers/%d/maximum_mesh_depth", solverNumber));
+  int result = getIntFromPath(sformat("/solvers/%d/maximum_mesh_depth", solverNumber),0,isOptional);
 
   if (tarch::la::smaller(result, 0)) {
     logError("getMaximumMeshDepth(int)",
@@ -775,7 +779,7 @@ int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getHaloCells(int solverNumber) const {
-  int result = getIntFromPath(sformat("/solvers/%d/halo_cells", solverNumber));
+  int result = getIntFromPath(sformat("/solvers/%d/halo_cells", solverNumber),0,isOptional);
 
   if (tarch::la::smaller(result, 0)) {
     logError("getHaloCells(int)",
@@ -789,7 +793,7 @@ int exahype::parser::Parser::getHaloCells(int solverNumber) const {
 }
 
 int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) const {
-  int result = getIntFromPath(sformat("/solvers/%d/regularised_fine_grid_levels", solverNumber));
+  int result = getIntFromPath(sformat("/solvers/%d/regularised_fine_grid_levels", solverNumber),0,isOptional);
   
   if (tarch::la::smaller(result, 0)) {
     logError("getRegularisedFineGridLevels(int)",
