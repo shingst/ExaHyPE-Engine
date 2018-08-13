@@ -11,8 +11,8 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef POSTPROCESSING_NavierStokesSubcellsWriter_CLASS_HEADER_
-#define POSTPROCESSING_NavierStokesSubcellsWriter_CLASS_HEADER_
+#ifndef POSTPROCESSING_PressureWriter_CLASS_HEADER_
+#define POSTPROCESSING_PressureWriter_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -20,13 +20,13 @@
 
 namespace NavierStokesADERDG {
   
-  class NavierStokesSubcellsWriter;
+  class PressureWriter;
 }
 
-class NavierStokesADERDG::NavierStokesSubcellsWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
+class NavierStokesADERDG::PressureWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
-  NavierStokesSubcellsWriter(exahype::solvers::LimitingADERDGSolver&  solver);
-  virtual ~NavierStokesSubcellsWriter();
+  PressureWriter(exahype::solvers::LimitingADERDGSolver&  solver);
+  virtual ~PressureWriter();
 
   void startPlotting(double time) override;
   void finishPlotting() override;
@@ -40,4 +40,4 @@ public:
     double timeStamp) override;
 };
 
-#endif /* POSTPROCESSING_NavierStokesSubcellsWriter_CLASS_HEADER_ */
+#endif /* POSTPROCESSING_PressureWriter_CLASS_HEADER_ */

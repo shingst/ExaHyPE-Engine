@@ -301,7 +301,7 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 {%- if enableProfiler %}
   _profiler->start("stableTimeStepSize");
 {%- endif %}
-  double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}}>(*static_cast<{{solver}}*>(this),luh,dx);
+  double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}},{{useParabolicFlux}}>(*static_cast<{{solver}}*>(this),luh,dx);
 {%- if enableProfiler %}
   _profiler->stop("stableTimeStepSize");
 {%- endif %}

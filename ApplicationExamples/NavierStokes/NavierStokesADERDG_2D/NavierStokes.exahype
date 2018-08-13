@@ -1,6 +1,6 @@
 /**
  * 
- * NavierStokes Flow
+ * NavierStokes
  * 
  * This setup corresponds to the Finite Volume demonstrator code as discussed in 
  * Section 2 of the guidebook. To keep stuff here extremely simple, the spec file 
@@ -22,45 +22,33 @@
 exahype-project NavierStokesADERDG
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/NavierStokes/NavierStokesADERDG
+  output-directory const           = ./ApplicationExamples/NavierStokes/NavierStokesADERDG_2D
 
   computational-domain
     dimension const         = 2
-    width                   = 1.0, 1.0
-    offset                  = 0.0, 0.0
-    end-time                = 0.01
+    width                   = 6.283, 6.283
+    offset                  = 0.0,0.0
+    /*-3.14159, -3.14159*/
+    end-time                = 1.0
   end computational-domain
  
   /*
    ===========================================
    Comment this stuff in to get an MPI version
    ===========================================
-
   distributed-memory
     identifier               = static_load_balancing
     configure                = {greedy-naive,FCFS}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
-*/
-
-  /*
-   ====================================================
-   Comment this stuff in to get a shared memory version
-   ====================================================
- 
-  shared-memory
-    identifier               = dummy
-    configure                = {}
-    cores                    = 8
-    properties-file          = sharedmemory.properties
-  end shared-memory
- */ 
+  */
+  
   solver Limiting-ADER-DG MyNavierStokesSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
-    maximum-mesh-size          = 1e-1    
-    maximum-mesh-depth         = 2
+    maximum-mesh-size          = 2
+    maximum-mesh-depth         = 0
     time-stepping              = global
     type const                 = nonlinear, Legendre
     terms const                = parabolicflux
@@ -73,18 +61,19 @@ exahype-project NavierStokesADERDG
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
 
-    plot vtu::Cartesian::vertices::limited::ascii NavierStokesWriter
+    plot vtu::Cartesian::cells::ascii NavierStokesWriter
       variables const = 5
       time            = 0.0
-      repeat          = 0.001
-      output          = ./variables
+      repeat          = 0.01
+      output          = ./VtkOutput/variables
     end plot
 
-    plot vtk::Cartesian::subcells::limited::ascii NavierStokesSubcellsWriter
-      variables const = 5
+    plot vtu::Cartesian::cells::ascii PressureWriter
+      variables const = 1
       time            = 0.0
-      repeat          = 0.001
-      output          = ./variables-fv
+      repeat          = 0.01
+      output          = ./VtkOutput/pressure
     end plot
+
   end solver
 end exahype-project

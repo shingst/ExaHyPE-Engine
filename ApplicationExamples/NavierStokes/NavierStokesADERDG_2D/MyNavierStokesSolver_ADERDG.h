@@ -72,6 +72,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face

@@ -18,7 +18,7 @@
 
 #include "tarch/la/Vector.h" 
 
-template <typename SolverType>
+template <typename SolverType, bool useParabolicFlux>
 double kernels::aderdg::generic::c::stableTimeStepSize(
     SolverType& solver,
     const double* const luh,
@@ -31,32 +31,41 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
   constexpr double cflFactor       = SolverType::CFL;
   
   constexpr double PNPM[10]  = {1.0,   0.33,  0.17, 0.1,  0.069,
-                                0.045, 0.038, 0.03, 0.02, 0.015};
-  
+      0.045, 0.038, 0.03, 0.02, 0.015};
+
   const double invDx[3] = { 1.0/dx[0], 1.0/dx[1], 1.0/dx[2] };
-  
+
   idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
-  
+
   double dt = std::numeric_limits<double>::max();
   double lambda[numberOfVariables] = {0.0};
   for (int i = 0; i < basisSize; i++) {
-    for (int j = 0; j < basisSize; j++) {
-      for (int k = 0; k < basisSize; k++) {
-        double denominator = 0.0;
-        for (int d = 0; d < DIMENSIONS; d++) {
-          solver.eigenvalues(luh + idx_luh(i,j,k,0), d, lambda);
-          
-          double maxEigenvalue = 0.0;
-          for (int ivar = 0; ivar < numberOfVariables; ivar++) {
-            maxEigenvalue = std::max(fabs(lambda[ivar]), maxEigenvalue);
-          }
-          denominator += maxEigenvalue * invDx[d];
-        }
+      for (int j = 0; j < basisSize; j++) {
+          for (int k = 0; k < basisSize; k++) {
+              double denominator = 0.0;
+              for (int d = 0; d < DIMENSIONS; d++) {
+                  solver.eigenvalues(luh + idx_luh(i,j,k,0), d, lambda);
 
-        dt = std::min(dt, cflFactor * PNPM[order] / 
-                              denominator);  // order N = basisSize-1
+                  double maxEigenvalue = 0.0;
+                  for (int ivar = 0; ivar < numberOfVariables; ivar++) {
+                      maxEigenvalue = std::max(fabs(lambda[ivar]), maxEigenvalue);
+                  }
+                  if(useParabolicFlux){
+                      solver.parabolicEigenvalues(luh + idx_luh(i,j,k,0), d, lambda);
+
+                      double maxEigenvalueV = 0.0;
+                      for (int ivar = 0; ivar < numberOfVariables; ivar++) {
+                          maxEigenvalueV = std::max(fabs(lambda[ivar]), maxEigenvalue);
+                      }
+                      maxEigenvalue += maxEigenvalueV * 2.0 * PNPM[order] * invDx[d];
+                  }
+                  denominator += maxEigenvalue * invDx[d];
+              }
+
+              dt = std::min(dt, cflFactor * PNPM[order] / 
+                      denominator);  // order N = basisSize-1
+          }
       }
-    }
   }
 
   return dt;

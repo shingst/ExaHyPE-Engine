@@ -5,26 +5,26 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#include "NavierStokesWriter.h"
+#include "PressureWriter.h"
 
 
-NavierStokesADERDG::NavierStokesWriter::NavierStokesWriter(MyNavierStokesSolver&  solver) {
+NavierStokesFV::PressureWriter::PressureWriter(MyNavierStokesSolver&  solver) {
   // @TODO Please insert your code here.
 }
 
-NavierStokesADERDG::NavierStokesWriter::~NavierStokesWriter() {
+NavierStokesFV::PressureWriter::~PressureWriter() {
 }
 
-void NavierStokesADERDG::NavierStokesWriter::startPlotting( double time) {
+void NavierStokesFV::PressureWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void NavierStokesADERDG::NavierStokesWriter::finishPlotting() {
+void NavierStokesFV::PressureWriter::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void NavierStokesADERDG::NavierStokesWriter::mapQuantities(
+void NavierStokesFV::PressureWriter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -33,8 +33,7 @@ void NavierStokesADERDG::NavierStokesWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 5;
-  for (int i=0; i<writtenUnknowns; i++){ 
-    outputQuantities[i] = Q[i];
-  }
+    double GAMMA = 1.4;
+    const int writtenUnknowns = 1;
+    outputQuantities[0] = (GAMMA-1) * (Q[4] - 0.5 * (Q[1]*Q[1]+Q[2]*Q[2])/Q[0]);
 }

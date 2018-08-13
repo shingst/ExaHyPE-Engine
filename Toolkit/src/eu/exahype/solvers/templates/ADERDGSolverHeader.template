@@ -86,6 +86,9 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
+{%- if useParabolicFlux %}
+    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) final override;
+{%- endif %}
     
     /**
      * Impose boundary conditions at a point on a boundary face
