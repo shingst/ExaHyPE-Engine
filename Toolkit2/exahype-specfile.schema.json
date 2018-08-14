@@ -304,7 +304,7 @@
         "load_balancing_strategy" : {
           "type" : "string", 
           "title" : "Determines ranks with too much load",
-          "enum" : [hotspot","greedy_naive","greedy_regular"],
+          "enum" : ["hotspot","greedy_naive","greedy_regular"],
           "default" : "fair",
           "old_format" : [
             { "token_after" : "configure" },
