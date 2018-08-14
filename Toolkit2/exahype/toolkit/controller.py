@@ -346,10 +346,12 @@ class Controller():
         
     def buildFVKernelContext(self,kernel):
         context = {}
-        context["implementation"] = kernel.get("implementation","generic")
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
-        context["ghostLayerWidth"]=ghostLayerWidth[kernel["scheme"]]
-        context["finiteVolumesType"]=kernel["scheme"]
+        context["ghostLayerWidth"]   = ghostLayerWidth[kernel["scheme"]]
+        context["finiteVolumesType"] = kernel["scheme"]
+        context["implementation"]    = kernel.get("implementation","generic")
+        context["tempVarsOnStack"]   = kernel.get("allocate_temporary_arrays","heap")=="stack" 
+        context["patchwiseAdjust"]   = kernel.get("adjust_solution","pointwise")=="patchwise" 
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
     
@@ -374,7 +376,7 @@ class Controller():
         subdirOption = "plotter_subdirectory"
         if subdirOption in self.spec["paths"] and len(self.spec["paths"][subdirOption].strip()):
             context["plotterDir"]  = self.spec["paths"][subdirOption]+"/"
-            context["outputPath"] += self.spec["paths"][subdirOption]
+            context["outputPath"] += "/" + self.spec["paths"][subdirOption]
         return context
     
     def buildMakefileContext(self):
