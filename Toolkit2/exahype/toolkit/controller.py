@@ -429,9 +429,9 @@ class Controller():
                 solverContext["plotters"].append(plotterContext)
             context["solvers"].append(solverContext)
         
-        context["specfileName"]     = self.specfileName
-        context["spec_file_as_hex"] = kernelCallsModel.KernelCallsModel.specfile_as_hex(self.spec)
-        context["external_parser_command"], context["external_parser_strings"] = kernelCallsModel.KernelCallsModel.get_exahype_external_parser_command()
+        context["specfileName"]          = self.specfileName
+        context["specFileAsHex"]         = self.specfileAsHex(self.spec)
+        context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
         context["subPaths"]         = []
         # todo(JM) optimised kernels subPaths
         # todo(JM) profiler 
@@ -439,6 +439,16 @@ class Controller():
         context["includePaths"] = [] #TODO
         
         return context
+    
+    def specfileAsHex(self,spec):
+        """
+        Given a native python nested dict/list object, dump it as string and then hex-encode that string
+        character by character. This is safest way to include something in C++ without dealing with
+        character sets or anything.
+        """
+        text = json.dumps(spec, sort_keys=True, indent=4)
+        hex_tokens = [ "0x%02x"%ord(char) for char in text ] + ["0x00"] # null-terminated list of hex numbers
+        return ", ".join(hex_tokens)
     
     def checkEnvVariable(self):
         """
