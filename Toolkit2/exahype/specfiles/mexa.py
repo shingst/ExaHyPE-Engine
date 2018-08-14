@@ -33,9 +33,7 @@ from functools import wraps
 
 # helpers and shorthands:
 def warn(msg):
-	# instead, should go to https://stackoverflow.com/a/14981125
-	# from __future__ import print_function
-	print >> sys.stderr, msg
+	print(msg, file=sys.stderr)
 
 baseflags = re.IGNORECASE
 match = lambda pattern,string,flags=0: re.match(pattern,string,baseflags+flags)
@@ -828,7 +826,7 @@ class mexagraph:
 		imgfilename = base_filename+".png"
 		nx.nx_agraph.write_dot(self.G, dotfilename)
 		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
-		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+		print("Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode))
 	
 	def to_agraph(self):
 		"""
@@ -1326,7 +1324,7 @@ class graph_mexafile(io_mexafile):
 			imgfilename = base_filename+"."+format
 			nx.nx_agraph.write_dot(G, dotfilename)
 			retcode = subprocess.call(["dot", "-Grankdir=LR", "-T"+format, dotfilename, "-o", imgfilename])
-			print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+			print("Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode))
 		else:
 			self.write( A.to_string() )
 		
