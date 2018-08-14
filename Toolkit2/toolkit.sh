@@ -32,6 +32,9 @@ GITHUB=git://github.com
 #  markupsafe\  # why needed? I have jinja2 and jsonschema installed with apt-get and it is sufficient.
 
 modules=(\
+  attr\
+  pyrsistent\
+  markupsafe\
   jinja2\
   jsonschema\
   )
@@ -46,13 +49,10 @@ repos=(\
 
 
 errors=false
-for i in ${!modules[*]}; do
-  module=${modules[$i]}
-  if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $module" 2>&1 >/dev/null; then
-    echo "$0: Required python3 module '$module', not available." >&2
-    errors=true
-  fi
-done
+if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import attr,pyrsistent,markupsafe,jinja2,jsonschema" 2>&1 >/dev/null; then
+  echo "$0: At least required python3 module not available." >&2
+  errors=true
+fi
 
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
 if [ "$errors" = "false" ]; then

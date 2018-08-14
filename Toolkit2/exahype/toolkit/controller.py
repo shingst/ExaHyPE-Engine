@@ -106,11 +106,13 @@ class Controller():
                     context       = self.buildLimitingADERDGSolverContext(solver)
                     # modifications
                     fvContext["solver"]         = context["FVSolver"]
-                    fvContext["abstractSolver"] = context["AbstractFVSolver"]
+                    fvContext["solverType"]     = "Finite-Volumes"
+                    fvContext["abstractSolver"] = context["FVAbstractSolver"]
                     fvContext["patchSize"]      = 2 * aderdgContext["order"] + 1
                     
                     aderdgContext["solver"]                 = context["ADERDGSolver"]
-                    aderdgContext["abstractSolver"]         = context["AbstractADERDGSolver"]
+                    aderdgContext["solverType"]             = "ADER-DG"
+                    aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
                     aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                     
                     # generate all solver files
@@ -249,7 +251,6 @@ class Controller():
         context["outputPath"]           = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
         context["exahypePath"]          = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
         context["peanoToolboxPath"]     = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
-        context["plotter_subdirectory"] = self.spec["paths"]["peano_kernel_path"]
         
         # commonly used parameters
         context["project"]          = self.spec["project_name"]
@@ -278,7 +279,7 @@ class Controller():
         context.update(self.buildBaseSolverContext(solver))
         
         context["order"]                  = solver["order"]
-        context["numberOfDMPObservables"] = solver["limiter"]["numberOfObservables"]
+        context["numberOfDMPObservables"] = solver["limiter"]["dmp_observables"]
         context["implementation"]         = solver["limiter"].get("implementation","generic")
         
         context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
@@ -294,7 +295,7 @@ class Controller():
         context.update(self.buildBaseSolverContext(solver))
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
         
-        context["patchSize"] = solver["patch_size"] # overwrite if called from LimitingADERDGSolver creation
+        context["patchSize"] = solver.get("patch_size",-1) # overwrite if called from LimitingADERDGSolver creation
         
         return context
     
@@ -348,6 +349,7 @@ class Controller():
         context["implementation"] = kernel.get("implementation","generic")
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
         context["ghostLayerWidth"]=ghostLayerWidth[kernel["scheme"]]
+        context["finiteVolumesType"]=kernel["scheme"]
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
     

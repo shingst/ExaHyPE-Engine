@@ -74,9 +74,9 @@ class SolverModel(AbstractModelBaseClass):
             
         result = []
         for filePath in solverTemplates.get(implementation,[]):
-          result.append(self.render(solverTemplates[filePath],filePath,None,False))
+          result.append(self.render(solverTemplates[implementation][filePath],filePath,None,False))
         for filePath in abstractSolverTemplates.get(implementation,[]):
-          result.append(self.render(abstractSolverTemplates[filePath],filePath))
+          result.append(self.render(abstractSolverTemplates[implementation][filePath],filePath))
         
         return result # list of generated files; if no file was generated, element is `None` instead
 
@@ -97,7 +97,7 @@ class SolverModel(AbstractModelBaseClass):
         
         result = []
         for filePath in abstractSolverTemplates.get(implementation,[]):
-          result.append(self.render(abstractSolverTemplates[filePath],filePath))
+          result.append(self.render(abstractSolverTemplates[implementation][filePath],filePath))
         
         return result # list of generated files; if no file was generated, element is `None` instead
         
