@@ -214,15 +214,16 @@ class Controller():
         except Exception as e:
             self.log.error("Could not read specification file '%s': %s" % (self.specfileName, str(e)))
             self.log.error("In order to fix this problem, please fix the format of your file with the command line flag --format=XXX where XXX is a supported specification file format.")
-            self.log.exception(e)
+            if self.debug:
+               self.log.exception(e)
             sys.exit(-3)
 
         # I find this is more a debugging feature...
         if self.specfileName.endswith(".exahype") and self.write_json:
             json_file_name = self.specfileName.replace(".exahype",".exahype2")
             with open(json_file_name, 'w') as outfile:
-              json.dump(spec,outfile,indent=2)
-              self.log.info("Write JSON file '%s' ... OK" % json_file_name)
+                json.dump(spec,outfile,indent=2)
+                self.log.info("Write JSON file '%s' ... OK" % json_file_name)
 
         return spec
     
