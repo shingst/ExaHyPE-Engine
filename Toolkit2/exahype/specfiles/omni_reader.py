@@ -4,20 +4,31 @@
 An "omni-reader" for trying to read different kind of file formats.
 """
 
-import logging
+import logging, os
 from collections import OrderedDict
 import validate # local
+get_filename_extension = lambda filename: os.path.splitext(filename)[1]
 
 # We work with two major exceptions: ParserError, a generalized
 # decoder error and ImportError, if a library was not available
 class ParserError(RuntimeError): pass
 
+class OmniReaderError(RuntimeError): pass
+
 readers = OrderedDict()
+reader_by_extension = {}
 
 # somehow this whole registration thing is defunct. Should have class context
 # but python does not like me.
 
-def register_reader(format_name):
+def register_reader(format_name, extensions=None):
+	global reader_by_extension
+	if isinstance(extensions, list):
+		for e in extensions:
+			reader_by_extension[e] = format_name
+	if isinstance(extensions, str):
+		reader_by_extension[extensions] = format_name
+	
 	def impl(func):
 		readers[format_name] = func
 		return func
@@ -39,7 +50,7 @@ class OmniReader:
 	def available_readers(cls):
 		return [cls.any_format_name] + list(readers.keys())
 	
-	@register_reader("json")
+	@register_reader("json", extensions=[".json"])
 	def read_json(self, document_as_string):
 		"""
 		JSON fails pretty quickly thanks to it's strictness
@@ -51,7 +62,7 @@ class OmniReader:
 		except json.JSONDecodeError as e:
 			raise ParserError(e)
 
-	@register_reader("hjson")
+	@register_reader("hjson", extensions=[".hjson"])
 	def read_hjson(self, fp):
 		"""
 		Read human readable JSON, https://hjson.org/
@@ -65,7 +76,7 @@ class OmniReader:
 		except hijson.HjsonDecodeError as e:
 			raise ParserError(e)
 		
-	@register_reader("exahype-v1")
+	@register_reader("exahype-v1", extensions=[".exahype"])
 	def read_specfile1(self, document_as_string):
 		"""
 		This reader also prefers to deal with file handles
@@ -77,7 +88,7 @@ class OmniReader:
 		except specfile1_reader.SpecFile1ParserError as e:
 			raise ParserError(e)
 		
-	@register_reader("mexa")
+	@register_reader("mexa", extensions=[".mexa", ".mexahype"])
 	def read_mexa(self, document_as_string):
 		import mexa # local directory, but requires networkx
 		try:
@@ -87,7 +98,7 @@ class OmniReader:
 			raise ParserError(e)
 		
 
-	@register_reader("yaml")
+	@register_reader("yaml", extensions=[".yaml"])
 	def read_yaml(self, document_as_string):
 		"""
 		TODO:
@@ -101,10 +112,9 @@ class OmniReader:
 		except yaml.YAMLError as e:
 			raise ParserError(e)
 
-	def read_omni(self, document_as_string):
+	def read_omni(self, document_as_string, filename=None):
 		"""
-		Tries to read anything.
-		Validates if required.
+		Tries to read anything, without any preference, by order.
 		"""
 		testable = []
 		missing_libs = []
@@ -126,13 +136,25 @@ class OmniReader:
 				testable.append(format_name)
 				pass
 		
-		raise ValueError("File could not be understood at all. I could successfully test the file formats %s but was missing libraries to test the formats %s. In order to find syntax errors in your files, first fix the file format your file assumably has." % (str(testable), str(missing_libs)))
+		if filename:
+			ext = get_filename_extension(filename)
+			self.log.warning("All file formats tested failed at reading the given file %s." % filename)
+			if ext in reader_by_extension:
+				file_format = reader_by_extension[ext]
+				self.log.warning("In order to exit with a useful error message, I will exhibit the errors occuring while parsing the file as %s, the format which was guessed from the filename extension %s." % (ext, file_format))
+				return self.read(document_as_string, required_file_format = file_format)
+			else:
+				self.log.error("Extension %s cannot even be associated to a file format. These extensions are registered: %s" % (ext, reader_by_extension))
+		else:
+			self.log.error("Since no filename information is available, cannot make any more educated guess about which parser error to pass to the user.")
+				
+		raise OmniReaderError("File could not be understood at all. I could successfully test the file formats %s but was missing libraries to test the formats %s. In order to find syntax errors in your files, first fix the file format your file assumably has." % (str(testable), str(missing_libs)))
 
-	def read(self, document_as_string, required_file_format=None):
+	def read(self, document_as_string, required_file_format=None, filename=None):
 		if not required_file_format or required_file_format == OmniReader.any_format_name:
 			self.log.info("No specific file format requested, trying all available file formats in order.")
-			return self.read_omni(document_as_string)
-		elif required_file_format in self.available_formats():
+			return self.read_omni(document_as_string, filename=filename)
+		elif required_file_format in self.available_readers():
 			try:
 				self.log.info("Trying to read file as %s" % required_file_format)
 				structure = readers[required_file_format](self, document_as_string)
@@ -144,4 +166,4 @@ class OmniReader:
 				self.log.error("The input file is not a proper %s file, a parser error occured: %s" % (required_file_format, str(e)))
 				raise e	
 		else:
-			raise ValueError("Invalid input file format: %s." % required_file_format)
+			raise OmniReaderError("Invalid input file format: %s." % required_file_format)

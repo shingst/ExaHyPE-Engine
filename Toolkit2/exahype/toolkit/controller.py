@@ -210,7 +210,7 @@ class Controller():
     def getSpec(self, file_handle, file_format=OmniReader.any_format_name):
         try:
             reader = OmniReader(self.log)
-            spec = reader.read(file_handle.read(), required_file_format=file_format)
+            spec = reader.read(file_handle.read(), required_file_format=file_format, filename=self.specfileName)
         except Exception as e:
             self.log.error("Could not read specification file '%s': %s" % (self.specfileName, str(e)))
             self.log.error("In order to fix this problem, please fix the format of your file with the command line flag --format=XXX where XXX is a supported specification file format.")
