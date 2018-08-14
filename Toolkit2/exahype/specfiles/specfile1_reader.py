@@ -178,16 +178,16 @@ class SpecFile1Reader():
     ##
     # TODO
     def map_distributed_memory(self,distributed_memory):
-        distributed_memory["load_balancing_type"]=distributed_memory.pop("identifier").replace("_load_balancing","")
-        distributed_memory["buffer_size"]                =distributed_memory.pop("buffer_size")
+        distributed_memory["load_balancing_type"] = distributed_memory.pop("identifier").replace("_load_balancing","")
+        distributed_memory["buffer_size"]         = distributed_memory.pop("buffer_size")
         # configure
         if "configure" in distributed_memory:
             configure = distributed_memory.pop("configure").replace("{","").replace("}","")
             for token in configure.split(","):
                 token_s = token.strip()
-                m_ranks_per_node                    = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
-                m_primary_ranks_per_node    = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
-                m_node_pool_strategy            = re.match(r"(fair|FCFS|sfc-diffusion)",token_s)
+                m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
+                m_primary_ranks_per_node  = re.match(r"primary-ranks-per-node:([0-9]+)",token_s)
+                m_node_pool_strategy      = re.match(r"(fair|FCFS|sfc-diffusion)",token_s)
                 m_load_balancing_strategy = re.match(r"(hotspot|greedy-naive|greedy-regular)",token_s)
                 
                 found_token = False
@@ -244,17 +244,16 @@ class SpecFile1Reader():
             for term in ["flux","source","ncp","pointsources","materialparameters"]:
                 if token_s.startswith(term):
                     context.append(term.\
-                            replace("pointsources",            "point_sources").\
+                            replace("pointsources",      "point_sources").\
                             replace("materialparameters","material_parameters"))
                     if term=="pointsources":
                         try:
                             n_point_sources = int(token_s.split(":")[-1])
-                            self.log.warning("WARNING: Found 'pointsources' term. Ensure that you specify field 'point_sources' in the generated JSON file.")
                             found_token = True
                         except:
                             raise SpecFile1ParserError("Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s)
                     elif token_s==term:
-                            found_token = True
+                        found_token = True
             if not found_token:
                 raise SpecFile1ParserError("Could not map value '%s' extracted from option 'terms' (or 'limiter-terms'). Is it spelt correctly?" % token_s)
             
@@ -413,27 +412,28 @@ class SpecFile1Reader():
             fv_kernel_type, fv_kernel_terms, fv_kernel_opts    = "", "", ""
             # aderdg 
             if solver["type"] in ["Limiting-ADER-DG","ADER-DG"]:
-                    solver["aderdg_kernel"]=collections.OrderedDict()
-                    if "language" in solver:
-                        solver["aderdg_kernel"]["language"]=solver.pop("language")
-                    if "type" in solver:
-                        aderdg_kernel_type    = old_type
-                    if "terms" in solver:
-                        aderdg_kernel_terms = solver.pop("terms")
-                    if "optimisation" in solver:
-                        aderdg_kernel_opts    = solver.pop("optimisation")
-                    # type
-                    for token in aderdg_kernel_type.split(","):
-                        token_s = token.strip() 
-                        if token_s in ["linear","nonlinear"]:
-                            solver["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
-                        if token_s in ["Legendre","Lobatto"]:
-                            solver["aderdg_kernel"]["basis"]=token_s
-                    # terms
-                    result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
-                    solver["aderdg_kernel"]["terms"]=result
-                    # opts
-                    solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+                solver["aderdg_kernel"]=collections.OrderedDict()
+            if "language" in solver:
+                solver["aderdg_kernel"]["language"]=solver.pop("language")
+            if "type" in solver:
+                aderdg_kernel_type    = old_type
+            if "terms" in solver:
+                aderdg_kernel_terms = solver.pop("terms")
+            if "optimisation" in solver:
+                aderdg_kernel_opts    = solver.pop("optimisation")
+                # type
+            for token in aderdg_kernel_type.split(","):
+                token_s = token.strip() 
+                if token_s in ["linear","nonlinear"]:
+                    solver["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
+                if token_s in ["Legendre","Lobatto"]:
+                    solver["aderdg_kernel"]["basis"]=token_s
+                # terms
+                result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
+                solver["aderdg_kernel"]["terms"]=result
+                solver["point_sources"]=n_point_sources
+                # opts
+                solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
             # limiter
             if solver["type"]=="Limiting-ADER-DG":
                 solver["limiter"]=collections.OrderedDict()
@@ -444,28 +444,28 @@ class SpecFile1Reader():
                     solver["limiter"]["implementation"]=solver["aderdg_kernel"]["implementation"]
             # fv
             if solver["type"]=="Finite-Volumes":
-                    solver["fv_kernel"]=collections.OrderedDict()
-                    if "language" in solver:
-                        solver["fv_kernel"]["language"]=solver.pop("language")
-                    if "type" in solver:
-                        fv_kernel_type    = old_type
-                    if "terms" in solver:
-                     fv_kernel_terms = solver.pop("terms")
-                     # fv terms
-                    result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
-                    solver["fv_kernel"]["terms"]=result
-                    if "optimisation" in solver:
-                        fv_kernel_opts    = solver.pop("optimisation")
+                solver["fv_kernel"]=collections.OrderedDict()
+                if "language" in solver:
+                    solver["fv_kernel"]["language"]=solver.pop("language")
+                if "type" in solver:
+                    fv_kernel_type    = old_type
+                if "terms" in solver:
+                    fv_kernel_terms = solver.pop("terms")
+                # fv terms
+                result, n_point_sources = self.map_kernel_terms(fv_kernel_terms)
+                solver["fv_kernel"]["terms"]=result
+                if "optimisation" in solver:
+                    fv_kernel_opts    = solver.pop("optimisation")
             if solver["type"]=="Limiting-ADER-DG":
-                    solver["fv_kernel"]=collections.OrderedDict()
-                    if "limiter_language" in solver:
-                        solver["fv_kernel"]["language"]=solver.pop("limiter_language")
-                    if "limiter_type" in solver:
-                        fv_kernel_type    = solver.pop("limiter_type") 
-                    if "terms" in solver["aderdg_kernel"]:
-                        solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
-                    if "limiter_optimisation" in solver:
-                        fv_kernel_opts    = solver.pop("limiter_optimisation")
+                solver["fv_kernel"]=collections.OrderedDict()
+                if "limiter_language" in solver:
+                    solver["fv_kernel"]["language"]=solver.pop("limiter_language")
+                if "limiter_type" in solver:
+                    fv_kernel_type    = solver.pop("limiter_type") 
+                if "terms" in solver["aderdg_kernel"]:
+                    solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
+                if "limiter_optimisation" in solver:
+                    fv_kernel_opts    = solver.pop("limiter_optimisation")
             # fv type
             for token in fv_kernel_type.split(","):
                 token_s = token.strip() 

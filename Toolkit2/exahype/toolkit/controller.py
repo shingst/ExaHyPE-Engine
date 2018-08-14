@@ -310,7 +310,7 @@ class Controller():
         nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
         nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
         nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
-        nPointSources = len(solver.get("point_sources",[]))
+        nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
         context["numberOfMaterialParameters"] = nParam
