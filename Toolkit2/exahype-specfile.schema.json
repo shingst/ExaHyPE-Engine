@@ -646,21 +646,31 @@
             "old_format" : { "detect_variable_list_after" : "material-parameters" }
           }, 
           "point_sources" : {
-            "type" : "array",
-            "scope" : "compile-time",
-            "used-by" : "toolkit",
-            "$comment" : "Specify point source locations",
-            "items" : {
-              "type" : "array",
-              "title" : "Point source location",
-              "default" : [0.0, 0.0, 0.0],
-              "items" : {
-                "type" : "number", 
-                "scope" : "compile-time"
+            "oneOf" : [
+              { 
+                "type" : "integer",
+                "scope" : "compile-time",
+                "used-by" : "toolkit",
+                "$comment" : "Specify number of point sources"
               },
-              "minItems" : 2,
-              "maxItems" : 3
-            }
+              { 
+                "type" : "array",
+                "scope" : "compile-time",
+                "used-by" : "toolkit",
+                "$comment" : "Specify point source locations",
+                "items" : {
+                  "type" : "array",
+                  "title" : "Point source location",
+                  "default" : [0.0, 0.0, 0.0],
+                  "items" : {
+                    "type" : "number", 
+                    "scope" : "compile-time"
+                  },
+                  "minItems" : 2,
+                  "maxItems" : 3
+                }
+              }
+            ]
           }, 
           "global_observables" : {
           	"$ref" : "#/definitions/variables",

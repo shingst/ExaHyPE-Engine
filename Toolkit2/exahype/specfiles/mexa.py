@@ -603,12 +603,12 @@ class mexagraph:
 		for right, attr in self.G[starting_from].iteritems():
 			if attr['op'] == self.P:
 				if right.value == first:
-					#print "Looking for %s, Found %s" % (left,first)
+					#print("Looking for %s, Found %s" % (left,first))
 					return self.get_path_down(left.except_base(), right, silent_failure=silent_failure)
 				else:
-					#print "No success: %s != %s" % (right,first)
+					#print("No success: %s != %s" % (right,first))
 					pass
-		#print "Looked for %s (%s), found nothing" % (left,first)
+		#print("Looked for %s (%s), found nothing" % (left,first))
 		if not silent_failure:
 			raise ValueError("Symbol %s not found in graph, searching from %s." % (left,starting_from))
 		
@@ -743,13 +743,13 @@ class mexagraph:
 		#assert isa(root, term)
 		ret = []
 		for right, attr in self.G[left].iteritems():
-			#print "%s,%s" % (right,attr)
+			#print("%s,%s" % (right,attr))
 			if attr['op'] == self.P:
 				right_path = symbol(right.value).add_prefix(left_path)# if isa(right,term) else str(right))
-				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
+				#print("At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path))
 				ret += self.to_mexafile(right, right_path)
 			else:
-				#print "%s: Attr is %s" % (right, attr)
+				#print("%s: Attr is %s" % (right, attr))
 				if isa(right, term):
 					right = self.get_path_down(right) # TODO: Resolve the term -> symbol here.
 				ret += [ Rel(left_path, right, attr['op'], attr['src']) ]
@@ -789,7 +789,7 @@ class mexagraph:
 				# put onto the stack:
 				newstack = stack + tuplize(Rel(left, right, self.P, attr['src']))
 				#right_path = symbol(right.value).add_prefix(left_path)
-				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
+				#print("At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path))
 				ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1, sort_by=sort_by)
 			elif attr['op'] == self.E:
 				if isa(right, term):
@@ -806,7 +806,7 @@ class mexagraph:
 					newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
 					pathlst = [ rel.r.value for rel in newstack if rel.op == self.P ]
 					srclst  = [ rel.src     for rel in newstack if rel.op == self.E and not rel.l.isRoot() ]
-					#print "At left=%s, newstack=%s I composed path=%s, srclist=%s" % (left,newstack,pathlst,srclst)
+					#print("At left=%s, newstack=%s I composed path=%s, srclist=%s" % (left,newstack,pathlst,srclst))
 					ret += [ Rel(symbol(pathlst), right, "equals", source(srclst)) ] # could also use "define"
 			else:
 				# TODO: Should instead let all other operations pass.
@@ -1765,9 +1765,9 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		return jinja_env.get_template(self.tplfile).render(ctx)
 		# without exception chaining, we loose the stack trace:
 		#except Exception as e:
-		#	print "Debuggin context:"
+		#	print("Debuggin context:")
 		#	pprint.pprint(ctx)
-		#	print "Exception:"
+		#	print("Exception:")
 		#	print str(e)
 		#	raise e	
 

@@ -214,15 +214,16 @@ class Controller():
         except Exception as e:
             self.log.error("Could not read specification file '%s': %s" % (self.specfileName, str(e)))
             self.log.error("In order to fix this problem, please fix the format of your file with the command line flag --format=XXX where XXX is a supported specification file format.")
-            self.log.exception(e)
+            if self.debug:
+               self.log.exception(e)
             sys.exit(-3)
 
         # I find this is more a debugging feature...
         if self.specfileName.endswith(".exahype") and self.write_json:
             json_file_name = self.specfileName.replace(".exahype",".exahype2")
             with open(json_file_name, 'w') as outfile:
-              json.dump(spec,outfile,indent=2)
-              self.log.info("Write JSON file '%s' ... OK" % json_file_name)
+                json.dump(spec,outfile,indent=2)
+                self.log.info("Write JSON file '%s' ... OK" % json_file_name)
 
         return spec
     
@@ -309,7 +310,7 @@ class Controller():
         nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
         nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
         nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
-        nPointSources = len(solver.get("point_sources",[]))
+        nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
         context["numberOfMaterialParameters"] = nParam
@@ -429,9 +430,9 @@ class Controller():
                 solverContext["plotters"].append(plotterContext)
             context["solvers"].append(solverContext)
         
-        context["specfileName"]     = self.specfileName
-        context["spec_file_as_hex"] = kernelCallsModel.KernelCallsModel.specfile_as_hex(self.spec)
-        context["external_parser_command"], context["external_parser_strings"] = kernelCallsModel.KernelCallsModel.get_exahype_external_parser_command()
+        context["specfileName"]          = self.specfileName
+        context["specFileAsHex"]         = self.specfileAsHex(self.spec)
+        context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
         context["subPaths"]         = []
         # todo(JM) optimised kernels subPaths
         # todo(JM) profiler 
@@ -439,6 +440,16 @@ class Controller():
         context["includePaths"] = [] #TODO
         
         return context
+    
+    def specfileAsHex(self,spec):
+        """
+        Given a native python nested dict/list object, dump it as string and then hex-encode that string
+        character by character. This is safest way to include something in C++ without dealing with
+        character sets or anything.
+        """
+        text = json.dumps(spec, sort_keys=True, indent=4)
+        hex_tokens = [ "0x%02x"%ord(char) for char in text ] + ["0x00"] # null-terminated list of hex numbers
+        return ", ".join(hex_tokens)
     
     def checkEnvVariable(self):
         """
