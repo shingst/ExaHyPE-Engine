@@ -110,8 +110,9 @@ class OmniReader:
         Tries to read anything.
         Validates if required.
         """
-        testable = []
+        testable     = []
         missing_libs = []
+        parser_errors = {}
         for format_name, format_func in readers.items():
             try:
                 self.log.info("Trying to read file format %s" % format_name)
@@ -126,11 +127,18 @@ class OmniReader:
                 pass
             except ParserError as e:
                 # this is most likely not a file of that type
-                self.log.info("The input file is certainly not written in the format %s as a ParserError occured: %s" % (format_name, str(e)))
+                parser_errors[format_name] = "The input file is certainly not written in format '%s' as a ParserError occured: %s" % (format_name, str(e))
                 testable.append(format_name)
                 pass
         
-        raise ValueError("File could not be understood at all. I could successfully test the file formats %s but was missing libraries to test the formats %s. In order to find syntax errors in your files, first fix the file format your file assumably has." % (str(testable), str(missing_libs)))
+        aggregated_parser_errors = ""
+        for format_name in parser_errors:
+            aggregated_parser_errors += parser_errors[format_name]+"\n"
+        raise ValueError(\
+            ("File could not be understood at all. I could successfully test the file formats %s but was missing libraries to test the formats %s.\n"+\
+            "The available parsers reported the following errors:\n"+\
+            aggregated_parser_errors+\
+            "In order to find syntax errors in your files, first fix the file format your file assumably has.") % (str(testable), str(missing_libs)))
 
     def read(self, document_as_string, required_file_format=None):
         if not required_file_format or required_file_format == OmniReader.any_format_name:
