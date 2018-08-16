@@ -59,7 +59,7 @@ class OmniReader:
 		#import ipdb; ipdb.set_trace()
 		try:
 			return json.loads(document_as_string)
-		except json.JSONDecodeError as e:
+		except ValueError as e:
 			raise ParserError(e)
 
 	@register_reader("hjson", extensions=[".hjson"])
