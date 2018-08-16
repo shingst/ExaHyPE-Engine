@@ -87,7 +87,7 @@ exahype-project  Elastic
       variables const = 29
       time            = 0.0
       repeat          = 3.0
-      output          = /home/kduru/data/TVP28/conserved_tvp28
+      output          = ./conserved_tvp28
     end plot
 
     /* this is the fake plotter used to compute global integrals */
