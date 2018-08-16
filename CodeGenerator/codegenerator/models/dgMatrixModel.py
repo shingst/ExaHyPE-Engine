@@ -41,8 +41,8 @@ class DGMatrixModel(AbstractModelBaseClass):
         start = time.perf_counter()
         # [FLCoeff 0...0]; [FRCoeff 0...0];
         # right now FLCoeff, FRCoeff no pad (gives no benefit w.r.t libxsmm)
-        FLCoeff, _ = MathsUtils.BaseFunc1d(0.0, xGPN, self.context["nDof"]) #is also F0
-        FRCoeff, _ = MathsUtils.BaseFunc1d(1.0, xGPN, self.context["nDof"])
+        FLCoeff, _ = MathsUtils.baseFunc1d(0.0, xGPN, self.context["nDof"]) #is also F0
+        FRCoeff, _ = MathsUtils.baseFunc1d(1.0, xGPN, self.context["nDof"])
         self.context["FLCoeff"] = MathsUtils.vectorPad(FLCoeff, padSize)
         self.context["FRCoeff"] = MathsUtils.vectorPad(FRCoeff, padSize)
         if self.context["runtimeDebug"]:
