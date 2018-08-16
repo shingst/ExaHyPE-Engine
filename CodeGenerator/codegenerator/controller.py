@@ -103,7 +103,6 @@ class Controller:
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
-        self.printConfig()
 
 
     def validateConfig(self, validArchitectures):
