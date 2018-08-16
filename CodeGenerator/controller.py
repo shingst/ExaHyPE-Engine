@@ -24,20 +24,22 @@
 # requires python3
 
 
-import argparse
 import os
 import copy
 import subprocess
 import errno
 import time
 
-from models import *
+from .configuration import Configuration
+from .argumentParser import ArgumentParser
+
+from .models import *
 
 
 class Controller:
     """Main Controller
     
-    Read the input from the command line, validate them and generate a base 
+    Read the input from the public API, validate them and generate a base 
     context for the models.
     
     Use generateCode() to run the models with the base context.
@@ -46,124 +48,62 @@ class Controller:
     automatically when using generateCode().
     """
     
-    def __init__(self, absolutePathToRoot, absolutePathToLibxsmm, simdWidth):
+    def __init__(self, inputConfig = None):
         """Initialize the base config from the command line inputs"""
-        # Process the command line arguments
-        parser = argparse.ArgumentParser(description="This is the front end of the ExaHyPE code generator.")
-        # Mandatory parameters
-        parser.add_argument("pathToApplication",
-            help="path to the application as given by the ExaHyPE specification file (application directory as root)")
-        parser.add_argument("pathToOptKernel",
-            help="desired relative path to the generated code (application directory as root)")
-        parser.add_argument("namespace",
-            help="desired namespace for the generated code")
-        parser.add_argument("solverName",
-            help="name of the user-solver")
-        parser.add_argument("numberOfVariables",
-            type=int,
-            help="the number of quantities")
-        parser.add_argument("numberOfParameters",
-            type=int,
-            help="the number of parameters (fixed quantities)")
-        parser.add_argument("order",
-            type=int,
-            help="the order of the approximation polynomial")
-        parser.add_argument("dimension",
-            type=int,
-            help="number of dimensions you want to simulate")
-        parser.add_argument("numerics",
-            help="linear or nonlinear")
-        parser.add_argument("architecture",
-            help="the microarchitecture of the target device")
-        # Optional parameters
-        parser.add_argument("--useFlux",
-            action="store_true",
-            help="enable flux")
-        parser.add_argument("--useFluxVect",
-            action="store_true",
-            help="enable vectorized flux (include useFlux)")
-        parser.add_argument("--useNCP",
-            action="store_true",
-            help="enable non conservative product")
-        parser.add_argument("--useNCPVect",
-            action="store_true",
-            help="enable vectorized non conservative product  (include useNCP)")
-        parser.add_argument("--useSource",
-            action="store_true",
-            help="enable source terms")
-        parser.add_argument("--useSourceVect",
-            action="store_true",
-            help="enable vectorized source terms (include useSource)")
-        parser.add_argument("--useFusedSource",
-            action="store_true",
-            help="enable fused source terms (include useSource)")
-        parser.add_argument("--useFusedSourceVect",
-            action="store_true",
-            help="enable vectorized fused source terms (include useFusedSource and useSourceVect)")
-        parser.add_argument("--useMaterialParam",
-            action="store_true",
-            help="enable material parameters")
-        parser.add_argument("--usePointSources",
-            type=int,
-            default=-1, #default -1 marks option not used
-            metavar='nPointSources',
-            help="enable nPointSources point sources")
-        parser.add_argument("--useCERKGuess",
-            action="store_true",
-            help="use CERK for SpaceTimePredictor inital guess (nonlinear only)")
-        parser.add_argument("--useLimiter",
-            type=int,
-            default=-1, #default -1 marks option not used
-            metavar='useLimiter',
-            help="enable limiter with the given number of observable")
-        parser.add_argument("--useGaussLobatto",
-            action="store_true",
-            help="use Gauss Lobatto Quadrature instead of Gauss Legendre")
-        parser.add_argument("--ghostLayerWidth",
-            type=int,
-            default=0,
-            metavar='ghostLayerWidth',
-            help="use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0")
-        commandLineArguments = parser.parse_args()
         
-        # Generate the base config from the parsed input
+        Configuration.checkPythonVersion()
+        dir = os.path.dirname(__file__)
+        absolutePathToRoot =  os.path.abspath(os.path.join(dir,Configuration.pathToExaHyPERoot))
+        absolutePathToLibxsmm =  os.path.abspath(os.path.join(dir,Configuration.pathToLibxsmmGemmGenerator))
+        
+        if inputConfig == None:
+            args = ArgumentParser.parseArgs()
+        else:
+            ArgumentParser.validateInputConfig(inputConfig)
+            args = inputConfig
+        
+        
+        
+        # Generate the base config from the args input
         self.config = {
-            "numerics"              : commandLineArguments.numerics,
-            "pathToOptKernel"       : commandLineArguments.pathToOptKernel,
-            "solverName"            : commandLineArguments.solverName,
-            "nVar"                  : commandLineArguments.numberOfVariables,
-            "nPar"                  : commandLineArguments.numberOfParameters,
-            "nData"                 : commandLineArguments.numberOfVariables + commandLineArguments.numberOfParameters,
-            "nDof"                  : (commandLineArguments.order)+1,
-            "nDim"                  : commandLineArguments.dimension,
-            "useFlux"               : (commandLineArguments.useFlux or commandLineArguments.useFluxVect),
-            "useFluxVect"           : commandLineArguments.useFluxVect,
-            "useNCP"                : (commandLineArguments.useNCP or commandLineArguments.useNCPVect),
-            "useNCPVect"            : commandLineArguments.useNCPVect,
-            "useSource"             : (commandLineArguments.useSource or commandLineArguments.useSourceVect or commandLineArguments.useFusedSource or commandLineArguments.useFusedSourceVect),
-            "useSourceVect"         : commandLineArguments.useSourceVect,
-            "useFusedSource"        : (commandLineArguments.useFusedSource or commandLineArguments.useFusedSourceVect),
-            "useFusedSourceVect"    : commandLineArguments.useFusedSourceVect,
-            "nPointSources"         : commandLineArguments.usePointSources,
-            "usePointSources"       : commandLineArguments.usePointSources >= 0,
-            "useMaterialParam"      : commandLineArguments.useMaterialParam,
-            "codeNamespace"         : commandLineArguments.namespace,
-            "pathToOutputDirectory" : os.path.join(absolutePathToRoot,commandLineArguments.pathToApplication,commandLineArguments.pathToOptKernel),
-            "architecture"          : commandLineArguments.architecture,
-            "useLimiter"            : commandLineArguments.useLimiter >= 0,
-            "nObs"                  : commandLineArguments.useLimiter,
-            "ghostLayerWidth"       : commandLineArguments.ghostLayerWidth,
+            "numerics"              : args["numerics"],
+            "pathToOptKernel"       : args["pathToOptKernel"],
+            "solverName"            : args["solverName"],
+            "nVar"                  : args["numberOfVariables"],
+            "nPar"                  : args["numberOfParameters"],
+            "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
+            "nDof"                  : (args["order"])+1,
+            "nDim"                  : args["dimension"],
+            "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
+            "useFluxVect"           : args["useFluxVect"],
+            "useNCP"                : (args["useNCP"] or args["useNCPVect"]),
+            "useNCPVect"            : args["useNCPVect"],
+            "useSource"             : (args["useSource"] or args["useSourceVect"] or args["useFusedSource"] or args["useFusedSourceVect"]),
+            "useSourceVect"         : args["useSourceVect"],
+            "useFusedSource"        : (args["useFusedSource"] or args["useFusedSourceVect"]),
+            "useFusedSourceVect"    : args["useFusedSourceVect"],
+            "nPointSources"         : args["usePointSources"],
+            "usePointSources"       : args["usePointSources"] >= 0,
+            "useMaterialParam"      : args["useMaterialParam"],
+            "codeNamespace"         : args["namespace"],
+            "pathToOutputDirectory" : os.path.join(absolutePathToRoot,args["pathToApplication"],args["pathToOptKernel"]),
+            "architecture"          : args["architecture"],
+            "useLimiter"            : args["useLimiter"] >= 0,
+            "nObs"                  : args["useLimiter"],
+            "ghostLayerWidth"       : args["ghostLayerWidth"],
             "pathToLibxsmmGemmGenerator"  : absolutePathToLibxsmm,
-            "quadratureType"        : ("Gauss-Lobatto" if commandLineArguments.useGaussLobatto else "Gauss-Legendre"),
-            "useCERKGuess"          : commandLineArguments.useCERKGuess,
+            "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
+            "useCERKGuess"          : args["useCERKGuess"],
             "useLibxsmm"            : True,
             "runtimeDebug"          : False #for debug
         }
+        
         self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
-        self.validateConfig(simdWidth.keys())
-        self.config["vectSize"] = simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
+        self.validateConfig(Configuration.simdWidth.keys())
+        self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
+        self.printConfig()
 
 
     def validateConfig(self, validArchitectures):

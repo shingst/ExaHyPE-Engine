@@ -25,24 +25,12 @@
 
 import sys
 import os
-from configuration import Configuration
-from controller import Controller
 
 def main():
-    """"Check python version, call the controller and run it"""
-    # check version. Python 3.3 required
-    requiredVersion = (3,3)
-    currentVersion  = sys.version_info
-    if(requiredVersion > currentVersion):
-        sys.exit("Requires Python 3.3 or newer. Abort.")
-    
-    # generate absolute paths to project and LIBXSMM
-    dir = os.path.dirname(__file__)
-    absolutePathToRoot =  os.path.abspath(os.path.join(dir,Configuration.pathToExaHyPERoot))
-    absolutePathToLibxsmm =  os.path.abspath(os.path.join(dir,Configuration.pathToLibxsmmGemmGenerator))
-    
-    # create controller and run it (input parsed with argparse)
-    control = Controller(absolutePathToRoot, absolutePathToLibxsmm, Configuration.simdWidth)
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"..")))
+    sys.path.append(os.path.dirname(__file__))
+    from CodeGenerator.controller import Controller
+    control = Controller()
     control.generateCode()
 
 

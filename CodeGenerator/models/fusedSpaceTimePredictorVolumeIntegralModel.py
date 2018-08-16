@@ -27,7 +27,7 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 
 import copy
 
-from utils.MatmulConfig import MatmulConfig
+from ..utils.MatmulConfig import MatmulConfig
 
 
 class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):  

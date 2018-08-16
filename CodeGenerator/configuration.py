@@ -28,3 +28,11 @@ class Configuration:
                   "knc"    : 8,
                   "knl"    : 8 
                 }
+
+
+    @staticmethod
+    def checkPythonVersion():
+        """check version. Python 3.3 required"""
+        requiredVersion = (3,3)
+        currentVersion  = sys.version_info
+        if(requiredVersion > currentVersion):

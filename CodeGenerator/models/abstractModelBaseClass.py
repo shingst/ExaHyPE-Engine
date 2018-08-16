@@ -30,8 +30,7 @@ import sys
 import os
 
 # add path to dependencies
-sys.path.append('..')
-from configuration import Configuration
+from ..configuration import Configuration
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),"..",Configuration.pathToJinja2))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),"..",Configuration.pathToMarkupsafe))
 

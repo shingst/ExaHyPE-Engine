@@ -24,7 +24,7 @@
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
-from utils import MathsUtils #matrix operation and build functions
+from ..utils import MathsUtils #matrix operation and build functions
 import time #for runtime measurements debug print if context["runtimeDebug"]
 
 

@@ -23,7 +23,7 @@
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
-from utils.MatmulConfig import MatmulConfig
+from ..utils.MatmulConfig import MatmulConfig
 
 
 class LimiterModel(AbstractModelBaseClass):
