@@ -28,8 +28,7 @@ import os
 
 def main():
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"..")))
-    sys.path.append(os.path.dirname(__file__))
-    from CodeGenerator.controller import Controller
+    from codegenerator import Controller
     control = Controller()
     control.generateCode()
 

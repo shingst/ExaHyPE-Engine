@@ -9,16 +9,16 @@ class Configuration:
     # Change them if required
 
     # path to the root of ExaHyPe from this file
-    pathToExaHyPERoot          = os.path.join("..")
+    pathToExaHyPERoot          = os.path.join("..", "..")
 
     # path to the gemm generator from this file
-    pathToLibxsmmGemmGenerator = os.path.join("dependencies", "libxsmm", "bin", "libxsmm_gemm_generator")
+    pathToLibxsmmGemmGenerator = os.path.join("..", "dependencies", "libxsmm", "bin", "libxsmm_gemm_generator")
     
     # path to jinja2
-    pathToJinja2               = os.path.join("dependencies", "jinja")
+    pathToJinja2               = os.path.join("..", "dependencies", "jinja")
     
     # path to markupsafe
-    pathToMarkupsafe           = os.path.join("dependencies", "markupsafe")
+    pathToMarkupsafe           = os.path.join("..", "dependencies", "markupsafe")
     
     # simd size of the accepted architectures
     simdWidth = { "noarch" : 1,
@@ -36,3 +36,4 @@ class Configuration:
         requiredVersion = (3,3)
         currentVersion  = sys.version_info
         if(requiredVersion > currentVersion):
+            sys.exit("Requires Python 3.3 or newer. Abort.")
