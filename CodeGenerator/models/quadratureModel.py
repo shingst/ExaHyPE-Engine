@@ -24,7 +24,6 @@
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
-import controller
 from utils import MathsUtils #matrix operation and build functions
 
 

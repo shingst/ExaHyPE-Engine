@@ -27,7 +27,6 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 
 import copy
 
-import controller
 from utils.MatmulConfig import MatmulConfig
 
 

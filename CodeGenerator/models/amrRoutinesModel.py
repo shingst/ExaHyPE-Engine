@@ -23,7 +23,6 @@
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
-import controller
 from utils.MatmulConfig import MatmulConfig
 
 
