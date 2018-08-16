@@ -651,7 +651,8 @@
                 "type" : "integer",
                 "scope" : "compile-time",
                 "used-by" : "toolkit",
-                "$comment" : "Specify number of point sources"
+                "$comment" : "Specify number of point sources",
+                "default" : 0
               },
               { 
                 "type" : "array",
