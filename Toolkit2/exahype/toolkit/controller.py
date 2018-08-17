@@ -5,18 +5,18 @@ This mimics the classical Frontend of the ExaHyPE toolkit.
 """
 
 import os, sys, argparse, subprocess, datetime, json, logging
-
-from os.path import isdir, isfile
 from pathlib import Path
-from collections import OrderedDict
 
-sys.path.append(os.path.join(os.path.dirname(__file__),"..","..")) # to allow import exahype... work
-from exahype.toolkit import *
-from exahype.toolkit.helper import BadSpecificationFile
-from exahype.specfiles import validate, OmniReader
+# specfile module import
+from specfiles import validate, OmniReader
 
-from models import *
-from configuration import Configuration
+# local import
+from .directories import DirectoryAndPathChecker
+from .toolkitHelper import BadSpecificationFile
+from .toolkitHelper import ToolkitHelper
+from .configuration import Configuration
+from .models import *
+
 
 class Controller():
     def header(self):
@@ -50,6 +50,10 @@ class Controller():
             print("\n\n\n\n")
     
     def __init__(self):
+        """TODO"""
+        # Check the python version according to the configuration
+        Configuration.checkPythonVersion()
+        
         logging.basicConfig(format="%(filename)s:%(lineno)s(%(funcName)s):%(levelname)s %(message)s")
         self.log = logging.getLogger()
 
@@ -76,12 +80,13 @@ class Controller():
         else:
             self.log.info("Read from stdin (%s)" % str(args.specfile))
         
-        self.spec = self.getSpec(args.specfile, args.format)
-        self.spec = self.validateAndSetDefaults(self.spec, args.validate_only)
-    
+        rawSpec = self.getSpec(args.specfile, args.format)
+        self.spec = self.validateAndSetDefaults(rawSpec, args.validate_only)
+
+
     def run(self):
         try:
-            d = directories.DirectoryAndPathChecker(self.buildBaseContext(), self.log)
+            d = DirectoryAndPathChecker(self.buildBaseContext(), self.log)
         except BadSpecificationFile as e:
             self.log.error("Some directories did not exist and/or could not be created.")
             self.log.exception(e)
@@ -307,9 +312,9 @@ class Controller():
         context["solver"]         = solver["name"]
         context["abstractSolver"] = "Abstract"+context["solver"]
         
-        nVar          = helper.count_variables(helper.parse_variables(solver,"variables"))
-        nParam        = helper.count_variables(helper.parse_variables(solver,"material_parameters"))
-        nGlobalObs    = helper.count_variables(helper.parse_variables(solver,"global_observables"))
+        nVar          = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"variables"))
+        nParam        = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"material_parameters"))
+        nGlobalObs    = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"global_observables"))
         nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
@@ -370,7 +375,7 @@ class Controller():
         context.update(self.buildBaseSolverContext(solver))
 
         context["plotter"]         = plotter["name"]
-        context["writtenUnknowns"] = helper.count_variables(helper.parse_variables(solver,"variables"))
+        context["writtenUnknowns"] = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"variables"))
         context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
         
         context["plotterDir"]=""
@@ -417,16 +422,16 @@ class Controller():
             solverContext["type"]                        = solver["type"]
             solverContext["class"]                       = context["project"]+"::"+solver["name"]
             solverContext["headerPath"]                  = solver["name"]+".h"
-            solverContext["variables_as_str"]            = helper.variables_to_str(solver,"variables")
-            solverContext["material_parameters_as_str"]  = helper.variables_to_str(solver,"material_parameters")
-            solverContext["global_observables_as_str"]   = helper.variables_to_str(solver,"global_observables")
+            solverContext["variables_as_str"]            = ToolkitHelper.variables_to_str(solver,"variables")
+            solverContext["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
+            solverContext["global_observables_as_str"]   = ToolkitHelper.variables_to_str(solver,"global_observables")
             solverContext["plotters"] = []
             for plotter in solver.get("plotters",[]):
                 plotterContext = {}
                 plotterContext["name"]             = plotter["name"]
                 plotterContext["headerPath"]       = os.path.join(plotter_subdirectory, plotter["name"]+".h" )
                 plotterContext["type_as_str"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
-                plotterContext["variables_as_str"] = helper.variables_to_str(plotter,"variables")
+                plotterContext["variables_as_str"] = ToolkitHelper.variables_to_str(plotter,"variables")
                 solverContext["plotters"].append(plotterContext)
             context["solvers"].append(solverContext)
         

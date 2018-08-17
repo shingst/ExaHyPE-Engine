@@ -2,17 +2,13 @@
 
 import sys
 import os
-from controller import Controller
 
 def main():
-    """"Check python version, call the controller and run it"""
-    # check version. Python 3.3 required
-    requiredVersion = (3,3)
-    currentVersion  = sys.version_info
-    if(requiredVersion > currentVersion):
-        sys.exit("Requires Python 3.3 or newer. Abort.")
-    
-    # create controller and run it (input parsed with argparse)
+    """"Call the controller and run it"""
+    # append directory above to sys.path to be able to load the module
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"..")))
+    # import as module
+    from toolkit import Controller
     control = Controller()
     control.run()
 
