@@ -15,10 +15,11 @@ from .directories import DirectoryAndPathChecker
 from .toolkitHelper import BadSpecificationFile
 from .toolkitHelper import ToolkitHelper
 from .configuration import Configuration
+from .solverController import SolverController
 from .models import *
 
 
-class Controller():
+class Controller:
     def header(self):
         info = {
             "gittag": subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip().decode('ascii'),
@@ -96,47 +97,8 @@ class Controller():
         self.wait_interactive("validated and configured pathes")
         
         try:
-            for i,solver in enumerate(self.spec.get("solvers",[])):
-                self.log.info("Generating solver[%d] = %s..." % (i, solver["name"]))
-                solverFiles = []
-                if solver["type"]=="ADER-DG":
-                    model       = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
-                    solverFiles = model.generateCode()
-                elif solver["type"]=="Finite-Volumes":
-                    model       = solverModel.SolverModel(buildFVSolverContext(solver))
-                    solverFiles = model.generateCode()
-                elif solver["type"]=="Limiting-ADER-DG":
-                    aderdgContext = self.buildADERDGSolverContext(solver)
-                    fvContext     = self.buildFVSolverContext(solver)
-                    context       = self.buildLimitingADERDGSolverContext(solver)
-                    # modifications
-                    fvContext["solver"]         = context["FVSolver"]
-                    fvContext["solverType"]     = "Finite-Volumes"
-                    fvContext["abstractSolver"] = context["FVAbstractSolver"]
-                    fvContext["patchSize"]      = 2 * aderdgContext["order"] + 1
-                    
-                    aderdgContext["solver"]                 = context["ADERDGSolver"]
-                    aderdgContext["solverType"]             = "ADER-DG"
-                    aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
-                    aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
-                    
-                    # generate all solver files
-                    model        = solverModel.SolverModel(context)
-                    solverFiles  = model.generateCode()
-                    model        = solverModel.SolverModel(fvContext)
-                    solverFiles += model.generateCode()
-                    model        = solverModel.SolverModel(aderdgContext)
-                    solverFiles += model.generateCode()
-                
-                for path in solverFiles:
-                    if not path is None:
-                        self.log.info("Generated '"+path+"'")
-                for j,plotter in enumerate(solver.get("plotters",[])):
-                    self.log.info("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
-                    model = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
-                    for path in model.generateCode():
-                        if not path is None:  
-                            self.log.info("Generated '"+path+"'")
+            solverControl = SolverController(self.spec.get("solvers",[]), self.buildBaseContext())
+            solverControl.run(self.log)
         except BadSpecificationFile as e:
             self.log.error("Could not create applications solver classes: %s" % str(e))
             self.log.exception(e)
@@ -254,9 +216,10 @@ class Controller():
         """Generate base context from spec with commonly used value"""
         context = {}
         # commonly used paths
-        context["outputPath"]           = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["output_directory"]
-        context["exahypePath"]          = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["exahype_path"]
-        context["peanoToolboxPath"]     = Configuration.pathToExaHyPERoot+"/"+self.spec["paths"]["peano_kernel_path"]
+        context["outputPath"]           = os.path.join(Configuration.pathToExaHyPERoot, self.spec["paths"]["output_directory"])
+        context["exahypePath"]          = os.path.join(Configuration.pathToExaHyPERoot, self.spec["paths"]["exahype_path"])
+        context["peanoToolboxPath"]     = os.path.join(Configuration.pathToExaHyPERoot, self.spec["paths"]["peano_kernel_path"])
+        context["plotterSubDirectory"]  = self.spec["paths"].get("plotter_subdirectory","").strip()
         
         # commonly used parameters
         context["project"]          = self.spec["project_name"]
@@ -270,121 +233,7 @@ class Controller():
         
         return context
     
-    def buildADERDGSolverContext(self,solver):
-        context = self.buildBaseContext()
-        context.update(self.buildBaseSolverContext(solver))
-        context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
-        
-        context["order"]                  = solver["order"]
-        context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
-        
-        return context
-        
-    def buildLimitingADERDGSolverContext(self,solver):
-        context = self.buildBaseContext()
-        context.update(self.buildBaseSolverContext(solver))
-        
-        context["order"]                  = solver["order"]
-        context["numberOfDMPObservables"] = solver["limiter"]["dmp_observables"]
-        context["implementation"]         = solver["limiter"].get("implementation","generic")
-        
-        context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
-        context["FVSolver"]             = solver["name"]+"_FV"
-        context["ADERDGAbstractSolver"] = "Abstract"+solver["name"]+"_ADERDG"
-        context["FVAbstractSolver"]     = "Abstract"+solver["name"]+"_FV"
-        
-        return context
-    
-        
-    def buildFVSolverContext(self,solver):
-        context = self.buildBaseContext()
-        context.update(self.buildBaseSolverContext(solver))
-        context.update(self.buildFVKernelContext(solver["fv_kernel"]))
-        
-        context["patchSize"] = solver.get("patch_size",-1) # overwrite if called from LimitingADERDGSolver creation
-        
-        return context
-    
-    def buildBaseSolverContext(self,solver):
-        context = {}
-        
-        context["solverType"]     = solver["type"]
-        context["solver"]         = solver["name"]
-        context["abstractSolver"] = "Abstract"+context["solver"]
-        
-        nVar          = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"variables"))
-        nParam        = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"material_parameters"))
-        nGlobalObs    = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"global_observables"))
-        nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
-        
-        context["numberOfVariables"]          = nVar
-        context["numberOfMaterialParameters"] = nParam
-        context["numberOfGlobalObservables"]  = nGlobalObs
-        context["numberOfPointSources"]       = nPointSources
-        
-        context["range_0_nVar"]          = range(0,nVar)
-        context["range_0_nVarParam"]     = range(0,nVar+nParam)
-        context["range_0_nGlobalObs"]    = range(0,nGlobalObs)    # nGlobalObs might be 0
-        context["range_0_nPointSources"] = range(0,nPointSources) # nPointSources might be 0
-        
-        context["namingSchemes"]=[] # TODO read from spec
-        return context
-    
-    def buildADERDGKernelContext(self,kernel):
-        context = {}
-        context["implementation"]          = kernel.get("implementation","generic")
-        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 
-        context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
-        context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
-        context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
-        context["language"]                = kernel.get("language","C").lower()
-        context["basis"]                   = kernel.get("basis","Legendre").lower()
-        context["isLinear"]                = not kernel.get("nonlinear",True)
-        context["isNonlinear"]             = kernel.get("nonlinear",True)
-        context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
-        context["isFortran"]               = kernel.get("language",False)=="Fortran" 
-        context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
-        context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
-        context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[])
-        context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[])
-        context.update(self.buildKernelTermsContext(kernel["terms"]))
-        return context
-        
-    def buildFVKernelContext(self,kernel):
-        context = {}
-        ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
-        context["ghostLayerWidth"]   = ghostLayerWidth[kernel["scheme"]]
-        context["finiteVolumesType"] = kernel["scheme"]
-        context["implementation"]    = kernel.get("implementation","generic")
-        context["tempVarsOnStack"]   = kernel.get("allocate_temporary_arrays","heap")=="stack" 
-        context["patchwiseAdjust"]   = kernel.get("adjust_solution","pointwise")=="patchwise" 
-        context.update(self.buildKernelTermsContext(kernel["terms"]))
-        return context
-    
-    def buildKernelTermsContext(self,terms):
-        context = {}
-        for term in ["flux","source","ncp","point_sources","material_parameters"]:
-            option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
-            option = "use%s%s" % ( option[0].upper(), option[1:] )
-            context[option] = term in terms
-            context["%s_s" % option] = "true" if context[option] else "false"
-        return context
-        
-    def buildPlotterContext(self,solver,plotter):
-        context = self.buildBaseContext()
-        context.update(self.buildBaseSolverContext(solver))
 
-        context["plotter"]         = plotter["name"]
-        context["writtenUnknowns"] = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"variables"))
-        context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
-        
-        context["plotterDir"]=""
-        subdirOption = "plotter_subdirectory"
-        if subdirOption in self.spec["paths"] and len(self.spec["paths"][subdirOption].strip()):
-            context["plotterDir"]  = self.spec["paths"][subdirOption]+"/"
-            context["outputPath"] += "/" + self.spec["paths"][subdirOption]
-        return context
-    
     def buildMakefileContext(self):
         """Generate context for the Makefile model"""
         context = self.buildBaseContext()
@@ -415,7 +264,6 @@ class Controller():
         context = self.buildBaseContext()
         
         context["solvers"] = []
-        plotter_subdirectory = self.spec["paths"].get("plotter_subdirectory","").strip()
         for solver in self.spec.get("solvers",[]):
             solverContext = {}
             solverContext["name"]                        = solver["name"]
@@ -429,7 +277,7 @@ class Controller():
             for plotter in solver.get("plotters",[]):
                 plotterContext = {}
                 plotterContext["name"]             = plotter["name"]
-                plotterContext["headerPath"]       = os.path.join(plotter_subdirectory, plotter["name"]+".h" )
+                plotterContext["headerPath"]       = os.path.join(context["plotterSubDirectory"], plotter["name"]+".h" )
                 plotterContext["type_as_str"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
                 plotterContext["variables_as_str"] = ToolkitHelper.variables_to_str(plotter,"variables")
                 solverContext["plotters"].append(plotterContext)
