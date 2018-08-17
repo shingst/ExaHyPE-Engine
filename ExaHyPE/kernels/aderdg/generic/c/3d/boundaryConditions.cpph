@@ -95,21 +95,19 @@ void kernels::aderdg::generic::c::boundaryConditions(
       x[d1] = cellCentre[d1] + cellSize[d1] * (node - 0.5); 
       
       if (useGradientFlux) {
-	// TODO(Lukas) Make more efficient if NOT using gradient.
+	assertion1(gradQIn != nullptr, useGradientFlux);
+	// TODO(Lukas) Make more elegant if NOT using gradient.
 	solver.boundaryValues(
 			      x,t,dt,faceIndex,normalNonZero,
 			      FIn  + idx_F(i,j,0), QIn  + idx_Q(i,j,0), gradQIn + idx_gradQ(i,j,0,0),
 			      FOut + idx_F(i,j,0), QOut + idx_Q(i,j,0)
 			      );
       } else {
-	/*
-	// TODO(Lukas) implement this!
 	solver.boundaryValues(
 			      x,t,dt,faceIndex,normalNonZero,
-			      FIn  + idx_F(i,j,0), QIn  + idx_Q(i,j,0),
+			      FIn  + idx_F(i,j,0), QIn  + idx_Q(i,j,0), nullptr,
 			      FOut + idx_F(i,j,0), QOut + idx_Q(i,j,0)
 			      );
-	*/
       }
     }
   }

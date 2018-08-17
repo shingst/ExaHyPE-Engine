@@ -79,7 +79,7 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
   abort();
 }
 
-int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t ,const double dt) {
+int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(double* lduh, double* lQhbnd, double* lGradQhbnd, double* lFhbnd, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center, const tarch::la::Vector<DIMENSIONS, double>& dx, const double t ,const double dt) {
 {%- if enableProfiler %}
   _profiler->start("fusedSpaceTimePredictorVolumeIntegral");
 {%- endif %}
@@ -172,7 +172,7 @@ const int picardIterations = 1;
   double* lFhi = memory; memory+=sizeLFhi;
 {%-   endif %}
 
- const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useGradientFLux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
+ const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useGradientFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
   kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
 {%- endif %}
@@ -227,7 +227,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double> &lengthScale,const int direction,bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
 {%- if enableProfiler %}
@@ -247,7 +247,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- endif %}
 }
 
-void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn,const double* const gradStateIn, const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
 {%- endif %}
@@ -272,12 +272,12 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
 
   const int faceIndex = 2*direction+orientation;
   
-  kernels::aderdg::generic::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,cellCentre,cellSize,t,dt,faceIndex,direction);
+  kernels::aderdg::generic::c::boundaryConditions<{{useGradientFlux}}, {{solver}}>(*static_cast<{{solver}}*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
   if ( orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
-    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,dt,cellSize,direction,true,faceIndex);
   
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
@@ -285,7 +285,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
+    riemannSolver(FL,FR,QL,QR,dt,cellSize,direction,true,faceIndex);
     
     kernels::aderdg::generic::{{language}}::faceIntegral{{linearOrNonlinear}}<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }

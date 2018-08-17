@@ -34,12 +34,12 @@ public class ADERDGKernel {
   
   private static final Map<String, String> TERM_OPTION_IDS = new HashMap<String, String>();
   static {
-    TERMS_OPTION_ID.put("FLUX_OPTION_ID",              "flux");
-    TERMS_OPTION_ID.put("SOURCE_OPTION_ID",            "source");
-    TERMS_OPTION_ID.put("NCP_OPTION_ID",               "ncp");
-    TERMS_OPTION_ID.put("POINTSOURCES_OPTION_ID",      "pointsources");
-    TERMS_OPTION_ID.put("MATERIALPARAMETER_OPTION_ID", "materialparameters");
-    TERMS_OPTION_ID.put("GRADIENT_FLUX_OPTION_ID",     "gradientFlux");
+    TERM_OPTION_IDS.put("FLUX_OPTION_ID",              "flux");
+    TERM_OPTION_IDS.put("SOURCE_OPTION_ID",            "source");
+    TERM_OPTION_IDS.put("NCP_OPTION_ID",               "ncp");
+    TERM_OPTION_IDS.put("POINTSOURCES_OPTION_ID",      "pointsources");
+    TERM_OPTION_IDS.put("MATERIALPARAMETER_OPTION_ID", "materialparameters");
+    TERM_OPTION_IDS.put("GRADIENT_FLUX_OPTION_ID",     "gradientFlux");
   }
   
   private static final Map<String, String> OPTIMIZATION_OPTION_IDS = new HashMap<String, String>();
@@ -187,7 +187,7 @@ public class ADERDGKernel {
   }
   
   public boolean useGradientFlux() {
-    return terms.containsKey(TERMS_OPTION_ID.get("GRADIENT_FLUX_OPTION_ID"));
+    return terms.containsKey(TERM_OPTION_IDS.get("GRADIENT_FLUX_OPTION_ID"));
   }
     
   public boolean useSource() {

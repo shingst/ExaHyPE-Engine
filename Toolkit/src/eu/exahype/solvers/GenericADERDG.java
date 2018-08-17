@@ -68,7 +68,7 @@ public class GenericADERDG implements Solver {
     context.put("isLinear"              , isLinear);
     context.put("isFortran"             , isFortran);
     context.put("useFlux"               , useFlux);
-    context.put("useGradientFLux"       , useFlux);
+    context.put("useGradientFlux"       , useFlux);
     context.put("useSource"             , useSource);
     context.put("useNCP"                , useNCP);
     context.put("usePointSources"       , usePointSources);
