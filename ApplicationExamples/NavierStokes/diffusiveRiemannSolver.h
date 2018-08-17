@@ -98,33 +98,6 @@ void riemannSolverNonlinear(SolverType& solver,
     }
   }
 
-  double LL[numberOfVariables] = {0.0}; // do not need to store material parameters
-  double LR[numberOfVariables] = {0.0};
-  solver.eigenvalues(QavL, direction, LL);
-  solver.eigenvalues(QavR, direction, LR);
-
-  // skip parameters
-  // hyperbolic eigenvalues
-  std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
-  std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
-  const double smax_L = *std::max_element(LL, LL + numberOfVariables);
-  const double smax_R = *std::max_element(LR, LR + numberOfVariables);
-  const double maxHyperbolicEigenvalue = std::max(smax_L, smax_R);
-
-  // diffusive eigenvalues
-  solver.diffusiveEigenvalues(QavL, direction, LL);
-  solver.diffusiveEigenvalues(QavR, direction, LR);
-  std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
-  std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
-  const double smaxDiffusive_L = *std::max_element(LL, LL + numberOfVariables);
-  const double smaxDiffusive_R = *std::max_element(LR, LR + numberOfVariables);
-  const double maxDiffusiveEigenvalue = std::max(smaxDiffusive_L, smaxDiffusive_R);
-
-  //constexpr double pi = std::acos(-1.0);
-  //const double factor =  (2 * order + 1)/(characteristicLength + std::sqrt(0.5 * pi))
-  const double factor = 2 * ((order + 1)/characteristicLength[direction]);
-  const double penalty = maxHyperbolicEigenvalue + factor * maxDiffusiveEigenvalue;
-
   // compute fluxes (and fluctuations for non-conservative PDEs)
   double Qavg[numberOfData];
   idx2 idx_gradQ(DIMENSIONS, numberOfVariables);
@@ -136,8 +109,34 @@ void riemannSolverNonlinear(SolverType& solver,
 
     for (int i = 0; i < basisSize; i++) {
       for (int j = 0; j < basisSize; j++) {
+	double LL[numberOfVariables] = {0.0}; // do not need to store material parameters
+	double LR[numberOfVariables] = {0.0};
+	solver.eigenvalues(&QL[idx_QLR(i,j,0)], direction, LL);
+	solver.eigenvalues(&QR[idx_QLR(i,j,0)], direction, LR);
 
-        //if(useNCP) { // we don't use matrixB but the NCP call here.
+	// skip parameters
+	// hyperbolic eigenvalues
+	std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
+	std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
+	const double smax_L = *std::max_element(LL, LL + numberOfVariables);
+	const double smax_R = *std::max_element(LR, LR + numberOfVariables);
+	const double maxHyperbolicEigenvalue = std::max(smax_L, smax_R);
+
+	// diffusive eigenvalues
+	solver.diffusiveEigenvalues(&QL[idx_QLR(i,j,0)], direction, LL);
+	solver.diffusiveEigenvalues(&QR[idx_QLR(i,j,0)], direction, LR);
+	std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
+	std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
+	const double smaxDiffusive_L = *std::max_element(LL, LL + numberOfVariables);
+	const double smaxDiffusive_R = *std::max_element(LR, LR + numberOfVariables);
+	const double maxDiffusiveEigenvalue = std::max(smaxDiffusive_L, smaxDiffusive_R);
+
+	//constexpr double pi = std::acos(-1.0);
+	//const double factor =  (2 * order + 1)/(characteristicLength + std::sqrt(0.5 * pi))
+	const double factor = 2 * ((order + 1)/characteristicLength[direction]);
+	const double penalty = maxHyperbolicEigenvalue + factor * maxDiffusiveEigenvalue;
+
+	//if(useNCP) { // we don't use matrixB but the NCP call here.
         //  for(int l=0; l < numberOfVariables; l++) {
         //    gradQ[direction][l] = QR[idx_QLR(i, j, l)] - QL[idx_QLR(i, j, l)];
         //    Qavg[l] = 0.5 * (QR[idx_QLR(i, j, l)] + QL[idx_QLR(qi, j, l)]);

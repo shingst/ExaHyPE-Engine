@@ -97,16 +97,18 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
   if (useGradientFlux) {
     // Allocate new buffer for averaged gradient.
     gradQCur = new double[sizeGradQ];
+    std::memset(gradQ, 0.0, basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
   }
 
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
+    // TODO(Lukas) Do i need to reset the gradient here?
+    std::memset(gradQ, 0.0, basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
     for (int i = 0; i < basisSize; i++) {  // time DOF
       // Compute gradients only if nonconservative contributions have to be
       // computed or if the flux depends on the gradient.
       if (useNCP || useGradientFlux) {
-        std::memset(
-            gradQCur, 0,
+        std::memset(gradQCur, 0.0,
             basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
 
         // Compute the "derivatives" (contributions of the stiffness matrix)
@@ -170,6 +172,24 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
           }
         }
       }
+
+      /*
+      for (int j = 0; i < basisSize; ++j) {
+	for (int k = 0; j < basisSize; ++k) {
+	  for (int l = 0; k < basisSize; ++l) {
+	    for (int dim = 0; dim < DIMENSIONS; ++dim) {
+	      for (int var = 0; var < numberOfVariables; ++var) {
+		const auto idx = idx_gradQ(i,j,k,dim,var);
+		assertion7(std::isfinite(gradQCur[idx]), gradQCur[idx], i, j, k, l, dim, var);
+		assertion7(std::isfinite(gradQ[idx]), gradQCur[idx], i, j, k, l, dim, var);
+	      }
+	    }
+	  }
+	}
+      }
+      */
+
+
 
       // Compute the fluxes
       if (useFlux) {
@@ -511,6 +531,9 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
   idx4 idx_lFhbnd(2 * DIMENSIONS, basisSize, basisSize, numberOfVariables);
 
   std::fill_n(lQhbnd, 2 * DIMENSIONS * basisSize2 * numberOfData, 0.0);
+  if (useGradientFlux) {
+    std::fill_n(lGradQhbnd, 2 * DIMENSIONS * basisSize2 * numberOfVariables * DIMENSIONS, 0.0);
+  }
   // in princple, we should ignore the lFhbnd but we can also zero them out.
   // zeroing them keeps CCZ4 GaugeWave stable for more time steps but not
   // for long time.
@@ -658,10 +681,10 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
 }
 
 template <bool useFlux, int numberOfVariables, int numberOfParameters,
-          int basisSize>
+	  int basisSize>
 void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
-                                            const double* lFi, double* lQhbnd,
-                                            double* lFhbnd) {
+					    const double* lFi, double* lQhbnd,
+					    double* lFhbnd) {
   // Compute the boundary-extrapolated values for Q and F*n
 
   const int order = basisSize - 1;
@@ -670,7 +693,7 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
   constexpr int numberOfData = numberOfVariables + numberOfParameters;
 
   idx5 idx_lQi(basisSize, basisSize, basisSize, basisSize,
-               numberOfData);  // (z,y,x,t,var/param)
+	       numberOfData);  // (z,y,x,t,var/param)
   idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, DIMENSIONS + 1,
                numberOfVariables);  // (t,z,y,x,flux/source,var)
 
@@ -799,9 +822,26 @@ int spaceTimePredictorNonlinear(
       aderPicardLoopNonlinear<useSource, useFlux, useGradientFlux, useNCP,
                               SolverType>(solver, luh, dt, invDx, lQi, rhs, lFi,
                                           gradQ);
+  idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS,
+                 numberOfVariables);
+  /*
+  for (int i = 0; i < basisSize; ++i) {
+    for (int j = 0; j < basisSize; ++j) {
+      for (int k = 0; k < basisSize; ++k) {
+	for (int dim = 0; dim < DIMENSIONS; ++dim) {
+	  for (int var = 0; var < numberOfVariables; ++var) {
+	    assertion5(std::isfinite(gradQ[idx_gradQ(i,j,k,dim,var)]), i, j, k, dim, var);
+	  }
+	}
+      }
+    }
+  }
+  */
+
 
   if (noTimeAveraging) {
     // TODO(Lukas) what shall we do for this case?
+    assert(false);
     aderTimeAveragingExtrapolatorNonlinear<useFlux, numberOfVariables,
                                            numberOfParameters, basisSize>(
         lQi, lFi, lQhbnd, lFhbnd);
@@ -826,6 +866,21 @@ int spaceTimePredictorNonlinear(
         &lFhi[1 * basisSize3 * numberOfVariables],  // lFhi_y
         &lFhi[2 * basisSize3 * numberOfVariables],  // lFhi_z
         lQhbnd, lGradQhbnd, lFhbnd);
+
+    idx5 idx_lGradQhbnd(2 * DIMENSIONS, basisSize, basisSize, DIMENSIONS,
+			numberOfVariables);
+    for (int i = 0; i < 2 * DIMENSIONS; ++i) {
+      for (int j = 0; j < basisSize; ++j) {
+	for (int k = 0; k < basisSize; ++k) {
+	  for (int dim = 0; dim < DIMENSIONS; ++dim) {
+	    for (int var = 0; var < numberOfVariables; ++var) {
+	      assertion5(std::isfinite(lGradQhbnd[idx_lGradQhbnd(i,j,k,dim,var)]), i, j, k, dim, var);
+	    }
+	  }
+	}
+      }
+    }
+
   }
 
   return iterations;

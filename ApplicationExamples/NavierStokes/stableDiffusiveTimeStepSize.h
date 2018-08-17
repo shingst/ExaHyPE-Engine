@@ -31,7 +31,6 @@ double stableDiffusiveTimeStepSize(
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int order              = SolverType::Order;
   constexpr int basisSize          = order+1;
-  // TODO(Lukas): Why is it only stable with a small cfl?
   constexpr double cflFactor       = 0.7; //SolverType::CFL;
 
   double dt = std::numeric_limits<double>::max();
