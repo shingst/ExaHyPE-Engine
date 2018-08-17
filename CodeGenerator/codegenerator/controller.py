@@ -59,7 +59,7 @@ class Controller:
             ArgumentParser.validateInputConfig(inputConfig)
             args = inputConfig
         
-        
+        self.commandLine = ArgumentParser.buildCommandLineFromConfig(args)
         
         # Generate the base config from the args input
         self.config = {
