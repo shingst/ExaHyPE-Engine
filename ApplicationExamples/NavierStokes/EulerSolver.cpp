@@ -31,7 +31,8 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
   const std::map<std::string, Scenario> scenarioMap {{
     {"sod-shock-tube", Scenario::sodShockTube},
     {"double-shock-tube", Scenario::doubleShockTube},
-    {"smooth-wave", Scenario::smoothWave}
+    {"smooth-wave", Scenario::smoothWave},
+    {"stokes", Scenario::stokes}
   }};
   // TODO(Lukas): Error handling.
   scenario = scenarioMap.at(scenarioName);
@@ -56,19 +57,23 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
 
   switch (scenario) {
   case Scenario::sodShockTube:
-    if (x[0] < 0.45) {
+    {
+    // TODO(Lukas) Change back to x-axis
+    if (x[1] < 0.45) {
       vars.rho() = 0.125;
       const double u = 0;
       vars.j(u * vars.rho(), 0.0, 0.0);
       pressure = 0.1;
     } else {
       vars.rho() = 1.0;
-      const double u = 0.0; 
+      const double u = 0.0;
       vars.j(u * vars.rho(), 0.0, 0.0);
       pressure = 1.0;
     }
+    }
     break;
   case Scenario::doubleShockTube:
+    {
     if (x[0] < 0.33 || x[0] > 0.66) {
       vars.rho() = 0.125;
       const double u = 0;
@@ -76,19 +81,40 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
       pressure = 0.1;
     } else {
       vars.rho() = 1.0;
-      const double u = 0.0; 
+      const double u = 0.0;
       vars.j(u * vars.rho(), 0.0, 0.0);
       pressure = 1.0;
     }
+    }
+    break;
+  case Scenario::smoothWave:
+    {
+    vars.j(0,0,0);
+    const auto distX = x[0] - 0.5;
+    const auto distY = x[1] - 0.5;
+    const auto dist = distX * distX + distY * distY;
+    vars.rho() = 1 - dist;
+    pressure = 1 - dist;
+    }
     break;
 
-  case Scenario::smoothWave:
-    vars.rho() = 1;
-    vars.j(0,0,0);
-    
-    // Initial value for E given by equation of state!
-    pressure = 10*std::exp(-1 * (x[0] - 0.5)*(x[0] - 0.5));
+  case Scenario::stokes:
+    vars.rho() = 1.0;
+    vars.j(1.0, 0, 0);
+    pressure = 100/ns.GAMMA;
     break;
+  case Scenario::taylorGreen:
+    {
+      // 2D-Scenario
+    vars.rho() = 1.0;
+    vars.j(0) =  1 * std::cos(x[0]) * std::sin(x[1]);
+    vars.j(1) = -1 * std::sin(x[0]) * std::cos(x[1]);
+    vars.j(2) = 0;
+    const auto sound_speed_sqr = 1.0; // TODO(Lukas)
+    pressure = sound_speed_sqr / ns.GAMMA + (1.0/16.0) * (
+      (std::cos(2 * x[0]) + std::cos(2 * x[1])) *
+      (std::cos(2 * x[2]) + 2) );
+    }
   }
 
   // Initial value for E given by equation of state!
@@ -99,22 +125,72 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
 void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
 					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
   double *fluxOut,double* stateOut) {
-  // Set reflective wall boundary conditions.
-
-  // First set the state.
-  std::copy_n(stateIn, NumberOfVariables, stateOut);
-  stateOut[1+normalNonZero]= -stateOut[1+normalNonZero];
+  constexpr auto basisSize = Order + 1;
   constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
-  auto gradStateOut = std::array<double, gradSize>{{0.0}};   // Then compute flux
 
+  auto gradStateOut = std::array<double, gradSize>{{0.0}};
+  kernels::idx2 idxGradQ(DIMENSIONS,NumberOfVariables);
+
+  std::fill_n(fluxOut, NumberOfVariables, 0.0);
   double _F[3][NumberOfVariables]={0.0};
   double* F[3] = {_F[0], _F[1], _F[2]};
-  flux(stateOut, gradStateOut.data(), F);
-  std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
+
+  // Solid wall at y = y_min = 0
+  if (scenario == Scenario::stokes && faceIndex != 2) {
+    // Integrate over time.
+    for (int i = 0; i < basisSize; ++i) {
+      const double weight = kernels::gaussLegendreWeights[Order][i];
+      const double xi = kernels::gaussLegendreNodes[Order][i];
+      const double ti = t + xi * dt;
+
+      const double rho = 1;
+      const double v = ns.referenceViscosity / rho;
+      stateOut[0] = 1;
+      stateOut[1] = std::erf(x[1] / std::sqrt(2 * v * ti));
+      stateOut[2] = 0;
+      stateOut[3] = 0;
+      const double pressure = 100/ns.GAMMA;
+      const double invRho = 1;
+      stateOut[4] = pressure/(ns.GAMMA - 1) + 0.5 * (invRho * stateOut[1] * stateOut[1]); 
+
+      gradStateOut[idxGradQ(1,1)] = 1.0;
+      
+      flux(stateOut, gradStateOut.data(), F);
+
+      for (int j = 0; j < NumberOfVariables; ++j) {
+        fluxOut[j] += weight * F[normalNonZero][j];
+      }
+    }
+    return;
+  }
   
 
-exahype::solvers::Solver::RefinementControl Euler::EulerSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
+  // Set no slip wall boundary conditions.
+  
+  // First set the state.
+  std::copy_n(stateIn, NumberOfVariables, stateOut);
+  //stateOut[1+normalNonZero]= -stateOut[1+normalNonZero];
+  stateOut[1] = -stateIn[1];
+  stateOut[2] = -stateIn[2];
+  stateOut[3] = -stateIn[3];
+  std::copy_n(gradStateIn, gradSize, gradStateOut.data());
+  flux(stateOut, gradStateOut.data(), F);
+
+  std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
+}
+
+exahype::solvers::Solver::RefinementControl Euler::EulerSolver::refinementCriterion(
+    const double* luh,
+    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const double t,
+    const int level) {
+
+  // Coarse mesh at discontinuity
+  if (scenario == Scenario ::sodShockTube && level == getCoarsestMeshLevel() && (
+          center[1] < 0.4 || center[1] > 0.5) ) {
+      return exahype::solvers::Solver::RefinementControl::Refine;
+  }
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
@@ -135,6 +211,7 @@ void Euler::EulerSolver::diffusiveEigenvalues(const double* const Q,const int d,
   // Dimensions                        = 3
   // Number of variables + parameters  = 5 + 0
   ns.evaluateDiffusiveEigenvalues(Q, d, lambda);
+  assert(true);
 }
 
 // TODO(Lukas) remove, currently called in boundaryValues!
@@ -179,12 +256,11 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
   
   kernels::aderdg::generic::c::boundaryConditions<true, EulerSolver>(*static_cast<EulerSolver*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
 
-  const auto i = 0.037037;
-  if ( orientation==0 ) {
+  if (orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
   
-    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,i, dt,direction);
+    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
     //riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
   
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
@@ -193,7 +269,7 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
     double* FL = fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,i, dt,direction);
+    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
     //riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
     
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);

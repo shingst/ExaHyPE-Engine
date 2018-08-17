@@ -28,7 +28,7 @@ namespace Euler{
 }
 
 enum class Euler::Scenario {
-  sodShockTube, doubleShockTube, smoothWave
+  sodShockTube, doubleShockTube, smoothWave, stokes, taylorGreen
     };
 
 class Euler::EulerSolver : public Euler::AbstractEulerSolver {
