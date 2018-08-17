@@ -108,7 +108,7 @@ class Controller:
         
         try:
             # kernel calls
-            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext())
+            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext(codegeneratorModel.CodegeneratorModel.codegeneratorContextsList))
             pathToKernelCalls = kernelCalls.generateCode()
             self.log.info("Generated '"+pathToKernelCalls+"'")
         except Exception as e:
@@ -259,7 +259,7 @@ class Controller:
         
         return context
     
-    def buildKernelCallsContext(self):
+    def buildKernelCallsContext(self, codegeneratorContextsList):
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
         
@@ -286,8 +286,7 @@ class Controller:
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)
         context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
-        context["subPaths"]         = []
-        # todo(JM) optimised kernels subPaths
+        context["codegeneratorContextsList"] = codegeneratorContextsList #list of contexts used for the generation of each optimized solver
         # todo(JM) profiler 
         # todo(Sven) serialised spec file compiled into KernelCalls.cp
         context["includePaths"] = [] #TODO

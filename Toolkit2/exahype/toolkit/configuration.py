@@ -19,6 +19,9 @@ class Configuration:
     # absolute path to markupsafe
     pathToMarkupsafe           = os.path.abspath(os.path.join(os.path.dirname(__file__),"..", "..", "dependencies", "markupsafe"))
     
+    # absolute path to the codegenerator module (using pathToExaHyPERoot)
+    pathToCodegenerator        = os.path.abspath(os.path.join(pathToExaHyPERoot, "CodeGenerator"))
+    
     alignmentPerArchitectures  = {
         "noarch" : 16,
         "snb"    : 32, 
