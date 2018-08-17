@@ -104,6 +104,9 @@ void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gra
   // TODO: What if rho is tiny? Possibly add epsilon here for stability.
   //assert(vars.rho() > 10e-6);
   const auto invRho = 1. /vars.rho();
+  const auto invRho2 = 1./(vars.rho() * vars.rho());
+  const auto invRho3 = 1./(vars.rho() * vars.rho() * vars.rho());
+
   assertion2(vars.rho() > 0, vars.rho(), invRho);
   assertion2(std::isfinite(invRho), vars.rho(), invRho);
 
@@ -159,62 +162,30 @@ void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gra
 					 (gradV + tarch::la::transpose(gradV)));
   //const auto stressTensor = 0.0 * I;
 
-  // Compute derivatives of T with quotient rule:
+  const double factor = (GAMMA - 1)/(gasConstant);
 
-  const double normJ = vars.j(0) * vars.j(0) + vars.j(1) * vars.j(1) + vars.j(2) * vars.j(2);
+  // Multiplied by 0.5 for convenience.
+  const double normJ = 0.5 * (vars.j(0) * vars.j(0) + vars.j(1) * vars.j(1) + vars.j(2) * vars.j(2));
+  const double normJ_dx = vars.j(0) * gradQ[idx_gradQ(0,1)] + vars.j(1) * gradQ[idx_gradQ(0,2)] + vars.j(2) * gradQ[idx_gradQ(0,3)];
+  const double normJ_dy = vars.j(0) * gradQ[idx_gradQ(1,1)] + vars.j(1) * gradQ[idx_gradQ(1,2)] + vars.j(2) * gradQ[idx_gradQ(1,3)];
+  const double normJ_dz = vars.j(0) * gradQ[idx_gradQ(2,1)] + vars.j(1) * gradQ[idx_gradQ(2,2)] + vars.j(2) * gradQ[idx_gradQ(2,3)];
 
-  // Derivative of inverse rho
-  const double invRho_dx = -1 * gradQ[idx_gradQ(0,0)] / (invRho * invRho);
-  const double invRho_dy = -1 * gradQ[idx_gradQ(1,0)] / (invRho * invRho);
-  const double invRho_dz = -1 * gradQ[idx_gradQ(2,0)] / (invRho * invRho);
-    
-  // Derivative of norm of squared velocity densities times 0.5
-  const double normJ_dx = gradQ[idx_gradQ(0,1)] + gradQ[idx_gradQ(0,2)] + gradQ[idx_gradQ(0,3)];
-  const double normJ_dy = gradQ[idx_gradQ(1,1)] + gradQ[idx_gradQ(1,2)] + gradQ[idx_gradQ(1,3)];
-  const double normJ_dz = gradQ[idx_gradQ(2,1)] + gradQ[idx_gradQ(2,2)] + gradQ[idx_gradQ(2,3)];
-  
-  // Derivatives of numerator of T
-  const double scale_Tn = (GAMMA - 1.0);
-  const double Tn_dx = scale_Tn * (gradQ[idx_gradQ(0,4)] - (invRho_dx * normJ + invRho * normJ_dx));
-  const double Tn_dy = scale_Tn * (gradQ[idx_gradQ(1,4)] - (invRho_dy * normJ + invRho * normJ_dy));
-  const double Tn_dz = scale_Tn * (gradQ[idx_gradQ(2,4)] - (invRho_dz * normJ + invRho * normJ_dz));
+  const double T_dx = factor * (invRho3 * gradQ[idx_gradQ(0,0)] * normJ - invRho2 * gradQ[idx_gradQ(0,0)] * vars.E() + invRho * gradQ[(idx_gradQ(0,4))] - invRho2 * normJ_dx);
+  const double T_dy = factor * (invRho3 * gradQ[idx_gradQ(1,0)] * normJ - invRho2 * gradQ[idx_gradQ(1,0)] * vars.E() + invRho * gradQ[(idx_gradQ(1,4))] - invRho2 * normJ_dy);
+  const double T_dz = factor * (invRho3 * gradQ[idx_gradQ(2,0)] * normJ - invRho2 * gradQ[idx_gradQ(2,0)] * vars.E() + invRho * gradQ[(idx_gradQ(2,4))] - invRho2 * normJ_dz);
 
-  // Derivatives of denominator of T
-  const double Td_dx = gradQ[(idx_gradQ(0, 0))];
-  const double Td_dy = gradQ[(idx_gradQ(1, 0))]; 
-  const double Td_dz = gradQ[(idx_gradQ(2, 0))]; 
-
-  // Assemble gradient of T
-  const double scale = (1/gasConstant) *  1./(Td * Td);
-  const double T_dx = scale * (Tn_dx*Td + Tn * Td_dx);
-  const double T_dy = scale * (Tn_dy*Td + Tn * Td_dy);
-  const double T_dz = scale * (Tn_dz*Td + Tn * Td_dz);
-  assertion4(std::isfinite(T_dx), T_dx, Tn_dx, Td_dx, scale);
-  assertion4(std::isfinite(T_dy), T_dy, Tn_dy, Td_dy, scale);
-  assertion4(std::isfinite(T_dy), T_dz, Tn_dz, Td_dz, scale);
-    
-  
-  //const tarch::la::Vector<3, double> gradT =  {T_dx, T_dy, T_dz};
-  const tarch::la::Vector<3, double> gradT =  {0.0, 0.0, 0.0};
+  const tarch::la::Vector<3, double> gradT =  {T_dx, T_dy, T_dz};
   const double kappa =  evaluateHeatConductionCoeff(viscosity);
   assertion2(std::isfinite(kappa), kappa, viscosity);
-  
 
   // Full NS flux
   f.rho(vars.j());
   f.j(invRho * outerDot(vars.j(), vars.j()) + p*I + stressTensor);
   f.E(
       ((I * vars.E() + I * p + stressTensor) * (invRho * vars.j())) - kappa * gradT);
-  /*
-  // Only hyperbolic part, for debugging.
-  f.rho ( vars.j() );
-  f.j ( invRho *outerDot(vars.j(),vars.j()) + p*I );
-  f.E ( invRho *(vars.E() + p) *vars.j() );
-  */
- 
 
   for (int i = 0; i < vars.variables(); ++i) {
-    const auto cond = !std::isnan(Q[i]) && std::isfinite(Q[i]);
+    const auto cond = std::isfinite(Q[i]);
     if (!cond) {
       std::cout << i << std::endl;
       std::cout << "invRho = " << invRho << std::endl;
