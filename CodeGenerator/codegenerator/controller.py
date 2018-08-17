@@ -52,9 +52,6 @@ class Controller:
         """Initialize the base config from the command line inputs"""
         
         Configuration.checkPythonVersion()
-        dir = os.path.dirname(__file__)
-        absolutePathToRoot =  os.path.abspath(os.path.join(dir,Configuration.pathToExaHyPERoot))
-        absolutePathToLibxsmm =  os.path.abspath(os.path.join(dir,Configuration.pathToLibxsmmGemmGenerator))
         
         if inputConfig == None:
             args = ArgumentParser.parseArgs()
@@ -86,12 +83,12 @@ class Controller:
             "usePointSources"       : args["usePointSources"] >= 0,
             "useMaterialParam"      : args["useMaterialParam"],
             "codeNamespace"         : args["namespace"],
-            "pathToOutputDirectory" : os.path.join(absolutePathToRoot,args["pathToApplication"],args["pathToOptKernel"]),
+            "pathToOutputDirectory" : os.path.join(Configuration.pathToExaHyPERoot, args["pathToApplication"], args["pathToOptKernel"]),
             "architecture"          : args["architecture"],
             "useLimiter"            : args["useLimiter"] >= 0,
             "nObs"                  : args["useLimiter"],
             "ghostLayerWidth"       : args["ghostLayerWidth"],
-            "pathToLibxsmmGemmGenerator"  : absolutePathToLibxsmm,
+            "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
             "useCERKGuess"          : args["useCERKGuess"],
             "useLibxsmm"            : True,
