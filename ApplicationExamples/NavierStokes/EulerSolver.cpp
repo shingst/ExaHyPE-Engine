@@ -36,7 +36,8 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
     {"sod-shock-tube", Scenario::sodShockTube},
     {"double-shock-tube", Scenario::doubleShockTube},
     {"smooth-wave", Scenario::smoothWave},
-    {"stokes", Scenario::stokes}
+    {"stokes", Scenario::stokes},
+    {"taylor-green", Scenario::taylorGreen},
   }};
   // TODO(Lukas): Error handling.
   scenario = scenarioMap.at(scenarioName);
@@ -124,11 +125,7 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
 #if DIMENSIONS == 3
     vars.j(2) = 0;
 #endif
-    //const auto sound_speed_sqr = 1.0; // TODO(Lukas)
-    //pressure = sound_speed_sqr / ns.GAMMA + (1.0/16.0) * (
-    //  (std::cos(2 * x[0]) + std::cos(2 * x[1])) *
-    //  (std::cos(2 * x[2]) + 2) );
-    pressure = 1.0;
+    pressure = -1 * (vars.rho()/4) * (std::cos(2 * x[0]) + std::cos(2 * x[1]));
     }
     break;
   }
@@ -159,6 +156,7 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
   ReadOnlyVariables varsIn(stateIn);
   Variables varsOut(stateOut);
 
+  // TODO(Lukas) refactor!
   // Solid wall at y = y_min = 0
   if (scenario == Scenario::stokes && faceIndex != 2) {
     // Integrate over time.
@@ -179,8 +177,14 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
       const double invRho = 1;
       varsOut.E() = pressure/(ns.GAMMA - 1) + 0.5 * (invRho * stateOut[1] * stateOut[1]);
 
+      // Assuming rho is constant.
       gradStateOut[idxGradQ(1,1)] = 1.0;
-      
+#if DIMENSIONS == 2
+      gradStateOut[idxGradQ(1,3)] = 1/varsOut.rho() * varsOut.j(0);
+#elif DIMENSIONS == 3
+      gradStateOut[idxGradQ(1,4)] = 1/varsOut.rho() * varsOut.j(0);
+#endif
+
       flux(stateOut, gradStateOut.data(), F);
 
       for (int j = 0; j < NumberOfVariables; ++j) {
@@ -189,7 +193,44 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
     }
     return;
   }
-  
+  if (scenario == Scenario::taylorGreen) {
+    // Integrate over time.
+    for (int i = 0; i < basisSize; ++i) {
+      const double weight = kernels::gaussLegendreWeights[Order][i];
+      const double xi = kernels::gaussLegendreNodes[Order][i];
+      const double ti = t + xi * dt;
+
+      const double Ft = std::exp(-2 * ns.referenceViscosity * ti);
+
+      varsOut.rho() = 1.0;
+      varsOut.j(0) =  1 * std::cos(x[0]) * std::sin(x[1]) * Ft;
+      varsOut.j(1) = -1 * std::sin(x[0]) * std::cos(x[1]) * Ft;
+#if DIMENSIONS == 3
+      vars.j(2) = 0;
+#endif
+      const auto pressure = -1 * (varsOut.rho()/4) * (std::cos(2 * x[0]) + std::cos(2 * x[1])) * Ft * Ft;
+      const auto invRho = 1./varsOut.rho();
+      varsOut.E() = pressure/(ns.GAMMA - 1) + 0.5 * (invRho * varsOut.j() * varsOut.j());
+
+      // Assuming rho is constant.
+      // j(0)
+      gradStateOut[idxGradQ(0,1)] = -1 * std::sin(x[0]) * std::sin(x[1]) * Ft;
+      gradStateOut[idxGradQ(1,1)] =  1 * std::cos(x[0]) * std::cos(x[1]) * Ft;
+
+      // j(1)
+      gradStateOut[idxGradQ(0,2)] = -1 * std::cos(x[0]) * std::cos(x[1]) * Ft;
+      gradStateOut[idxGradQ(1,2)] =  1 * std::sin(x[0]) * std::sin(x[1]) * Ft;
+
+      // TODO(Lukas) Derivative of energy
+
+      flux(stateOut, gradStateOut.data(), F);
+
+      for (int j = 0; j < NumberOfVariables; ++j) {
+        fluxOut[j] += weight * F[normalNonZero][j];
+      }
+    }
+    return;
+  }
 
   // Set no slip wall boundary conditions.
   
