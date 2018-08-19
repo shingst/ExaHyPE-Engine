@@ -1,126 +1,119 @@
 #include "SHMPinningObserver.h"
 #include "SHMMacros.h"
-#include <sched.h>
-#include <sys/resource.h>
+
+
 #include <iostream>
-#include <thread>
-
-namespace {
-  //const int MaxNumberOfSupportedCPUs = 16*1024;
-  const int MaxNumberOfSupportedCPUs = sizeof(long int)*8;
-}
-
+#include <cassert>
+#include <sys/resource.h>
+#include <sched.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 
 shminvade::SHMPinningObserver::SHMPinningObserver():
-  _mask( nullptr ) {
+  _availableCores(0),
+  _mutex() {
+}
 
-  for ( _ncpus = sizeof(cpu_set_t)/CHAR_BIT; _ncpus < MaxNumberOfSupportedCPUs; _ncpus <<= 1 ) {
-    _mask = CPU_ALLOC( _ncpus );
-    if ( !_mask ) break;
-    const size_t size = CPU_ALLOC_SIZE( _ncpus );
-    CPU_ZERO_S( size, _mask );
-    const int err = sched_getaffinity( 0, size, _mask );
+
+void shminvade::SHMPinningObserver::observe(bool toggle) {
+  assert( _availableCores.count()==0 );
+
+  // reconstruct Unix mask
+  cpu_set_t* mask;
+  for ( _numberOfCPUs = sizeof(cpu_set_t)/CHAR_BIT; _numberOfCPUs < MaxCores; _numberOfCPUs <<= 1 ) {
+    mask = CPU_ALLOC( _numberOfCPUs );
+    if ( !mask ) break;
+    const size_t size = CPU_ALLOC_SIZE( _numberOfCPUs );
+    CPU_ZERO_S( size, mask );
+    const int err = sched_getaffinity( 0, size, mask );
     if ( !err ) break;
 
-    CPU_FREE( _mask );
-    _mask = NULL;
+    CPU_FREE( mask );
+    mask = NULL;
     if ( errno != EINVAL )  break;
   }
-  if ( _mask ) {
-    #if SHM_INVADE_DEBUG>=1
-    CPUSetBitfield bitfield = cpuSetMaskToBitfield( *_mask );
-    std::cout << getSHMDebugPrefix() <<  "Process mask is " << bitfield
-    		  << ", " << bitfield.count() << " logical cores available"
-    		  << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
 
-    if ( bitfield.count() != std::thread::hardware_concurrency()) {
-      std::cerr << getSHMDebugPrefix() <<  "Process affinity mask has only " << bitfield.count() << " entries although hardware concurrency is " << std::thread::hardware_concurrency() << std::endl;
+  // Convert into bitset to make it more C++ish
+  if ( mask ) {
+    _availableCores = 0;
+    for (int i=0; i<MaxCores; i++) {
+      if (CPU_ISSET(i, mask)) {
+        _availableCores[i] = true;
+      }
     }
+
+    #if SHM_INVADE_DEBUG>=2
+    std::cout << SHM_DEBUG_PREFIX << "identified available cores: " << _availableCores << std::endl;
     #endif
 
-    // thread 0 will be pinned twice, but I want to be sure it is in our data
-    // base right from the start
-    _numThreads++;
-    pinCurrentThread();
-    _numThreads--;
+    tbb::task_scheduler_observer::observe(toggle);
   }
   else {
-    std::cerr << getSHMDebugPrefix() <<  "Failed to obtain process affinity mask" << std::endl;
+    std::cerr << SHM_DEBUG_PREFIX << SHM_DEBUG_SEPARATOR << "failed to obtain process affinity mask" << std::endl;
   }
 }
 
 
 shminvade::SHMPinningObserver::~SHMPinningObserver() {
-  if ( _mask != nullptr ) {
-    CPU_FREE( _mask );
-  }
-}
-
-
-void shminvade::SHMPinningObserver::pinCurrentThread() {
-  const size_t size = CPU_ALLOC_SIZE( _ncpus );
-  const int num_cpus = CPU_COUNT_S( size, _mask );
-  int thr_idx =  tbb::task_arena::current_thread_index();
-  thr_idx %= num_cpus; // To limit unique number in [0; num_cpus-1] range
-  // Place threads with specified step
-  int cpu_idx = 0;
-  for ( int i = 0, offset = 0; i<thr_idx; ++i ) {
-    cpu_idx ++;
-    if ( cpu_idx >= num_cpus )
-      cpu_idx = ++offset;
-  }
-
-
-  // Find index of 'cpu_idx'-th bit equal to 1
-  int mapped_idx = -1;
-  while ( cpu_idx >= 0 ) {
-    if ( CPU_ISSET_S( ++mapped_idx, size, _mask ) )
-      --cpu_idx;
-  }
-
-  cpu_set_t *target_mask = CPU_ALLOC( _ncpus );
-  CPU_ZERO_S( size, target_mask );
-  CPU_SET_S( mapped_idx, size, target_mask );
-  const int err = sched_setaffinity( 0, size, target_mask );
-
-  if ( err ) {
-    std::cerr << getSHMDebugPrefix() <<  "Failed to set thread affinity!" << std::endl;
-    exit( EXIT_FAILURE );
-  }
-
-  CPU_FREE( target_mask );
 }
 
 
 void shminvade::SHMPinningObserver::on_scheduler_entry( bool ) {
-  ++_numThreads;
+  _mutex.lock();
 
-  if ( _mask ) {
-    pinCurrentThread();
+  if (_availableCores.count()==0) {
+    std::cerr << SHM_DEBUG_PREFIX << SHM_DEBUG_SEPARATOR << "too many threads, i.e. no idle core available anymore" << std::endl;
   }
+  else {
+    int targetCore = 0;
+    for (int i=0; i<MaxCores; i++) {
+      if (_availableCores[i]) {
+    	targetCore = i;
+        _availableCores[i] = false;
+        i = MaxCores;
+      }
+    }
+
+	cpu_set_t*   target_mask = CPU_ALLOC( _numberOfCPUs );
+    const size_t size        = CPU_ALLOC_SIZE( _numberOfCPUs );
+    CPU_ZERO_S( size, target_mask );
+    CPU_SET_S( targetCore, size, target_mask );
+	const int err = sched_setaffinity( 0, size, target_mask );
+
+    if ( err ) {
+      std::cerr << SHM_DEBUG_PREFIX << SHM_DEBUG_SEPARATOR << "pinning new thread to core " << targetCore << " failed with error code " << err << std::endl;
+    }
+    else {
+      const int   currentCore     = sched_getcpu();
+      #if SHM_INVADE_DEBUG>=2
+      std::cout << SHM_DEBUG_PREFIX << SHM_DEBUG_SEPARATOR << "pinned new thread currently running on core " << currentCore << " to core " << targetCore << std::endl;
+      #endif
+    }
+
+    CPU_FREE( target_mask );
+  }
+
+  _mutex.unlock();
 }
 
 
 void shminvade::SHMPinningObserver::on_scheduler_exit( bool ) {
-  --_numThreads;
-}
+  _mutex.lock();
 
-
-int shminvade::SHMPinningObserver::getNumberOfRegisteredThreads() const {
-  return _numThreads;
-}
-
-
-shminvade::SHMPinningObserver::CPUSetBitfield shminvade::SHMPinningObserver::cpuSetMaskToBitfield( cpu_set_t   _mask) {
-  CPUSetBitfield result = 0;
-
-  for (long i = 0; i < MaxNumberOfSupportedCPUs; i++) {
-    if (CPU_ISSET(i, &_mask)) {
-      result[i] = true;
-    }
+  const int   currentCore     = sched_getcpu();
+  if (_availableCores[currentCore]) {
+    #if SHM_INVADE_DEBUG>=2
+    std::cerr << SHM_DEBUG_PREFIX << SHM_DEBUG_SEPARATOR << "thread running on core " << currentCore << " exits though core is already marked as idle" << std::endl;
+    #endif
+  }
+  else {
+    _availableCores[currentCore] = true;
+    #if SHM_INVADE_DEBUG>=2
+    std::cout << SHM_DEBUG_PREFIX << SHM_DEBUG_SEPARATOR << "thread exits and frees core " << currentCore << std::endl;
+    #endif
   }
 
-  return result;
+  _mutex.unlock();
 }
 
