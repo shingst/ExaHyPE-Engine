@@ -18,7 +18,7 @@ public:
 
   double evaluateTemperature(double rho, double pressure) const;
   double evaluateHeatConductionCoeff(double viscosity) const;  
-  double evaluatePressure(double E, double rho, const tarch::la::Vector<3,double> &j) const;
+  double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const;
   double evaluateViscosity(double T) const;
   void evaluateEigenvalues(const double* const Q, const int d, double* lambda) const;
   void evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const;

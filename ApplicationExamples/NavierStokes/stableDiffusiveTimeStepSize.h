@@ -34,18 +34,29 @@ double stableDiffusiveTimeStepSize(
   constexpr double cflFactor       = 0.7; //SolverType::CFL;
 
   double dt = std::numeric_limits<double>::max();
-  kernels::idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
+#if DIMENSIONS == 2
+	kernels::idx3 idx_luh(basisSize, basisSize, numberOfData);
+#elif DIMENSIONS == 3
+	kernels::idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
+#endif
 
   // Iterate over dofs.
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
+#if DIMENSIONS == 3
       for (int k = 0; k < basisSize; k++) {
+#endif
 	for (int dim = 0; dim < DIMENSIONS; dim++) {
 	  // First compute max eigenvalues of hyperbolic and diffusive part.
 	  auto hyperbolicEigenvalues = std::array<double,numberOfVariables>();
 	  auto diffusiveEigenvalues = std::array<double,numberOfVariables>();
-	  solver.eigenvalues(luh + idx_luh(i,j,k,0), dim, hyperbolicEigenvalues.data());
-	  solver.diffusiveEigenvalues(luh + idx_luh(i,j,k,0), dim, diffusiveEigenvalues.data());
+#if DIMENSIONS == 2
+        const auto idx = idx_luh(i,j,0);
+#elif DIMENSIONS == 3
+        const auto idx = idx_luh(i,j,k,0);
+#endif
+	  solver.eigenvalues(luh + idx, dim, hyperbolicEigenvalues.data());
+	  solver.diffusiveEigenvalues(luh + idx, dim, diffusiveEigenvalues.data());
 
 	  double maxHyperbolicEigenvalue = 0.0;
 	  double maxDiffusiveEigenvalue = 0.0;
@@ -69,10 +80,12 @@ double stableDiffusiveTimeStepSize(
 	  // std::cout << "invDx = " << curInvDx << " curDt = " << curDt << std::endl;
 	  // std::cout << "lam_h = " << maxHyperbolicEigenvalue << " lam_d = " << maxDiffusiveEigenvalue << std::endl;
 	  dt = std::min(dt, curDt);
-	}
-      }
-    }
-  }
+	} // dim
+#if DIMENSIONS == 3
+	  } // k
+#endif
+    } // j
+   } // i
     
   return dt;
 }

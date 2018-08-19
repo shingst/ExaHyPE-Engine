@@ -4,36 +4,36 @@ exahype-project Euler
     output-directory const = ./ApplicationExamples/NavierStokes
 
     computational-domain
-	dimension const          = 3
-	width                    = 1.0, 1.0, 0.2
-	offset                   = 0.0, 0.0, 0.0
-	end-time                 = 0.3
+	dimension const          = 2
+	width                    = 1.0, 1.0
+	offset                   = 0.0, 0.0
+	end-time                 = 1.0
     end computational-domain
 
     shared-memory
          identifier               = dummy
-	 configure                = {}
-	 cores                    = 16
-	 properties-file          = sharedmemory.properties
+         cores                    = 1
+         properties-file          = sharedmemory.properties
     end shared-memory  
 
     solver ADER-DG EulerSolver
-	variables const = rho:1, j:3, E:1
-	order const = 1
+	variables const = rho:1, j:2, E:1
+	order const = 2
 	maximum-mesh-size = 0.1
+	//maximum-mesh-size = 30.0
 	maximum-mesh-depth = 2
 	time-stepping = global
 	type const = nonlinear
 	terms const = flux, gradientFlux
 	optimisation const = generic
 	language const = C
-	constants = viscosity:0.01,scenario:sod-shock-tube
+	constants = viscosity:0.001,scenario:smooth-wave
 
-    plot vtu::Legendre::cells::ascii Plotter
-	variables const = 5
+    plot vtu::Legendre::vertices::ascii Plotter
+	variables const = 4
 	time = 0.0
 	repeat = 0.005
-	output = ./solution
+	output = ./results/solution
     end plot
     end solver
 

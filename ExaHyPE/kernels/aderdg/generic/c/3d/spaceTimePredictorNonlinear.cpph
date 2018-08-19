@@ -91,25 +91,25 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS,
                  numberOfVariables);
   // If the flux depends on the gradient we need to return the time-averaged
-  // gradient in gradQ The variable gradQCur corresponds to the gradient for the
+  // gradient in gradQ.
+  // The variable gradQCur corresponds to the gradient for the
   // current timestep.
   auto gradQCur = gradQ;  // no need to allocate here.
   if (useGradientFlux) {
     // Allocate new buffer for averaged gradient.
     gradQCur = new double[sizeGradQ];
-    std::memset(gradQ, 0.0, basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
   }
 
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
     // TODO(Lukas) Do i need to reset the gradient here?
-    std::memset(gradQ, 0.0, basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
+    std::memset(gradQ, 0.0, sizeGradQ * sizeof(double));
     for (int i = 0; i < basisSize; i++) {  // time DOF
       // Compute gradients only if nonconservative contributions have to be
       // computed or if the flux depends on the gradient.
       if (useNCP || useGradientFlux) {
         std::memset(gradQCur, 0.0,
-            basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
+            sizeGradQ * sizeof(double));
 
         // Compute the "derivatives" (contributions of the stiffness matrix)
         // x direction (independent from the y and z derivatives)
@@ -819,9 +819,9 @@ int spaceTimePredictorNonlinear(
   constexpr int basisSize = SolverType::Order + 1;
 
   const int iterations =
-      aderPicardLoopNonlinear<useSource, useFlux, useGradientFlux, useNCP,
-                              SolverType>(solver, luh, dt, invDx, lQi, rhs, lFi,
-                                          gradQ);
+      aderPicardLoopNonlinear<useSource, useFlux, useGradientFlux, useNCP, SolverType>(
+              solver, luh, dt, invDx, lQi, rhs, lFi, gradQ);
+
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS,
                  numberOfVariables);
   /*
@@ -842,16 +842,14 @@ int spaceTimePredictorNonlinear(
   if (noTimeAveraging) {
     // TODO(Lukas) what shall we do for this case?
     assert(false);
-    aderTimeAveragingExtrapolatorNonlinear<useFlux, numberOfVariables,
-                                           numberOfParameters, basisSize>(
+    aderTimeAveragingExtrapolatorNonlinear<useFlux, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhbnd, lFhbnd);
   } else {
     constexpr int basisSize2 = basisSize * basisSize;
     constexpr int basisSize3 = basisSize2 * basisSize;
 
     // Note: gradQ is already time-averaged!
-    aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables,
-                           numberOfParameters, basisSize>(
+    aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,
         &lFhi[0 * basisSize3 * numberOfVariables],  // lFhi_x
         &lFhi[1 * basisSize3 * numberOfVariables],  // lFhi_y

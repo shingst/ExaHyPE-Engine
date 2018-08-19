@@ -25,7 +25,7 @@ double NavierStokes::NavierStokes::evaluateHeatConductionCoeff(double viscosity)
   //return 1./Pr * viscosity * GAMMA * (1.0/(GAMMA - 1)) * gasConstant;
 }
 
-double NavierStokes::NavierStokes::evaluatePressure(double E, double rho, const tarch::la::Vector<3,double> &j) const {
+double NavierStokes::NavierStokes::evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const {
   return (GAMMA-1) * (E - 0.5 * (1.0/rho) * j * j);
 }
 
@@ -42,7 +42,7 @@ void NavierStokes::NavierStokes::evaluateEigenvalues(const double* const Q, cons
   Variables eigs(lambda);
 
   const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
-  assertion6(std::isfinite(p), p, vars.E(), vars.rho(), vars.j(0), vars.j(1), vars.j(2));
+  assertion4(std::isfinite(p), p, vars.E(), vars.rho(), vars.j());
 
   const double u_n = vars.j(d)/vars.rho();
   const double temperature = evaluateTemperature(vars.rho(), p);
@@ -53,14 +53,13 @@ void NavierStokes::NavierStokes::evaluateEigenvalues(const double* const Q, cons
   assertion6(std::isfinite(temperature) && temperature >= 0.0, temperature, vars.rho(), vars.E(), vars.j() * vars.j(), p, u_n);
   assertion3(std::isfinite(c), c, u_n, temperature);
 
-  eigs.rho() = u_n - c;
-  eigs.E() = u_n + c;
-  eigs.j(u_n, u_n, u_n);
+  std::fill_n(lambda, vars.variables(), u_n);
+  lambda[0] -= c;
+  lambda[1] += c;
 }
 
 void NavierStokes::NavierStokes::evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const {
   ReadOnlyVariables vars(Q);
-  Variables eigs(lambda);
 
   const double pressure = evaluatePressure(vars.E(), vars.rho(), vars.j());
   const double T = evaluateTemperature(vars.rho(), pressure);
@@ -78,17 +77,20 @@ void NavierStokes::NavierStokes::evaluateDiffusiveEigenvalues(const double* cons
 }
 
 void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gradQ, double** F) const {
-  // Dimensions                        = 3
-  // Number of variables + parameters  = 5 + 0
- 
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
 
   // Identity
+#if DIMENSIONS == 2
+  tarch::la::Matrix<2,2,double> I;
+  I = 1, 0,
+      0, 1;
+#elif DIMENSIONS == 3
   tarch::la::Matrix<3,3,double> I;
   I = 1, 0, 0,
-    0, 1, 0,
-    0, 0, 1;
+      0, 1, 0,
+      0, 0, 1;
+#endif
 
   const auto p = evaluatePressure(vars.E(), vars.rho(), vars.j());
 
@@ -113,41 +115,58 @@ void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gra
   // Velocities
   const auto vx = invRho * vars.j(0);
   const auto vy = invRho * vars.j(1);
+#if DIMENSIONS == 3
   const auto vz = invRho * vars.j(2);
+#endif
+
   assertion2(std::isfinite(vx), invRho, vars.j(0));
   assertion2(std::isfinite(vy), invRho, vars.j(1));
+#if DIMENSIONS == 3
   assertion2(std::isfinite(vz), invRho, vars.j(2));
+#endif
 
   // Derivatives of velocities.
   const auto vx_dx = invRho * (gradQ[idx_gradQ(0, 1)] - vx * gradQ[(idx_gradQ(0,0))]);
   const auto vy_dx = invRho * (gradQ[idx_gradQ(0, 2)] - vy * gradQ[(idx_gradQ(0,0))]);
-  const auto vz_dx = invRho * (gradQ[idx_gradQ(0, 3)] - vz * gradQ[(idx_gradQ(0,0))]);
 
   const auto vx_dy = invRho * (gradQ[idx_gradQ(1, 1)] - vx * gradQ[(idx_gradQ(1,0))]);
   const auto vy_dy = invRho * (gradQ[idx_gradQ(1, 2)] - vy * gradQ[(idx_gradQ(1,0))]);
+#if DIMENSIONS == 3
+  const auto vz_dx = invRho * (gradQ[idx_gradQ(0, 3)] - vz * gradQ[(idx_gradQ(0,0))]);
   const auto vz_dy = invRho * (gradQ[idx_gradQ(1, 3)] - vz * gradQ[(idx_gradQ(1,0))]);
 
   const auto vx_dz = invRho * (gradQ[idx_gradQ(2, 1)] - vx * gradQ[(idx_gradQ(2,0))]);
   const auto vy_dz = invRho * (gradQ[idx_gradQ(2, 2)] - vy * gradQ[(idx_gradQ(2,0))]);
   const auto vz_dz = invRho * (gradQ[idx_gradQ(2, 3)] - vz * gradQ[(idx_gradQ(2,0))]);
+#endif
 
   assertion3(std::isfinite(vx_dx), invRho, gradQ[idx_gradQ(0, 1)], gradQ[(idx_gradQ(0,0))]);
   assertion3(std::isfinite(vy_dx), invRho, gradQ[idx_gradQ(0, 2)], gradQ[(idx_gradQ(0,0))]);
-  assertion3(std::isfinite(vz_dx), invRho, gradQ[idx_gradQ(0, 3)], gradQ[(idx_gradQ(0,0))]);
   assertion3(std::isfinite(vx_dy), invRho, gradQ[idx_gradQ(1, 1)], gradQ[(idx_gradQ(1,0))]);
   assertion3(std::isfinite(vy_dy), invRho, gradQ[idx_gradQ(1, 2)], gradQ[(idx_gradQ(1,0))]);
+#if DIMENSIONS == 3
+  assertion3(std::isfinite(vz_dx), invRho, gradQ[idx_gradQ(0, 3)], gradQ[(idx_gradQ(0,0))]);
   assertion3(std::isfinite(vz_dy), invRho, gradQ[idx_gradQ(1, 3)], gradQ[(idx_gradQ(1,0))]);
   assertion3(std::isfinite(vx_dz), invRho, gradQ[idx_gradQ(2, 1)], gradQ[(idx_gradQ(2,0))]);
   assertion3(std::isfinite(vy_dz), invRho, gradQ[idx_gradQ(2, 2)], gradQ[(idx_gradQ(2,0))]);
   assertion3(std::isfinite(vz_dz), invRho, gradQ[idx_gradQ(2, 3)], gradQ[(idx_gradQ(2,0))]);
+#endif
 
-  // Gradient and divergence 
+  // Gradient and divergence
+#if DIMENSIONS == 2
+  tarch::la::Matrix<2,2,double> gradV;
+  gradV = vx_dx, vy_dx,
+    vx_dy, vy_dy;
+
+  const auto div_v = vx_dx + vy_dy;
+#elif DIMENSIONS == 3
   tarch::la::Matrix<3,3,double> gradV;
   gradV = vx_dx, vy_dx, vz_dx,
     vx_dy, vy_dy, vz_dy,
     vx_dz, vy_dz, vz_dz;
-  
+
   const auto div_v = vx_dx + vy_dy + vz_dz;
+#endif
 
   // Temperature: TODO, kappa currently set to 0
   // T = (p)/(vars.rho() * Pr)
@@ -164,17 +183,36 @@ void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gra
 
   const double factor = (GAMMA - 1)/(gasConstant);
 
-  // Multiplied by 0.5 for convenience.
+  // Norm multiplied by 0.5 for convenience.
+#if DIMENSIONS == 2
+  const double normJ = 0.5 * (vars.j(0) * vars.j(0) + vars.j(1) * vars.j(1));
+  const double normJ_dx = vars.j(0) * gradQ[idx_gradQ(0,1)] + vars.j(1) * gradQ[idx_gradQ(0,2)];
+  const double normJ_dy = vars.j(0) * gradQ[idx_gradQ(1,1)] + vars.j(1) * gradQ[idx_gradQ(1,2)];
+# elif DIMENSIONS == 3
   const double normJ = 0.5 * (vars.j(0) * vars.j(0) + vars.j(1) * vars.j(1) + vars.j(2) * vars.j(2));
   const double normJ_dx = vars.j(0) * gradQ[idx_gradQ(0,1)] + vars.j(1) * gradQ[idx_gradQ(0,2)] + vars.j(2) * gradQ[idx_gradQ(0,3)];
   const double normJ_dy = vars.j(0) * gradQ[idx_gradQ(1,1)] + vars.j(1) * gradQ[idx_gradQ(1,2)] + vars.j(2) * gradQ[idx_gradQ(1,3)];
   const double normJ_dz = vars.j(0) * gradQ[idx_gradQ(2,1)] + vars.j(1) * gradQ[idx_gradQ(2,2)] + vars.j(2) * gradQ[idx_gradQ(2,3)];
+#endif
 
+  // Finally, assemble temperature gradient.
+  // Note: idx for energy differs for 2d/3d!
+#if DIMENSIONS == 2
+  const double T_dx = factor * (invRho3 * gradQ[idx_gradQ(0,0)] * normJ - invRho2 * gradQ[idx_gradQ(0,0)] * vars.E() + invRho * gradQ[(idx_gradQ(0,3))] - invRho2 * normJ_dx);
+  const double T_dy = factor * (invRho3 * gradQ[idx_gradQ(1,0)] * normJ - invRho2 * gradQ[idx_gradQ(1,0)] * vars.E() + invRho * gradQ[(idx_gradQ(1,3))] - invRho2 * normJ_dy);
+#elif DIMENSIONS == 3
   const double T_dx = factor * (invRho3 * gradQ[idx_gradQ(0,0)] * normJ - invRho2 * gradQ[idx_gradQ(0,0)] * vars.E() + invRho * gradQ[(idx_gradQ(0,4))] - invRho2 * normJ_dx);
   const double T_dy = factor * (invRho3 * gradQ[idx_gradQ(1,0)] * normJ - invRho2 * gradQ[idx_gradQ(1,0)] * vars.E() + invRho * gradQ[(idx_gradQ(1,4))] - invRho2 * normJ_dy);
   const double T_dz = factor * (invRho3 * gradQ[idx_gradQ(2,0)] * normJ - invRho2 * gradQ[idx_gradQ(2,0)] * vars.E() + invRho * gradQ[(idx_gradQ(2,4))] - invRho2 * normJ_dz);
+#endif
 
-  const tarch::la::Vector<3, double> gradT =  {T_dx, T_dy, T_dz};
+#if DIMENSIONS == 2
+  //const tarch::la::Vector<2, double> gradT =  {T_dx, T_dy};
+  const tarch::la::Vector<2, double> gradT = {0.0, 0.0};
+#elif DIMENSIONS == 3
+  //const tarch::la::Vector<3, double> gradT =  {T_dx, T_dy, T_dz};
+  const tarch::la::Vector<3, double> gradT = {0.0, 0.0, 0.0};
+#endif
   const double kappa =  evaluateHeatConductionCoeff(viscosity);
   assertion2(std::isfinite(kappa), kappa, viscosity);
 

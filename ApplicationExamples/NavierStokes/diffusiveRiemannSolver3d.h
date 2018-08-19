@@ -28,42 +28,11 @@
 * We implement a very simple Rusanov scheme with scalar dissipation
 * (smax*Id).
 *
-#ifndef __DIFFUSIVE_RIEMANN_SOLVER_HEADER__
-#define __DIFFUSIVE_RIEMANN_SOLVER_HEADER__
-
-/**
-* This file is part of the ExaHyPE project.
-* Copyright (c) 2016  http://exahype.eu
-* All rights reserved.
-*
-* The project has received funding from the European Union's Horizon
-* 2020 research and innovation programme under grant agreement
-* No 671698. For copyrights and licensing, please consult the webpage.
-*
-* Released under the BSD 3 Open Source License.
-* For the full license text, see LICENSE.txt
-**/
-
-// included in ../../Kernels.h
-
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <cstring>
-
-#include "kernels/KernelUtils.h"
-#include "kernels/GaussLegendreQuadrature.h"
-
-/**
-* We implement a very simple Rusanov scheme with scalar dissipation
-* (smax*Id).
-*
 * We need to consider material parameters
 * in QL and QR.
 * We don't need to consider material parameters
 * in FL,FR.
 */
-//TODO(Lukas) Accept vector for characteristicLength
 template <bool useNCP, typename SolverType>
 void riemannSolverNonlinear(SolverType& solver,
                           double* FL, double* FR, const double* const QL,

@@ -1,0 +1,40 @@
+exahype-project Euler
+    peano-kernel-path const = ./Peano/
+    exahype-path const = ./ExaHyPE
+    output-directory const = ./ApplicationExamples/NavierStokes
+
+    computational-domain
+	dimension const          = 3
+	width                    = 1.0, 2.0, 1.0
+	offset                   = 0.0, 0.0, 0.0
+	end-time                 = 1.0
+    end computational-domain
+
+    shared-memory
+         identifier               = dummy
+         configure                = {background-tasks: 1}
+         cores                    = 8
+         properties-file          = sharedmemory.properties
+    end shared-memory  
+
+    solver ADER-DG EulerSolver
+	variables const = rho:1, j:3, E:1
+	order const = 2
+	maximum-mesh-size = 0.3
+	maximum-mesh-depth = 2
+	time-stepping = global
+	type const = nonlinear
+	terms const = flux, gradientFlux
+	optimisation const = generic
+	language const = C
+	constants = viscosity:0.1,scenario:stokes
+
+    plot vtu::Legendre::vertices::ascii Plotter
+	variables const = 5
+	time = 0.0
+	repeat = 0.005
+	output = ./results/solution
+    end plot
+    end solver
+
+end exahype-project
