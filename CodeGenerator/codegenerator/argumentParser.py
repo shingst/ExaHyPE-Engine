@@ -130,6 +130,6 @@ class ArgumentParser:
                     commandLine += "--" + key + " "
             elif type == ArgumentParser.ArgType.OptionalInt:
                 if key in inputConfig and inputConfig[key] != arg[3]:
-                    commandLine += "--" + key + " " + arg[3] + " "
+                    commandLine += "--" + key + " " + str(inputConfig[key]) + " "
         
         return commandLine

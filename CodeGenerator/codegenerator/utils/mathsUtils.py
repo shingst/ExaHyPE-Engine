@@ -467,7 +467,7 @@ class MathsUtils:
             lsqm[i][N] = -weights[i]
         lsqm[N][N] = 0.0
         
-        ilsqm = matrixInverse(lsqm)
+        ilsqm = MathsUtils.matrixInverse(lsqm)
         
         for i in range(0, Nlim):
             for j in range(0, N):
