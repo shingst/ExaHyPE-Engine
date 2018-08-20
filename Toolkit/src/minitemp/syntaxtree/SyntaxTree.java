@@ -37,6 +37,8 @@ public abstract class SyntaxTree {
     SyntaxTree currentNode = new RootNode(); //start with a root node
     for(Token t : tokens) { //build the tree token by token
       switch(t.type) {
+        case COMMENT: //comment is ignored
+          break;
         case VAR: //variable is a Leaf
           currentNode.addNode(new VariableLeaf(t));
           break;

@@ -47,6 +47,14 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 public:
   enum class InterfaceType { None, Interior, Boundary };
 
+  /**
+   * Compare if two vectors are equal up to a relative
+   * tolerance.
+   */
+  static bool equalUpToRelativeTolerance(
+      const tarch::la::Vector<DIMENSIONS,double>& first,
+      const tarch::la::Vector<DIMENSIONS,double>& second);
+
 private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
@@ -56,14 +64,6 @@ private:
    * The log device of this class.
    */
   static tarch::logging::Log _log;
-
-  /**
-   * Compare if two vectors are equal up to a relative
-   * tolerance.
-   */
-  static bool equalUpToRelativeTolerance(
-      const tarch::la::Vector<DIMENSIONS,double>& first,
-      const tarch::la::Vector<DIMENSIONS,double>& second);
 
 
   /**
@@ -391,13 +391,12 @@ private:
    * Returns true if the vertex has to communicate, i.e.
    * send and receive metadata, and solver data if applicable.
    *
-   * Current criteria:
+   * Criteria:
    * - Vertex has to be inside of the domain.
    * - Vertex must belong to a grid which is at least
    *   as fine as the coarsest solver grid.
    */
-  bool hasToCommunicate(
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+  bool hasToCommunicate( const int level ) const;
 
   /**
    * TODO(Dominic): Add docu.
@@ -456,8 +455,7 @@ private:
   bool hasToMergeWithNeighbourMetadata(
       const tarch::la::Vector<DIMENSIONS,int>& src,
       const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& x) const;
 
 
   /**
@@ -519,7 +517,6 @@ private:
   void dropNeighbourMetadata(
       const int fromRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int level) const;
 
   /**
@@ -618,7 +615,6 @@ private:
       int toRank,
       const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
 
   /*! Receive data from remote ranks at all remote boundary faces adjacent to this vertex.
@@ -630,7 +626,6 @@ private:
       bool mergeWithReceivedData,
       bool isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;
 #endif
 };

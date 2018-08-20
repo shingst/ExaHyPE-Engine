@@ -138,6 +138,16 @@ void exahype::mappings::Prediction::beginIteration(
     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
   }
 
+  if (
+      !exahype::solvers::Solver::FuseADERDGPhases &&
+      _stateCopy.isFirstIterationOfBatchOrNoBatch()
+  ) {
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      solver->beginTimeStep(solver->getMinTimeStamp());
+    }
+  }
+
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
@@ -222,7 +232,7 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
-    vertex.sendToNeighbour(toRank,true,x,h,level);
+    vertex.sendToNeighbour(toRank,true,x,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );

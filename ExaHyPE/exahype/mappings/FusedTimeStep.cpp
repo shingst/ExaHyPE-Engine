@@ -138,8 +138,14 @@ void exahype::mappings::FusedTimeStep::ensureAllBackgroundJobsHaveTerminated(boo
     _batchIteration = ( initialiseBatchIterationCounter) ? 0 : _batchIteration+1;
     _batchIterationCounterUpdated = true;
 
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && issuePredictionJobsInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+    if ( issuePredictionJobsInThisIteration() ) {
+      if (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob) {
+        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+      }
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        solver->beginTimeStep(solver->getMinTimeStamp());
+      }
     }
     if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
@@ -177,7 +183,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
   if ( sendOutRiemannDataInThisIteration() ) {
     exahype::plotters::finishedPlotting();
     
-
     const int isFirstTimeStep = 
           ( exahype::solvers::Solver::PredictionSweeps==1 ) ? 
           _stateCopy.isFirstIterationOfBatchOrNoBatch() : 
@@ -355,7 +360,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,_stateCopy.isFirstIterationOfBatchOrNoBatch(),
-        fineGridX,fineGridH,level);
+        fineGridX,level);
   }
 
   logTraceOut( "mergeWithNeighbour(...)" );
@@ -368,7 +373,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( sendOutRiemannDataInThisIteration() ) {
-    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,h,level);
+    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
@@ -393,7 +398,7 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
         fineGridVerticesEnumerator.getLevel());
   }
 
-  logTraceInWith1Argument( "prepareSendToWorker(...)", localCell );
+  logTraceInWith1Argument( "prepareSendToWorker(...)", fineGridCell );
 
   return _stateCopy.isFirstIterationOfBatchOrNoBatch() ||
          _stateCopy.isLastIterationOfBatchOrNoBatch();

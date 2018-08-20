@@ -117,6 +117,8 @@ private:
    * ensures that all background jobs of a certain type have terminated.
    * The type of the background jobs is determined based on the batch iteration counter.
    *
+   * Signal the solvers that we start a new time step.
+   *
    * \note As the state can only be copied in beginIteration(...) and
    * we need to know the batch iteration in touchVertexFirstTime(...),
    * we cannot rely on its batch iteration counter and

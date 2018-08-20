@@ -69,6 +69,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     _dimensions = Integer.parseInt( node.getDimension().getText() );
     if (_dimensions!=2 && _dimensions!=3) {
       System.err.println( "ERROR: dimension has to be either 2 or 3.");
+      valid = false;
     }
   }
 
@@ -123,7 +124,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
       SolverFactory solverFactory = new SolverFactory(_projectName, _dimensions, _enableProfiler, _microarchitecture);
       eu.exahype.solvers.Solver solver = solverFactory.createADERDGSolver(
           solverName, kernel, isFortran, variables.getNumberOfVariables(), variables.getNumberOfParameters(),variables.getNamingSchemeNames(), order, hasConstants);
-      valid = validate(variables,order,kernel.toString(),language,solverName,solver);
+      valid &= validate(variables,order,kernel.toString(),language,solverName,solver);
       
       if (valid) {
         _definedSolvers.add(solverName);
@@ -161,7 +162,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     eu.exahype.solvers.Solver solver = solverFactory.createFiniteVolumesSolver(
         solverName, kernel, isFortran, variables.getNumberOfVariables(), variables.getNumberOfParameters(),variables.getNamingSchemeNames(), patchSize, hasConstants);
 
-    valid = validate(variables,patchSize,kernel.toString(),language,solverName,solver);
+    valid &= validate(variables,patchSize,kernel.toString(),language,solverName,solver);
 
     if (valid) {
       _definedSolvers.add(solverName);
@@ -216,7 +217,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
           solverNameFV, FVKernel,isFortran,variablesLimiter.getNumberOfVariables(),variablesLimiter.getNumberOfParameters(),variablesLimiter.getNamingSchemeNames(),patchSize,hasConstants);
       Solver solverLimiter = solverFactory.createLimiterSolver(solverNameLimiter, aderdgKernel, FVKernel, solverAderdg, solverFV);
 
-      valid  = validate(variablesSolver,order,aderdgKernel.toString(),language,solverName,solverAderdg);
+      valid &= validate(variablesSolver,order,aderdgKernel.toString(),language,solverName,solverAderdg);
       valid &= validate(variablesLimiter,patchSize,FVKernel.toString(),limiterLanguage,solverName,solverFV);
       
       if (valid) {        

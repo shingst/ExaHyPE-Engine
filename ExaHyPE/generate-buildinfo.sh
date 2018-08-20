@@ -53,6 +53,7 @@ getstatic_repo_info() {
 echo
 echo "/*"
 echo " * ExaHyPE Git Repository information extraction"
+echo " * Extracted from git repository in $exahype_path"
 echo " */"
 echo
 
@@ -76,32 +77,40 @@ cd "$oldpwd"
 
 echo
 echo "/*"
-echo " * Peano Subversion Repository information extraction"
+echo " * Peano Git Repository information extraction"
+echo " * Extracted from git repository in $peano_path"
 echo " */"
 echo
 
 cd "$peano_path"
-if which svn &>/dev/null && svn info --show-item revision &>/dev/null; then
-	echo "/* Information collected with $(svn --version | head -n1) */"
+if which git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+	echo "/* Information collected with $(git --version | head -n1) */"
+	
+	BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+	SHORTREF="$(git rev-parse --short HEAD)"
+	DATE="$(git log -1 --format=%cd --date=local)"
 
-	# problem with old svn (1.6): --show-item is not available
+	echo "#define PEANO_GIT_INFO \"$BRANCH  $SHORTREF $DATE\""
 	
-	COMMIT="$(svn info --show-item revision)"
-	# TODO: Determine whether --show-item is a remote (ie. over internet) action. If so, remove.
-	DATE="$(svn info --show-item last-changed-date)"
-	
-	echo "#define PEANO_SVN_INFO \"Rev ${COMMIT// /}, $DATE\""
 elif [[ -e "$static_repo_info" ]]; then
-	getstatic_repo_info "PEANO_SVN_INFO"
+	getstatic_repo_info "PEANO_GIT_INFO"
 else
-	echo "/* No svn repository found or svn binary not available */"
-	echo "#define PEANO_SVN_INFO \"No svn/repository available\""
+	echo "/* No git repository found or git binary not available */"
+	echo "#define PEANO_GIT_INFO \"No git/repository available\""
+	
 fi
 
-###
-### Peano version check
-###
-
+echo "#define PEANO_SVN_INFO  PEANO_GIT_INFO /* transition time */"
+echo
+echo "/*"
+echo "    Peano version check"
+echo 
+echo "    FIXME TODO This is the worst place ever to hook in version"
+echo "               requirements. Please move the following to somewhere"
+echo "               suitable, such as the Peano startup phase."
+echo
+echo "*/"
+echo
 echo "#include \"peano/version.h\""
 echo 
 echo "#endif /* EXAHYPE_BUILD_INFO_H */"

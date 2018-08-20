@@ -508,10 +508,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag);
   }
 
-  std::cout << "_refineOrKeepOnFineGrid="<<_refineOrKeepOnFineGrid<<std::endl;
-  std::cout << "_limiterHelperLayers="<<_limiterHelperLayers<<std::endl;
-  std::cout << "_minimumRefinementStatusForPassiveFVPatch="<<_minimumRefinementStatusForPassiveFVPatch<<std::endl;
-
   #ifdef Parallel
   _invalidExtrapolatedPredictor.resize(getBndFaceSize());
   _invalidFluctuations.resize(getBndFluxSize());
@@ -1003,7 +999,12 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   else if ( fineGridCellElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
-    assertion5(tarch::la::equals(fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize()),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+
+    #ifdef Asserts
+    const tarch::la::Vector<DIMENSIONS,double> center = fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize();
+    #endif
+    assertion5(Vertex::equalUpToRelativeTolerance(fineGridVerticesEnumerator.getCellCenter(),center),
+               fineGridVerticesEnumerator.getCellCenter(),center,fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
     assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
     // ensure that the fine grid cell descriptions's parent index is pointing to the
     // coarse grid cell's cell descriptions index; this is important to re-establish
@@ -1598,7 +1599,10 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
         CellDescription& cellDescription = getCellDescription(
             cellDescriptionsIndex,element);
 
-        if ( !checkThoroughly || tarch::la::equals( cellDescription.getOffset(), cellOffset ) )  {
+        if (
+            !checkThoroughly ||
+            Vertex::equalUpToRelativeTolerance(cellDescription.getOffset(), cellOffset)
+        ) {
           bool refineAdjacentVertices =
               cellDescription.getType()==CellDescription::Type::Ancestor ||
               cellDescription.getHasVirtualChildren() ||
@@ -3140,7 +3144,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
       (faceIndex * dataPerFace);
   double* FIn = DataHeap::getInstance().getData(p.getFluctuation()).data() +
       (faceIndex * dofPerFace);
-
+  const double* luh = DataHeap::getInstance().getData(p.getSolution()).data();
   double* update = DataHeap::getInstance().getData(p.getUpdate()).data();
 
   const int orientation = faceIndex % 2;
@@ -3157,8 +3161,9 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
   boundaryConditions(
-      update,
+      update, // also refered to as dluh
       FIn,QIn,
+      luh,
       p.getOffset() + 0.5*p.getSize(),
       p.getSize(),
       p.getCorrectorTimeStamp(),
@@ -3644,7 +3649,10 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   
-  assertion5(tarch::la::equals(x,cellDescription.getOffset()+0.5*cellDescription.getSize()),x,cellDescription.getOffset()+0.5*cellDescription.getSize(),level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+  #ifdef Asserts
+  const tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  #endif
+  assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
 
   if ( cellDescription.getType()==CellDescription::Type::Cell ) {
@@ -3673,7 +3681,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  assertion5(tarch::la::equals(x,cellDescription.getOffset()+0.5*cellDescription.getSize()),x,cellDescription.getOffset()+0.5*cellDescription.getSize(),level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+  #ifdef Asserts
+  const tarch::la::Vector<DIMENSIONS,double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  #endif
+  assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
 
   // allocate memory

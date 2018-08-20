@@ -26,6 +26,12 @@ metrics =  [
         ["AVX MFLOP/s",                 "Sum"],
         ["Memory bandwidth [MBytes/s]", "Sum"],
         ["Memory data volume [GBytes]", "Sum"],
+        ["Local bandwidth [MByte/s]",   "Avg"],
+        ["Local data volume [GByte]",   "Avg"],
+        ["Remote bandwidth [MByte/s]",  "Avg"],
+        ["Remote data volume [GByte]",  "Avg"],
+        ["Total bandwidth [MByte/s]",   "Avg"],
+        ["Total data volume [GByte]",   "Avg"],
         ["L3 bandwidth [MBytes/s]",     "Sum"],
         ["L3 data volume [GBytes]",     "Sum"],
         ["L3 request rate",             "Avg"],
@@ -44,6 +50,18 @@ counters = [
             ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
             ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
            ]
+
+
+def convertToFloat(val):
+    '''
+    Check if a val is a float and return float(val) or -1.0 if not
+    Useful for likwid metrics which often use 'nil'
+    '''
+    try:
+        return float(val)
+    except:
+        return -1.0
+
 def column(matrix, i):
     return [row[i] for row in matrix]
 
@@ -630,10 +648,10 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                     segments = line.split('|')
                     #   |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
                     values = {}
-                    values["Sum"] = float(segments[2].strip());
-                    values["Min"] = float(segments[3].strip());
-                    values["Max"] = float(segments[4].strip());
-                    values["Avg"] = float(segments[5].strip());
+                    values["Sum"] = convertToFloat(segments[2].strip());
+                    values["Min"] = convertToFloat(segments[3].strip());
+                    values["Max"] = convertToFloat(segments[4].strip());
+                    values["Avg"] = convertToFloat(segments[5].strip());
                     result[metric[0]][metric[1]]=values[metric[1]]
                 elif metric[0] in line:
                     segments = line.split('|')
@@ -652,15 +670,15 @@ def parseLikwidMetrics(filePath,metrics,counters,singlecore=False):
                     segments = line.split('|')
                     #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
                     values = {}
-                    values["Sum"] = float(segments[3].strip());
-                    values["Min"] = float(segments[4].strip());
-                    values["Max"] = float(segments[5].strip());
-                    values["Avg"] = float(segments[6].strip());
+                    values["Sum"] = convertToFloat(segments[3].strip())
+                    values["Min"] = convertToFloat(segments[4].strip())
+                    values["Max"] = convertToFloat(segments[5].strip())
+                    values["Avg"] = convertToFloat(segments[6].strip())
                     result[counter[0]][counter[1]]=values[counter[1]]
                 elif counter[0] in line:
                     segments = line.split('|')
                     #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
-                    value  = float(segments[3].strip());
+                    value  = convertToFloat(segments[3].strip());
                     values = {}
                     values["Sum"] = value
                     values["Min"] = value
