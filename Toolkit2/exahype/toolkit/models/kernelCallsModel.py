@@ -20,16 +20,11 @@
 # Generates the application-specific Makefile
 #
 
-import sys, os, json
-import shlex # > python 3.3
-from string import Formatter
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
-escape = shlex.quote # always escape your strings, please
-formatter_keys = lambda template: [i[1] for i in Formatter().parse(template)]
 
 class KernelCallsModel(AbstractModelBaseClass):
-    
+
     def generateCode(self):
         return self.render("KernelCallsImplementation.template", "KernelCalls.cpp") #return path to generated file

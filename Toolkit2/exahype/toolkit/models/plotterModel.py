@@ -25,18 +25,19 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 
 
 class PlotterModel(AbstractModelBaseClass):
+
     def generateCode(self):
-      userDefined = self.context["plotterType"]=="user::defined"
-      
-      templates = {
-        True : {  self.context["plotter"]+".h" : "plotters/UserDefinedDeviceHeader.template",
-                  self.context["plotter"]+".cpp" : "plotters/UserDefinedDeviceImplementation.template" },
-        False: {  self.context["plotter"]+".h" : "plotters/UserOnTheFlyPostProcessingHeader.template",
-                  self.context["plotter"]+".cpp" : "plotters/UserOnTheFlyPostProcessingImplementation.template" }
-      }
-      
-      result = []
-      for filePath in templates.get(userDefined):
-          result.append(self.render(templates[userDefined][filePath],filePath,None,False))
-      
-      return result # return generated files as list
+        userDefined = self.context["plotterType"]=="user::defined"
+        
+        templates = {
+            True : [ (self.context["plotter"]+".h"   , "plotters/UserDefinedDeviceHeader.template"),
+                     (self.context["plotter"]+".cpp" , "plotters/UserDefinedDeviceImplementation.template") ],
+            False: [ (self.context["plotter"]+".h"   , "plotters/UserOnTheFlyPostProcessingHeader.template"),
+                     (self.context["plotter"]+".cpp" , "plotters/UserOnTheFlyPostProcessingImplementation.template") ],
+          }
+        
+        result = []
+        for filePath,template in templates.get(userDefined, []):
+            result.append(self.render(template,filePath,overwrite=False))
+        
+        return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
