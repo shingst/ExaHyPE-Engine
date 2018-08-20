@@ -35,6 +35,7 @@ class SolverController:
                 aderdgContext["solverType"]             = "ADER-DG"
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
+                aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 
                 # generate all solver files
                 model        = solverModel.SolverModel(context)
@@ -45,14 +46,12 @@ class SolverController:
                 solverFiles += model.generateCode()
             
             for path in solverFiles:
-                if not path is None:
-                    logger.info("Generated '"+path+"'")
+                logger.info("Generated '"+path+"'")
             for j,plotter in enumerate(solver.get("plotters",[])):
                 logger.info("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
                 model = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
                 for path in model.generateCode():
-                    if not path is None:  
-                        logger.info("Generated '"+path+"'")
+                    logger.info("Generated '"+path+"'")
                         
 
 
@@ -85,9 +84,10 @@ class SolverController:
     def buildADERDGSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
         context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
+        context.update(self.buildKernelOptimizationContext(solver["aderdg_kernel"], context))
         
         context["order"]                  = solver["order"]
-        context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
+        context["numberOfDMPObservables"] = -1 # overwrite if called from LimitingADERDGSolver creation
         
         return context
         
@@ -119,7 +119,7 @@ class SolverController:
     def buildADERDGKernelContext(self, kernel):
         context = {}
         context["implementation"]          = kernel.get("implementation","generic")
-        context["useMaxPicardIterations"]  = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 
+        context["useMaxPicardIterations"]  = "true" if kernel.get("space_time_predictor",{}).get("maxpicarditer",0)!=0 else "false"
         context["maxPicardIterations"]     = kernel.get("space_time_predictor",{}).get("maxpicarditer",0)
         context["tempVarsOnStack"]         = kernel.get("allocate_temporary_arrays","heap")=="stack" 
         context["patchwiseAdjust"]         = kernel.get("adjust_solution","pointwise")=="patchwise" 
@@ -131,8 +131,6 @@ class SolverController:
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
         context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
-        context["useConverter"]            = "converter" in kernel.get("optimised_kernel_debugging",[])
-        context["countFlops"]              = "flops" in kernel.get("optimised_kernel_debugging",[])
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
         
@@ -169,3 +167,19 @@ class SolverController:
             context["outputPath"] = os.path.join(context["outputPath"], context["plotterSubDirectory"])
             
         return context
+        
+    def buildKernelOptimizationContext(self, kernel, solverContext):
+        optimizations = kernel.get("optimised_kernel_debugging",[]) + kernel.get("optimised_terms",[])
+        context = {}
+        context["optKernelPath"]      = os.path.join("kernels", solverContext["project"] + "_" + solverContext["solver"])
+        context["optNamespace"]       = solverContext["project"] + "::" + solverContext["solver"] + "_kernels::aderdg"
+        context["useConverter"]       = "converter"       in optimizations
+        context["countFlops"]         = "flops"           in optimizations
+        context["useFluxVect"]        = "fluxvect"        in optimizations
+        context["useFusedSource"]     = "fusedsource"     in optimizations
+        context["useFusedSourceVect"] = "fusedsourcevect" in optimizations
+        context["useSourceVect"]      = "fusedsourcevect" in optimizations
+        context["useNCPVect"]         = "fusedsourcevect" in optimizations
+
+        return context
+        

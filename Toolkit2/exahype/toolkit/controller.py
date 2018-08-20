@@ -72,6 +72,7 @@ class Controller:
             self.log.setLevel(logging.INFO)
             self.log.info(self.header())
             logging.raiseExceptions = True # development mode
+            codegeneratorModel.CodegeneratorModel.logger = self.log #codegeneratorModel will print the associated command line
         else:
             logging.raiseExceptions = False # production mode
         
@@ -224,7 +225,8 @@ class Controller:
         # commonly used parameters
         context["project"]          = self.spec["project_name"]
         
-        context["alignment"]        = Configuration.alignmentPerArchitectures[self.spec["architecture"]]
+        context["architecture"]     = self.spec["architecture"]
+        context["alignment"]        = Configuration.alignmentPerArchitectures[context["architecture"]]
         
         context["dimensions"]   = self.spec["computational_domain"]["dimension"]
         context["range_0_nDim"] = range(0,context["dimensions"])

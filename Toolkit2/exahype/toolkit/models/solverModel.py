@@ -22,6 +22,7 @@
 
 
 from .abstractModelBaseClass import AbstractModelBaseClass
+from .codegeneratorModel import CodegeneratorModel
 
 
 class SolverModel(AbstractModelBaseClass):
@@ -50,6 +51,9 @@ class SolverModel(AbstractModelBaseClass):
           result.append(self.render(template,filePath,overwrite=False))
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
           result.append(self.render(template,filePath))
+        
+        if implementation == "optimised":
+            CodegeneratorModel.generateCode(self.context)
         
         return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
 
