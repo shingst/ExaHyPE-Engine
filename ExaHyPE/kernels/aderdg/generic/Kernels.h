@@ -145,16 +145,19 @@ void riemannSolverNonlinear(
     const double* const QR,
     const double dt,
     const int direction);
-
-template <typename SolverType>
-void boundaryConditions(
-    SolverType& solver,
-    double* fluxOut, double* stateOut,
-    const double* const fluxIn, const double* const stateIn, // TODO(Dominic): Inconsistent order of arguments w.r.t to riemannSolver
-    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const double t, const double dt, const int faceIndex,
-    const int direction);
+template <bool useGradientFlux, typename SolverType>
+void kernels::aderdg::generic::c::boundaryConditions(
+                        SolverType& solver,
+                        double* FOut,
+                        double* QOut,
+                        const double* const fluxIn,  // TODO(Dominic): Inconsistent order of arguments w.r.t to riemannSolver
+                        const double* const stateIn,
+                        const double* const gradStateIn,
+                        const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+                        const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+                        const double t,const double dt,
+                        const int faceIndex,
+                        const int normalNonZero);
 
 
 template <typename SolverType>
