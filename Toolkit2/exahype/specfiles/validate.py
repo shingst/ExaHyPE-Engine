@@ -14,18 +14,17 @@ It will raise an Exception if the file is not valid.
 # python-included ("batteries")
 import sys, json, pathlib
 
-import specfile1_reader
-
+# add path to dependencies
+from .configuration import Configuration
+sys.path.insert(1, Configuration.pathToJSONSchema)
+sys.path.insert(1, Configuration.pathToAttr)       #jsonschema dependency
+sys.path.insert(1, Configuration.pathToPyrsistent) #jsonschema dependency
+from jsonschema import Draft4Validator, validators, validate
 # https://pypi.org/project/jsonschema/
 # Current stable version is 2.6, version 3.0 brings Draft6Validator,
 # but that's still alpha.
 
-sys.path.append("../../")     # in case of local installation
-
-from jsonschema import Draft4Validator, validators, validate
-
-exahype_schema_filename = "../../exahype-specfile.schema.json"
-schema = json.load(pathlib.Path(__file__).parent.joinpath(exahype_schema_filename).open("r"))
+schema = json.load(pathlib.Path(__file__).parent.joinpath(Configuration.pathToSchema).open("r"))
 
 def extend_with_default(validator_class):
   """

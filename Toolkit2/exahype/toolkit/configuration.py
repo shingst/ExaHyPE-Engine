@@ -11,16 +11,19 @@ class Configuration:
     #TODO Add missing path
     # absolute path to ExaHyPE's root (we need absolute paths in generated Makefile)
     # TODO: This is flawed, we have some paths in the specfile but not this one. Why?
-    pathToExaHyPERoot          = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    pathToExaHyPERoot   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     
     # absolute path to jinja2
-    pathToJinja2               = os.path.abspath(os.path.join(os.path.dirname(__file__),"..", "..", "dependencies", "jinja"))
+    pathToJinja2        = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "jinja"))
     
-    # absolute path to markupsafe
-    pathToMarkupsafe           = os.path.abspath(os.path.join(os.path.dirname(__file__),"..", "..", "dependencies", "markupsafe"))
+    # absolute path to markupsafe (jinja2 dependency)
+    pathToMarkupsafe    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "markupsafe"))
     
-    # absolute path to the codegenerator module (using pathToExaHyPERoot)
-    pathToCodegenerator        = os.path.abspath(os.path.join(pathToExaHyPERoot, "CodeGenerator"))
+    # absolute path to the codegenerator module
+    pathToCodegenerator = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "CodeGenerator"))
+    
+    # absolute path to the specfile module
+    pathToSpecfiles    = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     
     alignmentPerArchitectures  = {
         "noarch" : 16,

@@ -6,7 +6,6 @@ An "omni-reader" for trying to read different kind of file formats.
 
 import logging, os
 from collections import OrderedDict
-import validate # local
 get_filename_extension = lambda filename: os.path.splitext(filename)[1]
 
 # We work with two major exceptions: ParserError, a generalized
@@ -81,11 +80,12 @@ class OmniReader:
 		"""
 		This reader also prefers to deal with file handles
 		"""
-		import specfile1_reader # local directory, requires no extra libraries
+		from .specfile1_reader import SpecFile1Reader # local directory, requires no extra libraries
+		from .specfile1_reader import SpecFile1ParserError # local directory, requires no extra libraries
 		try:
-			rd = specfile1_reader.SpecFile1Reader(self.log)
+			rd = SpecFile1Reader(self.log)
 			return rd.read_string(document_as_string)
-		except specfile1_reader.SpecFile1ParserError as e:
+		except SpecFile1ParserError as e:
 			raise ParserError(e)
 		
 	@register_reader("mexa", extensions=[".mexa", ".mexahype"])
