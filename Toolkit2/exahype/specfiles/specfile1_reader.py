@@ -315,7 +315,7 @@ class SpecFile1Reader():
             token_s = token.strip()
             found_token = False
             if token_s in ["generic","optimised","user"]:
-                context["implementation"]=term
+                context["implementation"]=token_s
                 found_token = True
             if token_s=="patchwiseadjust":
                 context["adjust_solution"]="patchwise"
@@ -413,27 +413,28 @@ class SpecFile1Reader():
             # aderdg 
             if solver["type"] in ["Limiting-ADER-DG","ADER-DG"]:
                 solver["aderdg_kernel"]=collections.OrderedDict()
-            if "language" in solver:
-                solver["aderdg_kernel"]["language"]=solver.pop("language")
-            if "type" in solver:
-                aderdg_kernel_type    = old_type
-            if "terms" in solver:
-                aderdg_kernel_terms = solver.pop("terms")
-            if "optimisation" in solver:
-                aderdg_kernel_opts    = solver.pop("optimisation")
-                # type
-            for token in aderdg_kernel_type.split(","):
-                token_s = token.strip() 
-                if token_s in ["linear","nonlinear"]:
-                    solver["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
-                if token_s in ["Legendre","Lobatto"]:
-                    solver["aderdg_kernel"]["basis"]=token_s
-                # terms
-                result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
-                solver["aderdg_kernel"]["terms"]=result
-                solver["point_sources"]=n_point_sources
-                # opts
-                solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+                if "language" in solver:
+                    solver["aderdg_kernel"]["language"]=solver.pop("language")
+                if "type" in solver:
+                    aderdg_kernel_type  = old_type
+                if "terms" in solver:
+                    aderdg_kernel_terms = solver.pop("terms")
+                if "optimisation" in solver:
+                    aderdg_kernel_opts    = solver.pop("optimisation")
+                    # type
+                for token in aderdg_kernel_type.split(","):
+                    token_s = token.strip() 
+                    if token_s in ["linear","nonlinear"]:
+                        solver["aderdg_kernel"]["nonlinear"]=token_s=="nonlinear"
+                    if token_s in ["Legendre","Lobatto"]:
+                        solver["aderdg_kernel"]["basis"]=token_s
+                    # terms
+                    result, n_point_sources = self.map_kernel_terms(aderdg_kernel_terms)
+                    solver["aderdg_kernel"]["terms"]=result
+                    solver["point_sources"]=n_point_sources
+                    # opts
+                    solver["aderdg_kernel"].update(self.map_aderdg_kernel_opts(aderdg_kernel_opts))
+            
             # limiter
             if solver["type"]=="Limiting-ADER-DG":
                 solver["limiter"]=collections.OrderedDict()
@@ -442,6 +443,17 @@ class SpecFile1Reader():
                         solver["limiter"][option] = solver.pop(option)
                 if "implementation" in solver["aderdg_kernel"]:
                     solver["limiter"]["implementation"]=solver["aderdg_kernel"]["implementation"]
+                
+                solver["fv_kernel"]=collections.OrderedDict()
+                if "limiter_language" in solver:
+                    solver["fv_kernel"]["language"]=solver.pop("limiter_language")
+                if "limiter_type" in solver:
+                    fv_kernel_type    = solver.pop("limiter_type") 
+                if "terms" in solver["aderdg_kernel"]:
+                    solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
+                if "limiter_optimisation" in solver:
+                    fv_kernel_opts    = solver.pop("limiter_optimisation")
+            
             # fv
             if solver["type"]=="Finite-Volumes":
                 solver["fv_kernel"]=collections.OrderedDict()
@@ -456,16 +468,7 @@ class SpecFile1Reader():
                 solver["fv_kernel"]["terms"]=result
                 if "optimisation" in solver:
                     fv_kernel_opts    = solver.pop("optimisation")
-            if solver["type"]=="Limiting-ADER-DG":
-                solver["fv_kernel"]=collections.OrderedDict()
-                if "limiter_language" in solver:
-                    solver["fv_kernel"]["language"]=solver.pop("limiter_language")
-                if "limiter_type" in solver:
-                    fv_kernel_type    = solver.pop("limiter_type") 
-                if "terms" in solver["aderdg_kernel"]:
-                    solver["fv_kernel"]["terms"]=solver["aderdg_kernel"]["terms"] # copy ADER-DG terms
-                if "limiter_optimisation" in solver:
-                    fv_kernel_opts    = solver.pop("limiter_optimisation")
+            
             # fv type
             for token in fv_kernel_type.split(","):
                 token_s = token.strip() 
