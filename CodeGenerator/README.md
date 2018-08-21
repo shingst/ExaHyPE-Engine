@@ -9,9 +9,14 @@ Python 3.3 or more is required.
 Dependencies
 ------------
 
+By default get its dependencies from ExaHyPE's submodules
+
 You can install locally all the dependencies using the provided bash script:
 
 `./CodeGenerator/importJinjaAndUseSource.sh`
+
+You then need to adapt `./CodeGenerator/codegenerator/configuration.py` with the
+correct paths to the dependencies
 
 
 ### Jinja2
@@ -26,7 +31,7 @@ of jinja2 directly either with the bash script or by following these steps
 
 2) In `ExaHyPE-Engine/CodeGenerator/codegenerator/configuration.py`, 
 put the correct path to the jinja directory
-		
+
 3) Do the same for Markupsafe (https://pypi.org/project/MarkupSafe/), jinja's
 dependency
 
