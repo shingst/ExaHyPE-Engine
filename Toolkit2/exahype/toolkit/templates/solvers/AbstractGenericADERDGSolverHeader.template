@@ -166,7 +166,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int getTempSpaceTimeFluxUnknowns1Size() const {return -1;} //gradQ not required
 {% endif %}
     
-    //not used PDE
+    //not used PDE terms
 {% if not useMaterialParameters %}
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
 {% endif %}

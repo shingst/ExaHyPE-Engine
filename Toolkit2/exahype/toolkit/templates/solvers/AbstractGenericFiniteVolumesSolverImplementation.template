@@ -45,7 +45,7 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 }
 
 void {{project}}::{{abstractSolver}}::solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) {
-  maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<{{useSource}}, {{useNCP}}, {{useFlux}}, {{solver}}>(*static_cast<{{solver}}*>(this),luhNew,luh,dx,dt);
+  maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<{{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),luhNew,luh,dx,dt);
 }
 
 
@@ -108,7 +108,7 @@ void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* luhbnd,con
 
 double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) {
   // Default FV Riemann Solver
-  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP}}, {{useFlux}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,direction);
+  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP_s}}, {{useFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,direction);
 }
 
 

@@ -73,19 +73,19 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
     
-    {%- if !useNCP %}
+    {%- if not useNCP %}
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final {}
     {%- endif %}
     
-    {%- if !useSource %}
+    {%- if not useSource %}
     void algebraicSource(const double* const Q,double* S)  final {}
     {%- endif %}
     
-    {%- if !useFlux %}
+    {%- if not useFlux %}
     void flux(const double* const Q,double** F)  final {}
     {%- endif %}
     
-    {%- if !usePointSources %}
+    {%- if not usePointSources %}
     void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n)  final {}
     /* Please check if this is at the correct place: */
     virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}

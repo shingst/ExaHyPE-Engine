@@ -105,9 +105,9 @@ if(useGeneric) {
   
   
 {% if  isLinear %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParameters}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
 {% else %}
-  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
+  kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
 {% endif %}
   
   {{optNamespace}}::converter::Qhi_generic2optimised(lQhi, tempUnknowns);
@@ -195,9 +195,9 @@ if(useGeneric) {
   double* lFhi_g = new double[{{optNamespace}}::converter::getFhiGenArraySize()];
   {{optNamespace}}::converter::Fhi_optimised2generic(lFhi, lFhi_g);
 {% if isLinear %}
-  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi_g,&dx[0]);
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi_g,&dx[0]);
 {% else %}  
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,nullptr,lFhi_g,&dx[0]);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource_s}}, {{useFlux_s}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,nullptr,lFhi_g,&dx[0]);
 {% endif %}
 
   delete[] lFhi_g;
@@ -302,9 +302,9 @@ if(useGeneric) {
   {{optNamespace}}::converter::QFace_optimised2generic(QL,QL_g);
   {{optNamespace}}::converter::QFace_optimised2generic(QR,QR_g);
 {% if isLinear %}
-  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParameters}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
+  kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux_s}},{{useNCP_s}},{{useMaterialParameters_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
 {% else %}
-  kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
+  kernels::aderdg::generic::c::riemannSolverNonlinear<{{useNCP_s}},{{solver}}>(*static_cast<{{solver}}*>(this),FL_g,FR_g,QL_g,QR_g,dt,normalNonZeroIndex);
 {% endif %}
   
   {{optNamespace}}::converter::FFace_generic2optimised(FL_g,FL);
