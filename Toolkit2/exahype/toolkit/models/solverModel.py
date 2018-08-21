@@ -61,8 +61,10 @@ class SolverModel(AbstractModelBaseClass):
         solverTemplates = {
             "user"    : [ (self.context["solver"]+".h"   , "solvers/MinimalFiniteVolumesSolverHeader.template"),
                           (self.context["solver"]+".cpp" , "solvers/EmptyFiniteVolumesSolverImplementation.template") ],
-            "generic" : [ (self.context["solver"]+".h"   , "solvers/FiniteVolumesHeader.template"),
-                          (self.context["solver"]+".cpp" , "solvers/FiniteVolumesInCUserCode.template") ],
+            "generic" : []
+            #TODO Dominic: don't exist
+            #[ (self.context["solver"]+".h"   , "solvers/FiniteVolumesHeader.template"),
+                        #  (self.context["solver"]+".cpp" , "solvers/FiniteVolumesInCUserCode.template") ],
         }
         
         abstractSolverTemplates  = { 
