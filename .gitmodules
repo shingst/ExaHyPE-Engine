@@ -10,6 +10,7 @@
 [submodule "Submodules/libxsmm"]
 	path = Submodules/libxsmm
 	url = https://github.com/hfp/libxsmm.git
+	ignore = dirty
 [submodule "Submodules/attrs"]
 	path = Submodules/attrs
 	url = https://github.com/python-attrs/attrs.git
