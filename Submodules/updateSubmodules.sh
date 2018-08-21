@@ -115,6 +115,7 @@ if [ $# -eq 0 ]; then
 		rm -rf documentation/
 		cd ..
 	else
+		echo "Update libxsmm submodule"
 		cd libxsmm
 		LOCAL=$(git rev-parse master)
 		REMOTE=$(git rev-parse origin/master)
@@ -122,7 +123,6 @@ if [ $# -eq 0 ]; then
 			echo "Up-to-date"
 		else
 			REBUILD_LIBXSMM=true
-			echo "Update libxsmm submodule"
 			git stash -q     #silently stash the changes (deleted directories)
 			git pull origin master
 			git stash pop -q #silently unstash the changes (deleted directories)
