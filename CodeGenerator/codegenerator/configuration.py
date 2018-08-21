@@ -12,13 +12,13 @@ class Configuration:
     pathToExaHyPERoot          = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
     # path to the gemm generator from this file
-    pathToLibxsmmGemmGenerator = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "dependencies", "libxsmm", "bin", "libxsmm_gemm_generator"))
+    pathToLibxsmmGemmGenerator = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "libxsmm", "bin", "libxsmm_gemm_generator"))
     
     # path to jinja2
-    pathToJinja2               = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "dependencies", "jinja"))
+    pathToJinja2               = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "jinja"))
     
     # path to markupsafe
-    pathToMarkupsafe           = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "dependencies", "markupsafe"))
+    pathToMarkupsafe           = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "markupsafe"))
     
     # simd size of the accepted architectures
     simdWidth = { "noarch" : 1,
