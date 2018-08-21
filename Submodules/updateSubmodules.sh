@@ -20,6 +20,9 @@ currentLocation=$(pwd)
 # move to the CodeGenerator directory
 cd "$scriptDir"
 
+# By default don't rebuild LIBXSMM is nothing changed
+REBUILD_LIBXSMM=false
+
 if [ $# -eq 0 ]; then
 	#Peano
 	if [ ! -d Peano ]; then
@@ -35,7 +38,6 @@ if [ $# -eq 0 ]; then
 		cd ..
 	fi
 	#Jinja2
-	echo "test"
 	if [ ! -d jinja ]; then
 		mkdir jinja
 	fi
@@ -74,13 +76,32 @@ if [ $# -eq 0 ]; then
 		rm -rf documentation/
 		cd ..
 	else
-		echo "Update libxsmm submodule"
 		cd libxsmm
-		git stash -q     #silently stash the changes (deleted directories)
-		git pull origin release
-		git stash pop -q #silently unstash the changes (deleted directories)
-		rm -rf samples/       #delete potentially new stuff
-		rm -rf documentation/ #delete potentially new stuff
+		LOCAL=$(git rev-parse master)
+		REMOTE=$(git rev-parse origin/master)
+		if [ $LOCAL = $REMOTE ]; then
+			echo "Up-to-date"
+		else
+			REBUILD_LIBXSMM=true
+			echo "Update libxsmm submodule"
+			git stash -q     #silently stash the changes (deleted directories)
+			git pull origin master
+			git stash pop -q #silently unstash the changes (deleted directories)
+			rm -rf samples/       #delete potential new stuff
+			rm -rf documentation/ #delete potential new stuff
+		fi
+		cd ..
+	fi
+	
+	# build libxsmm
+	if [ ! -d libxsmm/bin ] || [ ! -e libxsmm/bin/libxsmm_gemm_generator ]; then
+		REBUILD_LIBXSMM=true
+	fi
+	if [ "$REBUILD_LIBXSMM" = true ]; then
+		echo "Build libxsmm gemm generator"
+		cd libxsmm
+		make realclean
+		make generator
 		cd ..
 	fi
 else
@@ -91,9 +112,9 @@ else
 			echo "-v set Peano Submodule url to https"
 			exit -1;;
 		s)  git config submodule.Submodules/Peano.url git@gitlab.lrz.de:gi26det/Peano.git
-			git config submodule.Submodules/jinja.url git@github.com/pallets/jinja.git
-			git config submodule.Submodules/markupsafe.url git@github.com/pallets/markupsafe.git
-			git config submodule.Submodules/libxsmm.url git@github.com/hfp/libxsmm.git
+			git config submodule.Submodules/jinja.url git@github.com:pallets/jinja.git
+			git config submodule.Submodules/markupsafe.url git@github.com:pallets/markupsafe.git
+			git config submodule.Submodules/libxsmm.url git@github.com:hfp/libxsmm.git
 			exit -2;;
 		w)  git config submodule.Submodules/Peano.url https://gitlab.lrz.de/gi26det/Peano.git
 			git config submodule.Submodules/jinja.url https://github.com/pallets/jinja.git
