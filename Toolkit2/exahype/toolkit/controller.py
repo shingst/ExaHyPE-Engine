@@ -64,9 +64,9 @@ class Controller:
         # set member values from args
         self.specfileName = args.specfile.name # note, this can be something like "<stdin>"
         self.interactive = args.interactive or not args.not_interactive
+        self.debug=args.debug
         self.verbose = args.verbose or self.interactive or self.debug
         self.write_json = args.write_json
-        self.debug=args.debug
         
         if self.verbose:
             self.log.setLevel(logging.INFO)
