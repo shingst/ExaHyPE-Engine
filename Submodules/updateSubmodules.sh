@@ -63,6 +63,45 @@ if [ $# -eq 0 ]; then
 		git pull origin master
 		cd ..
 	fi
+	#attrs
+	if [ ! -d attrs ]; then
+		mkdir attrs
+	fi
+	if [ ! -f attrs/.git ]; then
+		echo "Initialize attrs submodule"
+		git submodule update --init attrs
+	else
+		echo "Update attrs submodule"
+		cd attrs
+		git pull origin master
+		cd ..
+	fi
+	#pyrsistent
+	if [ ! -d pyrsistent ]; then
+		mkdir pyrsistent
+	fi
+	if [ ! -f pyrsistent/.git ]; then
+		echo "Initialize pyrsistent submodule"
+		git submodule update --init pyrsistent
+	else
+		echo "Update pyrsistent submodule"
+		cd pyrsistent
+		git pull origin master
+		cd ..
+	fi
+	#pyrsistent
+	if [ ! -d jsonschema ]; then
+		mkdir jsonschema
+	fi
+	if [ ! -f jsonschema/.git ]; then
+		echo "Initialize jsonschema submodule"
+		git submodule update --init jsonschema
+	else
+		echo "Update jsonschema submodule"
+		cd jsonschema
+		git pull origin master
+		cd ..
+	fi
 	#Libxsmm
 	if [ ! -d libxsmm ]; then
 		mkdir libxsmm
@@ -108,18 +147,24 @@ else
 	while getopts hsw opt; do
 	case $opt in
 		h)  echo "-h prints this message"
-			echo "-s set Peano Submodule url to ssh"
-			echo "-v set Peano Submodule url to https"
+			echo "-s set submodules url to ssh"
+			echo "-v set submodules url to https"
 			exit -1;;
-		s)  git config submodule.Submodules/Peano.url git@gitlab.lrz.de:gi26det/Peano.git
-			git config submodule.Submodules/jinja.url git@github.com:pallets/jinja.git
-			git config submodule.Submodules/markupsafe.url git@github.com:pallets/markupsafe.git
-			git config submodule.Submodules/libxsmm.url git@github.com:hfp/libxsmm.git
+		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:gi26det/Peano.git
+			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
+			git config submodule.Submodules/markupsafe.url  git@github.com:pallets/markupsafe.git
+			git config submodule.Submodules/attrs.url       git@github.com:python-attrs/attrs.git
+			git config submodule.Submodules/pyrsistent.url  git@github.com:tobgu/pyrsistent.git
+			git config submodule.Submodules/jsonschema.url  git@github.com:Julian/jsonschema.git
+			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git
 			exit -2;;
-		w)  git config submodule.Submodules/Peano.url https://gitlab.lrz.de/gi26det/Peano.git
-			git config submodule.Submodules/jinja.url https://github.com/pallets/jinja.git
-			git config submodule.Submodules/markupsafe.url https://github.com/pallets/markupsafe.git
-			git config submodule.Submodules/libxsmm.url https://github.com/hfp/libxsmm.git
+		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/gi26det/Peano.git
+			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
+			git config submodule.Submodules/markupsafe.url  https://github.com/pallets/markupsafe.git
+			git config submodule.Submodules/attrs.url       https://github.com/python-attrs/attrs.git
+			git config submodule.Submodules/pyrsistent.url  https://github.com/tobgu/pyrsistent.git
+			git config submodule.Submodules/jsonschema.url  https://github.com/Julian/jsonschema.git
+			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git
 			exit -3;;
 	esac
 	done
