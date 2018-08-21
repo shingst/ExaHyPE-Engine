@@ -10,3 +10,12 @@
 [submodule "Submodules/libxsmm"]
 	path = Submodules/libxsmm
 	url = https://github.com/hfp/libxsmm.git
+[submodule "Submodules/attrs"]
+	path = Submodules/attrs
+	url = https://github.com/python-attrs/attrs.git
+[submodule "Submodules/pyrsistent"]
+	path = Submodules/pyrsistent
+	url = https://github.com/tobgu/pyrsistent.git
+[submodule "Submodules/jsonschema"]
+	path = Submodules/jsonschema
+	url = https://github.com/Julian/jsonschema.git
