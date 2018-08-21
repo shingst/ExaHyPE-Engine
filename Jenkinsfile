@@ -20,9 +20,8 @@ pipeline {
 		run = load "Miscellaneous/Jenkins/Run.groovy"
 		build = load "Miscellaneous/Jenkins/Build.groovy"
 		}
-		sh util.getModuleCode() + 'Peano/updatePeano.sh -s'
-		sh util.getModuleCode() + 'Peano/updatePeano.sh'
-		sh util.getModuleCode() + 'CodeGenerator/importDependenciesLocally.sh -s'
+		sh util.getModuleCode() + 'Submodules/updateSubmodules.sh -s'
+		sh util.getModuleCode() + 'Submodules/updateSubmodules.sh'
 
 	    }
 	}
