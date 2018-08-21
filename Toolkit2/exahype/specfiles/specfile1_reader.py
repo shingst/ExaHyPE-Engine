@@ -532,6 +532,8 @@ class SpecFile1Reader():
         self.log.info("Mapping INI structure to JSON input object... ")
         result=self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
         self.log.info("OK")
+        self.log.debug("Result:")
+        self.log.debug(json.dumps(result, indent=2, sort_keys=True))
         return result 
 
     @classmethod
