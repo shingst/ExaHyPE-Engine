@@ -157,7 +157,6 @@ else
 			git config submodule.Submodules/pyrsistent.url  git@github.com:tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git@github.com:Julian/jsonschema.git
 			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git
-			exit -2;;
 		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  https://github.com/pallets/markupsafe.git
@@ -165,7 +164,6 @@ else
 			git config submodule.Submodules/pyrsistent.url  https://github.com/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  https://github.com/Julian/jsonschema.git
 			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git
-			exit -3;;
 	esac
 	done
 fi
