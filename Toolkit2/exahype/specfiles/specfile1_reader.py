@@ -518,10 +518,10 @@ class SpecFile1Reader():
         """
         spec_file_1: A list of strings (one line per list element)
         """
-        self.log.info("Converting legacy specification file (%d lines) to INI structure... " % len(spec_file_1))
+        self.log.info("Converting legacy specification file (%d lines) to INI file... " % len(spec_file_1))
         (spec_file_1_ini, n_solvers, n_plotters) = self.spec_file_1_to_ini(spec_file_1)
         self.log.info("OK")
-        self.log.debug("Ini file is: " + str(spec_file_1_ini))
+        self.log.debug("INI file is:\n" + str(spec_file_1_ini))
         
         config = configparser.ConfigParser(delimiters=('='))
         try:
@@ -532,8 +532,7 @@ class SpecFile1Reader():
         self.log.info("Mapping INI structure to JSON input object... ")
         result=self.map_options(self.convert_to_dict(config,n_solvers,n_plotters))
         self.log.info("OK")
-        self.log.debug("Result:")
-        self.log.debug(json.dumps(result, indent=2, sort_keys=True))
+        self.log.debug("JSON input object is: \n" + json.dumps(result, indent=2, sort_keys=True))
         return result 
 
     @classmethod
