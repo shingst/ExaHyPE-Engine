@@ -264,8 +264,8 @@ class SpecFile1Reader():
     # in the original spec file
     def map_aderdg_kernel_opts(self,kernel_opts):
         context = collections.OrderedDict()
-        stp         = "space_time_predictor"
-        opt         = "optimised_terms"
+        stp     = "space_time_predictor"
+        opt     = "optimised_terms"
         opt_dbg = "optimised_kernel_debugging"
         context[stp]=collections.OrderedDict()
         context[opt]=[]
@@ -289,7 +289,7 @@ class SpecFile1Reader():
                     found_token=True
             for term in ["converter","flops"]:
                 if token_s==term:
-                    context[opt_debug].append(term)
+                    context[opt_dbg].append(term)
                     found_token=True
             for term in ["cerkguess","notimeavg","maxpicarditer"]:
                 if token_s.startswith(term):
@@ -298,9 +298,9 @@ class SpecFile1Reader():
                             context[stp][term]=int(token_s.split(":")[-1])
                             found_token=True
                         except:
-                            raise SpecFile1ParserError("Number of point sources could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'pointsources':<int>)!" % token_s)
+                            raise SpecFile1ParserError("Parameter 'maxpicarditer' could not be parsed in original ExaHyPE specification file (is: '%s'. expected: 'maxpicarditer':<int>)!" % token_s)
                     else:
-                        context[stp][term]=term
+                        context[stp][term]=True
                         found_token=True
             if not found_token:
                 raise SpecFile1ParserError("Could not map value '%s' extracted from option 'optimisation'. Is it spelt correctly?" % token_s)
