@@ -223,7 +223,7 @@ class SpecFile1Reader():
                 if m_background_job_consumers:
                     shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
                     found_token = True
-                if re.search(r"manual_pinning",configure)!=None:
+                if re.search(r"manual-pinning",configure)!=None:
                     shared_memory["manual_pinning"] = True
                     found_token = True
                 if token_s in ["no-invade", "analyse-optimal-static-distribution-but-do-not-invade", "occupy-all-cores", "invade-between-time-steps", "invade-throughout-computation", "invade-at-time-step-startup-plus-throughout-computation"]:
