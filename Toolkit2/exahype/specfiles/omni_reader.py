@@ -98,7 +98,8 @@ class OmniReader:
 			raise ParserError(e)
 		
 
-	@register_reader("yaml", extensions=[".yaml"])
+        # TODO disabled until we decide how to deal with YAML
+        #@register_reader("yaml", extensions=[".yaml"])
 	def read_yaml(self, document_as_string):
 		"""
 		TODO:
