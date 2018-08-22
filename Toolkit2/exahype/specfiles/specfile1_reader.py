@@ -221,7 +221,7 @@ class SpecFile1Reader():
                 found_token = False
                 m_background_job_consumers = re.match(r"background-tasks:([0-9]+)",token_s)
                 if m_background_job_consumers:
-                    shared_memory["background_job_consumers"] = m.background_job_consumers.group(1)
+                    shared_memory["background_job_consumers"] = int(m_background_job_consumers.group(1))
                     found_token = True
                 if re.search(r"manual-pinning",configure)!=None:
                     shared_memory["manual_pinning"] = True
