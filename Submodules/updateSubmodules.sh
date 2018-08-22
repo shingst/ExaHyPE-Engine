@@ -99,10 +99,11 @@ if [ $# -eq 0 ]; then
 	else
 		echo "Update jsonschema submodule"
 		cd jsonschema
+		git checkout -- * #undo modifications
 		git pull origin master
-                # comment last two lines of module init file (hot fix)
-                sed -i -e "s,^from pkg_resources import get_distribution,#from pkg_resources import get_distribution,g" jsonschema/__init__.py
-                sed -i -e "s,^__version__ = get_distribution(__name__).version,#__version__ = get_distribution(__name__).version,g" jsonschema/__init__.py
+		# comment last two lines of module init file (hot fix)
+		sed -i -e "s,^from pkg_resources import get_distribution,#from pkg_resources import get_distribution,g" jsonschema/__init__.py
+		sed -i -e "s,^__version__ = get_distribution(__name__).version,#__version__ = get_distribution(__name__).version,g" jsonschema/__init__.py
 		cd ..
 	fi
 	#Libxsmm

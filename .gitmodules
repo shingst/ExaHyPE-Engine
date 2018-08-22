@@ -1,6 +1,7 @@
 [submodule "Submodules/Peano"]
 	path = Submodules/Peano
 	url = https://gitlab.lrz.de/gi26det/Peano.git
+	ignore = untracked # .o from compilation
 [submodule "Submodules/jinja"]
 	path = Submodules/jinja
 	url = https://github.com/pallets/jinja.git
@@ -10,7 +11,7 @@
 [submodule "Submodules/libxsmm"]
 	path = Submodules/libxsmm
 	url = https://github.com/hfp/libxsmm.git
-	ignore = dirty
+	ignore = dirty #deleted documentation and sample + build
 [submodule "Submodules/attrs"]
 	path = Submodules/attrs
 	url = https://github.com/python-attrs/attrs.git
@@ -20,4 +21,4 @@
 [submodule "Submodules/jsonschema"]
 	path = Submodules/jsonschema
 	url = https://github.com/Julian/jsonschema.git
-	ignore = dirty
+	ignore = dirty #modified __init__.py + __pycache__
