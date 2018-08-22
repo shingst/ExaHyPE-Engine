@@ -31,7 +31,7 @@ Toolkit/build.sh
 echo "Building $path"
 dir="$(readlink -f $(dirname ${path}))"
 
-java -jar Toolkit/dist/ExaHyPE.jar --not-interactive ${path}
+./Toolkit2/toolkit.sh ${path}
 cd $dir
 make -j 32
 '''
