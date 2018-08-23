@@ -44,13 +44,11 @@ struct {{project}}::{{abstractSolver}}::VariableMetrics {
 class {{project}}::{{abstractSolver}}::VariableShortcuts : public {{project}}::{{abstractSolver}}::VariableMetrics {
 public:
   /// positions of fields inside the unknown vector (solution vector) Q
-  const int _Q[numDistinctVariables + 1] = { {% set offset=0 %}{% for var in variablesMap %}{{ comma() }}{{offset}}{%set offset = offset+var.multiplicity %}{% endfor %} };
+  const int _Q[numDistinctVariables + 1] = { {% for var in variablesMap %}{{ comma() }}{{var.offset}}{% endfor %} };
 
-  {% set offset=0 %}
-  {% for var in variablesMap %}
-  const int {{var.name}} = {{offset}};
-  {%set offset = offset+var.multiplicity %};
-  {% endfor %}
+{% for var in variablesMap %}
+  const int {{var.name}} = {{var.offset}};
+{% endfor %}
 
   const int* asArray() const { return _Q; }
   int operator [] (int index) const { return _Q[index]; }
@@ -65,7 +63,7 @@ public:
 class {{project}}::{{abstractSolver}}::VariableMultiplicities : public {{project}}::{{abstractSolver}}::VariableMetrics {
 public:
   /// positions of fields inside the unknown vector (solution vector) Q
-  const int _Q[numDistinctVariables + 1] = { {% for var in variablesMap %}{{ comma() }}{{var.multiplicity}}{% endfor %} };
+  const int _Q[numDistinctVariables] = { {% for var in variablesMap %}{{ comma() }}{{var.multiplicity}}{% endfor %} };
 
 {% for var in variablesMap %}
   const int {{var.name}} = {{var.multiplicity}};

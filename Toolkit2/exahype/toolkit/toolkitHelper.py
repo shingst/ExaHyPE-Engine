@@ -35,11 +35,21 @@ class ToolkitHelper:
         """
         if field in solver:
             if type(solver[field]) is int:
-                return [OrderedDict([("name", "Q"), ("multiplicity", solver[field])])]
-            else:
-                return solver[field]
+                return [OrderedDict([("name", "Q"), ("multiplicity", solver[field]), ("offset", 0)])]
+            else: # is list
+                offset = 0
+                listOfVariables = []
+                for item in solver[field]:
+                    if type(item) is str:
+                        listOfVariables.append(OrderedDict([("name", item), ("multiplicity", 1), ("offset", offset)]))
+                        offset += 1
+                    else:
+                        multiplicity = item["multiplicity"]
+                        listOfVariables.append(OrderedDict([("name", item["name"]), ("multiplicity", multiplicity), ("offset", offset)]))
+                        offset += multiplicity
+                return listOfVariables
         else:
-            return [OrderedDict([("name", "Q"), ("multiplicity", 0)])]
+            return [OrderedDict([("name", "Q"), ("multiplicity", 0), ("offset", 0)])]
 
 
     @staticmethod
