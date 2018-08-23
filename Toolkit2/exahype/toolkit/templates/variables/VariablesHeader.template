@@ -83,7 +83,7 @@ public:
 class {{project}}::{{abstractSolver}}::VariableNames : public {{project}}::{{abstractSolver}}::VariableMetrics {
 public:
 {% set comma=joiner(",") %}
-  const char const *_Q[numDistinctVariables + 1] = { {% for var in variablesMap %}{{ comma() }}"{{var.name}}"{% endfor %} };
+  char const *_Q[numDistinctVariables + 1] = { {% for var in variablesMap %}{{ comma() }}"{{var.name}}"{% endfor %} };
 
 {% for var in variablesMap %}
   const char* {{var.name}} = "{{var.name}}";
@@ -182,18 +182,18 @@ class {{project}}::{{abstractSolver}}::ReadOnlyVariables : public {{project}}::{
 {% for var in variablesMap %}
 {% if var.multiplicity == 1%}
     // getter and setter for {{var.name}}
-    double {{var.name}}() const {return _data[{{var.offset}}];}
+    double {{var.name}}() const {return _Q[{{var.offset}}];}
         
 {% else %}
     // getters for {{var.name}} 
     double {{var.name}}(int index) const {
       assertion(index >= 0 && index<{{var.multiplicity}});
-      return _data[{{var.offset}}+index];
+      return _Q[{{var.offset}}+index];
     }
     tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
       tarch::la::Vector<{{var.multiplicity}},double> values;
 {% set comma=joiner(",") %}
-      values={%for i in range(var.multiplicity)%}{{comma()}}_data[{{var.offset+i}}]{%endfor%};
+      values={%for i in range(var.multiplicity)%}{{comma()}}_Q[{{var.offset+i}}]{%endfor%};
       return values;
     }
         
@@ -252,30 +252,31 @@ class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstrac
 {% for var in variablesMap %}
 {% if var.multiplicity == 1%}
     // getter and setter for {{var.name}}
-    double {{var.name}}() const {return _data[{{var.offset}}];}
-    double& {{var.name}}() const {return _data[{{var.offset}}];}
+    double {{var.name}}() const {return _Q[{{var.offset}}];}
+    double& {{var.name}}() {return _Q[{{var.offset}}];}
     
 {% else %}
     // getters for {{var.name}} 
     double {{var.name}}(int index) const {
       assertion(index >= 0 && index<{{var.multiplicity}});
-      return _data[{{var.offset}}+index];
+      return _Q[{{var.offset}}+index];
     }
     tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
       tarch::la::Vector<{{var.multiplicity}},double> values;
-      values={%for i in range(var.multiplicity)%}_data[{{var.offset+i}}],{%endfor%}_data[{{var.offset+var.multiplicity-1}}];
+      values={%for i in range(var.multiplicity)%}_Q[{{var.offset+i}}],{%endfor%}_Q[{{var.offset+var.multiplicity-1}}];
       return values;
     }
     // setters for {{var.name}}
-    double& {{var.name}}(int index) const {return _data[{{var.offset}}+index];}
-    void {{var.name}}(const tarch::la::Vector<{{var.multiplicity}},double>& values)) const {
+    double& {{var.name}}(int index) {return _Q[{{var.offset}}+index];}
+    void {{var.name}}(const tarch::la::Vector<{{var.multiplicity}},double>& values) const {
 {%for i in range(var.multiplicity)%}
-      _data[{{var.offset+i}}] = values[{{i}}];
+      _Q[{{var.offset+i}}] = values[{{i}}];
 {%endfor%}
     }
-    void {{var.name}}({%for i in range(var.multiplicity)%}double {{var.name}}{{i}},{%endfor%}double {{var.name}}{{var.multiplicity-1}}) {
+{% set comma = joiner(",") %}
+    void {{var.name}}({%for i in range(var.multiplicity)%}{{comma()}}double {{var.name}}{{i}}{%endfor%}) {
 {%for i in range(var.multiplicity)%}
-      _data[{{var.offset+i}}] = {{var.name}}{{i}};
+      _Q[{{var.offset+i}}] = {{var.name}}{{i}};
 {%endfor%}
     }
     
@@ -342,13 +343,13 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
 {# ex: tarch::la::Matrix<3,3,double> v() const; #}
     tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> {{var.name}}() const {
       tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> values;
-      #if DIMENSIONS==2;
+      #if DIMENSIONS==2
       values = 
 {% set newline = joiner("\n") %}
       {% for i in range(var.multiplicity) %}{{ newline() }}{% set comma=joiner(",") %}
       {% for j in range(2) %}{{ comma() }}_F[{{j}}][{{var.offset}}+{{i}}]{% endfor %}
       {% endfor %};
-      #elif DIMENSIONS==3;
+      #elif DIMENSIONS==3
       values = 
 {% set newline = joiner("\n") %}
         {% for i in range(var.multiplicity) %}{{ newline() }}{% set comma=joiner(",") %}{% for j in range(3) %}{{ comma() }}_F[{{j}}][{{var.offset}}+{{i}}]{% endfor %}{% endfor %};
@@ -358,46 +359,46 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
 {% endif %}
     // setters for {{var.name}}
 {% if var.multiplicity==1 %}
-{# ex: double& v(int column); #}
+    {# ex: double& v(int column); #}
     double& {{var.name}}(int column) {
       assertion(column >= 0 && column<DIMENSIONS);
       return _F[column][{{var.offset}}];
     }
 
-{# ex: void rho(tarch::la::Vector<DIMENSIONS,double>& values); 3D and 2D #}
+    {# ex: void rho(tarch::la::Vector<DIMENSIONS,double>& values); 3D and 2D #}
     void {{var.name}}(const tarch::la::Vector<DIMENSIONS,double>& values) {
-{% for j in range(2) %}
+      {% for j in range(2) %}
       _F[{{j}}][{{var.offset}}] = values[{{j}}];
-{% endfor %}
+      {% endfor %}
       #if DIMENSIONS==3
       _F[2][{{var.offset}}] = values[2];
       #endif
     }
 
-{# ex: void rho(tarch::la::Vector<DIMENSIONS,double>& values); 2.5D #}
+    {# ex: void rho(tarch::la::Vector<DIMENSIONS,double>& values); 2.5D #}
     #if DIMENSIONS==2
     // setter for 2.5D calculations. Third vector element is ignored.*/;
     void {{var.name}}(const tarch::la::Vector<3,double>& values) {
-{% for j in range(2) %}
+      {% for j in range(2) %}
       _F[{{j}}][{{var.offset}}] = values[{{j}}];
-{% endfor %}
+      {% endfor %}
     }
     #endif
 
 {# ex: void v(double v0, double v1, double v2);  3D and 2.5D #}
-    // setter for 3D and 2.5D calculations. Third argument is ignored for the latter.*/;
+    // setter for 3D and 2.5D calculations. Third argument is ignored for the latter.
 {% set comma=joiner(",") %}
     void {{var.name}}({% for j in range(3) %}{{comma()}}double v{{j}}{% endfor %}) {
 {% for j in range(2) %}
        _F[{{j}}][{{var.offset}}] = v{{j}};
 {% endfor %}
-      #if DIMENSIONS==3;
+      #if DIMENSIONS==3
       _F[2][{{var.offset}}] = v2;
-      #endif;
+      #endif
     }
     
 {# ex: void v(double v0, double v1); 2D #}
-    #if DIMENSIONS==2;
+    #if DIMENSIONS==2
 {% set comma=joiner(",") %}
     void {{var.name}}({% for j in range(2) %}{{comma()}}double v{{j}}{% endfor %}) {
     {% for j in range(2) %}
@@ -420,11 +421,11 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
 {% for j in range(2) %}
       _F[{{j}}][{{var.offset}}+row] = values[{{j}}];
 {% endfor %}
-      #if DIMENSIONS==3;
+      #if DIMENSIONS==3
       _F[2][{{var.offset}}+row] = values[2];
-      #endif;
+      #endif
     }
-    #if DIMENSIONS==2;
+    #if DIMENSIONS==2
     // setter for 2.5D calculations. Third vector element is ignored.*/;
     void {{var.name}}(int row, const tarch::la::Vector<3,double>& values) {
       assertion(row >= 0 && row<{{var.multiplicity}});
@@ -441,14 +442,14 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
       _F[{{j}}][{{var.offset}}+{{i}}] = values({{i}},{{j}});
 {% endfor %}
 {% endfor %}
-      #if DIMENSIONS==3;
+      #if DIMENSIONS==3
 {% for i in range(var.multiplicity) %}
       _F[2][{{var.offset}}+{{i}}] = values({{i}},2);
 {% endfor %}
-      #endif;
+      #endif
     }
 {# ex: void v(const tarch::la::Matrix<3,3,double>& values);  2.5D #}
-    #if DIMENSIONS==2;
+    #if DIMENSIONS==2
     // setter for 2.5D calculations. Third matrix column is ignored.*/;
     void {{var.name}}(const tarch::la::Matrix<{{var.multiplicity}},3,double>& values) {
 {% for j in range(2) %}
@@ -460,18 +461,18 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
     #endif
       
 {# ex: void v(int row, double v0, double v1, double v2); #}
-    // setter for 3D and 2.5D calculations. Third argument is ignored for the latter.*/;
+    // setter for 3D and 2.5D calculations. Third argument is ignored for the latter.
 {% set comma = joiner(",") %}
     void {{var.name}}(int row, {% for j in range(3) %}{{comma()}}double v{{j}}{% endfor %}) {
       assertion(row >= 0 && row<{{var.multiplicity}});
 {% for j in range(2) %}
       _F[{{j}}][{{var.offset}}+row] = v{{j}};
 {% endfor %}
-      #if DIMENSIONS==3;
+      #if DIMENSIONS==3
       _F[2][{{var.offset}}+row] = v2;
-      #endif;
+      #endif
     }
-    #if DIMENSIONS==2;
+    #if DIMENSIONS==2
     // setter for 2D calculations.*/;
 {% set comma = joiner(",") %}
     void {{var.name}}(int row, {% for j in range(2) %}{{comma()}}double v{{j}}{% endfor %}) {
@@ -483,8 +484,7 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
     #endif
 
 {# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2.5D and 3D #}
-      int argIndentLength = ( indent +"void {{var.name}}(" ).length();
-    // setter for 3D and 2.5D calculations. Third column values are ignored for the latter.*/;
+    // setter for 3D and 2.5D calculations. Third column values are ignored for the latter.
 {% set comma = joiner(",") %}
     void {{var.name}}({% for i in range(var.multiplicity) %}{% for j in range(3) %}{{comma()}}double v{{i}}{{j}}{% endfor %}{% endfor %}) {
 {% for j in range(2) %}
@@ -492,14 +492,14 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
       _F[{{j}}][{{var.offset}}+{{i}}] = v{{i}}{{j}};
 {% endfor %}
 {% endfor %}
-      #if DIMENSIONS==3;
+      #if DIMENSIONS==3
 {% for i in range(var.multiplicity) %}
       _F[2][{{var.offset}}+{{i}}] = v{{i}}2;
 {% endfor %}
       #endif
     }
 {# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2D #}
-    #if DIMENSIONS==2;
+    #if DIMENSIONS==2
 {% set comma = joiner(",") %}
     void {{var.name}}({% for i in range(var.multiplicity) %}{% for j in range(3) %}{{comma()}}double v{{i}}{{j}}{% endfor %}{% endfor %}) {
 {% for j in range(2) %}
