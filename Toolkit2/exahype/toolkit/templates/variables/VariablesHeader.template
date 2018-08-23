@@ -166,9 +166,27 @@ class {{project}}::{{abstractSolver}}::ReadOnlyVariables : public {{project}}::{
       return SizeParameters;
     }
 
-    // Java-generated code for VariablesGetters:
-
-{{VariablesGetters}}
+    {% set offset = 0 %}
+    {% for var in variablesMap %}
+    {% if var.multiplicity == 1%}
+        // getter and setter for {{var.name}}
+        double {{var.name}}() const {return _data[{{offset}}];}
+        
+    {% else %}
+        // getters for {{var.name}} 
+        double {{var.name}}(int index) const {
+          assertion(index >= 0 && index<{{var.multiplicity}});
+          return _data[{{offset}}+index];
+        }
+        tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
+          tarch::la::Vector<{{var.multiplicity}},double> values;
+          values={%for i in range(var.multiplicity)%}_data[{{offset+i}}],{%endfor%}_data[{{offset+var.multiplicity-1}}];
+          return values;
+        }
+        
+    {% endif %}
+    {% set offset = offset + var.multiplicity %}
+    {% endfor %}
 }; // end of ReadOnlyVariables
 
 
@@ -253,7 +271,6 @@ class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstrac
 {% endif %}
 {% set offset = offset + var.multiplicity %}
 {% endfor %}
-
 }; // end of Variables
 
 
@@ -274,59 +291,204 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
     }
 
 
-    {% if var.multiplicity==1 %}
-    {# ex: double rho(int column) const;  #}
-      double {{var.name}}(int column) const {
-        assertion(column >= 0 && column<DIMENSIONS);
-        return _F[column][{{offset}}];
-      }
+{% set offset = 0 %}
+{% for var in variablesMap %}
+    // getters for {{var.name}}
+{% if var.multiplicity==1 %}
+{# ex: double rho(int column) const;  #}
+    double {{var.name}}(int column) const {
+      assertion(column >= 0 && column<DIMENSIONS);
+      return _F[column][{{offset}}];
+    }
+{# ex: tarch::la::Vector<DIMENSIONS,double> rho() const; #}
+    tarch::la::Vector<DIMENSIONS,double> {{var.name}}() const {
+      #if DIMENSIONS==2 
+      tarch::la::Vector<DIMENSIONS,double> values({% for i in range(2) %}_F[{{i}}][{{offset}}]{{ "," if not loop.last }}{% endfor %});
+      #elif DIMENSIONS==3 
+      tarch::la::Vector<DIMENSIONS,double> values({% for i in range(3) %}_F[{{i}}][{{offset}}]{{ "," if not loop.last }}{% endfor %});
+      #endif
+      return values;
+    }
+{% else %}
+{# ex: double v(int row, int column) const; #}
+    double {{var.name}}(int row, int column) const {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+      assertion(column >= 0 && column<DIMENSIONS);
+      return _F[column][{{offset}}+row];
+    }
+{# ex: tarch::la::Vector<3,double> v(int row) const; #}
+    tarch::la::Vector<DIMENSIONS,double> {{var.name}}(int row) const {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+      #if DIMENSIONS==2
+      tarch::la::Vector<DIMENSIONS,double> values({% for i in range(2) %}_F[{{i}}][{{offset}}+row]{{ "," if not loop.last }}{% endfor %});
+      #elif DIMENSIONS==3 
+      tarch::la::Vector<DIMENSIONS,double> values({% for i in range(3) %}_F[{{i}}][{{offset}}+row]{{ "," if not loop.last }}{% endfor %});
+      #endif
+      return values;
+    }
+{# ex: tarch::la::Matrix<3,3,double> v() const; #}
+    tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> {{var.name}}() const {
+      tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> values;
+      #if DIMENSIONS==2;
+      values = 
+        {% for i in range(var.multiplicity) %}{% for j in range(2) %} _F[{{j}}][{{offset}}+{{i}}]{{ "," if not loop.last }}{% endfor %}{{ "\n" if not loop.last }}{% endfor %};
+      #elif DIMENSIONS==3;
+      values = 
+        {% for i in range(var.multiplicity) %}{% for j in range(3) %} _F[{{j}}][{{offset}}+{{i}}]{{ "," if not loop.last }}{% endfor %}{{ "\n" if not loop.last }}{% endfor %};
+      #endif
+      return values;
+    }
+{% endif %}
+    // setters for {{var.name}}
+{% if var.multiplicity==1 %}
+{# ex: double& v(int column); #}
+    double& {{var.name}}(int column) {
+      assertion(column >= 0 && column<DIMENSIONS);
+      return _F[column][{{offset}}];
+    }
 
-    {# ex: tarch::la::Vector<DIMENSIONS,double> rho() const; #}
-      tarch::la::Vector<DIMENSIONS,double> {{var.name}}() const {
-        #if DIMENSIONS==2 
-        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(2) %}_F[{{i}}][{{offset}}]{{ "," if not loop.last }}{% endfor %});
-        #elif DIMENSIONS==3 
-        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(3) %}_F[{{i}}][{{offset}}]{{ "," if not loop.last }}{% endfor %});
-        #endif
-        return values;
-      }
-          
-    {% else %}
-    {# ex: double v(int row, int column) const; #}
-      double {{var.name}}(int row, int column) const {
-        assertion(row >= 0 && row<{{var.multiplicity}});
-        assertion(column >= 0 && column<DIMENSIONS);
-        return _F[column][{{offset}}+row];
-      }
+{# ex: void rho(tarch::la::Vector<DIMENSIONS,double>& values); 3D and 2D #}
+    void {{var.name}}(const tarch::la::Vector<DIMENSIONS,double>& values) {
+{% for j in range(2) %}
+      _F[{{j}}][{{offset}}] = values[{{j}}];
+{% endfor %}
+      #if DIMENSIONS==3
+      _F[2][{{offset}}]=values[2];
+      #endif
+    }
 
-    {# ex: tarch::la::Vector<3,double> v(int row) const; #}
-      tarch::la::Vector<DIMENSIONS,double> {{var.name}}(int row) const {
-        assertion(row >= 0 && row<{{var.multiplicity}});
-        #if DIMENSIONS==2
-        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(2) %}_F[{{i}}][{{offset}}+row]{{ "," if not loop.last }}{% endfor %});
-        #elif DIMENSIONS==3 
-        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(3) %}_F[{{i}}][{{offset}}+row]{{ "," if not loop.last }}{% endfor %});
-        #endif
-        return values;
-      }
-          
-    {# ex: tarch::la::Matrix<3,3,double> v() const; #}
-      tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> {{var.name}}() const {
-        tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> values;
-        #if DIMENSIONS==2;
-        values = 
-          {% for i in range(var.multiplicity) %}{% for j in range(2) %} _F[{{j}}][{{offset}}+{{i}}]{{ "," if not loop.last }}{% endfor %}{{ "\n" if not loop.last }}{% endfor %};
-        #elif DIMENSIONS==3;
-        values = 
-          {% for i in range(var.multiplicity) %}{% for j in range(3) %} _F[{{j}}][{{offset}}+{{i}}]{{ "," if not loop.last }}{% endfor %}{{ "\n" if not loop.last }}{% endfor %};
-        #endif
-        return values;
-      }
-    {% endif %}
+{# ex: void rho(tarch::la::Vector<DIMENSIONS,double>& values); 2.5D #}
+    #if DIMENSIONS==2
+    /** Setter for 2.5D calculations. Third vector element is ignored.*/;
+    void {{var.name}}(const tarch::la::Vector<3,double>& values) {
+{% for j in range(2) %}
+      _F[{{j}}][{{offset}}] = values[{{j}}];
+{% endfor %}
+    }
+    #endif
 
-    // Java-generated code for FluxSetters:
+{# ex: void v(double v0, double v1, double v2);  3D and 2.5D #}
+    /** Setter for 3D and 2.5D calculations. Third argument is ignored for the latter.*/;
+    void {{var.name}}({% for j in range(3) %}double v{{j}}{"," if not loop.last}{% endfor %}) {
+{% for j in range(2) %}
+        _F[{{j}}][{{offset}}]=v{{j}};
+{% endfor %}
+      #if DIMENSIONS==3;
+      _F[2][{{offset}}]=v2;
+      #endif;
+    }
+    
+{# ex: void v(double v0, double v1); 2D #}
+    #if DIMENSIONS==2;
+    void {{var.name}}({% for j in range(3) %}double v{{j}}{"," if not loop.last}{% endfor %}) {
+    {% for j in range(2) %}
+        _F[{{j}}][{{offset}}]=v{{j}};
+    {% endfor %}
+    }
+    #endif
+{# multipilcity > 1 %}
+{% else %}
+{# ex: double& v(int row, int column) #}
+    double& {{var.name}}(int row, int column) {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+      assertion(column >= 0 && column<DIMENSIONS);
+      return _F[column][{{offset}}+row];
+    }
 
-{{FluxesSetters}}
+{# ex: void v(int row, const tarch::la::Vector<3,double>& values); 2D and 3D
+    void {{var.name}}(int row, const tarch::la::Vector<DIMENSIONS,double>& values) {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+{% for j in range(2) %}
+        _F[{{j}}][{{offset}}+row]=values[{{j}}];
+{% endfor %}
+      #if DIMENSIONS==3;
+      _F[2][{{offset}}+row]=values[2];
+      #endif;
+    }
+    #if DIMENSIONS==2;
+    /** Setter for 2.5D calculations. Third vector element is ignored.*/;
+    void {{var.name}}(int row, const tarch::la::Vector<3,double>& values) {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+{% for j in range(2) %}
+        _F[{{j}}][{{offset}}+row]=values[{{j}}];
+{% endfor %}
+    }
+    #endif
+      
+{# ex: void v(const tarch::la::Matrix<3,DIMENSIONS,double>& values);  2D and 3D #}
+    void {{var.name}}(const tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double>& values) {
+{% for j in range(2) %}
+{% for i in range({{var.multiplicity}}) %}
+      _F[{{j}}][{{offset}}+{{i}}]=values({{i}},{{j}});
+{% endfor %}
+{% endfor %}
+      #if DIMENSIONS==3;
+{% for i in range({{var.multiplicity}}) %}
+      _F[2][{{offset}}+{{i}}]=values({{i}},2);
+{% endfor %}
+      #endif;
+    }
+{# ex: void v(const tarch::la::Matrix<3,3,double>& values);  2.5D #}
+    #if DIMENSIONS==2;
+    /** Setter for 2.5D calculations. Third matrix column is ignored.*/;
+    void {{var.name}}(const tarch::la::Matrix<{{var.multiplicity}},3,double>& values) {
+{% for j in range(2) %}
+{% for i in range({{var.multiplicity}}) %}
+      _F[{{j}}][{{offset}}+{{i}}]=values({{i}},{{j}});
+{% endfor %}
+{% endfor %}
+    }
+    #endif
+      
+{# ex: void v(int row, double v0, double v1, double v2); #}
+    /** Setter for 3D and 2.5D calculations. Third argument is ignored for the latter.*/;
+    void {{var.name}}(int row, {% for j in range(3) %}double v{{j}}{"," if not loop.last}{% endfor %}) {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+{% for j in range(2) %}
+      _F[{{j}}][{{offset}}+row]=v{{j}};
+{% endfor %}
+      #if DIMENSIONS==3;
+      _F[2][{{offset}}+row]=v2;
+      #endif;
+    }
+    #if DIMENSIONS==2;
+    /** Setter for 2D calculations.*/;
+    void {{var.name}}(int row, {% for j in range(2) %}double v{{j}}{"," if not loop.last}{% endfor %}) {
+      assertion(row >= 0 && row<{{var.multiplicity}});
+{% for j in range(2) %}
+      _F[{{j}}][{{offset}}+row]=v{{j}};
+{% endfor %}
+    }
+    #endif
+
+{# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2.5D and 3D #}
+      int argIndentLength = ( indent +"void {{var.name}}(" ).length();
+    /** Setter for 3D and 2.5D calculations. Third column values are ignored for the latter.*/;
+    void {{var.name}}({% for i in range({{var.multiplicity}}) %}{% for j in range(3) %}double v{{i}}{{j}}{"," if not loop.last}{% endfor %}{% endfor %}) {
+{% for j in range(2) %}
+{% for i in range({{var.multiplicity}}) %}
+      _F[{{j}}][{{offset}}+{{i}}]=v{{i}}{{j}};
+{% endfor %}
+{% endfor %}
+      #if DIMENSIONS==3;
+{% for i in range({{var.multiplicity}}) %}
+      _F[2][{{offset}}+{{i}}]=v{{i}}2;
+{% endfor %}
+      #endif
+    }
+{# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2D #}
+    #if DIMENSIONS==2;
+    void {{var.name}}({% for i in range({{var.multiplicity}}) %}{% for j in range(3) %}double v{{i}}{{j}}{"," if not loop.last}{% endfor %}{% endfor %}) {
+{% for j in range(2) %}
+{% for i in range({{var.multiplicity}}) %}
+      _F[{{j}}][{{offset}}+{{i}}]=v{{i}}{{j}};
+{% endfor %}
+{% endfor %}
+    }
+    #endif
+{% endif %}
+{% set offset = offset + var.multiplicity %}
+{% endfor %}
 }; // end of Fluxes
 
 // NamingSchemes:
