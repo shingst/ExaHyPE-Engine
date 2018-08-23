@@ -9,18 +9,23 @@ class SolverController:
     def __init__(self, solverSpec, baseContext):
         self.solverSpec = solverSpec
         self.baseContext = baseContext
+        self.solverContexts = [] #store all contexts used to generate solver
 
 
     def run(self, logger):
-        model = solverModel.SolverModel(None, logger)
+        model = solverModel.SolverModel(None, logger) #solverModel, need to stay the same to get codegeneratorContext
         for i,solver in enumerate(self.solverSpec):
             logger.info("Generating solver[%d] = %s..." % (i, solver["name"]))
             solverFiles = []
             if solver["type"]=="ADER-DG":
-                model.switchContext(self.buildADERDGSolverContext(solver))
+                context = self.buildADERDGSolverContext(solver)
+                model.switchContext(context)
+                self.solverContexts.append(context)
                 solverFiles = model.generateCode()
             elif solver["type"]=="Finite-Volumes":
-                model.switchContext(self.buildFVSolverContext(solver))
+                context = self.buildFVSolverContext(solver)
+                model.switchContext(context)
+                self.solverContexts.append(context)
                 solverFiles = model.generateCode()
             elif solver["type"]=="Limiting-ADER-DG":
                 aderdgContext = self.buildADERDGSolverContext(solver)
@@ -38,6 +43,8 @@ class SolverController:
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 
+                self.solverContexts.extend([context, fvContext, aderdgContext])
+                
                 # generate all solver files
                 model.switchContext(context)
                 solverFiles  = model.generateCode()
@@ -54,7 +61,7 @@ class SolverController:
                 for path in plotModel.generateCode():
                     logger.info("Generated '"+path+"'")
         
-        return [[], model.getCodegeneratorContexts()]
+        return [self.solverContexts, model.getCodegeneratorContexts()]
 
 
     def buildBaseSolverContext(self, solver):

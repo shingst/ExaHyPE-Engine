@@ -102,7 +102,7 @@ class Controller:
         
         try:
             solverControl = SolverController(self.spec.get("solvers",[]), self.buildBaseContext())
-            _, codegeneratorContexts = solverControl.run(self.log)
+            solverContexts, codegeneratorContexts = solverControl.run(self.log)
         except BadSpecificationFile as e:
             self.log.error("Could not create applications solver classes: %s" % str(e))
             self.log.exception(e)
@@ -118,19 +118,22 @@ class Controller:
         except Exception as e:
             self.log.error("Could not create ExaHyPE's kernel calls: %s" % str(e))
             self.log.exception(e)
-            sys.exit(-10)
+            sys.exit(-8)
             
         self.wait_interactive("generated computational kernel calls")
         
-        # blah
-        #CreateReadme(self.spec,self.verbose)
-        #
-        #self.wait_interactive("generated README")
-        #
-        # makefiles, etc.
-        #setupBuildEnvironment(self.spec, self.verbose)
-        #
-        #self.wait_interactive("setup build environment")
+        
+        try:
+            # README
+            readme = readmeModel.ReadmeModel(self.buildReadmeContext(solverContexts, codegeneratorContexts))
+            pathToReadme = readme.generateCode()
+            self.log.info("Generated '"+pathToReadme+"'")
+        except Exception as e:
+            self.log.error("Could not create ExaHyPE's README: %s" % str(e))
+            self.log.exception(e)
+            sys.exit(-12)
+            
+        self.wait_interactive("generated computational README")
         
         try:
             makefile = makefileModel.MakefileModel(self.buildMakefileContext())
@@ -267,7 +270,7 @@ class Controller:
     def buildKernelCallsContext(self, codegeneratorContextsList):
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
-        
+        #TODO JMG refactor to use solverContexts
         context["solvers"] = []
         for solver in self.spec.get("solvers",[]):
             solverContext = {}
@@ -297,6 +300,16 @@ class Controller:
         context["includePaths"] = [] #TODO
         
         return context
+    
+    
+    def buildReadmeContext(self, solverContexts, codegeneratorContexts):
+        """Generate context for the Readme model"""
+        context = self.buildBaseContext()
+        context["solverContexts"] = solverContexts
+        context["codegeneratorContexts"] = codegeneratorContexts
+        
+        return context
+    
     
     def specfileAsHex(self,spec):
         """
