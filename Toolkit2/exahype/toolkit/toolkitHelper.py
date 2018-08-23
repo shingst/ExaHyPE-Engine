@@ -1,6 +1,8 @@
 import fnmatch
 import os
 
+from collections import OrderedDict
+
 class BadSpecificationFile(Exception):
     pass
 
@@ -33,11 +35,11 @@ class ToolkitHelper:
         """
         if field in solver:
             if type(solver[field]) is int:
-                return [{"name" : "Q", "multiplicity" : solver[field]}]
+                return [OrderedDict([("name", "Q"), ("multiplicity", solver[field])])]
             else:
                 return solver[field]
         else:
-            return [{"name" : "Q", "multiplicity" : 0}]
+            return [OrderedDict([("name", "Q"), ("multiplicity", 0)])]
 
 
     @staticmethod

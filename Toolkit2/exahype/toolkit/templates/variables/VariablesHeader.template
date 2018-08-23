@@ -219,13 +219,41 @@ class {{project}}::{{abstractSolver}}::Variables : public {{project}}::{{abstrac
       return SizeParameters;
     }
 
-    // Java-generated code for VariablesGetters:
+{% set offset = 0 %}
+{% for var in variablesMap %}
+{% if var.multiplicity == 1%}
+    // getter and setter for {{var.name}}
+    double {{var.name}}() const {return _data[{{offset}}];}
+    double& {{var.name}}() const {return _data[{{offset}}];}
+    
+{% else %}
+    // getters for {{var.name}} 
+    double {{var.name}}(int index) const {
+      assertion(index >= 0 && index<{{var.multiplicity}});
+      return _data[{{offset}}+index];
+    }
+    tarch::la::Vector<{{var.multiplicity}},double> {{var.name}}() const {
+      tarch::la::Vector<{{var.multiplicity}},double> values;
+      values={%for i in range(var.multiplicity)%}_data[{{offset+i}}],{%endfor%}_data[{{offset+var.multiplicity-1}}];
+      return values;
+    }
+    // setters for {{var.name}}
+    double& {{var.name}}(int index) const {return _data[{{offset}}+index];}
+    void {{var.name}}(const tarch::la::Vector<{{var.multiplicity}},double>& values)) const {
+{%for i in range(var.multiplicity)%}
+      _data[{{offset+i}}] = values[{{i}}];
+{%endfor%}
+    }
+    void {{var.name}}({%for i in range(var.multiplicity)%}double {{var.name}}{{i}},{%endfor%}double {{var.name}}{{var.multiplicity-1}}) {
+{%for i in range(multiplicity)%}
+      _data[{{offset+i}}] = {{var.name}}{{i}};
+{%endfor%}
+    }
+    
+{% endif %}
+{% set offset = offset + var.multiplicity %}
+{% endfor %}
 
-{{VariablesGetters}}
-
-    // Java-generated code for VariablesSetters:
-
-{{VariablesSetters}}
 }; // end of Variables
 
 
@@ -246,9 +274,55 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
     }
 
 
-    // Java-generated code for FluxGetters:
+    {% if var.multiplicity==1 %}
+    {# ex: double rho(int column) const;  #}
+      double {{var.name}}(int column) const {
+        assertion(column >= 0 && column<DIMENSIONS);
+        return _F[column][{{offset}}];
+      }
 
-{{FluxesGetters}}
+    {# ex: tarch::la::Vector<DIMENSIONS,double> rho() const; #}
+      tarch::la::Vector<DIMENSIONS,double> {{var.name}}() const {
+        #if DIMENSIONS==2 
+        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(2) %}_F[{{i}}][{{offset}}]{{ "," if not loop.last }}{% endfor %});
+        #elif DIMENSIONS==3 
+        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(3) %}_F[{{i}}][{{offset}}]{{ "," if not loop.last }}{% endfor %});
+        #endif
+        return values;
+      }
+          
+    {% else %}
+    {# ex: double v(int row, int column) const; #}
+      double {{var.name}}(int row, int column) const {
+        assertion(row >= 0 && row<{{var.multiplicity}});
+        assertion(column >= 0 && column<DIMENSIONS);
+        return _F[column][{{offset}}+row];
+      }
+
+    {# ex: tarch::la::Vector<3,double> v(int row) const; #}
+      tarch::la::Vector<DIMENSIONS,double> {{var.name}}(int row) const {
+        assertion(row >= 0 && row<{{var.multiplicity}});
+        #if DIMENSIONS==2
+        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(2) %}_F[{{i}}][{{offset}}+row]{{ "," if not loop.last }}{% endfor %});
+        #elif DIMENSIONS==3 
+        tarch::la::Vector<DIMENSIONS,double> values({% for i in range(3) %}_F[{{i}}][{{offset}}+row]{{ "," if not loop.last }}{% endfor %});
+        #endif
+        return values;
+      }
+          
+    {# ex: tarch::la::Matrix<3,3,double> v() const; #}
+      tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> {{var.name}}() const {
+        tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> values;
+        #if DIMENSIONS==2;
+        values = 
+          {% for i in range(var.multiplicity) %}{% for j in range(2) %} _F[{{j}}][{{offset}}+{{i}}]{{ "," if not loop.last }}{% endfor %}{{ "\n" if not loop.last }}{% endfor %};
+        #elif DIMENSIONS==3;
+        values = 
+          {% for i in range(var.multiplicity) %}{% for j in range(3) %} _F[{{j}}][{{offset}}+{{i}}]{{ "," if not loop.last }}{% endfor %}{{ "\n" if not loop.last }}{% endfor %};
+        #endif
+        return values;
+      }
+    {% endif %}
 
     // Java-generated code for FluxSetters:
 
