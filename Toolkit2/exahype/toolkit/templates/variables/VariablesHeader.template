@@ -345,14 +345,15 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
       tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double> values;
       #if DIMENSIONS==2
       values = 
-{% set newline = joiner("\n") %}
+{% set newline = joiner(",\n") %}
       {% for i in range(var.multiplicity) %}{{ newline() }}{% set comma=joiner(",") %}
       {% for j in range(2) %}{{ comma() }}_F[{{j}}][{{var.offset}}+{{i}}]{% endfor %}
       {% endfor %};
       #elif DIMENSIONS==3
       values = 
-{% set newline = joiner("\n") %}
-        {% for i in range(var.multiplicity) %}{{ newline() }}{% set comma=joiner(",") %}{% for j in range(3) %}{{ comma() }}_F[{{j}}][{{var.offset}}+{{i}}]{% endfor %}{% endfor %};
+{% set newline = joiner(",\n") %}
+      {% for i in range(var.multiplicity) %}{{ newline() }}{% set comma=joiner(",") %}
+      {% for j in range(3) %}{{ comma() }}_F[{{j}}][{{var.offset}}+{{i}}]{% endfor %}{% endfor %};
       #endif
       return values;
     }
@@ -385,42 +386,42 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
     }
     #endif
 
-{# ex: void v(double v0, double v1, double v2);  3D and 2.5D #}
+    {# ex: void v(double v0, double v1, double v2);  3D and 2.5D #}
     // setter for 3D and 2.5D calculations. Third argument is ignored for the latter.
-{% set comma=joiner(",") %}
+    {% set comma=joiner(",") %}
     void {{var.name}}({% for j in range(3) %}{{comma()}}double v{{j}}{% endfor %}) {
-{% for j in range(2) %}
-       _F[{{j}}][{{var.offset}}] = v{{j}};
-{% endfor %}
+      {% for j in range(2) %}
+      _F[{{j}}][{{var.offset}}] = v{{j}};
+      {% endfor %}
       #if DIMENSIONS==3
       _F[2][{{var.offset}}] = v2;
       #endif
     }
     
-{# ex: void v(double v0, double v1); 2D #}
+    {# ex: void v(double v0, double v1); 2D #}
     #if DIMENSIONS==2
-{% set comma=joiner(",") %}
+    {% set comma=joiner(",") %}
     void {{var.name}}({% for j in range(2) %}{{comma()}}double v{{j}}{% endfor %}) {
     {% for j in range(2) %}
       _F[{{j}}][{{var.offset}}] = v{{j}};
     {% endfor %}
     }
     #endif
-{# multiplicity > 1 %}
+{# multiplicity > 1 #}
 {% else %}
-{# ex: double& v(int row, int column) #}
+    {# ex: double& v(int row, int column) #}
     double& {{var.name}}(int row, int column) {
       assertion(row >= 0 && row<{{var.multiplicity}});
       assertion(column >= 0 && column<DIMENSIONS);
       return _F[column][{{var.offset}}+row];
     }
 
-{# ex: void v(int row, const tarch::la::Vector<3,double>& values); 2D and 3D
+    {# ex: void v(int row, const tarch::la::Vector<3,double>& values); 2D and 3D
     void {{var.name}}(int row, const tarch::la::Vector<DIMENSIONS,double>& values) {
       assertion(row >= 0 && row<{{var.multiplicity}});
-{% for j in range(2) %}
+      {% for j in range(2) %}
       _F[{{j}}][{{var.offset}}+row] = values[{{j}}];
-{% endfor %}
+      {% endfor %}
       #if DIMENSIONS==3
       _F[2][{{var.offset}}+row] = values[2];
       #endif
@@ -429,34 +430,34 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
     // setter for 2.5D calculations. Third vector element is ignored.*/;
     void {{var.name}}(int row, const tarch::la::Vector<3,double>& values) {
       assertion(row >= 0 && row<{{var.multiplicity}});
-{% for j in range(2) %}
+        {% for j in range(2) %}
        _F[{{j}}][{{var.offset}}+row] = values[{{j}}];
-{% endfor %}
+       {% endfor %}
     }
     #endif
       
-{# ex: void v(const tarch::la::Matrix<3,DIMENSIONS,double>& values);  2D and 3D #}
+    {# ex: void v(const tarch::la::Matrix<3,DIMENSIONS,double>& values);  2D and 3D #}
     void {{var.name}}(const tarch::la::Matrix<{{var.multiplicity}},DIMENSIONS,double>& values) {
-{% for j in range(2) %}
-{% for i in range(var.multiplicity) %}
+      {% for j in range(2) %}
+      {% for i in range(var.multiplicity) %}
       _F[{{j}}][{{var.offset}}+{{i}}] = values({{i}},{{j}});
-{% endfor %}
-{% endfor %}
+      {% endfor %}
+      {% endfor %}
       #if DIMENSIONS==3
-{% for i in range(var.multiplicity) %}
+      {% for i in range(var.multiplicity) %}
       _F[2][{{var.offset}}+{{i}}] = values({{i}},2);
-{% endfor %}
+      {% endfor %}
       #endif
     }
-{# ex: void v(const tarch::la::Matrix<3,3,double>& values);  2.5D #}
+    {# ex: void v(const tarch::la::Matrix<3,3,double>& values);  2.5D #}
     #if DIMENSIONS==2
     // setter for 2.5D calculations. Third matrix column is ignored.*/;
     void {{var.name}}(const tarch::la::Matrix<{{var.multiplicity}},3,double>& values) {
-{% for j in range(2) %}
-{% for i in range(var.multiplicity) %}
+      {% for j in range(2) %}
+      {% for i in range(var.multiplicity) %}
       _F[{{j}}][{{var.offset}}+{{i}}] = values({{i}},{{j}});
-{% endfor %}
-{% endfor %}
+      {% endfor %}
+      {% endfor %}
     }
     #endif
       
@@ -485,28 +486,28 @@ class {{project}}::{{abstractSolver}}::Fluxes : public {{project}}::{{abstractSo
 
 {# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2.5D and 3D #}
     // setter for 3D and 2.5D calculations. Third column values are ignored for the latter.
-{% set comma = joiner(",") %}
+    {% set comma = joiner(",") %}
     void {{var.name}}({% for i in range(var.multiplicity) %}{% for j in range(3) %}{{comma()}}double v{{i}}{{j}}{% endfor %}{% endfor %}) {
-{% for j in range(2) %}
-{% for i in range(var.multiplicity) %}
+      {% for j in range(2) %}
+      {% for i in range(var.multiplicity) %}
       _F[{{j}}][{{var.offset}}+{{i}}] = v{{i}}{{j}};
-{% endfor %}
-{% endfor %}
+      {% endfor %}
+      {% endfor %}
       #if DIMENSIONS==3
-{% for i in range(var.multiplicity) %}
+      {% for i in range(var.multiplicity) %}
       _F[2][{{var.offset}}+{{i}}] = v{{i}}2;
-{% endfor %}
+      {% endfor %}
       #endif
     }
-{# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2D #}
+    {# ex: void v(double v00, double v01, double v02, double v10, double v11, double v12, double v20, double v21, double v22);  2D #}
     #if DIMENSIONS==2
-{% set comma = joiner(",") %}
-    void {{var.name}}({% for i in range(var.multiplicity) %}{% for j in range(3) %}{{comma()}}double v{{i}}{{j}}{% endfor %}{% endfor %}) {
-{% for j in range(2) %}
-{% for i in range(var.multiplicity) %}
+    {% set comma = joiner(",") %}
+    void {{var.name}}({% for i in range(var.multiplicity) %}{% for j in range(2) %}{{comma()}}double v{{i}}{{j}}{% endfor %}{% endfor %}) {
+      {% for j in range(2) %}
+      {% for i in range(var.multiplicity) %}
       _F[{{j}}][{{var.offset}}+{{i}}] = v{{i}}{{j}};
-{% endfor %}
-{% endfor %}
+      {% endfor %}
+      {% endfor %}
     }
     #endif
 {% endif %}
