@@ -52,6 +52,9 @@ class SolverModel(AbstractModelBaseClass):
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
           result.append(self.render(template,filePath))
         
+        if implementation != "user":
+            result.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h"))
+        
         if implementation == "optimised":
             CodegeneratorModel.generateCode(self.context)
         
@@ -81,6 +84,9 @@ class SolverModel(AbstractModelBaseClass):
           result.append(self.render(template,filePath,overwrite=False))
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
           result.append(self.render(template,filePath))
+        
+        if implementation != "user":
+            result.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h"))
         
         return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
 

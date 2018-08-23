@@ -72,6 +72,12 @@ class SolverController:
         context["numberOfGlobalObservables"]  = nGlobalObs
         context["numberOfPointSources"]       = nPointSources
         
+        # variables access class
+        context["variablesMap"]  = ToolkitHelper.parse_variables(solver,"variables")
+        if nParam>0:
+            context["variablesMap"] += ToolkitHelper.parse_variables(solver,"material_parameters")
+        context["variablesMapSize"] = len(context["variablesMap"])
+        
         context["range_0_nVar"]          = range(0,nVar)
         context["range_0_nVarParam"]     = range(0,nVar+nParam)
         context["range_0_nGlobalObs"]    = range(0,nGlobalObs)    # nGlobalObs might be 0

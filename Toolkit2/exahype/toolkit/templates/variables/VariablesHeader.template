@@ -8,8 +8,8 @@
 // ==============================================
 // Please do not change the implementations below
 // =============================---==============
-#ifndef __{{Solver}}_Variables_CLASS_HEADER__
-#define __{{Solver}}_Variables_CLASS_HEADER__
+#ifndef __{{solver}}_Variables_CLASS_HEADER__
+#define __{{solver}}_Variables_CLASS_HEADER__
 
 #include "{{abstractSolver}}.h"
 
@@ -23,10 +23,10 @@
  **/
 struct {{project}}::{{abstractSolver}}::VariableMetrics {
   static constexpr int numDistinctVariables = {{variablesMapSize}};
-  static constexpr int SizeVariables = {{numberOfVariables}}; 
+  static constexpr int SizeVariables  = {{numberOfVariables}}; 
   static constexpr int SizeParameters = {{numberOfMaterialParameters}};
   static constexpr int Size           = {{numberOfVariables}}+{{numberOfMaterialParameters}};
-  static constexpr int Dimensions    = DIMENSIONS;
+  static constexpr int Dimensions     = DIMENSIONS;
 };
 
 /**
@@ -42,7 +42,7 @@ struct {{project}}::{{abstractSolver}}::VariableMetrics {
 class {{project}}::{{abstractSolver}}::VariableShortcuts : public {{project}}::{{abstractSolver}}::VariableMetrics {
 public:
   /// positions of fields inside the unknown vector (solution vector) Q
-  int _Q[numDistinctVariables + 1] = { {% set offset=0 %}{% for id in variablesMap.keys() %}{{offset}},{%set offset = offset+variablesMap.id %}{% endfor %} -1 };
+  int _Q[numDistinctVariables + 1] = { {% set offset=0 %}{% for var in variablesMap %}{{offset}},{%set offset = offset+var.multiplicity %}{% endfor %} -1 };
 
 {{VariableShortcuts}}
 
@@ -95,7 +95,7 @@ public:
  * Usage is like:
  * 
  *    void somewhere() {
- *       using namespace {{project}}::{{Solver}}_Variables::shortcuts;
+ *       using namespace {{project}}::{{solver}}_Variables::shortcuts;
  *       Q[foo] = 17;
  *    }
  *
@@ -108,7 +108,7 @@ public:
  *
  **/
 namespace {{project}} {
-  namespace {{Solver}}_Variables {
+  namespace {{solver}}_Variables {
     namespace shortcuts {
       {{ConstexprVariableShortcuts}}
     } // namespace shortcuts
@@ -306,7 +306,7 @@ class {{project}}::{{abstractSolver}}::{{name | capitalize}} {
       return values;
     }
 {% endif %}
-{% offset = offset + multiplicity %}
+{% set offset = offset + multiplicity %}
 {% endfor %}
 //Setter
 {% set offset = 0 %}
@@ -327,7 +327,7 @@ class {{project}}::{{abstractSolver}}::{{name | capitalize}} {
 {%endfor%}
     }
 {% endif %}
-{% offset = offset + multiplicity %}
+{% set offset = offset + multiplicity %}
 {% endfor %}
 };
 {% endfor %}
