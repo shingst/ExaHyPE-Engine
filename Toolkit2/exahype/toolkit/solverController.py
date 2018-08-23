@@ -12,14 +12,15 @@ class SolverController:
 
 
     def run(self, logger):
+        model = solverModel.SolverModel(None, logger)
         for i,solver in enumerate(self.solverSpec):
             logger.info("Generating solver[%d] = %s..." % (i, solver["name"]))
             solverFiles = []
             if solver["type"]=="ADER-DG":
-                model       = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
+                model.switchContext(self.buildADERDGSolverContext(solver))
                 solverFiles = model.generateCode()
             elif solver["type"]=="Finite-Volumes":
-                model       = solverModel.SolverModel(self.buildFVSolverContext(solver))
+                model.switchContext(self.buildFVSolverContext(solver))
                 solverFiles = model.generateCode()
             elif solver["type"]=="Limiting-ADER-DG":
                 aderdgContext = self.buildADERDGSolverContext(solver)
@@ -38,21 +39,22 @@ class SolverController:
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 
                 # generate all solver files
-                model        = solverModel.SolverModel(context)
+                model.switchContext(context)
                 solverFiles  = model.generateCode()
-                model        = solverModel.SolverModel(fvContext)
+                model.switchContext(fvContext)
                 solverFiles += model.generateCode()
-                model        = solverModel.SolverModel(aderdgContext)
+                model.switchContext(aderdgContext)
                 solverFiles += model.generateCode()
             
             for path in solverFiles:
                 logger.info("Generated '"+path+"'")
             for j,plotter in enumerate(solver.get("plotters",[])):
                 logger.info("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
-                model = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
-                for path in model.generateCode():
+                plotModel = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
+                for path in plotModel.generateCode():
                     logger.info("Generated '"+path+"'")
-                        
+        
+        return [[], model.getCodegeneratorContexts()]
 
 
     def buildBaseSolverContext(self, solver):

@@ -4,19 +4,16 @@ import sys
 # add path to dependencies
 from ..configuration import Configuration
 sys.path.insert(1, Configuration.pathToCodegenerator)
-
 import codegenerator
 
 
 class CodegeneratorModel:
 
-    # static list of dict, store all information on generated code (used for kernel registration)
-    codegeneratorContextsList = []
+    def __init__(self, logger):
+        self.logger = logger
     
-    logger  = None
     
-    @staticmethod
-    def generateCode(solverContext):
+    def generateCode(self, solverContext):
         #translation from solverContext to codegeneratorContext
         codegeneratorContext = {
             # Mandatory parameters
@@ -51,9 +48,8 @@ class CodegeneratorModel:
         # call the codegenerator with the given context
         codegeneratorController = codegenerator.Controller(codegeneratorContext)
         codegeneratorController.generateCode()
-        # append the given context to the list
-        CodegeneratorModel.codegeneratorContextsList.append(codegeneratorContext)
         
         # if verbose print the associated command line
-        if CodegeneratorModel.logger is not None:
-            CodegeneratorModel.logger.info(codegeneratorController.commandLine)
+        self.logger.info(codegeneratorController.commandLine)
+        
+        return codegeneratorContext

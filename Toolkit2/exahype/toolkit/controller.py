@@ -102,7 +102,7 @@ class Controller:
         
         try:
             solverControl = SolverController(self.spec.get("solvers",[]), self.buildBaseContext())
-            solverControl.run(self.log)
+            _, codegeneratorContexts = solverControl.run(self.log)
         except BadSpecificationFile as e:
             self.log.error("Could not create applications solver classes: %s" % str(e))
             self.log.exception(e)
@@ -112,7 +112,7 @@ class Controller:
         
         try:
             # kernel calls
-            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext(codegeneratorModel.CodegeneratorModel.codegeneratorContextsList))
+            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext(codegeneratorContexts))
             pathToKernelCalls = kernelCalls.generateCode()
             self.log.info("Generated '"+pathToKernelCalls+"'")
         except Exception as e:

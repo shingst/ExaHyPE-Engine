@@ -21,12 +21,29 @@
 #
 
 
+import copy
+
 from .abstractModelBaseClass import AbstractModelBaseClass
 from .codegeneratorModel import CodegeneratorModel
 
 
 class SolverModel(AbstractModelBaseClass):
-    
+
+
+    def __init__(self, baseContext, logger):
+        super().__init__(baseContext)
+        self.codegenModel = CodegeneratorModel(logger)
+        self.codegenContexts = []
+
+
+    def switchContext(self, newContext):
+        self.context = copy.copy(newContext)
+
+
+    def getCodegeneratorContexts(self):
+        return self.codegenContexts
+
+
     def generateADERDGSolverFiles(self):
         solverTemplates = {
             "user"    : [ (self.context["solver"]+".h"   , "solvers/MinimalADERDGSolverHeader.template"),
@@ -56,9 +73,10 @@ class SolverModel(AbstractModelBaseClass):
             result.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h"))
         
         if implementation == "optimised":
-            CodegeneratorModel.generateCode(self.context)
+            self.codegenContexts.append(self.codegenModel.generateCode(self.context)) #call codegenerator and store context used
         
         return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
+
 
     def generateFiniteVolumesSolverFiles(self):
         solverTemplates = {
@@ -90,6 +108,7 @@ class SolverModel(AbstractModelBaseClass):
         
         return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
 
+
     def generateLimitingADERDGSolverFiles(self):
         solverTemplates = {  }
         abstractSolverTemplates  = { 
@@ -110,7 +129,8 @@ class SolverModel(AbstractModelBaseClass):
           result.append(self.render(template,filePath))
         
         return result # return generated files as list
-        
+
+
     def generateCode(self):
         generators = { 
           "ADER-DG"          : self.generateADERDGSolverFiles,
