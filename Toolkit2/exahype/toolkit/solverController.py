@@ -83,7 +83,7 @@ class SolverController:
         context["range_0_nGlobalObs"]    = range(0,nGlobalObs)    # nGlobalObs might be 0
         context["range_0_nPointSources"] = range(0,nPointSources) # nPointSources might be 0
         
-        context["namingSchemes"]=[] # TODO read from spec
+        context["namingSchemes"]={} # TODO read from spec
         return context
 
 
