@@ -8,7 +8,7 @@
 // ==============================================
 // Please do not change the implementations below
 // =============================---==============
-#include "{{abstractSolver}}.h"
+#include "{{solver}}.h"
 
 #include "{{optKernelPath}}/Kernels.h"
 
@@ -18,32 +18,32 @@
 {% endif %}
 
 {% if countFlops  %}
-std::atomic_ulong {{project}}::{{abstractSolver}}::total_flops = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::total_time = 0;
+std::atomic_ulong {{project}}::{{solver}}::total_flops = 0;
+std::atomic_ulong {{project}}::{{solver}}::total_time = 0;
 
-std::atomic_ulong {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace_c = 0;
+std::atomic_ulong {{project}}::{{solver}}::projectOnFVLimiterSpace_f = 0;
+std::atomic_ulong {{project}}::{{solver}}::projectOnFVLimiterSpace_t = 0;
+std::atomic_ulong {{project}}::{{solver}}::projectOnFVLimiterSpace_c = 0;
   
-std::atomic_ulong {{project}}::{{abstractSolver}}::projectOnDGSpace_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::projectOnDGSpace_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::projectOnDGSpace_c = 0;
+std::atomic_ulong {{project}}::{{solver}}::projectOnDGSpace_f = 0;
+std::atomic_ulong {{project}}::{{solver}}::projectOnDGSpace_t = 0;
+std::atomic_ulong {{project}}::{{solver}}::projectOnDGSpace_c = 0;
     
-std::atomic_ulong {{project}}::{{abstractSolver}}::discreteMaximumPrincipleAndMinAndMaxSearch_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::discreteMaximumPrincipleAndMinAndMaxSearch_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::discreteMaximumPrincipleAndMinAndMaxSearch_c = 0;
+std::atomic_ulong {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch_f = 0;
+std::atomic_ulong {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch_t = 0;
+std::atomic_ulong {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch_c = 0;
     
-std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalMinAndMax_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalMinAndMax_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalMinAndMax_c = 0;
+std::atomic_ulong {{project}}::{{solver}}::findCellLocalMinAndMax_f = 0;
+std::atomic_ulong {{project}}::{{solver}}::findCellLocalMinAndMax_t = 0;
+std::atomic_ulong {{project}}::{{solver}}::findCellLocalMinAndMax_c = 0;
     
-std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalLimiterMinAndMax_f = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalLimiterMinAndMax_t = 0;
-std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalLimiterMinAndMax_c = 0;
+std::atomic_ulong {{project}}::{{solver}}::findCellLocalLimiterMinAndMax_f = 0;
+std::atomic_ulong {{project}}::{{solver}}::findCellLocalLimiterMinAndMax_t = 0;
+std::atomic_ulong {{project}}::{{solver}}::findCellLocalLimiterMinAndMax_c = 0;
 {% endif %}
 
 // Just call parent constructor
-{{project}}::{{abstractSolver}}::{{abstractSolver}}(
+{{project}}::{{solver}}::{{solver}}(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
@@ -65,7 +65,7 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::findCellLocalLimiterMinAndMax
     DMPDifferenceScaling,
 iterationsToCureTroubledCell) {}
 
-void {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
+void {{project}}::{{solver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
 {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
@@ -84,7 +84,7 @@ void {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace(const double* cons
 {% endif %} 
 }
 
-void {{project}}::{{abstractSolver}}::projectOnDGSpace(const double* const lim, double* const luh) const {
+void {{project}}::{{solver}}::projectOnDGSpace(const double* const lim, double* const luh) const {
 {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
@@ -103,7 +103,7 @@ void {{project}}::{{abstractSolver}}::projectOnDGSpace(const double* const lim, 
 {% endif %} 
 }
 
-bool {{project}}::{{abstractSolver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) {
+bool {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) {
 {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
@@ -124,7 +124,7 @@ bool {{project}}::{{abstractSolver}}::discreteMaximumPrincipleAndMinAndMaxSearch
   return r;
 }
 
-void {{project}}::{{abstractSolver}}::findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) {
+void {{project}}::{{solver}}::findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) {
 {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
@@ -143,7 +143,7 @@ void {{project}}::{{abstractSolver}}::findCellLocalMinAndMax(const double* const
 {% endif %} 
 }
 
-void {{project}}::{{abstractSolver}}::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
+void {{project}}::{{solver}}::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
 {% if countFlops  %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}

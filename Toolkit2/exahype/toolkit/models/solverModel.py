@@ -112,10 +112,10 @@ class SolverModel(AbstractModelBaseClass):
     def generateLimitingADERDGSolverFiles(self):
         solverTemplates = {  }
         abstractSolverTemplates  = { 
-            "generic"   :  [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractGenericLimiterSolverImplementation.template"),
-                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractGenericLimiterSolverHeader.template") ],
-            "optimised" :  [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractOptimisedLimiterSolverImplementation.template"),
-                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractOptimisedLimiterSolverHeader.template") ],
+            "generic"   :  [ (self.context["solver"]+".cpp" , "solvers/GenericLimiterSolverImplementation.template"),
+                             (self.context["solver"]+".h"   , "solvers/GenericLimiterSolverHeader.template") ],
+            "optimised" :  [ (self.context["solver"]+".cpp" , "solvers/OptimisedLimiterSolverImplementation.template"),
+                             (self.context["solver"]+".h"   , "solvers/OptimisedLimiterSolverHeader.template") ],
         }
         
         implementation = self.context["implementation"]
