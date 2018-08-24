@@ -274,7 +274,7 @@ class Controller:
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
         context["solvers"] = solverContextsList
-        context["codegeneratorContextsList"] = filter(None, [solverContext.get("codegeneratorContext", None) for solverContext in solverContextsList])
+        context["codegeneratorContextsList"] = [solverContext["codegeneratorContext"] for solverContext in solverContextsList if "codegeneratorContext" in solverContext]
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)
         context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
