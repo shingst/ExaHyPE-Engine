@@ -30,11 +30,6 @@ from .codegeneratorModel import CodegeneratorModel
 class SolverModel(AbstractModelBaseClass):
 
 
-    def __init__(self, baseContext):
-        super().__init__(baseContext)
-        self.codegenModel = CodegeneratorModel()
-
-
     def generateADERDGSolverFiles(self):
         solverTemplates = {
             "user"    : [ (self.context["solver"]+".h"   , "solvers/MinimalADERDGSolverHeader.template"),
@@ -56,7 +51,8 @@ class SolverModel(AbstractModelBaseClass):
         
         paths = [] # path is None if nothing was generated
         if implementation == "optimised":
-            _ , self.context["codegeneratorContext"] = self.codegenModel.generateCode(self.context) #call codegenerator and store context used
+            codegenModel = CodegeneratorModel()
+            _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
           paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
