@@ -31,8 +31,8 @@
 {% endfor %}
 
 {% for solver in solvers %}
-// includes for solver '{{solver.name}}'
-#include "{{solver.headerPath}}"
+// includes for solver '{{solver.solver}}'
+#include "{{solver.solver}}.h"
 {% for plotter in solver.plotters %}
 #include "{{plotter.headerPath}}"
 {% endfor %}
@@ -42,11 +42,11 @@
 void kernels::registerSolvers(exahype::parser::Parser& parser) {
 {% for solver in solvers %}
 {%set solver_loop = loop %}
-  // register solver '{{solver.name}}' (type: '{{solver.type}}')
+  // register solver '{{solver.solver}}' (type: '{{solver.type}}')
   {
 {% if solver.type == "ADER-DG" %}
     exahype::solvers::RegisteredSolvers.push_back(
-      new {{project}}::{{solver.name}}(
+      new {{project}}::{{solver.solver}}(
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
@@ -58,7 +58,7 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
     );
 {% elif solver.type == "Limiting-ADER-DG" %}
     exahype::solvers::RegisteredSolvers.push_back(
-      new {{project}}::{{solver.name}}(
+      new {{project}}::{{solver.solver}}(
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
@@ -73,7 +73,7 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
     );
 {% elif solver.type == "Finite-Volumes" %}
     exahype::solvers::RegisteredSolvers.push_back(
-      new {{project}}::{{solver.name}}(
+      new {{project}}::{{solver.solver}}(
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}})
       )
@@ -82,17 +82,17 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
     parser.checkSolverConsistency({{loop.index0}});
     
 {% for plotter in solver.plotters %}
-    // register plotter '{{plotter.name}}'
-{% if plotter.type_as_str == "user::defined" %}
+    // register plotter '{{plotter.plotter}}'
+{% if plotter.plotterType == "user::defined" %}
     exahype::plotters::RegisteredPlotters.push_back( 
       new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, 
-        new {{project}}::{{plotter.name}}()
+        new {{project}}::{{plotter.plotter}}()
       )
     );
 {% else %}
     exahype::plotters::RegisteredPlotters.push_back( 
-      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, new {{project}}::{{plotter.name}}(
-          *static_cast<{{project}}::{{solver.name}}*>(exahype::solvers::RegisteredSolvers[{{solver_loop.index0}}])) 
+      new exahype::plotters::Plotter({{solver_loop.index0}},{{loop.index0}},parser, new {{project}}::{{plotter.plotter}}(
+          *static_cast<{{project}}::{{solver.solver}}*>(exahype::solvers::RegisteredSolvers[{{solver_loop.index0}}])) 
       )
     );
 {% endif %}
@@ -120,20 +120,20 @@ void kernels::toString(std::ostream& ostream) {
   ostream << "projectName:    {{project}}\n";
 {% for solver in solvers %}
   ostream << "Solver[{{loop.index0}}].type:             {{solver.type}}\n";
-  ostream << "Solver[{{loop.index0}}].class:            {{solver.class}}\n";
+  ostream << "Solver[{{loop.index0}}].class:            {{solver.project}}::{{solver.solver}}\n";
 {%   if solver.type=="Limiting-ADER-DG" %}
-  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solver.class}}_ADERDG\n";
+  ostream << "Solver[{{loop.index0}}].class[ADERDG]:    {{solver.project}}::{{solver.ADERDGSolver}}\n";
   ostream << "Solver[{{loop.index0}}].abstract[ADERDG]: ";
-  {{solver.class}}_ADERDG::constantsToString(ostream);
-  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solver.class}}_FV\n";
+  {{solver.project}}::{{solver.ADERDGSolver}}::constantsToString(ostream);
+  ostream << "Solver[{{loop.index0}}].class[FV]:        {{solver.project}}::{{solver.FVSolver}}\n";
   ostream << "Solver[{{loop.index0}}].abstract[FV]: ";
-  {{solver.class}}_FV::constantsToString(ostream);
+  {{solver.project}}::{{solver.FVSolver}}::constantsToString(ostream);
 {%   elif solver["type"]=="ADER-DG" %}
   ostream << "Solver[{{loop.index0}}].abstract: ";
-  {{solver.class}}::constantsToString(ostream);
+  {{solver.project}}::{{solver.solver}}::constantsToString(ostream);
 {%   elif solver.type=="Finite-Volumes" %}
   ostream << "Solver[{{loop.index0}}].abstract: ";
-  {{solver.class}}::constantsToString(ostream);
+  {{solver.project}}::{{solver.solver}}::constantsToString(ostream);
 {%   endif %}
   ostream << "Solver[{{loop.index0}}].variables:           [ {{solver.variables_as_str}} ]\n";
   ostream << "Solver[{{loop.index0}}].material_parameters: [ {{solver.material_parameters_as_str}} ]\n";
@@ -151,7 +151,7 @@ void kernels::toString(std::ostream& ostream) {
 */ #}
 {%   set solver_loop=loop %}
 {%   for plotter in solver.plotters %}
-  ostream << "Solver[{{solver_loop.index0}}].Plotter[{{loop.index0}}]: {{project}}::{{plotter.name}}(variables={{plotter.variables_as_str}})\n";
+  ostream << "Solver[{{solver_loop.index0}}].Plotter[{{loop.index0}}]: {{project}}::{{plotter.plotter}}(variables={{plotter.variables_as_str}})\n";
 {%   endfor %}
 {% endfor %}
  

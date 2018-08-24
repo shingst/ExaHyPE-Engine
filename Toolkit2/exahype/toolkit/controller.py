@@ -201,6 +201,7 @@ class Controller:
 
         return spec
     
+    
     def validateAndSetDefaults(self, spec, validate_only=False):
         """
         Given a specification, validate it  against the JSON-Schema and
@@ -218,6 +219,7 @@ class Controller:
             sys.exit(0)
         else:
             return spec
+
 
     def buildBaseContext(self):
         """Generate base context from spec with commonly used value"""
@@ -267,42 +269,15 @@ class Controller:
         
         return context
     
+    
     def buildKernelCallsContext(self, solverContextsList):
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
-        #TODO JMG refactor to use solverContexts
-        context["solvers"] = []
-        for solver in self.spec.get("solvers",[]):
-            solverContext = {}
-            solverContext["name"]                        = solver["name"]
-            solverContext["type"]                        = solver["type"]
-            solverContext["class"]                       = context["project"]+"::"+solver["name"]
-            solverContext["headerPath"]                  = solver["name"]+".h"
-            solverContext["variables_as_str"]            = ToolkitHelper.variables_to_str(solver,"variables")
-            solverContext["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
-            solverContext["global_observables_as_str"]   = ToolkitHelper.variables_to_str(solver,"global_observables")
-            solverContext["plotters"] = []
-            for plotter in solver.get("plotters",[]):
-                plotterContext = {}
-                plotterContext["name"]             = plotter["name"]
-                plotterContext["headerPath"]       = os.path.join(context["plotterSubDirectory"], plotter["name"]+".h" )
-                plotterContext["type_as_str"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
-                plotterContext["variables_as_str"] = ToolkitHelper.variables_to_str(plotter,"variables")
-                solverContext["plotters"].append(plotterContext)
-            context["solvers"].append(solverContext)
-        
+        context["solvers"] = solverContextsList
+        context["codegeneratorContextsList"] = filter(None, [solverContext.get("codegeneratorContext", None) for solverContext in solverContextsList])
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)
         context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
-        # TODO JMG
-        l = []
-        for solverContext in solverContextsList:
-            if "codegeneratorContext" in solverContext:
-                l.append(solverContext["codegeneratorContext"])
-        context["codegeneratorContextsList"] = l#codegeneratorContextsList #list of contexts used for the generation of each optimized solver
-        # todo(JM) profiler 
-        # todo(Sven) serialised spec file compiled into KernelCalls.cp
-        context["includePaths"] = [] #TODO
         
         return context
     
@@ -324,6 +299,7 @@ class Controller:
         text = json.dumps(spec, sort_keys=True, indent=4)
         hex_tokens = [ "0x%02x"%ord(char) for char in text ] + ["0x00"] # null-terminated list of hex numbers
         return ", ".join(hex_tokens)
+    
     
     def checkEnvVariable(self):
         """

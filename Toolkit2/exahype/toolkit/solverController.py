@@ -55,11 +55,14 @@ class SolverController:
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 
+                context["aderdgContext"] = aderdgContext
+                context["fvContext"] = fvContext
+                
                 # generate all solver files
                 model = solverModel.SolverModel(fvContext)
-                self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                self.processModelOutput(model.generateCode(), [], logger) #don't register context
                 model = solverModel.SolverModel(aderdgContext)
-                self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                self.processModelOutput(model.generateCode(), [], logger) #don't register context
                 model = solverModel.SolverModel(context)
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
                 
@@ -96,6 +99,9 @@ class SolverController:
         if nParam>0:
             context["variablesMap"] += ToolkitHelper.parse_variables(solver,"material_parameters")
         context["variablesMapSize"] = len(context["variablesMap"])
+        context["variables_as_str"] = ToolkitHelper.variables_to_str(solver,"variables")
+        context["material_parameters_as_str"]  = ToolkitHelper.variables_to_str(solver,"material_parameters")
+        context["global_observables_as_str"]   = ToolkitHelper.variables_to_str(solver,"global_observables")
         
         context["range_0_nVar"]          = range(0,nVar)
         context["range_0_nVarParam"]     = range(0,nVar+nParam)
@@ -108,6 +114,7 @@ class SolverController:
 
     def buildADERDGSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
+        context["type"] = "ADER-DG"
         context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
         context.update(self.buildKernelOptimizationContext(solver["aderdg_kernel"], context))
         
@@ -119,11 +126,10 @@ class SolverController:
 
     def buildLimitingADERDGSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
-        
+        context["type"] = "Limiting-ADER-DG"
         context["order"]                  = solver["order"]
         context["numberOfDMPObservables"] = solver["limiter"]["dmp_observables"]
         context["implementation"]         = solver["limiter"].get("implementation","generic")
-        
         context["ADERDGSolver"]         = solver["name"]+"_ADERDG"
         context["FVSolver"]             = solver["name"]+"_FV"
         context["ADERDGAbstractSolver"] = "Abstract"+solver["name"]+"_ADERDG"
@@ -134,8 +140,8 @@ class SolverController:
 
     def buildFVSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
+        context["type"] = "Finite-Volumes"
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
-        
         context["patchSize"] = solver.get("patch_size",-1) # overwrite if called from LimitingADERDGSolver creation
         
         return context
@@ -185,13 +191,14 @@ class SolverController:
     def buildPlotterContext(self,solver,plotter):
         context = self.buildBaseSolverContext(solver)
 
-        context["plotter"]         = plotter["name"]
-        context["writtenUnknowns"] = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(plotter,"variables"))
-        context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
+        context["plotter"]          = plotter["name"]
+        context["writtenUnknowns"]  = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(plotter,"variables"))
+        context["variables_as_str"] = ToolkitHelper.variables_to_str(plotter,"variables")
+        context["plotterType"]      = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
         
-        context["headerPath"] = os.path.join(context["plotterSubDirectory"],(context["plotter"]+".h"))
+        context["headerPath"]       = os.path.join(context["plotterSubDirectory"],(context["plotter"]+".h"))
         if context["plotterSubDirectory"] != "":
-            context["outputPath"] = os.path.join(context["outputPath"], context["plotterSubDirectory"])
+            context["outputPath"]   = os.path.join(context["outputPath"], context["plotterSubDirectory"])
             
         return context
 
