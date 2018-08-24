@@ -9,24 +9,36 @@ class SolverController:
     def __init__(self, solverSpec, baseContext):
         self.solverSpec = solverSpec
         self.baseContext = baseContext
-        self.solverContexts = [] #store all contexts used to generate solver
+
+
+    def processModelOutput(self, output, contextsList, logger):
+        """Standard model output is (paths, context)
+        
+        Log the path of the generated file (== not None) using the logger and
+        store the context used in the contextList
+        
+        return the context
+        """
+        paths, context = output
+        for path in filter(None, paths):
+            logger.info("Generated '"+path+"'")
+        if "codegeneratorContext" in context:
+            logger.info("Codegenerator used, command line to get the same result: "+context["codegeneratorContext"]["commandLine"])
+        contextsList.append(context)
+        
+        return context
 
 
     def run(self, logger):
-        model = solverModel.SolverModel(None, logger) #solverModel, need to stay the same to get codegeneratorContext
+        solverContextsList = []
         for i,solver in enumerate(self.solverSpec):
             logger.info("Generating solver[%d] = %s..." % (i, solver["name"]))
-            solverFiles = []
-            if solver["type"]=="ADER-DG":
-                context = self.buildADERDGSolverContext(solver)
-                model.switchContext(context)
-                self.solverContexts.append(context)
-                solverFiles = model.generateCode()
+            if solver["type"]=="ADER-DG": 
+                model = solverModel.SolverModel(self.buildADERDGSolverContext(solver))
+                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Finite-Volumes":
-                context = self.buildFVSolverContext(solver)
-                model.switchContext(context)
-                self.solverContexts.append(context)
-                solverFiles = model.generateCode()
+                model = solverModel.SolverModel(self.buildFVSolverContext(solver))
+                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
             elif solver["type"]=="Limiting-ADER-DG":
                 aderdgContext = self.buildADERDGSolverContext(solver)
                 fvContext     = self.buildFVSolverContext(solver)
@@ -43,25 +55,23 @@ class SolverController:
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 
-                self.solverContexts.extend([context, fvContext, aderdgContext])
-                
                 # generate all solver files
-                model.switchContext(context)
-                solverFiles  = model.generateCode()
-                model.switchContext(fvContext)
-                solverFiles += model.generateCode()
-                model.switchContext(aderdgContext)
-                solverFiles += model.generateCode()
-            
-            for path in solverFiles:
-                logger.info("Generated '"+path+"'")
-            for j,plotter in enumerate(solver.get("plotters",[])):
-                logger.info("Generating plotter[%d] = %s for solver[%d] = %s" % (j, plotter["name"], i, solver["name"]))
+                model = solverModel.SolverModel(fvContext)
+                self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                model = solverModel.SolverModel(aderdgContext)
+                self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                model = solverModel.SolverModel(context)
+                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
+                
+            solverContext["plotters"] = []
+            for j, plotter in enumerate(solver.get("plotters",[])):
+                logger.info("Generating plotter[%d]= %s ,for solver[%d]= %s..." % (j, plotter["name"], i, solver["name"]))
                 plotModel = plotterModel.PlotterModel(self.buildPlotterContext(solver,plotter))
-                for path in plotModel.generateCode():
-                    logger.info("Generated '"+path+"'")
+                self.processModelOutput(plotModel.generateCode(), solverContext["plotters"], logger)
+            
+        logger.info("Solver generation... done")
         
-        return [self.solverContexts, model.getCodegeneratorContexts()]
+        return solverContextsList
 
 
     def buildBaseSolverContext(self, solver):
@@ -105,7 +115,8 @@ class SolverController:
         context["numberOfDMPObservables"] = -1 # overwrite if called from LimitingADERDGSolver creation
         
         return context
-        
+
+
     def buildLimitingADERDGSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
         
@@ -119,8 +130,8 @@ class SolverController:
         context["FVAbstractSolver"]     = "Abstract"+solver["name"]+"_FV"
         
         return context
-    
-        
+
+
     def buildFVSolverContext(self, solver):
         context = self.buildBaseSolverContext(solver)
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
@@ -128,9 +139,8 @@ class SolverController:
         context["patchSize"] = solver.get("patch_size",-1) # overwrite if called from LimitingADERDGSolver creation
         
         return context
-    
 
-    
+
     def buildADERDGKernelContext(self, kernel):
         context = {}
         context["implementation"]          = kernel.get("implementation","generic")
@@ -148,7 +158,8 @@ class SolverController:
         context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
-        
+
+
     def buildFVKernelContext(self,kernel):
         context = {}
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
@@ -159,7 +170,8 @@ class SolverController:
         context["patchwiseAdjust"]   = kernel.get("adjust_solution","pointwise")=="patchwise" 
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
-    
+
+
     def buildKernelTermsContext(self,terms):
         context = {}
         for term in ["flux","source","ncp","point_sources","material_parameters"]:
@@ -169,12 +181,12 @@ class SolverController:
             context["%s_s" % option] = "true" if context[option] else "false"
         return context
 
-        
+
     def buildPlotterContext(self,solver,plotter):
         context = self.buildBaseSolverContext(solver)
 
         context["plotter"]         = plotter["name"]
-        context["writtenUnknowns"] = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(solver,"variables"))
+        context["writtenUnknowns"] = ToolkitHelper.count_variables(ToolkitHelper.parse_variables(plotter,"variables"))
         context["plotterType"]     = plotter["type"] if type(plotter["type"]) is str else "::".join(plotter["type"])
         
         context["headerPath"] = os.path.join(context["plotterSubDirectory"],(context["plotter"]+".h"))
@@ -182,7 +194,8 @@ class SolverController:
             context["outputPath"] = os.path.join(context["outputPath"], context["plotterSubDirectory"])
             
         return context
-        
+
+
     def buildKernelOptimizationContext(self, kernel, solverContext):
         optimizations = kernel.get("optimised_kernel_debugging",[]) + kernel.get("optimised_terms",[])
         context = {}
@@ -197,4 +210,3 @@ class SolverController:
         context["useNCPVect"]         = "fusedsourcevect" in optimizations
 
         return context
-        

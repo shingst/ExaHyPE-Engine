@@ -36,8 +36,8 @@ class PlotterModel(AbstractModelBaseClass):
                      (self.context["plotter"]+".cpp" , "plotters/UserOnTheFlyPostProcessingImplementation.template") ],
           }
         
-        result = []
+        paths = [] # path is None if nothing was generated
         for filePath,template in templates.get(userDefined, []):
-            result.append(self.render(template,filePath,overwrite=False))
+            paths.append(self.render(template,filePath,overwrite=False)[0]) #only keep the path
         
-        return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
+        return paths, self.context

@@ -102,7 +102,7 @@ class Controller:
         
         try:
             solverControl = SolverController(self.spec.get("solvers",[]), self.buildBaseContext())
-            solverContexts, codegeneratorContexts = solverControl.run(self.log)
+            solverContextsList = solverControl.run(self.log)
         except BadSpecificationFile as e:
             self.log.error("Could not create applications solver classes: %s" % str(e))
             self.log.exception(e)
@@ -112,8 +112,8 @@ class Controller:
         
         try:
             # kernel calls
-            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext(codegeneratorContexts))
-            pathToKernelCalls = kernelCalls.generateCode()
+            kernelCalls = kernelCallsModel.KernelCallsModel(self.buildKernelCallsContext(solverContextsList))
+            pathToKernelCalls, _ = kernelCalls.generateCode()
             self.log.info("Generated '"+pathToKernelCalls+"'")
         except Exception as e:
             self.log.error("Could not create ExaHyPE's kernel calls: %s" % str(e))
@@ -125,8 +125,8 @@ class Controller:
         
         try:
             # README
-            readme = readmeModel.ReadmeModel(self.buildReadmeContext(solverContexts, codegeneratorContexts))
-            pathToReadme = readme.generateCode()
+            readme = readmeModel.ReadmeModel(self.buildReadmeContext(solverContextsList))
+            pathToReadme, _ = readme.generateCode()
             self.log.info("Generated '"+pathToReadme+"'")
         except Exception as e:
             self.log.error("Could not create ExaHyPE's README: %s" % str(e))
@@ -137,7 +137,7 @@ class Controller:
         
         try:
             makefile = makefileModel.MakefileModel(self.buildMakefileContext())
-            pathToMakefile = makefile.generateCode() #generate Makefile and get path to it
+            pathToMakefile, _ = makefile.generateCode() #generate Makefile and get path to it
             makefileMessage = makefile.getOutputMessage()
             self.log.info("Generated '"+pathToMakefile+"'")
         except Exception as e:
@@ -267,7 +267,7 @@ class Controller:
         
         return context
     
-    def buildKernelCallsContext(self, codegeneratorContextsList):
+    def buildKernelCallsContext(self, solverContextsList):
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
         #TODO JMG refactor to use solverContexts
@@ -294,7 +294,12 @@ class Controller:
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)
         context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
-        context["codegeneratorContextsList"] = codegeneratorContextsList #list of contexts used for the generation of each optimized solver
+        # TODO JMG
+        l = []
+        for solverContext in solverContextsList:
+            if "codegeneratorContext" in solverContext:
+                l.append(solverContext["codegeneratorContext"])
+        context["codegeneratorContextsList"] = l#codegeneratorContextsList #list of contexts used for the generation of each optimized solver
         # todo(JM) profiler 
         # todo(Sven) serialised spec file compiled into KernelCalls.cp
         context["includePaths"] = [] #TODO
@@ -302,11 +307,10 @@ class Controller:
         return context
     
     
-    def buildReadmeContext(self, solverContexts, codegeneratorContexts):
+    def buildReadmeContext(self, solverContextsList):
         """Generate context for the Readme model"""
         context = self.buildBaseContext()
-        context["solverContexts"] = solverContexts
-        context["codegeneratorContexts"] = codegeneratorContexts
+        context["solverContexts"] = solverContextsList
         
         return context
     

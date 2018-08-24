@@ -30,18 +30,9 @@ from .codegeneratorModel import CodegeneratorModel
 class SolverModel(AbstractModelBaseClass):
 
 
-    def __init__(self, baseContext, logger):
+    def __init__(self, baseContext):
         super().__init__(baseContext)
-        self.codegenModel = CodegeneratorModel(logger)
-        self.codegenContexts = []
-
-
-    def switchContext(self, newContext):
-        self.context = copy.copy(newContext)
-
-
-    def getCodegeneratorContexts(self):
-        return self.codegenContexts
+        self.codegenModel = CodegeneratorModel()
 
 
     def generateADERDGSolverFiles(self):
@@ -63,19 +54,18 @@ class SolverModel(AbstractModelBaseClass):
         
         implementation = self.context["implementation"]
         
-        result = []
+        paths = [] # path is None if nothing was generated
+        if implementation == "optimised":
+            _ , self.context["codegeneratorContext"] = self.codegenModel.generateCode(self.context) #call codegenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
-          result.append(self.render(template,filePath,overwrite=False))
+          paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          result.append(self.render(template,filePath))
+          paths.append(self.render(template,filePath)[0])
         
         if implementation != "user":
-            result.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h"))
+            paths.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h")[0])
         
-        if implementation == "optimised":
-            self.codegenContexts.append(self.codegenModel.generateCode(self.context)) #call codegenerator and store context used
-        
-        return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
+        return paths, self.context
 
 
     def generateFiniteVolumesSolverFiles(self):
@@ -97,16 +87,16 @@ class SolverModel(AbstractModelBaseClass):
             print("ERROR: optimised FV kernels not available yet.",file=sys.stderr)
             raise
             
-        result = []
+        paths = [] # path is None if nothing was generated
         for filePath,template in solverTemplates.get(implementation,[]):
-          result.append(self.render(template,filePath,overwrite=False))
+          paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          result.append(self.render(template,filePath))
+          paths.append(self.render(template,filePath)[0])
         
         if implementation != "user":
-            result.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h"))
+            paths.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h")[0])
         
-        return filter(lambda x: x is not None, result) # return generated files as list, None from not overwrite is filtered out
+        return paths, self.context
 
 
     def generateLimitingADERDGSolverFiles(self):
@@ -124,11 +114,11 @@ class SolverModel(AbstractModelBaseClass):
             print("ERROR: optimised FV kernels not available yet.",file=sys.stderr)
             raise
         
-        result = []
+        paths = [] # path is None if nothing was generated
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          result.append(self.render(template,filePath))
+          paths.append(self.render(template,filePath)[0])
         
-        return result # return generated files as list
+        return paths, self.context
 
 
     def generateCode(self):
@@ -138,4 +128,4 @@ class SolverModel(AbstractModelBaseClass):
           "Limiting-ADER-DG" : self.generateLimitingADERDGSolverFiles
         }
        
-        return generators[self.context["solverType"]]()
+        return generators[self.context["solverType"]]() # (paths, context)

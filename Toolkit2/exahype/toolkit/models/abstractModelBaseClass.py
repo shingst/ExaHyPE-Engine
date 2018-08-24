@@ -64,7 +64,7 @@ class AbstractModelBaseClass():
         """Render a template to outputFilename using the given context (local context if none given)
         
         Return the path to the generated file or `None` if the file exists and
-        shall not be overwritten.
+        shall not be overwritten and the context
         """
         # set default context to local context if none given
         if context == None:
@@ -79,9 +79,9 @@ class AbstractModelBaseClass():
         if not os.path.exists(canonicalPath) or overwrite:
           with open(canonicalPath, "w") as output:
               output.write(self.renderAsString(templateName, context))
-          return canonicalPath
+          return canonicalPath, context
         else:
-          return None
+          return None, context
     
     
     def renderAsString(self, templateName, context=None):

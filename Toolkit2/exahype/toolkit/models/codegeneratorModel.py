@@ -9,10 +9,7 @@ import codegenerator
 
 class CodegeneratorModel:
 
-    def __init__(self, logger):
-        self.logger = logger
-    
-    
+
     def generateCode(self, solverContext):
         #translation from solverContext to codegeneratorContext
         codegeneratorContext = {
@@ -50,6 +47,6 @@ class CodegeneratorModel:
         codegeneratorController.generateCode()
         
         # if verbose print the associated command line
-        self.logger.info(codegeneratorController.commandLine)
+        codegeneratorContext["commandLine"] = codegeneratorController.commandLine
         
-        return codegeneratorContext
+        return solverContext["optKernelPath"], codegeneratorContext
