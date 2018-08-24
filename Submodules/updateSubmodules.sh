@@ -9,15 +9,16 @@
 # tarball instead.
 #
 
-
-#from: https://stackoverflow.com/questions/24112727/relative-paths-based-on-file-location-instead-of-current-working-directory#
-parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+#CONFIGURATION VALUE
+pathToExaHyPETopLevelFromHere=".."
 
 # local var to resolve relative path correctly
-scriptDir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
+scriptDir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")") #Should be the Submodules directory
 currentLocation=$(pwd)
+pathToTopLevel="$scriptDir"/"$pathToExaHyPETopLevelFromHere"
 
-# move to the CodeGenerator directory
+
+# Move to the Submodules directory
 cd "$scriptDir"
 
 # By default don't rebuild LIBXSMM is nothing changed
@@ -30,7 +31,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f Peano/.git ]; then
 		echo "Initialize Peano submodule"
-		git submodule update --init Peano
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/Peano
+		cd "$scriptDir" #move back
 	else
 		echo "Update Peano submodule"
 		cd Peano
@@ -43,7 +46,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f jinja/.git ]; then
 		echo "Initialize jinja submodule"
-		git submodule update --init jinja
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/jinja
+		cd "$scriptDir" #move back
 	else
 		echo "Update jinja submodule"
 		cd jinja
@@ -56,7 +61,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f markupsafe/.git ]; then
 		echo "Initialize markupsafe submodule"
-		git submodule update --init markupsafe
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/markupsafe
+		cd "$scriptDir" #move back
 	else
 		echo "Update markupsafe submodule"
 		cd markupsafe
@@ -69,7 +76,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f attrs/.git ]; then
 		echo "Initialize attrs submodule"
-		git submodule update --init attrs
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/attrs
+		cd "$scriptDir" #move back
 	else
 		echo "Update attrs submodule"
 		cd attrs
@@ -82,7 +91,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f pyrsistent/.git ]; then
 		echo "Initialize pyrsistent submodule"
-		git submodule update --init pyrsistent
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/pyrsistent
+		cd "$scriptDir" #move back
 	else
 		echo "Update pyrsistent submodule"
 		cd pyrsistent
@@ -95,7 +106,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f jsonschema/.git ]; then
 		echo "Initialize jsonschema submodule"
-		git submodule update --init jsonschema
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/jsonschema
+		cd "$scriptDir" #move back
 	else
 		echo "Update jsonschema submodule"
 		cd jsonschema
@@ -112,7 +125,9 @@ if [ $# -eq 0 ]; then
 	fi
 	if [ ! -f libxsmm/.git ]; then
 		echo "Initialize libxsmm submodule"
-		git submodule update --init libxsmm
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/libxsmm
+		cd "$scriptDir" #move back
 		#Clean documentation to save space
 		cd libxsmm
 		rm -rf samples/
