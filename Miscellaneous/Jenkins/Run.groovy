@@ -23,7 +23,7 @@ directory="$(dirname "${file}")"
 cd "${directory}"
 
 ls
-eval "./ExaHyPE-${project_name} *.exahype"
+eval "./ExaHyPE-${project_name} *.exahype2"
 '''
 	    deleteDir()
 	}
