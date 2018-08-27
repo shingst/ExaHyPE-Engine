@@ -14,16 +14,17 @@ pwd
 set -euo pipefail
 
 ls
-file="$(find . -name '*\\.exahype')"
+file="$(find . -name '*\\.exahype2')"
 echo "File is called ${file}."
 project_name="$(grep -o "exahype-project .*" "${file}" | sed "s/exahype-project\\s*//g")"
 echo "Project is called ${project_name}"
-
+filename=$(basename -- "${file}")
 directory="$(dirname "${file}")"
 cd "${directory}"
 
 ls
-eval "./ExaHyPE-${project_name} *.exahype2"
+cat "${filename}"
+eval "./ExaHyPE-${project_name} "${filename}""
 '''
 	    deleteDir()
 	}
