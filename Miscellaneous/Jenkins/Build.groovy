@@ -31,7 +31,7 @@ dir="$(readlink -f $(dirname ${path}))"
 
 ./Toolkit2/toolkit.sh ${path}
 
-cp -rf Toolkit2/. $dir/.
+cp -rf Toolkit2/. $dir/../../../.
 cd $dir
 make -j 32
 '''
