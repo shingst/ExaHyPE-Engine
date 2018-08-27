@@ -17,7 +17,6 @@ pwd
 set -euo pipefail
 cp -rf ${workspace}/. .
 path=${config.exahypeFile}
-cp -rf ${workspace}/../../../Toolkit2/. .
 """ + '''
 ls
 
@@ -31,6 +30,8 @@ echo "Building $path"
 dir="$(readlink -f $(dirname ${path}))"
 
 ./Toolkit2/toolkit.sh ${path}
+
+cp -rf Toolkit2/. $dir/.
 cd $dir
 make -j 32
 '''
