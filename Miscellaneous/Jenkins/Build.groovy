@@ -17,6 +17,7 @@ pwd
 set -euo pipefail
 cp -rf ${workspace}/. .
 path=${config.exahypeFile}
+cp -rf ${workspace}/../../../Toolkit2/. .
 """ + '''
 ls
 
@@ -24,8 +25,6 @@ ls
 export COMPILER_LFLAGS='-pthread'
 export PROJECT_LFLAGS="-lrt" 
 
-# Build toolkit
-Toolkit/build.sh
 
 # Build example
 echo "Building $path"
