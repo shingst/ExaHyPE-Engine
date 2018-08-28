@@ -12,6 +12,7 @@
 
 #include <ostream>
 #include <string>
+#include <Scenarios/Scenario.h>
 
 #include "AbstractEulerSolver.h"
 #include "exahype/parser/ParserView.h"
@@ -19,6 +20,7 @@
 /**
  * We use Peano's logging
  */
+#include <memory>
 #include "tarch/logging/Log.h"
 #include "NavierStokes.h"
 
@@ -27,10 +29,6 @@ namespace Euler{
   enum class Scenario;
 }
 
-enum class Euler::Scenario {
-  sodShockTube, doubleShockTube, smoothWave, stokes, taylorGreen
-    };
-
 class Euler::EulerSolver : public Euler::AbstractEulerSolver {
   private:
     /**
@@ -38,7 +36,8 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      */
     static tarch::logging::Log _log;
     NavierStokes::NavierStokes ns;
-    Scenario scenario;
+    //Scenario scenario;
+    std::unique_ptr<NavierStokes::Scenario> scenario;
   public:
     EulerSolver(
         const double maximumMeshSize,

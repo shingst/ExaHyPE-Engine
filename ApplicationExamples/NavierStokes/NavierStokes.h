@@ -16,6 +16,7 @@ public:
   NavierStokes();
   NavierStokes(double referenceT, double referenceViscosity, double sutherlandC);
 
+  double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const;
   double evaluateTemperature(double rho, double pressure) const;
   double evaluateHeatConductionCoeff(double viscosity) const;  
   double evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const;

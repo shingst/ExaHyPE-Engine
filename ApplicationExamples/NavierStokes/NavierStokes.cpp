@@ -14,6 +14,10 @@ NavierStokes::NavierStokes::NavierStokes(double referenceT, double referenceVisc
 }
 
 
+double NavierStokes::NavierStokes::evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const {
+  const auto invRho = 1./rho;
+  return pressure/(GAMMA - 1) + 0.5 * (invRho * j * j);
+}
 
 double NavierStokes::NavierStokes::evaluateTemperature(double rho, double pressure) const {
   return pressure/(gasConstant * rho);
@@ -34,6 +38,7 @@ double NavierStokes::NavierStokes::evaluateViscosity(double T) const {
   return referenceViscosity;
 
   // Sutherland's law
+  // If using, check derivatives
   //return sutherlandLambda * (std::pow(T, 3./2) / (T + sutherlandC));
 }
 
