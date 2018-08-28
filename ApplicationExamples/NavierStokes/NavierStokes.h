@@ -1,3 +1,6 @@
+#ifndef NAVIERSTOKES_NAVIERSTOKES_H
+#define NAVIERSTOKES_NAVIERSTOKES_H
+
 #include <cmath>
 #include "tarch/la/Vector.h"
 #include "EulerSolver_Variables.h"
@@ -26,7 +29,7 @@ public:
   void evaluateFlux(const double* Q, const double* gradQ, double** F) const;
 
   static constexpr double GAMMA = 1.4;
-  static constexpr double gasConstant = 8.3144598; // TODO
+  static constexpr double gasConstant = 287.058; // [m^2/(s^2 K)] = [J/(kg K)] Specific gas constant, for dry air
   static constexpr double Pr = 0.71; // Prandtl number, for air
   double referenceViscosity;
   double referenceT;
@@ -34,3 +37,5 @@ public:
   double sutherlandLambda;
   
 };
+
+#endif // NAVIERSTOKES_NAVIERSTOKES_H
