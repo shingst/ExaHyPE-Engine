@@ -46,7 +46,6 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
           _DMPDifferenceScaling(DMPDifferenceScaling),
           _iterationsToCureTroubledCell(iterationsToCureTroubledCell)
 {
-  assertion(_solver->getNumberOfParameters() == 0);
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
 
   #ifdef Parallel
