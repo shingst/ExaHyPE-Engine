@@ -212,11 +212,11 @@ void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gra
 #endif
 
 #if DIMENSIONS == 2
-  //const tarch::la::Vector<2, double> gradT =  {T_dx, T_dy};
-  const tarch::la::Vector<2, double> gradT = {0.0, 0.0};
+  const tarch::la::Vector<2, double> gradT =  {T_dx, T_dy};
+  //const tarch::la::Vector<2, double> gradT = {0.0, 0.0};
 #elif DIMENSIONS == 3
-  //const tarch::la::Vector<3, double> gradT =  {T_dx, T_dy, T_dz};
-  const tarch::la::Vector<3, double> gradT = {0.0, 0.0, 0.0};
+  const tarch::la::Vector<3, double> gradT =  {T_dx, T_dy, T_dz};
+  //const tarch::la::Vector<3, double> gradT = {0.0, 0.0, 0.0};
 #endif
   const double kappa =  evaluateHeatConductionCoeff(viscosity);
   assertion2(std::isfinite(kappa), kappa, viscosity);

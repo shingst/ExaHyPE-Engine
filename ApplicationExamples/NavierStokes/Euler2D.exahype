@@ -31,7 +31,7 @@ exahype-project Euler
 	constants = viscosity:0.001,scenario:smooth-wave
 
     plot vtu::Legendre::vertices::ascii Plotter
-	variables const = 4
+	variables const = 5
 	time = 0.0
 	repeat = 0.005
 	output = ./results/solution
