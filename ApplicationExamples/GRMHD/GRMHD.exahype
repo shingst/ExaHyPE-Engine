@@ -69,9 +69,10 @@ exahype-project GRMHD
 	optimisation const = generic
     language const                 = C
 
-    limiter-kernel const           = generic::musclhancock 
+    limiter-type const             = musclhancock
+    limiter-optimisation const     = generic
     limiter-language const         = C
-    dmp-observables                = 2
+    dmp-observables const          = 2
     dmp-relaxation-parameter       = 1e-2 
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
@@ -83,30 +84,7 @@ exahype-project GRMHD
       time      = 0.0
       repeat    = 0.00166667
       output    = ./vtk-output/conserved
-    end plot
-
-    plot hdf5::Cartesian::vertices ConservedWriter
-      variables const = 19
-      time = 0.0
-      repeat = 0.00001
-      output = ./hdf5-output/all3d
-    end plot
-
-    plot hdf5::Cartesian::vertices ConservedWriter
-      variables const = 19
-      time = 0.0
-      repeat = 0.00001
-      output = ./hdf5-output/all2d
-      select = z:0.0
-    end plot
-
-    plot hdf5::Cartesian::vertices ConservedWriter
-      variables const = 19
-      time = 0.0
-      repeat = 0.000001
-      output = ./hdf5-output/all1d
-      select = z:0.0,y:0.0
-    end plot
+    end plot 
 
     plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
