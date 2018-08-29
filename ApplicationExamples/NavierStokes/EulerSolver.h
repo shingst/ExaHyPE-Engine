@@ -135,6 +135,8 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
   double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) final override;
   void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;
 
+    void algebraicSource(const double *const Q, double *S) override;
+
 /* algebraicSource() function not included, as requested by the specification file */
 
 /* nonConservativeProduct() function is not included, as requested in the specification file */

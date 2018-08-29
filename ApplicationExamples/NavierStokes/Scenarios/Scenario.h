@@ -11,8 +11,9 @@ class Scenario {
  public:
   Scenario();
   virtual void initialValues(const double* const x, const NavierStokes& ns, Variables& vars);
-  virtual void analyticalSolution(const double* const x, const double t,
+  virtual void analyticalSolution(const double* const x, double t,
                                   const NavierStokes& ns, Variables& vars, double* gradState);
+  virtual void source(const double* const Q, double* S);
   virtual BoundaryType getBoundaryType(int faceId);
 };
 }  // namespace NavierStokes

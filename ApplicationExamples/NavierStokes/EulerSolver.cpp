@@ -70,6 +70,10 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
   scenario->initialValues(x, ns, vars);
 }
 
+void Euler::EulerSolver::algebraicSource(const double *const Q, double *S) {
+   scenario->source(Q, S);
+}
+
 void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
 					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
   double *fluxOut,double* stateOut) {

@@ -19,6 +19,10 @@ void NavierStokes::Scenario::analyticalSolution(const double* const x,
                                                 double* gradState) {
   throw std::logic_error("Analytical solution not implemented!");
 }
+void NavierStokes::Scenario::source(const double* const Q, double* S) {
+  constexpr auto NumberOfVariables = DIMENSIONS + 2; // TODO(Lukas) generalise?
+  std::fill_n(S, NumberOfVariables, 0.0);
+}
 
 NavierStokes::BoundaryType NavierStokes::Scenario::getBoundaryType(int faceId) {
   return BoundaryType::wall;
