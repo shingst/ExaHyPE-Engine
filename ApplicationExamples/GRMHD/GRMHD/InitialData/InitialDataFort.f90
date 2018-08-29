@@ -237,6 +237,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc(x,t,Q)
     REAL :: V(nVar), BV(3), VV(3), Pi = ACOS(-1.0)
     REAL :: r, zz, urc, vc2, tc, pc,tt, c1, c2, urr, f
     REAL :: df, dt, ut, LF, vr, vtheta, vphi, rho, p, VV_cov(3), g_cov(3,3), g_contr(3,3)
+    REAL :: phi_c
     REAL :: gp, gm, shift(3), lapse
     
     ! PARAMETERS:
@@ -245,7 +246,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc(x,t,Q)
     INTEGER :: MAXNEWTON = 50, iNewton
     REAL :: ng = 1.0 / (gamma-1.0)
 
-    CALL METRIC ( x, lapse, gp, gm, shift, g_cov, g_contr)
+    CALL METRIC ( x, lapse, gp, gm, shift, g_cov, g_contr,phi_c)
 
     
      ! The Following is for Kerr-Schild spherical coordinates
@@ -309,6 +310,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     REAL :: r, zz, urc, vc2, tc, pc,tt, c1, c2, urr, f
     REAL :: df, dt, ut, LF, vr, vtheta, vphi, rho, p, VV_cov(3), g_cov(3,3), g_contr(3,3)
     REAL :: gp, gm, shift(3), lapse, gammaij(6), betaru, g_tt, phi, theta, vx, vy, vz
+    REAL :: phi_c
     REAL :: detgamma    
     ! PARAMETERS:
     REAL :: rhoc = 0.625  ! Critical radius
@@ -319,7 +321,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     REAL :: ng = 1.0 / (gamma-1.0)
 
     
-     CALL METRIC_3D ( x, lapse, gp, gm, shift, g_cov, g_contr)
+     CALL METRIC ( x, lapse, gp, gm, shift, g_cov, g_contr,phi_c)
 
      ng     = 1.0/(gamma - 1.0)
 
