@@ -146,3 +146,6 @@ Submodules
 
 # Submodules
 Submodules/
+
+# They hold no useful information, do they?
+README_generated.md

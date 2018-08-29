@@ -22,6 +22,7 @@ InitialDataCode* InitialDataCode::getInstanceByName(std::string idname) {
 	if(idname == "pizzatov")	return new pizzatov();
 	if(idname == "rnsid") 		return new rnsid();
 	if(idname == "shocktube") 	return new GRMHD_Shocktube();
+	if(idname == "tovsolver")	return new TovSolverAdapter();
 	return nullptr;
 }
 
