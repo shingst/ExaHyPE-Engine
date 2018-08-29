@@ -1,0 +1,91 @@
+{#
+  String inputLuh : name of the inputTensor (e.g. luh or lwh)
+  int    inputLuh_dataSize
+  String outputKi : name of the output tensor (e.g. K1 or K2)
+#}
+{# /********************
+   **** Subtemplate ****
+   *********************/ #}
+{% if useFlux %}
+
+  // Flux component
+
+{# ******************************************************
+   **** call to flux function over {{inputLuh}} into lF_guess ****
+   ****************************************************** #}
+{% with inputQ=inputLuh, inputQ_dataSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %}
+
+  // x direction
+  for (int j = 0; j < {{nDof3D}}; j++) {
+    for (int k = 0; k < {{nDof}}; k++) {
+{% with gemmKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+    }
+  }
+  
+  // y direction
+  for (int j = 0; j < {{nDof3D}}; j++) {
+    for (int k = 0; k < {{nDof}}; k++) {
+{% with gemmKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+    }
+  }
+  
+{% if nDim==3 %}
+  // z direction
+  for (int j = 0; j < {{nDof}}; j++) {
+    for (int k = 0; k < {{nDof}}; k++) {
+{% with gemmKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+    }
+  }
+{% endif %}{# nDim == 3 #}
+{% endif %}{# useFlux #}
+{% if useNCP %}
+  
+  //NCP component
+  
+  // x direction
+  for (int j = 0; j < {{nDof3D}}; j++) {
+    for (int k = 0; k < {{nDof}}; k++) {
+{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+    }
+  }
+  
+  // y direction
+  for (int j = 0; j < {{nDof3D}}; j++) {
+    for (int k = 0; k < {{nDof}}; k++) {
+{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+    }
+  }
+  
+{% if nDim == 3 %}
+  // z direction
+  for (int j = 0; j < {{nDof3D}}; j++) {
+    for (int k = 0; k < {{nDof}}; k++) {
+{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %}
+    }
+  }
+{% endif %}
+
+
+  {
+{# ***********************************************************
+   **** call to Source and NCP (or FusedSource) functions ****
+   *********************************************************** #}
+{% with time_var='0', inputQ=inputLuh, output=outputKi, writeSource=False, multiplyByWeights=False, substractToOutput=True, inputQ_dataSize=inputLuh_dataSize, timeInterleaved=False %}
+{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %}
+  }
+{% endif %}

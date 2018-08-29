@@ -21,6 +21,7 @@
         REAL    :: V         ! Rupture velocity
         REAL    :: t0        ! Rupture initial time
         REAL    :: L        ! Nucleation size
+		REAL    :: dx
         ! ------------------------------------------------------------------
     END TYPE tFriction
     TYPE(tFriction) :: SSCRACKFL
@@ -549,7 +550,6 @@
         real, intent(out) :: sigma_vec(6)
         real :: detA,stressnorm
         logical :: addp
-
         select case(GPRLEversion)
             case(0)
                 sigma_vec(1)=(Q(5) * Q(9) * Q(13) - Q(5) * Q(10) * Q(12) - Q(8) * Q(6) * Q(13) + Q(8) * Q(7) * Q(12) + Q(11) * Q(6) * Q(10) - Q(11) * Q(7) * Q(9)) * (Q(5) ** 2 + Q(8) ** 2 + Q(11) ** 2) * Q(16) * (-0.2D1 / 0.3D1 * Q(5) ** 2 - 0.2D1 / 0.3D1 * Q(8) ** 2 - 0.2D1 / 0.3D1 * Q(11) ** 2 + Q(6) ** 2 / 0.3D1 + Q(9) ** 2 / 0.3D1 + Q(12) ** 2 / 0.3D1 + Q(7) ** 2 / 0.3D1 + Q(10) ** 2 / 0.3D1 + Q(13) ** 2 / 0.3D1)
@@ -3852,7 +3852,7 @@
         real :: mu_f, lambda, mu, rho, detA
         real :: cs,cs_f
         cs=sqrt(mu/rho)
-        cs_f=sqrt(2.0)
+        cs_f=0.5!sqrt(2.0)
         mu2tauFL=mu_f*6.0/rho
         mu2tauFL=6.0/(detA*rho*cs_f**2)*mu_f
         !mu2tauFL=mu2tauFL/2.0
@@ -4236,7 +4236,6 @@ end select
         implicit none
         logical :: dmpresult
         real    :: lxb(3),ldx(3)
-        
         SELECT CASE(ICType)
             CASE('SSCRACK')
                 if(abs(lxb(1))<10000.0+ldx(1) .and. abs(lxb(2))<ldx(2)) then
@@ -4250,6 +4249,7 @@ end select
                 if(     ( (abs(lxb(2)-0.1)<(ldx(2)) .or. abs(lxb(2)+0.1)<(ldx(2)))  .and. (lxb(1)>-0.5-(ldx(1)) .and. lxb(1)<0.5+(ldx(1)))) ) then
                      dmpresult = .FALSE.
                 end if
+			CASE DEFAULT
         END SELECT
         
     end subroutine StaticLimiterEQ99
