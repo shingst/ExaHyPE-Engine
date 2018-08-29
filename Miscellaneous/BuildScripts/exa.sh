@@ -96,6 +96,9 @@ case $CMD in
 		info "Running ExaHyPE.jar on $SPECFILE"
 		exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE
 		;;
+	"toolkit-call") # Just call the toolkit, don't do anything beyond
+		exec java -jar $(subreq root)/Toolkit/dist/ExaHyPE.jar --not-interactive $@
+		;;
 	"compile") # Invokes the toolkit and compilation of an application
 		cdapp;
 		export SPECFILE="$(subreq find specfile "$APPNAME")" || abort "Could not retrieve specfile of $APPNAME, I just got $SPECFILE"
