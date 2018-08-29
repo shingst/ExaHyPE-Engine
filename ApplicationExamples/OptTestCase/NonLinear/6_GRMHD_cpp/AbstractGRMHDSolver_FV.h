@@ -46,7 +46,7 @@ class GRMHD::AbstractGRMHDSolver_FV : public exahype::solvers::FiniteVolumesSolv
     class VariableMultiplicities;
     class VariableNames;
     
-    AbstractGRMHDSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    AbstractGRMHDSolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     void solutionUpdate(double* luhNew,const double* luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt,double& maxAdmissibleDt) override;
     

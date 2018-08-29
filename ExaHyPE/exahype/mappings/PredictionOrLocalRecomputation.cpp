@@ -19,7 +19,9 @@
 
 #include "peano/utils/Globals.h"
 #include "peano/utils/Loop.h"
+
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -36,23 +38,49 @@ bool exahype::mappings::PredictionOrLocalRecomputation::OneSolverRequestedLocalR
 
 peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
-  return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,
-      true);
+  // master->worker
+  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeMasterWorkerData =
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange;
+  #ifdef Parallel
+  if (
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      !exahype::solvers::Solver::FuseADERDGPhases   ||
+      exahype::State::BroadcastInThisIteration      // must be set in previous iteration
+  ) { // must be set in previous iteration
+    exchangeMasterWorkerData =
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime;
+  }
+  #endif
+
+  // worker->master
+  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
+  #ifdef Parallel
+  if (
+      exahype::solvers::Solver::PredictionSweeps==1 ||
+      !exahype::solvers::Solver::FuseADERDGPhases   ||
+      exahype::State::ReduceInThisIteration         // must be set in previous iteration
+  ) {
+    exchangeWorkerMasterData =
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime;
+  }
+  #endif
+
+  return peano::CommunicationSpecification(exchangeMasterWorkerData,exchangeWorkerMasterData,true);
 }
 
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-}
-peano::MappingSpecification
-exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+  if (
+      exahype::solvers::Solver::FuseADERDGPhases &&
+      exahype::solvers::Solver::oneSolverRequestedMeshRefinement()
+  ) {
+    return exahype::mappings::Prediction::determineEnterCellSpecification(level);
+  } else {
+    return peano::MappingSpecification(
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::AvoidFineGridRaces,true); // TODO(Dominic): false should work in theory
+  }
 }
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const {
@@ -62,6 +90,13 @@ exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecifica
 }
 
 // Below specs are all nop
+peano::MappingSpecification
+exahype::mappings::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+}
+
 peano::MappingSpecification
 exahype::mappings::PredictionOrLocalRecomputation::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
@@ -109,7 +144,8 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
-    const PredictionOrLocalRecomputation& masterThread) {
+    const PredictionOrLocalRecomputation& masterThread) :
+  _stateCopy(masterThread._stateCopy) {
   initialiseLocalVariables();
 }
 // Merge over threads
@@ -128,10 +164,22 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  OneSolverRequestedLocalRecomputation =
-        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+  _stateCopy = solverState;
 
-  initialiseLocalVariables();
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+    OneSolverRequestedLocalRecomputation =
+        exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
+
+    initialiseLocalVariables();
+  }
+
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      _stateCopy.isLastIterationOfBatchOrNoBatch()
+  ) {
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+  }
 
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
@@ -144,28 +192,26 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
 bool exahype::mappings::PredictionOrLocalRecomputation::performLocalRecomputation(
     exahype::solvers::Solver* solver) {
   return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::Irregular;
+      solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
 }
 
 bool exahype::mappings::PredictionOrLocalRecomputation::performPrediction(
     exahype::solvers::Solver* solver) {
-  return exahype::State::fuseADERDGPhases() &&
-         solver->getMeshUpdateRequest();
+  return exahype::solvers::Solver::FuseADERDGPhases &&
+         solver->hasRequestedMeshRefinement();
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( OneSolverRequestedLocalRecomputation ) {
+  if (
+      _stateCopy.isLastIterationOfBatchOrNoBatch() &&
+      OneSolverRequestedLocalRecomputation
+  ) {
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if (
-          performLocalRecomputation( solver )
-      ) {
+      if ( performLocalRecomputation( solver ) ) {
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
 
@@ -173,22 +219,23 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
 
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
 
+        logDebug("endIteration(state)","[pre] solver="<<solver->toString());
         if (
-            exahype::State::fuseADERDGPhases()
+            exahype::solvers::Solver::FuseADERDGPhases
             #ifdef Parallel
-            && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+            && tarch::parallel::Node::getInstance().isGlobalMaster()
             #endif
         ) {
           exahype::solvers::Solver::
           reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
         }
-        if (exahype::State::fuseADERDGPhases()) {
+        if (exahype::solvers::Solver::FuseADERDGPhases) {
           solver->startNewTimeStepFused(true,true);
         } else {
           solver->startNewTimeStep();
         }
 
-        logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
+        logDebug("endIteration(state)","[post] updatedTimeStepSize="<<solver->getMinTimeStepSize()<<", solver="<<solver->toString());
       }
     }
 
@@ -198,6 +245,26 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     #endif
   }
 
+  #ifdef Parallel
+  // broadcasts
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::BroadcastInThisIteration==true);
+    exahype::State::BroadcastInThisIteration = false;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::BroadcastInThisIteration==false);
+    exahype::State::BroadcastInThisIteration = true;
+  }
+  // reduction (must come here; is before first commSpec evaluation for reduction
+  if ( _stateCopy.isSecondToLastIterationOfBatchOrNoBatch() ) { // this is after the broadcast
+    assertion(exahype::State::ReduceInThisIteration==false);
+    exahype::State::ReduceInThisIteration = true;
+  }
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    assertion(exahype::State::ReduceInThisIteration==true);
+    exahype::State::ReduceInThisIteration = false;
+  }
+  #endif
   logTraceOutWith1Argument("endIteration(State)", state);
 }
 
@@ -212,7 +279,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if (fineGridCell.isInitialised()) {
+  if ( fineGridCell.isInitialised() ) {
     const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
 
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
@@ -220,27 +287,23 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if ( element!=exahype::solvers::Solver::NotFound ) {
-
-        if ( performLocalRecomputation( solver ) ) {
+        if (
+            performLocalRecomputation( solver ) &&
+            _stateCopy.isFirstIterationOfBatchOrNoBatch()
+        ) {
           auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-          limitingADERDG->recomputeSolutionLocally(
-              cellDescriptionsIndex,element);
 
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
-          if (exahype::State::fuseADERDGPhases()) {
-            limitingADERDG->recomputePredictorLocally(
+          if ( exahype::solvers::Solver::FuseADERDGPhases ) {
+            admissibleTimeStepSize = limitingADERDG->recomputeSolutionLocallyFused(
                 cellDescriptionsIndex,element,
                 exahype::Cell::isAtRemoteBoundary(
-                    fineGridVertices,fineGridVerticesEnumerator)
-            );
-            admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
-                cellDescriptionsIndex,element,
-                exahype::State::isFirstIterationOfBatchOrNoBatch(),
-                exahype::State::isLastIterationOfBatchOrNoBatch());
+                    fineGridVertices,fineGridVerticesEnumerator));
           } else {
-            admissibleTimeStepSize = limitingADERDG->startNewTimeStep(
+            admissibleTimeStepSize = limitingADERDG->recomputeSolutionLocally(
                 cellDescriptionsIndex,element);
           }
+
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
           _maxLevels[solverNumber] = std::max(
@@ -249,28 +312,31 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           limitingADERDG->determineMinAndMax(cellDescriptionsIndex,element);
         }
         else if ( performPrediction(solver) ) {
-          exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-              solver,fineGridCell.getCellDescriptionsIndex(),element,
-              exahype::Cell::isAtRemoteBoundary(
-                  fineGridVertices,fineGridVerticesEnumerator)
-          );
-
-          solver->prolongateAndPrepareRestriction(
-              cellDescriptionsIndex,element);
+          if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+            // this operates only on compute cells
+            exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
+                solver,fineGridCell.getCellDescriptionsIndex(),element,
+                exahype::Cell::isAtRemoteBoundary(
+                    fineGridVertices,fineGridVerticesEnumerator)
+            );
+          }
+          if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) { // we are sure here that the skeleton STPs have finished
+            // this operates only on helper cells
+            solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
+          }
         }
-
       }
     }
 
-
-    if ( OneSolverRequestedLocalRecomputation ) {
-      exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-          cellDescriptionsIndex,fineGridVerticesEnumerator);
+    if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+      if ( OneSolverRequestedLocalRecomputation ) {
+        exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+            cellDescriptionsIndex,fineGridVerticesEnumerator);
+      }
+      exahype::Cell::resetNeighbourMergeFlags(
+          fineGridCell.getCellDescriptionsIndex(),
+          fineGridVertices,fineGridVerticesEnumerator);
     }
-    exahype::Cell::resetNeighbourMergeFlags(
-        cellDescriptionsIndex);
-    exahype::Cell::resetFaceDataExchangeCounters(
-        cellDescriptionsIndex,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -283,16 +349,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::leaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  logTraceInWith4Arguments("leaveCell(...)", fineGridCell,
-                           fineGridVerticesEnumerator.toString(),
-                           coarseGridCell, fineGridPositionOfCell);
-
-  if ( exahype::State::fuseADERDGPhases() ) {
-    exahype::mappings::Prediction::restriction(
-        fineGridCell,exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
-  }
-
-  logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
+  // do nothing
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
@@ -306,10 +363,16 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
 ) {
   logTraceInWith6Arguments( "touchVertexFirstTime(...)", fineGridVertex, fineGridX, fineGridH, coarseGridVerticesEnumerator.toString(), coarseGridCell, fineGridPositionOfVertex );
 
-  if ( OneSolverRequestedLocalRecomputation ) {
+  if (
+      _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
+      OneSolverRequestedLocalRecomputation
+  ) {
     dfor2(pos1)
       dfor2(pos2)
-        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
+        exahype::Vertex::InterfaceType interfaceType =
+            fineGridVertex.determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH,true);
+
+        if ( interfaceType==exahype::Vertex::InterfaceType::Interior ) { // Assumes that we have two valid indices
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             if ( performLocalRecomputation(solver) ) {
@@ -331,10 +394,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
             _interiorFaceMerges++;
             #endif
           }
-
-          fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
-        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
+        if ( interfaceType==exahype::Vertex::InterfaceType::Boundary ) {
           for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
             auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
             const int cellDescriptionsIndex1 = fineGridVertex.getCellDescriptionsIndex()[pos1Scalar];
@@ -356,7 +417,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               limitingADERDG->
                 mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
                   cellDescriptionsIndex1,element1,
-                  solverPatch1.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values.
+                  solverPatch1.getRefinementStatus(), // !!! We assume here that we have already unified the merged limiter status values.
                   pos1,pos2,                              // The cell-based limiter status is still holding the old value though.
                   true);
 
@@ -374,7 +435,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               limitingADERDG->
                 mergeWithBoundaryDataBasedOnLimiterStatus( // !!! Be aware of indices "2" and "1" and the order of the arguments.
                   cellDescriptionsIndex2,element2,
-                  solverPatch2.getLimiterStatus(), // !!! We assume here that we have already unified the merged limiter status values
+                  solverPatch2.getRefinementStatus(), // !!! We assume here that we have already unified the merged limiter status values
                   pos2,pos1,                              // The cell-based limiter status is still holding the old value though.
                   true);
               #ifdef Debug
@@ -382,8 +443,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
               #endif
             }
           }
-
-          fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
       enddforx
     enddforx
@@ -403,47 +462,45 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
+//  logInfo("mergeWithNeighbour(...)","_stateCopy.isFirstIterationOfBatchOrNoBatch()="<<_stateCopy.isFirstIterationOfBatchOrNoBatch());
+//  logInfo("mergeWithNeighbour(...)","OneSolverRequestedLocalRecomputation="<<OneSolverRequestedLocalRecomputation);
+  
   if (
+      _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation &&
       vertex.hasToCommunicate(fineGridH)
   ) {
     dfor2(myDest)
-        dfor2(mySrc)
+      dfor2(mySrc)
         tarch::la::Vector<DIMENSIONS, int> dest = tarch::la::Vector<DIMENSIONS, int>(1) - myDest;
-    tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
+        tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
 
-    int destScalar = TWO_POWER_D - myDestScalar - 1;
+        const int destScalar = TWO_POWER_D - myDestScalar - 1;
 
-    if (vertex.hasToReceiveMetadata(fromRank,src,dest)) {
-      const int receivedMetadataIndex =
+        if ( vertex.hasToReceiveMetadata(fromRank,src,dest) ) {
+          exahype::MetadataHeap::HeapEntries receivedMetadata;
+          receivedMetadata.clear();
           exahype::receiveNeighbourCommunicationMetadata(
-              fromRank, fineGridX, level);
-      exahype::MetadataHeap::HeapEntries& receivedMetadata =
-          MetadataHeap::getInstance().getData(receivedMetadataIndex);
-      assertionEquals(receivedMetadata.size(),
-          exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+              receivedMetadata,fromRank, fineGridX, level);
+          assertionEquals(receivedMetadata.size(),
+              exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
-      if(vertex.hasToMergeWithNeighbourData(src,dest)) { // Only communicate data once per face
-        mergeNeighourData(
-            fromRank,
-            src,dest,
-            vertex.getCellDescriptionsIndex()[destScalar],
-            fineGridX,level,
-            receivedMetadata);
-
-        vertex.setFaceDataExchangeCountersOfDestination(src,dest,TWO_POWER_D); // !!! Do not forget this
-        vertex.setMergePerformed(src,dest,true);
-      } else {
-        dropNeighbourData(
-            fromRank,
-            src,dest,
-            fineGridX,level,
-            receivedMetadata);
-      }
-      // Clean up
-      MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
-    }
-    enddforx
+          if( vertex.hasToMergeWithNeighbourData(src,dest) ) { // Only communicate data once per face
+            mergeNeighourData(
+                fromRank,
+                src,dest,
+                vertex.getCellDescriptionsIndex()[destScalar],
+                fineGridX,level,
+                receivedMetadata);
+          } else {
+            dropNeighbourData(
+                fromRank,
+                src,dest,
+                fineGridX,level,
+                receivedMetadata);
+          }
+        }
+      enddforx
     enddforx
   }
 
@@ -505,7 +562,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->mergeWithNeighbourDataBasedOnLimiterStatus(
             fromRank,
-            metadataPortion,
             destCellDescriptionIndex,element,src,dest,
             true, /* isRecomputation */
             x,level);
@@ -527,8 +583,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith3Arguments( "prepareSendToNeighbour(...)", vertex, toRank, level );
 
-  if ( exahype::State::fuseADERDGPhases() ) {
-    vertex.sendToNeighbour(toRank,x,h,level);
+  if (
+      _stateCopy.isLastIterationOfBatchOrNoBatch() &&
+      exahype::solvers::Solver::FuseADERDGPhases
+  ) {
+   vertex.sendToNeighbour(toRank,true,x,h,level); 
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );
@@ -544,13 +603,15 @@ bool exahype::mappings::PredictionOrLocalRecomputation::prepareSendToWorker(
     int worker) {
   logTraceIn( "prepareSendToWorker(...)" );
 
-  exahype::Cell::broadcastGlobalDataToWorker(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getLevel());
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::Cell::broadcastGlobalDataToWorker(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
+  }
 
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
-  return true;
+  return true; // this must be sent to worker in first broadcast
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
@@ -565,10 +626,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceIn( "receiveDataFromMaster(...)" );
 
-  exahype::Cell::mergeWithGlobalDataFromMaster(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getLevel());
+  if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
+    exahype::Cell::mergeWithGlobalDataFromMaster(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getLevel());
+  }
 
   logTraceOut( "receiveDataFromMaster(...)" );
 }
@@ -582,21 +645,15 @@ void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
 
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( performLocalRecomputation(solver) ) {
-      solver->sendDataToMaster(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getLevel());
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( performLocalRecomputation(solver) ) {
+        solver->sendDataToMaster(
+            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            verticesEnumerator.getCellCenter(),
+            verticesEnumerator.getLevel());
+      }
     }
-  }
-
-  if ( exahype::State::fuseADERDGPhases() ) {
-    localCell.reduceDataToMasterPerCell(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getCellSize(),
-        verticesEnumerator.getLevel());
   }
 
   logTraceOut( "prepareSendToMaster(...)" );
@@ -616,21 +673,15 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithMaster(
     exahype::State& masterState) {
   logTraceIn( "mergeWithMaster(...)" );
 
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( performLocalRecomputation(solver) ) {
-      solver->mergeWithWorkerData(
-          worker,
-          fineGridVerticesEnumerator.getCellCenter(),
-          fineGridVerticesEnumerator.getLevel());
+  if ( _stateCopy.isLastIterationOfBatchOrNoBatch() ) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if ( performLocalRecomputation(solver) ) {
+        solver->mergeWithWorkerData(
+            worker,
+            fineGridVerticesEnumerator.getCellCenter(),
+            fineGridVerticesEnumerator.getLevel());
+      }
     }
-  }
-
-  if ( exahype::State::fuseADERDGPhases() ) {
-    fineGridCell.mergeWithDataFromWorkerPerCell(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getCellSize(),
-        fineGridVerticesEnumerator.getLevel());
   }
 
   logTraceOut( "mergeWithMaster(...)" );

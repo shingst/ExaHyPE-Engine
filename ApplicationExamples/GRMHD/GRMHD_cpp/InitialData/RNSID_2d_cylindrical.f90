@@ -7,12 +7,13 @@ SUBROUTINE RNSID_2d_Cartesian2Cylindrical(Q, V, xGP_loc)
 	!
 	INTENT(IN)  :: V   ! State vector in Cartesian coordinates
 	INTENT(OUT) :: Q   ! State vector in Cylindrical coordinates
-	INTENT(IN)  :: xGP_loc
+	INTENT(IN)  :: xGP_loc ! cylindrical 3D coordinates 
 	!
-	REAL :: A_coord(3,3), iA_coord(3,3), iA_coord_contr(3,3), detA
+	REAL :: A(3,3), iA(3,3), detA
 	REAL :: rho, vel(3), p, Bmag(3), psi, lapse, shift(3), g_cov(3,3)
 	
-	! Gather the state
+	! Gather the state. It is not important whether this are
+	! primitive or conserved (hydro) variables.
 	rho        = V(1)
 	vel        = V(2:4)
 	p          = V(5)
@@ -38,18 +39,21 @@ SUBROUTINE RNSID_2d_Cartesian2Cylindrical(Q, V, xGP_loc)
 	g_cov(3,2) = V(18)        !   g_cov(3,2) = V(18)
 	
 	! Compose the transformation matrix
-        CALL RNSID_Cart2CylMatrix_cov(A_coord,xGP_loc)
-        CALL MatrixInverse3x3(A_coord,iA_coord,detA)      ! now: iA_coord = Cyl2CartMatrix_cov    = Cart2CylMatrix_contr
-        iA_coord_contr(:,:) = TRANSPOSE(A_coord(:,:))     ! Sph2CartMatrix_contr = TRANSPOSE( Cart2SphMatrix_cov )
+        CALL RNSID_Cart2CylMatrix_cov(A,xGP_loc)
+        CALL RNSID_MatrixInverse3x3(A,iA,detA)
 
         ! Note, if you get a crash because A_coord is singular,
         ! xGP_loc(1) == radius will be zero. At r=0, the coordinate
         ! system itself is singular.
 
-        ! Transform the state: vector and matrices
-        vel = MATMUL(A_coord,vel)
-        Bmag = MATMUL(iA_coord,Bmag)   
-        g_cov = MATMUL(MATMUL(A_coord, g_cov), iA_coord_contr)     ! HERE I NEED THE TRANSPOSE.
+        ! Transform the state: vector v_i and matrix g_ij
+        vel = MATMUL(iA,vel)
+        g_cov = MATMUL(MATMUL(iA, g_cov), A) ! iA.T = contravariant iA
+
+        ! Upper index vectors B^i and shift^i
+        ! This is wrong; We need to convert them to lower index vectors first.
+        Bmag = MATMUL(iA,Bmag)
+        shift = MATMUL(iA,shift)
 
         ! Scatter the new state
 	Q(1)     = rho
@@ -57,7 +61,7 @@ SUBROUTINE RNSID_2d_Cartesian2Cylindrical(Q, V, xGP_loc)
 	Q(5)     = p
 	Q(6:8)   = Bmag
 	Q(9)     = psi
-	Q(10)    = Lapse
+	Q(10)    = lapse
 	Q(11:13) = shift
 	!  Pizza Ordering         !   Trento ordering
 	Q(14)    = g_cov(1,1)     !   Q(14)    = g_cov(1,1)
@@ -75,28 +79,25 @@ SUBROUTINE RNSID_Cart2CylMatrix_cov(A,x)
 	REAL, INTENT(IN)  :: x(3)
 	REAL, INTENT(OUT) :: A(3,3)
 	! local variables
-	REAL :: theta,sintheta,costheta,cosphip,sinphip,phi,r,r2,ir2,datanAR,z
+	REAL :: rho,z,phi
 	!
-	! x=r*cos(phi)
-	! y=r*sin(phi)
+	! x=rho*cos(phi)
+	! y=rho*sin(phi)
 	! z=z'
-	r = x(1)
-	z = x(2)
-	phi = x(3)
 	!
-	cosphip = DCOS(phi)
-	sinphip = DSIN(phi)
+	rho = x(1)
+	phi = x(2)
+	z   = x(3)
 	! 
-	! these are the columns!
-	A(1:3,1) = (/ cosphip          ,  0.0  , - r*sinphip    /)      !:  GRAD (x)
-	A(1:3,2) = (/ sinphip          ,  0.0  , + r*cosphip    /)      !:  GRAD (y)
-	A(1:3,3) = (/ 0.0              ,  1.0   , 0.0           /)      !:  GRAD (z)
-	!
-	continue
-!
+	A = 0
+	A(1,1) =  COS(phi)
+	A(1,2) =  rho * SIN(phi)
+	A(2,1) =  SIN(phi)
+	A(2,2) = -rho * COS(PHI)
+	A(3,3) = 1
 END SUBROUTINE RNSID_Cart2CylMatrix_cov
 
- SUBROUTINE MatrixInverse3x3(M,iM,det) 
+ SUBROUTINE RNSID_MatrixInverse3x3(M,iM,det) 
     !---------------
     ! compute the determinant det of the NxN-matrix M
     !---------------
@@ -146,4 +147,4 @@ END SUBROUTINE RNSID_Cart2CylMatrix_cov
     !
     CONTINUE
     !
-END SUBROUTINE MatrixInverse3x3
+END SUBROUTINE RNSID_MatrixInverse3x3

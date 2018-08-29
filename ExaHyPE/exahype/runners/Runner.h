@@ -19,14 +19,20 @@
 
 #include "exahype/State.h"
 
+#include "tarch/multicore/MulticoreDefinitions.h"
+
 namespace exahype {
-namespace runners {
-class Runner;
+  namespace runners {
+    class Runner;
+  }
+  namespace repositories {
+    class Repository;
+  }
 }
-namespace repositories {
-class Repository;
-}
-}
+
+#ifdef TBBInvade
+#include "shminvade/SHMInvade.h"
+#endif
 
 /**
  * Runner
@@ -76,12 +82,22 @@ class exahype::runners::Runner {
   int _globalRecomputations;
   int _predictorReruns;
 
+  #ifdef TBBInvade
+  shminvade::SHMInvade*  _shmInvade;
+  #endif
+
   /**
    * Updates the statistics.
    */
   void updateStatistics();
 
   void printStatistics();
+
+  /**
+   * Parses global optimisations and
+   * prints them out. Must be used for all ranks.
+   */
+  void parseOptimisations() const;
 
   /**
    * Setup the oracles for the shared memory parallelisation. Different

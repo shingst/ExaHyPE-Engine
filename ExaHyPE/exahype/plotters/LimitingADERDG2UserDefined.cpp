@@ -60,9 +60,9 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int cellDesc
     auto* limitingADERDG =
         static_cast<exahype::solvers::LimitingADERDGSolver*>(exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]);
 
-    if (solverPatch.getLimiterStatus()>=limitingADERDG->getSolver()->getMinimumLimiterStatusForActiveFVPatch()) {
+    if (solverPatch.getRefinementStatus()>=limitingADERDG->getSolver()->getMinimumRefinementStatusForActiveFVPatch()) {
       auto& limiterPatch = limitingADERDG->
-              getLimiterPatchForSolverPatch(cellDescriptionsIndex,solverPatch);
+              getLimiterPatchForSolverPatch(solverPatch,cellDescriptionsIndex);
 
       double* limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
 
@@ -70,7 +70,7 @@ void exahype::plotters::LimitingADERDG2UserDefined::plotPatch(const int cellDesc
           limiterPatch.getOffset(),
           limiterPatch.getSize(), limiterSolution,
           limiterPatch.getTimeStamp()); // The limiter time stamp might not be valid at the time of the plotting
-    } else { // solverPatch.getLimiterStatus()<exahype::solvers::ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
+    } else { // solverPatch.getRefinementStatus()<exahype::solvers::ADERDGSolver::MinimumRefinementStatusForActiveFVPatch
       double* solverSolution = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
 
       plotADERDGPatch(

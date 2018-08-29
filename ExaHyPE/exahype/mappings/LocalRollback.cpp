@@ -102,16 +102,13 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
   OneSolverRequestedLocalRecomputation =
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+      exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
     exahype::solvers::Solver* solver) {
   return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::Irregular;
+      solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange;
 }
 
 void exahype::mappings::LocalRollback::endIteration(
@@ -121,13 +118,15 @@ void exahype::mappings::LocalRollback::endIteration(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
           performLocalRecomputation(solver) &&
-          exahype::State::fuseADERDGPhases()==true
+          exahype::solvers::Solver::FuseADERDGPhases==true
       ) {
+        logDebug("endIteration(state)","[pre] solver="<<solver->toString());
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->rollbackToPreviousTimeStepFused();
+        logDebug("endIteration(state)","[post] solver="<<solver->toString());
       } else if (
           performLocalRecomputation(solver) &&
-          exahype::State::fuseADERDGPhases()==false
+          exahype::solvers::Solver::FuseADERDGPhases==false
       ) {
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDGSolver->rollbackToPreviousTimeStep();
@@ -159,13 +158,9 @@ void exahype::mappings::LocalRollback::enterCell(
       if (element!=exahype::solvers::Solver::NotFound) {
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-          if (exahype::State::fuseADERDGPhases()) {
-            limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
-          } else {
-            limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-          }
-          limitingADERDGSolver->rollbackSolutionLocally(fineGridCell.getCellDescriptionsIndex(),element);
+          limitingADERDGSolver->rollbackSolutionLocally(
+              fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::solvers::Solver::FuseADERDGPhases);
         }
       }
     }
@@ -173,8 +168,6 @@ void exahype::mappings::LocalRollback::enterCell(
     // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
     // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.)
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVertices,fineGridVerticesEnumerator);
   }
@@ -192,8 +185,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
   ) {
     dfor2(dest)
       dfor2(src)
-        if (vertex.hasToSendMetadata(toRank,src,dest)) {
-          vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
+        if ( vertex.hasToSendMetadata(toRank,src,dest) ) {
           if (vertex.hasToSendDataToNeighbour(src,dest)) {
             sendDataToNeighbour(
                 toRank,src,dest,

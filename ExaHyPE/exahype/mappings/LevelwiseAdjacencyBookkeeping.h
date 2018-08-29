@@ -166,15 +166,18 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
      * \note This function interplays with function multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(...)
      * which ensures that the adjacency indices corresponding to the global master ranks'
      * domain are always set to the value of a domain boundary adjacency index.
+     *
+     * \note We use the leaveCell plugin point as this is the last time a cell is touched by
+     * other mappings.
      */
-    void enterCell(
-      exahype::Cell&                 fineGridCell,
-      exahype::Vertex * const        fineGridVertices,
-      const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-      exahype::Vertex * const        coarseGridVertices,
-      const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-      exahype::Cell&                 coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+    void leaveCell(
+      exahype::Cell&                          fineGridCell,
+      exahype::Vertex * const                 fineGridVertices,
+      const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
+      exahype::Vertex * const                 coarseGridVertices,
+      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
+      exahype::Cell&                          coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>&      fineGridPositionOfCell
     );
 
     #ifdef Parallel
@@ -240,10 +243,9 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
       int                                       level
     );
 
+
     /**
-     * If we are on a new worker, write an
-     * invalid index into the cell's
-     * heap index.
+     * Nop.
      */
     void mergeWithRemoteDataDueToForkOrJoin(
       exahype::Cell&  localCell,
@@ -355,6 +357,15 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
         const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
     );
 
+    void enterCell(
+      exahype::Cell&                 fineGridCell,
+      exahype::Vertex * const        fineGridVertices,
+      const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+      exahype::Vertex * const        coarseGridVertices,
+      const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+      exahype::Cell&                 coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+    );
 
     void touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
@@ -376,18 +387,6 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
     );
-
-
-    void leaveCell(
-      exahype::Cell&                          fineGridCell,
-      exahype::Vertex * const                 fineGridVertices,
-      const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
-      exahype::Vertex * const                 coarseGridVertices,
-      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
-      exahype::Cell&                          coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&      fineGridPositionOfCell
-    );
-
 
     void beginIteration(
       exahype::State&  solverState

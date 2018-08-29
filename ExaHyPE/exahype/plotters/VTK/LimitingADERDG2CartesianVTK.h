@@ -83,10 +83,10 @@ private:
   tarch::plotter::griddata::Writer::CellDataWriter*                          _cellDataWriter   = nullptr;
   tarch::plotter::griddata::Writer::VertexDataWriter*                        _timeStampVertexDataWriter = nullptr;
   tarch::plotter::griddata::Writer::CellDataWriter*                          _timeStampCellDataWriter   = nullptr;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellLimiterStatusWriter   = nullptr;
-  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexLimiterStatusWriter         = nullptr;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellPreviousLimiterStatusWriter   = nullptr;
-  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexPreviousLimiterStatusWriter = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellRefinementStatusWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexRefinementStatusWriter         = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellPreviousRefinementStatusWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexPreviousRefinementStatusWriter = nullptr;
 
   void writeTimeStampDataToADERDGPatch( double timeStamp, int vertexIndex );
 
@@ -96,8 +96,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
       double* u,
       double timeStamp,
-      const int limiterStatus,
-      const int previousLimiterStatusAsInt
+      const int RefinementStatus,
+      const int previousRefinementStatusAsInt
   );
 
   void plotCellData(
@@ -106,8 +106,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
       double* u,
       double timeStamp,
-      const int limiterStatusAsInt,
-      const int previousLimiterStatusAsInt
+      const int RefinementStatusAsInt,
+      const int previousRefinementStatusAsInt
   );
 public:
   LimitingADERDG2CartesianVTK(
@@ -129,8 +129,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
       double timeStamp,
-      const int limiterStatusAsInt,
-      const int previousLimiterStatusAsInt);
+      const int RefinementStatusAsInt,
+      const int previousRefinementStatusAsInt);
 
   /**
    * Plot a finite volumes solution.

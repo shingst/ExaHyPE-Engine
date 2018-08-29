@@ -381,6 +381,9 @@ void exahype::plotters::ADERDG2LegendreVTK::plotVertexData(
 
     firstVertexIndex++;
   }
+
+  if (value!=nullptr)        delete[] value;
+
 }
 
 

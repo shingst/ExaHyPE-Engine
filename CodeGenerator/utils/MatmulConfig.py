@@ -24,7 +24,6 @@
 
 
 from sys import exit
-import AvailableConfigs
 
 
 class MatmulConfig:
@@ -74,9 +73,6 @@ class MatmulConfig:
 			print("MatmulConfig: Something is wrong with the alignment choice of matrix C")
 			exit()
 			
-		if(prefetchStrategy not in AvailableConfigs.prefetchStrategies):
-			print("MatmulConfig: Unkown prefetching strategy")
-			exit()
 			
 		self.M = M
 		self.N = N

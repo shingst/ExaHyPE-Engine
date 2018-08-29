@@ -29,7 +29,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
      */
     static tarch::logging::Log _log;
   public:
-    MyEulerSolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    MyEulerSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.
@@ -131,7 +131,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
     bool isPhysicallyAdmissible(
         const double* const solution,
         const double* const observablesMin,const double* const observablesMax,
-        const int numberOfObservables,
+        const bool wasTroubledInPreviousTimeStep,
         const tarch::la::Vector<DIMENSIONS,double>& center,
         const tarch::la::Vector<DIMENSIONS,double>& dx,
         const double t, const double dt) const override;

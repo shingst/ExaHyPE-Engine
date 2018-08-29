@@ -118,10 +118,12 @@ void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 }
 
 bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
-  const double* const solution,
-  const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-  const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-  const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
   int limvalue;
   // Variant 1 (cheapest, currently works only in 2D)
   //  double outerRadius = 1.25*0.25;
@@ -144,7 +146,7 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   // Slow bug has to works
   //pdelimitervalue_(&limvalue,xx);
   //if (tarch::la::equals(t,0.0)) {
-  pdelimitervalue_(&limvalue,&center[0],&numberOfObservables, observablesMin, observablesMax);
+  pdelimitervalue_(&limvalue,&center[0],&NumberOfObservables, observablesMin, observablesMax);
   if(limvalue>0){
 	  return false;
   }else{

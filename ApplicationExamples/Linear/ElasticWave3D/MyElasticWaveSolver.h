@@ -31,8 +31,10 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * Log device
      */
     static tarch::logging::Log _log;
+    bool   amr_regularization;
+
   public:
-    MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    MyElasticWaveSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.
@@ -86,7 +88,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * you all NumberOfVariables*(Order+1)^DIMENSIONS solution degrees of freedom.
      *
      * \note Use this function and ::adjustSolution to set initial conditions.
-     *
+o     *
      * \param[in]    centre    The centre of the cell.
      * \param[in]    dx        The extent of the cell.
      * \param[in]    t         the start of the time interval.

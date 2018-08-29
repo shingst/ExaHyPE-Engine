@@ -333,6 +333,9 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
     const double* luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
+  if ( level > getCoarsestMeshLevel() ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
@@ -380,10 +383,12 @@ void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 
 
 bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
-    const double* const solution,
-    const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-    const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-    const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
   if (observablesMin[0] <= 0.0) return false;
   if (observablesMin[4] < 0.0) return false;
   return true;

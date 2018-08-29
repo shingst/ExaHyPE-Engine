@@ -116,7 +116,8 @@ void exahype::mappings::MergeNeighbours::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( !_backgroundJobsHaveTerminated ) {
-    exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     _backgroundJobsHaveTerminated = true;
   }
 
@@ -136,12 +137,6 @@ void exahype::mappings::MergeNeighbours::enterCell(
     exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
         fineGridCell.getCellDescriptionsIndex(),
         fineGridVerticesEnumerator);
-
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
 
     if (exahype::solvers::Solver::CompressionAccuracy>0.0) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
@@ -175,8 +170,17 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  vertex.receiveNeighbourData(
-        fromRank,true,
+  if (
+      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
+      !_backgroundJobsHaveTerminated
+  ) {
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
+    _backgroundJobsHaveTerminated = true;
+  }
+
+   vertex.receiveNeighbourData(
+        fromRank,true /*merge*/,true/*no batch*/,
         fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );
@@ -200,12 +204,6 @@ bool exahype::mappings::MergeNeighbours::prepareSendToWorker(
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel());
 
-  fineGridCell.broadcastDataToWorkerPerCell(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getCellSize(),
-      fineGridVerticesEnumerator.getLevel());
-
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
   return true; // see docu
@@ -228,12 +226,6 @@ void exahype::mappings::MergeNeighbours::receiveDataFromMaster(
       receivedVerticesEnumerator.getCellCenter(),
       receivedVerticesEnumerator.getLevel());
 
-  receivedCell.receiveDataFromMasterPerCell(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      receivedVerticesEnumerator.getCellCenter(),
-      receivedVerticesEnumerator.getCellSize(),
-      receivedVerticesEnumerator.getLevel());
-
   logTraceOut( "receiveDataFromMaster(...)" );
 }
 
@@ -242,11 +234,7 @@ void exahype::mappings::MergeNeighbours::mergeWithWorker(
     exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
-
-  localCell.mergeWithMasterDataPerCell( cellSize );
-
-  logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
+  // do nothing
 }
 
 //

@@ -6,15 +6,15 @@
 #include <assert.h>
 
 
-shminvade::SHMInvade::SHMInvade(int threads):
-  _occupiedThreads() {
-  assert(threads>0 || threads==MaxThreads);
+shminvade::SHMInvade::SHMInvade(int cores):
+  _occupiedCores() {
+  assert(cores>0 || cores==MaxCores);
 
-  if (threads==MaxThreads) {
-    threads = SHMController::getInstance().getMaxAvailableCores();
+  if (cores==MaxCores) {
+    cores = SHMController::getInstance().getMaxAvailableCores();
   }
 
-  _occupiedThreads = SHMStrategy::getInstance().invadeThreads(threads);
+  _occupiedCores = SHMStrategy::getInstance().invade(cores);
 }
 
 
@@ -24,8 +24,8 @@ shminvade::SHMInvade::~SHMInvade() {
 
 
 void shminvade::SHMInvade::retreat() {
-  if (!_occupiedThreads.empty()) {
-    SHMStrategy::getInstance().retreat(_occupiedThreads);
+  if (!_occupiedCores.empty()) {
+    SHMStrategy::getInstance().retreat(_occupiedCores);
   }
-  _occupiedThreads.clear();
+  _occupiedCores.clear();
 }

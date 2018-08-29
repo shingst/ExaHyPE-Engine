@@ -13,6 +13,7 @@ void InitialPlaneWave_(const double* x, const double* const t, double* Q);
 void GaussianBubble_(const double* x, const double* const t, double* Q);
 void readcgfile_(const double* const MyOffset, const double* const MyDomain);
 void pdelimitervalue_(int* limiter_value, const double* xx,const int* const numberOfObservables, const double* const observablesMin,const double* const observablesMax);
+void pdegeometriclimitervalue_(int* limiter_value, const double* xx);
 
 // Smoothing functions for alpha
 // void SmoothInterface(const double* alpha, const double* const r, const double* const ICsig);

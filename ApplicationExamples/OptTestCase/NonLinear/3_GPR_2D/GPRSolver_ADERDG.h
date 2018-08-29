@@ -28,7 +28,7 @@ class GPR::GPRSolver_ADERDG : public GPR::AbstractGPRSolver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    GPRSolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    GPRSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.
@@ -156,8 +156,10 @@ class GPR::GPRSolver_ADERDG : public GPR::AbstractGPRSolver_ADERDG {
 
     bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const override;
 };
 

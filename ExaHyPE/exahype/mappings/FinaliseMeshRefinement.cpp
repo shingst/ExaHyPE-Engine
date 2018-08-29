@@ -18,11 +18,12 @@
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/datatraversal/TaskSet.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/mappings/MeshRefinement.h"
-#include "exahype/mappings/LimiterStatusSpreading.h"
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 peano::CommunicationSpecification
 exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
@@ -121,7 +122,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   OneSolverRequestedMeshUpdate =
-      exahype::solvers::Solver::oneSolverRequestedMeshUpdate();
+      exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
@@ -142,7 +143,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       fineGridCell.isInitialised()
   ) {
     if ( !_backgroundJobsHaveTerminated ) {
-      exahype::solvers::Solver::ensureAllBackgroundJobsHaveTerminated();
+      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
       _backgroundJobsHaveTerminated = true;
     }
 
@@ -150,7 +151,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
     for( int solverNumber=0; solverNumber<numberOfSolvers; solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      if ( solver->getMeshUpdateRequest() ) {
+      if ( solver->hasRequestedMeshRefinement() ) {
         solver->finaliseStateUpdates(
             fineGridCell,
             fineGridVertices,
@@ -167,7 +168,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
 
           // compute a new time step size
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
-          if ( exahype::State::fuseADERDGPhases() ) {
+          if ( exahype::solvers::Solver::FuseADERDGPhases ) {
             admissibleTimeStepSize = solver->updateTimeStepSizesFused(cellDescriptionsIndex,element);
           } else {
             admissibleTimeStepSize = solver->updateTimeStepSizes(cellDescriptionsIndex,element);
@@ -182,17 +183,15 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
             auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
             limitingADERDGSolver->determineMinAndMax(cellDescriptionsIndex,element);
-            assertion(limitingADERDGSolver->getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::Irregular);
+            assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
           }
         }
       }
     }
 
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-            fineGridCell.getCellDescriptionsIndex(),
-            fineGridVertices,fineGridVerticesEnumerator);
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 
@@ -209,7 +208,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      if (solver->getMeshUpdateRequest()) {
+      if (solver->hasRequestedMeshRefinement()) {
         // cell sizes
         solver->updateNextMaxLevel(_maxLevels[solverNumber]);
 
@@ -217,9 +216,9 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
         assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
         assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
         solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
-        if ( exahype::State::fuseADERDGPhases() ) {
+        if ( exahype::solvers::Solver::FuseADERDGPhases ) {
           #ifdef Parallel
-          if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+          if (tarch::parallel::Node::getInstance().isGlobalMaster() ) {
             exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(solver);
           }
           #endif
@@ -242,10 +241,8 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  if (OneSolverRequestedMeshUpdate) {
-    vertex.dropNeighbourMetadata(
-        fromRank,fineGridX,fineGridH,level);
-  }
+  vertex.dropNeighbourMetadata(
+     fromRank,fineGridX,fineGridH,level);
 
   logTraceOut("mergeWithNeighbour(...)");
 }
@@ -270,7 +267,7 @@ void exahype::mappings::FinaliseMeshRefinement::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
 
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->getMeshUpdateRequest() ) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       solver->sendDataToMaster(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
           verticesEnumerator.getCellCenter(),
@@ -292,7 +289,7 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithMaster(
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if ( solver->getMeshUpdateRequest() ) {
+    if ( solver->hasRequestedMeshRefinement() ) {
       solver->mergeWithWorkerData(
           worker,
           fineGridVerticesEnumerator.getCellCenter(),

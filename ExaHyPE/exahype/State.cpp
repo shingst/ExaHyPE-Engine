@@ -23,33 +23,27 @@
 
 #include <limits>
 
-bool exahype::State::FuseADERDGPhases           = false;
-double exahype::State::WeightForPredictionRerun = 0.99;
-
-bool exahype::State::SpawnPredictorAsBackgroundThread = false;
-
 bool exahype::State::VirtuallyExpandBoundingBox = false;
 
-bool exahype::State::fuseADERDGPhases() {
-  return FuseADERDGPhases;
+#ifdef Parallel
+bool exahype::State::BroadcastInThisIteration = true;
+bool exahype::State::ReduceInThisIteration    = false;
+#endif
+
+bool exahype::State::isFirstIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==0;
 }
 
-double exahype::State::getTimeStepSizeWeightForPredictionRerun() {
-  return WeightForPredictionRerun;
+bool exahype::State::isSecondIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==1;
 }
 
-bool exahype::State::spawnPredictorAsBackgroundThread() {
-  return SpawnPredictorAsBackgroundThread;
+bool exahype::State::isLastIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-1;
 }
 
-bool exahype::State::isFirstIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::FirstIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
-}
-
-bool exahype::State::isLastIterationOfBatchOrNoBatch() {
-  return getBatchState()==BatchState::LastIterationOfBatch ||
-         getBatchState()==BatchState::NoBatch;
+bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch() const {
+  return _stateData.getTotalNumberOfBatchIterations()==1 || _stateData.getBatchIteration()==_stateData.getTotalNumberOfBatchIterations()-2;
 }
 
 exahype::State::State() : Base() {
@@ -70,10 +64,39 @@ bool exahype::State::getVerticalExchangeOfSolverDataRequired() const {
   return _stateData.getVerticalExchangeOfSolverDataRequired();
 }
 
-void exahype::State::merge(const exahype::State& anotherState) {
-  setVerticalExchangeOfSolverDataRequired(
-      getVerticalExchangeOfSolverDataRequired() ||
-      anotherState.getVerticalExchangeOfSolverDataRequired());
+/**
+ * \see exahype/State.def
+ */
+void exahype::State::setAllSolversAttainedStableStateInPreviousIteration(const bool state) {
+  _stateData.setAllSolversAttainedStableStateInPreviousIteration(state);
+}
+/**
+ * \see exahype/State.def
+ */
+bool exahype::State::getAllSolversAttainedStableStateInPreviousIteration() const {
+  return _stateData.getAllSolversAttainedStableStateInPreviousIteration();
+}
+
+/**
+ * \see exahype/State.def
+ */
+void exahype::State::setMeshRefinementHasConverged(const bool state) {
+  _stateData.setMeshRefinementHasConverged(state);
+}
+/**
+ * \see exahype/State.def
+ */
+bool exahype::State::getMeshRefinementHasConverged() const {
+  return _stateData.getMeshRefinementHasConverged();
+}
+
+void exahype::State::mergeWithMaster(const exahype::State& anotherState) {
+  _stateData.setVerticalExchangeOfSolverDataRequired(
+      _stateData.getVerticalExchangeOfSolverDataRequired() ||
+      anotherState._stateData.getVerticalExchangeOfSolverDataRequired());
+  _stateData.setAllSolversAttainedStableStateInPreviousIteration(
+      _stateData.getAllSolversAttainedStableStateInPreviousIteration() &&
+      anotherState._stateData.getAllSolversAttainedStableStateInPreviousIteration());
 }
 
 void exahype::State::writeToCheckpoint(
@@ -91,6 +114,19 @@ void exahype::State::endedGridConstructionIteration(int finestGridLevelPossible)
       tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()>0;
   const bool nodePoolHasGivenOutRankSizeLastQuery =
       tarch::parallel::NodePool::getInstance().hasGivenOutRankSizeLastQuery();
+
+  #ifdef Debug
+  std::cout <<  "!getHasChangedVertexOrCellState=" << !_stateData.getHasChangedVertexOrCellState() << std::endl;
+  std::cout <<  "!getHasRefined=" << !_stateData.getHasRefined() << std::endl;
+  std::cout <<  "!getHasErased=" << !_stateData.getHasErased()  << std::endl;
+  std::cout <<  "!getHasTriggeredRefinementForNextIteration=" << !_stateData.getHasTriggeredRefinementForNextIteration() << std::endl;
+  std::cout <<  "!getHasTriggeredEraseForNextIteration=" << !_stateData.getHasTriggeredEraseForNextIteration() << std::endl;
+  #ifdef Parallel
+  std::cout <<  "!getCouldNotEraseDueToDecompositionFlag=" << !_stateData.getCouldNotEraseDueToDecompositionFlag() << std::endl;
+  #endif
+  std::cout << "isGridStationary()=" << isGridStationary() << std::endl;
+  std::cout << "getMaxRefinementLevelAllowed()=" << _stateData.getMaxRefinementLevelAllowed() << std::endl;
+  #endif
 
   // No more nodes left. Start to enforce refinement
   if ( !idleNodesLeft
@@ -172,8 +208,8 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 
 bool exahype::State::continueToConstructGrid() const {
 #ifdef Parallel
-  return _stateData.getMaxRefinementLevelAllowed()>=-3;
+  return _stateData.getMaxRefinementLevelAllowed()>=-3 || !_stateData.getMeshRefinementHasConverged();
 #else
-  return !isGridBalanced();
+  return !isGridBalanced() || !_stateData.getMeshRefinementHasConverged();
 #endif
 }

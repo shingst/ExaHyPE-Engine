@@ -32,12 +32,12 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
   feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
   // Todo: Move this to specfile once we have working constants.
-  std::string id_default = "Fortran";
-  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+  //std::string id_default = "Fortran";
+  //std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
   // alternatives:
-  //std::string id_RNSID = "RNSID";
-  //std::string bc_RNSID_octant = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
+  std::string id_default = "RNSID";
+  std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
 
   // try to obtain requested initial data and boundary conditions from the
   // environment variables, as the specfile parameter system is still broken.
@@ -160,10 +160,12 @@ void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 */
 /*
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
-  const double* const solution,
-  const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-  const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
-  const double t, const double dt) const {
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const {
 
   // geometric criterion:
   //  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;

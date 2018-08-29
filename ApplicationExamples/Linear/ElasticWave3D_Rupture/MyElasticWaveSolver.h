@@ -29,7 +29,7 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      */
     static tarch::logging::Log _log;
   public:
-    MyElasticWaveSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    MyElasticWaveSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
 
     /**
      * Initialise the solver.
@@ -132,7 +132,9 @@ class Elastic::MyElasticWaveSolver : public Elastic::AbstractMyElasticWaveSolver
      * 
      * @TODO: Document me, please.
     **/
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+
+    void initPointSources();
+    void pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n);
 
     /**
      * @TODO LR : document

@@ -26,21 +26,21 @@ exahype-project DIM
 
   computational-domain
     dimension const         = 3
-    width                   = 30000.0, 10000.0, 10000.0
-    offset                  = -15000.0, -5000.0, -5000.0
+    width                   = 30000.0, 30000.0, 10000.0
+    offset                  = -15000.0, -15000.0, -5000.0
     end-time                = 2.0
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:4}
-    cores                    = 4
+    configure                = {background-tasks:1}
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:4}
+    configure                = {hotspot,fair,ranks-per-node:28}
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory
@@ -50,9 +50,9 @@ exahype-project DIM
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
-    timestep-batch-factor           = 0.0
-    skip-reduction-in-batched-time-steps = on
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = on
   end global-optimisation
@@ -62,7 +62,7 @@ exahype-project DIM
     variables const                = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
     order const                    = 3
     maximum-mesh-size              = 1000.0
-    maximum-mesh-depth             = 0
+    maximum-mesh-depth             = 1
     time-stepping                  = global
     type const = nonlinear
 	terms const = flux,ncp
@@ -71,7 +71,7 @@ exahype-project DIM
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         = 1
+    dmp-observables  const         = 0
     dmp-relaxation-parameter       = 1e+3 
     dmp-difference-scaling         = 1e+4 
     steps-till-cured           = 5

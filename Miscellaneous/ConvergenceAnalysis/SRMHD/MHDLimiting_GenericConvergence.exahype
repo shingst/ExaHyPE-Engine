@@ -46,7 +46,7 @@ exahype-project MHD
     fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    timestep-batch-factor           = 0.0
+    time-step-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
     double-compression = 0.0

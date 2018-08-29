@@ -48,7 +48,6 @@ int aderPicardLoopNonlinear(SolverType& solver,
   constexpr int order              = SolverType::Order;
   constexpr int basisSize          = order+1;
   constexpr int basisSize2         = basisSize * basisSize;
-  constexpr int basisSize3         = basisSize2 * basisSize;
   
   constexpr bool useMaxPicardIterations = SolverType::UseMaxPicardIterations;
   constexpr int  maxPicardIterations    = SolverType::MaxPicardIterations;
@@ -73,14 +72,14 @@ int aderPicardLoopNonlinear(SolverType& solver,
     }
   }
   
-  // 3. Discrete Picard iterations
+  // 2. Discrete Picard iterations
   constexpr int MaxIterations = (useMaxPicardIterations) ? maxPicardIterations : 2 * (order + 1);
 
   // right-hand side
   idx4 idx_rhs(basisSize, basisSize, basisSize, numberOfVariables); // idx_rhs(t,y,x,nVar)
   
   // spatial gradient of q
-  idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables); // idx_gradQ(y,x,t,nDim,nVar)
+  idx4 idx_gradQ(basisSize, basisSize, DIMENSIONS, numberOfVariables); // idx_gradQ(y,x,nDim,nVar)
 
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
@@ -117,7 +116,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
       // Compute gradients only if nonconservative contributions have to be
       // computed. 
       if(useNCP) {
-        std::memset(gradQ, 0, basisSize3 * DIMENSIONS * numberOfVariables * sizeof(double));
+        std::memset(gradQ, 0, basisSize2 * DIMENSIONS * numberOfVariables * sizeof(double));
       }
 
       // Compute the "derivatives" (contributions of the stiffness matrix)
@@ -136,7 +135,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
                                             kernels::Kxi[order][n][l]; 
               }
               if(useNCP) {
-                gradQ[idx_gradQ(k, l, i, /*x*/0, m)] += 1.0 * invDx[0] *
+                gradQ[idx_gradQ(k, l, /*x*/0, m)] += 1.0 * invDx[0] *
                                           lQi[idx_lQi(k,n,i,m)] *
                                           kernels::dudx[order][l][n];
               }
@@ -161,7 +160,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
                     kernels::Kxi[order][n][l];
               }
               if(useNCP) {
-                gradQ[idx_gradQ(l, k, i, /*y*/1, m)] += 1.0 * invDx[1] *
+                gradQ[idx_gradQ(l, k, /*y*/1, m)] += 1.0 * invDx[1] *
                                           lQi[idx_lQi(n, k, i, m)] *
                                           kernels::dudx[order][l][n]; /* l,n: transpose */
               }
@@ -190,7 +189,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             }
             if(useNCP) {
               double ncp[numberOfVariables];
-              solver.nonConservativeProduct(lQi+idx_lQi(k, l, i, 0), gradQ+idx_gradQ(k, l, i, 0, 0), ncp);
+              solver.nonConservativeProduct(lQi+idx_lQi(k, l, i, 0), gradQ+idx_gradQ(k, l, 0, 0), ncp);
               for(int l=0; l<numberOfVariables; l++) {
                 S[l] -= ncp[l];
               }
@@ -205,7 +204,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
     }  // end time dof
 
 
-    // 4. Multiply with (K1)^(-1) to get the discrete time integral of the
+    // 3. Multiply with (K1)^(-1) to get the discrete time integral of the
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int j = 0; j < basisSize; j++) { // j == y
@@ -255,7 +254,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
     }
      */
 
-    // 5. Exit condition
+    // 4. Exit condition
     if (!useMaxPicardIterations) {
       constexpr double tol = 1e-7;
       if (sq_res < tol * tol) {
@@ -533,14 +532,6 @@ int spaceTimePredictorNonlinear(
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
-
-//  double* lQi     = tempSpaceTimeUnknowns[0];
-//  double* rhs     = tempSpaceTimeUnknowns[1];
-
-  // if fluxes are not computed, make sure wrong access patterns result in a crash, thus
-  // the nullptr:
-//  double* lFi     = tempSpaceTimeFluxUnknowns[0]; // lFi also stores the source
-//  double* gradQ   = tempSpaceTimeFluxUnknowns[1]; // size: basisSize3 * DIMENSIONS * numberOfVariables
   
   const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP, SolverType>(
         solver, luh, dt, invDx,
@@ -553,9 +544,6 @@ int spaceTimePredictorNonlinear(
         lQhbnd, lFhbnd);
   } else {
     constexpr int basisSize2         = basisSize * basisSize;
-    
-//    double* lQhi    = tempUnknowns;
-//    double* lFhi    = tempFluxUnknowns;
 
     aderPredictorNonlinear<useSource, useFlux, useNCP, numberOfVariables, numberOfParameters, basisSize>(
         lQi, lFi, lQhi,

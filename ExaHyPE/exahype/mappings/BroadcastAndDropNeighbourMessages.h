@@ -25,8 +25,6 @@
 
 #include "tarch/multicore/MulticoreDefinitions.h"
 
-#include "exahype/solvers/TemporaryVariables.h"
-
 #include "exahype/Cell.h"
 #include "exahype/State.h"
 #include "exahype/Vertex.h"
@@ -50,7 +48,6 @@ private:
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
-
 public:
 
   /**

@@ -44,7 +44,18 @@ namespace exahype {
  * thus be found in this class.
  */
 class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
- private:
+public:
+  enum class InterfaceType { None, Interior, Boundary };
+
+  /**
+   * Compare if two vectors are equal up to a relative
+   * tolerance.
+   */
+  static bool equalUpToRelativeTolerance(
+      const tarch::la::Vector<DIMENSIONS,double>& first,
+      const tarch::la::Vector<DIMENSIONS,double>& second);
+
+private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
   friend class VertexOperations;
@@ -54,13 +65,70 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   static tarch::logging::Log _log;
 
+
   /**
-   * Compare if two vectors are equal up to a relative
-   * tolerance.
+   * Validate that a compute cell is not next to
+   * an invalid cell description index as long as their
+   * interface is an interior face.
    */
-  static bool equalUpToRelativeTolerance(
-      const tarch::la::Vector<DIMENSIONS,double>& first,
-      const tarch::la::Vector<DIMENSIONS,double>& second);
+  void validateNeighbourhood(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
+
+  /**
+   * Checks if the cell descriptions at the indices corresponding
+   * to \p pos1 and \p pos2 need to be merged with each other.
+   *
+   * To this end, we check if
+   *
+   * - the cell descriptions are valid and different and
+   * - no merge has yet been performed at the given face
+   *   on both cell descriptions.
+   *
+   * !! Side effects !!
+   *
+   * If a merge has to be performed, this routine sets the neighbourMergePerformed flag for this face
+   * for all found cell descriptions
+   *
+   * <h2>MPI</h2>
+   *
+   * During the mesh refinement iterations in a MPI-context, we have further
+   * observed that the adjacency information might not be up-to-date / are mixed up
+   * on a newly introduced rank after a fork was performed.
+   *
+   * We then further check if
+   *
+   *  - the geometry information of the two cell descriptions clarifies
+   *    that they are neighbours.
+   *    We compare the barycentres for this purpose.
+   */
+  bool hasToMergeNeighbours(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
+   * Checks if a cell descriptions at the indices corresponding
+   * to \p pos1 and \p pos2 are next to the domain boundary.
+   * Is this the case, boundary conditions have to be imposed.
+   *
+   * !! Side effects !!
+   *
+   * If a merge has to be performed, this routine sets the neighbourMergePerformed flag for this face
+   * for all found cell descriptions
+   */
+  bool hasToMergeWithBoundaryData(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /*! Helper routine for mergeNeighbours.
    *
@@ -84,6 +152,8 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 
   #ifdef Parallel
 
+  static constexpr int InvalidMetadataIndex = -1;
+
   /*! Helper routine for sendToNeighbour
    *
    * Loop over all the solvers and check
@@ -94,6 +164,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void sendEmptySolverDataToNeighbour(
       const int                                     toRank,
+      const bool                                    sendMetadata,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
@@ -115,6 +186,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void sendSolverDataToNeighbour(
       const int                                    toRank,
+      const bool                                   isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS,int>&     src,
       const tarch::la::Vector<DIMENSIONS,int>&     dest,
       const int                                    srcCellDescriptionIndex,
@@ -131,7 +203,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void dropNeighbourData(
       const int fromRank,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -153,6 +224,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   void mergeWithNeighbourData(
       const int fromRank,
       const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+      const bool mergeWithNeighbourMetadata,
       const int srcCellDescriptionIndex,
       const int destCellDescriptionIndex,
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -203,7 +275,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   static tarch::la::Vector<DIMENSIONS,double> computeFaceBarycentre(
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const tarch::la::Vector<DIMENSIONS,double>& h,
-      const int&                                  normalDirection,
+      const int                                   normalDirection,
       const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
 
   /**
@@ -217,7 +289,10 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * a physics-based refinement criterion.)
    */
   exahype::solvers::Solver::RefinementControl evaluateRefinementCriterion(
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+      const tarch::la::Vector<DIMENSIONS, double>& vertexOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& level,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const bool checkThoroughly) const;
 
   /**
    * Loop over all neighbouring cells and merge
@@ -233,78 +308,18 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
-  /**
-   * Validate that a compute cell is not next to
-   * an invalid cell description index as long as their
-   * interface is an interior face.
-   */
-  void validateNeighbourhood(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar) const;
 
   /**
-   * Checks if the cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 need to be merged with each other.
-   *
-   * Therefore, we check if
-   *
-   * - the cell descriptions are valid and different and
-   * - no merge has yet been performed at the given face
-   *   on both cell descriptions.
-   *
-   * <h2>MPI</h2>
-   *
-   * During the mesh refinement iterations in a MPI-context, we have further
-   * observed that the adjacency information might not be up-to-date / are mixed up
-   * on a newly introduced rank after a fork was performed.
-   *
-   * We then further check if
-   *
-   *  - the geometry information of the two cell descriptions clarifies
-   *    that they are neighbours.
-   *    We compare the barycentres for this purpose.
+   * \return the type of the interface between two cells.
    */
-  bool hasToMergeNeighbours(
+  InterfaceType determineInterfaceType(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
       const int pos2Scalar,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
-  /**
-   * Checks if the cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 need to be merged with each other.
-   *
-   * TODO(Dominic): The idea is to store purely geometry based information
-   * (offset,size,riemannSolvePerfomed,..) on a separate heap.
-   * That's why I have not merged the loops in this method
-   * into the solvers. I need to discuss this with Tobias.
-   */
-  bool hasToMergeWithBoundaryData(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
-  /**
-   * Sets a flag on the cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 that the merge with the neighbours has been
-   * performed.
-   *
-   * TODO(Dominic): The idea is to store purely geometry based information
-   * (offset,size,riemannSolvePerfomed,..) on a separate heap.
-   * That's why I have not merged the loops in this method
-   * into the solvers. I need to discuss this with Tobias.
-   */
-  void setMergePerformed(
-          const tarch::la::Vector<DIMENSIONS,int>& pos1,
-          const tarch::la::Vector<DIMENSIONS,int>& pos2,
-          bool state) const;
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const bool validate) const;
 
   /*!Solve Riemann problems on all interior faces that are adjacent
    * to this vertex and impose boundary conditions on faces that
@@ -511,11 +526,14 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * Checks for all cell descriptions (ADER-DG, FV, ...)
    * corresponding to the heap index at position \p src
    * in getCellDescriptions() if now is the time to
-   * send out face data to a neighbouring rank
+   * send out face data to a neighbouring rank.
    *
-   * The face corresponding to the adjacent cells \p src and \p dest
-   * must be an inside face if periodic boundary conditions
-   * are switched off.
+   * !! Side effects !!
+   *
+   * Every call of this function decrements the
+   * faceDataExchangeCounter for the face corresponding
+   * to the source and destination location pair \p src and \p dest
+   * for all cell descriptions registered at the source location \p src.
    *
    * \note This method should only be used
    * if hasToSendMetadata(...) returns true.
@@ -537,8 +555,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * we then decrement the counters for the face
    * every time one of the 2^{d-1}
    * adjacent vertices touches the face.
-   *
-   * \see decrementCounters
    */
   bool hasToSendDataToNeighbour(
       const tarch::la::Vector<DIMENSIONS,int>& src,
@@ -550,9 +566,14 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * in getCellDescriptions() if now is the time to
    * receive face data from a neighbouring rank
    *
-   * The face corresponding to the adjacent cells \p dest and \p src
-   * must be an inside face if periodic boundary conditions
-   * are switched off.
+   * !! Side effects !!
+   *
+   * Resets the face data exchange counters of
+   * the the cell descriptions corresponding
+   * to cell position \p dest.
+   *
+   * Further sets the neighbour merge performed
+   * flag to true.
    *
    * \note This method should only be used
    * if hasToReceiveMetadata(...) returns true.
@@ -569,9 +590,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * we initialise the corresponding counter with
    * value 2^{d-1}.
    *
-   * In the Prediction::prepareSendToNeighbour(...) and
-   * RiemannSolver::mergeWithNeighbour(...) routine,
-   * we then decrement the counters for the face
+   * When we send out data, we then decrement the counters for the face
    * every time one of the 2^{d-1}
    * adjacent vertices touches the face.
    *
@@ -581,50 +600,15 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS,int>& src,
       const tarch::la::Vector<DIMENSIONS,int>& dest) const;
 
-  /**
-   * Every call of this function decrements the
-   * faceDataExchangeCounter for the face corresponding
-   * to the source and destination position pair \p src and \p dest
-   * for all cell descriptions corresponding to \p cellDescriptionsIndex.
-   *
-   * \note Unfortunately, we cannot move the face data exchange
-   * counters from the cell descriptions (ADERDGCellDescription,
-   * FiniteVolumesCellDescription,...)
-   * to the fineGridCell since we access the cell descriptions
-   * from the vertices in Prediction::prepareToSendToNeighbour(...)
-   * and RiemannSolver::mergeWithNeighbour(...). We do not have access
-   * to the corresponding cell records in this case.
-   *
-   * Naturally, we cannot use counters if we do not
-   * have any cell description registered on a cell
-   * adjacent to a vertex. In this case,
-   * the function simply returns.
-   *
-   * \see hasToSendFace
-   */
-  void tryDecrementFaceDataExchangeCountersOfSource(
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
-
-  /**
-   * Resets the face data exchange coutnesr of
-   * the the cell descriptions corresponding
-   * to cell position \p dest.
-   *
-   * \note Requires that hasToReceiveSolverData(...) has returned true
-   * beforehand.
-   *
-   * \see hasToMergeNeighbourData
-   */
-  void setFaceDataExchangeCountersOfDestination(
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const int value) const;
-
   /*! Send face data to neighbouring remote ranks.
    *
    * Look up facewise neighbours. If we find a remote boundary,
    * send face data of every registered solver to the remote rank.
+   *
+   * <h2> Batching </h2>
+   * If we are not in the last iteration of a batch or we do not run a batch at all and
+   * all solvers perform static or no limiting at all,
+   * we can switch off the metadata sends.
    *
    * \param[in] x     position of the vertex.
    * \param[in] h     extents of adjacent cells.
@@ -632,6 +616,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   */
   void sendToNeighbour(
       int toRank,
+      const bool isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level) const;
@@ -643,6 +628,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   void receiveNeighbourData(
       int fromRank,
       bool mergeWithReceivedData,
+      bool isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;

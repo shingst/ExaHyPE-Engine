@@ -29,7 +29,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    GRMHDSolver_ADERDG(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping);
+    GRMHDSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int limiterHelperLayers,const int DMPObservables);
  
 
     /**
@@ -158,8 +158,10 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
     // Limiting driver functions
     bool isPhysicallyAdmissible(
       const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
-      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double* const observablesMin,const double* const observablesMax,
+      const bool wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const override;
     void mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const override;
 

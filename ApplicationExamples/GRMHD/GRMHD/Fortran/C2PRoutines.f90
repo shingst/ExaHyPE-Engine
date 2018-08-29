@@ -5,7 +5,7 @@
 ! Using this multiline comment you can choose which implementation
 ! you want to use:
 
-#if 1
+#if 0
 
 RECURSIVE FUNCTION RTSAFE_C2P_RMHD1(X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
   IMPLICIT NONE

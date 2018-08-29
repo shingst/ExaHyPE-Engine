@@ -12,6 +12,7 @@ import java.util.stream.IntStream;
 import minitemp.Context;
 import minitemp.TemplateEngine;
 
+import eu.exahype.CreateReadme;
 import eu.exahype.kernel.ADERDGKernel;
 import eu.exahype.io.IOUtils;
 import eu.exahype.io.SourceTemplate;
@@ -39,6 +40,8 @@ public class GenericADERDG implements Solver {
     final int     maxPicardIterations    = kernel.maxPicardIterations();
     final int     numberOfPointSources   = kernel.getNumberOfPointSources();
     
+    final int     numberOfObservables    = kernel.getNumberOfObservables(); // TODO This field should not be member of class  ADERDGKernel
+    
     templateEngine = new TemplateEngine();
     context = new Context();
     
@@ -54,6 +57,7 @@ public class GenericADERDG implements Solver {
     context.put("order"               , order);
     context.put("numberOfVariables"   , numberOfVariables);
     context.put("numberOfParameters"  , numberOfParameters);
+    context.put("numberOfObservables" , numberOfObservables);
     context.put("numberOfPointSources", numberOfPointSources);
     context.put("maxPicardIterations" , maxPicardIterations);
     
@@ -85,6 +89,9 @@ public class GenericADERDG implements Solver {
     context.put("range_0_nVar"      , IntStream.range(0, numberOfVariables)                   .boxed().collect(Collectors.toList()));
     context.put("range_0_nVarParam" , IntStream.range(0, numberOfVariables+numberOfParameters).boxed().collect(Collectors.toList()));
     context.put("range_0_numberOfPointSources", IntStream.range(0, numberOfPointSources)      .boxed().collect(Collectors.toList()));
+    
+    //Register solver for the README
+    CreateReadme.getInstance().addSolverContext(context);
   }
   
   @Override

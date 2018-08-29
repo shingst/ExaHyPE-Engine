@@ -31,9 +31,12 @@ public:
 	/// sets this id pointer, finally.
 	InitialDataCode* id;
 	std::string name; ///< set by setIdByName
-	bool alreadyPrepared; ///< set by prepare()
 	
-	GlobalInitialData(InitialDataCode* _id, std::string _name) : _log("GlobalInitialData"), id(_id), name(_name), alreadyPrepared(false) {}
+	bool alreadyPrepared; ///< guard flag for prepare()
+	bool alreadySetParameters; ///< guard flag for setByParmeters()
+	
+	GlobalInitialData(InitialDataCode* _id, std::string _name) 
+	   : _log("GlobalInitialData"), id(_id), name(_name), alreadyPrepared(false), alreadySetParameters(false) {}
 	
 	/// Returns true in case of success
 	bool setIdByName(const std::string& name);

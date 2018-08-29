@@ -210,8 +210,8 @@ void exahype::plotters::Patch2VTK::startPlotting( double time ) {
     _cellElementWriter = _gridWriter->createCellDataWriter("element", 1);
     _cellLevelWriter = _gridWriter->createCellDataWriter("level", 1);
     _cellMpiRankWriter = _hasMPIenabled ? _gridWriter->createCellDataWriter("MpiRank", 1) : nullptr;
-    _cellLimiterStatusWriter     = _isLimitingSolver ? _gridWriter->createCellDataWriter("Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1) : nullptr;
-    _cellPreviousLimiterStatusWriter = _isLimitingSolver ? _gridWriter->createCellDataWriter("Previous-Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1) : nullptr;
+    _cellRefinementStatusWriter     = _isLimitingSolver ? _gridWriter->createCellDataWriter("Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1) : nullptr;
+    _cellPreviousRefinementStatusWriter = _isLimitingSolver ? _gridWriter->createCellDataWriter("Previous-Limiter-Status(0-O,1..2-DG,3..4-FV,5-T)", 1) : nullptr;
 
   _postProcessing->startPlotting( time );
 
@@ -228,8 +228,8 @@ void exahype::plotters::Patch2VTK::finishPlotting() {
 	if (_cellDataWriter!=nullptr)            _cellDataWriter->close();
 	if (_cellTimeStampDataWriter!=nullptr)   _cellTimeStampDataWriter->close();
 	if (_cellMpiRankWriter!=nullptr)      _cellMpiRankWriter->close();
-	if (_cellLimiterStatusWriter!=nullptr) _cellLimiterStatusWriter->close();
-	if (_cellPreviousLimiterStatusWriter!=nullptr) _cellPreviousLimiterStatusWriter->close();
+	if (_cellRefinementStatusWriter!=nullptr) _cellRefinementStatusWriter->close();
+	if (_cellPreviousRefinementStatusWriter!=nullptr) _cellPreviousRefinementStatusWriter->close();
 	if (_cellElementWriter!=nullptr)    _cellElementWriter->close();
 	if (_cellDescriptionIndexWriter!=nullptr) _cellDescriptionIndexWriter->close();
 	if (_cellLevelWriter!=nullptr)  _cellLevelWriter->close();
@@ -263,8 +263,8 @@ void exahype::plotters::Patch2VTK::finishPlotting() {
 	if (_vertexWriter!=nullptr)        delete _vertexWriter;
 	if (_cellWriter!=nullptr)          delete _cellWriter;
 	if (_cellMpiRankWriter!=nullptr)   delete _cellMpiRankWriter;
-	if (_cellLimiterStatusWriter!=nullptr) delete _cellLimiterStatusWriter;
-	if (_cellPreviousLimiterStatusWriter!=nullptr) delete _cellPreviousLimiterStatusWriter;
+	if (_cellRefinementStatusWriter!=nullptr) delete _cellRefinementStatusWriter;
+	if (_cellPreviousRefinementStatusWriter!=nullptr) delete _cellPreviousRefinementStatusWriter;
 	if (_cellDataWriter!=nullptr)       delete _cellDataWriter;
 	if (_cellTimeStampDataWriter!=nullptr)    delete _cellTimeStampDataWriter;
 	if (_gridWriter!=nullptr)           delete _gridWriter;
@@ -278,8 +278,8 @@ void exahype::plotters::Patch2VTK::finishPlotting() {
 	_cellTimeStampDataWriter   = nullptr;
 	_gridWriter          = nullptr;
 	_cellMpiRankWriter = nullptr;
-	_cellLimiterStatusWriter = nullptr;
-	_cellPreviousLimiterStatusWriter = nullptr;
+	_cellRefinementStatusWriter = nullptr;
+	_cellPreviousRefinementStatusWriter = nullptr;
 	_cellDescriptionIndexWriter = nullptr;
 	_cellElementWriter = nullptr;
 	_cellLevelWriter = nullptr;
@@ -353,7 +353,7 @@ void plotInt(tarch::plotter::griddata::Writer::CellDataWriter *writer, int cellI
 
 void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, const int element) {
 	double *solution=nullptr, timeStamp=-1;
-	int limiterStatus=-1, previousLimiterStatus=-1, level=-1;
+	int RefinementStatus=-1, previousRefinementStatus=-1, level=-1;
 	tarch::la::Vector<DIMENSIONS, double> offsetOfPatch, sizeOfPatch;
 	
 	// we need this code doubling as we have different C++ types. Could probably use templates instead.
@@ -370,18 +370,18 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 			level = solverPatch.getLevel();
 			
 			if(_isLimitingSolver) {
-				limiterStatus         = solverPatch.getLimiterStatus();
-				previousLimiterStatus = solverPatch.getPreviousLimiterStatus();
+				RefinementStatus         = solverPatch.getRefinementStatus();
+				previousRefinementStatus = solverPatch.getPreviousRefinementStatus();
 
 				// this comes from LimitingADERDG2CartesianVTK.cpp:
 				// ignore limiter status on coarser mesh levels
 				assertion(static_cast<unsigned int>(solverPatch.getSolverNumber())<exahype::solvers::RegisteredSolvers.size());
 				if (level<exahype::solvers::RegisteredSolvers[solverPatch.getSolverNumber()]->getMaximumAdaptiveMeshLevel()) {
-					limiterStatus         = 0;
-					previousLimiterStatus = 0;
+					RefinementStatus         = 0;
+					previousRefinementStatus = 0;
 				}
 
-				assertion(limiterStatus >= 0);
+				assertion(RefinementStatus >= -1);
 			}
 			break;
 		}
@@ -409,8 +409,8 @@ void exahype::plotters::Patch2VTK::plotPatch(const int cellDescriptionsIndex, co
 
 		// plot data about limiter
 		if(_isLimitingSolver) {
-			plotInt(_cellLimiterStatusWriter, cellIndex, limiterStatus);
-			plotInt(_cellPreviousLimiterStatusWriter, cellIndex, previousLimiterStatus);
+			plotInt(_cellRefinementStatusWriter, cellIndex, RefinementStatus);
+			plotInt(_cellPreviousRefinementStatusWriter, cellIndex, previousRefinementStatus);
 		}
 
 		// plot data about MPI rank

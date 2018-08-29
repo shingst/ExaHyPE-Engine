@@ -88,6 +88,34 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	!limiter_value=0
 END SUBROUTINE PDElimitervalue
 
+
+
+RECURSIVE SUBROUTINE PDEGeometriclimitervalue(limiter_value,xx)
+	USE SpecificVarEqn99
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE Parameters, ONLY : nVar, nDim,ICFlag
+	IMPLICIT NONE 
+	! Argument list 
+	REAL, INTENT(IN)               :: xx(nDim)        ! 
+	INTEGER, INTENT(OUT)              :: limiter_value        !
+	real	:: rr	
+
+	if(ICFlag .eq. 'CGeom') then
+		rr = RadiusFromCG(xx(1),xx(2),xx(3))
+		!rr = xx(3)-1000.0
+		if(abs(rr)<200) then
+			limiter_value=1
+		else
+			limiter_value=0
+		end if
+		return
+	else
+		print *, 'Error, geometric limiter not implemented for this test case'
+		stop
+	end if
+
+END SUBROUTINE PDEGeometriclimitervalue
+
 RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
     USE, INTRINSIC :: ISO_C_BINDING
 	USE SpecificVarEqn99
@@ -126,7 +154,7 @@ RECURSIVE SUBROUTINE InitialCG3D(x, t, Q)
         up(14)  = 1.0   ! No Fracture everywhere
         r = x(3)
         !r = RadiusFromCG(x(1),x(2),x(3))
-		ICsig=200.0
+		ICsig=50.0
 		r = DistanceFromSurfaceCG(x(1),x(2),x(3),ICsig)
 		!r = RadiusFromCG(x(1),x(2),x(3)) 
         !r = x(3)-(1000.0+500.0*sin(x(1)))
@@ -240,13 +268,13 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
 		!leng=15000.0
 		n_new_in=(/200, 200/)			! Number of elements for the min sub tri function
 		
-		!CGEOMFile="CG.dat"			! DTM file
-		!center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
-		!binary_input=.false.
+		CGEOMFile="CG.dat"			! DTM file
+		center=(/0.0, 0.0/)			! UTM coordinates of the center (with respect to the DTM data file)
+		binary_input=.false.
 		
-		CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
-		center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
-		binary_input=.true.
+		!CGEOMFile="trient_003_44_48_9_13.bin"			! DTM file
+		!center=(/4405.905971174,2551.552691730/)			! UTM coordinates of the center (with respect to the DTM data file)
+		!binary_input=.true.
 		
 		!leng=15000.0
 		!center=(/600.0, 5110.0/)			! UTM coordinates of the center (with respect to the DTM data file)
@@ -329,7 +357,7 @@ RECURSIVE subroutine ReadCGFile(MyOffset,MyDomain)
         ny_cg=ny_cg_new;        
         allocate(x_cg(nx_cg),y_cg(ny_cg),z_cg(nx_cg,ny_cg))
         x_cg=x_cg_new
-        y_cg=y_cg_new
+        y_cg=y_cg_new-243.9     ! Move by 1 element since CG is shifted with respect to the real DTM
 		if(invert_coordinates) then
 			do i=1,nx_cg
 				z_cg(i,1:ny_cg)=z_cg_new(i,ny_cg:1:-1)

@@ -1031,10 +1031,27 @@ class mexafile:
 				name = op.r.node()
 			else:
 				# a dumb way to come up with a number:
+				# TODO: This is really dumb as the numbering is natural, i.e. we don't
+				#       know the total length of the list (TODO there is certainly a simple way to obtain it)
+				#       and therefore have either to fallback to natural sorting
+				#       (n0, n1, n2, ... n9, n10, n11, ... n99, n100, n101, ...)
+				#       instead of the buggy n0, n10, n11, ..., n100, n101, ..., n1, n2, ...
+				#       or to rely on a hardcoded maximum where bugs arise, for instance
+				#       n000, n001, n002, ... n999, n1000, n1001, ...
+				#       here, with n%30i we choose the later and cross our hands that this
+				#       bug will be noticed when it appears...
+				#
+				# Improvement: To make this nicer for vectors of length 2 (3), there one should
+				#       fall back to a naming x, y, z, or i, j, k.
+				#
+				# Comment for obtaining the vector length: This is probably a "cleanup step"
+				#       which should be done after the very end of the evaluation. Therefore,
+				#       "counting names" should be marked and then beautified at the end.
+				#
 				if not hasattr(operations, 'append_counter'):
 					operations.append_counter = defaultdict(lambda: 0)
 				i_op_node = operations.append_counter[op.l]
-				name = "n%i" % i_op_node
+				name = "n%03i" % i_op_node
 				operations.append_counter[op.l] += 1
 				# import pdb; pdb.set_trace()
 				
@@ -1379,6 +1396,17 @@ class encoded_mexafile(io_mexafile):
 		needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
 		return "".join([ quote(c) if needsquote(c) else c for c in s])
 	
+	@staticmethod
+	def relaxed_quoted_printable(s, escape='%'):
+		"""
+		Version of quoted printable which allows more special characters
+		which are probably accepted by the toolkit.
+		"""
+		HEX = '0123456789ABCDEF'
+		quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
+		needsquote = lambda c: not (c in '_-' or '0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
+		return "".join([ quote(c) if needsquote(c) else c for c in s])
+	
 	encodings = {
 		# base64 is the well known base64
 		'base64': lambda f: base64.b64encode(f),
@@ -1569,7 +1597,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 			# Strings must be treated with special care. They must not whitespace other "weird"
 			# characters. Therefore, they are encoded.
 			encoding = 'quotedprintable'
-			encode_str = encoded_mexafile.quoted_printable
+			encode_str = encoded_mexafile.relaxed_quoted_printable
 			ret['mexa/encoding'] = encoding
 			join_multiline = True
 			join_kv_tpl = "%s: %s" # Allow some whitespace
@@ -1597,6 +1625,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 				identifier = l.canonical()
 				
 				# at the moment, warn only. Proper escaping is subject to future extension of this code.
+				# TODO: Shouldn't these check wether "in reserved_token_list" instead of "in reserved_tokens"?
 				if identifier in reserved_tokens:
 					warn("Warning: Key '%s' is a reserved token in the ExaHyPE toolkit. Will probably generate problems. You should probably switch to parameter_style=embedded" % identifier)
 				if re in reserved_tokens:
@@ -1654,7 +1683,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 			# former:
 			## return adict.values()
 			# instead, filter out the $path backref
-			return [ v for k, v in adict.iteritems() if k != self.backref_key ]
+			return [ adict[k] for k in sorted(adict.keys()) if k != self.backref_key ]
 		
 		@jinja_filter
 		def asfloat(something):

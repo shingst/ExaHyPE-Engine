@@ -1,92 +1,3 @@
-template <class CellDescription,class CellDescriptionHeap>
-exahype::solvers::Solver::SubcellPosition
-exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(
-    const CellDescription& pChild) {
-  // 1. Initialisation.
-  exahype::solvers::Solver::SubcellPosition subcellPosition;
-  if (
-      (pChild.getType()==CellDescription::Cell || 
-      pChild.getType()==CellDescription::Ancestor)
-      &&
-      CellDescriptionHeap::getInstance().isValidIndex(pChild.getParentIndex())
-  ) {
-    CellDescription* pParent = 0;
-    int parentElement=0;
-    for (auto& p : CellDescriptionHeap::getInstance().getData(pChild.getParentIndex())) {
-      if (p.getSolverNumber()==pChild.getSolverNumber()) {
-        subcellPosition.parentCellDescriptionsIndex = pChild.getParentIndex();
-        subcellPosition.parentElement               = parentElement;
-        pParent = &p;
-        break;
-      }
-      ++parentElement;
-    }
-
-    // 2. If the current parent is an EmptyAncestor,
-    // try to determine iteratively the next parent that holds data.
-    if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound) {
-      while (
-          pParent->getType()==CellDescription::Ancestor            &&
-          pParent->getCommunicationStatus()==0                            &&
-          #ifdef Parallel
-          !pParent->getHasToHoldDataForMasterWorkerCommunication() &&
-          #endif
-          CellDescriptionHeap::getInstance().isValidIndex(pParent->getParentIndex())
-      ) {
-        const int currentParentIndex = pParent->getParentIndex();
-        int parentElement=0;
-        for (auto& p : CellDescriptionHeap::getInstance().getData(currentParentIndex)) {  // Loop over cell descriptions
-          if (p.getSolverNumber() == pChild.getSolverNumber()) {
-            subcellPosition.parentCellDescriptionsIndex = pParent->getParentIndex();
-            subcellPosition.parentElement               = parentElement;
-            pParent = &p;
-            break;
-          }
-          ++parentElement;
-        }
-      }
-      assertion2(pParent->getType()==CellDescription::Ancestor,
-                 pChild.toString(),pParent->toString());
-
-      if (
-          pParent->getCommunicationStatus()==0
-          #ifdef Parallel
-          && !pParent->getHasToHoldDataForMasterWorkerCommunication()
-          #endif
-      ) {
-        subcellPosition.invalidate();
-      } else {
-        subcellPosition.subcellIndex =
-            computeSubcellIndex(
-                pChild.getOffset(),pChild.getSize(),
-                pParent->getOffset());
-        subcellPosition.levelDifference =
-            pChild.getLevel() - pParent->getLevel();
-      }
-    }
-  }
-
-  return subcellPosition;
-}
-
-template <class CellDescription,class CellDescriptionHeap>
-exahype::solvers::Solver::SubcellPosition
-exahype::amr::computeSubcellPositionOfCellOrAncestor(
-    const CellDescription& pChild) {
-  if (
-      pChild.getType()==CellDescription::Cell
-      || 
-      (pChild.getType()==CellDescription::Ancestor &&
-      pChild.getCommunicationStatus()>0)
-  ) {
-    exahype::solvers::Solver::SubcellPosition subcellPosition =
-        computeSubcellPositionOfCellOrAncestorOrEmptyAncestor
-        <CellDescription,CellDescriptionHeap>(pChild);
-    return subcellPosition;
-  } else {
-    return exahype::solvers::Solver::SubcellPosition();
-  }
-}
 
 template <class CellDescription,class CellDescriptionHeap,bool topMost>
 exahype::solvers::Solver::SubcellPosition
@@ -115,17 +26,18 @@ exahype::amr::computeSubcellPositionOfDescendant(
   // a parent in the parent's cell description array.
   assertion1(pParent!=0,pChild.toString());
 
-  // 2. If the current parent is an EmptyAncestor,
-  // try to determine iteratively the next parent that holds data.
+  // 2. If the current parent is a Descendant that doesn't,
+  // hold face data try to determine iteratively the next parent that holds data.
+  // If topMost is true, look for a Cell or a Descendant at the master-worker boundary.
   while (
-      (pParent->getType()==CellDescription::Descendant && 
-       pParent->getCommunicationStatus()==0                   
+      (pParent->getType()==CellDescription::Descendant &&
+       pParent->getCommunicationStatus()==0
        #ifdef Parallel
        && !pParent->getHasToHoldDataForMasterWorkerCommunication()
        #endif
        )
-      || 
-      (topMost                                         && 
+      ||
+      (topMost                                         &&
        pParent->getType()==CellDescription::Descendant
        #ifdef Parallel
        && !pParent->getHasToHoldDataForMasterWorkerCommunication()

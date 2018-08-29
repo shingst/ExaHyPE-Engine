@@ -2,9 +2,46 @@
 #include "mpibalancing/HotspotBalancing.h"
 #include "peano/utils/UserInterface.h"
 
+#include "tarch/la/ScalarOperations.h"
 
 exahype::mappings::LoadBalancing::LoadBalancingAnalysis  exahype::mappings::LoadBalancing::_loadBalancingAnalysis;
 
+/**
+ * Compute the number of ranks required to populate the given mesh level
+ */
+
+
+#ifdef Parallel
+int exahype::mappings::LoadBalancing::LastLevelToPopulateUniformly  = -1;
+
+int exahype::mappings::LoadBalancing::determineLastLevelToPopulateUniformly() {
+  if ( exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ) {
+    return std::numeric_limits<int>::max();
+  } else {
+    tarch::la::Vector<DIMENSIONS,double> domain = exahype::solvers::Solver::getDomainSize();
+    const int uniformMeshLevel                  = exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers(); // TODO(Dominic): Multisolver: Maybe consider to use the finest mesh level instead?
+    const double uniformMeshSize                = exahype::solvers::Solver::getCoarsestMeshSizeOfAllSolvers();
+    
+    const int numberOfAvailableRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+    int level     = 1;
+    int usedRanks = 1; // global master rank
+    while( level < uniformMeshLevel && usedRanks <= numberOfAvailableRanks ) {
+      const int levelDelta = uniformMeshLevel - level;
+      
+      int ranksToDeployOnCurrentLevel = 1;
+      for (int d=0; d<DIMENSIONS; d++) {
+        const int numberOfCellsOnUniformGrid = static_cast<int>( std::round ( domain[d] / uniformMeshSize ) );
+        ranksToDeployOnCurrentLevel *= numberOfCellsOnUniformGrid / tarch::la::aPowI(levelDelta,3);
+      }
+      usedRanks += ranksToDeployOnCurrentLevel;
+      level++;
+    }
+    int maxLevel =  std::min(uniformMeshLevel-1, std::max(2,level-2)); // -1 since the while loop went one further, -1 since we do not touch the actual uniform grid with the load balancing
+    return maxLevel;
+  }
+}
+#endif
 
 void exahype::mappings::LoadBalancing::setLoadBalancingAnalysis(LoadBalancingAnalysis loadBalancingAnalysis) {
   _loadBalancingAnalysis = loadBalancingAnalysis;
@@ -77,7 +114,11 @@ void exahype::mappings::LoadBalancing::mergeWithWorkerThread(const LoadBalancing
 void exahype::mappings::LoadBalancing::beginIteration(
   exahype::State&  solverState
 ) {
+  #ifdef Parallel
+  LastLevelToPopulateUniformly  = 
+      determineLastLevelToPopulateUniformly();
   _numberOfLocalCells = 0;
+  #endif
 }
 
 void exahype::mappings::LoadBalancing::enterCell(
@@ -89,7 +130,19 @@ void exahype::mappings::LoadBalancing::enterCell(
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  _numberOfLocalCells++;
+  #ifdef Parallel
+  if ( 
+    fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
+  ) {
+    _numberOfLocalCells++;
+  } else if ( fineGridVerticesEnumerator.getLevel() == 2 ) {
+    // do not compute any weights on level 2 if it does not belong to the coarse grid. 
+    // It does not make sense to distribute it then.
+  } else {
+    _numberOfLocalCells += exahype::solvers::ADERDGSolver::computeWeight(fineGridCell.getCellDescriptionsIndex());
+    _numberOfLocalCells += exahype::solvers::FiniteVolumesSolver::computeWeight(fineGridCell.getCellDescriptionsIndex());
+  }
+  #endif
 }
 
 
@@ -343,8 +396,17 @@ void exahype::mappings::LoadBalancing::prepareSendToMaster(
   const exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
 ) {
+  if ( // do not count the root cell
+    verticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
+  ) {
+    _numberOfLocalCells--;
+  } else { 
+    _numberOfLocalCells -= exahype::solvers::ADERDGSolver::computeWeight(localCell.getCellDescriptionsIndex());
+    _numberOfLocalCells -= exahype::solvers::FiniteVolumesSolver::computeWeight(localCell.getCellDescriptionsIndex());
+  }
+   
   if (_loadBalancingAnalysis==LoadBalancingAnalysis::Hotspot) {
-    mpibalancing::HotspotBalancing::setLocalWeightAndNotifyMaster(_numberOfLocalCells);
+    mpibalancing::HotspotBalancing::setLocalWeightAndNotifyMaster( _numberOfLocalCells );
   }
 }
 

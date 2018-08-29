@@ -69,15 +69,32 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
 
   // 0. Allocate local variable
-  double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1_T
-  
-{% if useNCP %}
-  double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+{% with %}
+{% if useFluxVect %}
+  // transposed F slice for flux_vect
+{% set array, blockedDim = 'Ft', True %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
 {% endif %}
+{% if useNCPVect or useFusedSourceVect %}
+  // transposed gradQ slice for vect ncp/source
+{% set array, blockedDim = 'gradQt', True %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% endif %}
+{% if useFluxVect or useNCPVect or useSourceVect or useFusedSourceVect %}
+  // transposed Q slice for vect PDEs
+{% set array, blockedDim = 'Qt', False %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% endif %}
+{% if useNCPVect or useSourceVect or useFusedSourceVect %}
+  // transposed S slice for vect ncp/source
+{% set array, blockedDim = 'St', False %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/vectPDEsArrays.template' %}{% endfilter %} 
+{% endif %}
+{% endwith %}
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
-{% if useNCP %}
+{% if useNCP or useFlux %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
@@ -92,41 +109,88 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endif %}
 
+{% if not useCERKGuess %}{# fallback trivial guess #}
   // 1. Trivial initial guess
   for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
     for (int l = 0; l < {{nDof}}; l++) {
       std::copy_n(&luh[{{nData}}*ijk], {{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
     }
   }
+{% else %}{# useCERKGuess #}
+  //1. Optimized initial guess, Continuous Extension Runga-Kutta.
+  {
+{% if useFlux %}{# use lFi as temp array, lFi total size = nVarPad*(nDof**(nDim+1))*nDim #}
+    // use lFi as temporary storage for CERK's temporary arrays
+    double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
+    double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
+    double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
+    double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
+    std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
+{% else %}{# no flux so use lSi instead, lSi total size = nVarPad*(nDof**(nDim+1)) #}
+    // use lSi as temporary storage for CERK's temporary arrays
+    double* const K1 = lSi; // K1[z?][y][x][n]
+    double* const K2 = lSi+{{(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
+    double* const lwh = lSi+{{2*(nDof**nDim)*nVarPad}}; // lwh[z?][y][x][n] (nData)
+    std::memset(lSi, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
+{% endif %}
+    //Note: temporary storage will be overwritten by user functions later, no need to reset them to 0
 
+    // K1
+{% with inputLuh='luh', outputKi='K1', inputLuh_dataSize=nData %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
+{% endwith %} 
+{% if useNCP %}
+    std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0 for next loop
+{% endif %}
+    
+    // K2
+    for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
+      for (int n = 0; n < {{nVar}}; n++) {
+        lwh[n+{{nData}}*ijk] = luh[n+{{nData}}*ijk] - dt * K1[n+{{nVarPad}}*ijk];
+      }
+{% if nPar != 0 %}
+      for (int n = {{nVar}}; n < {{nData}}; n++) { //copy parameters
+        lwh[n+{{nData}}*ijk] = luh[n+{{nData}}*ijk];
+      }
+{% endif %}
+    }
 
-  // 2. Compute the contribution of the initial condition uh to the time update
-  // we compute rhs on the fly, TODO JMG clean legacy
+{% with inputLuh='lwh', outputKi='K2', inputLuh_dataSize=nData %}
+{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
+{% endwith %} 
+
+    // Set initial guess using CERK
+    for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
+      for (int l = 0; l < {{nDof}}; l++) {
+        for (int n = 0; n < {{nVar}}; n++) {
+          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = luh[n+{{nData}}*ijk] - (dt * nodes[l] * K1[n+{{nVarPad}}*ijk]) - (0.5*dt*nodes[l]*nodes[l]* (K2[n+{{nVarPad}}*ijk]-K1[n+{{nVarPad}}*ijk]));
+        }
+{% if nPar != 0 %}
+        for (int n = {{nVar}}; n < {{nData}}; n++) { // copy parameters
+          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = luh[n+{{nData}}*ijk];
+        }
+{% endif %}
+      }
+    } 
+    
+  } // end initial guess
+{% endif %} {# useCERKGuess #}
   
-  // 3. Discrete Picard iterations
-  constexpr int MaxIterations = {{2 * nDof}};
+  // 2. Discrete Picard iterations
+  constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
+  
   int iter = 0;
-
   for (iter; iter < MaxIterations; iter++) {
     for (int i = 0; i < {{nDof}}; i++) {  // time DOF
 
-{% if useFlux %}    
-      // Compute the fluxes
-      for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
-        // Call PDE fluxes
-        const double* Q = &lQi[{{nDataPad}}*(i+{{nDof}}*jkl)];
-        double* F[{{nDim}}];
-        F[0] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)];
-        F[1] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}}];
-{% if nDim == 3 %}
-        F[2] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{2*(nDof**nDim)*nDof*nVarPad}}];
-{% endif %}
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::flux(Q, F);
-      }
-{% endif %} {# useFlux #}
+{% if useFlux %}
+{# *************************************************
+   **** call to flux function over lQi into lFi ****
+   ************************************************* #}
+{% with inputQ='lQi', inputQ_dataSize=nDataPad, outputF='lFi',  timeInterleaved=True, time_var='i' %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %} 
+{% endif %}{# useFlux #}
 
       // Compute the contribution of the initial condition uh to the right-hand side (rhs)
       for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
@@ -139,10 +203,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       
 {% if useNCP %}
       //set gradQ to 0
-      std::memset(gradQ, 0, {{(nDof**nDim)*nDof*nVarPad*nDim}} * sizeof(double));
+      std::memset(gradQ, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
 {% endif %}
       
-
       // Compute the "derivatives" (contributions of the stiffness matrix)      
       // x direction (independent from the y and z derivatives)
       ijk_=i*{{nDof*nDof3D}};
@@ -150,101 +213,33 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% if useLibxsmm %}
-          #pragma vector aligned
-          for(int it=0;it<{{nDof*nDofPad}};it++) {
-            s_m[it] = -updateSize * Kxi[it];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_rhs_x = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_rhs_x}}(&lFi[{{nVarPad*nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i))], &s_m[0], &rhs[{{nVarPad*nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVarPad}}; n++) {
-                rhs[n+{{nVarPad}}*(l+{{nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i)))] -= updateSize *
-                                               lFi[n+{{nVarPad}}*(m+{{nDof}}*(k+{{nDof}}*(j+{{nDof3D}}*i)))] *
-                                               Kxi[m+{{nDofPad}}*l];
-              }
-            }
-          }
-{% endif %}
-{% endif %} {# useFlux #}
+{% with gemmKey='rhs_x', A='lFi', B='coeffRhsX', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
+{% endif %}{# useFlux #}
 {% if useNCP %}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-          #pragma forceinline
-#endif
-          {{gemm_gradQ_x}}(&lQi[{{nDataPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVarPad}}*(0+{{nDim}}*(i+{{nDof}}*(l+{{nDof}}*(k+{{nDof}}*j))))] += inverseDx[0] *
-                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(m+{{nDof}}*(k+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
-              }
-            }
-          }
-{% endif %}
+{% with gemmKey='gradQ_x', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
 {% endif %}
           ijk_++;
         }
       }
-
+      
       // y direction (independent from the x and z derivatives)
       ijk_=i*{{nDof*nDof3D}};
       for (int j = 0; j < {{nDof3D}}; j++) {
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% if useLibxsmm %}
-          #pragma vector aligned
-          for(int it=0;it<{{nDof*nDofPad}};it++) {
-            s_m[it] = -updateSize * Kxi[it];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_rhs_y = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_rhs_y}}(&lFi[{{1*(nDof**nDim)*nDof*nVarPad}}+{{nVarPad}}*(k+{{nDof*nDof}}*(j+{{nDof3D}}*i))], &s_m[0], &rhs[{{nVarPad}}*(k+{{nDof*nDof}}*(j+{{nDof3D}}*i))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVarPad}}; n++) {
-                rhs[n+{{nVarPad}}*(k+{{nDof}}*(l+{{nDof}}*(j+{{nDof3D}}*i)))] -= updateSize *
-                                               lFi[{{1*(nDof**nDim)*nDof*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(m+{{nDof}}*(j+{{nDof3D}}*i)))] *
-                                               Kxi[m+{{nDofPad}}*l];
-              }
-            }
-          }
-{% endif %}
-{% endif %} {# useFlux #}
+{% with gemmKey='rhs_y', A='lFi', B='coeffRhsY', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
+{% endif %}{# useFlux #}
 {% if useNCP %}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-          #pragma forceinline
-#endif
-          {{gemm_gradQ_y}}(&lQi[{{nDataPad}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))+{{nVarPad}}]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVarPad}}*(1+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(l+{{nDof}}*j))))] += inverseDx[0] *
-                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(m+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
-              }
-            }
-          }
-{% endif %}
+{% with gemmKey='gradQ_y', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
 {% endif %}
           ijk_++;
         }
@@ -257,123 +252,39 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% if useLibxsmm %}
-          #pragma vector aligned
-          for(int it=0;it<{{nDof*nDofPad}};it++) {
-            s_m[it] = -updateSize * Kxi[it];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_rhs_z = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_rhs_z}}(&lFi[{{2*(nDof**nDim)*nDof*nVarPad}}+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof*nDof}}*i))], &s_m[0], &rhs[{{nVarPad}}*(k+{{nDof}}*(j+{{nDof*nDof}}*i))]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVarPad}}; n++) {
-                rhs[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(l+{{nDof}}*i)))] -= updateSize *
-                                               lFi[{{2*(nDof**nDim)*nDof*nVarPad}}+n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(m+{{nDof}}*i)))] *
-                                               Kxi[m+{{nDofPad}}*l];
-              }
-            }
-          }
-{% endif %}
-{% endif %} {# useFlux #}
+{% with gemmKey='rhs_z', A='lFi', B='coeffRhsZ', C='rhs', A_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
+{% endif %}{# useFlux #}
 {% if useNCP %}
-{% if useLibxsmm %}
-#ifdef USE_IPO
-          #pragma forceinline
-#endif
-          {{gemm_gradQ_z}}(&lQi[{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof}}*j))+{{2*nVarPad}}]);
-{% else %}
-          for (int l = 0; l < {{nDof}}; l++) {
-            for (int m = 0; m < {{nDof}}; m++) {
-              #pragma simd
-              for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVarPad}}*(2+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*l))))] += inverseDx[0] *
-                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*m)))] * dudx[l+{{nDofPad}}*m];
-              }
-            }
-          }
-{% endif %}
+{% with gemmKey='gradQ_z', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
 {% endif %}
           ijk_++;
         }
       }
 {% endif %}
-     
+
 {% if useSourceOrNCP %}
-      // Compute the Nonconservative part NCP + Source
-      for(int jkl = 0; jkl < {{nDof**nDim}}; jkl++) { //zyx
-        const double updateSize = weights1[i] * weights3[jkl] * dt;
-        const int shift = {{nVarPad}}*(jkl+{{nDof**nDim}}*i);
-        const int it = i+{{nDof}}*jkl;        
-        // Old code (for reference): solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], &gradQNoPad[0], &lSi[shift]);
-{% if useSource %}
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::algebraicSource(&lQi[{{nDataPad}}*it], &lSi[shift]);
-{% else %}
-        std::memset(&lSi[shift], 0, {{nVarPad}} * sizeof(double));
+{# ***********************************************************
+   **** call to Source and NCP (or FusedSource) functions ****
+   *********************************************************** #}
+{% with time_var='i', inputQ='lQi', output='rhs', inputQ_dataSize=nDataPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
+{% endwith %} 
 {% endif %}
-{% if useNCP %}
-        double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
-        std::copy_n(&gradQ[{{nVarPad*nDim}}*it]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
-        std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{1*nVarPad}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
-{% if nDim==3 %}
-        std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{2*nVarPad}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
-{% endif %}
-        std::memset(&ncp[0], 0, {{nVarPad}} * sizeof(double));
-#ifdef USE_IPO
-        #pragma forceinline recursive
-#endif
-        solver.{{solverName}}::nonConservativeProduct(&lQi[{{nDataPad}}*it], &gradQNoPad[0], ncp);
-        #pragma simd
-        for(int n = 0; n<{{nVarPad}}; n++) {
-          lSi[n+shift] -= ncp[n];
-        }
-{% endif %}
-        #pragma simd
-        for (int n = 0; n < {{nVarPad}}; n++) {
-          rhs[n+shift] += updateSize * lSi[n+shift];
-        }
-      }
-{% endif %}
-   
+
     }  // end time dof
 
-    // 4. Multiply with (K1)^(-1) to get the discrete time integral of the
+    // 3. Multiply with (K1)^(-1) to get the discrete time integral of the
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
-      const double iweight = 1.0 / weights3[ijk];
-      #pragma vector aligned
-      for(int it=0;it<{{nDof*nDofPad}};it++) {
-        s_m[it] = iweight * iK1_T[it];
-      }
-{% if useLibxsmm %}
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-      volatile double doNotOptimizeAway_lqi = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-      #pragma forceinline
-#endif
-      {{gemm_lqi}}(&rhs[{{nVarPad}}*ijk], &s_m[0], &new_lQi_slice[0]); //Note: the gemm performs C = A*B, no need to initialize C to 0
-{% else %}
-      std::memset(new_lQi_slice, 0, {{nDof*nVarPad}} * sizeof(double));
-      for(int l=0;l<{{nDof}};l++) { 
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}};n++) {
-            new_lQi_slice[l*{{nVarPad}}+n] += s_m[l*{{nDof}}+k] * rhs[{{nVarPad}}*ijk+k*{{(nDof**nDim)*nVarPad}}+n];
-          }
-        }
-      }
-{% endif %}
+      const double iweight = 1.0 / weights3[ijk];     
+{% with gemmKey='lqi', A='rhs', B='s_m_QSlice', C='new_lQi_slice', A_shift=nVarPad~'*ijk', B_shift='0', C_shift='0', trueB='iK1_T', trueAlpha='iweight' %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
       for(int l = 0; l < {{nDof}}; l++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
           sq_res += (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]) * (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]);
@@ -382,7 +293,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
     }
 
-    // 5. Exit condition
+    // 4. Exit condition
     constexpr double tol2 = 1e-7 * 1e-7;
     if (sq_res < tol2) {
       break;
@@ -499,7 +410,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if nDataPad != nVarPad %}
       }
       #pragma simd
-      for (int n = 0; n < {{nVarPad}}; n++) {  
+      for (int n = 0; n < {{nVarPad}}; n++) {
 {% endif %}
         // Fortran: lFhbnd(:,j,i,1) = lFhi_x(:,:,j,i) * FLCoeff(:)
         lFhbnd[n+{{nVarPad}}*yz+{{0*nVarPad*nDof*nDof3D}}] +=
@@ -508,7 +419,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         // Fortran: lFhbnd(:,j,i,2) = lFhi_x(:,:,j,i) * FRCoeff(:)
         lFhbnd[n+{{nVarPad}}*yz+{{1*nVarPad*nDof*nDof3D}}] +=
             lFhi[n+{{nVarPad}}*(x+{{nDof}}*yz)] * FRCoeff[x];
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
       }
     }
   }
@@ -517,13 +428,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (int xz = 0; xz < {{nDof*nDof3D}}; xz++) {  
     // Matrix-Vector Products
     for (int y = 0; y < {{nDof}}; y++) {
-      {% if nDim==3 %}
+{% if nDim==3 %}
       const int z = xz / {{nDof}};
       const int x = xz % {{nDof}};
-      {% else %}
+{% else %}
       const int z = 0;
       const int x = xz;
-      {% endif %}
+{% endif %}
       #pragma simd
       for (int n = 0; n < {{nDataPad}}; n++) {
         // Fortran: lQhbnd(:,j,i,3) = lQhi(:,j,:,i) * FLCoeff(:)
@@ -546,19 +457,19 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         // Fortran: lFhbnd(:,j,i,4) = lFhi_y(:,:,j,i) * FRCoeff(:)
         lFhbnd[n+{{nVarPad}}*xz+{{3*nVarPad*nDof*nDof3D}}] +=
             lFhi[n+{{nVarPad}}*(y+{{nDof}}*xz)+{{1*nVarPad*(nDof**nDim)}}] * FRCoeff[y];
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
       }
     }
   }
 
   
-  {% if nDim==3 %}
+{% if nDim==3 %}
   // z-direction: face 5 (left) and face 6 (right)
   for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
     // Matrix-Vector Products
     for (int z = 0; z < {{nDof}}; z++) {
       #pragma simd
-      for (int n = 0; n < {{nVarPad}}; n++) {
+      for (int n = 0; n < {{nDataPad}}; n++) {
         // Fortran: lQhbnd(:,j,i,5) = lQhi(:,j,i,:) * FLCoeff(:)
         lQhbnd[n+{{nDataPad}}*xy+{{4*nDataPad*nDof*nDof3D}}] +=
             lQhi[n+{{nDataPad}}*(xy+{{nDof*nDof}}*z)] * FLCoeff[z];
@@ -579,7 +490,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         // Fortran: lFhbnd(:,j,i,6) = lFhi_z(:,:,j,i) * FRCoeff(:)
         lFhbnd[n+{{nVarPad}}*xy+{{5*nVarPad*nDof*nDof3D}}] +=
             lFhi[n+{{nVarPad}}*(z+{{nDof}}*xy)+{{2*nVarPad*(nDof**nDim)}}] * FRCoeff[z];
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
       }
     }
   }
@@ -610,63 +521,25 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
   for (int j=0; j<{{nDof3D}}; j++) {
     for (int i=0; i<{{nDof}}; i++) {
-  
-      #pragma vector aligned
-      for(int it=0; it<{{nDof*nDofPad}}; it++) {
-        s_m[it] = weights2[i+j*{{nDof}}] * inverseDx[0] * Kxi_T[it];
-      }
-{% if useLibxsmm %}
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-      volatile double doNotOptimizeAway_volume = s_m[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-      #pragma forceinline
-#endif
-      {{gemm_x}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}]);
-#ifdef USE_IPO
-      #pragma forceinline
-#endif
-      {{gemm_y}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}]);
+      
+      //x, also define coefficient matrix coeffVolume
+{% with gemmKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx[0]', forceCoeffMatrix=True %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
+
+      //y, reuse coeffVolume
+{% with gemmKey='lduh_y', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~(nDof*nDof)~'+i)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}
+{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
 {% if nDim == 3 %}
-#ifdef USE_IPO
-      #pragma forceinline
-#endif
-      {{gemm_z}}(&lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[(j*{{nDof}}+i)*{{nVarPad}}]);
+
+      //z, reuse coeffVolume
+{% with gemmKey='lduh_z', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% endwith %} 
 {% endif %}
-{% else %}
-      //x 
-      for(int l=0; l<{{nDof}}; l++) {
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof}}+i)*{{nVarPad*nDof}}+l*{{nVarPad}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{0*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
-          }
-        }
-      }
-      
-      //y
-      for(int l=0; l<{{nDof}}; l++) {
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof*nDof}}+i)*{{nVarPad}}+l*{{nVarPad*nDof}}+n]+= lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{1*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
-          }
-        }
-      }
-      
-{% if nDim == 3 %}
-      //z
-      for(int l=0; l<{{nDof}}; l++) {
-        for(int k=0; k<{{nDof}}; k++) {
-          #pragma simd
-          for(int n=0; n<{{nVar}}; n++) {
-            lduh[(j*{{nDof}}+i)*{{nVarPad}}+l*{{nVarPad*nDof**2}}+n] += lFhi[(j*{{nDof}}+i)*{{nVarPad*nDof}} + {{2*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
-          }
-        }
-      }
-  
-{% endif %}{# dim3 #}
-{% endif %}{# useLibxsmm #}
+
     }
   }
 {% endif %}{# useFlux #}
@@ -679,7 +552,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       lduh[xyz*{{nVarPad}}+n] += weights3[xyz] * lShi[xyz*{{nVarPad}}+n];
     }
   }
-  
 {% endif %} 
 
   return std::min(iter+1, MaxIterations); //return number of Picard iterations, min to avoid doing a +1 if the loop wasn't exited early

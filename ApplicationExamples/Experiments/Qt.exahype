@@ -10,11 +10,11 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
+
  
 /**
 
- A project for testing the scaling. 
-
+ A project for testing the scaling.  
  */
 exahype-project  Qt
 
@@ -34,7 +34,7 @@ exahype-project  Qt
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 1
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
 
@@ -50,16 +50,16 @@ exahype-project  Qt
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = on
     spawn-amr-background-threads         = off
-    timestep-batch-factor           = 0.0
-    skip-reduction-in-batched-time-steps = on
-    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
   end global-optimisation
 
 solver Limiting-ADER-DG Demonstrator
     variables const    = 60
-    order const        = 5
+    order const        = 3
     //step size should be 40 to give 27x27x27 grid
     maximum-mesh-size  = 40.0 
 //    maximum-mesh-depth = 3

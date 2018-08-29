@@ -1,16 +1,16 @@
 #!/bin/bash
 # Mandatory parameters are:
-# time, nodes, tasks,
+# time, ranks, nodes,
 # job_name, output_file, error_file, 
-# job_file, spec_file, app, 
-# environment, parameters
+# body
 # 
 # Optional parameters are:
-# ranks, cores, mail
-#@ job_type = parallel
-#@ class = {{class}}
-#@ node = {{nodes}}
-#@ tasks_per_node = {{tasks}}
+# tasks, coresPerTask, mail
+
+#@ job_type     = parallel
+#@ class        = {{class}}
+#@ total_tasks  = {{ranks}}
+#@ node         = {{nodes}}
 #@ island_count = {{islands}}
 #@ network.MPI = sn_all,not_shared,us 
 #@ energy_policy_tag = ExaHyPE_Euler_energy_tag
@@ -24,21 +24,12 @@
 #@ queue
 . /etc/profile
 . /etc/profile.d/modules.sh
-module load gcc/4.9
-module load tbb
+module switch intel/18.0
+module switch tbb/2018
+module switch gcc/5
 
-# pipe some information into output file
-echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`"
-echo ""
-module list
-echo ""
-printenv
-echo ""
-cat {{job_file}}
-echo ""
-echo "sweep/environment={{environment}}"
-echo "sweep/parameters={{parameters}}"
-cat {{spec_file}}
+export OMP_NUM_THREADS={{coresPerTask}}
+export MP_TASK_AFFINITY=core:{{coresPerTask}}
 
-# multiple ranks
-mpiexec -np {{ranks}} {{app}} {{spec_file}} 
+{{body}}
+

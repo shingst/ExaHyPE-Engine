@@ -90,38 +90,45 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
    try {
     const int MAX_CHARS_PER_LINE = 65536;
 
-    std::regex COMMENT_BEGIN(R"((\/\*))"); // Covers all cases /*,/**,/***,... .
-    std::regex COMMENT_END(R"((\*\/))"); //
+    std::regex SL_COMMENT(R"(^\s*(\/\/)+)");
+    std::regex ML_COMMENT_BEGIN(R"((\/\*))"); // Covers all cases /*,/**,/***,... .
+    std::regex ML_COMMENT_END(R"((\*\/))"); //
     std::regex GROUP_BEGIN_OR_END(R"(^(\s|\t)*([a-zA-Z][^\=]+)+)");
-    std::regex CONST_PARAMETER(R"(^(\s|\t)*([A-Za-z](\w|[^a-zA-Z\d\s\t])*)(\s|\t)+const(\s|\t)*=(\s|\t)*(([^\s\t]|\,\s*)+)(\s|\t)*$)");
-    std::regex PARAMETER(R"(^(\s|\t)*([A-Za-z](\w|[^a-zA-Z\d\s\t])*)(\s|\t)*=(\s|\t)*(([^\s\t]|\,\s*)+)(\s|\t)*$)");
+    std::regex CONST_PARAMETER(R"(^\s*([A-Za-z](\w|[^a-zA-Z\d\s\t])*)\s+const\s*=\s*(([^\,]+\,)*([^\,]+)))");
+    std::regex PARAMETER(R"(^\s*([A-Za-z](\w|[^a-zA-Z\d\s\t])*)\s*=\s*(([^\,]+\,)*([^\,]+)))");
     std::regex NO_SPLITTING(R"(\}|\{)");
     std::regex COMMA_SEPARATED(R"((\w|[^a-zA-Z\,\s\t])+)");
     std::regex WHITESPACE_SEPARATED(R"(([^\s\t]+))");
     std::smatch match;
-
+    
     _tokenStream.clear();
     _filename = filename;
 
-    int currentlyReadsComment = 0;
+    int currentlyReadsMultilineComment = 0;
     int lineNumber            = 0;
     while (!inputFile.eof() && inputFile) {
       char lineBuffer[MAX_CHARS_PER_LINE];
       inputFile.getline(lineBuffer, MAX_CHARS_PER_LINE);
       std::string line(lineBuffer);
 
-      // parse the line
-      if (std::regex_search(line, match, COMMENT_BEGIN) && match.size() > 1) {
-        currentlyReadsComment += 1;
+      // ignore single-line and multi-line comments
+      if (std::regex_search(line, match, ML_COMMENT_BEGIN) && match.size() > 1) {
+        currentlyReadsMultilineComment += 1;
       }
-      if (std::regex_search(line, match, COMMENT_END) && match.size() > 1) {
-        currentlyReadsComment -= 1;
+      if (std::regex_search(line, match, ML_COMMENT_END) && match.size() > 1) {
+        currentlyReadsMultilineComment -= 1;
       }
+      bool currentlyReadsSinglineComment =
+          std::regex_search(line, SL_COMMENT, std::regex_constants::match_continuous);
 
       // Runtime parameters
-      if (currentlyReadsComment==0 && std::regex_search(line, match, PARAMETER) && match.size() > 1) {
-        _tokenStream.push_back(match.str(2)); // Subgroup 2 is left-hand side (trimmed)
-        std::string rightHandSide = match.str(6);
+      if (
+          !currentlyReadsSinglineComment &&
+          currentlyReadsMultilineComment==0 &&
+          std::regex_search(line, match, PARAMETER) && match.size() > 1
+      ) {
+        _tokenStream.push_back(match.str(1)); // Subgroup 1 is left-hand side (trimmed)
+        std::string rightHandSide = match.str(3);
 
         if (!std::regex_search(rightHandSide, match, NO_SPLITTING)) {
           std::regex_iterator<std::string::iterator> regex_it ( rightHandSide.begin(), rightHandSide.end(), COMMA_SEPARATED );
@@ -134,9 +141,13 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
           _tokenStream.push_back(rightHandSide);
         }
       // Compile time parameters (Do not push the token const on the stream)
-      } else if (currentlyReadsComment==0 && std::regex_search(line, match, CONST_PARAMETER) && match.size() > 1) {
-        _tokenStream.push_back(match.str(2)); // Subgroup 2 is left-hand side (trimmed)
-        std::string rightHandSide = match.str(7);
+      } else if (
+          !currentlyReadsSinglineComment &&
+          currentlyReadsMultilineComment==0 &&
+          std::regex_search(line, match, CONST_PARAMETER) && match.size() > 1
+      ) {
+        _tokenStream.push_back(match.str(1)); // Subgroup 1 is left-hand side (trimmed)
+        std::string rightHandSide = match.str(3);
 
         if (!std::regex_search(rightHandSide, match, NO_SPLITTING)) {
           std::regex_iterator<std::string::iterator> regex_it ( rightHandSide.begin(), rightHandSide.end(), COMMA_SEPARATED );
@@ -148,7 +159,11 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
         } else {
           _tokenStream.push_back(rightHandSide);
         }
-      } else if (currentlyReadsComment==0 && std::regex_search(line, match, GROUP_BEGIN_OR_END) && match.size() > 1) {
+      } else if (
+          !currentlyReadsSinglineComment &&
+          currentlyReadsMultilineComment==0 &&
+          std::regex_search(line, match, GROUP_BEGIN_OR_END) && match.size() > 1
+      ) {
         std::regex_iterator<std::string::iterator> regex_it ( line.begin(), line.end(), WHITESPACE_SEPARATED );
         std::regex_iterator<std::string::iterator> rend;
         if (regex_it->str().compare("end")!=0) { // first token should not be end
@@ -157,7 +172,7 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
             ++regex_it;
           }
         } // else do nothing
-      } else if (currentlyReadsComment<0) {
+      } else if (currentlyReadsMultilineComment<0) {
         logError("readFile(istream)",
              "Please remove additional multi-line comment end(s) in line '" << lineNumber << "'.");
          _interpretationErrorOccured = true;
@@ -165,14 +180,17 @@ void exahype::parser::Parser::readFile(std::istream& inputFile, std::string file
       lineNumber++;
     }
 
-    if (currentlyReadsComment>0) {
+    if (currentlyReadsMultilineComment>0) {
       logError("readFile(istream)",
                "A multi-line comment was not closed after line " << lineNumber);
       _interpretationErrorOccured = true;
     }
    }
   catch (const std::regex_error& e) {
-    logError("readFile(istream)", "catched exception " << e.what() );
+    logError("readFile(istream)", "catched exception " << e.what() <<
+        ". This usually indicates that you are linking against a C++ standard library implementation which does not" <<
+        " provide a proper implementation of the std::regex functionality. In particular," <<
+        " if you use GCC or your compiler relies on GCC, please make sure that you use a GCC version >= 4.9.0." );
     _interpretationErrorOccured = true;
   }
 
@@ -526,19 +544,18 @@ bool exahype::parser::Parser::getFuseAlgorithmicSteps() const {
   std::string token = getTokenAfter("global-optimisation", "fuse-algorithmic-steps");
   logDebug("getFuseAlgorithmicSteps()", "found fuse-algorithmic-steps"
                                             << token);
-
-  bool result = token.compare("on") == 0;
-
-  if (token.compare(_noTokenFound) == 0) {
-    result = false;  // default value
-  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
     logError("getFuseAlgorithmicSteps()",
-             "fuse-algorithmic-steps is required in the "
-             "global-optimisation segment and has to be either on or off: "
+             "fuse-algorithmic-steps in the "
+             "global-optimisation segment has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return result;
+  return token.compare("on")==0;
 }
 
 
@@ -564,79 +581,98 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsFactor() const {
 
       return result;
   }
-  else return false;
+  else return 0.0;
 }
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   std::string token = getTokenAfter("global-optimisation", "spawn-predictor-as-background-thread");
   logDebug("getSpawnPredictorAsBackgroundTask()", "found spawn-predictor-as-background-thread"
                                             << token);
-
-  bool result = token.compare("on") == 0;
-
-  if (token.compare(_noTokenFound) == 0) {
-    result = false;  // default value
-  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
     logError("getSpawnPredictorAsBackgroundTask()",
              "spawn-predictor-as-background-thread is required in the "
              "global-optimisation segment and has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return result;
+  return token.compare("on")==0;
 }
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
   std::string token = getTokenAfter("global-optimisation", "spawn-amr-background-threads");
   logDebug("getSpawnAMRBackgroundThreads()", "found spawn-amr-background-threads"
                                             << token);
-
-  bool result = token.compare("on") == 0;
-
-  if (token.compare(_noTokenFound) == 0) {
-    result = false;  // default value
-  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
     logError("getSpawnAMRBackgroundThreads()",
              "spawn-amr-background-threads is required in the "
              "global-optimisation segment and has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return result;
+  return token.compare("on")==0;
 }
 
-bool exahype::parser::Parser::getExchangeBoundaryDataInBatchedTimeSteps() const {
-  std::string token = getTokenAfter(
-      "global-optimisation",
-      "disable-amr-if-grid-has-been-stationary-in-previous-iteration");
-  if (token.compare("on") != 0 && token.compare("off") != 0) {
-    logError("getExchangeBoundaryDataInBatchedTimeSteps()",
-             "disable-amr-if-grid-has-been-stationary-in-previous-iteration is "
-             "required in the "
-             "global-optimisation segment and has to be either on or off: "
+bool exahype::parser::Parser::getDisableMetadataExchangeInBatchedTimeSteps() const {
+  std::string token = getTokenAfter("global-optimisation", "disable-metadata-exchange-in-batched-time-steps");
+  logDebug("getDisableMetaDataExchangeInBatchedTimeSteps()", "found metadata-exchange-in-batched-time-steps"
+                                            << token);
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
+    logError("getDisableMetaDataExchangeInBatchedTimeSteps()",
+             "metadata-exchange-in-batched-time-steps in the "
+             "global-optimisation segment has to be either on or off: "
                  << token);
     _interpretationErrorOccured = true;
   }
-  return token.compare("off") == 0;
+  return token.compare("on")==0;
+}
+
+bool exahype::parser::Parser::getDisablePeanoNeighbourExchangeInTimeSteps() const {
+  std::string token = getTokenAfter(
+      "global-optimisation",
+      "disable-vertex-exchange-in-time-steps");
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
+    logError("getDisablePeanoNeighbourExchangeInTimeSteps()",
+        "disable-vertex-exchange-in-time-steps in the "
+        "global-optimisation segment has to be either on or off: "
+        << token);
+    _interpretationErrorOccured = true;
+  }
+  return token.compare("on")==0;
 }
 
 double exahype::parser::Parser::getTimestepBatchFactor() const {
-  std::string token = getTokenAfter("global-optimisation", "timestep-batch-factor");
-  char* pEnd;
-  double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
-  logDebug("getFuseAlgorithmicStepsFactor()", "found timestep-batch-factor "
-                                                  << token);
+  if(hasOptimisationSegment()) {
+    std::string token = getTokenAfter("global-optimisation", "time-step-batch-factor");
+    char* pEnd;
+    double result = std::strtod(token.c_str(), &pEnd);
+    logDebug("getFuseAlgorithmicStepsFactor()", "found time-step-batch-factor " << token);
 
-  if (result < 0.0 || result > 1.0 || pEnd == token.c_str()) {
-    logError("getFuseAlgorithmicStepsFactor()",
-             "'timestep-batch-factor': Value is required in global-optimisation "
-             "section and must be greater than zero and smaller than one: "
-                 << result);
-    result = 0.0;
-    _interpretationErrorOccured = true;
-  }
-
-  return result;
+    if (result < 0.0 || result > 1.0 || pEnd == token.c_str()) {
+      logError("getFuseAlgorithmicStepsFactor()",
+               "'time-step-batch-factor': Value is required in global-optimisation "
+               "section and must be greater than zero and smaller than one: "
+                   << result);
+      result = 0.0;
+      _interpretationErrorOccured = true;
+    }
+    return result;
+  } else return 0.0;
 }
 
 
@@ -648,19 +684,7 @@ bool exahype::parser::Parser::hasOptimisationSegment() const {
 
 bool exahype::parser::Parser::getSkipReductionInBatchedTimeSteps() const {
   if (hasOptimisationSegment()) {
-    std::string token =
-      getTokenAfter("global-optimisation", "skip-reduction-in-batched-time-steps");
-    logDebug("getSkipReductionInBatchedTimeSteps()",
-           "found skip-reduction-in-batched-time-steps " << token);
-    if (token.compare("on") != 0 && token.compare("off") != 0) {
-      logError("getSkipReductionInBatchedTimeSteps()",
-             "skip-reduction-in-batched-time-steps is required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-      _interpretationErrorOccured = true;
-    }
-
-    return token.compare("on") == 0;
+    return tarch::la::greater(getTimestepBatchFactor(),0.0);
   }
   else return false;
 }
@@ -695,22 +719,18 @@ bool   exahype::parser::Parser::getSpawnDoubleCompressionAsBackgroundTask() cons
   std::string token =
       getTokenAfter("global-optimisation", "spawn-double-compression-as-background-thread");
 
-  if (token.compare(_noTokenFound) == 0) {
-    return false;  // default value
+  if (
+      token.compare("on") != 0 &&
+      token.compare("off") != 0 &&
+      token.compare(_noTokenFound) != 0
+  ) {
+    logError("getSpawnDoubleCompressionAsBackgroundTask()",
+        "spawn-double-compression-as-background-thread in the "
+        "global-optimisation segment has to be either on or off: "
+        << token);
+    _interpretationErrorOccured = true;
   }
-  else {
-    logDebug("getSpawnDoubleCompressionAsBackgroundTask()",
-           "found spawn-double-compression-as-background-thread " << token);
-    if (token.compare("on") != 0 && token.compare("off") != 0) {
-      logError("getSpawnDoubleCompressionAsBackgroundTask()",
-             "spawn-double-compression-as-background-thread is required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-      _interpretationErrorOccured = true;
-    }
-
-    return token.compare("on") == 0;
-  }
+  return token.compare("on") == 0;
 }
 
 
@@ -856,7 +876,7 @@ double exahype::parser::Parser::getMaximumMeshSize(int solverNumber) const {
   return result;
 }
 
-double exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
+int exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
   std::string token;
 
   int result = 0;
@@ -878,6 +898,56 @@ double exahype::parser::Parser::getMaximumMeshDepth(int solverNumber) const {
   }
 
   logDebug("getMaximumMeshDepth()", "found maximum mesh size " << result);
+  return result;
+}
+
+int exahype::parser::Parser::getHaloCells(int solverNumber) const {
+  std::string token;
+
+  int result = 0;
+  token = getTokenAfter("solver", solverNumber + 1, "halo-cells", 1, 0);
+  if (token==_noTokenFound) {
+    return result;
+  }
+
+  result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getHaloCells(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'halo-cells': Value must be greater than or equal to zero.");
+    _interpretationErrorOccured = true;
+  }
+
+  logDebug("getHaloCells()", "found halo-cells " << result);
+  return result;
+}
+
+int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) const {
+  std::string token;
+
+  int result = 0;
+  token = getTokenAfter("solver", solverNumber + 1, "regularised-fine-grid-levels", 1, 0);
+  if (token==_noTokenFound) {
+    return result;
+  }
+
+  result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getRegularisedFineGridLevels(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'regularised-fine-grid-levels': Value must be greater than or equal to zero.");
+    _interpretationErrorOccured = true;
+  }
+
+  logDebug("getRegularisedFineGridLevels()", "found regularised-fine-grid-levels " << result);
   return result;
 }
 
@@ -918,7 +988,7 @@ double exahype::parser::Parser::getDMPRelaxationParameter(int solverNumber) cons
     _interpretationErrorOccured = true;
   }
 
-  logInfo("getParameters()", "found dmp-relaxation-parameter " << result);
+  logDebug("getParameters()", "found dmp-relaxation-parameter " << result);
   return result;
 }
 
@@ -938,7 +1008,7 @@ double exahype::parser::Parser::getDMPDifferenceScaling(int solverNumber) const 
     _interpretationErrorOccured = true;
   }
 
-  logInfo("getDMPDifferenceScaling()", "found dmp-difference-scaling " << result);
+  logDebug("getDMPDifferenceScaling()", "found dmp-difference-scaling " << result);
   return result;
 }
 
@@ -958,7 +1028,7 @@ int exahype::parser::Parser::getDMPObservables(int solverNumber) const {
     _interpretationErrorOccured = true;
   }
 
-  logInfo("getDMPObservables()", "found dmp-observables " << result);
+  logDebug("getDMPObservables()", "found dmp-observables " << result);
   return result;
 }
 
@@ -981,7 +1051,7 @@ int exahype::parser::Parser::getStepsTillCured(int solverNumber) const {
       _interpretationErrorOccured = true;
     }
 
-    logInfo("getStepsTillCured()", "found steps-till-cured " << result);
+    logDebug("getStepsTillCured()", "found steps-till-cured " << result);
   }
   return result;
 }
@@ -1004,7 +1074,7 @@ int exahype::parser::Parser::getLimiterHelperLayers(int solverNumber) const {
                << "': 'helper-layers': Value must be integral and greater or equal to 1.");
       _interpretationErrorOccured = true;
     }
-    logInfo("getLimiterHelperLayers()", "found helper-layers " << result);
+    logDebug("getLimiterHelperLayers()", "found helper-layers " << result);
   }
   return result;
 }
@@ -1285,4 +1355,16 @@ bool exahype::parser::Parser::useManualPinning() {
 
 exahype::parser::ParserView exahype::parser::Parser::createParserView(const int solverNumberInSpecificationFile) {
   return exahype::parser::ParserView(*this,solverNumberInSpecificationFile);
+}
+
+
+exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvadeStrategy() const {
+  if ( getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvade;
+  if ( getSharedMemoryConfiguration().find("analyse-optimal-static-distribution-but-do-not-invade")!=std::string::npos) return TBBInvadeStrategy::NoInvadeButAnalyseDistribution;
+  if ( getSharedMemoryConfiguration().find("occupy-all-cores")!=std::string::npos) return TBBInvadeStrategy::OccupyAllCores;
+  if ( getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) return TBBInvadeStrategy::InvadeBetweenTimeSteps;
+  if ( getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeThroughoutComputation;
+  if ( getSharedMemoryConfiguration().find("invade-at-time-step-startup-plus-throughout-computation")!=std::string::npos) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
+
+  return TBBInvadeStrategy::Undef;
 }

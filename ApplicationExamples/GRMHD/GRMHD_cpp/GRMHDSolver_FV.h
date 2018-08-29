@@ -30,7 +30,7 @@ class GRMHD::GRMHDSolver_FV : public GRMHD::AbstractGRMHDSolver_FV {
      */
     static tarch::logging::Log _log;
   public:
-    GRMHDSolver_FV(double maximumMeshSize,int maximumAdaptiveMeshDepth,exahype::solvers::Solver::TimeStepping timeStepping);
+    GRMHDSolver_FV(const double maximumMeshSize,const exahype::solvers::Solver::TimeStepping timeStepping);
     
     /**
      * Initialise the solver.
