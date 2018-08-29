@@ -28,7 +28,7 @@ exahype-project Euler
 	terms const = flux, gradientFlux, source
 	optimisation const = generic
 	language const = C
-	constants = viscosity:0.001,scenario:smooth-wave
+    constants = viscosity:0.1,scenario:two-bubbles
 
     plot vtu::Legendre::vertices::ascii Plotter
 	variables const = 5

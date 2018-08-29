@@ -6,7 +6,8 @@
 //   www.exahype.eu
 // ========================
 #include "Plotter.h"
-
+#include "EulerSolver_Variables.h"
+#include "NavierStokes.h"
 
 Euler::Plotter::Plotter(EulerSolver&  solver) {
   // @TODO Please insert your code here.
@@ -33,8 +34,20 @@ void Euler::Plotter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 5;
-  for (int i=0; i<writtenUnknowns; i++){ 
+  for (int i=0; i<DIMENSIONS + 2; i++){
     outputQuantities[i] = Q[i];
   }
+
+  // TODO(Lukas): Make sure we use the correct constants
+  // As we only consider air, this should be a given!
+  const auto ns = NavierStokes::NavierStokes();
+  AbstractEulerSolver::Variables vars(Q);
+
+  const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+  const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+
+  const auto potT = temperature * std::pow((ns.referencePressure/pressure), (ns.gasConstant/ns.c_p));
+
+  // Write potential temperature
+  outputQuantities[DIMENSIONS + 2] = potT;
 }
