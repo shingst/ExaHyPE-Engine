@@ -360,7 +360,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,_stateCopy.isFirstIterationOfBatchOrNoBatch(),
-        fineGridX,fineGridH,level);
+        fineGridX,level);
   }
 
   logTraceOut( "mergeWithNeighbour(...)" );
@@ -373,7 +373,7 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
   logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
 
   if ( sendOutRiemannDataInThisIteration() ) {
-    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,h,level);
+    vertex.sendToNeighbour(toRank,_stateCopy.isLastIterationOfBatchOrNoBatch(),x,level);
   }
 
   logTraceOut( "prepareSendToNeighbour(...)" );

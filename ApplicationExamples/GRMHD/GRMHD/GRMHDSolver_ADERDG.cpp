@@ -32,12 +32,12 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
   feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
   // Todo: Move this to specfile once we have working constants.
-  //std::string id_default = "Fortran";
-  //std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+  std::string id_default = "Fortran";
+  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
   // alternatives:
-  std::string id_default = "RNSID";
-  std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
+  //std::string id_default = "RNSID";
+  //std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
 
   // try to obtain requested initial data and boundary conditions from the
   // environment variables, as the specfile parameter system is still broken.

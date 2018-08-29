@@ -21,9 +21,13 @@ public class TemplateEngine {
   /** Block tokens contain logic and come in group, requiring a syntax tree to evaluate */
   public static final String BLOCK_TOKEN_START = "{%";
   public static final String BLOCK_TOKEN_END   = "%}";
+  /** Comment tokens, everything inside is ignored */
+  public static final String COMMENT_TOKEN_START = "{#";
+  public static final String COMMENT_TOKEN_END   = "#}";
   
-  /** Special block token start delimiter that strip whitespaces around it */
+  /** Special block and comment token start delimiter that strip whitespaces around it */
   public static final String STRIP_BLOCK_TOKEN_START = "{%-";
+  public static final String STRIP_COMMENT_TOKEN_START = "{#-";
   
   /** Tags of the logic block for Branches */
   public static final String LOGIC_IF_TAG    = "if";
@@ -59,13 +63,15 @@ public class TemplateEngine {
    */
   private void buildRegex() {
     // tokens
-    final String varTokenStart   = escRegex(VAR_TOKEN_START);
-    final String varTokenEnd     = escRegex(VAR_TOKEN_END);
-    final String blockTokenStart = escRegex(BLOCK_TOKEN_START);
-    final String blockTokenEnd   = escRegex(BLOCK_TOKEN_END);
+    final String varTokenStart     = escRegex(VAR_TOKEN_START);
+    final String varTokenEnd       = escRegex(VAR_TOKEN_END);
+    final String blockTokenStart   = escRegex(BLOCK_TOKEN_START);
+    final String blockTokenEnd     = escRegex(BLOCK_TOKEN_END);
+    final String commentTokenStart = escRegex(COMMENT_TOKEN_START);
+    final String commentTokenEnd   = escRegex(COMMENT_TOKEN_END);
     
     //match one of the grammar tokens
-    final String tokenPattern = varTokenStart+"|"+varTokenEnd+"|"+blockTokenStart+"|"+blockTokenEnd;
+    final String tokenPattern = varTokenStart+"|"+varTokenEnd+"|"+blockTokenStart+"|"+blockTokenEnd+"|"+commentTokenStart+"|"+commentTokenEnd;
     
     //lookahead+lookbehind trick
     this.regex = "(?="+tokenPattern+")|(?<="+tokenPattern+")";
@@ -75,7 +81,7 @@ public class TemplateEngine {
   private String escRegex(String regex) {
     // ReplaceAll uses regex itself hence the '\\' and '\\\\'
     return regex.replaceAll("\\{", "\\\\{").replaceAll("\\}", "\\\\}");
-  }  
+  }
   
   /**
    * Evaluate a template with a given context.

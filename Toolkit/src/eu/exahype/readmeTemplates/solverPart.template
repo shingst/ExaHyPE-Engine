@@ -3,12 +3,37 @@
 
 ### Prerequisite
 
-{%- if useFlux %}
+{%- if useFlux || useFluxVect %}
 flux
+{%- if useFluxVect %}
+Using vectorized flux, the kernels expect this PDE
+
+```cpp
+void flux_vect(const double* const * const restrict Q, double* const * const * const restrict F, int size);
+```
+{%- endif %}
 
 {%- endif %}
 {%- if useNCP %}
 ncp
 
 {%- endif %}
-TODO JMG add prerequisites
+{%- if useFusedSource || useFusedSourceVect%}
+TODO add fusedSource description
+
+{%- if useFusedSourceVect %}
+Using vectorized fusedSource, the kernels expect this PDE
+Note that GradQ now follows the same convention as the flux (dimensions are splitted in the first coordinate)
+
+```cpp
+void fusedSourceVect(const double* const * const restrict Q, const double* const * const * const restrict gradQ, double* const * const restrict S, const int size);
+```
+{%- else %}
+Using fusedSource, the kernels expect this PDE
+
+```cpp
+void fusedSource(const double* const restrict Q, const double* const restrict gradQ, double* const restrict S);
+```
+{%- endif %}
+
+{%- endif %}
