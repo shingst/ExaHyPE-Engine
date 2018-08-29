@@ -181,7 +181,7 @@ void exahype::mappings::MergeNeighbours::mergeWithNeighbour(
 
    vertex.receiveNeighbourData(
         fromRank,true /*merge*/,true/*no batch*/,
-        fineGridX,fineGridH,level);
+        fineGridX,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );
 }

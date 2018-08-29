@@ -492,15 +492,10 @@ void exahype::Vertex::mergeNeighbours(
 // PARALLEL
 
 #if Parallel
-bool exahype::Vertex::hasToCommunicate(
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
-  if (!isInside()) {
-    return false;
-  } else if (tarch::la::oneGreater(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers())) {
-    return  false;
-  } else {
-    return true;
-  }
+bool exahype::Vertex::hasToCommunicate( const int level) const {
+  return
+     isInside() &&
+     level >= exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
 }
 
 bool exahype::Vertex::hasToSendMetadata(
@@ -571,13 +566,13 @@ void exahype::Vertex::sendOnlyMetadataToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     int level) const {
-  if ( hasToCommunicate(h) ) {
+  if ( hasToCommunicate(level) ) {
     tarch::la::Vector<TWO_POWER_D, int> adjacentADERDGCellDescriptionsIndices = getCellDescriptionsIndex();
     dfor2(dest)
       dfor2(src)
-        if (hasToSendMetadata(toRank,src,dest)) {
+        if ( hasToSendMetadata(toRank,src,dest) ) {
           const int srcCellDescriptionIndex = adjacentADERDGCellDescriptionsIndices(srcScalar);
-          if (hasToSendMetadataToNeighbour(src,dest,x,h)) {
+          if ( hasToSendMetadataToNeighbour(src,dest,x,h) ) {
             exahype::sendNeighbourCommunicationMetadata(
                 toRank,srcCellDescriptionIndex,src,dest,x,level);
           } else {
@@ -619,8 +614,7 @@ bool exahype::Vertex::hasToReceiveMetadata(
 bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS,int>& src,
     const tarch::la::Vector<DIMENSIONS,int>& dest,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+    const tarch::la::Vector<DIMENSIONS, double>& x) const {
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
   const int destCellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(destScalar);
 
@@ -660,7 +654,7 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int level,
     const exahype::State::AlgorithmSection& section) const {
-  if ( hasToCommunicate(h) ) {
+  if ( hasToCommunicate(level) ) {
     dfor2(myDest)
       dfor2(mySrc)
         tarch::la::Vector<DIMENSIONS, int> dest = tarch::la::Vector<DIMENSIONS, int>(1) - myDest;
@@ -678,7 +672,7 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
           assertionEquals(receivedMetadata.size(),
               exahype::NeighbourCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
-          if (hasToMergeWithNeighbourMetadata(src,dest,x,h)) {
+          if ( hasToMergeWithNeighbourMetadata(src,dest,x) ) {
             for(unsigned int solverNumber = solvers::RegisteredSolvers.size(); solverNumber-- > 0;) {
               auto* solver = solvers::RegisteredSolvers[solverNumber];
               if (solver->isMergingMetadata(section)) {
@@ -709,9 +703,8 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
 void exahype::Vertex::dropNeighbourMetadata(
     const int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h,
     const int level) const {
-  if ( hasToCommunicate(h) ) {
+  if ( hasToCommunicate(level) ) {
     dfor2(myDest)
       dfor2(mySrc)
         tarch::la::Vector<DIMENSIONS, int> dest = tarch::la::Vector<DIMENSIONS, int>(1) - myDest;
@@ -875,9 +868,8 @@ void exahype::Vertex::sendToNeighbour(
     int toRank,
     bool isLastIterationOfBatchOrNoBatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h,
     const int level) const {
-  if ( hasToCommunicate(h) ) {
+  if ( hasToCommunicate(level) ) {
     dfor2(dest)
       dfor2(src)
       if ( hasToSendMetadata(toRank,src,dest) ) {
@@ -970,9 +962,8 @@ void exahype::Vertex::receiveNeighbourData(
     bool mergeWithReceivedData,
     bool isFirstIterationOfBatchOrNoBatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h,
     int level) const {
-  if ( hasToCommunicate(h) ) {
+  if ( hasToCommunicate(level) ) {
     dfor2(myDest)
       dfor2(mySrc)
         tarch::la::Vector<DIMENSIONS, int> dest = tarch::la::Vector<DIMENSIONS, int>(1) - myDest; // "invert" points

@@ -1,21 +1,116 @@
 ! DIM Initial Data
 
 
-RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
+RECURSIVE SUBROUTINE InitialData(xGP, t, Q,maxAMR,CoarseLen, order)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim, ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xGP(nDim), t        ! 
+	INTEGER, INTENT(IN)			   :: maxAMR, order
+	REAL, INTENT(IN)               :: xGP(nDim), t,CoarseLen        ! 
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 	! Local variables
 	REAL :: up(nVar),LEsigma(6)
 	REAL :: ICA, ICsig, ICxd, r, DIsize,c0
-
+	REAL :: rho0, lambda0, mu0, ICx0(3)
 	select case(ICType)
-		case('StiffInclusion')
+		case('SSCRACK')
+			! ============================ SELF-SIMILAR RUPTURE TEST =====================================
+			
+			! ---------- DEFINE THE PARAMETERS -----------
+			lambda0=1.3333333333333333333e+10
+			mu0=1.333333333333333333333e+10
+			rho0=2500.000000
+			ICsig=0.5 ! Velocity
+			! --------------------------------------------
+			
+			
+			up=0.
+			! Set the lamè constants ------ !
+			up(15)=lambda0   ! Lambda    !
+			up(16)=mu0      ! mu        !
+			up(1)= rho0     ! rho       !
+			! ----------------------------- !
+			! Initial velocity vector ----- !
+			up(2) = 0.0                     !
+			up(3) = 0.0                     ! 
+			up(4) = 0.0                     !
+			! ----------------------------- ! 
+			LEsigma=0.
+			LEsigma(1)=0.!40.0*1.e+6
+			LEsigma(2)=40.0*1.e+6!/1.e+6
+			LEsigma(3)=0.!40.0*1.e+6
+			LEsigma(4)=20.0*1.e+6!/1.e+6
+			up(5:13)= GPRsigma2A(LEsigma,0.0,up(15),up(16),up(1),1.e-3)
+			! ----------------------------- !
+			up(14)=1     ! alpha
+			up(17)=1.e+16! Y0
+			up(18)=1     ! xi
+			! ----------------------------- !
+			! Friction parameters -----------
+			if(t .eq. 0) then
+			SSCRACKFL%mu_s=0.5
+			SSCRACKFL%mu_d=0.25
+			SSCRACKFL%DynamicFL= .false.
+			SSCRACKFL%V=2000.0  ! m/s
+			SSCRACKFL%t0=0.0    !s
+			SSCRACKFL%L=250     ! m
+			
+			SSCRACKFL%dx=CoarseLen/(3.0**maxAMR)/(order+1.0)*2.0	! m
+			end if
+			! ------------------------------
+			if(abs(xGP(1)).lt.10000.0) then
+				!up(18)=1.0-EXP(-0.5*xGP(2)**2/100.0**2)
+				if(abs(xGP(2))<200) then
+				!   up(18)=0.0 
+				end if
+			end if
+			!up(20:22)=xGP(1:3)
+			USEFrictionLaw=.true.  ! Do not use friction law
+			up(24)=LEfriction_mu(xGP(1:3),0.0,up(2:4),0.0,SSCRACKFL)
+		case('DRupture')
+			! ============================ DYNAMIC RUPTURE TEST CASE =====================================
+			! Debug test for dynamic rupture. We introduce two zones with different velocities that generate
+			! a stress sufficient to break the material
+			
+
+			
+			up=0.
+			up(2:4) = 0.0	
+			if(xGP(1)<0) then! .and. xGP(1)<0.6) then
+				up(3) = ICsig  
+			else
+				up(3) = -ICsig	
+			end if
+			
+			up(5)=1.            ! A_11
+			up(9)=1.            ! A_22
+			up(13)=1.           ! A_33
+			
+			up(14)=1.           ! alpha
+			
+			up(15)=lambda0   ! Lambda
+			up(16)=mu0       ! mu
+			up(1)=rho0       ! mu
+			
+			up(18)=1        ! xi, 1 -> not broken, 0 -> broken with friction law
+			
+			up(17)=1!.e+6     ! Y0
+			if(xGP(2)>0) then
+				up(17)=1-1.0*EXP(-0.5*(xGP(2)-2.0*xGP(1))**2/0.1**2)
+				up(17)=min(up(17),1-1.0*EXP(-0.5*(xGP(2)+2.0*xGP(1))**2/0.1**2))
+			else
+				up(17)=min(up(17),1-1.0*EXP(-0.5*(xGP(1))**2/0.05**2))   
+			end if
+			
+			! Friction parametersUSEFrictionLaw=.FALSE.  ! Do not use friction law
+			up(24)=0.001            ! Set the friction value mu to be constant
+			case('StiffInclusion')
 			! ============================ STIFF INCLUSION TEST CASE =====================================
+			! p-wave travelling through a still material with p-wave speed 10 times larger. This test was
+			! taken from gij1 and was modified so the wall is identify by a DI instead of physical boundaries
+			!
 			! ---------- DEFINE THE PARAMETERS -----------
 			ICsig=-0.8
 			ICxd=0.01
@@ -39,6 +134,10 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 			!	up(15)=200.0
 			!	up(16)=100.0
 			!end if
+			if(abs(xGP(1))<0.49794239582487282 .and. abs(xGP(2))<0.09958848025146097) then
+				up(15)=200.0
+				up(16)=100.0
+			end if
 			
 			up(5:13)= GPRsigma2A(LEsigma,0.0,up(15),up(16),up(1),1.e-8) ! Assign Aij from sigma and theta
 			up(2)	= -2.0*ICA*exp(-0.5*(xGP(1)-ICsig-c0*t)**2/ICxd**2)     	! Assign the velocity
@@ -49,7 +148,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 			
 			r = abs(xGP(2))
 			DIsize=0.01 !(ymax-ymin)/JMAX*1.0/(MaxRefFactor**MAXREFLEVEL)/2.0
-			!up(14)=SmoothInterface(-0.5+r,DIsize,0.0,1.0)
+			up(14)=SmoothInterface(-0.5+r,DIsize,0.0,1.0)
 			
 			USEFrictionLaw=.FALSE.  ! Do not use friction law
 			up(24)=1.0            ! Set the friction value mu to be constant
@@ -61,26 +160,35 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q)
 		CALL PDEPrim2Cons(Q,up)
 END SUBROUTINE InitialData
 
-RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, observablesMin, observablesMax)
+RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx_in,numberOfObservables, observablesMin, observablesMax)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim,ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xx(nDim)        ! 
+	REAL, INTENT(IN)               :: xx_in(nDim)        ! 
 	INTEGER, INTENT(IN)					:: numberOfObservables
 	INTEGER, INTENT(OUT)              :: limiter_value        !
 	REAL, INTENT(IN)					:: observablesMin(numberOfObservables), observablesMax(numberOfObservables)
 	LOGICAL :: dmpresult
-	real	:: rr,ldx	
-
+	real	:: rr,ldx(3),xx(3)
+	xx=0.
+	xx(1:nDim)=xx_in(1:nDim)
    if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
 		dmpresult=.FALSE.
    else
 		dmpresult=.TRUE.
    ENDIF 
+   
+   !if(abs(observablesMax(2)-observablesMin(2)) .gt. 1.e-2) then
+	!dmpresult=.FALSE.
+   !end if
+	if(abs(observablesMin(2)) .lt. 1.e-2) then
+		dmpresult=.FALSE.
+	end if   
    ldx=0.01
    call StaticLimiterEQ99(dmpresult,xx,ldx)
+
    
    if(dmpresult) then
 	limiter_value=0

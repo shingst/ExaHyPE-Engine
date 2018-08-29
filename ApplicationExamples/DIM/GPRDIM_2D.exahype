@@ -26,10 +26,11 @@ exahype-project GPRDIM
 
   computational-domain
     dimension const         = 2
-    width                   = 2.0, 1.0
-    offset                  = -1.0, -0.5
+    width                   = 2.0, 1.2
+    offset                  = -1.0, -0.6
     end-time                = 0.25
   end computational-domain
+
   
   shared-memory
     identifier               = dummy
@@ -40,7 +41,7 @@ exahype-project GPRDIM
   
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:4}
+    configure                = {hotspot,fair,ranks-per-node:16}
     buffer-size              = 6400
     timeout                  = 6000
   end distributed-memory
@@ -60,8 +61,8 @@ exahype-project GPRDIM
   solver Limiting-ADER-DG DIMSolver
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,A:9,alpha:1,lambda:1,mu:1,Y0:1,xi:1,rhoE:1,dDisp:3,Disp:1,muf:1
-    order const                    = 3
-    maximum-mesh-size              = 0.01
+    order const                    = 5
+    maximum-mesh-size              = 0.05
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
@@ -71,7 +72,7 @@ exahype-project GPRDIM
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables  const         = 1
+    dmp-observables  const         = 2
     dmp-relaxation-parameter       = 1e+3 
     dmp-difference-scaling         = 1e+4 
     steps-till-cured           = 5

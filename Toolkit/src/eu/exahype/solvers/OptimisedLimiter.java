@@ -13,6 +13,7 @@ import minitemp.TemplateEngine;
 
 import eu.exahype.io.IOUtils;
 import eu.exahype.CodeGeneratorHelper;
+import eu.exahype.kernel.ADERDGKernel;
 
 
 public class OptimisedLimiter implements Solver {
@@ -22,14 +23,16 @@ public class OptimisedLimiter implements Solver {
   private Context        context;
   private TemplateEngine templateEngine;
   
-  public OptimisedLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver, boolean countFlops) 
+  public OptimisedLimiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver, ADERDGKernel aderdgKernel) 
       throws IOException, IllegalArgumentException {    
     
     this.solverName                 = solverName;
     
-    final String aderdgSolverName   = ADERDGSolver.getSolverName();
-    final String optKernelPath      = CodeGeneratorHelper.getInstance().getIncludePath(projectName, aderdgSolverName);
-    final String optNamespace       = CodeGeneratorHelper.getInstance().getNamespace(projectName, aderdgSolverName);
+    final String aderdgSolverName = ADERDGSolver.getSolverName();
+    final String optKernelPath    = CodeGeneratorHelper.getInstance().getIncludePath(projectName, aderdgSolverName);
+    final String optNamespace     = CodeGeneratorHelper.getInstance().getNamespace(projectName, aderdgSolverName);
+    final int numberOfObservables = aderdgKernel.getNumberOfObservables();
+    final boolean countFlops      = aderdgKernel.useFlopsDebug();
     
     if(optKernelPath == null || optNamespace == null) {
       throw new IllegalArgumentException("Optimized code not found!");
@@ -49,6 +52,9 @@ public class OptimisedLimiter implements Solver {
     context.put("FVSolver"            , FVSolver.getSolverName());
     context.put("optKernelPath"       , optKernelPath);
     context.put("optNamespace"        , optNamespace);
+    
+    //int
+    context.put("numberOfObservables" , numberOfObservables);
     
     //boolean
     context.put("countFlops"          , countFlops);

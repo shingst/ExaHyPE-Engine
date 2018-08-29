@@ -72,6 +72,7 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,h,Q)
 	g(23)=Q(2)/Q(1)
 	h(23)=Q(2)/Q(1)
 	
+	g(23)=g(23)*SSCRACKFL%dx*2.0	! Test only
   END SUBROUTINE PDEFlux
 
 
@@ -219,16 +220,19 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
         tau = ee*min(1.0,(1.0-Q(18)))   
     end if
 	
-	S(6)= -psiM(1,1)/tau*detA**(8./3.)
-	S(7)= -psiM(1,2)/tau*detA**(8./3.)
-	S(8)= -psiM(1,3)/tau*detA**(8./3.)
-	S(9)= -psiM(2,1)/tau*detA**(8./3.)
-	S(10)=-psiM(2,2)/tau*detA**(8./3.)
-	S(11)=-psiM(2,3)/tau*detA**(8./3.)
-	S(12)=-psiM(3,1)/tau*detA**(8./3.)
-	S(13)=-psiM(3,2)/tau*detA**(8./3.)
-	S(14)=-psiM(3,3)/tau*detA**(8./3.)
+	S(5)= -psiM(1,1)/tau*detA**(8./3.)
+	S(6)= -psiM(1,2)/tau*detA**(8./3.)
+	S(7)= -psiM(1,3)/tau*detA**(8./3.)
+	S(8)= -psiM(2,1)/tau*detA**(8./3.)
+	S(9)=-psiM(2,2)/tau*detA**(8./3.)
+	S(10)=-psiM(2,3)/tau*detA**(8./3.)
+	S(11)=-psiM(3,1)/tau*detA**(8./3.)
+	S(12)=-psiM(3,2)/tau*detA**(8./3.)
+	S(13)=-psiM(3,3)/tau*detA**(8./3.)
 	  
+	S(20)=Q(2)/Q(1)
+	S(21)=Q(3)/Q(1)
+	S(22)=Q(4)/Q(1)
 END SUBROUTINE PDESource
 
 RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind) 
@@ -268,6 +272,40 @@ RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind)
 	MyNameOUT=MyName(ind+1)
     END SUBROUTINE PDEVarName
 
+RECURSIVE SUBROUTINE PDEAuxName(MyNameOUT,ind) 
+	USE Parameters, ONLY: nVar  
+	IMPLICIT NONE     
+	CHARACTER(LEN=10):: AuxName(nVar),MyNameOUT
+	INTEGER			:: ind
+
+
+	! EQNTYPE99
+	AuxName(1) = 'sxx'
+	AuxName(2) = 'syy'
+	AuxName(3) = 'szz'
+	AuxName(4) = 'sxy'
+	AuxName(5) = 'syz'
+	AuxName(6) = 'sxz'
+	AuxName(7) = 'YY'
+	AuxName(8) = 'TT'
+
+	MyNameOUT=AuxName(ind+1)
+END SUBROUTINE PDEAuxName
+	
+RECURSIVE SUBROUTINE PDEAuxVar(aux,Q,x,time)
+    USE Parameters, ONLY : nVar,nAux
+	USE SpecificVarEqn99
+	implicit none
+	real :: aux(nAux),Q(nVar),x(3),time
+	real :: detA
+	! print *, "ENTERED HERE ------------------------------------------------------------------------------"
+	aux=0.
+	!return
+	call computeGPRLEstress(aux(7),aux(1:6),Q,.true.)
+	call ComputeAcontribution(detA,Q)
+	aux(8)=1.0/Q(1)*(Q(19)-0.5*1.0/Q(1)*(sum(Q(2:4)**2))-detA)
+END SUBROUTINE PDEAuxVar
+	
 RECURSIVE SUBROUTINE PDEJacobian(An,Q,gradQ,nv)
   USE Parameters, ONLY : nVar, nDim
   USE iso_c_binding
@@ -420,6 +458,87 @@ INTEGER :: j
 	L = 0.
     END SUBROUTINE PDEEigenvectors 
     
+	
+RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
+	USE SpecificVarEqn99
+	USE, INTRINSIC :: ISO_C_BINDING
+	USE Parameters, ONLY : nVar, nDim, ICType
+	IMPLICIT NONE 
+	! Argument list 
+	REAL, INTENT(IN)               :: x_in(nDim), t     ! 
+	REAL, INTENT(OUT)              :: Q(nVar)        ! 
+	! Local variables
+	REAL :: stressnorm, sigma_vec(6),ee,u(3),x(3)
+	! Compute the normal stress using the Formula by Barton (IJNMF 2009)
+	x=0.
+	x(1:nDim)=x_in(1:nDim)
+	call computeGPRLEstress(stressnorm,sigma_vec,Q,.true.)
+	IF( stressnorm > Q(17) ) THEN
+		! If the normal stress is greater than the illness stress Y0 (stored in Q(17), then broke the material
+		Q(18)=0.!0.
+		if(USEFrictionLaw) then
+			! Compute the proper friction coefficient according to the prescribed friction law
+			u=Q(2:4)/Q(1)
+			ee=LEfriction_mu(x,t,u(1:3),Q(23),SSCRACKFL)
+			Q(24)=ee*2.0*SSCRACKFL%dx
+		end if
+		! Now in the this DoF it follows the NS friction law with mu proportional to mu_f ( stored in Q(24) )
+		!print *, 'Crack!'
+	ELSE
+		!Q(18)=1. ! Reattach 
+	END IF
+	! Add here some static rupture (like for the SSCRACK test case
+	!
+	!
+	if(.not. SSCRACKFL%DynamicFL .and. USEFrictionLaw) then ! Static marker
+	    u=Q(2:4)/Q(1)
+		ee=LEfriction_mu(x,t,u(1:3),Q(23),SSCRACKFL)
+		if(ee<SSCRACKFL%mu_s*0.999) then
+			if(abs(x(1)).le.10000 .and. abs(x(2)).le.SSCRACKFL%dx) then
+				Q(18)=0.
+				Q(24)=ee*2.0*SSCRACKFL%dx
+			end if
+		end if
+		!print *, SSCRACKFL%dx
+	end if				
+				
+	!
+	!
+	!
+END SUBROUTINE DynamicRupture	
+	
+RECURSIVE SUBROUTINE ruptureflag(rupture_flag,order,luh,x_in,dx_in)
+	USE Parameters, ONLY: nVar, nDim, ICType
+	implicit none
+	INTEGER :: rupture_flag, order
+	REAL    :: luh(nVar,(order+1)**nDim),uMax,uMin,x_in(nDim),dx_in(nDim)
+	
+	rupture_flag=0
+	
+	uMax=maxval(luh(18,:))			! xi value
+	uMin=minval(luh(18,:))
+	if(abs(uMax-uMin)>1.e-2) then
+		rupture_flag=1
+	end if
+	
+	!uMax=maxval(luh(17,:))			! Y0 value
+	!uMin=minval(luh(17,:))
+	!if(abs(uMax-uMin)>1.e-2) then
+	!	rupture_flag=1
+	!end if
+	
+	! Static part
+	select case(ICType)
+		case('SSCRACK')
+			if (abs(x_in(1)).le. 10000.0 .and. abs(x_in(2)).le. dx_in(2)) then
+				rupture_flag=1
+			end if
+		case default
+	end select
+		
+	!print *, uMin, uMax
+END SUBROUTINE ruptureflag	
+	
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
   IMPLICIT NONE     
@@ -447,6 +566,7 @@ RECURSIVE SUBROUTINE HLLEMRiemannSolver(basisSize,NormalNonZero,lFbndL,lFbndR,lQ
   REAL, INTENT(INOUT)  :: lFbndL(nVar,basisSize,basisSize)
   REAL, INTENT(INOUT)  :: lFbndR(nVar,basisSize,basisSize)
     ! Local variables 
+	REAL :: f(nVar), g(nVar), h(nVar)
 INTEGER           :: i,j,k,l, ml(1)  
 REAL              :: aux(nDim), Id(nVar,nVar), smax, Qav(nVar),QavL(nVar), QavR(nVar) 
 REAL              ::  xGP, yGP, xdeb, ydeb  
@@ -459,7 +579,7 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
   
   nv(:)=0.
   nv(NormalNonZero+1)=1.
-  !print *, "Normal non zero in fortran=" NormalNonZero
+  !print *, "Normal non zero in fortran=", NormalNonZero
   !print *, "basisSize=", basisSize
   !print *, "NormalNonZero=", NormalNonZero
   !print *, "QavR=",QavR(1)
@@ -470,6 +590,12 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
 	flattener=1.
 	lFbndL=0.
 	lFbndR=0.
+	CALL PDEflux(f,g,h,QavL)
+	lFbndL(:,1,1)=f*nv(1)+g*nv(2)*h*nv(3)
+
+	CALL PDEflux(f,g,h,QavR)
+	lFbndR(:,1,1)=f*nv(1)+g*nv(2)*h*nv(3)	
+
     CALL PDEEigenvalues(LL,QavL,nv) 
     CALL PDEEigenvalues(LR,QavR,nv) 
     smax = MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) )
@@ -567,8 +693,8 @@ REAL              :: gradQ(nVar,3), src(nVar),flattener(nLin)
                 Qav = 0.5*(lQbndR(:,j,k)+lQbndL(:,j,k)) 
                 gradQ(:,NormalNonZero+1) = lQbndR(:,j,k) - lQbndL(:,j,k) 
                 CALL PDENCP(ncp,Qav,gradQ)
-				!lFbndL(:,j,k) = sL*sR/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )
-                lFbndL(:,j,k) = ( sR*lFbndL(:,j,k) - sL*lFbndR(:,j,k) )/(sR-sL) + sR*sL/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )   ! purely conservative flux 
+				lFbndL(:,j,k) = sL*sR/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )
+                !lFbndL(:,j,k) = ( sR*lFbndL(:,j,k) - sL*lFbndR(:,j,k) )/(sR-sL) + sR*sL/(sR-sL)*( lQbndR(:,j,k) - lQbndL(:,j,k) )   ! purely conservative flux 
                 lFbndR(:,j,k) = lFbndL(:,j,k) - sR/(sR-sL)*ncp(:)                                                                   ! subtract the non-conservative product 
                 lFbndL(:,j,k) = lFbndL(:,j,k) - sL/(sR-sL)*ncp(:)                                                                   ! add the non-conservative product 
             ENDDO
@@ -581,5 +707,10 @@ RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
 	INTEGER :: N_in,M_in
 	CALL SetMainParameters(N_in,M_in)
 END SUBROUTINE InitTECPLOT
+
+
+
+
+
 
 

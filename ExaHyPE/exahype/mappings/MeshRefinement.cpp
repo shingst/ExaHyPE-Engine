@@ -619,7 +619,7 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
 
   if (
       !exahype::State::isForkingRank(worker) &&
-      fineGridCell.hasToCommunicate(fineGridVerticesEnumerator.getCellSize())
+      fineGridCell.hasToCommunicate(fineGridVerticesEnumerator.getLevel() )
   ) {
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -676,7 +676,7 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   if (
       !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
-      receivedCell.hasToCommunicate( receivedVerticesEnumerator.getCellSize())
+      receivedCell.hasToCommunicate( receivedVerticesEnumerator.getLevel())
   ) {
     receivedCell.setupMetaData();
     exahype::solvers::ADERDGSolver::receiveCellDescriptions(
@@ -764,7 +764,7 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
 
-  if ( localCell.hasToCommunicate( verticesEnumerator.getCellSize()) ) {
+  if ( localCell.hasToCommunicate( verticesEnumerator.getLevel() ) ) {
     exahype::solvers::ADERDGSolver::sendCellDescriptions(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         localCell.getCellDescriptionsIndex(),true/* send data from worker side*/,
@@ -811,7 +811,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
   _allSolversAttainedStableState        &= workerState.getAllSolversAttainedStableStateInPreviousIteration();
   _verticalExchangeOfSolverDataRequired |= workerState.getVerticalExchangeOfSolverDataRequired();
 
-  if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getCellSize()) ) {
+  if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getLevel() ) ) {
     if ( fineGridCell.isInitialised() ) {
       exahype::solvers::ADERDGSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
       exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
@@ -869,7 +869,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   if ( 
-      localCell.hasToCommunicate(cellSize) && 
+      localCell.hasToCommunicate(level) &&
       localCell.getRankOfRemoteNode()==toRank 
   ) { // isAsignedToRemoteRank does not work, remeber the halo sends
     const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
@@ -917,7 +917,7 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
   logTraceInWith3Arguments( "mergeWithRemoteDataDueToForkOrJoin(...)", localCell, masterOrWorkerCell, fromRank );
 
   if ( 
-      localCell.hasToCommunicate(cellSize) && 
+      localCell.hasToCommunicate(level) &&
       masterOrWorkerCell.getRankOfRemoteNode()==tarch::parallel::Node::getInstance().getRank()
   ) {
     if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
