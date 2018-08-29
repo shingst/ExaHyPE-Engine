@@ -5,30 +5,56 @@
 ! Using this multiline comment you can choose which implementation
 ! you want to use:
 
-#if 0
-
-RECURSIVE FUNCTION RTSAFE_C2P_RMHD1(X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
+#if 1
+  
+SUBROUTINE RTSAFE_C2P_RMHD1(v2,X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
+  USE parameters, ONLY : nVar ! DebugFile,,DebugPrint
   IMPLICIT NONE
-  INTEGER, PARAMETER    :: MAXIT=200
-  INTEGER               :: J
-  REAL                  :: RTSAFE_C2P_RMHD1
+  INTEGER, PARAMETER    :: MAXIT=400
+  INTEGER               :: J,i
+  REAL                  :: v2 
   REAL                  :: X1,X2,XACC,gam,d,e,s2,b2,sb2,w
-  REAL                  :: FL,FH,DF,XH,XL,SWAP,DXOLD,DX,F,TEMP
+  REAL                  :: FL,FH,DF,XH,XL,SWAP,DXOLD,DX,F,TEMP,Xtmp,Vtmp(7),Ftmp,dFtmp,dXtmp
   LOGICAL               :: FAILED
   !
   FAILED = .FALSE.
+  !IF(DebugPrint) THEN 
+  !    WRITE(DebugFile,'(a)') 'DebugFile.dat' 
+  !    OPEN(UNIT=4321,FILE=TRIM(DebugFile), RECL=800) 
+  !    WRITE(4321,*) '  VARIABLES = "i"   "Xtmp"   "Ftmp"   "dFtmp"   "gam" "d" "e" "s2" "b2" "sb2" "w" '
+  !    WRITE(4321,*)
+  !    Vtmp(1:7) = (/ gam,d,e,s2,b2,sb2,w /)
+  !    dXtmp = (1.0-1.0e-12)/300
+  !    DO i =1, 350
+  !        Xtmp = 0.5*dXtmp + real(i)*dXtmp
+  !      CALL FUNC_C2P_RMHD1(Xtmp,Ftmp,dFtmp,Vtmp(1),Vtmp(2),Vtmp(3),Vtmp(4),Vtmp(5),Vtmp(6),Vtmp(7))
+  !      WRITE(4321,'(i9.4,10(E16.6))') i,Xtmp,Ftmp,dFtmp,Vtmp(1:7)
+  !    ENDDO
+  !    CLOSE(4321)   
+  !ENDIF
+  !
   CALL FUNC_C2P_RMHD1(X1,FL,DF,gam,d,e,s2,b2,sb2,w)
   IF(FL.EQ.0.) THEN
-     RTSAFE_C2P_RMHD1=X1
+     v2=X1
      RETURN
   ENDIF
   CALL FUNC_C2P_RMHD1(X2,FH,DF,gam,d,e,s2,b2,sb2,w)
+#ifdef C2PGRMHD  
+  IF(ABS(FH).LT.1e-22) THEN
+      continue
+        IF(FH.NE.0.) THEN
+            continue
+        ENDIF
+        !
+#else
   IF(FH.EQ.0.) THEN
-     RTSAFE_C2P_RMHD1=X2
+#endif
+     v2=X2
      RETURN
   ENDIF
   IF(FL*FH.GT.0.) THEN
      FAILED = .TRUE.
+     v2 = 0. ! assign value even if it fails
      RETURN
   ENDIF
   IF(FL.LT.0.)THEN
@@ -41,37 +67,47 @@ RECURSIVE FUNCTION RTSAFE_C2P_RMHD1(X1,X2,XACC,gam,d,e,s2,b2,sb2,w,FAILED)
      FL=FH
      FH=SWAP
   ENDIF
-  RTSAFE_C2P_RMHD1=.5*(X1+X2)
+  v2=.5*(X1+X2)
   DXOLD=ABS(X2-X1)
   DX=DXOLD
-  CALL FUNC_C2P_RMHD1(RTSAFE_C2P_RMHD1,F,DF,gam,d,e,s2,b2,sb2,w)
+  CALL FUNC_C2P_RMHD1(v2,F,DF,gam,d,e,s2,b2,sb2,w)
   DO 11 J=1,MAXIT
-     IF(((RTSAFE_C2P_RMHD1-XH)*DF-F)*((RTSAFE_C2P_RMHD1-XL)*DF-F).GE.0. &
+     IF(((v2-XH)*DF-F)*((v2-XL)*DF-F).GE.0. &
           .OR. ABS(2.*F).GT.ABS(DXOLD*DF) ) THEN
         DXOLD=DX
         DX=0.5*(XH-XL)
-        RTSAFE_C2P_RMHD1=XL+DX
-        IF(XL.EQ.RTSAFE_C2P_RMHD1)RETURN
+        v2=XL+DX
+        IF(XL.EQ.v2) THEN
+            continue
+            RETURN
+        ENDIF
      ELSE
         DXOLD=DX
         DX=F/DF
-        TEMP=RTSAFE_C2P_RMHD1
-        RTSAFE_C2P_RMHD1=RTSAFE_C2P_RMHD1-DX
-        IF(TEMP.EQ.RTSAFE_C2P_RMHD1)RETURN
+        TEMP=v2
+        v2=v2-DX
+        IF(TEMP.EQ.v2) THEN
+            continue
+            RETURN
+        ENDIF
      ENDIF
-     IF(ABS(DX).LT.XACC) RETURN
-     CALL FUNC_C2P_RMHD1(RTSAFE_C2P_RMHD1,F,DF,gam,d,e,s2,b2,sb2,w)
+     IF(ABS(DX).LT.XACC) THEN
+            continue
+            RETURN
+     ENDIF
+     CALL FUNC_C2P_RMHD1(v2,F,DF,gam,d,e,s2,b2,sb2,w)
      IF(F.LT.0.) THEN
-        XL=RTSAFE_C2P_RMHD1
+        XL=v2
         FL=F
      ELSE
-        XH=RTSAFE_C2P_RMHD1
+        XH=v2
         FH=F
      ENDIF
 11   CONTINUE
      FAILED = .TRUE.
+     v2 = 0. ! assign value even if it fails
      RETURN
-END FUNCTION
+END SUBROUTINE 
 
 PURE SUBROUTINE FUNC_C2P_RMHD1(x,f,df,gam,d,e,s2,b2,sb2,w)
   !
@@ -83,6 +119,7 @@ PURE SUBROUTINE FUNC_C2P_RMHD1(x,f,df,gam,d,e,s2,b2,sb2,w)
   INTEGER    :: iter
   REAL       :: x,f,df,v2,rho,c0,c2,c3,dw,dc2,dc3,dlogw,wb,vb2
   REAL       :: gam,d,e,s2,b2,sb2,w
+  REAL, PARAMETER :: tolerance = 1e-10
   INTENT(IN) :: x,gam,d,e,s2,b2,sb2
   INTENT(OUT):: f,df,w
   
@@ -106,7 +143,10 @@ PURE SUBROUTINE FUNC_C2P_RMHD1(x,f,df,gam,d,e,s2,b2,sb2,w)
      w = max ( - c2 / c3, ( -c0 / c3)**third)
      do iter = 1,100
         dw = -((c3*w + c2)*w**2 + c0)/((3*c3*w + 2*c2)*w)
-        if (abs(dw/w)<1.e-10) exit
+        if (abs(dw/w).LT.tolerance) THEN
+                exit
+        ENDIF
+        !
         w = w + dw
      end do
   endif
@@ -118,7 +158,7 @@ PURE SUBROUTINE FUNC_C2P_RMHD1(x,f,df,gam,d,e,s2,b2,sb2,w)
   vb2   = sb2 / w**2
   f     = wb**2 * v2 - ( 2.0 * w + b2) * vb2 - s2
   df    = wb * ( wb + 2.0 * dlogw * ( w * v2 + vb2))
-  
+  !
 END SUBROUTINE FUNC_C2P_RMHD1
 
 #endif
