@@ -27,6 +27,7 @@
 #include "Scenarios/SmoothWave.h"
 #include "Scenarios/TaylorGreen.h"
 #include "Scenarios/Stokes.h"
+#include "Scenarios/TwoBubbles.h"
 
 tarch::logging::Log Euler::EulerSolver::_log( "Euler::EulerSolver" );
 
@@ -47,6 +48,8 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::Stokes());
   } else if (scenarioName == "taylor-green") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TaylorGreen());
+  } else if (scenarioName == "two-bubbles") {
+    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TwoBubbles());
   } else {
     _log.error("EulerSolver::init", "Unknown scenario: " + scenarioName);
     std::abort();
