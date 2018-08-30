@@ -26,24 +26,24 @@ exahype-project GRMHD
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 2
-    width                          = 1.0, 1.0
-    offset                         = 0.0, 0.0
-    end-time                       = 1000.000000001
+    dimension const                = 3
+    width                          = 6.28, 6.28, 6.28
+    offset                         = 0.0, 0.0, 0.0
+    end-time                       = 2.00001
   end computational-domain
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 1
+    cores                    = 20
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
-    identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:1}
-    buffer-size              = 64
-    timeout                  = 60
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks_per_node:1}
+    buffer-size      = 64
+    timeout          = 60
   end distributed-memory
 
   global-optimisation
@@ -55,72 +55,41 @@ exahype-project GRMHD
     time-step-batch-factor           = 0.0
     disable-metadata-exchange-in-batched-time-steps = off
     double-compression = 0.0
-    spawn-double-compression-as-background-thread = on
+    spawn-double-compression-as-background-thread = off
   end global-optimisation
 
   solver ADER-DG GRMHDSolver_ADERDG
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 0.333333399911111119000333339
+    maximum-mesh-size              = 0.233
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
     terms const = flux,ncp
     optimisation const = generic
     language const                 = C
-    constants  = mexa:stuff,
-       initialdata/name:alfenwave,
-       boundaries/left:exact,
-       boundaries/right:exact,
-       boundaries/top:exact,
-       boundaries/bottom:exact,
-       boundaries/front:exact,
-       boundaries/back:exact
 
     plot vtu::Legendre::vertices::ascii ConservedWriter
       variables const = 19
       time      = 0.0
-      repeat    = 0.000666667
+      repeat    = 0.01
       output    = ./vtk-output/conserved
     end plot
 
     plot vtu::Legendre::vertices::ascii PrimitiveWriter
       variables const = 19
       time      = 0.0
-      repeat    = 0.000666667
+      repeat    = 0.01
       output    = ./vtk-output/primitive
-    end plot
-/*
-    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
-      variables const = 19
-      time = 0.0
-      repeat = 0.00001
-      output = ./hdf5-carpet/conserved
-    end plot
+    end plot 
 
-    plot hdf5::flash ConservedWriter
-      variables const = 19
-      time = 0.0
-      repeat = 0.00001
-      output = ./hdf5-flash/conserved
-    end plot
-
-    plot user::defined SphereIntegrals
-      variables const = 0
-      time = 10000.0
-      repeat = 0.000666667 
-      output = ./global-sphere-integrals
-    end plot
-*/
-    plot vtk::Cartesian::cells::ascii IntegralsWriter
+    plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
       time = 0.0
-      repeat = 0.000001
-      output = ./output/global-integrals
+      repeat = 0.01
+      output = ./global-integrals
     end plot
-
-
   end solver
 
 

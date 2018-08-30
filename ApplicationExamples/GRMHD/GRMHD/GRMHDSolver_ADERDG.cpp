@@ -29,7 +29,7 @@ ADERDG_BC* abc;
 
 void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // NAN checker
-  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
+//  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
   // Todo: Move this to specfile once we have working constants.
   std::string id_default = "Fortran";
