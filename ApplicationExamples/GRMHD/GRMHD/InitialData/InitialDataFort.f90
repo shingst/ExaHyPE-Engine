@@ -63,8 +63,6 @@ RECURSIVE SUBROUTINE AlfenWave(x, t, Q)
 !    BV(3) = eta * B0 * SIN(2*Pi*( x(1) - vax*(t-t_offset)))
     BV(2) = eta * B0 * COS(x(1) - vax*t)
     BV(3) = eta * B0 * SIN(x(1) - vax*t)
-    print *, eta, B0, x(1), vax, t , BV(2)   
-    print *, eta, B0, x(1), vax, t , BV(3)   
     !
     VV(1)   = 0.0
     VV(2:3) = - vax * BV(2:3) / B0
