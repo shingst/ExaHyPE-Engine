@@ -27,23 +27,23 @@ exahype-project GRMHD
 
   computational-domain
     dimension const                = 3
-    width                          = 1.0, 1.0, 1.0
+    width                          = 6.28, 6.28, 6.28
     offset                         = 0.0, 0.0, 0.0
-    end-time                       = 1000.000000001
+    end-time                       = 2.00001
   end computational-domain
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
-    identifier               = static_load_balancing
-    configure                = {greedy-naive,FCFS}
-    buffer-size              = 64
-    timeout                  = 120
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks_per_node:1}
+    buffer-size      = 64
+    timeout          = 60
   end distributed-memory
 
   global-optimisation
@@ -60,8 +60,8 @@ exahype-project GRMHD
 
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
-    order const                    = 4
-    maximum-mesh-size              = 0.33339
+    order const                    = 3
+    maximum-mesh-size              = 0.233
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
