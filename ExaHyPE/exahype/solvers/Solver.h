@@ -1434,6 +1434,23 @@ class exahype::solvers::Solver {
    * performs an FV update. Performs some additional
    * tasks.
    *
+   * * <h2> Background Jobs </h2>
+   *
+   * The FiniteVolumesSolver, ADERDGSolver and LimitingADERDGSolver implementations
+   * show the following behaviour:
+   *
+   *   - If exahype::solvers::Solver::SpawnPredictionAsBackgroundJob is set to false,
+   *     this function will not spawn any background jobs.
+   *
+   *   - If exahype::solvers::Solver::SpawnPredictionAsBackgroundJob is set to true:
+   *
+   *     - This function will spawn a FusedTimeStepJob in intermediate batch iterations.
+   *       Here, it distinguishes between skeleton and enclave cells.
+   *       ADERDGSolver and LimitingADERDGSolver variants do not spawn a PredictionJob in this case.
+   *
+   *     - This function will not a spawn a FusedTimeStepJob in the first and last iteration of
+   *       a batch. ADERDGSolver and LimitingADERDGSolver may still spawn a PredictionJob in this case.
+   *
    * \param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
    *                                    we are in the first iteration of a batch.
    * \param[in] isLastIterationOfBatch  Indicates that we currently run no batch or
