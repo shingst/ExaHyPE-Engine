@@ -105,7 +105,7 @@ AstroBenchmarks
 
 # Logs and other typical output of runs
 *.log
-*output
+*output*
 *.out-exahype
 
 # There are people storing LaTeX in the main repository, so these
