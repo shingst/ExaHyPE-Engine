@@ -26,7 +26,7 @@ END SUBROUTINE InitialData
 
 RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
 	USE, INTRINSIC :: ISO_C_BINDING
-    USE Parameters, ONLY : nVar, nDim, d, ICType,  ICType2,ExcisionRadius,NSTOVVar,NSTOVVar_bar,NSTOV_kappa, dx  , aom, Mbh,NSTOV_ATMO,NSTOV_t_atm
+    USE Parameters, ONLY : nVar, nDim, d, ICType,  ICType2,ExcisionRadius,NSTOVVar,NSTOVVar_bar,NSTOV_kappa,  aom, Mbh,NSTOV_ATMO,NSTOV_t_atm, gamma
     !USE Bessel_mod 
 #ifdef TWOPUNCTURES  
 	USE TwoPunctures_mod, ONLY : TwoPunctures_Interpolate
@@ -39,19 +39,17 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
 #endif
     IMPLICIT NONE
     ! Argument list 
-    REAL, INTENT(IN ) :: xGP(d), tGP        ! spatial position vector and time 
-    REAL, INTENT(OUT) :: u0(nVar)           ! initial data vector in terms of conserved variables 
-    REAL, INTENT(OUT) :: par(nParam)        ! material parameter vector  
-	! Argument list 
-	REAL, INTENT(IN)               :: x(nDim), t        ! 
-	REAL, INTENT(OUT)              :: Q(nVar)        ! 
-	REAL :: xGP(d),tGP,u0(nVar),par(nParam)
+    REAL, INTENT(IN ) :: x(nDim), t        ! spatial position vector and time 
+    REAL, INTENT(OUT) :: Q(nVar)        ! 
+
+    INTEGER , PARAMETER :: nParam = 1
+    REAL :: xGP(d),tGP,u0(nVar)
     ! Local variables 
     INTEGER :: i,j,k,l,nm,iNewton, Maxnewton = 50    
     REAL :: VBase(nVar), ampl(nVar), sigma(d) 
     REAL :: V0(nVar),r,VLL(nVar),VRR(nVar), VZ4(54),V70(70)  
     REAL :: du,dv,drho,dTemp,dp,epsilon,xc(d),rbar
-    REAL :: omega, parL(nParam), parR(nParam), igamma,gamma2,gamma1,rho_atm,h,t,p_atm
+    REAL :: omega, parL(nParam), parR(nParam), igamma,gamma2,gamma1,rho_atm,h,p_atm
     REAL :: r1(9), lambda, lambdat, lambdax, mu, rho, cs, cp, ICA, HH, dxH, Kxx
 #ifndef GRMHD
     REAL :: aom,Mbh
@@ -77,8 +75,8 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
 	tGP = t
 
     u0  = 0.0
-    par = 0.0 
     !
+#ifdef GRMHD
     SELECT CASE(ICType)
     CASE('GRMHDAlfvenWave') 
        rho0 = 1.
@@ -129,7 +127,6 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
         !
        CONTINUE
        !
-    END SELECT
        !
     CASE('GRMHDTOV')
 #ifdef RNSTOV
@@ -728,7 +725,7 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
 #endif
     !
     !
-    !CALL PDEPrim2Cons(u0,V0) 
+    CALL PDEPrim2Cons(Q,V0) 
     !
     CONTINUE
     !
@@ -1033,7 +1030,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     REAL :: ng = 1.0 / (gamma-1.0)
 
     
-     CALL METRIC_3D ( x, alpha, gp, gm, shift, g_cov, g_contr)
+     CALL METRIC ( x, alpha, gp, gm, shift, g_cov, g_contr, phi)
 
      ng     = 1.0/(gamma - 1.0)
 

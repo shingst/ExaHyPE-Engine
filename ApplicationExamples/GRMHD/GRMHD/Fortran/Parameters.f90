@@ -68,6 +68,8 @@
 	REAL, PARAMETER :: rho_floor = 1.0e-10 
 	REAL, PARAMETER :: NSTOV_p_atmo = 1e-15
     REAL, PARAMETER :: NSTOV_rho_atmo = (NSTOV_p_atmo/NSTOV_kappa)**igamma  
+
+  REAL, PARAMETER :: ExcisionRadius=1.5
 	!
 	REAL, PARAMETER :: aom = 0.0, Mbh = 1.0
   CHARACTER(LEN=200), PARAMETER  :: ICType = TRIM('GRMHD-SphericalAccretion')
