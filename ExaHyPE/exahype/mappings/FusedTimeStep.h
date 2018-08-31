@@ -125,6 +125,7 @@ private:
    * have to count ourselves.
    * Note that touchVertexFirstTime(...) might be invoked before beginIteration(...)
    * if state broadcasting is turned off.
+   *
    */
   void ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter);
 
