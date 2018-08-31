@@ -147,7 +147,7 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr,
   r  = xc(1)
   r2 = r*r
   
-  st = DSIN(xc(2))
+  st = SIN(xc(2))
   IF (st < 1.e-14) st = 1.
   st2 = st**2
   
@@ -158,7 +158,7 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr,
   sigma = (r2 + aom2)**2 - aom2*delta*st2
   zz    = 2.0*r/rho2
   
-  lapse    = 1.0 / dsqrt(1.0 + zz)
+  lapse    = 1.0 / sqrt(1.0 + zz)
   shift(1) = zz/(1.0 + zz)       
   shift(2) = 0.0         
   shift(3) = 0.0  
@@ -171,7 +171,7 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr,
   g_contr( 2, 1:3) = (/  0.0,                        1.0/rho2,                  0.0              /)
   g_contr( 3, 1:3) = (/  aom/rho2,                   0.0,                       1.0/(rho2*st2)   /)
   !
-  gp = rho2*st*dsqrt(1.0 + zz)
+  gp = rho2*st*sqrt(1.0 + zz)
   gm = 1.0/gp  
   !
 #endif  

@@ -19,8 +19,8 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	! Call InitialOrsagTang(x, 0.0 , Q)
 	
 	! CALL InitialAccretionDisc(x, 0.0,  Q)
-	CALL InitialAccretionDisc3D(x, 0.0, Q)
-!	CALL InitialDataTN(x, t,  Q)
+!	CALL InitialAccretionDisc3D(x, 0.0, Q)
+	CALL InitialDataTN(x, t,  Q)
     
 END SUBROUTINE InitialData
 
@@ -129,7 +129,7 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
        !
        !
     CASE('GRMHDTOV')
-#ifdef RNSTOV
+#IFDEF RNSTOV
         CALL Curved2Cartesian(xGP_loc,xGP)          ! no effects if you are in Cartesian coordiantes
         CALL Cartesian2Spherical(xGP_sph,xGP_loc)   ! here we convert Cartesian to Spherical, independently on the chosen coordiantes
         r=XGP_sph(1)
