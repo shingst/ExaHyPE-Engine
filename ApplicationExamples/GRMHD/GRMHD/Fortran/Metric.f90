@@ -3,7 +3,7 @@
 
 #define EQNTYPE4
 
-RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, g_cov, g_contr, phi )
+RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr, phi )
   USE Parameters, ONLY : nVar, nDim, ICType,NSTOVVar  , aom, Mbh
 #ifdef TWOPUNCTURES  
 	USE TwoPunctures, ONLY : TwoPunctures_Interpolate
