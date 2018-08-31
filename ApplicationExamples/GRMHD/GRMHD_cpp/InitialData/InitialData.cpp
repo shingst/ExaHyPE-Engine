@@ -23,6 +23,7 @@ InitialDataCode* InitialDataCode::getInstanceByName(std::string idname) {
 	if(idname == "rnsid") 		return new rnsid();
 	if(idname == "shocktube") 	return new GRMHD_Shocktube();
 	if(idname == "tovsolver")	return new TovSolverAdapter();
+	if(idname == "toriid")		return new ToriIDAdapter();
 	return nullptr;
 }
 
