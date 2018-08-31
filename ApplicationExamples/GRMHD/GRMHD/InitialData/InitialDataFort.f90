@@ -19,8 +19,8 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	! Call InitialOrsagTang(x, 0.0 , Q)
 	
 	! CALL InitialAccretionDisc(x, 0.0,  Q)
-	!CALL InitialAccretionDisc3D(x, 0.0, Q)
-	CALL InitialDataTN(x, t,  Q)
+	CALL InitialAccretionDisc3D(x, 0.0, Q)
+!	CALL InitialDataTN(x, t,  Q)
     
 END SUBROUTINE InitialData
 
@@ -637,7 +637,10 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
        vy  = DSIN(theta)*DSIN(phi2)*vr
        vz  = DCOS(theta)*vr
        !
-       VV(1:3) = (/ vx, vy, vz /)
+        VV(1) = vx
+        VV(2) = vy
+        VV(3) = vz
+
        ! Convert to covariant velocities
        VV_cov = MATMUL(g_cov, VV)
        !
@@ -645,7 +648,7 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
        p   = rho*tt
        !
        BV(1:3) = 0.
-	   BV_contr(1:3) = 0.
+       BV_contr(1:3) = 0.
        ! 
        !
        SELECT CASE(TRIM(ICType2))
@@ -1026,8 +1029,8 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     REAL :: phi_c
     REAL :: detgamma    
     ! PARAMETERS:
-    REAL :: rhoc = 0.625  ! Critical radius
-   ! REAL :: rhoc = 0.0625  ! Critical radius
+  !  REAL :: rhoc = 0.625  ! Critical radius
+    REAL :: rhoc = 0.0625  ! Critical radius
     
     REAL :: rc = 8.0
     INTEGER :: MAXNEWTON = 50, iNewton
