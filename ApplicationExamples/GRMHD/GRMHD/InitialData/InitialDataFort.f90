@@ -11,13 +11,13 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 
 	! Call here one of
 	! CALL InitialBlast(x, 0.0,  Q)
-	Call AlfenWave(x, t, Q)
+  !	Call AlfenWave(x, t, Q)
 	! Call InitialRotor(x, 0.0, Q)
 	! Call InitialBlast(x, 0.0, Q)
 	! Call InitialOrsagTang(x, 0.0 , Q)
 	
 	! CALL InitialAccretionDisc(x, 0.0,  Q)
-!	CALL InitialAccretionDisc3D(x, 0.0, Q)
+	CALL InitialAccretionDisc3D(x, 0.0, Q)
 END SUBROUTINE InitialData
 
 
@@ -63,8 +63,6 @@ RECURSIVE SUBROUTINE AlfenWave(x, t, Q)
 !    BV(3) = eta * B0 * SIN(2*Pi*( x(1) - vax*(t-t_offset)))
     BV(2) = eta * B0 * COS(x(1) - vax*t)
     BV(3) = eta * B0 * SIN(x(1) - vax*t)
-    print *, eta, B0, x(1), vax, t , BV(2)   
-    print *, eta, B0, x(1), vax, t , BV(3)   
     !
     VV(1)   = 0.0
     VV(2:3) = - vax * BV(2:3) / B0
@@ -322,6 +320,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     
     REAL :: rc = 8.0
     INTEGER :: MAXNEWTON = 50, iNewton
+    INTEGER :: i 
     REAL :: ng = 1.0 / (gamma-1.0)
 
     
@@ -336,15 +335,15 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
        !IF ( x(2) .LT. 0.1) RETURN
        !IF ( x(3) .LT. 0.1) RETURN
        IF ( r .LT. 0.8) THEN
-		! To avoid division by zero, never used for evolution or BC
-		rho = 1.0 !1.0
-		VV_cov(1:3) = 0.0
-		p = 1.0
-		BV = 0.0 
-		V(1:9) = (/ rho, VV_cov(1:3), p, BV(1:3), 0. /)
-		V(10:19) = (/ 1.0, 0.0,0.0,0.0, 1.0,0.0,0.0,1.0,0.0,1.0 /)
-		CALL PDEPrim2Cons(Q,V)       
-		RETURN
+          ! To avoid division by zero, never used for evolution or BC
+          rho = 1.0 !1.0
+          VV_cov(1:3) = 0.0
+          p = 1.0
+          BV = 0.0 
+          V(1:9) = (/ rho, VV_cov(1:3), p, BV(1:3), 0. /)
+          V(10:19) = (/ 1.0, 0.0,0.0,0.0, 1.0,0.0,0.0,1.0,0.0,1.0 /)
+          CALL PDEPrim2Cons(Q,V)       
+          RETURN
        ENDIF
        !
        theta  = ACOS( x(3)/r)
@@ -381,7 +380,10 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
        vy  = SIN(theta)*SIN(phi)*vr
        vz  = COS(theta)*         vr
        !
-       VV(1:3) = (/ vx, vy, vz /)
+!       VV(1:3) = (/ vx, vy, vz /)
+       VV(1) = vx
+       VV(2) = vy
+       VV(3) = vz
        ! Convert to covariant velocities
        VV_cov = MATMUL(g_cov, VV)
        !
@@ -403,7 +405,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
 
        !BV(1:3) = 0.                                                                            
 
-       ! MHD  Michel accretion                                                                  
+       ! MHD  mICHEl accretion                                                                  
 
 !       detgamma= gammaij(1)*( gammaij(4)*gammaij(6)-gammaij(5)*gammaij(5)) &
 !               - gammaij(2)*( gammaij(2)*gammaij(6)-gammaij(5)*gammaij(3)) &
@@ -415,7 +417,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
 
        ! B0 = (2.2688/M)*(sqrt(b^2/rho0)), here sqrt(b^2/rho0)=4.0                              
 
-       B0 = 2.2688*2.0
+       B0 = 0
 
        !---------------------------------------------------------------------- 
        BV_contr = B0*x(1:3)/(sqrt(gp) * r*r*r)
@@ -423,10 +425,36 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
 !       BV = BV_contr
        
        BV = MATMUL(g_cov,BV_contr)
-       
 
-       V(1:9) = (/ rho, VV_cov(1:3), p, BV(1:3), 0. /)
-       V(10:19) = (/ lapse, shift(1:3), gammaij(1:6) /)
+        !
+
+    V(1) = rho
+    V(2) = VV_cov(1)
+    V(3) = VV_cov(2)
+    V(4) = VV_cov(3)
+    V(5) = p  
+    V(6) = BV(1)
+    V(7) = BV(2)
+    V(8) = BV(3)
+    V(9) = 0
+    V(10) = lapse
+    V(11) = shift(1)
+    V(12) = shift(2)
+    V(13) = shift(3)
+        DO i=1,6
+            V(13+i) = gammaij(i)
+        ENDDO
+   
+  ! DO i=1,3
+   !     V(1+i) = VV_cov(i)
+   !     V(5+i) = BV(i)
+   !     V(10+i) = shift(i)
+   ! ENDDO
+    !
+    !
+       !V(1:9) = (/ rho, VV_cov(1:3), p, BV(1:3), 0. /)
+       !V(10:19) = (/ lapse, shift(1:3), gammaij(1:6) /)
        CALL PDEPrim2Cons(Q,V)
+
 
  END SUBROUTINE InitialAccretionDisc3D

@@ -1,5 +1,8 @@
 ! Static background metrics for GRMHD
 
+
+#define EQNTYPE4
+
 RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, g_cov, g_contr, phi )
   USE Parameters, ONLY : nVar, nDim, ICType,NSTOVVar  , aom, Mbh
 #ifdef TWOPUNCTURES  
@@ -23,10 +26,12 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, g_cov, g_contr, phi 
   REAL, PARAMETER :: P_eps = 1e-4    
 
   !
-  IF(nDIM.eq.3) THEN
+  IF(nDIM.eq.2) THEN
 	xc(1) = xc_loc(1)
 	xc(2) = xc_loc(2)
 	xc(3) = 0.
+  ELSE
+   xc = xc_loc
   ENDIF
   !
   Kex = 0.0 
