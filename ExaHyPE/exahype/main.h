@@ -6,6 +6,8 @@
 namespace exahype {
         /**
          * Simple ping pong test. Returns 0 if everything is ok.
+	 * 
+	 * This function is implemented in PingPongTest.cpp
          */
 	int pingPongTest();
 

@@ -72,7 +72,7 @@ cdapp() {
 
 # some paths to the exa helper scripts
 BuildScripts=$GITROOT/Miscellaneous/BuildScripts # == $SCRIPTDIR
-Postprocesing=$GITROOT/Miscellaneous/Postprocessing
+Postprocessing=$GITROOT/Miscellaneous/Postprocessing
 
 case $CMD in
 	"update") # Update the repository or dependencies. Use "--help" for help.
