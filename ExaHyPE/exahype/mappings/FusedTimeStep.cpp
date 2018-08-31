@@ -133,13 +133,22 @@ exahype::mappings::FusedTimeStep::descendSpecification(int level) const {
 exahype::mappings::FusedTimeStep::FusedTimeStep() {
 }
 
+// @todo To discuss with Dominic
+//   - Is this an appropriate name for the function? I guess we should rename it.
+//   - If I pass true, this is done only by beginIteration(). Why does the code
+//     then wait for the Enclave Jobs to finish? It waits later on (through
+//     touchVertexFirstTime anyway.
 void exahype::mappings::FusedTimeStep::ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter) {
   if (!_batchIterationCounterUpdated) {
     _batchIteration = ( initialiseBatchIterationCounter) ? 0 : _batchIteration+1;
     _batchIterationCounterUpdated = true;
 
     if ( issuePredictionJobsInThisIteration() ) {
-      if (exahype::solvers::Solver::SpawnPredictionAsBackgroundJob) {
+      if (
+        // @todo Dominic: Adding this line does not work unfortunately
+        // (not initialiseBatchIterationCounter) and
+        exahype::solvers::Solver::SpawnPredictionAsBackgroundJob
+	  ) {
         exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
       }
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
