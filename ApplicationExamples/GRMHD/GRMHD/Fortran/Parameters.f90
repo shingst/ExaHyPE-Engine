@@ -72,7 +72,8 @@
   REAL, PARAMETER :: ExcisionRadius=1.5
 	!
 	REAL, PARAMETER :: aom = 0.0, Mbh = 1.0
-  CHARACTER(LEN=200), PARAMETER  :: ICType = TRIM('GRMHD-SphericalAccretion')
+!  CHARACTER(LEN=200), PARAMETER  :: ICType = TRIM('GRMHD-SphericalAccretion')
+  CHARACTER(LEN=200), PARAMETER  :: ICType = TRIM('GRMHDTOV')
   CHARACTER(LEN=200), PARAMETER  :: ICType2 = TRIM('GRMHD-SphericalAccretion')
 !  CHARACTER(LEN=200), PARAMETER  :: ICType2 = TRIM('GRMHD-BondiAccretion')
 	!ICType = 'GRMHDTOV' 
