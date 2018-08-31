@@ -38,7 +38,7 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, g_cov, g_contr, phi 
   !
   SELECT CASE(ICType)
 #if defined(EQNTYPE4) || defined(EQNTYPE94) || defined(EQNTYPE4LAG)   
-  CASE('GRHD-SphericalAccretion','GRMHD-SphericalAccretion','GRHD-SphericalAccretionBI')
+  CASE('GRHD-SphericalAccretion','GRMHD-SphericalAccretion','GRHD-SphericalAccretionBI','GRMHD-BondiAccretion')
   !
       PHI = 1.0
       !
