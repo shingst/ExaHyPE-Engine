@@ -20,10 +20,12 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr,
   REAL,dimension(3,3)            :: Kex, g_cov, g_contr 
 
   REAL :: x, y, z, r, z2, r2, aom2, det,Mbh_loc 
-  REAL :: lx, ly, lz, HH, SS, detg
+  REAL :: lx, ly, lz, HH, SS, detg  
   REAL :: st, st2, delta, rho2, sigma, zz, V0Z4(54),V070(70)  
   REAL :: transl(3), xGP(3), xGP_tmp(3) 
+  REAL :: rbar
   REAL, PARAMETER :: P_eps = 1e-4    
+  REAL, DIMENSION(3) :: xGP_loc,xGP_sph
 
   !
   IF(nDIM.eq.2) THEN
@@ -35,6 +37,7 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr,
   ENDIF
   !
   Kex = 0.0 
+  phi = 1.0
   !
   SELECT CASE(ICType)
 #if defined(EQNTYPE4) || defined(EQNTYPE94) || defined(EQNTYPE4LAG)   
@@ -112,70 +115,51 @@ RECURSIVE SUBROUTINE METRIC ( xc_loc, lapse, gp, gm, shift, Kex, g_cov, g_contr,
 #endif  
 #endif  
     !
-#if defined(EQNTYPE4) || defined(EQNTYPE94) || defined(EQNTYPE4LAG)   
-  CASE('GRMHDTOV')
-  !
-      PHI = 1.0
-      Mbh_loc=NSTOVVar%Mass
-      !
-#ifndef SPHERICAL
-  ! NonRotating (Schwarzschild) black hole in Schwarzschild Cartesian coordinates. See De Felice & Clarke Sect. 11.4
-  x    = xc(1)
-  y    = xc(2)
-  z    = xc(3)
-  !  
-  r    = SQRT(x**2 + y**2 + z**2)
-  r2   = r**2
-  !
-  HH = Mbh_loc/(r)
-  lapse   = SQRT(1.0-2.0*HH)
-  SS = 1.0/(1.0-2.0*HH)/r**2 -1.0/r**2
-  !
-  shift(1) = 0.0         
-  shift(2) = 0.0         
-  shift(3) = 0.0        
-  !
-  g_cov( 1, 1:3) = (/ 1.0 + x**2*SS    , 2.0*SS*x*y,      2.0*SS*x*z     /)
-  g_cov( 2, 1:3) = (/ 2.0*SS*x*y,    1.0 + y**2*SS,         2.0*SS*z*y       /)
-  g_cov( 3, 1:3) = (/ 2.0*SS*x*z,       2.0*SS*z*y,       1.0 + z**2*SS    /)
-  !
-  CALL MatrixInverse3x3(g_cov,g_contr,gp)
-  !
-  gm = 1.0/gp
-#else
-  ! Rotating black hole in Kerr-Schild spherical coordinates. See Appendix B of Komissarov (2004) MNRAS, 350, 427
-  r  = xc(1)
-  r2 = r*r
-  
-  st = SIN(xc(2))
-  IF (st < 1.e-14) st = 1.
-  st2 = st**2
-  
-  aom2 = aom**2
-  
-  delta = r2 - 2.0 * Mbh_loc * r + aom2
-  rho2  = r2 + aom2*(1.0 - st2)
-  sigma = (r2 + aom2)**2 - aom2*delta*st2
-  zz    = 2.0*r/rho2
-  
-  lapse    = 1.0 / sqrt(1.0 + zz)
-  shift(1) = zz/(1.0 + zz)       
-  shift(2) = 0.0         
-  shift(3) = 0.0  
-  
-  g_cov( 1, 1:3) = (/ 1.0 + zz,             0.0,        -aom*st2*(1.0 + zz)   /)
-  g_cov( 2, 1:3) = (/ 0.0,                  rho2,       0.0                   /)
-  g_cov( 3, 1:3) = (/ -aom*st2*(1.0 + zz),  0.0,        (sigma/rho2)*st2      /)
-  
-  g_contr( 1, 1:3) = (/  lapse**2 + aom2*st2/rho2,   0.0,                       aom/rho2         /)
-  g_contr( 2, 1:3) = (/  0.0,                        1.0/rho2,                  0.0              /)
-  g_contr( 3, 1:3) = (/  aom/rho2,                   0.0,                       1.0/(rho2*st2)   /)
-  !
-  gp = rho2*st*sqrt(1.0 + zz)
-  gm = 1.0/gp  
-  !
-#endif  
-#endif  
+    CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
+#ifdef RNSTOV 
+        CALL Curved2Cartesian(xGP_loc,xc)          ! no effects if you are in Cartesian coordiantes
+        CALL Cartesian2Spherical(xGP_sph,xGP_loc)   ! here we convert Cartesian to Spherical, independently on the chosen coordiantes
+        r=XGP_sph(1)
+        !
+#ifdef SPHERICAL  ! then we are in the original coordinate system        
+        CALL NSTOV_x(r,NSTOVVar%qloc)
+#elif CYLINDRICAL
+        PRINT *, 'CYLINDRICAL COORDINATES NOT TESTED FOR RNSTOV'
+#else  
+        CALL NSTOV_rbar(r,NSTOVVar%qloc)
+#endif
+        !
+        lapse = EXP(NSTOVVar%qloc(2))
+        shift(1:3) = 0.
+        !gammaij(1:6) = 0.
+        !gammaij(1) = 1.0
+        !gammaij(4) = 1.0
+        !gammaij(6) = 1.0
+        g_cov = 0.
+#ifdef SPHERICAL
+        g_cov(1,1)  = 1.0/(1.0-2.0*NSTOVVar%qloc(1)/r)
+        g_cov(2,2)  = r**2
+        g_cov(3,3)  = SIN(xGP_sph(2))**2*r**2
+        !
+#else   
+        !rbar = r !*NSTOVVar%C*exp(NSTOVVar%q(4,n))
+        !rbar = 0.5*r/NSTOVVar%radius*(SQRT(NSTOVVar%radius**2-2*NSTOVVar%q(1,NSTOVVar%iradius)*NSTOVVar%radius)+NSTOVVar%radius-NSTOVVar%q(1,NSTOVVar%iradius))*EXP(NSTOVVar%qloc(4)-NSTOVVar%q(4,NSTOVVar%iradius)) 
+        g_cov(1,1) = 1.0/(NSTOVVar%C**2*exp(2.0*NSTOVVar%qloc(4))) ! rbar**2/(r+1e-14)**2
+        g_cov(2,2) = 1.0/(NSTOVVar%C**2*exp(2.0*NSTOVVar%qloc(4))) ! rbar**2/(r+1e-14)**2
+        g_cov(3,3) = 1.0/(NSTOVVar%C**2*exp(2.0*NSTOVVar%qloc(4))) ! rbar**2/(r+1e-14)**2
+        !
+#endif 
+        g_contr=0.
+        g_contr( 1, 1) = 1.0/g_cov(1,1)
+        g_contr( 2, 2) = 1.0/g_cov(2,2)
+        g_contr( 3, 3) = 1.0/g_cov(3,3)
+        gp = SQRT(g_cov(1,1)*g_cov(2,2)*g_cov(3,3))
+        gm = 1/gp
+
+        det = g_cov(1,1)*g_cov(2,2)*g_cov(3,3) 
+        phi = det**(-1./6.)        
+        
+#endif 
     !
   CASE('CCZ4Puncture') 
     !   
