@@ -19,8 +19,8 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	! Call InitialOrsagTang(x, 0.0 , Q)
 	
 	! CALL InitialAccretionDisc(x, 0.0,  Q)
-	!CALL InitialAccretionDisc3D(x, 0.0, Q)
-	CALL InitialDataTN(x, t,  Q)
+	CALL InitialAccretionDisc3D(x, 0.0, Q)
+!	CALL InitialDataTN(x, t,  Q)
     
 END SUBROUTINE InitialData
 
@@ -637,7 +637,10 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
        vy  = DSIN(theta)*DSIN(phi2)*vr
        vz  = DCOS(theta)*vr
        !
-       VV(1:3) = (/ vx, vy, vz /)
+        VV(1) = vx
+        VV(2) = vy
+        VV(3) = vz
+
        ! Convert to covariant velocities
        VV_cov = MATMUL(g_cov, VV)
        !
@@ -645,7 +648,7 @@ RECURSIVE SUBROUTINE InitialDataTN(x, t, Q)
        p   = rho*tt
        !
        BV(1:3) = 0.
-	   BV_contr(1:3) = 0.
+       BV_contr(1:3) = 0.
        ! 
        !
        SELECT CASE(TRIM(ICType2))
@@ -949,7 +952,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc(x,t,Q)
     REAL :: rho0, p0, eta, B0, hh, tempaa, tempab, tempac, va2, vax
     REAL :: V(nVar), BV(3), VV(3), Pi = ACOS(-1.0)
     REAL :: r, zz, urc, vc2, tc, pc,tt, c1, c2, urr, f
-    REAL :: df, dt, ut, LF, vr, vtheta, vphi, rho, p, VV_cov(3), g_cov(3,3), g_contr(3,3)
+    REAL :: df, dt, ut, LF, vr, vtheta, vphi, rho, p, VV_cov(3), Kex(3,3), g_cov(3,3), g_contr(3,3)
     REAL :: phi_c
     REAL :: gp, gm, shift(3), lapse
     
@@ -959,7 +962,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc(x,t,Q)
     INTEGER :: MAXNEWTON = 50, iNewton
     REAL :: ng = 1.0 / (gamma-1.0)
 
-    CALL METRIC ( x, lapse, gp, gm, shift, g_cov, g_contr,phi_c)
+    CALL METRIC ( x, lapse, gp, gm, shift, Kex, g_cov, g_contr,phi_c)
 
     
      ! The Following is for Kerr-Schild spherical coordinates
@@ -1021,13 +1024,13 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     REAL :: rho0, p0, eta, B0, hh, tempaa, tempab, tempac, va2, vax
     REAL :: V(nVar), BV(3), BV_contr(3), VV(3), Pi = ACOS(-1.0)
     REAL :: r, zz, urc, vc2, tc, pc,tt, c1, c2, urr, f
-    REAL :: df, dt, ut, LF, vr, vtheta, vphi, rho, p, VV_cov(3), g_cov(3,3), g_contr(3,3)
+    REAL :: df, dt, ut, LF, vr, vtheta, vphi, rho, p, VV_cov(3), Kex(3,3),g_cov(3,3), g_contr(3,3)
     REAL :: gp, gm, shift(3), lapse, gammaij(6), betaru, g_tt, phi, theta, vx, vy, vz
     REAL :: phi_c
     REAL :: detgamma    
     ! PARAMETERS:
-    REAL :: rhoc = 0.625  ! Critical radius
-   ! REAL :: rhoc = 0.0625  ! Critical radius
+  !  REAL :: rhoc = 0.625  ! Critical radius
+    REAL :: rhoc = 0.0625  ! Critical radius
     
     REAL :: rc = 8.0
     INTEGER :: MAXNEWTON = 50, iNewton
@@ -1035,7 +1038,7 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
     REAL :: ng = 1.0 / (gamma-1.0)
 
     
-     CALL METRIC ( x, lapse, gp, gm, shift, g_cov, g_contr,phi_c)
+     CALL METRIC ( x, lapse, gp, gm, shift, Kex , g_cov, g_contr,phi_c)
 
      ng     = 1.0/(gamma - 1.0)
 
