@@ -30,7 +30,7 @@
 #else
   INTEGER, PARAMETER :: nVar = 19                           ! The number of variables of the PDE system 
 #endif
-    
+    INTEGER, PARAMETER :: nparam = 0
     ! Ideal EOS:
     ! 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
     ! 2.0 used for TOV stars
@@ -71,6 +71,7 @@
 	!
 	REAL, PARAMETER :: aom = 0.0, Mbh = 1.0
   CHARACTER(LEN=200), PARAMETER  :: ICType = TRIM('GRMHD-SphericalAccretion')
+  CHARACTER(LEN=200), PARAMETER  :: ICType2 = TRIM('GRMHD-BondiAccretion')
 	!ICType = 'GRMHDTOV' 
     !
   END MODULE Parameters  
