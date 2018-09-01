@@ -866,7 +866,7 @@ class exahype::solvers::Solver {
  template <typename CellDescription,JobType jobType>
  static void waitUntilCompletedTimeStep(
      const CellDescription& cellDescription) {
-   while ( !cellDescription.hasCompletedTimeStep() ) {
+   while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
      tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
      if ( jobType != JobType::SkeletonJob ) {
