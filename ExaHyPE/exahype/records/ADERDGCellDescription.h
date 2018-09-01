@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   01/09/2018 16:10
+    * @date   01/09/2018 15:55
     */
    class exahype::records::ADERDGCellDescription { 
       
@@ -53,22 +53,18 @@ namespace exahype {
             None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
          };
          
-         enum STPStatus {
-            Triggered = 0, Compupting = 1, Computed = 2
-         };
-         
          enum Type {
             Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
          };
          
          struct PersistentRecords {
-            STPStatus _stpStatus;
             int _solverNumber;
             #ifdef UseManualAlignment
             std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
             #else
             std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
             #endif
+            bool _hasCompletedTimeStep;
             bool _adjacentToRemoteRank;
             bool _hasToHoldDataForMasterWorkerCommunication;
             #ifdef UseManualAlignment
@@ -157,27 +153,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
-            
-            
-            inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _stpStatus;
-            }
-            
-            
-            
-            inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _stpStatus = stpStatus;
-            }
-            
+            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -254,6 +230,26 @@ namespace exahype {
  #endif 
  {
                _neighbourMergePerformed = (neighbourMergePerformed);
+            }
+            
+            
+            
+            inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _hasCompletedTimeStep;
+            }
+            
+            
+            
+            inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _hasCompletedTimeStep = hasCompletedTimeStep;
             }
             
             
@@ -1582,32 +1578,12 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescription(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
              */
             ~ADERDGCellDescription();
-            
-            
-            inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._stpStatus;
-            }
-            
-            
-            
-            inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._stpStatus = stpStatus;
-            }
-            
             
             
             inline int getSolverNumber() const 
@@ -1722,6 +1698,26 @@ namespace exahype {
                assertion(elementIndex>=0);
                assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                _persistentRecords._neighbourMergePerformed.flip(elementIndex);
+            }
+            
+            
+            
+            inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._hasCompletedTimeStep;
+            }
+            
+            
+            
+            inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._hasCompletedTimeStep = hasCompletedTimeStep;
             }
             
             
@@ -3246,16 +3242,6 @@ namespace exahype {
             /**
              * Generated
              */
-            static std::string toString(const STPStatus& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getSTPStatusMapping();
-            
-            /**
-             * Generated
-             */
             static std::string toString(const Type& param);
             
             /**
@@ -3333,13 +3319,11 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   01/09/2018 16:10
+    * @date   01/09/2018 15:55
     */
    class exahype::records::ADERDGCellDescriptionPacked { 
       
       public:
-         
-         typedef exahype::records::ADERDGCellDescription::STPStatus STPStatus;
          
          typedef exahype::records::ADERDGCellDescription::Type Type;
          
@@ -3350,7 +3334,6 @@ namespace exahype {
          typedef exahype::records::ADERDGCellDescription::Creation Creation;
          
          struct PersistentRecords {
-            STPStatus _stpStatus;
             int _solverNumber;
             bool _hasToHoldDataForMasterWorkerCommunication;
             tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
@@ -3399,15 +3382,16 @@ namespace exahype {
             /** mapping of records:
             || Member 	|| startbit 	|| length
              |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-             |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-             |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
-             |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 4
-             |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 7	| #bits 2
-             |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 3
-             |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 12	| #bits 3
-             |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 15	| #bits 3
-             |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 18	| #bits 3
-             |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 21	| #bits 3
+             |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
+             |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 1
+             |  type	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 2
+             |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 4	| #bits 4
+             |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 2
+             |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 10	| #bits 3
+             |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 13	| #bits 3
+             |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 16	| #bits 3
+             |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 19	| #bits 3
+             |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 22	| #bits 3
              */
             int _packedRecords0;
             
@@ -3419,27 +3403,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
-            
-            
-            inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _stpStatus;
-            }
-            
-            
-            
-            inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _stpStatus = stpStatus;
-            }
-            
+            PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             
             inline int getSolverNumber() const 
@@ -3528,7 +3492,7 @@ namespace exahype {
             
             
             
-            inline bool getAdjacentToRemoteRank() const 
+            inline bool getHasCompletedTimeStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -3540,12 +3504,35 @@ namespace exahype {
             
             
             
-            inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+            inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
+            }
+            
+            
+            
+            inline bool getAdjacentToRemoteRank() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   return (tmp != 0);
+            }
+            
+            
+            
+            inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
    _packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
             }
             
@@ -3753,9 +3740,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
             }
@@ -3769,9 +3756,9 @@ namespace exahype {
  {
                assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
             }
             
             
@@ -3782,9 +3769,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
    assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
             }
@@ -3798,9 +3785,9 @@ namespace exahype {
  {
                assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
             }
             
             
@@ -4721,9 +4708,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -4737,9 +4724,9 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
             }
             
             
@@ -4750,9 +4737,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4767,9 +4754,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
             }
             
             
@@ -4780,9 +4767,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4797,9 +4784,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
             }
             
             
@@ -4810,9 +4797,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4827,9 +4814,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
             }
             
             
@@ -4840,9 +4827,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4857,9 +4844,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
             }
             
             
@@ -4870,9 +4857,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -4887,9 +4874,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
             }
             
             
@@ -4932,32 +4919,12 @@ namespace exahype {
             /**
              * Generated
              */
-            ADERDGCellDescriptionPacked(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+            ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
             
             /**
              * Generated
              */
             ~ADERDGCellDescriptionPacked();
-            
-            
-            inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._stpStatus;
-            }
-            
-            
-            
-            inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._stpStatus = stpStatus;
-            }
-            
             
             
             inline int getSolverNumber() const 
@@ -5091,7 +5058,7 @@ namespace exahype {
             
             
             
-            inline bool getAdjacentToRemoteRank() const 
+            inline bool getHasCompletedTimeStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -5103,12 +5070,35 @@ namespace exahype {
             
             
             
-            inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+            inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
+            }
+            
+            
+            
+            inline bool getAdjacentToRemoteRank() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   return (tmp != 0);
+            }
+            
+            
+            
+            inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
    _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
             }
             
@@ -5368,9 +5358,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
             }
@@ -5384,9 +5374,9 @@ namespace exahype {
  {
                assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
             }
             
             
@@ -5397,9 +5387,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
    assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
             }
@@ -5413,9 +5403,9 @@ namespace exahype {
  {
                assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
             }
             
             
@@ -6466,9 +6456,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
             }
@@ -6482,9 +6472,9 @@ namespace exahype {
  {
                assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
             }
             
             
@@ -6495,9 +6485,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6512,9 +6502,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
             }
             
             
@@ -6525,9 +6515,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6542,9 +6532,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
             }
             
             
@@ -6555,9 +6545,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6572,9 +6562,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
             }
             
             
@@ -6585,9 +6575,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6602,9 +6592,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
             }
             
             
@@ -6615,9 +6605,9 @@ namespace exahype {
  #endif 
  {
                int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -6632,9 +6622,9 @@ namespace exahype {
  {
                assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
             }
             
             
@@ -6657,16 +6647,6 @@ namespace exahype {
                _persistentRecords._creation = creation;
             }
             
-            
-            /**
-             * Generated
-             */
-            static std::string toString(const STPStatus& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getSTPStatusMapping();
             
             /**
              * Generated
@@ -6774,7 +6754,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 16:10
+       * @date   01/09/2018 15:55
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -6790,22 +6770,18 @@ namespace exahype {
                None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
             };
             
-            enum STPStatus {
-               Triggered = 0, Compupting = 1, Computed = 2
-            };
-            
             enum Type {
                Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
             };
             
             struct PersistentRecords {
-               STPStatus _stpStatus;
                int _solverNumber;
                #ifdef UseManualAlignment
                std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
                std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
                #endif
+               bool _hasCompletedTimeStep;
                bool _adjacentToRemoteRank;
                bool _hasToHoldDataForMasterWorkerCommunication;
                #ifdef UseManualAlignment
@@ -6893,27 +6869,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _stpStatus = stpStatus;
-               }
-               
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -6990,6 +6946,26 @@ namespace exahype {
  #endif 
  {
                   _neighbourMergePerformed = (neighbourMergePerformed);
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _hasCompletedTimeStep = hasCompletedTimeStep;
                }
                
                
@@ -8298,32 +8274,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
                 */
                ~ADERDGCellDescription();
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._stpStatus = stpStatus;
-               }
-               
                
                
                inline int getSolverNumber() const 
@@ -8438,6 +8394,26 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed.flip(elementIndex);
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._hasCompletedTimeStep = hasCompletedTimeStep;
                }
                
                
@@ -9932,16 +9908,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const STPStatus& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSTPStatusMapping();
-               
-               /**
-                * Generated
-                */
                static std::string toString(const Type& param);
                
                /**
@@ -10019,13 +9985,11 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 16:10
+       * @date   01/09/2018 15:55
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
          public:
-            
-            typedef exahype::records::ADERDGCellDescription::STPStatus STPStatus;
             
             typedef exahype::records::ADERDGCellDescription::Type Type;
             
@@ -10034,7 +9998,6 @@ namespace exahype {
             typedef exahype::records::ADERDGCellDescription::CompressionState CompressionState;
             
             struct PersistentRecords {
-               STPStatus _stpStatus;
                int _solverNumber;
                bool _hasToHoldDataForMasterWorkerCommunication;
                tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _faceDataExchangeCounter;
@@ -10082,15 +10045,16 @@ namespace exahype {
                /** mapping of records:
                || Member 	|| startbit 	|| length
                 |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 4
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 7	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 12	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 15	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 18	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 21	| #bits 3
+                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
+                |  adjacentToRemoteRank	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 1
+                |  type	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 2
+                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 4	| #bits 4
+                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 10	| #bits 3
+                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 13	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 16	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 19	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 22	| #bits 3
                 */
                int _packedRecords0;
                
@@ -10102,27 +10066,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _stpStatus = stpStatus;
-               }
-               
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -10211,7 +10155,7 @@ namespace exahype {
                
                
                
-               inline bool getAdjacentToRemoteRank() const 
+               inline bool getHasCompletedTimeStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -10223,12 +10167,35 @@ namespace exahype {
                
                
                
-               inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
+               }
+               
+               
+               
+               inline bool getAdjacentToRemoteRank() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
    _packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
@@ -10308,6 +10275,6345 @@ namespace exahype {
  #endif 
  {
                   _faceDataExchangeCounter = (faceDataExchangeCounter);
+               }
+               
+               
+               
+               inline int getParentIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _parentIndex;
+               }
+               
+               
+               
+               inline void setParentIndex(const int& parentIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _parentIndex = parentIndex;
+               }
+               
+               
+               
+               inline int getParentCellLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _parentCellLevel;
+               }
+               
+               
+               
+               inline void setParentCellLevel(const int& parentCellLevel) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _parentCellLevel = parentCellLevel;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _parentOffset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _parentOffset = (parentOffset);
+               }
+               
+               
+               
+               inline bool getHasVirtualChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _hasVirtualChildren;
+               }
+               
+               
+               
+               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _hasVirtualChildren = hasVirtualChildren;
+               }
+               
+               
+               
+               inline Type getType() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   assertion(( tmp >= 0 &&  tmp <= 3));
+   return (Type) tmp;
+               }
+               
+               
+               
+               inline void setType(const Type& type) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((type >= 0 && type <= 3));
+   int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+               }
+               
+               
+               
+               inline RefinementEvent getRefinementEvent() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (4)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
+   assertion(( tmp >= 0 &&  tmp <= 14));
+   return (RefinementEvent) tmp;
+               }
+               
+               
+               
+               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
+   int mask =  (1 << (4)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+               }
+               
+               
+               
+               inline int getLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _level;
+               }
+               
+               
+               
+               inline void setLevel(const int& level) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _level = level;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _offset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _offset = (offset);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _size;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _size = (size);
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _correctorTimeStepSize;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _correctorTimeStepSize = correctorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _correctorTimeStamp;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _correctorTimeStamp = correctorTimeStamp;
+               }
+               
+               
+               
+               inline double getPredictorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _predictorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _predictorTimeStepSize = predictorTimeStepSize;
+               }
+               
+               
+               
+               inline double getPredictorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _predictorTimeStamp;
+               }
+               
+               
+               
+               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _predictorTimeStamp = predictorTimeStamp;
+               }
+               
+               
+               
+               inline int getSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solution;
+               }
+               
+               
+               
+               inline void setSolution(const int& solution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solution = solution;
+               }
+               
+               
+               
+               inline int getSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAverages;
+               }
+               
+               
+               
+               inline void setSolutionAverages(const int& solutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAverages = solutionAverages;
+               }
+               
+               
+               
+               inline int getSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressed;
+               }
+               
+               
+               
+               inline void setSolutionCompressed(const int& solutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressed = solutionCompressed;
+               }
+               
+               
+               
+               inline int getPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolution;
+               }
+               
+               
+               
+               inline void setPreviousSolution(const int& previousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolution = previousSolution;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAverages;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAverages = previousSolutionAverages;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressed;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressed = previousSolutionCompressed;
+               }
+               
+               
+               
+               inline int getUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _update;
+               }
+               
+               
+               
+               inline void setUpdate(const int& update) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _update = update;
+               }
+               
+               
+               
+               inline int getUpdateAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAverages;
+               }
+               
+               
+               
+               inline void setUpdateAverages(const int& updateAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAverages = updateAverages;
+               }
+               
+               
+               
+               inline int getUpdateCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressed;
+               }
+               
+               
+               
+               inline void setUpdateCompressed(const int& updateCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressed = updateCompressed;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictor;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictor = extrapolatedPredictor;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAverages = extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline int getFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuation;
+               }
+               
+               
+               
+               inline void setFluctuation(const int& fluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuation = fluctuation;
+               }
+               
+               
+               
+               inline int getFluctuationAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAverages;
+               }
+               
+               
+               
+               inline void setFluctuationAverages(const int& fluctuationAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAverages = fluctuationAverages;
+               }
+               
+               
+               
+               inline int getFluctuationCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressed;
+               }
+               
+               
+               
+               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressed = fluctuationCompressed;
+               }
+               
+               
+               
+               inline int getSolutionMin() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMin;
+               }
+               
+               
+               
+               inline void setSolutionMin(const int& solutionMin) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMin = solutionMin;
+               }
+               
+               
+               
+               inline int getSolutionMax() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMax;
+               }
+               
+               
+               
+               inline void setSolutionMax(const int& solutionMax) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMax = solutionMax;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _facewiseAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _facewiseAugmentationStatus = (facewiseAugmentationStatus);
+               }
+               
+               
+               
+               inline int getAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _augmentationStatus;
+               }
+               
+               
+               
+               inline void setAugmentationStatus(const int& augmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _augmentationStatus = augmentationStatus;
+               }
+               
+               
+               
+               inline int getPreviousAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousAugmentationStatus;
+               }
+               
+               
+               
+               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousAugmentationStatus = previousAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _facewiseCommunicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _facewiseCommunicationStatus = (facewiseCommunicationStatus);
+               }
+               
+               
+               
+               inline int getCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _communicationStatus;
+               }
+               
+               
+               
+               inline void setCommunicationStatus(const int& communicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _communicationStatus = communicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _facewiseRefinementStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _facewiseRefinementStatus = (facewiseRefinementStatus);
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline int getRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementStatus;
+               }
+               
+               
+               
+               inline void setRefinementStatus(const int& refinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementStatus = refinementStatus;
+               }
+               
+               
+               
+               inline int getPreviousRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousRefinementStatus;
+               }
+               
+               
+               
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline int getIterationsToCureTroubledCell() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _iterationsToCureTroubledCell = iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline CompressionState getCompressionState() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   assertion(( tmp >= 0 &&  tmp <= 2));
+   return (CompressionState) tmp;
+               }
+               
+               
+               
+               inline void setCompressionState(const CompressionState& compressionState) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((compressionState >= 0 && compressionState <= 2));
+   int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+               }
+               
+               
+               
+            };
+            private: 
+               PersistentRecords _persistentRecords;
+               
+            public:
+               /**
+                * Generated
+                */
+               ADERDGCellDescriptionPacked();
+               
+               /**
+                * Generated
+                */
+               ADERDGCellDescriptionPacked(const PersistentRecords& persistentRecords);
+               
+               /**
+                * Generated
+                */
+               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               
+               /**
+                * Generated
+                */
+               ~ADERDGCellDescriptionPacked();
+               
+               
+               inline int getSolverNumber() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solverNumber;
+               }
+               
+               
+               
+               inline void setSolverNumber(const int& solverNumber) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solverNumber = solverNumber;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
+                  mask = static_cast<int>(mask << (0));
+                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+                  tmp = static_cast<int>(tmp >> (0));
+                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
+                  return result;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
+                  mask = static_cast<int>(mask << (0));
+                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               }
+               
+               
+               
+               inline bool getNeighbourMergePerformed(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
+                  mask = mask << elementIndex;
+                  return (_persistentRecords._packedRecords0& mask);
+               }
+               
+               
+               
+               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
+                  int shift        = 0 + elementIndex; 
+                  int mask         = 1     << (shift);
+                  int shiftedValue = neighbourMergePerformed << (shift);
+                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
+                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
+               }
+               
+               
+               
+               inline void flipNeighbourMergePerformed(int elementIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  int mask = 1 << (0);
+                  mask = mask << elementIndex;
+                  _persistentRecords._packedRecords0^= mask;
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
+               }
+               
+               
+               
+               inline bool getAdjacentToRemoteRank() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO + 1);
+   _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
+               }
+               
+               
+               
+               inline bool getHasToHoldDataForMasterWorkerCommunication() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._hasToHoldDataForMasterWorkerCommunication;
+               }
+               
+               
+               
+               inline void setHasToHoldDataForMasterWorkerCommunication(const bool& hasToHoldDataForMasterWorkerCommunication) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._hasToHoldDataForMasterWorkerCommunication = hasToHoldDataForMasterWorkerCommunication;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFaceDataExchangeCounter() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._faceDataExchangeCounter;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFaceDataExchangeCounter(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._faceDataExchangeCounter = (faceDataExchangeCounter);
+               }
+               
+               
+               
+               inline int getFaceDataExchangeCounter(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._faceDataExchangeCounter[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFaceDataExchangeCounter(int elementIndex, const int& faceDataExchangeCounter) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._faceDataExchangeCounter[elementIndex]= faceDataExchangeCounter;
+                  
+               }
+               
+               
+               
+               inline int getParentIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._parentIndex;
+               }
+               
+               
+               
+               inline void setParentIndex(const int& parentIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._parentIndex = parentIndex;
+               }
+               
+               
+               
+               inline int getParentCellLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._parentCellLevel;
+               }
+               
+               
+               
+               inline void setParentCellLevel(const int& parentCellLevel) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._parentCellLevel = parentCellLevel;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._parentOffset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._parentOffset = (parentOffset);
+               }
+               
+               
+               
+               inline double getParentOffset(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  return _persistentRecords._parentOffset[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setParentOffset(int elementIndex, const double& parentOffset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
+                  
+               }
+               
+               
+               
+               inline bool getHasVirtualChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._hasVirtualChildren;
+               }
+               
+               
+               
+               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._hasVirtualChildren = hasVirtualChildren;
+               }
+               
+               
+               
+               inline Type getType() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   assertion(( tmp >= 0 &&  tmp <= 3));
+   return (Type) tmp;
+               }
+               
+               
+               
+               inline void setType(const Type& type) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((type >= 0 && type <= 3));
+   int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 2));
+               }
+               
+               
+               
+               inline RefinementEvent getRefinementEvent() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (4)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 4));
+   assertion(( tmp >= 0 &&  tmp <= 14));
+   return (RefinementEvent) tmp;
+               }
+               
+               
+               
+               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
+   int mask =  (1 << (4)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 4));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 4));
+               }
+               
+               
+               
+               inline int getLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._level;
+               }
+               
+               
+               
+               inline void setLevel(const int& level) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._level = level;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._offset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._offset = (offset);
+               }
+               
+               
+               
+               inline double getOffset(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  return _persistentRecords._offset[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setOffset(int elementIndex, const double& offset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  _persistentRecords._offset[elementIndex]= offset;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._size;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._size = (size);
+               }
+               
+               
+               
+               inline double getSize(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  return _persistentRecords._size[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setSize(int elementIndex, const double& size) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  _persistentRecords._size[elementIndex]= size;
+                  
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._correctorTimeStepSize;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._correctorTimeStamp;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._correctorTimeStamp = correctorTimeStamp;
+               }
+               
+               
+               
+               inline double getPredictorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._predictorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
+               }
+               
+               
+               
+               inline double getPredictorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._predictorTimeStamp;
+               }
+               
+               
+               
+               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._predictorTimeStamp = predictorTimeStamp;
+               }
+               
+               
+               
+               inline int getSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solution;
+               }
+               
+               
+               
+               inline void setSolution(const int& solution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solution = solution;
+               }
+               
+               
+               
+               inline int getSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAverages;
+               }
+               
+               
+               
+               inline void setSolutionAverages(const int& solutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAverages = solutionAverages;
+               }
+               
+               
+               
+               inline int getSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressed;
+               }
+               
+               
+               
+               inline void setSolutionCompressed(const int& solutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressed = solutionCompressed;
+               }
+               
+               
+               
+               inline int getPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolution;
+               }
+               
+               
+               
+               inline void setPreviousSolution(const int& previousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolution = previousSolution;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAverages;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAverages = previousSolutionAverages;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressed;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressed = previousSolutionCompressed;
+               }
+               
+               
+               
+               inline int getUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._update;
+               }
+               
+               
+               
+               inline void setUpdate(const int& update) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._update = update;
+               }
+               
+               
+               
+               inline int getUpdateAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAverages;
+               }
+               
+               
+               
+               inline void setUpdateAverages(const int& updateAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAverages = updateAverages;
+               }
+               
+               
+               
+               inline int getUpdateCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressed;
+               }
+               
+               
+               
+               inline void setUpdateCompressed(const int& updateCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressed = updateCompressed;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictor;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictor = extrapolatedPredictor;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAverages = extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline int getFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuation;
+               }
+               
+               
+               
+               inline void setFluctuation(const int& fluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuation = fluctuation;
+               }
+               
+               
+               
+               inline int getFluctuationAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAverages;
+               }
+               
+               
+               
+               inline void setFluctuationAverages(const int& fluctuationAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAverages = fluctuationAverages;
+               }
+               
+               
+               
+               inline int getFluctuationCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressed;
+               }
+               
+               
+               
+               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressed = fluctuationCompressed;
+               }
+               
+               
+               
+               inline int getSolutionMin() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMin;
+               }
+               
+               
+               
+               inline void setSolutionMin(const int& solutionMin) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMin = solutionMin;
+               }
+               
+               
+               
+               inline int getSolutionMax() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMax;
+               }
+               
+               
+               
+               inline void setSolutionMax(const int& solutionMax) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMax = solutionMax;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._facewiseAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._facewiseAugmentationStatus = (facewiseAugmentationStatus);
+               }
+               
+               
+               
+               inline int getFacewiseAugmentationStatus(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._facewiseAugmentationStatus[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFacewiseAugmentationStatus(int elementIndex, const int& facewiseAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._facewiseAugmentationStatus[elementIndex]= facewiseAugmentationStatus;
+                  
+               }
+               
+               
+               
+               inline int getAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._augmentationStatus;
+               }
+               
+               
+               
+               inline void setAugmentationStatus(const int& augmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._augmentationStatus = augmentationStatus;
+               }
+               
+               
+               
+               inline int getPreviousAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousAugmentationStatus;
+               }
+               
+               
+               
+               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousAugmentationStatus = previousAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._facewiseCommunicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._facewiseCommunicationStatus = (facewiseCommunicationStatus);
+               }
+               
+               
+               
+               inline int getFacewiseCommunicationStatus(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._facewiseCommunicationStatus[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFacewiseCommunicationStatus(int elementIndex, const int& facewiseCommunicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._facewiseCommunicationStatus[elementIndex]= facewiseCommunicationStatus;
+                  
+               }
+               
+               
+               
+               inline int getCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._communicationStatus;
+               }
+               
+               
+               
+               inline void setCommunicationStatus(const int& communicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._communicationStatus = communicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._facewiseRefinementStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
+               }
+               
+               
+               
+               inline int getFacewiseRefinementStatus(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._facewiseRefinementStatus[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
+                  
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline int getRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementStatus;
+               }
+               
+               
+               
+               inline void setRefinementStatus(const int& refinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementStatus = refinementStatus;
+               }
+               
+               
+               
+               inline int getPreviousRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousRefinementStatus;
+               }
+               
+               
+               
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline int getIterationsToCureTroubledCell() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._iterationsToCureTroubledCell = iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline CompressionState getCompressionState() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   assertion(( tmp >= 0 &&  tmp <= 2));
+   return (CompressionState) tmp;
+               }
+               
+               
+               
+               inline void setCompressionState(const CompressionState& compressionState) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((compressionState >= 0 && compressionState <= 2));
+   int mask =  (1 << (2)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 8));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 10));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 10));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 10));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 13));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 13));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 13));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 16));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 16));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 16));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 19));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 19));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 19));
+               }
+               
+               
+               
+               inline int getBytesPerDoFInFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 22));
+   tmp = tmp + 1;
+   assertion(( tmp >= 1 &&  tmp <= 7));
+   return (int) tmp;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
+   int mask =  (1 << (3)) - 1;
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 22));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 22));
+               }
+               
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const Type& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getTypeMapping();
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const RefinementEvent& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getRefinementEventMapping();
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const CompressionState& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getCompressionStateMapping();
+               
+               /**
+                * Generated
+                */
+               std::string toString() const;
+               
+               /**
+                * Generated
+                */
+               void toString(std::ostream& out) const;
+               
+               
+               PersistentRecords getPersistentRecords() const;
+               /**
+                * Generated
+                */
+               ADERDGCellDescription convert() const;
+               
+               
+            #ifdef Parallel
+               protected:
+                  static tarch::logging::Log _log;
+                  
+               public:
+                  
+                  /**
+                   * Global that represents the mpi datatype.
+                   * There are two variants: Datatype identifies only those attributes marked with
+                   * parallelise. FullDatatype instead identifies the whole record with all fields.
+                   */
+                  static MPI_Datatype Datatype;
+                  static MPI_Datatype FullDatatype;
+                  
+                  /**
+                   * Initializes the data type for the mpi operations. Has to be called
+                   * before the very first send or receive operation is called.
+                   */
+                  static void initDatatype();
+                  
+                  static void shutdownDatatype();
+                  
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
+                  
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
+                  
+                  #endif
+         
+      };
+      
+      #ifdef PackedRecords
+      #pragma pack (pop)
+      #endif
+      
+      
+      
+   #elif defined(Asserts) && !defined(Parallel)
+      /**
+       * @author This class is generated by DaStGen
+       * 		   DataStructureGenerator (DaStGen)
+       * 		   2007-2009 Wolfgang Eckhardt
+       * 		   2012      Tobias Weinzierl
+       *
+       * 		   build date: 09-02-2014 14:40
+       *
+       * @date   01/09/2018 15:55
+       */
+      class exahype::records::ADERDGCellDescription { 
+         
+         public:
+            
+            typedef exahype::records::ADERDGCellDescriptionPacked Packed;
+            
+            enum CompressionState {
+               Uncompressed = 0, CurrentlyProcessed = 1, Compressed = 2
+            };
+            
+            enum Creation {
+               NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4, ReceivedFromWorker = 5
+            };
+            
+            enum RefinementEvent {
+               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
+            };
+            
+            enum Type {
+               Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
+            };
+            
+            struct PersistentRecords {
+               int _solverNumber;
+               #ifdef UseManualAlignment
+               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
+               #else
+               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
+               #endif
+               bool _hasCompletedTimeStep;
+               int _parentIndex;
+               int _parentCellLevel;
+               #ifdef UseManualAlignment
+               tarch::la::Vector<DIMENSIONS,double> _parentOffset __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
+               #endif
+               bool _hasVirtualChildren;
+               Type _type;
+               RefinementEvent _refinementEvent;
+               int _level;
+               #ifdef UseManualAlignment
+               tarch::la::Vector<DIMENSIONS,double> _offset __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<DIMENSIONS,double> _offset;
+               #endif
+               #ifdef UseManualAlignment
+               tarch::la::Vector<DIMENSIONS,double> _size __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<DIMENSIONS,double> _size;
+               #endif
+               double _previousCorrectorTimeStamp;
+               double _previousCorrectorTimeStepSize;
+               double _correctorTimeStepSize;
+               double _correctorTimeStamp;
+               double _predictorTimeStepSize;
+               double _predictorTimeStamp;
+               int _solution;
+               int _solutionAverages;
+               int _solutionCompressed;
+               int _previousSolution;
+               int _previousSolutionAverages;
+               int _previousSolutionCompressed;
+               int _update;
+               int _updateAverages;
+               int _updateCompressed;
+               int _extrapolatedPredictor;
+               int _extrapolatedPredictorAverages;
+               int _extrapolatedPredictorCompressed;
+               int _fluctuation;
+               int _fluctuationAverages;
+               int _fluctuationCompressed;
+               int _solutionMin;
+               int _solutionMax;
+               #ifdef UseManualAlignment
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
+               #endif
+               int _augmentationStatus;
+               int _previousAugmentationStatus;
+               #ifdef UseManualAlignment
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
+               #endif
+               int _communicationStatus;
+               #ifdef UseManualAlignment
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus __attribute__((aligned(VectorisationAlignment)));
+               #else
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
+               #endif
+               bool _refinementFlag;
+               int _refinementStatus;
+               int _previousRefinementStatus;
+               int _iterationsToCureTroubledCell;
+               CompressionState _compressionState;
+               int _bytesPerDoFInPreviousSolution;
+               int _bytesPerDoFInSolution;
+               int _bytesPerDoFInUpdate;
+               int _bytesPerDoFInExtrapolatedPredictor;
+               int _bytesPerDoFInFluctuation;
+               Creation _creation;
+               /**
+                * Generated
+                */
+               PersistentRecords();
+               
+               /**
+                * Generated
+                */
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               
+               
+               inline int getSolverNumber() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solverNumber;
+               }
+               
+               
+               
+               inline void setSolverNumber(const int& solverNumber) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solverNumber = solverNumber;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _neighbourMergePerformed;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _neighbourMergePerformed = (neighbourMergePerformed);
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _hasCompletedTimeStep = hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline int getParentIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _parentIndex;
+               }
+               
+               
+               
+               inline void setParentIndex(const int& parentIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _parentIndex = parentIndex;
+               }
+               
+               
+               
+               inline int getParentCellLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _parentCellLevel;
+               }
+               
+               
+               
+               inline void setParentCellLevel(const int& parentCellLevel) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _parentCellLevel = parentCellLevel;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _parentOffset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _parentOffset = (parentOffset);
+               }
+               
+               
+               
+               inline bool getHasVirtualChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _hasVirtualChildren;
+               }
+               
+               
+               
+               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _hasVirtualChildren = hasVirtualChildren;
+               }
+               
+               
+               
+               inline Type getType() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _type;
+               }
+               
+               
+               
+               inline void setType(const Type& type) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _type = type;
+               }
+               
+               
+               
+               inline RefinementEvent getRefinementEvent() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementEvent;
+               }
+               
+               
+               
+               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementEvent = refinementEvent;
+               }
+               
+               
+               
+               inline int getLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _level;
+               }
+               
+               
+               
+               inline void setLevel(const int& level) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _level = level;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _offset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _offset = (offset);
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _size;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _size = (size);
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _correctorTimeStepSize;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _correctorTimeStepSize = correctorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _correctorTimeStamp;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _correctorTimeStamp = correctorTimeStamp;
+               }
+               
+               
+               
+               inline double getPredictorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _predictorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _predictorTimeStepSize = predictorTimeStepSize;
+               }
+               
+               
+               
+               inline double getPredictorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _predictorTimeStamp;
+               }
+               
+               
+               
+               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _predictorTimeStamp = predictorTimeStamp;
+               }
+               
+               
+               
+               inline int getSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solution;
+               }
+               
+               
+               
+               inline void setSolution(const int& solution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solution = solution;
+               }
+               
+               
+               
+               inline int getSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionAverages;
+               }
+               
+               
+               
+               inline void setSolutionAverages(const int& solutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionAverages = solutionAverages;
+               }
+               
+               
+               
+               inline int getSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionCompressed;
+               }
+               
+               
+               
+               inline void setSolutionCompressed(const int& solutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionCompressed = solutionCompressed;
+               }
+               
+               
+               
+               inline int getPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolution;
+               }
+               
+               
+               
+               inline void setPreviousSolution(const int& previousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolution = previousSolution;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionAverages;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionAverages = previousSolutionAverages;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousSolutionCompressed;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousSolutionCompressed = previousSolutionCompressed;
+               }
+               
+               
+               
+               inline int getUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _update;
+               }
+               
+               
+               
+               inline void setUpdate(const int& update) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _update = update;
+               }
+               
+               
+               
+               inline int getUpdateAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateAverages;
+               }
+               
+               
+               
+               inline void setUpdateAverages(const int& updateAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateAverages = updateAverages;
+               }
+               
+               
+               
+               inline int getUpdateCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _updateCompressed;
+               }
+               
+               
+               
+               inline void setUpdateCompressed(const int& updateCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _updateCompressed = updateCompressed;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictor;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictor = extrapolatedPredictor;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorAverages = extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline int getFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuation;
+               }
+               
+               
+               
+               inline void setFluctuation(const int& fluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuation = fluctuation;
+               }
+               
+               
+               
+               inline int getFluctuationAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationAverages;
+               }
+               
+               
+               
+               inline void setFluctuationAverages(const int& fluctuationAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationAverages = fluctuationAverages;
+               }
+               
+               
+               
+               inline int getFluctuationCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _fluctuationCompressed;
+               }
+               
+               
+               
+               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _fluctuationCompressed = fluctuationCompressed;
+               }
+               
+               
+               
+               inline int getSolutionMin() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMin;
+               }
+               
+               
+               
+               inline void setSolutionMin(const int& solutionMin) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMin = solutionMin;
+               }
+               
+               
+               
+               inline int getSolutionMax() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solutionMax;
+               }
+               
+               
+               
+               inline void setSolutionMax(const int& solutionMax) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solutionMax = solutionMax;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _facewiseAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _facewiseAugmentationStatus = (facewiseAugmentationStatus);
+               }
+               
+               
+               
+               inline int getAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _augmentationStatus;
+               }
+               
+               
+               
+               inline void setAugmentationStatus(const int& augmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _augmentationStatus = augmentationStatus;
+               }
+               
+               
+               
+               inline int getPreviousAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousAugmentationStatus;
+               }
+               
+               
+               
+               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousAugmentationStatus = previousAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _facewiseCommunicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _facewiseCommunicationStatus = (facewiseCommunicationStatus);
+               }
+               
+               
+               
+               inline int getCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _communicationStatus;
+               }
+               
+               
+               
+               inline void setCommunicationStatus(const int& communicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _communicationStatus = communicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _facewiseRefinementStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _facewiseRefinementStatus = (facewiseRefinementStatus);
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline int getRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _refinementStatus;
+               }
+               
+               
+               
+               inline void setRefinementStatus(const int& refinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _refinementStatus = refinementStatus;
+               }
+               
+               
+               
+               inline int getPreviousRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _previousRefinementStatus;
+               }
+               
+               
+               
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline int getIterationsToCureTroubledCell() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _iterationsToCureTroubledCell = iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline CompressionState getCompressionState() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _compressionState;
+               }
+               
+               
+               
+               inline void setCompressionState(const CompressionState& compressionState) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _compressionState = compressionState;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _bytesPerDoFInPreviousSolution;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _bytesPerDoFInPreviousSolution = bytesPerDoFInPreviousSolution;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _bytesPerDoFInSolution;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _bytesPerDoFInSolution = bytesPerDoFInSolution;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _bytesPerDoFInUpdate;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _bytesPerDoFInUpdate = bytesPerDoFInUpdate;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _bytesPerDoFInExtrapolatedPredictor;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _bytesPerDoFInExtrapolatedPredictor = bytesPerDoFInExtrapolatedPredictor;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _bytesPerDoFInFluctuation;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _bytesPerDoFInFluctuation = bytesPerDoFInFluctuation;
+               }
+               
+               
+               
+               inline Creation getCreation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _creation;
+               }
+               
+               
+               
+               inline void setCreation(const Creation& creation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _creation = creation;
+               }
+               
+               
+               
+            };
+            private: 
+               PersistentRecords _persistentRecords;
+               
+            public:
+               /**
+                * Generated
+                */
+               ADERDGCellDescription();
+               
+               /**
+                * Generated
+                */
+               ADERDGCellDescription(const PersistentRecords& persistentRecords);
+               
+               /**
+                * Generated
+                */
+               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               
+               /**
+                * Generated
+                */
+               ~ADERDGCellDescription();
+               
+               
+               inline int getSolverNumber() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solverNumber;
+               }
+               
+               
+               
+               inline void setSolverNumber(const int& solverNumber) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solverNumber = solverNumber;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._neighbourMergePerformed;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
+               }
+               
+               
+               
+               inline bool getNeighbourMergePerformed(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._neighbourMergePerformed[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
+                  
+               }
+               
+               
+               
+               inline void flipNeighbourMergePerformed(int elementIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._hasCompletedTimeStep = hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline int getParentIndex() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._parentIndex;
+               }
+               
+               
+               
+               inline void setParentIndex(const int& parentIndex) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._parentIndex = parentIndex;
+               }
+               
+               
+               
+               inline int getParentCellLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._parentCellLevel;
+               }
+               
+               
+               
+               inline void setParentCellLevel(const int& parentCellLevel) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._parentCellLevel = parentCellLevel;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._parentOffset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._parentOffset = (parentOffset);
+               }
+               
+               
+               
+               inline double getParentOffset(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  return _persistentRecords._parentOffset[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setParentOffset(int elementIndex, const double& parentOffset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
+                  
+               }
+               
+               
+               
+               inline bool getHasVirtualChildren() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._hasVirtualChildren;
+               }
+               
+               
+               
+               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._hasVirtualChildren = hasVirtualChildren;
+               }
+               
+               
+               
+               inline Type getType() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._type;
+               }
+               
+               
+               
+               inline void setType(const Type& type) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._type = type;
+               }
+               
+               
+               
+               inline RefinementEvent getRefinementEvent() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementEvent;
+               }
+               
+               
+               
+               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementEvent = refinementEvent;
+               }
+               
+               
+               
+               inline int getLevel() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._level;
+               }
+               
+               
+               
+               inline void setLevel(const int& level) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._level = level;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._offset;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._offset = (offset);
+               }
+               
+               
+               
+               inline double getOffset(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  return _persistentRecords._offset[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setOffset(int elementIndex, const double& offset) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  _persistentRecords._offset[elementIndex]= offset;
+                  
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._size;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._size = (size);
+               }
+               
+               
+               
+               inline double getSize(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  return _persistentRecords._size[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setSize(int elementIndex, const double& size) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS);
+                  _persistentRecords._size[elementIndex]= size;
+                  
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
+               }
+               
+               
+               
+               inline double getPreviousCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._correctorTimeStepSize;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
+               }
+               
+               
+               
+               inline double getCorrectorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._correctorTimeStamp;
+               }
+               
+               
+               
+               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._correctorTimeStamp = correctorTimeStamp;
+               }
+               
+               
+               
+               inline double getPredictorTimeStepSize() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._predictorTimeStepSize;
+               }
+               
+               
+               
+               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
+               }
+               
+               
+               
+               inline double getPredictorTimeStamp() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._predictorTimeStamp;
+               }
+               
+               
+               
+               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._predictorTimeStamp = predictorTimeStamp;
+               }
+               
+               
+               
+               inline int getSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solution;
+               }
+               
+               
+               
+               inline void setSolution(const int& solution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solution = solution;
+               }
+               
+               
+               
+               inline int getSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionAverages;
+               }
+               
+               
+               
+               inline void setSolutionAverages(const int& solutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionAverages = solutionAverages;
+               }
+               
+               
+               
+               inline int getSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionCompressed;
+               }
+               
+               
+               
+               inline void setSolutionCompressed(const int& solutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionCompressed = solutionCompressed;
+               }
+               
+               
+               
+               inline int getPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolution;
+               }
+               
+               
+               
+               inline void setPreviousSolution(const int& previousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolution = previousSolution;
+               }
+               
+               
+               
+               inline int getPreviousSolutionAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionAverages;
+               }
+               
+               
+               
+               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionAverages = previousSolutionAverages;
+               }
+               
+               
+               
+               inline int getPreviousSolutionCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousSolutionCompressed;
+               }
+               
+               
+               
+               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousSolutionCompressed = previousSolutionCompressed;
+               }
+               
+               
+               
+               inline int getUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._update;
+               }
+               
+               
+               
+               inline void setUpdate(const int& update) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._update = update;
+               }
+               
+               
+               
+               inline int getUpdateAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateAverages;
+               }
+               
+               
+               
+               inline void setUpdateAverages(const int& updateAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateAverages = updateAverages;
+               }
+               
+               
+               
+               inline int getUpdateCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._updateCompressed;
+               }
+               
+               
+               
+               inline void setUpdateCompressed(const int& updateCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._updateCompressed = updateCompressed;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictor;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictor = extrapolatedPredictor;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorAverages = extrapolatedPredictorAverages;
+               }
+               
+               
+               
+               inline int getExtrapolatedPredictorCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
+               }
+               
+               
+               
+               inline int getFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuation;
+               }
+               
+               
+               
+               inline void setFluctuation(const int& fluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuation = fluctuation;
+               }
+               
+               
+               
+               inline int getFluctuationAverages() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationAverages;
+               }
+               
+               
+               
+               inline void setFluctuationAverages(const int& fluctuationAverages) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationAverages = fluctuationAverages;
+               }
+               
+               
+               
+               inline int getFluctuationCompressed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._fluctuationCompressed;
+               }
+               
+               
+               
+               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._fluctuationCompressed = fluctuationCompressed;
+               }
+               
+               
+               
+               inline int getSolutionMin() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMin;
+               }
+               
+               
+               
+               inline void setSolutionMin(const int& solutionMin) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMin = solutionMin;
+               }
+               
+               
+               
+               inline int getSolutionMax() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._solutionMax;
+               }
+               
+               
+               
+               inline void setSolutionMax(const int& solutionMax) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._solutionMax = solutionMax;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._facewiseAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._facewiseAugmentationStatus = (facewiseAugmentationStatus);
+               }
+               
+               
+               
+               inline int getFacewiseAugmentationStatus(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._facewiseAugmentationStatus[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFacewiseAugmentationStatus(int elementIndex, const int& facewiseAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._facewiseAugmentationStatus[elementIndex]= facewiseAugmentationStatus;
+                  
+               }
+               
+               
+               
+               inline int getAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._augmentationStatus;
+               }
+               
+               
+               
+               inline void setAugmentationStatus(const int& augmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._augmentationStatus = augmentationStatus;
+               }
+               
+               
+               
+               inline int getPreviousAugmentationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousAugmentationStatus;
+               }
+               
+               
+               
+               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousAugmentationStatus = previousAugmentationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._facewiseCommunicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._facewiseCommunicationStatus = (facewiseCommunicationStatus);
+               }
+               
+               
+               
+               inline int getFacewiseCommunicationStatus(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._facewiseCommunicationStatus[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFacewiseCommunicationStatus(int elementIndex, const int& facewiseCommunicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._facewiseCommunicationStatus[elementIndex]= facewiseCommunicationStatus;
+                  
+               }
+               
+               
+               
+               inline int getCommunicationStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._communicationStatus;
+               }
+               
+               
+               
+               inline void setCommunicationStatus(const int& communicationStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._communicationStatus = communicationStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._facewiseRefinementStatus;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
+               }
+               
+               
+               
+               inline int getFacewiseRefinementStatus(int elementIndex) const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  return _persistentRecords._facewiseRefinementStatus[elementIndex];
+                  
+               }
+               
+               
+               
+               inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  assertion(elementIndex>=0);
+                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
+                  _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
+                  
+               }
+               
+               
+               
+               inline bool getRefinementFlag() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementFlag;
+               }
+               
+               
+               
+               inline void setRefinementFlag(const bool& refinementFlag) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementFlag = refinementFlag;
+               }
+               
+               
+               
+               inline int getRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._refinementStatus;
+               }
+               
+               
+               
+               inline void setRefinementStatus(const int& refinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._refinementStatus = refinementStatus;
+               }
+               
+               
+               
+               inline int getPreviousRefinementStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._previousRefinementStatus;
+               }
+               
+               
+               
+               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._previousRefinementStatus = previousRefinementStatus;
+               }
+               
+               
+               
+               inline int getIterationsToCureTroubledCell() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._iterationsToCureTroubledCell = iterationsToCureTroubledCell;
+               }
+               
+               
+               
+               inline CompressionState getCompressionState() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._compressionState;
+               }
+               
+               
+               
+               inline void setCompressionState(const CompressionState& compressionState) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._compressionState = compressionState;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInPreviousSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._bytesPerDoFInPreviousSolution;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._bytesPerDoFInPreviousSolution = bytesPerDoFInPreviousSolution;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInSolution() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._bytesPerDoFInSolution;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._bytesPerDoFInSolution = bytesPerDoFInSolution;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInUpdate() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._bytesPerDoFInUpdate;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._bytesPerDoFInUpdate = bytesPerDoFInUpdate;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInExtrapolatedPredictor() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._bytesPerDoFInExtrapolatedPredictor;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._bytesPerDoFInExtrapolatedPredictor = bytesPerDoFInExtrapolatedPredictor;
+               }
+               
+               
+               
+               inline int getBytesPerDoFInFluctuation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._bytesPerDoFInFluctuation;
+               }
+               
+               
+               
+               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._bytesPerDoFInFluctuation = bytesPerDoFInFluctuation;
+               }
+               
+               
+               
+               inline Creation getCreation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._creation;
+               }
+               
+               
+               
+               inline void setCreation(const Creation& creation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._creation = creation;
+               }
+               
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const CompressionState& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getCompressionStateMapping();
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const Creation& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getCreationMapping();
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const RefinementEvent& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getRefinementEventMapping();
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const Type& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getTypeMapping();
+               
+               /**
+                * Generated
+                */
+               std::string toString() const;
+               
+               /**
+                * Generated
+                */
+               void toString(std::ostream& out) const;
+               
+               
+               PersistentRecords getPersistentRecords() const;
+               /**
+                * Generated
+                */
+               ADERDGCellDescriptionPacked convert() const;
+               
+               
+            #ifdef Parallel
+               protected:
+                  static tarch::logging::Log _log;
+                  
+               public:
+                  
+                  /**
+                   * Global that represents the mpi datatype.
+                   * There are two variants: Datatype identifies only those attributes marked with
+                   * parallelise. FullDatatype instead identifies the whole record with all fields.
+                   */
+                  static MPI_Datatype Datatype;
+                  static MPI_Datatype FullDatatype;
+                  
+                  /**
+                   * Initializes the data type for the mpi operations. Has to be called
+                   * before the very first send or receive operation is called.
+                   */
+                  static void initDatatype();
+                  
+                  static void shutdownDatatype();
+                  
+                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
+                  
+                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
+                  
+                  static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
+                  
+                  #endif
+         
+      };
+      
+      #ifndef DaStGenPackedPadding
+        #define DaStGenPackedPadding 1      // 32 bit version
+        // #define DaStGenPackedPadding 2   // 64 bit version
+      #endif
+      
+      
+      #ifdef PackedRecords
+         #pragma pack (push, DaStGenPackedPadding)
+      #endif
+      
+      /**
+       * @author This class is generated by DaStGen
+       * 		   DataStructureGenerator (DaStGen)
+       * 		   2007-2009 Wolfgang Eckhardt
+       * 		   2012      Tobias Weinzierl
+       *
+       * 		   build date: 09-02-2014 14:40
+       *
+       * @date   01/09/2018 15:55
+       */
+      class exahype::records::ADERDGCellDescriptionPacked { 
+         
+         public:
+            
+            typedef exahype::records::ADERDGCellDescription::Type Type;
+            
+            typedef exahype::records::ADERDGCellDescription::RefinementEvent RefinementEvent;
+            
+            typedef exahype::records::ADERDGCellDescription::CompressionState CompressionState;
+            
+            typedef exahype::records::ADERDGCellDescription::Creation Creation;
+            
+            struct PersistentRecords {
+               int _solverNumber;
+               int _parentIndex;
+               int _parentCellLevel;
+               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
+               bool _hasVirtualChildren;
+               int _level;
+               tarch::la::Vector<DIMENSIONS,double> _offset;
+               tarch::la::Vector<DIMENSIONS,double> _size;
+               double _previousCorrectorTimeStamp;
+               double _previousCorrectorTimeStepSize;
+               double _correctorTimeStepSize;
+               double _correctorTimeStamp;
+               double _predictorTimeStepSize;
+               double _predictorTimeStamp;
+               int _solution;
+               int _solutionAverages;
+               int _solutionCompressed;
+               int _previousSolution;
+               int _previousSolutionAverages;
+               int _previousSolutionCompressed;
+               int _update;
+               int _updateAverages;
+               int _updateCompressed;
+               int _extrapolatedPredictor;
+               int _extrapolatedPredictorAverages;
+               int _extrapolatedPredictorCompressed;
+               int _fluctuation;
+               int _fluctuationAverages;
+               int _fluctuationCompressed;
+               int _solutionMin;
+               int _solutionMax;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
+               int _augmentationStatus;
+               int _previousAugmentationStatus;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
+               int _communicationStatus;
+               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
+               bool _refinementFlag;
+               int _refinementStatus;
+               int _previousRefinementStatus;
+               int _iterationsToCureTroubledCell;
+               Creation _creation;
+               
+               /** mapping of records:
+               || Member 	|| startbit 	|| length
+                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
+                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
+                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
+                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 4
+                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 7	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 3
+                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 12	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 15	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 18	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 21	| #bits 3
+                */
+               int _packedRecords0;
+               
+               /**
+                * Generated
+                */
+               PersistentRecords();
+               
+               /**
+                * Generated
+                */
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
+               
+               
+               inline int getSolverNumber() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _solverNumber;
+               }
+               
+               
+               
+               inline void setSolverNumber(const int& solverNumber) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _solverNumber = solverNumber;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
+                  mask = static_cast<int>(mask << (0));
+                  int tmp = static_cast<int>(_packedRecords0 & mask);
+                  tmp = static_cast<int>(tmp >> (0));
+                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
+                  return result;
+               }
+               
+               
+               
+               /**
+                * Generated and optimized
+                * 
+                * If you realise a for loop using exclusively arrays (vectors) and compile 
+                * with -DUseManualAlignment you may add 
+                * \code
+                #pragma vector aligned
+                #pragma simd
+                \endcode to this for loop to enforce your compiler to use SSE/AVX.
+                * 
+                * The alignment is tied to the unpacked records, i.e. for packed class
+                * variants the machine's natural alignment is switched off to recude the  
+                * memory footprint. Do not use any SSE/AVX operations or 
+                * vectorisation on the result for the packed variants, as the data is misaligned. 
+                * If you rely on vectorisation, convert the underlying record 
+                * into the unpacked version first. 
+                * 
+                * @see convert()
+                */
+               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
+                  mask = static_cast<int>(mask << (0));
+                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
+                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
                
@@ -11577,6 +17883,26 @@ namespace exahype {
                
                
                
+               inline Creation getCreation() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _creation;
+               }
+               
+               
+               
+               inline void setCreation(const Creation& creation) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _creation = creation;
+               }
+               
+               
+               
             };
             private: 
                PersistentRecords _persistentRecords;
@@ -11595,32 +17921,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& adjacentToRemoteRank, const bool& hasToHoldDataForMasterWorkerCommunication, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
                
                /**
                 * Generated
                 */
                ~ADERDGCellDescriptionPacked();
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._stpStatus = stpStatus;
-               }
-               
                
                
                inline int getSolverNumber() const 
@@ -11754,7 +18060,7 @@ namespace exahype {
                
                
                
-               inline bool getAdjacentToRemoteRank() const 
+               inline bool getHasCompletedTimeStep() const 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
@@ -11766,117 +18072,13 @@ namespace exahype {
                
                
                
-               inline void setAdjacentToRemoteRank(const bool& adjacentToRemoteRank) 
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
  #ifdef UseManualInlining
  __attribute__((always_inline))
  #endif 
  {
                   int mask = 1 << (DIMENSIONS_TIMES_TWO);
-   _persistentRecords._packedRecords0 = static_cast<int>( adjacentToRemoteRank ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
-               }
-               
-               
-               
-               inline bool getHasToHoldDataForMasterWorkerCommunication() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._hasToHoldDataForMasterWorkerCommunication;
-               }
-               
-               
-               
-               inline void setHasToHoldDataForMasterWorkerCommunication(const bool& hasToHoldDataForMasterWorkerCommunication) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._hasToHoldDataForMasterWorkerCommunication = hasToHoldDataForMasterWorkerCommunication;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFaceDataExchangeCounter() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._faceDataExchangeCounter;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFaceDataExchangeCounter(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._faceDataExchangeCounter = (faceDataExchangeCounter);
-               }
-               
-               
-               
-               inline int getFaceDataExchangeCounter(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._faceDataExchangeCounter[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFaceDataExchangeCounter(int elementIndex, const int& faceDataExchangeCounter) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._faceDataExchangeCounter[elementIndex]= faceDataExchangeCounter;
-                  
+   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
                
@@ -13301,3044 +19503,6 @@ namespace exahype {
                }
                
                
-               /**
-                * Generated
-                */
-               static std::string toString(const STPStatus& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSTPStatusMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const Type& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getTypeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const RefinementEvent& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getRefinementEventMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const CompressionState& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getCompressionStateMapping();
-               
-               /**
-                * Generated
-                */
-               std::string toString() const;
-               
-               /**
-                * Generated
-                */
-               void toString(std::ostream& out) const;
-               
-               
-               PersistentRecords getPersistentRecords() const;
-               /**
-                * Generated
-                */
-               ADERDGCellDescription convert() const;
-               
-               
-            #ifdef Parallel
-               protected:
-                  static tarch::logging::Log _log;
-                  
-               public:
-                  
-                  /**
-                   * Global that represents the mpi datatype.
-                   * There are two variants: Datatype identifies only those attributes marked with
-                   * parallelise. FullDatatype instead identifies the whole record with all fields.
-                   */
-                  static MPI_Datatype Datatype;
-                  static MPI_Datatype FullDatatype;
-                  
-                  /**
-                   * Initializes the data type for the mpi operations. Has to be called
-                   * before the very first send or receive operation is called.
-                   */
-                  static void initDatatype();
-                  
-                  static void shutdownDatatype();
-                  
-                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
-                  
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
-                  
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
-                  
-                  static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
-                  
-                  #endif
-         
-      };
-      
-      #ifdef PackedRecords
-      #pragma pack (pop)
-      #endif
-      
-      
-      
-   #elif defined(Asserts) && !defined(Parallel)
-      /**
-       * @author This class is generated by DaStGen
-       * 		   DataStructureGenerator (DaStGen)
-       * 		   2007-2009 Wolfgang Eckhardt
-       * 		   2012      Tobias Weinzierl
-       *
-       * 		   build date: 09-02-2014 14:40
-       *
-       * @date   01/09/2018 16:10
-       */
-      class exahype::records::ADERDGCellDescription { 
-         
-         public:
-            
-            typedef exahype::records::ADERDGCellDescriptionPacked Packed;
-            
-            enum CompressionState {
-               Uncompressed = 0, CurrentlyProcessed = 1, Compressed = 2
-            };
-            
-            enum Creation {
-               NotSpecified = 0, UniformRefinement = 1, AdaptiveRefinement = 2, AdaptiveCoarsening = 3, ReceivedDueToForkOrJoin = 4, ReceivedFromWorker = 5
-            };
-            
-            enum RefinementEvent {
-               None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
-            };
-            
-            enum STPStatus {
-               Triggered = 0, Compupting = 1, Computed = 2
-            };
-            
-            enum Type {
-               Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
-            };
-            
-            struct PersistentRecords {
-               STPStatus _stpStatus;
-               int _solverNumber;
-               #ifdef UseManualAlignment
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
-               #else
-               std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
-               #endif
-               int _parentIndex;
-               int _parentCellLevel;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
-               #endif
-               bool _hasVirtualChildren;
-               Type _type;
-               RefinementEvent _refinementEvent;
-               int _level;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS,double> _offset __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS,double> _offset;
-               #endif
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS,double> _size __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS,double> _size;
-               #endif
-               double _previousCorrectorTimeStamp;
-               double _previousCorrectorTimeStepSize;
-               double _correctorTimeStepSize;
-               double _correctorTimeStamp;
-               double _predictorTimeStepSize;
-               double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
-               #endif
-               int _augmentationStatus;
-               int _previousAugmentationStatus;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
-               #endif
-               int _communicationStatus;
-               #ifdef UseManualAlignment
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus __attribute__((aligned(VectorisationAlignment)));
-               #else
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
-               #endif
-               bool _refinementFlag;
-               int _refinementStatus;
-               int _previousRefinementStatus;
-               int _iterationsToCureTroubledCell;
-               CompressionState _compressionState;
-               int _bytesPerDoFInPreviousSolution;
-               int _bytesPerDoFInSolution;
-               int _bytesPerDoFInUpdate;
-               int _bytesPerDoFInExtrapolatedPredictor;
-               int _bytesPerDoFInFluctuation;
-               Creation _creation;
-               /**
-                * Generated
-                */
-               PersistentRecords();
-               
-               /**
-                * Generated
-                */
-               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _stpStatus = stpStatus;
-               }
-               
-               
-               
-               inline int getSolverNumber() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solverNumber;
-               }
-               
-               
-               
-               inline void setSolverNumber(const int& solverNumber) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solverNumber = solverNumber;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _neighbourMergePerformed;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _neighbourMergePerformed = (neighbourMergePerformed);
-               }
-               
-               
-               
-               inline int getParentIndex() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentIndex;
-               }
-               
-               
-               
-               inline void setParentIndex(const int& parentIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline bool getHasVirtualChildren() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _hasVirtualChildren;
-               }
-               
-               
-               
-               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _hasVirtualChildren = hasVirtualChildren;
-               }
-               
-               
-               
-               inline Type getType() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _type;
-               }
-               
-               
-               
-               inline void setType(const Type& type) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _type = type;
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementEvent;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementEvent = refinementEvent;
-               }
-               
-               
-               
-               inline int getLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _level;
-               }
-               
-               
-               
-               inline void setLevel(const int& level) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _level = level;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _offset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _offset = (offset);
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _size;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _size = (size);
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _correctorTimeStepSize;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _correctorTimeStepSize = correctorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _correctorTimeStamp;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStamp = predictorTimeStamp;
-               }
-               
-               
-               
-               inline int getSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solution;
-               }
-               
-               
-               
-               inline void setSolution(const int& solution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solution = solution;
-               }
-               
-               
-               
-               inline int getSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionAverages;
-               }
-               
-               
-               
-               inline void setSolutionAverages(const int& solutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionAverages = solutionAverages;
-               }
-               
-               
-               
-               inline int getSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionCompressed;
-               }
-               
-               
-               
-               inline void setSolutionCompressed(const int& solutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionCompressed = solutionCompressed;
-               }
-               
-               
-               
-               inline int getPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousSolution;
-               }
-               
-               
-               
-               inline void setPreviousSolution(const int& previousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousSolution = previousSolution;
-               }
-               
-               
-               
-               inline int getPreviousSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousSolutionAverages;
-               }
-               
-               
-               
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousSolutionAverages = previousSolutionAverages;
-               }
-               
-               
-               
-               inline int getPreviousSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousSolutionCompressed;
-               }
-               
-               
-               
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousSolutionCompressed = previousSolutionCompressed;
-               }
-               
-               
-               
-               inline int getUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _update;
-               }
-               
-               
-               
-               inline void setUpdate(const int& update) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _update = update;
-               }
-               
-               
-               
-               inline int getUpdateAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _updateAverages;
-               }
-               
-               
-               
-               inline void setUpdateAverages(const int& updateAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _updateAverages = updateAverages;
-               }
-               
-               
-               
-               inline int getUpdateCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _updateCompressed;
-               }
-               
-               
-               
-               inline void setUpdateCompressed(const int& updateCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _updateCompressed = updateCompressed;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _extrapolatedPredictor;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _extrapolatedPredictor = extrapolatedPredictor;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _extrapolatedPredictorAverages = extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline int getFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _fluctuation;
-               }
-               
-               
-               
-               inline void setFluctuation(const int& fluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _fluctuation = fluctuation;
-               }
-               
-               
-               
-               inline int getFluctuationAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _fluctuationAverages;
-               }
-               
-               
-               
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _fluctuationAverages = fluctuationAverages;
-               }
-               
-               
-               
-               inline int getFluctuationCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _fluctuationCompressed;
-               }
-               
-               
-               
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _fluctuationCompressed = fluctuationCompressed;
-               }
-               
-               
-               
-               inline int getSolutionMin() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionMin;
-               }
-               
-               
-               
-               inline void setSolutionMin(const int& solutionMin) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionMin = solutionMin;
-               }
-               
-               
-               
-               inline int getSolutionMax() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionMax;
-               }
-               
-               
-               
-               inline void setSolutionMax(const int& solutionMax) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionMax = solutionMax;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _facewiseAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _facewiseAugmentationStatus = (facewiseAugmentationStatus);
-               }
-               
-               
-               
-               inline int getAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _augmentationStatus;
-               }
-               
-               
-               
-               inline void setAugmentationStatus(const int& augmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _augmentationStatus = augmentationStatus;
-               }
-               
-               
-               
-               inline int getPreviousAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousAugmentationStatus;
-               }
-               
-               
-               
-               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousAugmentationStatus = previousAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _facewiseCommunicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _facewiseCommunicationStatus = (facewiseCommunicationStatus);
-               }
-               
-               
-               
-               inline int getCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _communicationStatus;
-               }
-               
-               
-               
-               inline void setCommunicationStatus(const int& communicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _communicationStatus = communicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _facewiseRefinementStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _facewiseRefinementStatus = (facewiseRefinementStatus);
-               }
-               
-               
-               
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
-               inline int getRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementStatus;
-               }
-               
-               
-               
-               inline void setRefinementStatus(const int& refinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementStatus = refinementStatus;
-               }
-               
-               
-               
-               inline int getPreviousRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousRefinementStatus;
-               }
-               
-               
-               
-               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousRefinementStatus = previousRefinementStatus;
-               }
-               
-               
-               
-               inline int getIterationsToCureTroubledCell() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _iterationsToCureTroubledCell = iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline CompressionState getCompressionState() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _compressionState;
-               }
-               
-               
-               
-               inline void setCompressionState(const CompressionState& compressionState) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _compressionState = compressionState;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _bytesPerDoFInPreviousSolution;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _bytesPerDoFInPreviousSolution = bytesPerDoFInPreviousSolution;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _bytesPerDoFInSolution;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _bytesPerDoFInSolution = bytesPerDoFInSolution;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _bytesPerDoFInUpdate;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _bytesPerDoFInUpdate = bytesPerDoFInUpdate;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _bytesPerDoFInExtrapolatedPredictor;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _bytesPerDoFInExtrapolatedPredictor = bytesPerDoFInExtrapolatedPredictor;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _bytesPerDoFInFluctuation;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _bytesPerDoFInFluctuation = bytesPerDoFInFluctuation;
-               }
-               
-               
-               
-               inline Creation getCreation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _creation;
-               }
-               
-               
-               
-               inline void setCreation(const Creation& creation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _creation = creation;
-               }
-               
-               
-               
-            };
-            private: 
-               PersistentRecords _persistentRecords;
-               
-            public:
-               /**
-                * Generated
-                */
-               ADERDGCellDescription();
-               
-               /**
-                * Generated
-                */
-               ADERDGCellDescription(const PersistentRecords& persistentRecords);
-               
-               /**
-                * Generated
-                */
-               ADERDGCellDescription(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
-               
-               /**
-                * Generated
-                */
-               ~ADERDGCellDescription();
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._stpStatus = stpStatus;
-               }
-               
-               
-               
-               inline int getSolverNumber() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solverNumber;
-               }
-               
-               
-               
-               inline void setSolverNumber(const int& solverNumber) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solverNumber = solverNumber;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._neighbourMergePerformed;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._neighbourMergePerformed = (neighbourMergePerformed);
-               }
-               
-               
-               
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._neighbourMergePerformed[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
-                  
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._neighbourMergePerformed.flip(elementIndex);
-               }
-               
-               
-               
-               inline int getParentIndex() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentIndex;
-               }
-               
-               
-               
-               inline void setParentIndex(const int& parentIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
-               }
-               
-               
-               
-               inline bool getHasVirtualChildren() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._hasVirtualChildren;
-               }
-               
-               
-               
-               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._hasVirtualChildren = hasVirtualChildren;
-               }
-               
-               
-               
-               inline Type getType() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._type;
-               }
-               
-               
-               
-               inline void setType(const Type& type) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._type = type;
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementEvent;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementEvent = refinementEvent;
-               }
-               
-               
-               
-               inline int getLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._level;
-               }
-               
-               
-               
-               inline void setLevel(const int& level) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._level = level;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._offset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._offset = (offset);
-               }
-               
-               
-               
-               inline double getOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._offset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setOffset(int elementIndex, const double& offset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._offset[elementIndex]= offset;
-                  
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._size;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._size = (size);
-               }
-               
-               
-               
-               inline double getSize(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._size[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setSize(int elementIndex, const double& size) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._size[elementIndex]= size;
-                  
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._correctorTimeStepSize;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._correctorTimeStamp;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStamp = predictorTimeStamp;
-               }
-               
-               
-               
-               inline int getSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solution;
-               }
-               
-               
-               
-               inline void setSolution(const int& solution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solution = solution;
-               }
-               
-               
-               
-               inline int getSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionAverages;
-               }
-               
-               
-               
-               inline void setSolutionAverages(const int& solutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionAverages = solutionAverages;
-               }
-               
-               
-               
-               inline int getSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionCompressed;
-               }
-               
-               
-               
-               inline void setSolutionCompressed(const int& solutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionCompressed = solutionCompressed;
-               }
-               
-               
-               
-               inline int getPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousSolution;
-               }
-               
-               
-               
-               inline void setPreviousSolution(const int& previousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousSolution = previousSolution;
-               }
-               
-               
-               
-               inline int getPreviousSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousSolutionAverages;
-               }
-               
-               
-               
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousSolutionAverages = previousSolutionAverages;
-               }
-               
-               
-               
-               inline int getPreviousSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousSolutionCompressed;
-               }
-               
-               
-               
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousSolutionCompressed = previousSolutionCompressed;
-               }
-               
-               
-               
-               inline int getUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._update;
-               }
-               
-               
-               
-               inline void setUpdate(const int& update) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._update = update;
-               }
-               
-               
-               
-               inline int getUpdateAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._updateAverages;
-               }
-               
-               
-               
-               inline void setUpdateAverages(const int& updateAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._updateAverages = updateAverages;
-               }
-               
-               
-               
-               inline int getUpdateCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._updateCompressed;
-               }
-               
-               
-               
-               inline void setUpdateCompressed(const int& updateCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._updateCompressed = updateCompressed;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._extrapolatedPredictor;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._extrapolatedPredictor = extrapolatedPredictor;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._extrapolatedPredictorAverages = extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline int getFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._fluctuation;
-               }
-               
-               
-               
-               inline void setFluctuation(const int& fluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._fluctuation = fluctuation;
-               }
-               
-               
-               
-               inline int getFluctuationAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._fluctuationAverages;
-               }
-               
-               
-               
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._fluctuationAverages = fluctuationAverages;
-               }
-               
-               
-               
-               inline int getFluctuationCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._fluctuationCompressed;
-               }
-               
-               
-               
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._fluctuationCompressed = fluctuationCompressed;
-               }
-               
-               
-               
-               inline int getSolutionMin() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionMin;
-               }
-               
-               
-               
-               inline void setSolutionMin(const int& solutionMin) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionMin = solutionMin;
-               }
-               
-               
-               
-               inline int getSolutionMax() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionMax;
-               }
-               
-               
-               
-               inline void setSolutionMax(const int& solutionMax) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionMax = solutionMax;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._facewiseAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._facewiseAugmentationStatus = (facewiseAugmentationStatus);
-               }
-               
-               
-               
-               inline int getFacewiseAugmentationStatus(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseAugmentationStatus[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFacewiseAugmentationStatus(int elementIndex, const int& facewiseAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseAugmentationStatus[elementIndex]= facewiseAugmentationStatus;
-                  
-               }
-               
-               
-               
-               inline int getAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._augmentationStatus;
-               }
-               
-               
-               
-               inline void setAugmentationStatus(const int& augmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._augmentationStatus = augmentationStatus;
-               }
-               
-               
-               
-               inline int getPreviousAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousAugmentationStatus;
-               }
-               
-               
-               
-               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousAugmentationStatus = previousAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._facewiseCommunicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._facewiseCommunicationStatus = (facewiseCommunicationStatus);
-               }
-               
-               
-               
-               inline int getFacewiseCommunicationStatus(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseCommunicationStatus[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFacewiseCommunicationStatus(int elementIndex, const int& facewiseCommunicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseCommunicationStatus[elementIndex]= facewiseCommunicationStatus;
-                  
-               }
-               
-               
-               
-               inline int getCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._communicationStatus;
-               }
-               
-               
-               
-               inline void setCommunicationStatus(const int& communicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._communicationStatus = communicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._facewiseRefinementStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
-               }
-               
-               
-               
-               inline int getFacewiseRefinementStatus(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseRefinementStatus[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
-                  
-               }
-               
-               
-               
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
-               inline int getRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementStatus;
-               }
-               
-               
-               
-               inline void setRefinementStatus(const int& refinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementStatus = refinementStatus;
-               }
-               
-               
-               
-               inline int getPreviousRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousRefinementStatus;
-               }
-               
-               
-               
-               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousRefinementStatus = previousRefinementStatus;
-               }
-               
-               
-               
-               inline int getIterationsToCureTroubledCell() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._iterationsToCureTroubledCell = iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline CompressionState getCompressionState() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._compressionState;
-               }
-               
-               
-               
-               inline void setCompressionState(const CompressionState& compressionState) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._compressionState = compressionState;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._bytesPerDoFInPreviousSolution;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._bytesPerDoFInPreviousSolution = bytesPerDoFInPreviousSolution;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._bytesPerDoFInSolution;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._bytesPerDoFInSolution = bytesPerDoFInSolution;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._bytesPerDoFInUpdate;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._bytesPerDoFInUpdate = bytesPerDoFInUpdate;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._bytesPerDoFInExtrapolatedPredictor;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._bytesPerDoFInExtrapolatedPredictor = bytesPerDoFInExtrapolatedPredictor;
-               }
-               
-               
-               
-               inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._bytesPerDoFInFluctuation;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._bytesPerDoFInFluctuation = bytesPerDoFInFluctuation;
-               }
-               
-               
                
                inline Creation getCreation() const 
  #ifdef UseManualInlining
@@ -16358,3230 +19522,6 @@ namespace exahype {
                   _persistentRecords._creation = creation;
                }
                
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const CompressionState& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getCompressionStateMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const Creation& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getCreationMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const RefinementEvent& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getRefinementEventMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const STPStatus& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSTPStatusMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const Type& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getTypeMapping();
-               
-               /**
-                * Generated
-                */
-               std::string toString() const;
-               
-               /**
-                * Generated
-                */
-               void toString(std::ostream& out) const;
-               
-               
-               PersistentRecords getPersistentRecords() const;
-               /**
-                * Generated
-                */
-               ADERDGCellDescriptionPacked convert() const;
-               
-               
-            #ifdef Parallel
-               protected:
-                  static tarch::logging::Log _log;
-                  
-               public:
-                  
-                  /**
-                   * Global that represents the mpi datatype.
-                   * There are two variants: Datatype identifies only those attributes marked with
-                   * parallelise. FullDatatype instead identifies the whole record with all fields.
-                   */
-                  static MPI_Datatype Datatype;
-                  static MPI_Datatype FullDatatype;
-                  
-                  /**
-                   * Initializes the data type for the mpi operations. Has to be called
-                   * before the very first send or receive operation is called.
-                   */
-                  static void initDatatype();
-                  
-                  static void shutdownDatatype();
-                  
-                  enum class ExchangeMode { Blocking, NonblockingWithPollingLoopOverTests, LoopOverProbeWithBlockingReceive };
-                  
-                  void send(int destination, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
-                  
-                  void receive(int source, int tag, bool exchangeOnlyAttributesMarkedWithParallelise, ExchangeMode mode );
-                  
-                  static bool isMessageInQueue(int tag, bool exchangeOnlyAttributesMarkedWithParallelise);
-                  
-                  #endif
-         
-      };
-      
-      #ifndef DaStGenPackedPadding
-        #define DaStGenPackedPadding 1      // 32 bit version
-        // #define DaStGenPackedPadding 2   // 64 bit version
-      #endif
-      
-      
-      #ifdef PackedRecords
-         #pragma pack (push, DaStGenPackedPadding)
-      #endif
-      
-      /**
-       * @author This class is generated by DaStGen
-       * 		   DataStructureGenerator (DaStGen)
-       * 		   2007-2009 Wolfgang Eckhardt
-       * 		   2012      Tobias Weinzierl
-       *
-       * 		   build date: 09-02-2014 14:40
-       *
-       * @date   01/09/2018 16:10
-       */
-      class exahype::records::ADERDGCellDescriptionPacked { 
-         
-         public:
-            
-            typedef exahype::records::ADERDGCellDescription::STPStatus STPStatus;
-            
-            typedef exahype::records::ADERDGCellDescription::Type Type;
-            
-            typedef exahype::records::ADERDGCellDescription::RefinementEvent RefinementEvent;
-            
-            typedef exahype::records::ADERDGCellDescription::CompressionState CompressionState;
-            
-            typedef exahype::records::ADERDGCellDescription::Creation Creation;
-            
-            struct PersistentRecords {
-               STPStatus _stpStatus;
-               int _solverNumber;
-               int _parentIndex;
-               int _parentCellLevel;
-               tarch::la::Vector<DIMENSIONS,double> _parentOffset;
-               bool _hasVirtualChildren;
-               int _level;
-               tarch::la::Vector<DIMENSIONS,double> _offset;
-               tarch::la::Vector<DIMENSIONS,double> _size;
-               double _previousCorrectorTimeStamp;
-               double _previousCorrectorTimeStepSize;
-               double _correctorTimeStepSize;
-               double _correctorTimeStamp;
-               double _predictorTimeStepSize;
-               double _predictorTimeStamp;
-               int _solution;
-               int _solutionAverages;
-               int _solutionCompressed;
-               int _previousSolution;
-               int _previousSolutionAverages;
-               int _previousSolutionCompressed;
-               int _update;
-               int _updateAverages;
-               int _updateCompressed;
-               int _extrapolatedPredictor;
-               int _extrapolatedPredictorAverages;
-               int _extrapolatedPredictorCompressed;
-               int _fluctuation;
-               int _fluctuationAverages;
-               int _fluctuationCompressed;
-               int _solutionMin;
-               int _solutionMax;
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseAugmentationStatus;
-               int _augmentationStatus;
-               int _previousAugmentationStatus;
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCommunicationStatus;
-               int _communicationStatus;
-               tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseRefinementStatus;
-               bool _refinementFlag;
-               int _refinementStatus;
-               int _previousRefinementStatus;
-               int _iterationsToCureTroubledCell;
-               Creation _creation;
-               
-               /** mapping of records:
-               || Member 	|| startbit 	|| length
-                |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 4
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 6	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 11	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 14	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 17	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 20	| #bits 3
-                */
-               int _packedRecords0;
-               
-               /**
-                * Generated
-                */
-               PersistentRecords();
-               
-               /**
-                * Generated
-                */
-               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _stpStatus = stpStatus;
-               }
-               
-               
-               
-               inline int getSolverNumber() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solverNumber;
-               }
-               
-               
-               
-               inline void setSolverNumber(const int& solverNumber) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solverNumber = solverNumber;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-                  _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
-               }
-               
-               
-               
-               inline int getParentIndex() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentIndex;
-               }
-               
-               
-               
-               inline void setParentIndex(const int& parentIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline bool getHasVirtualChildren() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _hasVirtualChildren;
-               }
-               
-               
-               
-               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _hasVirtualChildren = hasVirtualChildren;
-               }
-               
-               
-               
-               inline Type getType() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO));
-   assertion(( tmp >= 0 &&  tmp <= 3));
-   return (Type) tmp;
-               }
-               
-               
-               
-               inline void setType(const Type& type) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((type >= 0 && type <= 3));
-   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO));
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
-   assertion(( tmp >= 0 &&  tmp <= 14));
-   return (RefinementEvent) tmp;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 2));
-               }
-               
-               
-               
-               inline int getLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _level;
-               }
-               
-               
-               
-               inline void setLevel(const int& level) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _level = level;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _offset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _offset = (offset);
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _size;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _size = (size);
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousCorrectorTimeStamp = previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _correctorTimeStepSize;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _correctorTimeStepSize = correctorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _correctorTimeStamp;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _predictorTimeStamp = predictorTimeStamp;
-               }
-               
-               
-               
-               inline int getSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solution;
-               }
-               
-               
-               
-               inline void setSolution(const int& solution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solution = solution;
-               }
-               
-               
-               
-               inline int getSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionAverages;
-               }
-               
-               
-               
-               inline void setSolutionAverages(const int& solutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionAverages = solutionAverages;
-               }
-               
-               
-               
-               inline int getSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionCompressed;
-               }
-               
-               
-               
-               inline void setSolutionCompressed(const int& solutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionCompressed = solutionCompressed;
-               }
-               
-               
-               
-               inline int getPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousSolution;
-               }
-               
-               
-               
-               inline void setPreviousSolution(const int& previousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousSolution = previousSolution;
-               }
-               
-               
-               
-               inline int getPreviousSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousSolutionAverages;
-               }
-               
-               
-               
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousSolutionAverages = previousSolutionAverages;
-               }
-               
-               
-               
-               inline int getPreviousSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousSolutionCompressed;
-               }
-               
-               
-               
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousSolutionCompressed = previousSolutionCompressed;
-               }
-               
-               
-               
-               inline int getUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _update;
-               }
-               
-               
-               
-               inline void setUpdate(const int& update) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _update = update;
-               }
-               
-               
-               
-               inline int getUpdateAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _updateAverages;
-               }
-               
-               
-               
-               inline void setUpdateAverages(const int& updateAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _updateAverages = updateAverages;
-               }
-               
-               
-               
-               inline int getUpdateCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _updateCompressed;
-               }
-               
-               
-               
-               inline void setUpdateCompressed(const int& updateCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _updateCompressed = updateCompressed;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _extrapolatedPredictor;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _extrapolatedPredictor = extrapolatedPredictor;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _extrapolatedPredictorAverages = extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline int getFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _fluctuation;
-               }
-               
-               
-               
-               inline void setFluctuation(const int& fluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _fluctuation = fluctuation;
-               }
-               
-               
-               
-               inline int getFluctuationAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _fluctuationAverages;
-               }
-               
-               
-               
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _fluctuationAverages = fluctuationAverages;
-               }
-               
-               
-               
-               inline int getFluctuationCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _fluctuationCompressed;
-               }
-               
-               
-               
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _fluctuationCompressed = fluctuationCompressed;
-               }
-               
-               
-               
-               inline int getSolutionMin() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionMin;
-               }
-               
-               
-               
-               inline void setSolutionMin(const int& solutionMin) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionMin = solutionMin;
-               }
-               
-               
-               
-               inline int getSolutionMax() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _solutionMax;
-               }
-               
-               
-               
-               inline void setSolutionMax(const int& solutionMax) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _solutionMax = solutionMax;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _facewiseAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _facewiseAugmentationStatus = (facewiseAugmentationStatus);
-               }
-               
-               
-               
-               inline int getAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _augmentationStatus;
-               }
-               
-               
-               
-               inline void setAugmentationStatus(const int& augmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _augmentationStatus = augmentationStatus;
-               }
-               
-               
-               
-               inline int getPreviousAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousAugmentationStatus;
-               }
-               
-               
-               
-               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousAugmentationStatus = previousAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _facewiseCommunicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _facewiseCommunicationStatus = (facewiseCommunicationStatus);
-               }
-               
-               
-               
-               inline int getCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _communicationStatus;
-               }
-               
-               
-               
-               inline void setCommunicationStatus(const int& communicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _communicationStatus = communicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _facewiseRefinementStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _facewiseRefinementStatus = (facewiseRefinementStatus);
-               }
-               
-               
-               
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementFlag = refinementFlag;
-               }
-               
-               
-               
-               inline int getRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _refinementStatus;
-               }
-               
-               
-               
-               inline void setRefinementStatus(const int& refinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _refinementStatus = refinementStatus;
-               }
-               
-               
-               
-               inline int getPreviousRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _previousRefinementStatus;
-               }
-               
-               
-               
-               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _previousRefinementStatus = previousRefinementStatus;
-               }
-               
-               
-               
-               inline int getIterationsToCureTroubledCell() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _iterationsToCureTroubledCell = iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline CompressionState getCompressionState() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 6));
-   assertion(( tmp >= 0 &&  tmp <= 2));
-   return (CompressionState) tmp;
-               }
-               
-               
-               
-               inline void setCompressionState(const CompressionState& compressionState) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((compressionState >= 0 && compressionState <= 2));
-   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 6));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 8));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 14));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 17));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
-   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 20));
-               }
-               
-               
-               
-               inline Creation getCreation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _creation;
-               }
-               
-               
-               
-               inline void setCreation(const Creation& creation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _creation = creation;
-               }
-               
-               
-               
-            };
-            private: 
-               PersistentRecords _persistentRecords;
-               
-            public:
-               /**
-                * Generated
-                */
-               ADERDGCellDescriptionPacked();
-               
-               /**
-                * Generated
-                */
-               ADERDGCellDescriptionPacked(const PersistentRecords& persistentRecords);
-               
-               /**
-                * Generated
-                */
-               ADERDGCellDescriptionPacked(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation, const Creation& creation);
-               
-               /**
-                * Generated
-                */
-               ~ADERDGCellDescriptionPacked();
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._stpStatus = stpStatus;
-               }
-               
-               
-               
-               inline int getSolverNumber() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solverNumber;
-               }
-               
-               
-               
-               inline void setSolverNumber(const int& solverNumber) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solverNumber = solverNumber;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline std::bitset<DIMENSIONS_TIMES_TWO> getNeighbourMergePerformed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-                  tmp = static_cast<int>(tmp >> (0));
-                  std::bitset<DIMENSIONS_TIMES_TWO> result = tmp;
-                  return result;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setNeighbourMergePerformed(const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask = (int) (1 << (DIMENSIONS_TIMES_TWO)) - 1 ;
-                  mask = static_cast<int>(mask << (0));
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-                  _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
-               }
-               
-               
-               
-               inline bool getNeighbourMergePerformed(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  return (_persistentRecords._packedRecords0& mask);
-               }
-               
-               
-               
-               inline void setNeighbourMergePerformed(int elementIndex, const bool& neighbourMergePerformed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  assertion(!neighbourMergePerformed || neighbourMergePerformed==1);
-                  int shift        = 0 + elementIndex; 
-                  int mask         = 1     << (shift);
-                  int shiftedValue = neighbourMergePerformed << (shift);
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 & ~mask;
-                  _persistentRecords._packedRecords0 = _persistentRecords._packedRecords0 |  shiftedValue;
-               }
-               
-               
-               
-               inline void flipNeighbourMergePerformed(int elementIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  int mask = 1 << (0);
-                  mask = mask << elementIndex;
-                  _persistentRecords._packedRecords0^= mask;
-               }
-               
-               
-               
-               inline int getParentIndex() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentIndex;
-               }
-               
-               
-               
-               inline void setParentIndex(const int& parentIndex) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentIndex = parentIndex;
-               }
-               
-               
-               
-               inline int getParentCellLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentCellLevel;
-               }
-               
-               
-               
-               inline void setParentCellLevel(const int& parentCellLevel) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentCellLevel = parentCellLevel;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getParentOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._parentOffset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setParentOffset(const tarch::la::Vector<DIMENSIONS,double>& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._parentOffset = (parentOffset);
-               }
-               
-               
-               
-               inline double getParentOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._parentOffset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setParentOffset(int elementIndex, const double& parentOffset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._parentOffset[elementIndex]= parentOffset;
-                  
-               }
-               
-               
-               
-               inline bool getHasVirtualChildren() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._hasVirtualChildren;
-               }
-               
-               
-               
-               inline void setHasVirtualChildren(const bool& hasVirtualChildren) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._hasVirtualChildren = hasVirtualChildren;
-               }
-               
-               
-               
-               inline Type getType() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO));
-   assertion(( tmp >= 0 &&  tmp <= 3));
-   return (Type) tmp;
-               }
-               
-               
-               
-               inline void setType(const Type& type) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((type >= 0 && type <= 3));
-   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO));
-               }
-               
-               
-               
-               inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
-   assertion(( tmp >= 0 &&  tmp <= 14));
-   return (RefinementEvent) tmp;
-               }
-               
-               
-               
-               inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((refinementEvent >= 0 && refinementEvent <= 14));
-   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 2));
-               }
-               
-               
-               
-               inline int getLevel() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._level;
-               }
-               
-               
-               
-               inline void setLevel(const int& level) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._level = level;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getOffset() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._offset;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setOffset(const tarch::la::Vector<DIMENSIONS,double>& offset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._offset = (offset);
-               }
-               
-               
-               
-               inline double getOffset(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._offset[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setOffset(int elementIndex, const double& offset) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._offset[elementIndex]= offset;
-                  
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS,double> getSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._size;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setSize(const tarch::la::Vector<DIMENSIONS,double>& size) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._size = (size);
-               }
-               
-               
-               
-               inline double getSize(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  return _persistentRecords._size[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setSize(int elementIndex, const double& size) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS);
-                  _persistentRecords._size[elementIndex]= size;
-                  
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStamp(const double& previousCorrectorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousCorrectorTimeStamp = previousCorrectorTimeStamp;
-               }
-               
-               
-               
-               inline double getPreviousCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPreviousCorrectorTimeStepSize(const double& previousCorrectorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousCorrectorTimeStepSize = previousCorrectorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._correctorTimeStepSize;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStepSize(const double& correctorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._correctorTimeStepSize = correctorTimeStepSize;
-               }
-               
-               
-               
-               inline double getCorrectorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._correctorTimeStamp;
-               }
-               
-               
-               
-               inline void setCorrectorTimeStamp(const double& correctorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._correctorTimeStamp = correctorTimeStamp;
-               }
-               
-               
-               
-               inline double getPredictorTimeStepSize() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStepSize;
-               }
-               
-               
-               
-               inline void setPredictorTimeStepSize(const double& predictorTimeStepSize) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStepSize = predictorTimeStepSize;
-               }
-               
-               
-               
-               inline double getPredictorTimeStamp() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._predictorTimeStamp;
-               }
-               
-               
-               
-               inline void setPredictorTimeStamp(const double& predictorTimeStamp) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._predictorTimeStamp = predictorTimeStamp;
-               }
-               
-               
-               
-               inline int getSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solution;
-               }
-               
-               
-               
-               inline void setSolution(const int& solution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solution = solution;
-               }
-               
-               
-               
-               inline int getSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionAverages;
-               }
-               
-               
-               
-               inline void setSolutionAverages(const int& solutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionAverages = solutionAverages;
-               }
-               
-               
-               
-               inline int getSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionCompressed;
-               }
-               
-               
-               
-               inline void setSolutionCompressed(const int& solutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionCompressed = solutionCompressed;
-               }
-               
-               
-               
-               inline int getPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousSolution;
-               }
-               
-               
-               
-               inline void setPreviousSolution(const int& previousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousSolution = previousSolution;
-               }
-               
-               
-               
-               inline int getPreviousSolutionAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousSolutionAverages;
-               }
-               
-               
-               
-               inline void setPreviousSolutionAverages(const int& previousSolutionAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousSolutionAverages = previousSolutionAverages;
-               }
-               
-               
-               
-               inline int getPreviousSolutionCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousSolutionCompressed;
-               }
-               
-               
-               
-               inline void setPreviousSolutionCompressed(const int& previousSolutionCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousSolutionCompressed = previousSolutionCompressed;
-               }
-               
-               
-               
-               inline int getUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._update;
-               }
-               
-               
-               
-               inline void setUpdate(const int& update) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._update = update;
-               }
-               
-               
-               
-               inline int getUpdateAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._updateAverages;
-               }
-               
-               
-               
-               inline void setUpdateAverages(const int& updateAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._updateAverages = updateAverages;
-               }
-               
-               
-               
-               inline int getUpdateCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._updateCompressed;
-               }
-               
-               
-               
-               inline void setUpdateCompressed(const int& updateCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._updateCompressed = updateCompressed;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._extrapolatedPredictor;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictor(const int& extrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._extrapolatedPredictor = extrapolatedPredictor;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorAverages(const int& extrapolatedPredictorAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._extrapolatedPredictorAverages = extrapolatedPredictorAverages;
-               }
-               
-               
-               
-               inline int getExtrapolatedPredictorCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline void setExtrapolatedPredictorCompressed(const int& extrapolatedPredictorCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._extrapolatedPredictorCompressed = extrapolatedPredictorCompressed;
-               }
-               
-               
-               
-               inline int getFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._fluctuation;
-               }
-               
-               
-               
-               inline void setFluctuation(const int& fluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._fluctuation = fluctuation;
-               }
-               
-               
-               
-               inline int getFluctuationAverages() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._fluctuationAverages;
-               }
-               
-               
-               
-               inline void setFluctuationAverages(const int& fluctuationAverages) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._fluctuationAverages = fluctuationAverages;
-               }
-               
-               
-               
-               inline int getFluctuationCompressed() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._fluctuationCompressed;
-               }
-               
-               
-               
-               inline void setFluctuationCompressed(const int& fluctuationCompressed) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._fluctuationCompressed = fluctuationCompressed;
-               }
-               
-               
-               
-               inline int getSolutionMin() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionMin;
-               }
-               
-               
-               
-               inline void setSolutionMin(const int& solutionMin) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionMin = solutionMin;
-               }
-               
-               
-               
-               inline int getSolutionMax() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._solutionMax;
-               }
-               
-               
-               
-               inline void setSolutionMax(const int& solutionMax) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._solutionMax = solutionMax;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._facewiseAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseAugmentationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._facewiseAugmentationStatus = (facewiseAugmentationStatus);
-               }
-               
-               
-               
-               inline int getFacewiseAugmentationStatus(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseAugmentationStatus[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFacewiseAugmentationStatus(int elementIndex, const int& facewiseAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseAugmentationStatus[elementIndex]= facewiseAugmentationStatus;
-                  
-               }
-               
-               
-               
-               inline int getAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._augmentationStatus;
-               }
-               
-               
-               
-               inline void setAugmentationStatus(const int& augmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._augmentationStatus = augmentationStatus;
-               }
-               
-               
-               
-               inline int getPreviousAugmentationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousAugmentationStatus;
-               }
-               
-               
-               
-               inline void setPreviousAugmentationStatus(const int& previousAugmentationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousAugmentationStatus = previousAugmentationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._facewiseCommunicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseCommunicationStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._facewiseCommunicationStatus = (facewiseCommunicationStatus);
-               }
-               
-               
-               
-               inline int getFacewiseCommunicationStatus(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseCommunicationStatus[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFacewiseCommunicationStatus(int elementIndex, const int& facewiseCommunicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseCommunicationStatus[elementIndex]= facewiseCommunicationStatus;
-                  
-               }
-               
-               
-               
-               inline int getCommunicationStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._communicationStatus;
-               }
-               
-               
-               
-               inline void setCommunicationStatus(const int& communicationStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._communicationStatus = communicationStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> getFacewiseRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._facewiseRefinementStatus;
-               }
-               
-               
-               
-               /**
-                * Generated and optimized
-                * 
-                * If you realise a for loop using exclusively arrays (vectors) and compile 
-                * with -DUseManualAlignment you may add 
-                * \code
-                #pragma vector aligned
-                #pragma simd
-                \endcode to this for loop to enforce your compiler to use SSE/AVX.
-                * 
-                * The alignment is tied to the unpacked records, i.e. for packed class
-                * variants the machine's natural alignment is switched off to recude the  
-                * memory footprint. Do not use any SSE/AVX operations or 
-                * vectorisation on the result for the packed variants, as the data is misaligned. 
-                * If you rely on vectorisation, convert the underlying record 
-                * into the unpacked version first. 
-                * 
-                * @see convert()
-                */
-               inline void setFacewiseRefinementStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._facewiseRefinementStatus = (facewiseRefinementStatus);
-               }
-               
-               
-               
-               inline int getFacewiseRefinementStatus(int elementIndex) const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  return _persistentRecords._facewiseRefinementStatus[elementIndex];
-                  
-               }
-               
-               
-               
-               inline void setFacewiseRefinementStatus(int elementIndex, const int& facewiseRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion(elementIndex>=0);
-                  assertion(elementIndex<DIMENSIONS_TIMES_TWO);
-                  _persistentRecords._facewiseRefinementStatus[elementIndex]= facewiseRefinementStatus;
-                  
-               }
-               
-               
-               
-               inline bool getRefinementFlag() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementFlag;
-               }
-               
-               
-               
-               inline void setRefinementFlag(const bool& refinementFlag) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementFlag = refinementFlag;
-               }
-               
-               
-               
-               inline int getRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._refinementStatus;
-               }
-               
-               
-               
-               inline void setRefinementStatus(const int& refinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._refinementStatus = refinementStatus;
-               }
-               
-               
-               
-               inline int getPreviousRefinementStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._previousRefinementStatus;
-               }
-               
-               
-               
-               inline void setPreviousRefinementStatus(const int& previousRefinementStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._previousRefinementStatus = previousRefinementStatus;
-               }
-               
-               
-               
-               inline int getIterationsToCureTroubledCell() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline void setIterationsToCureTroubledCell(const int& iterationsToCureTroubledCell) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._iterationsToCureTroubledCell = iterationsToCureTroubledCell;
-               }
-               
-               
-               
-               inline CompressionState getCompressionState() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 6));
-   assertion(( tmp >= 0 &&  tmp <= 2));
-   return (CompressionState) tmp;
-               }
-               
-               
-               
-               inline void setCompressionState(const CompressionState& compressionState) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((compressionState >= 0 && compressionState <= 2));
-   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 6));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInPreviousSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInPreviousSolution(const int& bytesPerDoFInPreviousSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 8));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInSolution() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInSolution(const int& bytesPerDoFInSolution) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInUpdate() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInUpdate(const int& bytesPerDoFInUpdate) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 14));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInExtrapolatedPredictor() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInExtrapolatedPredictor(const int& bytesPerDoFInExtrapolatedPredictor) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 17));
-               }
-               
-               
-               
-               inline int getBytesPerDoFInFluctuation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
-   tmp = tmp + 1;
-   assertion(( tmp >= 1 &&  tmp <= 7));
-   return (int) tmp;
-               }
-               
-               
-               
-               inline void setBytesPerDoFInFluctuation(const int& bytesPerDoFInFluctuation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
-   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 20));
-               }
-               
-               
-               
-               inline Creation getCreation() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._creation;
-               }
-               
-               
-               
-               inline void setCreation(const Creation& creation) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._creation = creation;
-               }
-               
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const STPStatus& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSTPStatusMapping();
                
                /**
                 * Generated
@@ -19690,7 +19630,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 16:10
+       * @date   01/09/2018 15:55
        */
       class exahype::records::ADERDGCellDescription { 
          
@@ -19706,22 +19646,18 @@ namespace exahype {
                None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToVirtualChildrenRequested = 3, ChangeChildrenToVirtualChildren = 4, RefiningRequested = 5, Refining = 6, Prolongating = 7, ErasingVirtualChildrenRequested = 8, ErasingVirtualChildren = 9, VirtualRefiningRequested = 10, VirtualRefining = 11, Erasing = 12, ChangeToVirtualCell = 13, ErasingVirtualCell = 14
             };
             
-            enum STPStatus {
-               Triggered = 0, Compupting = 1, Computed = 2
-            };
-            
             enum Type {
                Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
             };
             
             struct PersistentRecords {
-               STPStatus _stpStatus;
                int _solverNumber;
                #ifdef UseManualAlignment
                std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed __attribute__((aligned(VectorisationAlignment)));
                #else
                std::bitset<DIMENSIONS_TIMES_TWO> _neighbourMergePerformed;
                #endif
+               bool _hasCompletedTimeStep;
                int _parentIndex;
                int _parentCellLevel;
                #ifdef UseManualAlignment
@@ -19802,27 +19738,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _stpStatus = stpStatus;
-               }
-               
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -19899,6 +19815,26 @@ namespace exahype {
  #endif 
  {
                   _neighbourMergePerformed = (neighbourMergePerformed);
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _hasCompletedTimeStep = hasCompletedTimeStep;
                }
                
                
@@ -21109,32 +21045,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescription(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescription(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
                 */
                ~ADERDGCellDescription();
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._stpStatus = stpStatus;
-               }
-               
                
                
                inline int getSolverNumber() const 
@@ -21249,6 +21165,26 @@ namespace exahype {
                   assertion(elementIndex>=0);
                   assertion(elementIndex<DIMENSIONS_TIMES_TWO);
                   _persistentRecords._neighbourMergePerformed.flip(elementIndex);
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._hasCompletedTimeStep;
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._hasCompletedTimeStep = hasCompletedTimeStep;
                }
                
                
@@ -22619,16 +22555,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const STPStatus& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSTPStatusMapping();
-               
-               /**
-                * Generated
-                */
                static std::string toString(const Type& param);
                
                /**
@@ -22706,13 +22632,11 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   01/09/2018 16:10
+       * @date   01/09/2018 15:55
        */
       class exahype::records::ADERDGCellDescriptionPacked { 
          
          public:
-            
-            typedef exahype::records::ADERDGCellDescription::STPStatus STPStatus;
             
             typedef exahype::records::ADERDGCellDescription::Type Type;
             
@@ -22721,7 +22645,6 @@ namespace exahype {
             typedef exahype::records::ADERDGCellDescription::CompressionState CompressionState;
             
             struct PersistentRecords {
-               STPStatus _stpStatus;
                int _solverNumber;
                int _parentIndex;
                int _parentCellLevel;
@@ -22767,14 +22690,15 @@ namespace exahype {
                /** mapping of records:
                || Member 	|| startbit 	|| length
                 |  neighbourMergePerformed	| startbit 0	| #bits DIMENSIONS_TIMES_TWO
-                |  type	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 2
-                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 2	| #bits 4
-                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 6	| #bits 2
-                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 8	| #bits 3
-                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 11	| #bits 3
-                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 14	| #bits 3
-                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 17	| #bits 3
-                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 20	| #bits 3
+                |  hasCompletedTimeStep	| startbit DIMENSIONS_TIMES_TWO + 0	| #bits 1
+                |  type	| startbit DIMENSIONS_TIMES_TWO + 1	| #bits 2
+                |  refinementEvent	| startbit DIMENSIONS_TIMES_TWO + 3	| #bits 4
+                |  compressionState	| startbit DIMENSIONS_TIMES_TWO + 7	| #bits 2
+                |  bytesPerDoFInPreviousSolution	| startbit DIMENSIONS_TIMES_TWO + 9	| #bits 3
+                |  bytesPerDoFInSolution	| startbit DIMENSIONS_TIMES_TWO + 12	| #bits 3
+                |  bytesPerDoFInUpdate	| startbit DIMENSIONS_TIMES_TWO + 15	| #bits 3
+                |  bytesPerDoFInExtrapolatedPredictor	| startbit DIMENSIONS_TIMES_TWO + 18	| #bits 3
+                |  bytesPerDoFInFluctuation	| startbit DIMENSIONS_TIMES_TWO + 21	| #bits 3
                 */
                int _packedRecords0;
                
@@ -22786,27 +22710,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _stpStatus = stpStatus;
-               }
-               
+               PersistentRecords(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                
                inline int getSolverNumber() const 
@@ -22891,6 +22795,29 @@ namespace exahype {
                   mask = static_cast<int>(mask << (0));
                   _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
                   _packedRecords0 = static_cast<int>(_packedRecords0 | neighbourMergePerformed.to_ulong() << (0));
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   int tmp = static_cast<int>(_packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
                }
                
                
@@ -23019,9 +22946,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -23035,9 +22962,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
                }
                
                
@@ -23048,9 +22975,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
    assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
                }
@@ -23064,9 +22991,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 2));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
                }
                
                
@@ -23987,9 +23914,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 6));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -24003,9 +23930,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 6));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
                }
                
                
@@ -24016,9 +23943,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24033,9 +23960,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 8));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
                }
                
                
@@ -24046,9 +23973,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24063,9 +23990,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
                }
                
                
@@ -24076,9 +24003,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24093,9 +24020,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 14));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
                }
                
                
@@ -24106,9 +24033,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24123,9 +24050,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 17));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
                }
                
                
@@ -24136,9 +24063,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -24153,9 +24080,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 20));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
                }
                
                
@@ -24178,32 +24105,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               ADERDGCellDescriptionPacked(const STPStatus& stpStatus, const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
+               ADERDGCellDescriptionPacked(const int& solverNumber, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& hasCompletedTimeStep, const int& parentIndex, const int& parentCellLevel, const tarch::la::Vector<DIMENSIONS,double>& parentOffset, const bool& hasVirtualChildren, const Type& type, const RefinementEvent& refinementEvent, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const double& previousCorrectorTimeStamp, const double& previousCorrectorTimeStepSize, const double& correctorTimeStepSize, const double& correctorTimeStamp, const double& predictorTimeStepSize, const double& predictorTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& update, const int& updateAverages, const int& updateCompressed, const int& extrapolatedPredictor, const int& extrapolatedPredictorAverages, const int& extrapolatedPredictorCompressed, const int& fluctuation, const int& fluctuationAverages, const int& fluctuationCompressed, const int& solutionMin, const int& solutionMax, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseAugmentationStatus, const int& augmentationStatus, const int& previousAugmentationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCommunicationStatus, const int& communicationStatus, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseRefinementStatus, const bool& refinementFlag, const int& refinementStatus, const int& previousRefinementStatus, const int& iterationsToCureTroubledCell, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInUpdate, const int& bytesPerDoFInExtrapolatedPredictor, const int& bytesPerDoFInFluctuation);
                
                /**
                 * Generated
                 */
                ~ADERDGCellDescriptionPacked();
-               
-               
-               inline STPStatus getStpStatus() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._stpStatus;
-               }
-               
-               
-               
-               inline void setStpStatus(const STPStatus& stpStatus) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._stpStatus = stpStatus;
-               }
-               
                
                
                inline int getSolverNumber() const 
@@ -24333,6 +24240,29 @@ namespace exahype {
                   int mask = 1 << (0);
                   mask = mask << elementIndex;
                   _persistentRecords._packedRecords0^= mask;
+               }
+               
+               
+               
+               inline bool getHasCompletedTimeStep() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
+   return (tmp != 0);
+               }
+               
+               
+               
+               inline void setHasCompletedTimeStep(const bool& hasCompletedTimeStep) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  int mask = 1 << (DIMENSIONS_TIMES_TWO);
+   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedTimeStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
                
@@ -24487,9 +24417,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 1));
    assertion(( tmp >= 0 &&  tmp <= 3));
    return (Type) tmp;
                }
@@ -24503,9 +24433,9 @@ namespace exahype {
  {
                   assertion((type >= 0 && type <= 3));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 1));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(type) << (DIMENSIONS_TIMES_TWO + 1));
                }
                
                
@@ -24516,9 +24446,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 2));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 3));
    assertion(( tmp >= 0 &&  tmp <= 14));
    return (RefinementEvent) tmp;
                }
@@ -24532,9 +24462,9 @@ namespace exahype {
  {
                   assertion((refinementEvent >= 0 && refinementEvent <= 14));
    int mask =  (1 << (4)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 2));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 3));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 2));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(refinementEvent) << (DIMENSIONS_TIMES_TWO + 3));
                }
                
                
@@ -25585,9 +25515,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 6));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 7));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
                }
@@ -25601,9 +25531,9 @@ namespace exahype {
  {
                   assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 6));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 7));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 6));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (DIMENSIONS_TIMES_TWO + 7));
                }
                
                
@@ -25614,9 +25544,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 8));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 9));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25631,9 +25561,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 8));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 9));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 8));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (DIMENSIONS_TIMES_TWO + 9));
                }
                
                
@@ -25644,9 +25574,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 11));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 12));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25661,9 +25591,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 11));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 12));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 11));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (DIMENSIONS_TIMES_TWO + 12));
                }
                
                
@@ -25674,9 +25604,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 14));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 15));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25691,9 +25621,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInUpdate >= 1 && bytesPerDoFInUpdate <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 14));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 15));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 14));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInUpdate) - 1) << (DIMENSIONS_TIMES_TWO + 15));
                }
                
                
@@ -25704,9 +25634,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 17));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 18));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25721,9 +25651,9 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInExtrapolatedPredictor >= 1 && bytesPerDoFInExtrapolatedPredictor <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 17));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 18));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 17));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedPredictor) - 1) << (DIMENSIONS_TIMES_TWO + 18));
                }
                
                
@@ -25734,9 +25664,9 @@ namespace exahype {
  #endif 
  {
                   int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 20));
+   tmp = static_cast<int>(tmp >> (DIMENSIONS_TIMES_TWO + 21));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -25751,21 +25681,11 @@ namespace exahype {
  {
                   assertion((bytesPerDoFInFluctuation >= 1 && bytesPerDoFInFluctuation <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 20));
+   mask = static_cast<int>(mask << (DIMENSIONS_TIMES_TWO + 21));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 20));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInFluctuation) - 1) << (DIMENSIONS_TIMES_TWO + 21));
                }
                
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const STPStatus& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSTPStatusMapping();
                
                /**
                 * Generated

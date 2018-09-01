@@ -11,18 +11,21 @@ Constant: DIMENSIONS;
 Constant: DIMENSIONS_TIMES_TWO;
 
 class exahype::records::FiniteVolumesCellDescription {
-  enum STPStatus {
-    Triggered,
-    Compupting,
-    Computed
-  };
-  
-  parallelise persistent STPStatus stpStatus;
-
   /**
    * Points to a solver in the solver registry.
    */
   parallelise persistent int solverNumber;
+  
+  /**
+   * These flags indicate on which face a Riemann solve has already been
+   * performed.
+   */
+  parallelise persistent bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
+  
+  /**
+   * Flag indicating if this cell description is processed by a background job.
+   */
+  persistent packed bool hasCompletedTimeStep;
 
   /**
   * The time step size this cell description is working with.
@@ -106,12 +109,6 @@ class exahype::records::FiniteVolumesCellDescription {
    * respective dimension.
    */
   parallelise persistent double size[DIMENSIONS];
-  
-  /**
-   * These flags indicate on which face a Riemann solve has already been
-   * performed.
-   */
-  parallelise persistent bool neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
   ///@}
   
   #ifdef Parallel  
