@@ -13,6 +13,14 @@ Constant: DIMENSIONS_TIMES_TWO hint-value 6;
 Constant: THREE_POWER_D hint-value 27;
 
 class exahype::records::ADERDGCellDescription {
+  enum STPStatus {
+    Triggered,
+    Compupting,
+    Computed
+  };
+  
+  parallelise persistent STPStatus stpStatus;
+
   /**
    * @defgroup SolverInfo Meta information on and for the solver
    */
