@@ -11,6 +11,14 @@ Constant: DIMENSIONS;
 Constant: DIMENSIONS_TIMES_TWO;
 
 class exahype::records::FiniteVolumesCellDescription {
+  enum STPStatus {
+    Triggered,
+    Compupting,
+    Computed
+  };
+  
+  parallelise persistent STPStatus stpStatus;
+
   /**
    * Points to a solver in the solver registry.
    */

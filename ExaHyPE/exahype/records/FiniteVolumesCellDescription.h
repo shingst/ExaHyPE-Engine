@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   12/07/2018 15:23
+    * @date   01/09/2018 16:10
     */
    class exahype::records::FiniteVolumesCellDescription { 
       
@@ -49,11 +49,16 @@ namespace exahype {
             None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToDescendantsRequested = 3, ChangeChildrenToDescendants = 4, RefiningRequested = 5, Refining = 6, DeaugmentingChildrenRequestedTriggered = 7, DeaugmentingChildrenRequested = 8, DeaugmentingChildren = 9, AugmentingRequested = 10, Augmenting = 11
          };
          
+         enum STPStatus {
+            Triggered = 0, Compupting = 1, Computed = 2
+         };
+         
          enum Type {
             Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
          };
          
          struct PersistentRecords {
+            STPStatus _stpStatus;
             int _solverNumber;
             double _timeStepSize;
             double _timeStamp;
@@ -105,7 +110,27 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+            PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+            
+            
+            inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _stpStatus;
+            }
+            
+            
+            
+            inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _stpStatus = stpStatus;
+            }
+            
             
             
             inline int getSolverNumber() const 
@@ -818,12 +843,32 @@ namespace exahype {
             /**
              * Generated
              */
-            FiniteVolumesCellDescription(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+            FiniteVolumesCellDescription(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
             
             /**
              * Generated
              */
             ~FiniteVolumesCellDescription();
+            
+            
+            inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._stpStatus;
+            }
+            
+            
+            
+            inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._stpStatus = stpStatus;
+            }
+            
             
             
             inline int getSolverNumber() const 
@@ -1656,6 +1701,16 @@ namespace exahype {
             /**
              * Generated
              */
+            static std::string toString(const STPStatus& param);
+            
+            /**
+             * Generated
+             */
+            static std::string getSTPStatusMapping();
+            
+            /**
+             * Generated
+             */
             static std::string toString(const Type& param);
             
             /**
@@ -1733,11 +1788,13 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   12/07/2018 15:23
+    * @date   01/09/2018 16:10
     */
    class exahype::records::FiniteVolumesCellDescriptionPacked { 
       
       public:
+         
+         typedef exahype::records::FiniteVolumesCellDescription::STPStatus STPStatus;
          
          typedef exahype::records::FiniteVolumesCellDescription::CompressionState CompressionState;
          
@@ -1746,6 +1803,7 @@ namespace exahype {
          typedef exahype::records::FiniteVolumesCellDescription::RefinementEvent RefinementEvent;
          
          struct PersistentRecords {
+            STPStatus _stpStatus;
             int _solverNumber;
             double _timeStepSize;
             double _timeStamp;
@@ -1787,7 +1845,27 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+            PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+            
+            
+            inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _stpStatus;
+            }
+            
+            
+            
+            inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _stpStatus = stpStatus;
+            }
+            
             
             
             inline int getSolverNumber() const 
@@ -2539,12 +2617,32 @@ namespace exahype {
             /**
              * Generated
              */
-            FiniteVolumesCellDescriptionPacked(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+            FiniteVolumesCellDescriptionPacked(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const bool& oneRemoteBoundaryNeighbourIsOfTypeCell, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& faceDataExchangeCounter, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
             
             /**
              * Generated
              */
             ~FiniteVolumesCellDescriptionPacked();
+            
+            
+            inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._stpStatus;
+            }
+            
+            
+            
+            inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._stpStatus = stpStatus;
+            }
+            
             
             
             inline int getSolverNumber() const 
@@ -3396,6 +3494,16 @@ namespace exahype {
             /**
              * Generated
              */
+            static std::string toString(const STPStatus& param);
+            
+            /**
+             * Generated
+             */
+            static std::string getSTPStatusMapping();
+            
+            /**
+             * Generated
+             */
             static std::string toString(const CompressionState& param);
             
             /**
@@ -3489,7 +3597,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/07/2018 15:23
+       * @date   01/09/2018 16:10
        */
       class exahype::records::FiniteVolumesCellDescription { 
          
@@ -3505,11 +3613,16 @@ namespace exahype {
                None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToDescendantsRequested = 3, ChangeChildrenToDescendants = 4, RefiningRequested = 5, Refining = 6, DeaugmentingChildrenRequestedTriggered = 7, DeaugmentingChildrenRequested = 8, DeaugmentingChildren = 9, AugmentingRequested = 10, Augmenting = 11
             };
             
+            enum STPStatus {
+               Triggered = 0, Compupting = 1, Computed = 2
+            };
+            
             enum Type {
                Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
             };
             
             struct PersistentRecords {
+               STPStatus _stpStatus;
                int _solverNumber;
                double _timeStepSize;
                double _timeStamp;
@@ -3555,7 +3668,27 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+               
+               
+               inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _stpStatus;
+               }
+               
+               
+               
+               inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _stpStatus = stpStatus;
+               }
+               
                
                
                inline int getSolverNumber() const 
@@ -4190,12 +4323,32 @@ namespace exahype {
                /**
                 * Generated
                 */
-               FiniteVolumesCellDescription(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+               FiniteVolumesCellDescription(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
                
                /**
                 * Generated
                 */
                ~FiniteVolumesCellDescription();
+               
+               
+               inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._stpStatus;
+               }
+               
+               
+               
+               inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._stpStatus = stpStatus;
+               }
+               
                
                
                inline int getSolverNumber() const 
@@ -4924,6 +5077,16 @@ namespace exahype {
                /**
                 * Generated
                 */
+               static std::string toString(const STPStatus& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getSTPStatusMapping();
+               
+               /**
+                * Generated
+                */
                static std::string toString(const Type& param);
                
                /**
@@ -5001,11 +5164,13 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/07/2018 15:23
+       * @date   01/09/2018 16:10
        */
       class exahype::records::FiniteVolumesCellDescriptionPacked { 
          
          public:
+            
+            typedef exahype::records::FiniteVolumesCellDescription::STPStatus STPStatus;
             
             typedef exahype::records::FiniteVolumesCellDescription::CompressionState CompressionState;
             
@@ -5014,6 +5179,7 @@ namespace exahype {
             typedef exahype::records::FiniteVolumesCellDescription::RefinementEvent RefinementEvent;
             
             struct PersistentRecords {
+               STPStatus _stpStatus;
                int _solverNumber;
                double _timeStepSize;
                double _timeStamp;
@@ -5053,7 +5219,27 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+               PersistentRecords(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+               
+               
+               inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _stpStatus;
+               }
+               
+               
+               
+               inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _stpStatus = stpStatus;
+               }
+               
                
                
                inline int getSolverNumber() const 
@@ -5727,12 +5913,32 @@ namespace exahype {
                /**
                 * Generated
                 */
-               FiniteVolumesCellDescriptionPacked(const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+               FiniteVolumesCellDescriptionPacked(const STPStatus& stpStatus, const int& solverNumber, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solution, const int& solutionAverages, const int& solutionCompressed, const int& previousSolution, const int& previousSolutionAverages, const int& previousSolutionCompressed, const int& extrapolatedSolution, const int& extrapolatedSolutionAverages, const int& extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
                
                /**
                 * Generated
                 */
                ~FiniteVolumesCellDescriptionPacked();
+               
+               
+               inline STPStatus getStpStatus() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._stpStatus;
+               }
+               
+               
+               
+               inline void setStpStatus(const STPStatus& stpStatus) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._stpStatus = stpStatus;
+               }
+               
                
                
                inline int getSolverNumber() const 
@@ -6476,6 +6682,16 @@ namespace exahype {
                   _persistentRecords._refinementEvent = refinementEvent;
                }
                
+               
+               /**
+                * Generated
+                */
+               static std::string toString(const STPStatus& param);
+               
+               /**
+                * Generated
+                */
+               static std::string getSTPStatusMapping();
                
                /**
                 * Generated
