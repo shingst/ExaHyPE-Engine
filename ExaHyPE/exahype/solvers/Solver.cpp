@@ -130,11 +130,11 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     tarch::parallel::Node::getInstance().receiveDanglingMessages();
     if ( jobType != JobType::SkeletonJob ) { // TODO(Dominic): Use background job queue here as well
        peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
-    } 
-    
+    }
+
     tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
     const int queuedJobs = getNumberOfQueuedJobs(jobType);
-    lock.free();     
+    lock.free();
     finishedWait = queuedJobs == 0;
   }
 }

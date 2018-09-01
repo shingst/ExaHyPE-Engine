@@ -846,16 +846,34 @@ class exahype::solvers::Solver {
 
   static int getNumberOfQueuedJobs(const JobType& jobType);
 
+
+  /**
+   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
+   * further. We have to wait until all tasks have terminated if we want to modify the heap,
+   * i.e. insert new data or remove data.
+   * Therefore, the wait (as well as the underlying semaphore) belong
+   * into this abstract superclass.
+   *
+   * \param[in] backgroundJobCounter A reference to a background job counter.
+   */
+  static void ensureAllJobsHaveTerminated(JobType jobType);
+
  /**
-  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
-  * further. We have to wait until all tasks have terminated if we want to modify the heap,
-  * i.e. insert new data or remove data.
-  * Therefore, the wait (as well as the underlying semaphore) belong
-  * into this abstract superclass.
+  * Waits until the \p cellDescription has completed its time step.
   *
-  * \param[in] backgroundJobCounter A reference to a background job counter.
+  * We only read (sample) the state and thus do not need any locks.
   */
- static void ensureAllJobsHaveTerminated(JobType jobType);
+ template <typename CellDescription,JobType jobType>
+ static void waitUntilCompletedTimeStep(
+     const CellDescription& cellDescription) {
+   while ( !cellDescription.hasCompletedTimeStep() ) {
+     // do some work myself
+     tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+     if ( jobType != JobType::SkeletonJob ) {
+       peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+     }
+   }
+ }
 
  /**
   * Submit a Prediction- or FusedTimeStepJob.

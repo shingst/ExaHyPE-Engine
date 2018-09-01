@@ -127,7 +127,7 @@ private:
    * if state broadcasting is turned off.
    *
    */
-  void ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter);
+  void updateBatchIterationCounter(bool initialiseBatchIterationCounter);
 
   /**
    * \return if the mappings/adapters

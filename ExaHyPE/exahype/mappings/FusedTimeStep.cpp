@@ -153,26 +153,18 @@ exahype::mappings::FusedTimeStep::FusedTimeStep() {
 //   With the STP flag per cell, there will not be a global wait for enclave jobs anymore.
 //   We will only need to wait for the skeleton jobs to finish, when we send out data or before we perform a prolongation.
 //
-void exahype::mappings::FusedTimeStep::ensureAllBackgroundJobsHaveTerminated(bool initialiseBatchIterationCounter) {
+void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initialiseBatchIterationCounter) {
   if (!_batchIterationCounterUpdated) {
     _batchIteration = ( initialiseBatchIterationCounter) ? 0 : _batchIteration+1;
     _batchIterationCounterUpdated = true;
 
     if ( issuePredictionJobsInThisIteration() ) {
-      if (
-        // @todo Dominic: Adding this line does not work unfortunately
-        // (not initialiseBatchIterationCounter) and
-        exahype::solvers::Solver::SpawnPredictionAsBackgroundJob
-	  ) {
-        exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
-      }
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
         solver->beginTimeStep(solver->getMinTimeStamp());
       }
     }
     if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
-      exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
     }
   }
@@ -185,7 +177,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   _stateCopy = solverState;
 
   if ( _stateCopy.isFirstIterationOfBatchOrNoBatch() ) {
-    ensureAllBackgroundJobsHaveTerminated(true);
+    updateBatchIterationCounter(true);
 
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
@@ -278,7 +270,7 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  ensureAllBackgroundJobsHaveTerminated(false);
+  updateBatchIterationCounter(false);
 
   if ( issuePredictionJobsInThisIteration() ) {
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
@@ -379,7 +371,7 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  ensureAllBackgroundJobsHaveTerminated(false);
+  updateBatchIterationCounter(false);
 
   if ( issuePredictionJobsInThisIteration() ) {
     vertex.receiveNeighbourData(
