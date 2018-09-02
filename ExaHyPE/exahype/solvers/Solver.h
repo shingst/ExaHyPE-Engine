@@ -839,6 +839,11 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
+  /**
+   * Specify if solvers spawn background jobs and
+   * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
+   * and PredictorOrLocalRecomputation.
+   */
   static void configureEnclaveTasking(const bool useBackgroundJobs);
 
 
