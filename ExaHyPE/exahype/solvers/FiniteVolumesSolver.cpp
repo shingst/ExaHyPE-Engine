@@ -957,6 +957,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 
   synchroniseTimeStepping(cellDescription);
 
+  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription);
+
   if (cellDescription.getType()==CellDescription::Cell) {
     uncompress(cellDescription);
 

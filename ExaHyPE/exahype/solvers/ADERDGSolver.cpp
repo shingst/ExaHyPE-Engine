@@ -3131,6 +3131,8 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
 
   synchroniseTimeStepping(cellDescription);
 
+  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription);
+
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
     const int orientation = (1 + posBoundary(direction) - posCell(direction))/2;
