@@ -861,7 +861,20 @@ class exahype::solvers::Solver {
  /**
   * Waits until the \p cellDescription has completed its time step.
   *
-  * We only read (sample) the state and thus do not need any locks.
+  * <h2> Thread-safety </h2>
+  *
+  * We only read (sample) the hasCompletedTimeStep flag and thus do not need any locks.
+  * If this flag were to assume an undefined state, this would happen after the job working processing the
+  * cell description was completed. This routine will then do an extra iteration or finish.
+  * Either is fine.
+  *
+  * The flag is modified before a job is spawned and after it was processed.
+  * As the job cannot be processed before it is spawned, setting the flag
+  * is thread-safe.
+  *
+  * <h2> MPI </h2>
+  *
+  * Tries to receive dangling MPI messages while waiting.
   */
  template <typename CellDescription,JobType jobType>
  static void waitUntilCompletedTimeStep(
