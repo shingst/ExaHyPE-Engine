@@ -67,6 +67,7 @@ class Controller:
         self.debug=args.debug
         self.verbose = args.verbose or self.interactive or self.debug
         self.write_json = args.write_json
+        self.strict_json = args.strict_json
         
         if self.verbose:
             self.log.setLevel(logging.INFO)
@@ -173,6 +174,7 @@ class Controller:
         formats = parser.add_argument_group("Specification-file-format specific options")
         formats.add_argument("-o", "--validate-only", action="store_true", default=False, help="Validate input only, don't run the toolkit. Will output the correct JSON if passes.")
         formats.add_argument("-f", "--format", choices=OmniReader.available_readers(), default=OmniReader.any_format_name, help="Specification file format of the input file. 'any' will try all built-in-formats.")
+        ui.add_argument("-s", "--strict-json", action="store_true", default=False, help="ExaHyPE will only run with JSON formatted inputs, no call to toolkit during runtime")
 
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
@@ -275,6 +277,7 @@ class Controller:
         context = self.buildBaseContext()
         context["solvers"] = solverContextsList
         context["codegeneratorContextsList"] = [solverContext["codegeneratorContext"] for solverContext in solverContextsList if "codegeneratorContext" in solverContext]
+        context["strictJSON"]            = self.strict_json
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)
         context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
