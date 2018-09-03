@@ -17,7 +17,9 @@ ls
 
 file="$(find . -name '*\\.exahype2')"
 echo "File is called ${file}."
-project_name="$(grep -o "exahype-project .*" "${file}" | sed "s/exahype-project\\s*//g")"
+#project_name="$(grep -o "exahype-project .*" "${file}" | sed "s/exahype-project\\s*//g")" //Toolkit1
+project_name="$(grep -o "exahype-project .*" "${file}" | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_name"])')"
+
 echo "Project is called ${project_name}"
 filename=$(basename -- "${file}")
 directory="$(dirname "${file}")"
