@@ -19,12 +19,10 @@ void NavierStokesADERDG::MyNavierStokesSolver_FV::adjustSolution(const double* c
   // Number of variables    = 5 + #parameters
     if ( tarch::la::equals( t,0.0 ) ) {
         Variables vars(Q);
-        //Taylor Green Vortex initial conditions
         vars.rho() = 1.0;
-        vars.j(0, 0 ,0);
-        /*if(std::abs(x[1]-1.0)<1e-6){
+        if(std::abs(x[1]-1.0)<1e-6){
             vars.j(0, 1.0 ,0);
-        }*/
+        }
         double p = c0*c0/GAMMA;
         vars.E() = p/(GAMMA-1) + 0.5 * (vars.j()*vars.j())/vars.rho();
     }
@@ -47,7 +45,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_FV::eigenvalues(const double* cons
   eigs.E()  = u_n + c;
 }
 
-void NavierStokesADERDG::MyNavierStokesSolver_FV::parabolicEigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void NavierStokesADERDG::MyNavierStokesSolver_FV::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
     // Dimensions             = 2
     // Number of variables    = 5 + #parameters
     ReadOnlyVariables vars(Q);
@@ -90,7 +88,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_FV::boundaryValues(
 //*********************** PDE *******************************
 //***********************************************************
 
-void NavierStokesADERDG::MyNavierStokesSolver_FV::parabolicFlux(const double* const Q, const double* const gradQ, double** F) {
+void NavierStokesADERDG::MyNavierStokesSolver_FV::viscousFlux(const double* const Q, const double* const gradQ, double** F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
   ReadOnlyVariables vars(Q);
@@ -138,7 +136,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_FV::parabolicFlux(const double* co
 
   double divV23  = 2./3.*(uux + vvy);
 
-  //parabolic part
+  //viscous part
   //F[0][0] += 0.;
   F[0][1] += mu*( 2*uux - divV23 );
   F[0][2] += mu*(   uuy + vvx    );

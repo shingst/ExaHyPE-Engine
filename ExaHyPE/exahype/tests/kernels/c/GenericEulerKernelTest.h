@@ -69,7 +69,7 @@ class GenericEulerKernelTest : public tarch::tests::TestCase {
 
   static void coefficientMatrix(const double* const Q, const int normalNonZero, double* Bn);
 
-  static void parabolicFlux(const double* const Q, double* gradQ, double** F);
+  static void viscousFlux(const double* const Q, double* gradQ, double** F);
 
   static void multiplyMaterialParameterMatrix(const double *Q, double *rhs){return;}
 

@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template <typename SolverType, bool useParabolicFlux>
+template <typename SolverType, bool useViscousFlux>
 double kernels::finitevolumes::commons::c::stableTimeStepSize(
     SolverType& solver,
     const double* const luh,
@@ -49,8 +49,8 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
                   std::abs<double>);
           double s_max_x = *std::max_element(lambda, lambda + numberOfVariables);
 
-          if(useParabolicFlux){
-              solver.parabolicEigenvalues(luh + idx(j, k, 0), 0, lambda);
+          if(useViscousFlux){
+              solver.viscousEigenvalues(luh + idx(j, k, 0), 0, lambda);
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               double s_max_x_vis = *std::max_element(lambda, lambda + numberOfVariables);
@@ -66,8 +66,8 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
                   std::abs<double>);
           double s_max_y = *std::max_element(lambda, lambda + numberOfVariables);
 
-          if(useParabolicFlux){
-              solver.parabolicEigenvalues(luh + idx(j, k, 0), 0, lambda);
+          if(useViscousFlux){
+              solver.viscousEigenvalues(luh + idx(j, k, 0), 0, lambda);
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               double s_max_y_vis = *std::max_element(lambda, lambda + numberOfVariables);
@@ -423,7 +423,7 @@ void kernels::finitevolumes::commons::c::ghostLayerFilling(
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template <typename SolverType, bool useParabolicFlux>
+template <typename SolverType, bool useViscousFlux>
 double kernels::finitevolumes::commons::c::stableTimeStepSize(
     SolverType& solver,
     const double* const luh,
@@ -453,8 +453,8 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
             std::abs<double>);
         double s_max_x = *std::max_element(lambda, lambda + numberOfVariables);
 
-          if(useParabolicFlux){
-              solver.parabolicEigenvalues(luh + idx(i,j,k,0), 0/*x-axis*/, lambda);
+          if(useViscousFlux){
+              solver.viscousEigenvalues(luh + idx(i,j,k,0), 0/*x-axis*/, lambda);
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               double s_max_x_vis = *std::max_element(lambda, lambda + numberOfVariables);
@@ -471,8 +471,8 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
         double s_max_y = *std::max_element(lambda, lambda + numberOfVariables);
 
 
-          if(useParabolicFlux){
-              solver.parabolicEigenvalues(luh + idx(i,j,k,0), 1/*y-axis*/, lambda);
+          if(useViscousFlux){
+              solver.viscousEigenvalues(luh + idx(i,j,k,0), 1/*y-axis*/, lambda);
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               double s_max_y_vis = *std::max_element(lambda, lambda + numberOfVariables);
@@ -488,8 +488,8 @@ double kernels::finitevolumes::commons::c::stableTimeStepSize(
             std::abs<double>);
         double s_max_z = *std::max_element(lambda, lambda + numberOfVariables);
 
-          if(useParabolicFlux){
-              solver.parabolicEigenvalues(luh + idx(i,j,k,0), 2/*z-axis*/, lambda);
+          if(useViscousFlux){
+              solver.viscousEigenvalues(luh + idx(i,j,k,0), 2/*z-axis*/, lambda);
               std::transform(lambda, lambda + numberOfVariables, lambda,
                       std::abs<double>);
               double s_max_z_vis = *std::max_element(lambda, lambda + numberOfVariables);

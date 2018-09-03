@@ -86,8 +86,8 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
-{%- if useParabolicFlux %}
-    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) final override;
+{%- if useViscousFlux %}
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) final override;
 {%- endif %}
     
     /**
@@ -129,7 +129,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     
     //PDE
     
-{%- if useFlux && !useParabolicFlux %}
+{%- if useFlux && !useViscousFlux %}
     /**
      * Compute the flux tensor.
      *
@@ -142,7 +142,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
 /* flux() function not included, as requested in the specification file */
 {%- endif %}
 
-{%- if useParabolicFlux %}
+{%- if useViscousFlux %}
     /**
      * Compute the flux tensor with diffusive components.
      *
@@ -152,9 +152,9 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void parabolicFlux(const double* const Q,const double* gradQ, double** F) final override;
+    void viscousFlux(const double* const Q,const double* gradQ, double** F) final override;
 {%- else -%}
-/* parabolicFlux() function not included, as requested in the specification file */
+/* viscousFlux() function not included, as requested in the specification file */
 {%- endif %}
     
 {%- if useSource %}

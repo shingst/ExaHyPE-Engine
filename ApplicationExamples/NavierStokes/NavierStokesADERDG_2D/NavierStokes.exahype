@@ -28,8 +28,7 @@ exahype-project NavierStokesADERDG
     dimension const         = 2
     width                   = 1.0,1.0
     offset                  = 0.0,0.0
-    /*-3.14159, -3.14159*/
-    end-time                = 0.5
+    end-time                = 5.0
   end computational-domain
  
   /*
@@ -46,12 +45,12 @@ exahype-project NavierStokesADERDG
   
   solver Limiting-ADER-DG MyNavierStokesSolver
     variables const            = rho:1,j:3,E:1
-    order const                = 5
+    order const                = 3
     maximum-mesh-size          = 0.25
-    maximum-mesh-depth         = 0
+    maximum-mesh-depth         = 1
     time-stepping              = global
     type const                 = nonlinear, Legendre
-    terms const                = parabolicflux
+    terms const                = viscousflux
     optimisation const         = generic
     language const             = C
     limiter-type const         = godunov

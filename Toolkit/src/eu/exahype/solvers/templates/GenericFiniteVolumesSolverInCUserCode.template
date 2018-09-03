@@ -52,7 +52,7 @@ void {{project}}::{{solver}}::boundaryValues(
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
 
-{%- if useFlux && !useParabolicFlux %}
+{%- if useFlux && !useViscousFlux %}
 void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
   // Dimensions                        = {{dimensions}}
   // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
@@ -68,8 +68,8 @@ void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
 {%- endif %}
 
 
-{%- if useParabolicFlux %}
-void {{project}}::{{solver}}::parabolicFlux(const double* const Q,const double* const gradQ, double** F) {
+{%- if useViscousFlux %}
+void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
     // Dimensions                        = {{dimensions}}
     // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
 
@@ -82,7 +82,7 @@ void {{project}}::{{solver}}::parabolicFlux(const double* const Q,const double* 
     {%- endfor %}
 }
 
-void {{project}}::{{solver}}::parabolicEigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void {{project}}::{{solver}}::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
     // Dimensions             = {{dimensions}}
     // Number of variables    = {{numberOfVariables + numberOfParameters}} + #parameters
 

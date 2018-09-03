@@ -157,7 +157,7 @@ void boundaryConditions(
     const int direction);
 
 
-template <typename SolverType,bool useParabolicFlux>
+template <typename SolverType,bool useViscousFlux>
 double stableTimeStepSize(SolverType& solver, const double* const luh,
                           const tarch::la::Vector<DIMENSIONS, double>& dx);
 

@@ -27,8 +27,8 @@ public class GenericADERDG implements Solver {
     _solverName         = solverName;
     
     final boolean isLinear               = kernel.isLinear();
-    final boolean useFlux                = kernel.useFlux() || kernel.useParabolicFlux();
-    final boolean useParabolicFlux       = kernel.useParabolicFlux(); 
+    final boolean useFlux                = kernel.useFlux() || kernel.useViscousFlux();
+    final boolean useViscousFlux       = kernel.useViscousFlux(); 
     final boolean useSource              = kernel.useSource();
     final boolean useNCP                 = kernel.useNCP();
     final boolean usePointSources        = kernel.usePointSources();
@@ -67,7 +67,7 @@ public class GenericADERDG implements Solver {
     context.put("isLinear"              , isLinear);
     context.put("isFortran"             , isFortran);
     context.put("useFlux"               , useFlux);
-    context.put("useParabolicFlux"      , useParabolicFlux);
+    context.put("useViscousFlux"      , useViscousFlux);
     context.put("useSource"             , useSource);
     context.put("useNCP"                , useNCP);
     context.put("usePointSources"       , usePointSources);
@@ -79,7 +79,7 @@ public class GenericADERDG implements Solver {
     
     //boolean as String
     context.put("useFlux_s"          , boolToTemplate(useFlux));
-    context.put("useParabolicFlux_s" , boolToTemplate(useParabolicFlux));
+    context.put("useViscousFlux_s" , boolToTemplate(useViscousFlux));
     context.put("useSource_s"        , boolToTemplate(useSource));
     context.put("useNCP_s"           , boolToTemplate(useNCP));
     

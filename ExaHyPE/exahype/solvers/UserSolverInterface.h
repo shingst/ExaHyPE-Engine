@@ -141,8 +141,8 @@ public:
    *               holding pointers to actual lists. Thus, the storage may be noncontinous.
    *               In any case, the storage has already been allocated.
    **/
-  virtual void parabolicFlux(const double* const Q, const double* const gradQ, double** F) = 0;
-  virtual void parabolicEigenvalues(const double* const Q,const int d,double* lambda) = 0;
+  virtual void viscousFlux(const double* const Q, const double* const gradQ, double** F) = 0;
+  virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda) = 0;
   ///@}
 };
  // UserSolverInterface

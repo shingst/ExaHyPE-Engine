@@ -72,7 +72,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
-    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -124,7 +124,7 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void parabolicFlux(const double* const Q,const double* gradQ, double** F) final override;
+    void viscousFlux(const double* const Q,const double* gradQ, double** F) final override;
 
 /* algebraicSource() function not included, as requested by the specification file */
 
@@ -133,6 +133,18 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
+
+    void mapDiscreteMaximumPrincipleObservables(
+            double* observables,const int numberOfObservables,
+            const double* const Q) const override;
+    bool isPhysicallyAdmissible(
+            const double* const solution,
+            const double* const observablesMin,const double* const observablesMax,
+            const int numberOfObservables,
+            const tarch::la::Vector<DIMENSIONS,double>& center,
+            const tarch::la::Vector<DIMENSIONS,double>& dx,
+            const double t, const double dt) const override;
+
 };
 
 #endif // __MyNavierStokesSolver_ADERDG_CLASS_HEADER__

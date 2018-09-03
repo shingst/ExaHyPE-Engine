@@ -81,8 +81,8 @@ void {{project}}::{{solver}}::eigenvalues(const double* const Q,const int d,doub
   lambda[{{i}}] = 1.0;
   {%- endfor %}
 }
-{%- if useParabolicFlux %}
-void {{project}}::{{solver}}::parabolicEigenvalues(const double* const Q,const int d,double* lambda) {
+{%- if useViscousFlux %}
+void {{project}}::{{solver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
   // Dimensions                        = {{dimensions}}
   // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
   
@@ -94,7 +94,7 @@ void {{project}}::{{solver}}::parabolicEigenvalues(const double* const Q,const i
 {%- endif %}
 
 
-{%- if useFlux && !useParabolicFlux %}
+{%- if useFlux && !useViscousFlux %}
 void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
   // Dimensions                        = {{dimensions}}
   // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
@@ -109,8 +109,8 @@ void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
 }
 {%- endif %}
 
-{%- if useParabolicFlux %}
-void {{project}}::{{solver}}::parabolicFlux(const double* const Q,const double* const gradQ,double** F) {
+{%- if useViscousFlux %}
+void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* const gradQ,double** F) {
   // Dimensions                        = {{dimensions}}
   // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
   

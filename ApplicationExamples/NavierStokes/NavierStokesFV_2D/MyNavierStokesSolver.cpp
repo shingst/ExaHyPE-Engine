@@ -44,7 +44,7 @@ void NavierStokesFV::MyNavierStokesSolver::eigenvalues(const double* const Q, co
   eigs.E()  = u_n + c;
 }
 
-void NavierStokesFV::MyNavierStokesSolver::parabolicEigenvalues(const double* const Q, const int dIndex, double* lambda) {
+void NavierStokesFV::MyNavierStokesSolver::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
     // Dimensions             = 2
     // Number of variables    = 5 + #parameters
     ReadOnlyVariables vars(Q);
@@ -77,7 +77,7 @@ void NavierStokesFV::MyNavierStokesSolver::boundaryValues(
 //*********************** PDE *******************************
 //***********************************************************
 
-void NavierStokesFV::MyNavierStokesSolver::parabolicFlux(const double* const Q, const double* const gradQ, double** F) {
+void NavierStokesFV::MyNavierStokesSolver::viscousFlux(const double* const Q, const double* const gradQ, double** F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
   ReadOnlyVariables vars(Q);
@@ -125,7 +125,7 @@ void NavierStokesFV::MyNavierStokesSolver::parabolicFlux(const double* const Q, 
 
   double divV23  = 2./3.*(uux + vvy);
 
-  //parabolic part
+  //viscous part
   //F[0][0] += 0.;
   F[0][1] += mu*( 2*uux - divV23 );
   F[0][2] += mu*(   uuy + vvx    );
