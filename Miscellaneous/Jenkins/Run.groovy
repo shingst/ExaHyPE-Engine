@@ -15,14 +15,12 @@ set -euo pipefail
 
 ls
 
-#file="$(find . -name '*\\.exahype2')"
-#echo "File is called ${file}."
-#project_name="$(grep -o "exahype-project .*" "${file}" | sed "s/exahype-project\\s*//g")"
-#echo "Project is called ${project_name}"
-#filename=$(basename -- "${file}")
-filename=${config.name}2
-#directory="$(dirname "${file}")"
-directory=${config.path}
+file="$(find . -name '*\\.exahype2')"
+echo "File is called ${file}."
+project_name="$(grep -o "exahype-project .*" "${file}" | sed "s/exahype-project\\s*//g")"
+echo "Project is called ${project_name}"
+filename=$(basename -- "${file}")
+directory="$(dirname "${file}")"
 cd "${directory}"
 
 ls
