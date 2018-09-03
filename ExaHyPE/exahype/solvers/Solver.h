@@ -887,9 +887,9 @@ class exahype::solvers::Solver {
    while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
      tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
-     if ( jobType != JobType::SkeletonJob ) {
+    //  if ( jobType != JobType::SkeletonJob ) {
        peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
-     }
+    //  }
    }
  }
 
