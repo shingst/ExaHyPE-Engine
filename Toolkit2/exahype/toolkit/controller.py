@@ -175,8 +175,8 @@ class Controller:
         formats.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file with a similar filename if legacy specification file is read (*.exahype) (default: no)")
         formats.add_argument("-f", "--format", choices=OmniReader.available_readers(), default=OmniReader.any_format_name, help="Specification file format of the input file. 'any' will try all built-in-formats.")
         
-        # Note: This option is unneccessary, --format=json will have the same effect.
-        ui.add_argument("-s", "--strict-json", action="store_true", default=False, help="ExaHyPE will only run with JSON formatted inputs, no call to toolkit during runtime")
+        generator = parser.add_argument_group("Generator-specific glue code generation options which should actually be part of the specification files")
+        generator.add_argument("-s", "--strict-json", action="store_true", default=False, help="Generate a specification file parser which does not call the toolkit as an external process during runtime but instead only accepts proper JSON as input")
 
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
