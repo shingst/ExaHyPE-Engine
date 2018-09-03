@@ -40,6 +40,7 @@ public class FiniteVolumesKernel {
     TERM_OPTION_IDS.put("NCP_OPTION_ID",               "ncp");
     TERM_OPTION_IDS.put("POINTSOURCES_OPTION_ID",      "pointsources");
     //TERM_OPTION_IDS.put("MATERIALPARAMETER_OPTION_ID", "materialparameters"); //TODO
+    TERM_OPTION_IDS.put("VISCOUS_FLUX_OPTION_ID",      "viscousflux");
   }
   
   private static final Map<String, String> OPTIMIZATION_OPTION_IDS = new HashMap<String, String>();
@@ -108,6 +109,10 @@ public class FiniteVolumesKernel {
         throw new IllegalArgumentException("Optimisation key \""+parsedId+"\" not recognized");
       }
     }
+    // can't use flux and viscous flux together
+    if(useFlux() && useViscousFlux()) {
+      throw new IllegalArgumentException("The term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"' and term '"+TERM_OPTION_IDS.get("VISCOUS_FLUX_OPTION_ID")+"' can't be used together");
+    }
   }
   
   public enum KernelType {
@@ -174,6 +179,9 @@ public class FiniteVolumesKernel {
   
   public boolean useMaterialParameterMatrix() {
     return terms.containsKey(TERM_OPTION_IDS.get("MATERIALPARAMETER_OPTION_ID"));
+  }
+  public boolean useViscousFlux() {
+    return terms.containsKey(TERM_OPTION_IDS.get("VISCOUS_FLUX_OPTION_ID"));
   }
   
   public boolean tempVarsOnStack() {

@@ -33,7 +33,7 @@ void solutionAdjustment(
 /**
  * todo docu
  */
-template <typename SolverType>
+template <typename SolverType, bool useViscousFlux>
 double stableTimeStepSize(
     SolverType& solver,
     const double* const luh,

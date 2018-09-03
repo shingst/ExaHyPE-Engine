@@ -172,7 +172,7 @@ const int picardIterations = 1;
   double* lFhi = memory; memory+=sizeLFhi;
 {%-   endif %}
 
-  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
+  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{useViscousFlux}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
   kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
 {%- endif %}
@@ -301,7 +301,7 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 {%- if enableProfiler %}
   _profiler->start("stableTimeStepSize");
 {%- endif %}
-  double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}}>(*static_cast<{{solver}}*>(this),luh,dx);
+  double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}},{{useViscousFlux}}>(*static_cast<{{solver}}*>(this),luh,dx);
 {%- if enableProfiler %}
   _profiler->stop("stableTimeStepSize");
 {%- endif %}
@@ -352,6 +352,14 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
       abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
+      abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+      abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {

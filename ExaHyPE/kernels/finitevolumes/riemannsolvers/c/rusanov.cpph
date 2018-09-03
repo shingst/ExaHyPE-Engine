@@ -21,7 +21,7 @@
  * A simple Rusanov flux considering pointwise
  * left and right values.
  */
-template <bool useNCP, bool useFlux, typename SolverType>
+template <bool useNCP, bool useFlux, bool useViscousFlux, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::rusanov(
     SolverType& solver,
     double* fnL, double *fnR, const double* qL, const double* qR, int normalNonZero) { // TODO(Dominic): I need four of those
@@ -43,28 +43,45 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     const double abs_sR_i = std::abs(sR[i]);
     s_max = std::max( abs_sR_i, s_max );
   }
+  if(useViscousFlux){ //Add contribution of hyperbolic part
+    double s_max_d = 0;
+    //TODO calculation
 
-  double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
-  double FR2[DIMENSIONS][numberOfVariables] = {0.0};
-  double* FL[DIMENSIONS]={FL2[0], FL2[1]};
-  double* FR[DIMENSIONS]={FR2[0], FR2[1]};
-  if (useFlux) {
-    solver.flux(qL, FL);
-    solver.flux(qR, FR);
+    s_max += s_max_d;
   }
 
   // determine BgradQ from ncp
   double ncp[numberOfData] = {0.0};
-  if (useNCP) {
+  double gradQ[DIMENSIONS][numberOfData] = {0.0};
+  if (useNCP || useViscousFlux) {
     double Qavg[numberOfData];
-    double gradQ[DIMENSIONS][numberOfData] = {0.0};
     for(int k=0; k < numberOfData; k++) {
        Qavg[k] = (qR[k] + qL[k]) / 2;
        gradQ[normalNonZero][k] = qR[k] - qL[k];
     }
     solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
   }
-  
+
+  double FL2[DIMENSIONS][numberOfVariables] = {0.0}; // Q: Can we skip this memset?
+  double FR2[DIMENSIONS][numberOfVariables] = {0.0};
+  double* FL[DIMENSIONS]={FL2[0], FL2[1]};
+  double* FR[DIMENSIONS]={FR2[0], FR2[1]};
+  if (useFlux && !useViscousFlux) {
+    solver.flux(qL, FL);
+    solver.flux(qR, FR);
+  }
+  if (useViscousFlux) {
+      //std::cout << numberOfData << std::endl;
+      double gradQ_[DIMENSIONS*numberOfData] = {0.0};
+      for(int i=0; i < DIMENSIONS; i++){
+          for(int j=0; j < numberOfData; j++){
+              gradQ_[i*numberOfData + j] = gradQ[i][j];
+          }
+      }
+    solver.viscousFlux(qL,gradQ_, FL);
+    solver.viscousFlux(qR,gradQ_, FR);
+  }
+
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
     if (useFlux) {
@@ -95,7 +112,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
 //template <void PDEEigenvalues(const double* const Q, const int normalNonZero,
 //                              double* lambda),
 //          void PDEFlux(const double* const Q, double** F)>
-template <bool useNCP, bool useFlux, typename SolverType>
+template <bool useNCP, bool useFlux,bool useViscousFlux, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, double* fnL, double *fnR, const double* qL, const double* qR,
                      int normalNonZero) { // TODO(Dominic): I need four of those
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
@@ -117,26 +134,39 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(SolverType& solver, do
     s_max = std::max( abs_sR_i, s_max );
   }
 
-  double FL3[DIMENSIONS][numberOfVariables] = {0.0};
-  double FR3[DIMENSIONS][numberOfVariables] = {0.0};
-  double* FL[DIMENSIONS]={FL3[0], FL3[1], FL3[2]};
-  double* FR[DIMENSIONS]={FR3[0], FR3[1], FR3[2]};
-  if (useFlux) {
-    solver.flux(qL, FL);
-    solver.flux(qR, FR);
-  }
-
   // determine BgradQ from ncp
   double ncp[numberOfData] = {0.0};
-  if (useNCP) {
+  double gradQ[DIMENSIONS][numberOfData] = {0.0};
+  if (useNCP || useViscousFlux) {
     double Qavg[numberOfData];
-    double gradQ[DIMENSIONS][numberOfData] = {0.0};
     for(int k=0; k < numberOfData; k++) {
        Qavg[k] = (qR[k] + qL[k]) / 2;
        gradQ[normalNonZero][k] = qR[k] - qL[k];
     }
     solver.nonConservativeProduct(Qavg, gradQ[0], ncp);
   }
+
+  double FL3[DIMENSIONS][numberOfVariables] = {0.0};
+  double FR3[DIMENSIONS][numberOfVariables] = {0.0};
+  double* FL[DIMENSIONS]={FL3[0], FL3[1], FL3[2]};
+  double* FR[DIMENSIONS]={FR3[0], FR3[1], FR3[2]};
+  if (useFlux && !useViscousFlux) {
+    solver.flux(qL, FL);
+    solver.flux(qR, FR);
+  }
+    if (useViscousFlux) {
+      //std::cout << numberOfData << std::endl;
+      double gradQ_[DIMENSIONS*numberOfData] = {0.0};
+      for(int i=0; i < DIMENSIONS; i++){
+          for(int j=0; j < numberOfData; j++){
+              gradQ_[i*numberOfData + j] = gradQ[i][j];
+          }
+      }
+    solver.viscousFlux(qL,gradQ_, FL);
+    solver.viscousFlux(qR,gradQ_, FR);
+  }
+
+
 
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
