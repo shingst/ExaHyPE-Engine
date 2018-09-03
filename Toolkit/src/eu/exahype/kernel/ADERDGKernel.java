@@ -69,6 +69,7 @@ public class ADERDGKernel {
   /**
    * numberOfObservables initialized if using the a LimitingSolver
    */ 
+  private int ghostLayerWidth = -1;
   private int numberOfObservables = -1; // TODO This should not be part of this class!
   
   
@@ -275,8 +276,18 @@ public class ADERDGKernel {
   
   // useLimiter only if the two limiter parameter have been set
   public boolean useLimiter() { // TODO This should not be part of this class!
-    return numberOfObservables > -1;
+    return ghostLayerWidth > -1 && numberOfObservables > -1;
   }
+  
+  // used for opt limiter
+  public void setGhostLayerWidth(int glw) {
+    this.ghostLayerWidth = glw;
+  }
+  
+  public int getGhostLayerWidth() {
+    return ghostLayerWidth; // -1 by default
+  }
+
 
   //(type: [...], terms: [...], opt: [...])
   public String toString() {
