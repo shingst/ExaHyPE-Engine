@@ -6,7 +6,7 @@
 
 Toolkit2="$(dirname $0)"
 has() { type $@ &>/dev/null; } # a way to check if command is available
-
+function join_by { local IFS="$1"; shift; echo "$*"; } # join bash-array with delimiter
 
 # find suitable python on the path
 if has python3; then PYTHON3="python3";
@@ -14,92 +14,19 @@ elif python --version | grep -qi "python 3"; then PYTHON3="python"
 else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; fi
 
 # check that all required modules are there.
-# Could probably postpone that because it is slow to call python so many times.
+modules=(attr pyresistent markupsafe jinja2 jsonschema)
 
-
-GITHUB=git://github.com
-
-# Uncomment if you use port forwarding a la
-# ssh -R 19489:github.com:9418 <Your Login>@<SuperMUC Login Node>
-#GITHUB=git://localhost:19489
-
-# Note about this way of checking dependencies:
-# it really takes a bit time to call python so many times, this slows down
-# startup.
-
-#  attr\
-#  pyrsistent\  # why needed? I have jinja2 and jsonschema installed with apt-get and it is sufficient.
-#  markupsafe\  # why needed? I have jinja2 and jsonschema installed with apt-get and it is sufficient.
-
-modules=(\
-  attr\
-  pyrsistent\
-  markupsafe\
-  jinja2\
-  jsonschema\
-  )
-
-repos=(\
-  $GITHUB/python-attrs/attrs.git\
-  $GITHUB/tobgu/pyrsistent.git\
-  $GITHUB/pallets/markupsafe.git\
-  $GITHUB/pallets/jinja.git\
-  $GITHUB/Julian/jsonschema.git\
-  )
-
-
-errors=false
-if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import attr,pyrsistent,markupsafe,jinja2,jsonschema" 2>&1 >/dev/null; then
-  echo "$0: At least required python3 module not available." >&2
-  errors=true
+if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $(join_by "," ${modules[@]})" 2>&1 >/dev/null; then
+  echo "$0: At least one required Python3 module is not available." >&2
+  if echo "$@" | grep -q -- '--interactive'; then
+    ./install-dependencies.sh >&2 || { echo "$0: Installing dependencies failed."; exit -1; }
+  else 
+    echo "$0: Call with --interactive to let the toolkit install the dependencies locally and interactively." >&2
+    exit -1
+  fi
 fi
 
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
-if [ "$errors" = "false" ]; then
-  # Run program using "exec", which ensures the proper return value of the shell script
-  PYTHONPATH="$Toolkit2" exec $PYTHON3 $Toolkit2/exahype/toolkit $@
-else
-  echo "$0: There are missing dependencies." >&2
-  echo "$0:"
-  echo "$0: Either run as root: " >&2
-  echo "$0:"
-  echo "$0: pip3 install ${modules[@]}" >&2
-  echo "$0:"
-  echo "$0: Or install dependencies in local subfolder." >&2
-  read -p "$0: Do you want to install dependencies in local subfolder (y/n)?" yn
-  case $yn in
-    [Yy]* ) 
-        dependencies=$Toolkit2/dependencies
-      
-        if [ ! -d $dependencies ]; then
-        mkdir $dependencies
-      else
-        rm -rf $dependencies/*
-      fi
-      
-      for i in ${!modules[*]}; do
-        module=${modules[$i]}
-        repo=${repos[$i]}
-                          
-         # symlink dependencies into top level dir 
-        ( cd $dependencies && git clone $repo ) # returns to work dir afterwards
-        
-        if [ "$module" == "attr" ]; then
-          (cd $Toolkit2 && ln -sf dependencies/attrs/src/attr ./)
-        elif [ "$module" == "jinja2" ]; then
-          (cd $Toolkit2 && ln -sf dependencies/jinja/jinja2 ./)
-        else
-          (cd $Toolkit2 && ln -sf dependencies/$module/$module ./)
-        fi
-        # remove last two lines of jsonschema __init__.py file as module might not be registered when installed locally 
-        # (head cannot use same file for input and output)
-        if [ "$module" == "jsonschema" ]; then
-          head -n -2 $Toolkit2/jsonschema/__init__.py > $Toolkit2/jsonschema/__init__.py.tmp  
-          mv $Toolkit2/jsonschema/__init__.py.tmp $Toolkit2/jsonschema/__init__.py
-        fi
-      done
-      ;;
-    [Nn]* ) errors=true;;
-    * ) errors=true; echo "Answer considered as 'n'.";;
-  esac
-fi
+
+# Run program using "exec", which ensures the proper return value of the shell script
+PYTHONPATH="$Toolkit2" exec $PYTHON3 $Toolkit2/exahype/toolkit $@

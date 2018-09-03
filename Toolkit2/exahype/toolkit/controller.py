@@ -179,8 +179,8 @@ class Controller():
     
     def parseArgs(self):
         parser = argparse.ArgumentParser(
-            description="ExaHyPE's new python-based toolkit",
-            epilog="See http://www.exahype.eu and the Guidebook for more help."
+            description="This is the ExaHyPE toolkit, a small python command line tool for generating the glue code and make system for ExaHyPE applications. It fulfills the purpose of the 'configure' step in some tools and comes before the compilation.",
+            epilog="See http://www.exahype.eu and the ExaHyPE Guidebook at http://dev.exahype.eu/guidebook.pdf for help. This is the new python-based toolkit (in action since August 2018). It replaces the older Java-based toolkit. It does not need to be compiled before usage. If you can read this message, you already setup everything to run the toolkit.",
         )
         
         # some mandatory arguments from Toolkit1
@@ -190,15 +190,16 @@ class Controller():
 
         ui = parser.add_argument_group("Toolkit user interface-specific options")
         g = ui.add_mutually_exclusive_group()
-        g.add_argument("-i", "--interactive", action="store_true", default=False, help="Run interactively")
+        g.add_argument("-i", "--interactive", action="store_true", default=False, help="Run interactively, triggers --verbose.")
         g.add_argument("-n", "--not-interactive", action="store_true", default=True, help="Run non-interactive in non-stop-mode (default)")
-        ui.add_argument("-v", "--verbose", action="store_true", help="Be verbose (off by default, triggered on by --interactive)")
-        ui.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file if legacy specification file is read (*.exahype) (default: no)")
-        ui.add_argument("-d", "--debug", action="store_true", default=False, help="Turn the debug mode on: print stack traces and more detailed error messages.")
+        ui.add_argument("-v", "--verbose", action="store_true", help="Be verbose (the new toolkit is off/quiet by default)")
+        ui.add_argument("-d", "--debug", action="store_true", default=False, help="Debugging mode, prints more detailed error messages, triggers --verbose.")
 
         formats = parser.add_argument_group("Specification-file-format specific options")
         formats.add_argument("-o", "--validate-only", action="store_true", default=False, help="Validate input only, don't run the toolkit. Will output the correct JSON if passes.")
+        formats.add_argument("-j", "--write-json", action="store_true", default=False, help="Write a JSON file with a similar filename if legacy specification file is read (*.exahype) (default: no)")
         formats.add_argument("-f", "--format", choices=OmniReader.available_readers(), default=OmniReader.any_format_name, help="Specification file format of the input file. 'any' will try all built-in-formats.")
+        
 
         parser.add_argument('specfile',
             type=argparse.FileType('r'),
