@@ -926,13 +926,25 @@ std::string exahype::parser::Parser::getFilenameForPlotter(int solverNumber,
 
 exahype::parser::ParserView exahype::parser::Parser::getParametersForPlotter(int solverNumber,
                                                    int plotterNumber) const {
+  // New style: We expect the "parameters" path
   std::string path = sformat("/solvers/%d/plotters/%d/parameters", solverNumber, plotterNumber);
   if ( hasPath(path) ) {
-    std::cout << path << std::endl;
+    logInfo("getParametersForPlotter", "Found parameters at " << path);
     return exahype::parser::ParserView(this,path);
-  } else {
-    return exahype::parser::ParserView();
   }
+
+  // Old style:
+  path = sformat("/solvers/%d/plotters/%d/select", solverNumber, plotterNumber);
+  if ( hasPath(path) ) {
+    logInfo("getParametersForPlotter", "Found parameters at " << path);
+    return exahype::parser::ParserView(this,path);
+  }
+
+  // Note that we do not support a bizarre mixing of old and new
+  // style a la "/solvers/%d/plotters/%d/parameters/select"
+
+  // No Parameters given for parser.
+  return exahype::parser::ParserView();
 }
 
 std::string exahype::parser::Parser::getLogFileName() const {
@@ -1065,6 +1077,10 @@ bool exahype::parser::Parser::useManualPinning() {
 }
 
 exahype::parser::ParserView exahype::parser::Parser::createParserView(const int solverNumberInSpecificationFile) {
+  // Note, we used to call this section "constants" in the past, but constants is really a bad name
+  // for run time parameters. Parameters is a bad name, too, since we have material parameters which
+  // have this name. Maybe "runtime_parameters" would be a good idea. Or just passing "/solver/%d" and
+  // letting the user to decide how to call his variables
   return exahype::parser::ParserView(this,sformat("/solvers/%d/parameters", solverNumberInSpecificationFile));
 }
 
