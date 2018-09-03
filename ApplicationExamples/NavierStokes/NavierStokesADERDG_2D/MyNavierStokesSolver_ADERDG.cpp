@@ -69,29 +69,6 @@ exahype::solvers::Solver::RefinementControl NavierStokesADERDG::MyNavierStokesSo
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
-    double* observables,const int numberOfObservables,
-    const double* const Q) const {
-  for (int i=0; i<NumberOfVariables; ++i) {
-    observables[i] = Q[i];
-  }
-}
-
-bool NavierStokesADERDG::MyNavierStokesSolver_ADERDG::isPhysicallyAdmissible(
-    const double* const solution,
-    const double* const observablesMin,const double* const observablesMax,
-    const int numberOfObservables,
-    const tarch::la::Vector<DIMENSIONS,double>& center,
-    const tarch::la::Vector<DIMENSIONS,double>& dx,
-    const double t, const double dt) const {
-  // This is an example for the compressible Euler equations.
-  // Modify it according to your needs.
-  if (observablesMin[0] <= 0.0) return false;
-  if (observablesMin[4] <= 0.0) return false;
-
-  return true;
-}
-
 //*****************************************************************************
 //******************************** PDE ****************************************
 // To use other PDE terms, specify them in the specification file, delete this 

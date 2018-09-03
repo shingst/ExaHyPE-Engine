@@ -358,6 +358,10 @@ void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const do
       abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
+void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+      abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
       abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }

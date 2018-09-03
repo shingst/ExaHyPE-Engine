@@ -134,17 +134,6 @@ class NavierStokesADERDG::MyNavierStokesSolver_ADERDG : public NavierStokesADERD
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 
-    void mapDiscreteMaximumPrincipleObservables(
-            double* observables,const int numberOfObservables,
-            const double* const Q) const override;
-    bool isPhysicallyAdmissible(
-            const double* const solution,
-            const double* const observablesMin,const double* const observablesMax,
-            const int numberOfObservables,
-            const tarch::la::Vector<DIMENSIONS,double>& center,
-            const tarch::la::Vector<DIMENSIONS,double>& dx,
-            const double t, const double dt) const override;
-
 };
 
 #endif // __MyNavierStokesSolver_ADERDG_CLASS_HEADER__
