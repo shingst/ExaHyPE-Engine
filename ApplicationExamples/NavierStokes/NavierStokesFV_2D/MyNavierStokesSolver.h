@@ -85,8 +85,8 @@ class NavierStokesFV::MyNavierStokesSolver : public NavierStokesFV::AbstractMyNa
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void parabolicFlux(const double* const Q,const double* const gradQ, double** F) override;
-    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** F) override;
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) override;
 
     /* algebraicSource() function not included, as requested by the specification file */
 

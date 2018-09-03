@@ -31,12 +31,10 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::adjustPointSolution(const 
   // Number of variables + parameters  = 5 + 0
     if ( tarch::la::equals( t,0.0 ) ) {
         Variables vars(Q);
-        //Taylor Green Vortex initial conditions
         vars.rho() = 1.0;
-        vars.j(0, 0 ,0);
-        /*if(std::abs(x[1]-1.0)<1e-6){
+        if(std::abs(x[1]-1.0)<1e-6){
             vars.j(0, 1.0 ,0);
-        }*/
+        }
         double p = c0*c0/GAMMA;
         vars.E() = p/(GAMMA-1) + 0.5 * (vars.j()*vars.j())/vars.rho();
     }
@@ -71,6 +69,29 @@ exahype::solvers::Solver::RefinementControl NavierStokesADERDG::MyNavierStokesSo
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
+    double* observables,const int numberOfObservables,
+    const double* const Q) const {
+  for (int i=0; i<NumberOfVariables; ++i) {
+    observables[i] = Q[i];
+  }
+}
+
+bool NavierStokesADERDG::MyNavierStokesSolver_ADERDG::isPhysicallyAdmissible(
+    const double* const solution,
+    const double* const observablesMin,const double* const observablesMax,
+    const int numberOfObservables,
+    const tarch::la::Vector<DIMENSIONS,double>& center,
+    const tarch::la::Vector<DIMENSIONS,double>& dx,
+    const double t, const double dt) const {
+  // This is an example for the compressible Euler equations.
+  // Modify it according to your needs.
+  if (observablesMin[0] <= 0.0) return false;
+  if (observablesMin[4] <= 0.0) return false;
+
+  return true;
+}
+
 //*****************************************************************************
 //******************************** PDE ****************************************
 // To use other PDE terms, specify them in the specification file, delete this 
@@ -95,7 +116,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::eigenvalues(const double* 
   eigs.E()  = u_n + c;
 }
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::parabolicEigenvalues(const double* const Q,const int d,double* lambda) {
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
     // Dimensions                        = 2
     // Number of variables + parameters  = 5 + 0
     ReadOnlyVariables vars(Q);
@@ -110,7 +131,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::parabolicEigenvalues(const
 }
 
 
-void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::parabolicFlux(const double* const Q,const double* const gradQ,double** F) {
+void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousFlux(const double* const Q,const double* const gradQ,double** F) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 5 + 0
  ReadOnlyVariables vars(Q);
@@ -158,7 +179,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::parabolicFlux(const double
 
   double divV23  = 2./3.*(uux + vvy);
 
-  //parabolic part
+  //viscous part
   //F[0][0] += 0.;
   F[0][1] += mu*( 2*uux - divV23 );
   F[0][2] += mu*(   uuy + vvx    );

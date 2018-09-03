@@ -29,11 +29,11 @@ public class GenericFiniteVolumesInC implements Solver {
         
     _solverName         = solverName;
     
-    final boolean useFlux            = kernel.useFlux() || kernel.useParabolicFlux();
+    final boolean useFlux            = kernel.useFlux() || kernel.useViscousFlux();
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSources    = kernel.usePointSources();
-    final boolean useParabolicFlux   = kernel.useParabolicFlux();
+    final boolean useViscousFlux   = kernel.useViscousFlux();
     final boolean tempVarsOnStack    = kernel.tempVarsOnStack();
     final int     ghostLayerWidth    = kernel.getGhostLayerWidth();
     
@@ -60,7 +60,7 @@ public class GenericFiniteVolumesInC implements Solver {
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
     context.put("usePointSources"   , usePointSources);
-    context.put("useParabolicFlux"  , useParabolicFlux);
+    context.put("useViscousFlux"  , useViscousFlux);
     context.put("tempVarsOnStack"   , tempVarsOnStack);
     
     //Set<String>

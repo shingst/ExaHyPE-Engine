@@ -18,7 +18,7 @@
 
 #include "tarch/la/Vector.h" 
 
-template <typename SolverType, bool useParabolicFlux>
+template <typename SolverType, bool useViscousFlux>
 double kernels::aderdg::generic::c::stableTimeStepSize(
     SolverType& solver,
     const double* const luh,
@@ -50,8 +50,8 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
                   for (int ivar = 0; ivar < numberOfVariables; ivar++) {
                       maxEigenvalue = std::max(fabs(lambda[ivar]), maxEigenvalue);
                   }
-                  if(useParabolicFlux){
-                      solver.parabolicEigenvalues(luh + idx_luh(i,j,k,0), d, lambda);
+                  if(useViscousFlux){
+                      solver.viscousEigenvalues(luh + idx_luh(i,j,k,0), d, lambda);
 
                       double maxEigenvalueV = 0.0;
                       for (int ivar = 0; ivar < numberOfVariables; ivar++) {

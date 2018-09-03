@@ -77,7 +77,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
     
-    {%- if useFlux && !useParabolicFlux %}
+    {%- if useFlux && !useViscousFlux %}
     /**
      * Compute the flux tensor.
      *
@@ -90,7 +90,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     /* flux() function not included, as requested in the specification file */
     {%- endif %}
 
-    {%- if useParabolicFlux %}
+    {%- if useViscousFlux %}
     /**
      * Compute the flux tensor with diffusive term.
      *
@@ -100,10 +100,10 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                     as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-    void parabolicFlux(const double* const Q,const double* const gradQ, double** F) override;
-    void parabolicEigenvalues(const double* const Q,const int d,double* lambda) override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** F) override;
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) override;
     {%- else -%}
-    /* parabolicFlux() function not included, as requested in the specification file */
+    /* viscousFlux() function not included, as requested in the specification file */
     {%- endif %}
 
     {%- if useSource %}

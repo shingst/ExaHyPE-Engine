@@ -36,7 +36,7 @@ namespace {
  *  We have to consider that we store parameters in luh, lQi
  *  and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useNCP,bool useParabolicFlux, typename SolverType>
+template <bool useSource, bool useFlux, bool useNCP,bool useViscousFlux, typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double dt,
                              const tarch::la::Vector<DIMENSIONS, double>& invDx,
@@ -89,7 +89,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
 
         // Compute gradients only if nonconservative contributions have to be
         // computed. 
-        if(useNCP || useParabolicFlux) {
+        if(useNCP || useViscousFlux) {
             std::memset(gradQ, 0, basisSize2 * DIMENSIONS * numberOfVariables * sizeof(double));
 
             for (int k = 0; k < basisSize; k++) { // k == y
@@ -137,8 +137,8 @@ int aderPicardLoopNonlinear(SolverType& solver,
             double* F[2]; // TODO(Sven): set but not used
             F[0]      = lFi + idx_lFi(i, k, l, 0, 0);
             F[1]      = lFi + idx_lFi(i, k, l, 1, 0);
-            if(useParabolicFlux){
-                solver.parabolicFlux(Q,gradQ,F);
+            if(useViscousFlux){
+                solver.viscousFlux(Q,gradQ,F);
             }
             else solver.flux(Q,F);
             // everything related to source now moved down to the NCP
@@ -549,7 +549,7 @@ void aderTimeAveragingExtrapolatorNonlinear(
 }  // namespace
 
 
-template <bool useSource, bool useFlux, bool useNCP, bool useParabolicFlux, bool noTimeAveraging, typename SolverType>
+template <bool useSource, bool useFlux, bool useNCP, bool useViscousFlux, bool noTimeAveraging, typename SolverType>
 int spaceTimePredictorNonlinear(
     SolverType& solver,
     double*  lQhbnd, double* lFhbnd,
@@ -562,7 +562,7 @@ int spaceTimePredictorNonlinear(
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
   
-  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP,useParabolicFlux, SolverType>(
+  const int iterations = aderPicardLoopNonlinear<useSource, useFlux, useNCP,useViscousFlux, SolverType>(
         solver, luh, dt, invDx,
         lQi, rhs, lFi, gradQ);
   

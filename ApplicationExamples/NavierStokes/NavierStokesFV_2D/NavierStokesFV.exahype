@@ -50,7 +50,7 @@ exahype-project NavierStokesFV
     maximum-mesh-size  = 0.6
     time-stepping      = global
     type const         = godunov
-    terms const        = parabolicflux
+    terms const        = viscousflux
 	optimisation const = generic
     
     language const    = C
