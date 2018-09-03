@@ -95,7 +95,7 @@ class SpecFile1Reader():
                         if option=="limiter-kernel":
                             raise SpecFile1ParserError("Found legacy option 'kernel const'. Please split it into ['limiter-type const','limiter-terms const','limiter-optimisation const']")
                     else: # multiline options need to be indented
-                        spec_file_1_ini += "    "+line.strip()+"\n"
+                        spec_file_1_ini +materialparameters= "    "+line.strip()+"\n"
             reads_multiline_comment -= 1 if line.strip().endswith("*/") else 0 
         return (spec_file_1_ini, solver, plotter[0:-1])
     
@@ -245,6 +245,7 @@ class SpecFile1Reader():
                 if token_s.startswith(term):
                     context.append(term.\
                             replace("pointsources",      "point_sources").\
+			    replace("viscousflux",       "viscous_flux").\
                             replace("materialparameters","material_parameters"))
                     if term=="pointsources":
                         try:
