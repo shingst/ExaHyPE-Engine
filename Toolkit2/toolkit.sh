@@ -15,7 +15,7 @@ elif python --version | grep -qi "python 3"; then PYTHON3="python"
 else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; fi
 
 # check that all required modules are there.
-modules=(attr pyresistent markupsafe jinja2 jsonschema)
+modules=(attr pyrsistent markupsafe jinja2 jsonschema)
 
 if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import $(join_by "," ${modules[@]})" 2>&1 >/dev/null; then
   echo "$0: At least one required Python3 module is not available." >&2
