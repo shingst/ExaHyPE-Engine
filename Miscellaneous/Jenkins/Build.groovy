@@ -36,7 +36,8 @@ make -j 32
 '''
 	    // Stash files for later reuse
 	    // This is needed because the run step could run on another node!
-	    stash includes: "${directory}/**", name: "exahype-${config.name}"
+	    // We need to exclude any example spec file from Toolit2 as these are erroneously considered in the run process
+	    stash includes: "${directory}/**", excludes: "${directory}/Toolkit2/examples/*", name: "exahype-${config.name}" 
 	    deleteDir()}
     }
 
