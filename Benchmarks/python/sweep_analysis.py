@@ -36,12 +36,16 @@ metrics =  [
         ["L3 data volume [GBytes]",     "Sum"],
         ["L3 request rate",             "Avg"],
         ["L3 miss rate",                "Avg"],
+        ["L3 miss ratio",               "Avg"],
+        ["L2 bandwidth [MBytes/s]",     "Sum"],
+        ["L2 data volume [GBytes]",     "Sum"],
         ["L2 request rate",             "Avg"],
         ["L2 miss rate",                "Avg"],
+        ["L2 miss ratio",               "Avg"],
         ["Branch misprediction rate",   "Avg"],
         ["Temperature [C]",             "Avg"],
         ["Energy [J]",                  "Sum"],
-        ["Energy DRAM [J]",             "Sum"]
+        ["Energy DRAM [J]",             "Max"]
 ]
 
 

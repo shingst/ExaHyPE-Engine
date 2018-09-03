@@ -20,7 +20,9 @@ rnsid::rnsid() {
         abort();
 }
 
+void rnsid::prepare() {}
 void rnsid::Interpolate(const double* x, double t, double* Q) {}
+void rnsid::readParameters(const mexa::mexafile& parameters) {}
 
 #else /* RNSID_AVAILABLE */
 

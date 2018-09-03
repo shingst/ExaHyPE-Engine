@@ -21,33 +21,33 @@ exahype-project GRMHD
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/GRMHD/GRMHD_f90
+  output-directory const           = ./ApplicationExamples/GRMHD/GRMHD
   architecture const               = noarch
   log-file                         = whatever.log
 
   computational-domain
     dimension const                = 3
-    width                          = 2.0, 2.0, 2.0
+    width                          = 6.28, 6.28, 6.28
     offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.1
+    end-time                       = 100.00001
   end computational-domain
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 16
     properties-file          = sharedmemory.properties
   end shared-memory  
   
   distributed-memory
-    identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:1}
-    buffer-size              = 64
-    timeout                  = 60
+    identifier       = static_load_balancing
+    configure        = {hotspot,fair,ranks_per_node:1}
+    buffer-size      = 64
+    timeout          = 60
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = off
+    fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
     spawn-predictor-as-background-thread = off
     spawn-amr-background-threads         = off
@@ -58,31 +58,57 @@ exahype-project GRMHD
     spawn-double-compression-as-background-thread = off
   end global-optimisation
 
-  solver ADER-DG GRMHDSolver
+  solver ADER-DG GRMHDSolver_ADERDG
     /* gamma is actually parts of a matrix... */
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6
     order const                    = 3
-    maximum-mesh-size              = 0.3 
+    maximum-mesh-size              = 0.698
+    maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
-	terms const = flux,ncp
-	optimisation const = generic
-    language const                 = Fortran
+    terms const = flux,ncp
+    optimisation const = generic
+    language const                 = C
 
-    plot vtk::Legendre::vertices::ascii ConservedWriter
+/*
+    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
+           variables const = 19
+           time = 0.0
+           repeat = 0.01
+           output = ./hdf5/conserved
+           select = y:0,z:0
+         end plot
+
+
+    plot vtu::Legendre::vertices::ascii ConservedWriter
       variables const = 19
       time      = 0.0
-      repeat    = 0.00111111
+      repeat    = 0.50
       output    = ./vtk-output/conserved
-      select    = x:0.0,y:0.0
     end plot
+*/
+
+    plot vtu::Legendre::vertices::ascii Michel
+      variables const = 4 
+      time      = 0.0
+      repeat    = 0.50
+      output    = ./vtk-output/michel
+    end plot
+
+/*
+    plot vtu::Legendre::vertices::ascii PrimitiveWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.50
+      output    = ./vtk-output/primitive
+    end plot 
+*/
 
     plot vtk::Legendre::vertices::ascii IntegralsWriter
       variables const = 0
       time = 0.0
-      repeat = 0.00111111
+      repeat = 0.50
       output = ./global-integrals
-      select    = x:0.0,y:0.0
     end plot
   end solver
 

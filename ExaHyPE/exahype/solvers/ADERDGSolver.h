@@ -1658,7 +1658,12 @@ public:
    * Can be configured to uncompress the cell description
    * arrays before computing the space-time predictor quantities.
    *
-   * \see performPredictionAndVolumeIntegralBody
+   * <h2>Background Jobs</h2>
+   *
+   * All FusedTimeStepJob and PredictionJob instances finish here.
+   * This is where an ADER-DG time step ends.
+   * We thus call cellDescription.setHasCompletedTimeStep(true) at
+   * the end of this function.
    *
    * \param[in] uncompressBefore             uncompress the cell description arrays before computing
    *                                         the space-time predictor quantities.

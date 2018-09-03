@@ -122,6 +122,7 @@ public class CodeGeneratorHelper {
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
                     + (kernel.useGaussLobatto() ? useGaussLobattoOptionFlag+" " : "")
                     + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")
+                    + (kernel.useLimiter() ?  ghostLayerWidthOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "")
                     ;
 
     // set up the command to execute the code generator

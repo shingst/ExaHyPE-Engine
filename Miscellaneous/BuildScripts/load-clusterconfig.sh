@@ -47,12 +47,13 @@ CLUSTERCONFIG="${CLUSTERNAME}.cfg"
 if [[ -e $CLUSTERCONFIG_DIR/$CLUSTERCONFIG ]]; then
 	echo "# Cluster configuration for $CLUSTERNAME"
 	echo "# Load this file by calling:"
-	echo "#   source <(exa config $CLUSTERNAME)"
+	echo "#     source <(exa config $CLUSTERNAME)"
+	echo "# or  source $CLUSTERCONFIG_DIR/$CLUSTERCONFIG"
 	echo
 	echo "echo 'Loading Cluster configuration for $CLUSTERNAME'"
 	echo
 	
-	# Clusterconfigs are supposed to be sourced from the ClusterConfig directory
+	echo '# Clusterconfigs are supposed to be sourced from the ClusterConfig directory'
 	echo 'OLDPWD=$PWD'
 	echo "cd $CLUSTERCONFIG_DIR"
 	

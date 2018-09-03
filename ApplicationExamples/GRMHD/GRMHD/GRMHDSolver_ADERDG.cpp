@@ -29,15 +29,15 @@ ADERDG_BC* abc;
 
 void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // NAN checker
-  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
+//  feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
   // Todo: Move this to specfile once we have working constants.
-  //std::string id_default = "Fortran";
-  //std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+  std::string id_default = "Fortran";
+  std::string bc_default = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
 
   // alternatives:
-  std::string id_default = "RNSID";
-  std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
+  //std::string id_default = "RNSID";
+  //std::string bc_default = "left:refl,right:exact,bottom:refl,top:exact,front:refl,back:exact";
 
   // try to obtain requested initial data and boundary conditions from the
   // environment variables, as the specfile parameter system is still broken.
@@ -55,6 +55,7 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 	logError("boundaryValues", "Some Boundary faces are missing in Specfile. Need: left,right,top,bottom,front,back. Got:" << tbc);
 	std::abort();
   }
+  icsetup_();
 }
 
 void __attribute__((optimize("O0"))) initialData(const double* const x,const double t,const double dt,double* Q) {
