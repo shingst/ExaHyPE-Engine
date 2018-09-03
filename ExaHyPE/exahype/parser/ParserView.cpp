@@ -43,9 +43,7 @@ bool exahype::parser::ParserView::hasKey(const std::string& key) const {
     assertion(getParser().isValid());
     return getParser().hasPath(getPath(key));
   } else {
-    logError("hasKey()", "No parameters found at all!");
-    std::abort();
-    return 0;
+    return false;
   }
 }
 

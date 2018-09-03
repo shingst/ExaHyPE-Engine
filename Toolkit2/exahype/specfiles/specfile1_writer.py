@@ -9,6 +9,12 @@ The code is extracted and modified from the mexa code.
 --> nothing more has yet beend one
 """
 
+# add path to dependencies
+from .configuration import Configuration
+sys.path.insert(1, Configuration.pathToJinja2)
+sys.path.insert(1, Configuration.pathToMarkupsafe)
+import jinja2
+
 class specfile1_writer:
 	"""
 	Generates an ExaHyPE specification file. Based on the queried root, the input
@@ -131,8 +137,6 @@ class specfile1_writer:
 		
 		mexa_path = self.mf.resolve_symbol("mexa")
 		
-		# this has to be installed:
-		import jinja2
 		
 		jinja_env = jinja2.Environment(
 			loader=jinja2.FileSystemLoader(mexa_path),

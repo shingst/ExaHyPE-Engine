@@ -4,11 +4,12 @@
 # It checks whether all Python is available and then calls it.
 # 
 
-Toolkit2="$(dirname $0)"
+Toolkit2="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")"
 has() { type $@ &>/dev/null; } # a way to check if command is available
 function join_by { local IFS="$1"; shift; echo "$*"; } # join bash-array with delimiter
 
 # find suitable python on the path
+has() { type $@ &>/dev/null; } # a way to check if command is available
 if has python3; then PYTHON3="python3";
 elif python --version | grep -qi "python 3"; then PYTHON3="python"
 else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; fi
@@ -29,4 +30,4 @@ fi
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
 
 # Run program using "exec", which ensures the proper return value of the shell script
-PYTHONPATH="$Toolkit2" exec $PYTHON3 $Toolkit2/exahype/toolkit $@
+exec $PYTHON3 "$Toolkit2"/exahype/toolkit $@

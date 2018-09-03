@@ -120,13 +120,13 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
         {% if enableProfiler %}, std::move(profiler){% endif %}) {}
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
-	// This string is used in the --version output to identify compile time constants
-	os << "{{project}}::{{abstractSolver}}("
-	   << "nVar=" << NumberOfVariables << ", "
-	   << "nParam=" << NumberOfParameters << ", "
-	   << "nDim=" << Dimensions << ", "
-	   << "order=" << Order
-	   << ")";
+  // This string is used in the --version output to identify compile time constants
+  os << "{{project}}::{{abstractSolver}}("
+     << "nVar=" << NumberOfVariables << ", "
+     << "nParam=" << NumberOfParameters << ", "
+     << "nDim=" << Dimensions << ", "
+     << "order=" << Order
+     << ")";
 }
 
 
@@ -161,7 +161,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% else %}
   constexpr double* lFi = nullptr;
   {% endif %}
-  {% if (!isLinear && useNCP) || useSource %}
+  {% if ((not isLinear) and useNCP) or useSource %}
   double* lSi = memory + {{optNamespace}}::getlSiShift();
   {% else %}
   constexpr double* lSi = nullptr;
@@ -172,7 +172,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% else %}
   constexpr double* lFhi = nullptr;
   {% endif %}
-  {% if (!isLinear && useNCP) || useSource %}
+  {% if ((not isLinear) and useNCP) or useSource %}
   double* lShi = memory + {{optNamespace}}::getlShiShift();
   {% else %}
   constexpr double* lShi = nullptr;
@@ -182,7 +182,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% else %}
   constexpr double* gradQ = nullptr;
   {% endif %}
-  {% if !isLinear %}
+  {% if not isLinear %}
   double* rhs = memory + {{optNamespace}}::getrhsShift(); //same size as lQi
   {% endif %}
   {% if usePointSources %} 
@@ -193,7 +193,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* PSderivatives = nullptr;
   {% endif %}
 
-{% if  isLinear %}
+{% if isLinear %}
 {% if usePointSources %}
   int picardIt = -1;
   std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),center,dx);
@@ -215,8 +215,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, tarch::la::invertEntries(dx) /*inverseDx*/, dt);
 {% endif %}
 
-
-{% if !tempVarsOnStack %}
+{% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
   freeArray(memory);
 {% endif %}
@@ -270,6 +269,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 }
 
 
+
 void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {% if enableProfiler %}
   _profiler->start("surfaceIntegral");
@@ -294,6 +294,7 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double*
 }
 
 
+
 void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize) {
 {% if enableProfiler %}
   _profiler->start("faceIntegral");
@@ -312,7 +313,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
     {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,tarch::la::invertEntries(coarseGridCellSize));  
-{% if !tempVarsOnStack %}
+{% if not tempVarsOnStack %}
     delete[] lFhbndCoarse;
 {% endif %}    
   } else {
@@ -332,6 +333,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
   _profiler->stop("faceIntegral");
 {% endif %}
 }
+
 
 
 void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
@@ -409,7 +411,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
   
   {{optNamespace}}::faceIntegral(update,fluxIn,direction,orientation,tarch::la::invertEntries(cellSize));
   
-{% if !tempVarsOnStack %}
+{% if not tempVarsOnStack %}
   //exahype::DataHeap::getInstance().deleteData(index,true);
   freeArray(memory);
 {% endif %}
@@ -449,7 +451,7 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 
 
 
-{% if !patchwiseAdjust %}
+{% if not patchwiseAdjust %}
 void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
 {% if enableProfiler %}
   _profiler->start("solutionAdjustment");
@@ -586,9 +588,9 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
 //--------
 
 void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
-	// verbosily fail even without assertions turned on
-	puts(msg);
-	abort();
+  // verbosily fail even without assertions turned on
+  puts(msg);
+  abort();
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
@@ -605,4 +607,12 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const Q,const double* const x,const double t,const double dt, double* forceVector,int n) {
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
+      abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+      abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }

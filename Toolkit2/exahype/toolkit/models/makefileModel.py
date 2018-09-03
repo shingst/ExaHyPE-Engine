@@ -25,8 +25,7 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 
 
 class MakefileModel(AbstractModelBaseClass):
-    
-    
+
     def generateCode(self):
         return self.render("Makefile.template", "Makefile") #return path to generated file
     

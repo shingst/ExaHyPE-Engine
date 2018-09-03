@@ -62,13 +62,13 @@ CartesianSlicer::CartesianSlicer(const dvec& _req, const ivec& _active, int _bas
 	
 CartesianSlicer* CartesianSlicer::fromSelectionQuery(const exahype::parser::ParserView& plotterParameters) {
 	dvec r; ivec v;
-	v(0) = plotterParameters.isValueValidDouble("plotterParameters/x");
-	r(0) = plotterParameters.getValueAsDouble("plotterParameters/x");
-	v(1) = plotterParameters.isValueValidDouble("plotterParameters/y");
-	r(1) = plotterParameters.getValueAsDouble("plotterParameters/y");
+	v(0) = plotterParameters.isValueValidDouble("select/x");
+	r(0) = plotterParameters.getValueAsDouble("select/x");
+	v(1) = plotterParameters.isValueValidDouble("select/y");
+	r(1) = plotterParameters.getValueAsDouble("select/y");
 	#if DIMENSIONS==3
-	v(2) = plotterParameters.isValueValidDouble("plotterParameters/z");
-	r(2) = plotterParameters.getValueAsDouble("plotterParameters/z");
+	v(2) = plotterParameters.isValueValidDouble("select/z");
+	r(2) = plotterParameters.getValueAsDouble("select/z");
 	#endif
 
 	// v(i) == true == 1 means that value was provided, v(i) == false == 0 means that not.
@@ -141,22 +141,22 @@ RegionSlicer* RegionSlicer::fromSelectionQuery(const exahype::parser::ParserView
 	dvec regionOfInterestLeftBottomFront, regionOfInterestRightTopBack;
 	double x;
 	
-	x = plotterParameters.getValueAsDouble("plotterParameters/left");
-	regionOfInterestLeftBottomFront(0) = plotterParameters.getValueAsDouble("plotterParameters/left") ? x : defaultLeftBottomFront; // "-", min
-	x = plotterParameters.getValueAsDouble( "plotterParameters/bottom" );
-	regionOfInterestLeftBottomFront(1) = plotterParameters.getValueAsDouble("plotterParameters/bottom") ? x : defaultLeftBottomFront; // "-", min
+	x = plotterParameters.getValueAsDouble("select/left");
+	regionOfInterestLeftBottomFront(0) = plotterParameters.getValueAsDouble("select/left") ? x : defaultLeftBottomFront; // "-", min
+	x = plotterParameters.getValueAsDouble( "select/bottom" );
+	regionOfInterestLeftBottomFront(1) = plotterParameters.getValueAsDouble("select/bottom") ? x : defaultLeftBottomFront; // "-", min
 	#if DIMENSIONS==3
-	x = plotterParameters.getValueAsDouble( "plotterParameters/front" );
-	regionOfInterestLeftBottomFront(2) = plotterParameters.getValueAsDouble("plotterParameters/front") ? x : defaultLeftBottomFront; // "-", min
+	x = plotterParameters.getValueAsDouble( "select/front" );
+	regionOfInterestLeftBottomFront(2) = plotterParameters.getValueAsDouble("select/front") ? x : defaultLeftBottomFront; // "-", min
 	#endif
 	
-	x = plotterParameters.getValueAsDouble( "plotterParameters/right" );
-	regionOfInterestRightTopBack(0) = plotterParameters.getValueAsDouble("plotterParameters/right") ? x : defaultRightTopBack;
-	x = plotterParameters.getValueAsDouble( "plotterParameters/top" );
-	regionOfInterestRightTopBack(1) = plotterParameters.getValueAsDouble("plotterParameters/top") ? x : defaultRightTopBack;
+	x = plotterParameters.getValueAsDouble( "select/right" );
+	regionOfInterestRightTopBack(0) = plotterParameters.getValueAsDouble("select/right") ? x : defaultRightTopBack;
+	x = plotterParameters.getValueAsDouble( "select/top" );
+	regionOfInterestRightTopBack(1) = plotterParameters.getValueAsDouble("select/top") ? x : defaultRightTopBack;
 	#if DIMENSIONS==3
-	x = plotterParameters.getValueAsDouble( "plotterParameters/back" );
-	regionOfInterestRightTopBack(2) = plotterParameters.getValueAsDouble("plotterParameters/back") ? x : defaultRightTopBack;
+	x = plotterParameters.getValueAsDouble( "select/back" );
+	regionOfInterestRightTopBack(2) = plotterParameters.getValueAsDouble("select/back") ? x : defaultRightTopBack;
 	#endif
 	
 	return new RegionSlicer(regionOfInterestLeftBottomFront, regionOfInterestRightTopBack);

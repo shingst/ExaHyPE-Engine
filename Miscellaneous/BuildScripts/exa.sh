@@ -72,7 +72,7 @@ cdapp() {
 
 # some paths to the exa helper scripts
 BuildScripts=$GITROOT/Miscellaneous/BuildScripts # == $SCRIPTDIR
-Postprocesing=$GITROOT/Miscellaneous/Postprocessing
+Postprocessing=$GITROOT/Miscellaneous/Postprocessing
 
 case $CMD in
 	"update") # Update the repository or dependencies. Use "--help" for help.
@@ -95,6 +95,9 @@ case $CMD in
 		SPECFILE="$(subreq find specfile "$APPNAME")" || abort "Could not find specfile: $SPECFILE"
 		info "Running ExaHyPE.jar on $SPECFILE"
 		exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE
+		;;
+	"toolkit-call") # Just call the toolkit, don't do anything beyond
+		exec java -jar $(subreq root)/Toolkit/dist/ExaHyPE.jar --not-interactive $@
 		;;
 	"compile") # Invokes the toolkit and compilation of an application
 		cdapp;

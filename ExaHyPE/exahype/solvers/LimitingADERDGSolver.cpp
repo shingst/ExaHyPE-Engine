@@ -46,7 +46,6 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
           _DMPDifferenceScaling(DMPDifferenceScaling),
           _iterationsToCureTroubledCell(iterationsToCureTroubledCell)
 {
-  assertion(_solver->getNumberOfParameters() == 0);
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
 
   #ifdef Parallel
@@ -547,6 +546,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
           mustBeDoneImmediately,
           solverPatch.getNeighbourMergePerformed());
     } else {
+      solverPatch.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
           solverPatch.getNeighbourMergePerformed(), isSkeletonCell );
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);

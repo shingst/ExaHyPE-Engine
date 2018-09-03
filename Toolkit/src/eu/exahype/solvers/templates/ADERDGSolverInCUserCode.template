@@ -81,9 +81,20 @@ void {{project}}::{{solver}}::eigenvalues(const double* const Q,const int d,doub
   lambda[{{i}}] = 1.0;
   {%- endfor %}
 }
+{%- if useViscousFlux %}
+void {{project}}::{{solver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+  // Dimensions                        = {{dimensions}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  
+  // @todo Please implement/augment if required
+  {%- for i in range_0_nVar %}
+  lambda[{{i}}] = 1.0;
+  {%- endfor %}
+}
+{%- endif %}
 
 
-{%- if useFlux %}
+{%- if useFlux && !useViscousFlux %}
 void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
   // Dimensions                        = {{dimensions}}
   // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
@@ -98,6 +109,20 @@ void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
 }
 {%- endif %}
 
+{%- if useViscousFlux %}
+void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* const gradQ,double** F) {
+  // Dimensions                        = {{dimensions}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  
+  // @todo Please implement/augment if required
+  {%- for d in range_0_nDim %}
+  {%- for i in range_0_nVar %}
+  F[{{d}}][{{i}}] = 0.0;
+  {%- endfor %}
+  
+  {%- endfor %}
+}
+{%- endif %}
 
 {%- if useSource %}
 //You can either implement this method or modify fusedSource

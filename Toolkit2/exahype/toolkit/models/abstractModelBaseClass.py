@@ -31,10 +31,9 @@ import os
 import pprint
 
 # add path to dependencies
-sys.path.append("..")
-from configuration import Configuration
-sys.path.insert(1, os.path.join(os.path.dirname(__file__),"..",Configuration.pathToJinja2))
-sys.path.insert(1, os.path.join(os.path.dirname(__file__),"..",Configuration.pathToMarkupsafe))
+from ..configuration import Configuration
+sys.path.insert(1, Configuration.pathToJinja2)
+sys.path.insert(1, Configuration.pathToMarkupsafe)
 
 import jinja2
 
@@ -47,7 +46,7 @@ class AbstractModelBaseClass():
     Override generateCode to implement your model. 
     """
 
-    def __init__(self, baseContext,verbose=False):
+    def __init__(self, baseContext):
         self.context = copy.copy(baseContext)
     
     
@@ -61,11 +60,11 @@ class AbstractModelBaseClass():
     
     
     # render a template to outputFilename using the given context (default = local context)
-    def render(self, templateName, outputFilename, context=None,overwrite=True):
+    def render(self, templateName, outputFilename, context=None, overwrite=True):
         """Render a template to outputFilename using the given context (local context if none given)
         
         Return the path to the generated file or `None` if the file exists and
-        shall not be overwritten.
+        shall not be overwritten and the context
         """
         # set default context to local context if none given
         if context == None:
@@ -80,9 +79,9 @@ class AbstractModelBaseClass():
         if not os.path.exists(canonicalPath) or overwrite:
           with open(canonicalPath, "w") as output:
               output.write(self.renderAsString(templateName, context))
-          return canonicalPath
+          return canonicalPath, context
         else:
-          return None
+          return None, context
     
     
     def renderAsString(self, templateName, context=None):

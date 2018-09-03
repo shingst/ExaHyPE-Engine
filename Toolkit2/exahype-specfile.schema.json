@@ -554,7 +554,7 @@
                 "$comment" : "'material_parameters' should be renamed",
                 "items" : { 
                   "type" : "string", 
-                  "enum" : ["flux", "source", "ncp", "material_parameters", "point_sources" ]
+                  "enum" : ["flux", "source", "ncp", "material_parameters", "point_sources", "viscous_flux"]
                 }
               },
               "optimised_terms" : {
@@ -614,7 +614,7 @@
                 "$comment" : "material_parameters not supported yet",
                 "items" : { 
                   "type" : "string", 
-                  "enum" : ["flux", "source", "ncp", "point_sources" ]
+                  "enum" : ["flux", "source", "ncp", "point_sources", "viscous_flux" ]
                 }
               },
               "language" : {
@@ -651,7 +651,8 @@
                 "type" : "integer",
                 "scope" : "compile-time",
                 "used-by" : "toolkit",
-                "$comment" : "Specify number of point sources"
+                "$comment" : "Specify number of point sources",
+                "default" : 0
               },
               { 
                 "type" : "array",

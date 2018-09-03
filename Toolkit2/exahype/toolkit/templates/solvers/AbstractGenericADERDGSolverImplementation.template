@@ -132,7 +132,7 @@ const int picardIterations = 1;
     kernels::aderdg::generic::c::spaceTimePredictorLinear<false, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
   }
 {% else %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources_s}}, {{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useMaterialParameters_s}}, {{solver}}>(*static_cast<{{solver}}*>(this),lQhbnd,lFhbnd,lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,luh,tarch::la::invertEntries(dx), dt);
 {%   endif %}
   kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource_s or useNCP_s}}, {{useFlux_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
@@ -172,8 +172,8 @@ const int picardIterations = 1;
   double* lFhi = memory; memory+=sizeLFhi;
 {%   endif %}
 
-  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource_s or useNCP_s}}, {{useFlux_s}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+  const int picardIterations = kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource_s}}, {{useFlux_s}}, {{useNCP_s}}, {{useViscousFlux_s}}, {{noTimeAveraging_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, lQi, rhs, lFi, gradQ, lQhi, lFhi, luh, tarch::la::invertEntries(dx), dt);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource_s or useNCP_s}}, {{useFlux_s}}, {{noTimeAveraging_s}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
 
 {% endif %}
 {%if tempVarsOnStack==False %}
@@ -301,7 +301,7 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 {% if enableProfiler %}
   _profiler->start("stableTimeStepSize");
 {% endif %}
-  double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}}>(*static_cast<{{solver}}*>(this),luh,dx);
+  double d = kernels::aderdg::generic::{{language}}::stableTimeStepSize<{{solver}},{{useViscousFlux_s}}>(*static_cast<{{solver}}*>(this),luh,dx);
 {% if enableProfiler %}
   _profiler->stop("stableTimeStepSize");
 {% endif %}
@@ -352,6 +352,14 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
       abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
+      abortWithMsg("viscous flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+}
+
+void {{project}}::{{abstractSolver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+      abortWithMsg("viscous eigenvalues: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {

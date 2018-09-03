@@ -14,18 +14,17 @@ It will raise an Exception if the file is not valid.
 # python-included ("batteries")
 import sys, json, pathlib
 
-import specfile1_reader
-
+# add path to dependencies
+from .configuration import Configuration
+sys.path.insert(1, Configuration.pathToJSONSchema)
+sys.path.insert(1, Configuration.pathToAttr)       #jsonschema dependency
+sys.path.insert(1, Configuration.pathToPyrsistent) #jsonschema dependency
+from jsonschema import Draft4Validator, validators, validate
 # https://pypi.org/project/jsonschema/
 # Current stable version is 2.6, version 3.0 brings Draft6Validator,
 # but that's still alpha.
 
-sys.path.append("../../")     # in case of local installation
-
-from jsonschema import Draft4Validator, validators, validate
-
-exahype_schema_filename = "../../exahype-specfile.schema.json"
-schema = json.load(pathlib.Path(__file__).parent.joinpath(exahype_schema_filename).open("r"))
+schema = json.load(pathlib.Path(__file__).parent.joinpath(Configuration.pathToSchema).open("r"))
 
 def extend_with_default(validator_class):
   """
@@ -66,4 +65,16 @@ def validate(python_structure, set_defaults=True):
   # python_structure is modified by reference, unfortunately. Should probably
   # do a deep copy before.
   get_validator(set_defaults).validate(python_structure)
+  
+  # mutually exclusives terms tests
+  if "solvers" in python_structure:
+    for solver in python_structure["solvers"]:
+        if "aderdg_kernel" in solver:
+            if "flux" in solver["aderdg_kernel"]["terms"] and "viscous_flux" in solver["aderdg_kernel"]["terms"]:
+                raise ValueError("flux and viscous-flux are mutually exclusive")
+        if "fv_kernel" in solver:
+            if "flux" in solver["aderdg_kernel"]["terms"] and "viscous_flux" in solver["fv_kernel"]["terms"]:
+                raise ValueError("flux and viscous-flux are mutually exclusive")
+  
+  
   return python_structure

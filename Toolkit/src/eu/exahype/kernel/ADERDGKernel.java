@@ -39,6 +39,7 @@ public class ADERDGKernel {
     TERM_OPTION_IDS.put("NCP_OPTION_ID",               "ncp");
     TERM_OPTION_IDS.put("POINTSOURCES_OPTION_ID",      "pointsources");
     TERM_OPTION_IDS.put("MATERIALPARAMETER_OPTION_ID", "materialparameters");
+    TERM_OPTION_IDS.put("VISCOUS_FLUX_OPTION_ID",     "viscousflux");
   }
   
   private static final Map<String, String> OPTIMIZATION_OPTION_IDS = new HashMap<String, String>();
@@ -68,6 +69,7 @@ public class ADERDGKernel {
   /**
    * numberOfObservables initialized if using the a LimitingSolver
    */ 
+  private int ghostLayerWidth = -1;
   private int numberOfObservables = -1; // TODO This should not be part of this class!
   
   
@@ -149,7 +151,10 @@ public class ADERDGKernel {
     if(useFluxVect() && !useFlux()) {
       throw new IllegalArgumentException("The optimization '"+OPTIMIZATION_OPTION_IDS.get("FLUX_VECT_OPTION_ID")+"' requires the PDE term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"'");
     }
-    
+    // can't use flux and viscous flux together
+    if(useFlux() && useViscousFlux()) {
+      throw new IllegalArgumentException("The term '"+TERM_OPTION_IDS.get("FLUX_OPTION_ID")+"' and term '"+TERM_OPTION_IDS.get("VISCOUS_FLUX_OPTION_ID")+"' can't be used together");
+    }
   }
 
   public enum KernelType {
@@ -183,6 +188,10 @@ public class ADERDGKernel {
 
   public boolean useFlux() {
     return terms.containsKey(TERM_OPTION_IDS.get("FLUX_OPTION_ID"));
+  }
+
+  public boolean useViscousFlux() {
+    return terms.containsKey(TERM_OPTION_IDS.get("VISCOUS_FLUX_OPTION_ID"));
   }
   
   public boolean useSource() {
@@ -267,8 +276,18 @@ public class ADERDGKernel {
   
   // useLimiter only if the two limiter parameter have been set
   public boolean useLimiter() { // TODO This should not be part of this class!
-    return numberOfObservables > -1;
+    return ghostLayerWidth > -1 && numberOfObservables > -1;
   }
+  
+  // used for opt limiter
+  public void setGhostLayerWidth(int glw) {
+    this.ghostLayerWidth = glw;
+  }
+  
+  public int getGhostLayerWidth() {
+    return ghostLayerWidth; // -1 by default
+  }
+
 
   //(type: [...], terms: [...], opt: [...])
   public String toString() {

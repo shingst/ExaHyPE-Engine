@@ -28,6 +28,9 @@ bool prepare_id(std::string idname);
 // FORTRAN ID:
 extern "C" {
 
+// FORTRAN function for IC setup
+void icsetup_()
+
 // FORTRAN functions called by C
 void initialdata_(const double* x, const double* const t, double* Q);
 

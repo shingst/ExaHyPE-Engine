@@ -2,22 +2,28 @@
 
 import sys
 import os
-from controller import Controller
+
+import resource
 
 def main():
-    """"Check python version, call the controller and run it"""
-    # check version. Python 3.3 required
-    requiredVersion = (3,3)
-    currentVersion  = sys.version_info
-    if(requiredVersion > currentVersion):
-        sys.exit("Requires Python 3.3 or newer. Abort.")
-    
-    # create controller and run it (input parsed with argparse)
+    """"Call the controller and run it"""
+    # append directory above to sys.path to be able to load the module
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"..")))
+    # import as module
+    from toolkit import Controller
     control = Controller()
     control.run()
 
+def memoryUsageResource():
+    """
+    see: http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
+    """
+    rusage_denom = 1024.
+    mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
+    return mem
 
 if __name__ == "__main__":
     # execute only if run as a script
     main()
+    #print("Maximum memory usage [MiB]: %1.3f" % memoryUsageResource())
 

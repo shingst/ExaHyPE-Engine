@@ -11,12 +11,5 @@ from and to the following formats:
 Parts of the codes may be just copied from https://bitbucket.org/svek/mexa
 """
 
-# Python does not like me when it comes to packages.
-# Maybe we can get rid of this...
-import sys
-from os.path import join, dirname, basename
-sys.path.append(join(dirname(__file__),"..","specfiles"))
-
-from validate import validate
-
-from omni_reader import OmniReader
+from .validate import validate
+from .omni_reader import OmniReader

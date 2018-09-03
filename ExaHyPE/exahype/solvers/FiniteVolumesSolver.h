@@ -686,6 +686,11 @@ public:
 
   void rollbackToPreviousTimeStepFused(CellDescription& cellDescription) const;
 
+  /** @copydoc: exahype::solvers::Solver::fusedTimeStep
+   *
+   * The "hasCompletedTimeStep" flag must be only be unset when
+   * a background job is spawned.
+   */
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,

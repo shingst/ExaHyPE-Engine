@@ -22,6 +22,7 @@ namespace {{project}}{
 class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSolver {  
   public:
     static constexpr int NumberOfVariables    = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
+    static constexpr int NumberOfParameters   = {{project}}::{{ADERDGAbstractSolver}}::NumberOfParameters;
     static constexpr int Order                = {{project}}::{{ADERDGAbstractSolver}}::Order;
     static constexpr int GhostLayerWidth      = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
     static constexpr int NumberOfObservables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfObservables;

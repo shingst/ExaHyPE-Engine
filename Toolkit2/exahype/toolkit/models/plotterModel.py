@@ -25,18 +25,19 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 
 
 class PlotterModel(AbstractModelBaseClass):
+
     def generateCode(self):
-      userDefined = self.context["plotterType"]=="user::defined"
-      
-      templates = {
-        True : {  self.context["plotter"]+".h" : "plotters/UserDefinedDeviceHeader.template",
-                  self.context["plotter"]+".cpp" : "plotters/UserDefinedDeviceImplementation.template" },
-        False: {  self.context["plotter"]+".h" : "plotters/UserOnTheFlyPostProcessingHeader.template",
-                  self.context["plotter"]+".cpp" : "plotters/UserOnTheFlyPostProcessingImplementation.template" }
-      }
-      
-      result = []
-      for filePath in templates.get(userDefined):
-          result.append(self.render(templates[userDefined][filePath],filePath,None,False))
-      
-      return result # return generated files as list
+        userDefined = self.context["plotterType"]=="user::defined"
+        
+        templates = {
+            True : [ (self.context["plotter"]+".h"   , "plotters/UserDefinedDeviceHeader.template"),
+                     (self.context["plotter"]+".cpp" , "plotters/UserDefinedDeviceImplementation.template") ],
+            False: [ (self.context["plotter"]+".h"   , "plotters/UserOnTheFlyPostProcessingHeader.template"),
+                     (self.context["plotter"]+".cpp" , "plotters/UserOnTheFlyPostProcessingImplementation.template") ],
+          }
+        
+        paths = [] # path is None if nothing was generated
+        for filePath,template in templates.get(userDefined, []):
+            paths.append(self.render(template,filePath,overwrite=False)[0]) #only keep the path
+        
+        return paths, self.context

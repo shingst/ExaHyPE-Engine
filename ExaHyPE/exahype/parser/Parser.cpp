@@ -234,7 +234,7 @@ bool exahype::parser::Parser::isValid() const {
 }
 
 void exahype::parser::Parser::invalidate() const {
-  _interpretationErrorOccured = false;
+  _interpretationErrorOccured = true;
 }
 
 bool exahype::parser::Parser::hasPath(std::string path) const {

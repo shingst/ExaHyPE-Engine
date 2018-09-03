@@ -10,6 +10,8 @@
 #include <cmath> // abs
 #include <algorithm> // max
 
+#if 0
+
 // For the actual Fortran interface, look at the end of this file.
 
 namespace C2PinC {
@@ -200,5 +202,7 @@ double rtsafe_c2p_rmhd1_(in X1,in X2,in XACC,in gam,in d,in e,in s2,in b2,in sb2
 }
 
 } /* Extern C */
+
+#endif
 
 #endif

@@ -97,9 +97,9 @@ class Player:
 	def something(self):
 		raise NotImplementedError("Please Implement this method")
 
-	@staticmethod
-	def add_group(argparser):
-		group = argparser.add_argument_group('plotting', description=cleandoc(self))
+	@classmethod
+	def add_group(cls, argparser):
+		group = argparser.add_argument_group('plotting', description=cleandoc(cls))
 
 		group.add_argument('-d', '--dimensions', choices=[1,2], type=int, default=2,
 			           help="Whether to create movies of 1D or 2D plots")

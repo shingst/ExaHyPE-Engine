@@ -36,6 +36,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <tbb/parallel_reduce.h>
 #include <tbb/blocked_range.h>
 #include <tbb/tick_count.h>
+#include <tbb/spin_mutex.h>
 
 
 #include <map>
@@ -47,59 +48,56 @@ namespace shminvade {
 
 
 /**
- * This implementations follows very closely
+ * This implementations follows very closely the PinningObserver of the Peano
+ * framework. We originally intended to follow
  *
  * https://software.intel.com/en-us/blogs/2013/10/31/applying-intel-threading-building-blocks-observers-for-thread-affinity-on-intel
  *
- * It is basically also the same as we use it in Peano's tarch though we make
- * it slightly more specific, i.e. invasion-focused.
+ * but this code snippet seems to be buggy as it does not take into account
+ * that TBB might terminate and re-issue threads throughout the lifetime.
  *
- * The file is an observer which is called every time TBB launches a thread.
- * The observer routine then pins this very thread to the next free core. As it
- * is called for every new thread, this observer always knows how many threads
- * do physically exist.
- *
- * Furthermore, it can maintain a map that tells us exactly which thread id
- * from Linux is mapped/pinned onto which core.
- *
- * @author Leonhard Rannabauer
  * @author Tobias Weinzierl
  */
 class shminvade::SHMPinningObserver: public tbb::task_scheduler_observer {
   private:
-    /**
-     * Masking being available to process. This is basically a bitfield which
-     * holds an entry for each core (hardware thread) the present application
-     * is allowed to run on. If you run multiple MPI ranks for example, this
-     * is a subset of the actual cores available on a node. The fild is
-     * initialised in the constructor.
-     */
-    cpu_set_t*    _mask;
-    //AffinityMask*    _mask;
-
-    int              _ncpus;
+    static constexpr int MaxCores = sizeof(long int)*8;
 
     /**
-     * How many threads have been registered through callback
+     * Masks are bitfields which hold an entry for each core (hardware thread)
+     * the present application is allowed to run on. If you run multiple MPI
+     * ranks for example, this is a subset of the actual cores available on a
+     * node. Pinning is realised by disabling all bits but one for a particular
+     * thread. Obviously, the pin mask has to be a subset of the process mask.
      */
-    tbb::atomic<int> _numThreads;
+    typedef std::bitset<MaxCores> CPUSetBitfield;
 
     /**
-     * If the observer is switched on, it automatically pins all threads.
+     * We may not initialise this field before we
+     * Is initialised in the constructor PinningObserver().
      */
-    void pinCurrentThread();
+    CPUSetBitfield           _availableCores;
 
-    typedef std::bitset<sizeof(long int)*8> CPUSetBitfield;
-    static CPUSetBitfield cpuSetMaskToBitfield( cpu_set_t   _mask);
-//    static std::string toString( CPUSetBitfield bitfield );
+    tbb::spin_mutex          _mutex;
+
+    int                      _numberOfCPUs;
   public:
+    /**
+     * Initialise the field _availableCores.
+     */
     SHMPinningObserver();
     virtual ~SHMPinningObserver();
 
+    /**
+      * Search for a free core in the bitset.
+     */
     void on_scheduler_entry( bool ) override;
     void on_scheduler_exit( bool ) override;
 
-    int getNumberOfRegisteredThreads() const;
+    /**
+     * Is an override though TBB developers didn't want it to be overriden for
+     * whatever reason
+     */
+    void observe(bool toggle);
 };
 
 #endif
