@@ -82,6 +82,21 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     void flux(const double* const Q,double** F) override;
 
     /**
+     * This operation should be overwritten in your application-specific 
+     * solver. Alternatively, make your own subclass useConservativeFlux()
+     * return false.
+     */
+    void viscousFlux(const double* const Q,const double* const gradQ,double** F) override;
+
+    /**
+     * This operation should be overwritten in your application-specific 
+     * solver. Alternatively, make your own subclass useConservativeFlux()
+     * return false.
+     */
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) override;
+
+    
+    /**
      * Default implementation. Has to be be overwritten by user's solver if you 
      * make the corresponding use operation activate the feature.
      *

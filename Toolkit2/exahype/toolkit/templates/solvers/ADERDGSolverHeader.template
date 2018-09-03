@@ -87,6 +87,10 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
     
+{% if useViscousFlux %}
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) final override;
+{% endif %}
+
     /**
      * Impose boundary conditions at a point on a boundary face
      * within the time interval [t,t+dt].
@@ -126,7 +130,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     
     //PDE
     
-{% if useFlux %}
+{% if useFlux and not useViscousFlux%}
     /**
      * Compute the flux tensor.
      *
@@ -138,6 +142,23 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
 {% else %}
 /* flux() function not included, as requested in the specification file */
 {% endif %}
+
+{% if useViscousFlux %}
+    /**
+     * Compute the flux tensor with diffusive components.
+     *
+     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
+     *                 as C array (already allocated).
+     *               gradQ the gradient of the conserved variables (and parameters) associated with a quadrature point
+     *                     as C array (already allocated).
+     * \param[inout] F the fluxes at that point as C array (already allocated).
+     */
+    void viscousFlux(const double* const Q,const double* gradQ, double** F) final override;
+{% else %}
+/* viscousFlux() function not included, as requested in the specification file */
+{% endif %}
+
+
     
 {% if useSource %}
      /**

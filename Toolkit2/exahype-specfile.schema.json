@@ -614,7 +614,7 @@
                 "$comment" : "material_parameters not supported yet",
                 "items" : { 
                   "type" : "string", 
-                  "enum" : ["flux", "source", "ncp", "point_sources" ]
+                  "enum" : ["flux", "source", "ncp", "point_sources", "viscous_flux" ]
                 }
               },
               "language" : {

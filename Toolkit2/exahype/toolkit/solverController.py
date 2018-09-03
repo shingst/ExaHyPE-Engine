@@ -161,7 +161,8 @@ class SolverController:
         context["linearOrNonlinear"]       = "Linear" if context["isLinear"] else "Nonlinear"
         context["isFortran"]               = kernel.get("language",False)=="Fortran" 
         context["useCERK"]                 = kernel.get("space_time_predictor",{}).get("cerkguess",False)
-        context["noTimeAveraging"]         = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
+        context["noTimeAveraging"]         = kernel.get("space_time_predictor",{}).get("notimeavg",False)
+        context["noTimeAveraging_s"]       = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
 
@@ -180,11 +181,19 @@ class SolverController:
 
     def buildKernelTermsContext(self,terms):
         context = {}
-        for term in ["flux","source","ncp","point_sources","material_parameters"]:
-            option = term.replace("_s","S").replace("_p","P").replace("ncp","NCP")
-            option = "use%s%s" % ( option[0].upper(), option[1:] )
-            context[option] = term in terms
-            context["%s_s" % option] = "true" if context[option] else "false"
+        context["useFlux"]                  = "flux" in terms or "viscous_flux" in terms
+        context["useFlux_s"]                = "true" if context["useFlux"] else "false"
+        context["useSource"]                = "source" in terms
+        context["useSource_s"]              = "true" if context["useSource"] else "false"
+        context["useNCP"]                   = "ncp" in terms
+        context["useNCP_s"]                 = "true" if context["useNCP"] else "false"
+        context["usePointSources"]          = "point_sources" in terms
+        context["usePointSources_s"]        = "true" if context["usePointSources"] else "false"
+        context["useMaterialParameters"]    = "material_parameters" in terms
+        context["useMaterialParameters_s"]  = "true" if context["useMaterialParameters"] else "false"
+        context["useViscousFlux"]           = "viscous_flux" in terms
+        context["useViscousFlux_s"]         = "true" if context["useViscousFlux"] else "false"
+        
         return context
 
 

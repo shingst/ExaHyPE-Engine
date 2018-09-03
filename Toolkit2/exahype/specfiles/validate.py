@@ -65,4 +65,16 @@ def validate(python_structure, set_defaults=True):
   # python_structure is modified by reference, unfortunately. Should probably
   # do a deep copy before.
   get_validator(set_defaults).validate(python_structure)
+  
+  # mutually exclusives terms tests
+  if "solvers" in python_structure:
+    for solver in python_structure["solvers"]:
+        if "aderdg_kernel" in solver:
+            if "flux" in solver["aderdg_kernel"]["terms"] and "viscous_flux" in solver["aderdg_kernel"]["terms"]:
+                raise ValueError("flux and viscous-flux are mutually exclusive")
+        if "fv_kernel" in solver:
+            if "flux" in solver["aderdg_kernel"]["terms"] and "viscous_flux" in solver["fv_kernel"]["terms"]:
+                raise ValueError("flux and viscous-flux are mutually exclusive")
+  
+  
   return python_structure

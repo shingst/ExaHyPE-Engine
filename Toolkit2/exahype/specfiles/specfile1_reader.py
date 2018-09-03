@@ -241,11 +241,11 @@ class SpecFile1Reader():
         for token in kernel_terms.split(","):
             token_s         = token.strip()
             found_token = False
-            for term in ["flux","source","ncp","pointsources","materialparameters"]:
+            for term in ["flux","source","ncp","pointsources","materialparameters","viscousflux"]:
                 if token_s.startswith(term):
                     context.append(term.\
                             replace("pointsources",      "point_sources").\
-			    replace("viscousflux",       "viscous_flux").\
+                            replace("viscousflux",       "viscous_flux").\
                             replace("materialparameters","material_parameters"))
                     if term=="pointsources":
                         try:
