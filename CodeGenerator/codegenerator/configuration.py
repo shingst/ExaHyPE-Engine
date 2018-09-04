@@ -37,3 +37,14 @@ class Configuration:
         currentVersion  = sys.version_info
         if(requiredVersion > currentVersion):
             sys.exit("Requires Python 3.3 or newer. Abort.")
+
+
+def checkDependencies():
+    """check all dependencies are reachable from the configuration path"""
+    # Check jinja
+    sys.path.insert(1, Configuration.pathToJinja2)
+    sys.path.insert(1, Configuration.pathToMarkupsafe)
+    import jinja2
+    # Remove added path
+    sys.path.remove(Configuration.pathToJinja2)
+    sys.path.remove(Configuration.pathToMarkupsafe)
