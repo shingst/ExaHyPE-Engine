@@ -22,3 +22,6 @@
 	path = Submodules/jsonschema
 	url = https://github.com/Julian/jsonschema.git
 	ignore = dirty #modified __init__.py + __pycache__
+[submodule "Submodules/six"]
+	path = Submodules/six
+	url = https://github.com/benjaminp/six.git

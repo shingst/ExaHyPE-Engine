@@ -124,6 +124,21 @@ update_others() {
 	sed -i -e "s,^from pkg_resources import get_distribution,#from pkg_resources import get_distribution,g" jsonschema/__init__.py
 	sed -i -e "s,^__version__ = get_distribution(__name__).version,#__version__ = get_distribution(__name__).version,g" jsonschema/__init__.py
 	cd ..
+	#six
+	if [ ! -d six ]; then
+		mkdir six
+	fi
+	if [ ! -f six/.git ]; then
+		echo "Initialize six submodule"
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/six
+		cd "$scriptDir" #move back
+	else
+		echo "Update six submodule"
+		cd six
+		git pull origin master
+		cd ..
+	fi
 	#Libxsmm
 	if [ ! -d libxsmm ]; then
 		mkdir libxsmm
@@ -182,12 +197,13 @@ else
 			echo "-p only update the Peano submodule"
 			echo "-o only update submodules other than Peano"
 			exit -1;;
-		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/Peano.git
+		t)  git config submodule.Submodules/Peano.url       git://localhost:12345/Peano.git
 			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git://localhost:12345/python-attrs/attrs.git
 			git config submodule.Submodules/pyrsistent.url  git://localhost:12345/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git://localhost:12345/Julian/jsonschema.git
+			git config submodule.Submodules/six.url         git://localhost:12345/benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git ;;
 		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
@@ -195,6 +211,7 @@ else
 			git config submodule.Submodules/attrs.url       git@github.com:python-attrs/attrs.git
 			git config submodule.Submodules/pyrsistent.url  git@github.com:tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git@github.com:Julian/jsonschema.git
+			git config submodule.Submodules/six.url         git@github.com:benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git ;;
 		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
@@ -202,6 +219,7 @@ else
 			git config submodule.Submodules/attrs.url       https://github.com/python-attrs/attrs.git
 			git config submodule.Submodules/pyrsistent.url  https://github.com/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  https://github.com/Julian/jsonschema.git
+			git config submodule.Submodules/six.url         https://github.com/benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git ;;
 		p)  echo "only update Peano"
 			update_Peano ;;
