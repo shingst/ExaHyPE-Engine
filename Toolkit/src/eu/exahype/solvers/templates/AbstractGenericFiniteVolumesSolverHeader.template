@@ -81,8 +81,12 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void algebraicSource(const double* const Q,double* S)  final {}
     {%- endif %}
     
-    {%- if !useFlux %}
+    {%- if !useFlux || useViscousFlux %}
     void flux(const double* const Q,double** F)  final {}
+    {%- endif %}
+    {%- if !useViscousFlux %}
+    void viscousFlux(const double* const Q,const double* const gradQ, double** F)  final {}
+    virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda) final {};
     {%- endif %}
     
     {%- if !usePointSources %}

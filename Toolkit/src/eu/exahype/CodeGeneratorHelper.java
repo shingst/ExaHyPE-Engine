@@ -12,8 +12,8 @@ public class CodeGeneratorHelper {
   
   //configuration parameters
   //------------------------
-  private static String OPT_KERNELS_PATH_PREFIX = "kernels";                 //Desired relative path to the generated code, starts from application root
-  private static String CODEGENERATOR_PATH      = "CodeGenerator/main.py";   //Relative path to the CodeGenerator, starts from exahype root (ExaHyPE-Engine)
+  private static String OPT_KERNELS_PATH_PREFIX = "kernels";       //Desired relative path to the generated code, starts from application root
+  private static String CODEGENERATOR_PATH      = "CodeGenerator/codegenerator"; //Relative path to the CodeGenerator, starts from exahype root (ExaHyPE-Engine)
   private static String defineNamespace(String projectName, String solverName) {return projectName+"::"+solverName+"_kernels::aderdg";}  //build the generated code's namespace
   
   //options flags
@@ -122,6 +122,7 @@ public class CodeGeneratorHelper {
                     + (kernel.useMaterialParameterMatrix() ? useMaterialParamOptionFlag+" " : "")
                     + (kernel.useGaussLobatto() ? useGaussLobattoOptionFlag+" " : "")
                     + (kernel.useLimiter() ?  useLimiterOptionFlag+" "+kernel.getNumberOfObservables()+" " : "")
+                    + (kernel.useLimiter() ?  ghostLayerWidthOptionFlag+" "+kernel.getGhostLayerWidth()+" " : "")
                     ;
 
     // set up the command to execute the code generator

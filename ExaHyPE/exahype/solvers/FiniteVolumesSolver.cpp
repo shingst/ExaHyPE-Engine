@@ -413,6 +413,9 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
   CellDescription newCellDescription;
   newCellDescription.setSolverNumber(solverNumber);
 
+  // Background job completion monitoring (must be initialised with true)
+  newCellDescription.setHasCompletedTimeStep(true);
+
   // Default AMR settings
   newCellDescription.setType(cellType);
   newCellDescription.setLevel(level);
@@ -735,20 +738,21 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   bool isSkeletonCell = isAtRemoteBoundary;
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if (
       !SpawnPredictionAsBackgroundJob ||
       isFirstIterationOfBatch ||
       isLastIterationOfBatch
   ) {
-    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
     updateSolution(cellDescription,cellDescriptionsIndex,isFirstIterationOfBatch);
     UpdateResult result;
     result._timeStepSize = startNewTimeStepFused(
         cellDescription,isFirstIterationOfBatch,isLastIterationOfBatch);
+    cellDescription.setHasCompletedTimeStep(true); // last step of the FV update
     return result;
   } else {
+    cellDescription.setHasCompletedTimeStep(false);
     FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element, isSkeletonCell );
     Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
     return UpdateResult();
@@ -766,6 +770,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::up
   updateSolution(cellDescription,cellDescriptionsIndex,true);
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription);
+
+  cellDescription.setHasCompletedTimeStep(true);
 
   compress(cellDescription,isAtRemoteBoundary);
   return result;
@@ -909,46 +915,37 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
   synchroniseTimeStepping(cellDescription1);
   synchroniseTimeStepping(cellDescription2);
 
-//  if (cellDescriptionsIndex1==2516 ||
-//      cellDescriptionsIndex2==2516) {
-//    std::cout << "cell1: "<< cellDescriptionsIndex1 << "," << cellDescription1.toString() << std::endl;
-//    std::cout << "cell2: "<< cellDescriptionsIndex2 << "," << cellDescription2.toString() << std::endl;
-//  }
+  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription1);
+  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription2);
 
-  if (cellDescription1.getType()==CellDescription::Cell ||
-      cellDescription2.getType()==CellDescription::Cell) {
+  assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
 
-    assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
-    assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
-    assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
-    assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
+  assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
+  assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
+  assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
+  assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
 
-    if ( CompressionAccuracy > 0.0 ) {
-      peano::datatraversal::TaskSet uncompression(
+  if ( CompressionAccuracy > 0.0 ) {
+    peano::datatraversal::TaskSet uncompression(
         [&] () -> bool {
-          uncompress(cellDescription1);
-          return false;
-        },
-        [&] () -> bool {
-          uncompress(cellDescription2);
-          return false;
-        },
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
-        true
-      );
-    }
-
-    double* solution1 = DataHeap::getInstance().getData(cellDescription1.getSolution()).data();
-    double* solution2 = DataHeap::getInstance().getData(cellDescription2.getSolution()).data();
-
-    ghostLayerFilling(solution1,solution2,pos2-pos1);
-    ghostLayerFilling(solution2,solution1,pos1-pos2);
+      uncompress(cellDescription1);
+      return false;
+    },
+    [&] () -> bool {
+      uncompress(cellDescription2);
+      return false;
+    },
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible,
+    true
+    );
   }
 
-  return;
+  double* solution1 = DataHeap::getInstance().getData(cellDescription1.getSolution()).data();
+  double* solution2 = DataHeap::getInstance().getData(cellDescription2.getSolution()).data();
 
-  assertionMsg(false,"Not implemented.");
+  ghostLayerFilling(solution1,solution2,pos2-pos1);
+  ghostLayerFilling(solution2,solution1,pos1-pos2);
 }
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
@@ -959,6 +956,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   synchroniseTimeStepping(cellDescription);
+
+  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription);
 
   if (cellDescription.getType()==CellDescription::Cell) {
     uncompress(cellDescription);
@@ -1259,6 +1258,8 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
 
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
+
+  waitUntilCompletedTimeStep<CellDescription,JobType::SkeletonJob>(cellDescription);
 
   const int numberOfFaceDof = getDataPerPatchFace();
   double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()

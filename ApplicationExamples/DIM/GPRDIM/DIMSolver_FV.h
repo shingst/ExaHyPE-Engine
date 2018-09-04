@@ -103,7 +103,7 @@ class GPRDIM::DIMSolver_FV : public GPRDIM::AbstractDIMSolver_FV {
      **/
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
     
-	double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) override;
+	double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) override;
     /* pointSource() function not included, as requested in the specification file */
 };
 

@@ -28,7 +28,7 @@ constexpr int nDim = DIMENSIONS;
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
 void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
+	//feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());
 	
@@ -142,6 +142,7 @@ void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,do
 
 
 void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
+	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 	// as TDIM is 3 and DIMENSIONS is 2, come up with this dirty wrapper:
 	#if DIMENSIONS == 2
@@ -165,7 +166,9 @@ void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
 	//DFOR(d) { zero2Din3D(F[d]); zeroHelpers(F[d]); }
 	for(int d=0;d<DIMENSIONS;d++) zeroHelpers(F[d]);
 	
-	for(int d=0;d<DIMENSIONS;d++) NVARS(i) { if(!std::isfinite(F[d][i])) { printf("F[%d][%d] = %e\n", d, i, F[d][i]); std::abort(); } }
+	// NaN fluxes are probably okay for the sake of having the Limiter being
+	// active afterwards, or so.
+	//for(int d=0;d<DIMENSIONS;d++) NVARS(i) { if(!std::isfinite(F[d][i])) { printf("F[%d][%d] = %e\n", d, i, F[d][i]); std::abort(); } }
 }
 
 

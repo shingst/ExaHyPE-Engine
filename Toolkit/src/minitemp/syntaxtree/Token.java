@@ -9,6 +9,7 @@ public class Token {
   /** Possible types of a token */
   public static enum TokenType {
     INVALID,   /** default type, should be changed at initialization */
+    COMMENT,   /** type of a comment token */
     TEXT,      /** type of text token */
     VAR,       /** type of variable grammar token */
     IF_OPEN,   /** type of logic grammar token: if */
@@ -49,6 +50,8 @@ public class Token {
       } else if(tag.startsWith(TemplateEngine.LOGIC_ENDFOR_TAG)) {
         type = TokenType.FOR_CLOSE;
       }
+    } else if(rawContent.startsWith(TemplateEngine.COMMENT_TOKEN_START)) {
+      type = TokenType.COMMENT;
     } else {
       type = TokenType.TEXT;
     }
@@ -109,8 +112,21 @@ public class Token {
     ArrayList<String> tokens_assembled = new ArrayList<String>(tokens_splitted.length/2+10); //initial guess
     StringBuilder chunk = null;
     boolean inChunk = false;
+    boolean inComment = false;
     for(int i=0; i<tokens_splitted.length; i++) {
+      if(inComment) { //while in a comment block add everything to the comment block until the end comment token
+        chunk.append(tokens_splitted[i]);
+        if(tokens_splitted[i].equals(TemplateEngine.COMMENT_TOKEN_END)) {
+          inComment = false;
+          tokens_assembled.add(chunk.toString());
+        }
+        continue;
+      }
       switch(tokens_splitted[i]){
+        case TemplateEngine.COMMENT_TOKEN_START:
+            inComment = true;
+            chunk = new StringBuilder(TemplateEngine.COMMENT_TOKEN_START);
+            break;
         case TemplateEngine.VAR_TOKEN_START:
             inChunk = true;
             chunk = new StringBuilder(TemplateEngine.VAR_TOKEN_START);
@@ -143,7 +159,7 @@ public class Token {
     
     //apply strip block
     for(int i=0; i<tokens_raw.length; i++) {
-      if(tokens_raw[i].startsWith(TemplateEngine.STRIP_BLOCK_TOKEN_START)) {
+      if(tokens_raw[i].startsWith(TemplateEngine.STRIP_BLOCK_TOKEN_START) || tokens_raw[i].startsWith(TemplateEngine.STRIP_COMMENT_TOKEN_START)) {
         if(i>0) {
           //remove trailing vertical whitespace from previous token
           tokens_raw[i-1] = tokens_raw[i-1].replaceAll("\\h*$", ""); 

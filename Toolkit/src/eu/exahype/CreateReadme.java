@@ -46,6 +46,8 @@ public class CreateReadme {
   //---------------
   
   public void writeReadme(String outputPath) {
+    if(!valid)
+      return; // don't try to write if not valid
     try {      
       final TemplateEngine templateEngine = new TemplateEngine();
       final Context context = new Context();
