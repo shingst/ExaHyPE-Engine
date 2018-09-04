@@ -43,12 +43,6 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     const double abs_sR_i = std::abs(sR[i]);
     s_max = std::max( abs_sR_i, s_max );
   }
-  if(useViscousFlux){ //Add contribution of hyperbolic part
-    double s_max_d = 0;
-    //TODO calculation
-
-    s_max += s_max_d;
-  }
 
   // determine BgradQ from ncp
   double ncp[numberOfData] = {0.0};
