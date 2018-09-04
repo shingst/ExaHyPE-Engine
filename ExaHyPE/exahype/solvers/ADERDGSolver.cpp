@@ -2605,7 +2605,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   DataHeap::HeapEntries& update = DataHeap::getInstance().getData(cellDescription.getUpdate());
   std::fill(update.begin(),update.end(),0.0);
 
-  waitUntilCompletedTimeStep<CellDescription,JobType::SkeletonJob>(parentCellDescription);
+  waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
 
   for (int d = 0; d < DIMENSIONS; ++d) {
     // Check if cell is at "left" or "right" d face of parent
@@ -2975,8 +2975,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
           :
           getCellDescription(cellDescriptionsIndex1,element1);
 
-  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescriptionLeft);
-  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescriptionRight);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionLeft,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionRight,false);
 
   // synchronise time stepping if necessary
   synchroniseTimeStepping(cellDescriptionLeft);
@@ -3131,7 +3131,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
 
   synchroniseTimeStepping(cellDescription);
 
-  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
@@ -3821,7 +3821,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     #endif
 */
 
-    waitUntilCompletedTimeStep<CellDescription,JobType::SkeletonJob>(cellDescription);
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true);
 
     // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
     // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
