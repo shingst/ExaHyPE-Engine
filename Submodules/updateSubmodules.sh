@@ -163,12 +163,20 @@ if [ $# -eq 0 ]; then
 		cd ..
 	fi
 else
-	while getopts hsw opt; do
+	while getopts htsw opt; do
 	case $opt in
 		h)  echo "-h prints this message"
 			echo "-s set submodules url to ssh"
+			echo "-t use ssh tunnel (port: 12345) and git protocol (works on SuperMUC)"
 			echo "-v set submodules url to https"
 			exit -1;;
+		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/Peano.git
+			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
+			git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
+			git config submodule.Submodules/attrs.url       git://localhost:12345/python-attrs/attrs.git
+			git config submodule.Submodules/pyrsistent.url  git://localhost:12345/tobgu/pyrsistent.git
+			git config submodule.Submodules/jsonschema.url  git://localhost:12345/Julian/jsonschema.git
+			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git ;;
 		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git@github.com:pallets/markupsafe.git
