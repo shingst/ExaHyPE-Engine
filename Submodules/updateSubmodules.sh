@@ -24,7 +24,7 @@ cd "$scriptDir"
 # By default don't rebuild LIBXSMM is nothing changed
 REBUILD_LIBXSMM=false
 
-if [ $# -eq 0 ]; then
+update_Peano() {
 	#Peano
 	if [ ! -d Peano ]; then
 		mkdir Peano
@@ -40,6 +40,9 @@ if [ $# -eq 0 ]; then
 		git pull origin master
 		cd ..
 	fi
+}
+
+update_others() {
 	#Jinja2
 	if [ ! -d jinja ]; then
 		mkdir jinja
@@ -162,13 +165,20 @@ if [ $# -eq 0 ]; then
 		make generator
 		cd ..
 	fi
+}
+
+if [ $# -eq 0 ]; then
+	update_Peano
+        update_others
 else
-	while getopts htsw opt; do
+	while getopts htswpo opt; do
 	case $opt in
 		h)  echo "-h prints this message"
 			echo "-s set submodules url to ssh"
 			echo "-t use ssh tunnel (port: 12345) and git protocol (works on SuperMUC)"
 			echo "-v set submodules url to https"
+			echo "-p only update the Peano submodule"
+			echo "-o only update submodules other than Peano"
 			exit -1;;
 		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/Peano.git
 			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
@@ -191,6 +201,10 @@ else
 			git config submodule.Submodules/pyrsistent.url  https://github.com/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  https://github.com/Julian/jsonschema.git
 			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git ;;
+		p)  echo "only update Peano"
+			update_Peano ;;
+		o)  echo "only update submodules other than Peano"
+			update_others ;;
 	esac
 	done
 fi
