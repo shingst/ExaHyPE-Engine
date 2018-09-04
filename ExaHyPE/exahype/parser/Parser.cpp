@@ -530,7 +530,7 @@ int exahype::parser::Parser::getMPITimeOut() const {
 }
 
 exahype::parser::Parser::MulticoreOracleType exahype::parser::Parser::getMulticoreOracleType() const {
-  std::string token = getStringFromPath("shared-memory/autotuning_strategy","dummy",isOptional);
+  std::string token = getStringFromPath("/shared-memory/autotuning_strategy","dummy",isOptional);
   exahype::parser::Parser::MulticoreOracleType result = MulticoreOracleType::Dummy;
   if (token.compare("dummy") == 0) {
     result = MulticoreOracleType::Dummy;
