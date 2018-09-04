@@ -186,7 +186,7 @@ update_others() {
 
 if [ $# -eq 0 ]; then
 	update_Peano
-        update_others
+	update_others
 else
 	while getopts htswpo opt; do
 	case $opt in
@@ -197,7 +197,7 @@ else
 			echo "-p only update the Peano submodule"
 			echo "-o only update submodules other than Peano"
 			exit -1;;
-		t)  git config submodule.Submodules/Peano.url       git://localhost:12345/Peano.git
+		t)  git config submodule.Submodules/Peano.url    git://localhost:12345/gi26det/Peano.git
 			git config submodule.Submodules/jinja.url       git://localhost:12345/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git://localhost:12345/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git://localhost:12345/python-attrs/attrs.git
