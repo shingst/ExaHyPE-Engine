@@ -22,6 +22,9 @@ class Configuration:
     
     # absolute path to pyrsistent (jsonschema dependency)
     pathToPyrsistent  = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "pyrsistent"))
+        
+    # absolute path to six (pyrsistent dependency)
+    pathToSix         = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "six"))
     
     # absolute path to the schema file
     pathToSchema      = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "exahype-specfile.schema.json"))
@@ -46,6 +49,7 @@ def checkDependencies():
     sys.path.insert(1, Configuration.pathToJSONSchema)
     sys.path.insert(1, Configuration.pathToAttr)       #jsonschema dependency
     sys.path.insert(1, Configuration.pathToPyrsistent) #jsonschema dependency
+    sys.path.insert(1, Configuration.pathToSix)        #pyrsistent dependency
     import jsonschema
     # Remove added path
     sys.path.remove(Configuration.pathToJinja2)

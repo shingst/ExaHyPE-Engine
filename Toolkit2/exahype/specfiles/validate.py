@@ -19,6 +19,7 @@ from .configuration import Configuration
 sys.path.insert(1, Configuration.pathToJSONSchema)
 sys.path.insert(1, Configuration.pathToAttr)       #jsonschema dependency
 sys.path.insert(1, Configuration.pathToPyrsistent) #jsonschema dependency
+sys.path.insert(1, Configuration.pathToSix)        #pyrsistent dependency
 from jsonschema import Draft4Validator, validators, validate
 # https://pypi.org/project/jsonschema/
 # Current stable version is 2.6, version 3.0 brings Draft6Validator,
