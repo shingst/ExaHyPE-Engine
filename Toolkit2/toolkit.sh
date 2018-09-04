@@ -17,12 +17,16 @@ else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; f
 # check that all required dependencies are there.
 if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import exahype.toolkit; exahype.toolkit.checkDependencies()" 2>&1 >/dev/null; then
   echo "$0: At least one required Python3 module is not available." >&2
-  if echo "$@" | grep -q -- '--interactive'; then
-    ./install-dependencies.sh >&2 || { echo "$0: Installing dependencies failed."; exit -1; }
-  else 
-    echo "$0: Call with --interactive to let the toolkit install the dependencies locally and interactively." >&2
-    exit -1
-  fi
+  echo "$0: Install the project submodules with ./Submodules/updateSubmodules.sh from ExaHyPE's main directory" >&2
+  exit -1
+  # TODO SVEN: your install script won't work, it need to install to Submodules or change the paths in the Configuration files of toolkit, specfiles and codegenerator
+  #echo "$0: At least one required Python3 module is not available." >&2
+  #if echo "$@" | grep -q -- '--interactive'; then
+  #  ./install-dependencies.sh >&2 || { echo "$0: Installing dependencies failed."; exit -1; }
+  #else 
+  #  echo "$0: Call with --interactive to let the toolkit install the dependencies locally and interactively." >&2
+  #  exit -1
+  #fi
 fi
 
 #exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@

@@ -5,6 +5,11 @@
 # call as it will ask before doing anything.
 #
 
+# TODO SVEN: your install script won't work, it need to install to Submodules or change the paths in the Configuration files of toolkit, specfiles and codegenerator
+echo "TODO SVEN: your install script won't work, it need to install to Submodules or change the paths in the Configuration files of toolkit, specfiles and codegenerator"
+exit -1
+
+
 Toolkit2="$(dirname $0)"
 has() { type $@ &>/dev/null; } # a way to check if command is available
 
