@@ -1061,12 +1061,12 @@ int exahype::parser::Parser::getRanksPerNode() {
 
 
 int exahype::parser::Parser::getNumberOfBackgroundTasks() {
-  int result = getIntFromPath("/shared_memory/background_job_consumers",1,isOptional);
+  const std::string Search = "background-tasks";
 
-  if (result<-2) {
-    logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
-      "set or no number at all. Use default (1). See BackgroundTasks.h for documentation.");
-    result = 1;
+  int result = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
+  if (result<=0) {
+    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default");
+    result = 0;
   }
   return result;
 }
