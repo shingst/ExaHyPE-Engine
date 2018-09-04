@@ -1061,9 +1061,7 @@ int exahype::parser::Parser::getRanksPerNode() {
 
 
 int exahype::parser::Parser::getNumberOfBackgroundTasks() {
-  const std::string Search = "background-tasks";
-
-  int result = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
+  int result = getIntFromPath("/shared_memory/background_job_consumers",0,isOptional);
   if (result<=0) {
     logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default");
     result = 0;
