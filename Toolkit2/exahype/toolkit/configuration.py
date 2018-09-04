@@ -8,9 +8,7 @@ class Configuration:
     ######################################
     # Change them if required
 
-    #TODO Add missing path
     # absolute path to ExaHyPE's root (we need absolute paths in generated Makefile)
-    # TODO: This is flawed, we have some paths in the specfile but not this one. Why?
     pathToExaHyPERoot   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     
     # absolute path to jinja2
@@ -41,3 +39,25 @@ class Configuration:
         currentVersion  = sys.version_info
         if(requiredVersion > currentVersion):
             sys.exit("Requires Python 3.3 or newer. Abort.")
+
+
+
+def checkDependencies():
+    """check all dependencies are reachable from the configuration path"""
+    # Check jinja
+    sys.path.insert(1, Configuration.pathToJinja2)
+    sys.path.insert(1, Configuration.pathToMarkupsafe)
+    import jinja2
+    # Check codegenerator
+    sys.path.insert(1, Configuration.pathToCodegenerator)
+    import codegenerator
+    codegenerator.checkDependencies()
+    # Check specfile
+    sys.path.insert(1, Configuration.pathToSpecfiles)
+    import specfiles
+    specfiles.checkDependencies()
+    # Remove added path
+    sys.path.remove(Configuration.pathToJinja2)
+    sys.path.remove(Configuration.pathToMarkupsafe)
+    sys.path.remove(Configuration.pathToCodegenerator)
+    sys.path.remove(Configuration.pathToSpecfiles)

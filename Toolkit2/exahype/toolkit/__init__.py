@@ -6,4 +6,4 @@ main glue code generator for ExaHyPE supposed to be runned by users.
 
 #High level API
 from .controller import Controller
-
+from .configuration import checkDependencies

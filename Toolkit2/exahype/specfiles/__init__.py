@@ -13,3 +13,4 @@ Parts of the codes may be just copied from https://bitbucket.org/svek/mexa
 
 from .validate import validate
 from .omni_reader import OmniReader
+from .configuration import checkDependencies
