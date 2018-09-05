@@ -115,7 +115,6 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
       const double ti = t + xi * dt;
 
       scenario->analyticalSolution(x, ti, ns, curVarsOut, gradStateOut.data());
-      std::fill_n(gradStateOut.data(), gradSize, 0.0);
 
       //flux(curStateOut.data(), gradStateOut.data(), F);
       ns.evaluateFlux(curStateOut.data(), gradStateOut.data(), F, true);
