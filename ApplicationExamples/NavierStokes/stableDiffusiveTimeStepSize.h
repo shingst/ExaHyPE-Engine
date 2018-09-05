@@ -31,14 +31,22 @@ double stableDiffusiveTimeStepSize(
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int order              = SolverType::Order;
   constexpr int basisSize          = order+1;
-  constexpr double cflFactor       = 0.7; //SolverType::CFL;
+  constexpr double cflFactor       = SolverType::CFL;
 
-  double dt = std::numeric_limits<double>::max();
+  auto dt = std::numeric_limits<double>::max();
 #if DIMENSIONS == 2
 	kernels::idx3 idx_luh(basisSize, basisSize, numberOfData);
 #elif DIMENSIONS == 3
 	kernels::idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
 #endif
+
+	auto minDx = std::numeric_limits<double>::max();
+	for (int i = 0; i < DIMENSIONS; i++) {
+		minDx = std::min(minDx, dx[i]);
+	}
+
+	auto maxHyperbolicEigenvalue = std::numeric_limits<double>::min();
+	auto maxDiffusiveEigenvalue = std::numeric_limits<double>::min();
 
   // Iterate over dofs.
   for (int i = 0; i < basisSize; i++) {
@@ -58,34 +66,22 @@ double stableDiffusiveTimeStepSize(
 	  solver.eigenvalues(luh + idx, dim, hyperbolicEigenvalues.data());
 	  solver.diffusiveEigenvalues(luh + idx, dim, diffusiveEigenvalues.data());
 
-	  double maxHyperbolicEigenvalue = 0.0;
-	  double maxDiffusiveEigenvalue = 0.0;
-
 	  for (const auto eigen : hyperbolicEigenvalues) {
+	  	// TODO(Lukas) Take abs here?
 	    maxHyperbolicEigenvalue = std::max(maxHyperbolicEigenvalue, std::abs(eigen));
 	  }
 	  for (const auto eigen : diffusiveEigenvalues) {
 	    maxDiffusiveEigenvalue = std::max(maxDiffusiveEigenvalue, std::abs(eigen));
 	  }
 
-	  // const double scale = cflFactor/(2 * order + 1);
-	  // // TODO(Lukas) what exactly is the scale here?
-	  // const double denominator = maxHyperbolicEigenvalue + 2 * maxDiffusiveEigenvalue * ((2 * order + 1)/dx[dim]);
-	  // const double curDt = scale * (dx[dim]/denominator);
-
-	  const double curDt = cflFactor * (dx[dim]/(DIMENSIONS * (2 * order + 1))) *
-	    1.0/(maxHyperbolicEigenvalue + maxDiffusiveEigenvalue *
-	     ((2* (2 * order + 1))/(dx[dim]))
-	     );
-	  // std::cout << "invDx = " << curInvDx << " curDt = " << curDt << std::endl;
-	  // std::cout << "lam_h = " << maxHyperbolicEigenvalue << " lam_d = " << maxDiffusiveEigenvalue << std::endl;
-	  dt = std::min(dt, curDt);
 	} // dim
 #if DIMENSIONS == 3
 	  } // k
 #endif
     } // j
    } // i
+   dt = cflFactor * (minDx/(DIMENSIONS*(2 * order + 1))) *
+		   1./(maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * (2 * (2 * order + 1))/minDx);
     
   return dt;
 }
