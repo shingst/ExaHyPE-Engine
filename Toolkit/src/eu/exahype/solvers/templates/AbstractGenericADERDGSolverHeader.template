@@ -90,7 +90,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      *
      * See superclass for function's semantics.
      */
-    void algebraicSource(const double* const Q,double* S) override;
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& cellCenter, double t, const double *const Q, double *S) override;
         
     /**
      * Default implementation. Has to be be overwritten by user's solver if you 

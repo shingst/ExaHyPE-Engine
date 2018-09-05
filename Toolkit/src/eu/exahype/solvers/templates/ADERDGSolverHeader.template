@@ -155,7 +155,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                 as C array (already allocated).
      * \param[inout] S the source point as C array (already allocated).
      */
-    void algebraicSource(const double* const Q,double* S) final override;
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& cellCenter, double t, const double *const Q, double *S);
 {%- else -%}
 /* algebraicSource() function not included, as requested by the specification file */
 {%- endif %}

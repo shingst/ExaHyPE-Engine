@@ -99,10 +99,12 @@ public:
    *
    * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
    *                 as C array (already allocated).
+   * \param[in]    cellCenter         the physical coordinate
+   * \param[in]    t         the current time
    * \param[inout] S the source point as C array (already allocated).
    */
-  virtual void algebraicSource(const double* const Q,double* S) = 0;
-  
+  virtual void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& cellCenter, double t, const double *const Q, double *S) = 0;
+
   /**
    * Compute the nonconservative term $B(Q) \nabla Q$.
    * 

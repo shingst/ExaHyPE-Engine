@@ -57,7 +57,7 @@ void GenericEulerKernelTest::flux(const double *const Q, double **F) {
   h[4] = irho * Q[3] * (Q[4] + p);
 }
 
-void GenericEulerKernelTest::algebraicSource(const double *const Q, double *S) {
+void GenericEulerKernelTest::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& cellCenter, double t, const double *const Q, double *S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -507,6 +507,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(0.5, 0.5, 0.5);
   const double dt = 1.267423918681417E-002;
 
+  // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   // Inputs:
   double lQi[1600];  // lQi; nVar * nDOFx * nDOFy * nDOFz * (nDOFt+1); nDOF+1 only here
   double PSi[1600];  // pointSources
@@ -528,7 +533,9 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,
       ::exahype::tests::testdata::generic_euler::
        testSpaceTimePredictor::luh, // TODO(Dominic): Rename namespace to testSpaceTimePredictorLinear?
-       tarch::la::invertEntries(dx), dt
+       x,
+       tarch::la::invertEntries(dx),
+       t, dt
   );
 
   for (int i = 0; i < 320; i++) {
@@ -576,6 +583,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(0.05, 0.05, 0.05);
   const double timeStepSize = 1.083937460199773E-003;
 
+  // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   constexpr int nVar       = NumberOfVariables;
   constexpr int nPar       = NumberOfParameters;
   constexpr int nData      = nVar+nPar;
@@ -619,7 +631,9 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
       lQhbnd, nullptr, lFhbnd,
       lQi, rhs, lFi, gradQ, lQhi, lFhi,
       luh,
-      tarch::la::invertEntries(dx), timeStepSize
+      x,
+      tarch::la::invertEntries(dx),
+      t, timeStepSize
   );
   _setNcpAndMatrixBToZero = false;
 

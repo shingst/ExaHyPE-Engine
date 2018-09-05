@@ -51,7 +51,7 @@ void GenericEulerKernelTest::flux(const double *Q, double **F) {
 }
 
 
-void GenericEulerKernelTest::algebraicSource(const double* const Q, double *S) {
+void GenericEulerKernelTest::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
   S[0] = 0.0;
   S[1] = 0.0;
   S[2] = 0.0;
@@ -742,6 +742,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(0.5, 0.5);
   const double dt = 1.267423918681417E-002;
 
+   // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   // Inputs:
   double lQi[400];  // lQi; nVar * nDOFx * nDOFy * (nDOFt+1); nDOF+1 only here
   double PSi[400];  // point sources
@@ -763,7 +768,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       lQhbnd, lFhbnd,
       lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,
       ::exahype::tests::testdata::generic_euler::testSpaceTimePredictorLinear::luh,
-      dx, dt);
+      x, dx, t, dt);
 
   _setNcpAndMatrixBToZero = false;
 
@@ -808,6 +813,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
   const tarch::la::Vector<DIMENSIONS, double> dx(5e-02, 5e-02);
   const double dt = 1.686854344081342E-003;
 
+  // These values are only used if the source depends on x or t.
+  // Hence, the actual values do not matter here.
+  const tarch::la::Vector<DIMENSIONS, double> x(0.0, 0.0);
+  const double t = 0.0;
+
   constexpr int nVar       = NumberOfVariables;
   constexpr int nPar       = NumberOfParameters;
   constexpr int nData      = nVar+nPar;
@@ -849,7 +859,10 @@ void GenericEulerKernelTest::testSpaceTimePredictorNonlinear() {
       lQhbnd, nullptr, lFhbnd,
       lQi, rhs, lFi, gradQ, lQhi, lFhi,
       luh,
-      tarch::la::invertEntries(dx), dt);
+      x,
+      tarch::la::invertEntries(dx),
+      t,
+      dt);
 
   _setNcpAndMatrixBToZero = false;
 

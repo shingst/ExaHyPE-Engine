@@ -38,7 +38,8 @@ namespace {
  */
 template <bool useSource, bool useFlux, bool useGradientFlux, bool useNCP, typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver,
-                             const double* luh, const double dt,
+                             const double* luh, const double t, const double dt,
+                             const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
                              const tarch::la::Vector<DIMENSIONS, double>& invDx,
                              double* lQi, double* rhs,
                              double* lFi, double* gradQ) {
@@ -223,7 +224,11 @@ int aderPicardLoopNonlinear(SolverType& solver,
 	          // algebraicSource is only a function of Q and S.
             // Old code (for reference): solver.fusedSource(&lQi[idx_lQi(k, l, i, 0)], &gradQ[idx_gradQ(k, l, i, 0, 0)], S);
             if(useSource) {
-              solver.algebraicSource(lQi+idx_lQi(k, l, i, 0), S);
+              const double ti = t + kernels::gaussLegendreNodes[order][i] * dt;
+              const double x = cellCenter[0] + (1./invDx[0]) * (kernels::gaussLegendreNodes[order][l] - 0.5);
+              const double y = cellCenter[1] + (1./invDx[1]) * (kernels::gaussLegendreNodes[order][k] - 0.5);
+              tarch::la::Vector<DIMENSIONS, double> coords = {x, y};
+              solver.algebraicSource(coords, ti, lQi+idx_lQi(k, l, i, 0), S);
             } else {
               std::fill_n(S, numberOfVariables, 0.0);
             }
@@ -604,14 +609,17 @@ int spaceTimePredictorNonlinear(
     SolverType& solver, double* lQhbnd, double* lGradQhbnd, double* lFhbnd,
     double* lQi, double* rhs, double* lFi, double* gradQ, double* lQhi,
     double* lFhi, const double* const luh,
-    const tarch::la::Vector<DIMENSIONS, double>& invDx, double dt) {
-  constexpr int numberOfVariables  = SolverType::NumberOfVariables;
+    const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
+    const tarch::la::Vector<DIMENSIONS, double>& invDx,
+    double t,
+    double dt) {
+ constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize          = SolverType::Order+1;
-  
+
   const int iterations =
           aderPicardLoopNonlinear<useSource, useFlux, useGradientFlux, useNCP, SolverType>(
-                  solver, luh, dt, invDx, lQi, rhs, lFi, gradQ);
+                  solver, luh, t, dt, cellCenter, invDx, lQi, rhs, lFi, gradQ);
   
   if(noTimeAveraging) {
     // TODO(Lukas) what shall we do for this case?
