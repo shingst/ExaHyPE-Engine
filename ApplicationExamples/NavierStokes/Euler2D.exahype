@@ -5,35 +5,34 @@ exahype-project Euler
 
     computational-domain
 	dimension const          = 2
-	width                    = 1.0, 1.0
+	width                    = 10.0, 10.0
 	offset                   = 0.0, 0.0
-	end-time                 = 1.0
+	end-time                 = 0.6
     end computational-domain
 
     shared-memory
          identifier               = dummy
 	 configure                = {}
-         cores                    = 1
+         cores                    = 16
          properties-file          = sharedmemory.properties
-    end shared-memory  
+    end shared-memory
 
     solver ADER-DG EulerSolver
 	variables const = rho:1, j:2, E:1
-	order const = 2
+	order const = 1
 	maximum-mesh-size = 0.1
-	//maximum-mesh-size = 30.0
-	maximum-mesh-depth = 2
+	maximum-mesh-depth = 10
 	time-stepping = global
 	type const = nonlinear
 	terms const = flux, gradientFlux, source
 	optimisation const = generic
 	language const = C
-    constants = viscosity:0.1,scenario:two-bubbles
+    constants = viscosity:0.1,scenario:convergence
 
     plot vtu::Legendre::vertices::ascii Plotter
 	variables const = 5
-	time = 0.0
-	repeat = 0.005
+	time = 0.5
+	repeat = 0.5
 	output = ./results/solution
     end plot
     end solver

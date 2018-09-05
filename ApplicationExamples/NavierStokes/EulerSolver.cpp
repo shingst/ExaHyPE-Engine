@@ -50,6 +50,8 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TaylorGreen());
   } else if (scenarioName == "two-bubbles") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TwoBubbles());
+  } else if (scenarioName == "convergence") {
+    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::ConvergenceTest());
   } else {
     _log.error("EulerSolver::init", "Unknown scenario: " + scenarioName);
     std::abort();
