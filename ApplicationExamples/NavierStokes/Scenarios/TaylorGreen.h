@@ -10,12 +10,13 @@
 namespace NavierStokes {
 
 class TaylorGreen : public Scenario {
-  void initialValues(const double* const x, const NavierStokes& ns, Variables& vars) final override;
+  void initialValues(const double* const x, const NavierStokes& ns,
+                     Variables& vars) final override;
   void analyticalSolution(const double* const x, const double t,
-                                  const NavierStokes& ns, Variables& vars, double* gradState) final override;
+                          const NavierStokes& ns, Variables& vars,
+                          double* gradState) final override;
   BoundaryType getBoundaryType(int faceId) final override;
 };
-}
+}  // namespace NavierStokes
 
-
-#endif //NAVIERSTOKES_TAYLORGREEN_H
+#endif  // NAVIERSTOKES_TAYLORGREEN_H

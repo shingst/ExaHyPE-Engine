@@ -1,7 +1,7 @@
 #include "SmoothWave.h"
 void NavierStokes::SmoothWave::initialValues(const double* const x,
-                                               const NavierStokes& ns,
-                                               Variables& vars) {
+                                             const NavierStokes& ns,
+                                             Variables& vars) {
 #if DIMENSIONS == 2
   vars.j(0.0, 0.0);
 #elif DIMENSIONS == 3

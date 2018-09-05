@@ -6,24 +6,27 @@
 namespace NavierStokes {
 
 class TwoBubbles : public Scenario {
-    struct Bubble {
-        const double tempDifference;
+  struct Bubble {
+    const double tempDifference;
 
-        Bubble(const double tempDifference, const double size, const double decay, const double centerX,
-               const double centerZ);
+    Bubble(const double tempDifference, const double size, const double decay,
+           const double centerX, const double centerZ);
 
-        // temp. difference
-        const double size; // [m]
-        const double decay; // [m]
-        const double centerX; // [m]
-        const double centerZ; // [m]
-    };
+    // temp. difference
+    const double size;     // [m]
+    const double decay;    // [m]
+    const double centerX;  // [m]
+    const double centerZ;  // [m]
+  };
 
-public:
-    void initialValues(const double *const x, const NavierStokes &ns, Variables &vars) override;
+ public:
+  void initialValues(const double* const x, const NavierStokes& ns,
+                     Variables& vars) override;
 
-    void source(const double *const Q, double *S) override;
+  void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
+              const NavierStokes& ns, const double* const Q,
+              double* S) override;
 };
-}
+}  // namespace NavierStokes
 
-#endif //NAVIERSTOKES_TWOBUBBLES_H
+#endif  // NAVIERSTOKES_TWOBUBBLES_H

@@ -1,7 +1,7 @@
 #include "DoubleShockTube.h"
 void NavierStokes::DoubleShockTube::initialValues(const double* const x,
-                                               const NavierStokes& ns,
-                                               Variables& vars) {
+                                                  const NavierStokes& ns,
+                                                  Variables& vars) {
   double pressure = 0.0;
   if (x[0] < 0.33 || x[0] > 0.66) {
     vars.rho() = 0.125;

@@ -8,12 +8,10 @@
 #include "Scenario.h"
 
 namespace NavierStokes {
-    class SmoothWave : public Scenario {
-        void initialValues(const double *const x,
-                           const NavierStokes &ns,
-                           Variables &vars) final override;
-    };
-}
+class SmoothWave : public Scenario {
+  void initialValues(const double *const x, const NavierStokes &ns,
+                     Variables &vars) final override;
+};
+}  // namespace NavierStokes
 
-
-#endif //NAVIERSTOKES_SMOOTHWAVE_H
+#endif  // NAVIERSTOKES_SMOOTHWAVE_H

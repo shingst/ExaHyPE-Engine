@@ -5,9 +5,8 @@
 
 namespace NavierStokes {
 class SodShockTube : public Scenario {
-  void initialValues(const double* const x,
-                             const NavierStokes& ns,
-                             Variables& vars) final override;
+  void initialValues(const double* const x, const NavierStokes& ns,
+                     Variables& vars) final override;
 };
 
 }  // namespace NavierStokes

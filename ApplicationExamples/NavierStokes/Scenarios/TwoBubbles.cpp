@@ -57,7 +57,7 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
     const auto distZ = posZ - bubble.centerZ;
     const auto distanceToCenter = std::sqrt(distX * distX + distZ * distZ);
     // Inside the center of the bubble apply tempDifference without decay,
-    if (distanceToCenter < bubble.size) {
+    if (distanceToCenter <= bubble.size) {
       potentialT += bubble.tempDifference;
     } else {
       // Exponentially decay temperature outside of size.
