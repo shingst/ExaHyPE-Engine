@@ -28,6 +28,7 @@
 #include "Scenarios/TaylorGreen.h"
 #include "Scenarios/Stokes.h"
 #include "Scenarios/TwoBubbles.h"
+#include "Scenarios/ConvergenceTest/ConvergenceTest.h"
 
 tarch::logging::Log Euler::EulerSolver::_log( "Euler::EulerSolver" );
 
@@ -66,17 +67,18 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
 
 void Euler::EulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // @todo Please implement/augment if required
-  if (!tarch::la::equals(t, 0.0)) {
-    return;
-  }
-  
-  Variables vars(Q);
+  if (tarch::la::equals(t, 0.0)) {
+    Variables vars(Q);
+    scenario->initialValues(x, ns, vars);
+    for (int i = 0; i < vars.variables(); ++i) {
+      assertion2(std::isfinite(Q[i]), i, Q[i]);
 
-  scenario->initialValues(x, ns, vars);
+    }
+  }
 }
 
-void Euler::EulerSolver::algebraicSource(const double *const Q, double *S) {
-   scenario->source(Q, S);
+void Euler::EulerSolver::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
+   scenario->source(x, t, ns, Q, S);
 }
 
 void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
@@ -113,8 +115,10 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
       const double ti = t + xi * dt;
 
       scenario->analyticalSolution(x, ti, ns, curVarsOut, gradStateOut.data());
+      std::fill_n(gradStateOut.data(), gradSize, 0.0);
 
-      flux(curStateOut.data(), gradStateOut.data(), F);
+      //flux(curStateOut.data(), gradStateOut.data(), F);
+      ns.evaluateFlux(curStateOut.data(), gradStateOut.data(), F, true);
 
       for (int j = 0; j < NumberOfVariables; ++j) {
         stateOut[j] += weight * curStateOut[j];
@@ -142,10 +146,10 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
 #endif
 
   // Extrapolate gradient.
-  // TODO(Lukas): Is this correct with heat conduction?
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
-  flux(stateOut, gradStateOut.data(), F);
+  // TODO(Lukas): Do sth about heat conduction.
+  ns.evaluateFlux(stateOut, gradStateOut.data(), F, true);
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
 }
 
@@ -191,6 +195,7 @@ double Euler::EulerSolver::stableTimeStepSize(const double* const luh,const tarc
 void Euler::EulerSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
+  //kernels::aderdg::generic::c::riemannSolverNonlinear<false, EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,dt,direction);
   riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,lengthScale, dt,direction);
 
 }
@@ -214,10 +219,9 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
   if (orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR = fluxIn;  const double* const QR = stateIn;
-  
+
     riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
-    //riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
-  
+
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
   else {
@@ -225,9 +229,9 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
-    //riemannSolver(FL,FR,QL,QR,dt,direction,true,faceIndex);
-    
+
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
+
   delete[] block;
 }
