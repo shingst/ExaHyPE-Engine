@@ -1,9 +1,3 @@
-{% set solver               = data["solver"]["name"]    %}
-{% set abstractSolver       = "Abstract"+solver        %}
-{% set ADERDGSolver         = solver+"_ADERDG"         %}
-{% set FVSolver             = solver+"_FV"             %}
-{% set ADERDGAbstractSolver = abstractSolver+"_ADERDG" %}
-{% set FVAbstractSolver     = abstractSolver+"_FV"     %}
 #ifndef __{{solver}}_CLASS_HEADER__
 #define __{{solver}}_CLASS_HEADER__
 
@@ -16,7 +10,7 @@
 // ========================
 
 #include <string>
-{% if countFlops %}
+{% if aderdgContext.countFlops %}
 #include <atomic>
 #include <iostream>
 {% endif %}
@@ -48,7 +42,7 @@ class {{project}}::{{solver}}: public exahype::solvers::LimitingADERDGSolver {
         const int iterationsToCureTroubledCell
         {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %});
     
-    {% if countFlops %}
+    {% if aderdgContext.countFlops %}
     static std::atomic_ulong total_flops;
     static std::atomic_ulong total_time;
     

@@ -9,11 +9,11 @@
 
 #include "exahype/plotters/{{solverType}}2UserDefined.h"
 
-namespace {{Project}} {
+namespace {{project}} {
   class {{plotter}};
 }
 
-class {{Project}}::{{plotter}} : public exahype::plotters::{{solverType}}2UserDefined {
+class {{project}}::{{plotter}} : public exahype::plotters::{{solverType}}2UserDefined {
  public:
   /**
    * Constructor.

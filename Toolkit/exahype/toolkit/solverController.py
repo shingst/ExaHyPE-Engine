@@ -109,6 +109,11 @@ class SolverController:
         context["range_0_nPointSources"] = range(0,nPointSources) # nPointSources might be 0
         
         context["namingSchemes"]={} # TODO read from spec
+        
+        # In case optimized kernel are used
+        context["optKernelPath"]      = os.path.join("kernels", context["project"] + "_" + context["solver"])
+        context["optNamespace"]       = context["project"] + "::" + context["solver"] + "_kernels::aderdg"
+        
         return context
 
 
@@ -215,8 +220,6 @@ class SolverController:
     def buildKernelOptimizationContext(self, kernel, solverContext):
         optimizations = kernel.get("optimised_kernel_debugging",[]) + kernel.get("optimised_terms",[])
         context = {}
-        context["optKernelPath"]      = os.path.join("kernels", solverContext["project"] + "_" + solverContext["solver"])
-        context["optNamespace"]       = solverContext["project"] + "::" + solverContext["solver"] + "_kernels::aderdg"
         context["useConverter"]       = "converter"       in optimizations
         context["countFlops"]         = "flops"           in optimizations
         context["useFluxVect"]        = "fluxvect"        in optimizations

@@ -8,12 +8,12 @@
 #include "{{headerPath}}"
 
 
-{{Project}}::{{plotter}}::{{plotter}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
+{{project}}::{{plotter}}::{{plotter}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{plotter}}::plotPatch(
+void {{project}}::{{plotter}}::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
     double timeStamp) {
@@ -21,11 +21,11 @@ void {{Project}}::{{plotter}}::plotPatch(
 }
 
 
-void {{Project}}::{{plotter}}::startPlotting( double time) {
+void {{project}}::{{plotter}}::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void {{Project}}::{{plotter}}::finishPlotting() {
+void {{project}}::{{plotter}}::finishPlotting() {
   // @TODO Please insert your code here.
 }
