@@ -282,7 +282,7 @@ class Controller:
         context["strictJSON"]            = self.strict_json
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)
-        context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit2/toolkit.sh","--format=any --validate-only")
+        context["externalParserCommand"] = "%s/%s %s" % ( Configuration.pathToExaHyPERoot, "Toolkit/toolkit.sh","--format=any --validate-only")
         
         return context
     

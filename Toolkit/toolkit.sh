@@ -4,7 +4,7 @@
 # It checks whether all Python is available and then calls it.
 # 
 
-Toolkit2="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")"
+Toolkit="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")"
 has() { type $@ &>/dev/null; } # a way to check if command is available
 function join_by { local IFS="$1"; shift; echo "$*"; } # join bash-array with delimiter
 
@@ -15,7 +15,7 @@ elif python --version | grep -qi "python 3"; then PYTHON3="python"
 else echo "$0: Python3 required for running the ExaHyPE toolkit" >&2; exit -1; fi
 
 # check that all required dependencies are there.
-if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import exahype.toolkit; exahype.toolkit.checkDependencies()" 2>&1 >/dev/null; then
+if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit\"); import exahype.toolkit; exahype.toolkit.checkDependencies()" 2>&1 >/dev/null; then
   echo "$0: At least one required Python3 module is not available." >&2
   echo "$0: Install the project submodules with ./Submodules/updateSubmodules.sh from ExaHyPE's main directory" >&2
   exit -1
@@ -29,7 +29,5 @@ if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit2\"); import exahype.too
   #fi
 fi
 
-#exec $PYTHON3 $Toolkit2/exahype/toolkit/frontend.py $@
-
 # Run program using "exec", which ensures the proper return value of the shell script
-exec $PYTHON3 "$Toolkit2"/exahype/toolkit $@
+exec $PYTHON3 "$Toolkit"/exahype/toolkit $@

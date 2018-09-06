@@ -29,7 +29,7 @@ export PROJECT_LFLAGS="-lrt"
 echo "Building $path"
 dir="$(readlink -f $(dirname ${path}))"
 
-./Toolkit2/toolkit.sh -s -j -d ${path}
+./Toolkit/toolkit.sh -s -j -d ${path}
 
 cd $dir
 make -j 32
@@ -37,7 +37,7 @@ make -j 32
 	    // Stash files for later reuse
 	    // This is needed because the run step could run on another node!
 	    // We need to exclude any example spec file from Toolit2 as these are erroneously considered in the run process
-	    stash includes: "${directory}/**", excludes: "${directory}/Toolkit2/examples/*", name: "exahype-${config.name}" 
+	    stash includes: "${directory}/**", excludes: "${directory}/Toolkit/examples/*", name: "exahype-${config.name}" 
 	    deleteDir()}
 	    
     }

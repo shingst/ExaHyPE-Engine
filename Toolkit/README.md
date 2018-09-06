@@ -9,7 +9,13 @@ in https://gitlab.lrz.de/exahype/ExaHyPE-Engine/issues/237
 To use it:
 
 ```
-python3 Toolkit2/exahype/toolkit MySpecFile.exahype2
+./Toolkit/toolkit.sh MySpecFile.exahype2
+```
+
+Or
+
+```
+python3 Toolkit/exahype/toolkit MySpecFile.exahype2
 ```
 
 ## Requirements/Dependencies
@@ -24,12 +30,12 @@ using pip3. Otherwise, manually install the following python modules
 * markupsafe
 * attr
 * pyrsistent 
+* six
 
 ## Local Installation of Dependencies
 
 In case you cannot use pip3 to install the required python modules,
-`Toolkit2/toolkit.sh` offers to download them for you.
-Just run the program, it will detect which dependencies are missing.
+`Submodules/updateSubmodules.sh` offers to download them for you.
 
 ## Installation of Dependencies on SuperMUC
 

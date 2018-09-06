@@ -2,7 +2,7 @@
 # Regular Python 2
 
 """
-This is the mexa implementation for the ExaHyPE Toolkit2.
+This is the mexa implementation for the ExaHyPE Toolkit.
 
 Mexa is a kind of non-turing-complete programming language to compose hierarchical
 configuration files. Stripping the logic, it is also a simple markup language for
