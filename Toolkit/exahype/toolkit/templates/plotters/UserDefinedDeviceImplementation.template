@@ -8,7 +8,7 @@
 #include "{{headerPath}}"
 
 
-{{project}}::{{plotter}}::{{plotter}}() : exahype::plotters::{{solverType}}2UserDefined::{{solverType}}2UserDefined(){
+{{project}}::{{plotter}}::{{plotter}}() : exahype::plotters::{{solverType | replace("-", "")}}2UserDefined::{{solverType | replace("-", "")}}2UserDefined(){
   // @TODO Please insert your code here.
 }
 

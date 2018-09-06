@@ -56,14 +56,14 @@ std::atomic_ulong {{project}}::{{solver}}::findCellLocalLimiterMinAndMax_c = 0;
         const int iterationsToCureTroubledCell 
         {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}) :
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
-    {{solver}},
+      "{{solver}}",
     new {{project}}::{{ADERDGSolver}}(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables,limiterHelperLayers),
+      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,limiterHelperLayers,DMPObservables),
     new {{project}}::{{FVSolver}}(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
     DMPDifferenceScaling,
-iterationsToCureTroubledCell) {}
+    iterationsToCureTroubledCell) {}
 
 void {{project}}::{{solver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
 {% if aderdgContext.countFlops  %}

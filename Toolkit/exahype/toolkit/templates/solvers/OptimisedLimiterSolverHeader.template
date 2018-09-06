@@ -25,9 +25,10 @@ namespace {{project}}{
 
 class {{project}}::{{solver}}: public exahype::solvers::LimitingADERDGSolver {  
   public:
-    static constexpr int NumberOfVariables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
-    static constexpr int Order              = {{project}}::{{ADERDGAbstractSolver}}::Order;
-    static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
+    static constexpr int NumberOfVariables      = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
+    static constexpr int Order                  = {{project}}::{{ADERDGAbstractSolver}}::Order;
+    static constexpr int NumberOfDMPObservables = {{project}}::{{ADERDGAbstractSolver}}::NumberOfDMPObservables;
+    static constexpr int GhostLayerWidth        = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
   
     {{solver}}(
         const double maximumMeshSize,
