@@ -117,13 +117,13 @@ void exahype::plotters::FlashHDF5Writer::ExtendableDataSet::write(const DataType
 	*/
 	
 	// Hyperslab: https://support.hdfgroup.org/HDF5/doc/cpplus_RM/class_h5_1_1_data_space.html#a3147799b3cd1e741e591175e61785854
-	// op	- IN: Operation to perform on current selection
+	// op	- IN: Operation to perform on current plotterParametersion
 	// count	- IN: Number of blocks included in the hyperslab
 	// start	- IN: Offset of the start of hyperslab
 	// stride	- IN: Hyperslab stride - default to NULL
 	// block	- IN: Size of block in the hyperslab - default to NULL
 	// C++: (op, count, start, stride, block)
-	filespace->selectHyperslab(H5S_SELECT_SET, block_count.data(), block_offset.data());
+	filespace->plotterParametersHyperslab(H5S_SELECT_SET, block_count.data(), block_offset.data());
 
 	// Define memory space.
 	DataSpace *memspace = new DataSpace(basic_shape.size(), basic_shape.data(), NULL);
@@ -140,7 +140,7 @@ exahype::plotters::FlashHDF5Writer::FlashHDF5Writer(
 	int _basisSize,
 	int _solverUnknowns,
 	int _writtenUnknowns,
-	const std::string& _select,
+	exahype::parser::ParserView  _plotterParameters,
 	char** _writtenQuantitiesNames,
 	bool _oneFilePerTimestep,
 	bool _allUnknownsInOneFile)
@@ -150,7 +150,7 @@ exahype::plotters::FlashHDF5Writer::FlashHDF5Writer(
 	writtenUnknowns(_writtenUnknowns),
 	basisFilename(_filename),
 	basisSize(_basisSize),
-	select(_select),
+	plotterParameters(_plotterParameters),
 	oneFilePerTimestep(_oneFilePerTimestep),
 	allUnknownsInOneFile(_allUnknownsInOneFile),
 	
@@ -165,7 +165,7 @@ exahype::plotters::FlashHDF5Writer::FlashHDF5Writer(
 	files(allUnknownsInOneFile ? 1 : writtenUnknowns)
 	{
 
-	// todo at this place:  allow _oneFilePerTimestep and _allUnknownsInOneFile to be read off _select.
+	// todo at this place:  allow _oneFilePerTimestep and _allUnknownsInOneFile to be read off _plotterParameters.
 
 	// just for convenience/a service, store an indexer for the actual ExaHyPE cells.
 	switch(DIMENSIONS) { // simulation dimensions
@@ -182,7 +182,7 @@ exahype::plotters::FlashHDF5Writer::FlashHDF5Writer(
 	}
 	writtenCellIdx = patchCellIdx; // without slicing, this is true.
 
-	slicer = Slicer::bestFromSelectionQuery(select);
+	slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 	if(slicer) {
 		logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<basisFilename);
 		if(slicer->getIdentifier() == "CartesianSlicer") {

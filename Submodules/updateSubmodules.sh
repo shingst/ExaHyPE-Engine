@@ -186,7 +186,7 @@ update_others() {
 
 if [ $# -eq 0 ]; then
 	update_Peano
-        update_others
+	update_others
 else
 	while getopts htswpo opt; do
 	case $opt in

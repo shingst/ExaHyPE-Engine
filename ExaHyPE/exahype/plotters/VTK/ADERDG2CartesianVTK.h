@@ -15,6 +15,7 @@
 #define _EXAHYPE_PLOTTERS_ADERDG_2_CARTESIAN_VTK_H_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/parser/ParserView.h"
 
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
 #include "tarch/plotter/griddata/VTUTimeSeriesWriter.h"
@@ -56,7 +57,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
   int           _order           = -1;
   int           _solverUnknowns  = -1;
   int           _writtenUnknowns = -1;
-  std::string   _select          = "";
+  exahype::parser::ParserView   _plotterParameters ;
 
   /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.
@@ -68,7 +69,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
    */
   double _time = 0;
 
-  exahype::plotters::Slicer *slicer = nullptr;
+  exahype::plotters::Slicer *_slicer = nullptr;
 
   static tarch::logging::Log _log;
 
@@ -101,7 +102,7 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
   ADERDG2CartesianVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells);
   virtual ~ADERDG2CartesianVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

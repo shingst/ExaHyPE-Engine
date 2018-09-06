@@ -170,14 +170,14 @@ void exahype::plotters::Patch2VTK::init(
   int                numberOfCellsPerAxis,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView plotterParameters
 ){
 	_filename             = filename;
 	_solverUnknowns       = unknowns; // not even needed
-	_select               = select;
+	_plotterParameters               = plotterParameters;
 	_writtenUnknowns      = writtenUnknowns;
 
-	slicer = Slicer::bestFromSelectionQuery(select);
+	slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 	if(slicer) {
 		logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
 	}

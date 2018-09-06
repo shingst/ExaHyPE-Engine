@@ -70,7 +70,7 @@ int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining 
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining        = 3;
 
 /**
- * static constexpr need to defined again when following a
+ * static constexpr need to declared again when following a
  * C++ standard before C++17.
  */
 constexpr int exahype::solvers::ADERDGSolver::BoundaryStatus;

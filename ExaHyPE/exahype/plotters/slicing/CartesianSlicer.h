@@ -24,6 +24,7 @@ namespace exahype {
 #include <algorithm>
 #include "exahype/plotters/slicing/Slicer.h"
 #include "tarch/la/Vector.h"
+#include "exahype/parser/ParserView.h"
 #include <iostream>
 
 /**
@@ -37,7 +38,7 @@ namespace exahype {
  * ie. typically it goes from 3D to 2D or 1D or from 2D to 1D.
  * 
  * By using this slicer, users can define to plot on a plane very easily by defining
- * this plane in their selection strings very close to the mathematical description:
+ * this plane in their plotterParametersion strings very close to the mathematical description:
  * 
  *   x:0  is the plane defined by x=0, ie. the y-z-plane
  *   y:0,z:0  is the axis defined by y=0 and z=0, ie. the x axis
@@ -45,7 +46,7 @@ namespace exahype {
  *   x:2.74,y:42,z:3.14  is a single point. This slicer can represent that and
  *        will map all points onto this point.
  *   x:123,y:234,z:456,y:819 is something which cannot be represented by the
- *        class members but may appear in a selection string, so it's in the
+ *        class members but may appear in a plotterParametersion string, so it's in the
  *        domain of the parser to interpret this.
  * 
  * <h3>A sub-patch slicer</h3>
@@ -84,7 +85,7 @@ struct exahype::plotters::CartesianSlicer : public exahype::plotters::Slicer {
 	 * Parse an ExaHyPE specfile query string and construct a CartesianSlicer object.
 	 * The syntax is described in the class documentation.
 	 **/
-	static CartesianSlicer* fromSelectionQuery(const std::string& select);
+	static CartesianSlicer* fromSelectionQuery(const exahype::parser::ParserView& plotterParameters);
 	
 	/// The inverse of the attribute "active".
 	int running(int d) const { return active(d) ? 0 : 1; }
@@ -97,7 +98,7 @@ struct exahype::plotters::CartesianSlicer : public exahype::plotters::Slicer {
 	}
 
 	/**
-	 * Coarse patch selection criterion. This will give true whenever the requested
+	 * Coarse patch plotterParametersion criterion. This will give true whenever the requested
 	 * plane/axis/point touches the given cell. That is, in the bordercase two neighboring
 	 * patches are active/plotted.
 	 **/

@@ -79,8 +79,9 @@ public class GenericADERDG implements Solver {
     context.put("useMaxPicardIterations", useMaxPicardIterations);
     
     //boolean as String
+
     context.put("useFlux_s"          , boolToTemplate(useFlux));
-    context.put("useViscousFlux_s" , boolToTemplate(useViscousFlux));
+    context.put("useViscousFlux_s"   , boolToTemplate(useViscousFlux));
     context.put("useSource_s"        , boolToTemplate(useSource));
     context.put("useNCP_s"           , boolToTemplate(useNCP));
     

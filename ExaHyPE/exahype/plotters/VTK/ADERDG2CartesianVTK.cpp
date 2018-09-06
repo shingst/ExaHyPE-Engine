@@ -131,19 +131,19 @@ void exahype::plotters::ADERDG2CartesianVTK::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView plotterParameters
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;
   _solverUnknowns    = unknowns;
-  _select            = select;
+  _plotterParameters            = plotterParameters;
   _patchWriter       = nullptr;
   _writtenUnknowns   = writtenUnknowns;
 
-  slicer = Slicer::bestFromSelectionQuery(select);
+  _slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 
-  if(slicer) {
-    logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
+  if(_slicer) {
+    logInfo("init", "Plotting selection "<<_slicer->toString()<<" to Files "<<filename);
   }
 }
 
@@ -390,7 +390,7 @@ void exahype::plotters::ADERDG2CartesianVTK::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u,
     double timeStamp) {
-  if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
+  if (!_slicer || _slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     assertion( _writtenUnknowns==0 || _patchWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _gridWriter!=nullptr );
 

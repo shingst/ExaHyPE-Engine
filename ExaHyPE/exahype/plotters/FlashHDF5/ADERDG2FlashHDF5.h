@@ -55,7 +55,7 @@ class exahype::plotters::ADERDG2FlashHDF5 : public exahype::plotters::Plotter::D
 
   virtual ~ADERDG2FlashHDF5();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView  plotterParameters);
 
   virtual void plotPatch(
         const int cellDescriptionsIndex,
