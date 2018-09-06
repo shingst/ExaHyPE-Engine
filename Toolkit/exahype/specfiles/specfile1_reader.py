@@ -389,7 +389,7 @@ class SpecFile1Reader():
         context.move_to_end("paths",last=False)                # put on top
         context.move_to_end("project_name",last=False) # put on top
         for option in list(context.keys()):
-            if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory"]:
+            if option in ["log_file","peano_kernel_path","peano_toolbox_path","exahype_path","output_directory","plotter_subdirectory"]:
                 context["paths"][option] = context.pop(option)
         self.map_computational_domain(context["computational_domain"])
         if "optimisation" in context:

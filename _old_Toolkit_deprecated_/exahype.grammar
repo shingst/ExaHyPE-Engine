@@ -54,6 +54,7 @@ Tokens
   token_exahype_path                 = 'exahype-path';
   token_output_directory             = 'output-directory';
   token_architecture                 = 'architecture';
+  token_plotter_directory            = 'plotter-subdirectory';
   token_logfile                      = 'log-file';
 
   token_computational_domain         = 'computational-domain';
@@ -164,21 +165,21 @@ Productions
   project {->project} =
    {serial}
      [begin_token]:token_project [name]:identifier
-       paths architecture? logfile? computational_domain optimisation? profiling? solver_list?
+       paths architecture? logfile? plotter_directory? computational_domain optimisation? profiling? solver_list?
      token_end [end_token]:token_project
-       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, computational_domain.computational_domain, Null, Null, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
+       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, plotter_directory.plotter_directory, computational_domain.computational_domain, Null, Null, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
    |
    {shared}
      [begin_token]:token_project [name]:identifier
-       paths architecture? logfile? computational_domain shared_memory distributed_memory? optimisation? profiling? solver_list?
+       paths architecture? logfile? plotter_directory? computational_domain shared_memory distributed_memory? optimisation? profiling? solver_list?
      token_end [end_token]:token_project
-       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
+       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, plotter_directory.plotter_directory, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
    |
    {distmem_first}
      [begin_token]:token_project [name]:identifier
-       paths architecture? logfile? computational_domain distributed_memory shared_memory? optimisation? profiling? solver_list?
+       paths architecture? logfile? plotter_directory? computational_domain distributed_memory shared_memory? optimisation? profiling? solver_list?
      token_end [end_token]:token_project
-       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
+       { -> New project( name, paths.paths, architecture.architecture, logfile.logfile, plotter_directory.plotter_directory, computational_domain.computational_domain, shared_memory.shared_memory, distributed_memory.distributed_memory, optimisation.optimisation, profiling.profiling, [solver_list.solver] ) }
      ;
 
 /*
@@ -239,6 +240,10 @@ Productions
   architecture {->architecture} =
        token_architecture [architecture_const]:token_const [architecture_equals]:token_equals [architecture]:identifier
     { -> New architecture(architecture) };
+
+  plotter_directory {-> plotter_directory} =
+       token_plotter_directory [plotter_directory_const]:token_const [plotter_directory_equals]:token_equals [plotter_directory]:identifier
+    { -> New plotter_directory(plotter_directory) };
 
   logfile {->logfile} =       
        token_logfile      [logfile_equals]:token_equals      [logfile]:filename
@@ -613,6 +618,7 @@ Abstract Syntax Tree
     paths
     architecture?
     logfile?
+    plotter_directory?
     computational_domain
     shared_memory?
     distributed_memory?
@@ -624,6 +630,8 @@ Abstract Syntax Tree
   logfile = filename;
   
   architecture = identifier;
+  
+  plotter_directory = identifier;
 
   paths =
     [peano_kernel_path]:filename [peano_toolbox_path]:filename? [exahype_path]:filename [output_directory]:filename;
