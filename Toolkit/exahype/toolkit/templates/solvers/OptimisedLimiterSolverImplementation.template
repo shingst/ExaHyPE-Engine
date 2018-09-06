@@ -10,7 +10,7 @@
 // =============================---==============
 #include "{{solver}}.h"
 
-#include "{{optKernelPath}}/Kernels.h"
+#include "{{aderdgContext.optKernelPath}}/Kernels.h"
 
 {% if aderdgContext.countFlops  %}
 #include <chrono>
@@ -70,12 +70,12 @@ void {{project}}::{{solver}}::projectOnFVLimiterSpace(const double* const luh, d
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   
-  {{optNamespace}}::projectOnFVLimiterSpace(luh, lim);
+  {{aderdgContext.optNamespace}}::projectOnFVLimiterSpace(luh, lim);
 
 {% if aderdgContext.countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
-  const unsigned long f ={{optNamespace}}::projectOnFVLimiterSpace_flops;
+  const unsigned long f ={{aderdgContext.optNamespace}}::projectOnFVLimiterSpace_flops;
   total_flops += f;
   total_time += time_ul;
   projectOnFVLimiterSpace_f += f;
@@ -89,12 +89,12 @@ void {{project}}::{{solver}}::projectOnDGSpace(const double* const lim, double* 
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   
-  {{optNamespace}}::projectOnDGSpace(lim, luh);
+  {{aderdgContext.optNamespace}}::projectOnDGSpace(lim, luh);
 
 {% if aderdgContext.countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
-  const unsigned long f ={{optNamespace}}::projectOnDGSpace_flops;
+  const unsigned long f ={{aderdgContext.optNamespace}}::projectOnDGSpace_flops;
   total_flops += f;
   total_time += time_ul;
   projectOnDGSpace_f += f;
@@ -108,12 +108,12 @@ bool {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const d
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   
-  const bool r =  {{optNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(luh, _solver.get(), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
+  const bool r =  {{aderdgContext.optNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch(luh, _solver.get(), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
 
 {% if aderdgContext.countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
-  const unsigned long f ={{optNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch_flops;
+  const unsigned long f ={{aderdgContext.optNamespace}}::discreteMaximumPrincipleAndMinAndMaxSearch_flops;
   total_flops += f;
   total_time += time_ul;
   discreteMaximumPrincipleAndMinAndMaxSearch_f += f;
@@ -129,12 +129,12 @@ void {{project}}::{{solver}}::findCellLocalMinAndMax(const double* const luh, do
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   
-  {{optNamespace}}::findCellLocalMinAndMax(luh, _solver.get(), localMinPerVariables, localMaxPerVariable);
+  {{aderdgContext.optNamespace}}::findCellLocalMinAndMax(luh, _solver.get(), localMinPerVariables, localMaxPerVariable);
 
 {% if aderdgContext.countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
-  const unsigned long f ={{optNamespace}}::findCellLocalMinAndMax_flops;
+  const unsigned long f ={{aderdgContext.optNamespace}}::findCellLocalMinAndMax_flops;
   total_flops += f;
   total_time += time_ul;
   findCellLocalMinAndMax_f += f;
@@ -148,12 +148,12 @@ void {{project}}::{{solver}}::findCellLocalLimiterMinAndMax(const double* const 
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
   
-  {{optNamespace}}::findCellLocalLimiterMinAndMax(lim, _solver.get(), localMinPerObservable,localMaxPerObservable);
+  {{aderdgContext.optNamespace}}::findCellLocalLimiterMinAndMax(lim, _solver.get(), localMinPerObservable,localMaxPerObservable);
 
 {% if aderdgContext.countFlops  %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long time_ul = (unsigned long) time;
-  const unsigned long f ={{optNamespace}}::findCellLocalLimiterMinAndMax_flops;
+  const unsigned long f ={{aderdgContext.optNamespace}}::findCellLocalLimiterMinAndMax_flops;
   total_flops += f;
   total_time += time_ul;
   findCellLocalLimiterMinAndMax_f += f;

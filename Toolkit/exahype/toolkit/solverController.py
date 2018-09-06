@@ -54,6 +54,7 @@ class SolverController:
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
+                self.addCodegeneratorPathAndNamespace(aderdgContext) # refresh path and namespace
                 
                 context["aderdgContext"] = aderdgContext
                 context["fvContext"] = fvContext
@@ -110,10 +111,6 @@ class SolverController:
         
         context["namingSchemes"]={} # TODO read from spec
         
-        # In case optimized kernel are used
-        context["optKernelPath"]      = os.path.join("kernels", context["project"] + "_" + context["solver"])
-        context["optNamespace"]       = context["project"] + "::" + context["solver"] + "_kernels::aderdg"
-        
         return context
 
 
@@ -122,6 +119,7 @@ class SolverController:
         context["type"] = "ADER-DG"
         context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
         context.update(self.buildKernelOptimizationContext(solver["aderdg_kernel"], context))
+        self.addCodegeneratorPathAndNamespace(context)
         
         context["order"]                  = solver["order"]
         context["numberOfDMPObservables"] = -1 # overwrite if called from LimitingADERDGSolver creation
@@ -227,5 +225,9 @@ class SolverController:
         context["useFusedSourceVect"] = "fusedsourcevect" in optimizations
         context["useSourceVect"]      = "fusedsourcevect" in optimizations
         context["useNCPVect"]         = "fusedsourcevect" in optimizations
-
+        
         return context
+        
+    def addCodegeneratorPathAndNamespace(self, context):
+        context["optKernelPath"]      = os.path.join("kernels", context["project"] + "_" + context["solver"])
+        context["optNamespace"]       = context["project"] + "::" + context["solver"] + "_kernels::aderdg"
