@@ -1,7 +1,3 @@
-[submodule "Submodules/Peano"]
-	path = Submodules/Peano
-	url = https://gitlab.lrz.de/gi26det/Peano.git
-	ignore = untracked # .o from compilation
 [submodule "Submodules/jinja"]
 	path = Submodules/jinja
 	url = https://github.com/pallets/jinja.git
