@@ -21,3 +21,6 @@
 [submodule "Submodules/six"]
 	path = Submodules/six
 	url = https://github.com/benjaminp/six.git
+[submodule "Submodules/Peano"]
+	path = Submodules/Peano
+	url = https://gitlab.lrz.de/gi26det/Peano.git
