@@ -124,6 +124,34 @@ struct exahype::parser::ParserImpl {
     throw std::runtime_error(ss.str());
   }
 
+  std::vector< std::pair<std::string, std::string> > getObjectAsVectorOfStringPair(std::string path, bool isOptional=false) const {
+    std::vector< std::pair<std::string, std::string> > retvec;
+    std::stringstream ss;
+    try{
+      auto object = data.at(json::json_pointer(path));
+      for (json::iterator it = object.begin(); it != object.end(); ++it) {
+        std::string value;
+        if(it.value().is_string()) {
+          value = it.value().get<std::string>(); //remove the ""
+        } else { //convert to string
+          std::ostringstream oss;
+          oss << it.value();
+          value = oss.str();
+        }
+        retvec.push_back( make_pair(it.key(), value) );
+      }
+      return retvec;
+    } catch (json::type_error& e) {
+      ss << path << " is not an object (" << e.what() << ")";
+    } catch(json::out_of_range& e) {
+      if(isOptional)
+        return retvec; //empty vector
+      else
+        ss << "Missing entry " << path << " (" << e.what() << ")";
+    }
+    throw std::runtime_error(ss.str());
+  }
+
 }; // end of ParserImpl
 
 /**
@@ -357,6 +385,18 @@ bool exahype::parser::Parser::getBoolFromPath(std::string path, bool defaultValu
     logError("getBoolFromPath()", e.what());
     invalidate();
     return defaultValue; /* I don't like returning something here */
+  }
+}
+
+std::vector< std::pair<std::string, std::string> > exahype::parser::Parser::getObjectAsVectorOfStringPair(std::string path, bool isOptional) const {
+  assertion(isValid());
+  try {
+    return _impl->getObjectAsVectorOfStringPair(path, isOptional);
+  } catch(std::runtime_error& e) {
+    logError("getObjectKeysFromPath()", e.what());
+    invalidate();
+    std::vector< std::pair<std::string, std::string> >  empty;
+    return empty; /* I don't like returning something here */
   }
 }
 

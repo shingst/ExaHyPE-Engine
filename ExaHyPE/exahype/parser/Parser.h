@@ -148,6 +148,7 @@ class exahype::parser::Parser {
   int getIntFromPath(std::string path, int defaultValue=-1, bool isOptional=false) const;
   double getDoubleFromPath(std::string path, double defaultValue=-1, bool isOptional=false) const;
   bool getBoolFromPath(std::string path, bool defaultValue=true, bool isOptional=false) const;
+  std::vector< std::pair<std::string, std::string> > getObjectAsVectorOfStringPair(std::string path, bool isOptional=false) const;
   
   /**
    * Compare string from a JSON path from the configuration file to

@@ -124,14 +124,20 @@ bool exahype::parser::ParserView::isValueValidBool(
 }
 
 std::vector< std::pair<std::string, std::string> > exahype::parser::ParserView::getAllAsOrderedMap() const {
-  std::vector< std::pair<std::string, std::string> > retvec;
-
-  // Well, this makes no sense in the moment and therefore I won't implement it.
-  // It does not make sense anymore because constants may be any kind of nested
-  // data.
   
-  logError("getAllAsOrderedMap()", "Not yet implemented");
-  return retvec;
+  // Expect the data to be in an object, if not then fail.
+  if (_parser!=nullptr && getParser().hasPath(_basePath)) {
+    return getParser().getObjectAsVectorOfStringPair(_basePath, true);
+  } else {
+    logError("getAllAsOrderedMap()", "No parameters found at all!");
+    std::abort();
+    std::vector< std::pair<std::string, std::string> > retvec;
+    return retvec;
+  }
+
+
+  
+  
 }
 
 std::map<std::string, std::string> exahype::parser::ParserView::getAllAsMap() const {
