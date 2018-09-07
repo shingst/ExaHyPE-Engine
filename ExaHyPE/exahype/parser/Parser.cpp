@@ -725,12 +725,15 @@ int exahype::parser::Parser::countVariablesType(const int solverNumber, const st
         }
       }
     }
+    /*
+    //TODO Sven: are parser with 0 variables as in CCZ4 valid?
     if(result == 0) {
       logError("countVariablesType()", "'" << getIdentifier(solverNumber)
                << "': '"<<identifier<<"': Value must be greater than zero (integer), "
                    "a list of identifiers (string), or a list of objects with fields 'name' (string) and 'multiplicity' (integer).");
       invalidate();
     }
+    */
     return result;
   } catch(json::out_of_range& e) { // not found
     if( !isOptional ) {
