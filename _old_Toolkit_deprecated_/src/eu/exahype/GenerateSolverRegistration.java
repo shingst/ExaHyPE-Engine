@@ -465,6 +465,22 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _writer.write("}\n");
       _writer.write("\n");
 
+      _writer.write("std::string kernels::readSpecificationFileToJSON(const std::string& filename) {\n");
+      _writer.write("  static tarch::logging::Log _log(\"kernels\");\n");
+      _writer.write("  constexpr int buffer_size = 512;\n");
+      _writer.write("  std::string command = \""+_directoryAndPathChecker.exahypePath.getAbsolutePath()+"/../Toolkit/toolkit.sh --format=any --validate-only \" + filename;\n");
+      _writer.write("  logInfo(\"readSpecificationFileToJSON()\", \"Invoking external command: \" << command);\n");
+      _writer.write("  std::array<char, buffer_size> buffer;\n");
+      _writer.write("  std::string json;\n");
+      _writer.write("  std::shared_ptr<FILE> pipe(popen(command.c_str(), \"r\"), pclose);\n");
+      _writer.write("  if (!pipe) throw std::runtime_error(std::string(\"Could not call external command with popen(\") + command + \").\");\n");
+      _writer.write("  while (!feof(pipe.get()))\n");
+      _writer.write("    if (fgets(buffer.data(), buffer_size, pipe.get()) != nullptr)\n");
+      _writer.write("        json += buffer.data();\n");
+
+      _writer.write("  return json;\n");
+      _writer.write("}\n");
+      
       System.out.println("configured all solver solvers ... ok");
 
       _writer.write("\n\n");
