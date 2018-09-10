@@ -227,12 +227,6 @@ private:
   void determineLimiterMinAndMax(SolverPatch& solverPatch,LimiterPatch& limiterPatch);
 
   /**
-   * Updates the merged limiter status based on the cell-local ADER-DG solution
-   * values,
-   */
-  void updateLimiterStatusAfterSolutionUpdate(SolverPatch& solverPatch,const bool isTroubled);
-
-  /**
    * Deallocates a limiter patch.
    *
    * \note Thread-safe.
