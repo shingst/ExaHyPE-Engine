@@ -263,11 +263,11 @@ class Controller:
         useFortran   = False
         for solver in self.spec["solvers"]:
             if "aderdg_kernel" in solver:
-                useOptKernel = useOptKernel or solver["aderdg_kernel"].get("type","generic")=="optimised"
-                useFortran   = useFortran or solver["aderdg_kernel"].get("language","C")=="Fortran"
+                useOptKernel = useOptKernel or solver["aderdg_kernel"]["implementation"]=="optimised"
+                useFortran   = useFortran or solver["aderdg_kernel"]["language"]=="Fortran"
             if "fv_kernel" in solver:
-                useOptKernel = useOptKernel or solver["fv_kernel"].get("type","generic")=="optimised"
-                useFortran   = useFortran or solver["fv_kernel"].get("language","C")=="Fortran"
+                useOptKernel = useOptKernel or solver["fv_kernel"]["implementation"]=="optimised"
+                useFortran   = useFortran or solver["fv_kernel"]["language"]=="Fortran"
         context["useOptKernel"] = useOptKernel
         context["useFortran"]   = useFortran
         

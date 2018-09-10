@@ -56,14 +56,13 @@ class SolverController:
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 self.addCodegeneratorPathAndNamespace(aderdgContext) # refresh path and namespace
                 
-                context["aderdgContext"] = aderdgContext
-                context["fvContext"] = fvContext
-                
                 # generate all solver files
                 model = solverModel.SolverModel(fvContext)
-                self.processModelOutput(model.generateCode(), [], logger) #don't register context
+                context["fvContext"] = self.processModelOutput(model.generateCode(), [], logger) #don't register context
                 model = solverModel.SolverModel(aderdgContext)
-                self.processModelOutput(model.generateCode(), [], logger) #don't register context
+                context["aderdgContext"] = self.processModelOutput(model.generateCode(), [], logger) #don't register context
+                if "codegeneratorContext" in context["aderdgContext"]:
+                    context["codegeneratorContext"] = context["aderdgContext"]["codegeneratorContext"] #move codegencontext one up if it exists
                 model = solverModel.SolverModel(context)
                 solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
                 
