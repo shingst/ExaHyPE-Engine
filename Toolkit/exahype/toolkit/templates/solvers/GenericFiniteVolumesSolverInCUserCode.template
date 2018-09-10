@@ -11,7 +11,7 @@ void {{project}}::{{solver}}::init(const std::vector<std::string>& cmdlineargs,c
 
 void {{project}}::{{solver}}::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
   // Dimensions             = {{dimensions}}
-  // Number of variables    = {{numberOfVariables + numberOfParameters}} + #parameters
+  // Number of variables    = {{numberOfVariables + numberOfMaterialParameters}} + #parameters
   
   // @todo Please implement/augment if required
   {% for i in range_0_nVarParam %}
@@ -21,7 +21,7 @@ void {{project}}::{{solver}}::adjustSolution(const double* const x,const double 
 
 void {{project}}::{{solver}}::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
   // Dimensions             = {{dimensions}}
-  // Number of variables    = {{numberOfVariables + numberOfParameters}} + #parameters
+  // Number of variables    = {{numberOfVariables + numberOfMaterialParameters}} + #parameters
   
   // @todo Please implement/augment if required
   {% for i in range_0_nVar %}
@@ -37,7 +37,7 @@ void {{project}}::{{solver}}::boundaryValues(
     const double* const stateInside,
     double* stateOutside) {
   // Dimensions             = {{dimensions}}
-  // Number of variables    = {{numberOfVariables + numberOfParameters}} + #parameters
+  // Number of variables    = {{numberOfVariables + numberOfMaterialParameters}} + #parameters
 
   // @todo Please implement/augment if required
   {% for i in range_0_nVar %}
@@ -55,7 +55,7 @@ void {{project}}::{{solver}}::boundaryValues(
 {% if useFlux and not useViscousFlux %}
 void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   
   // @todo Please implement/augment if required
   {% for d in range_0_nDim %}
