@@ -535,10 +535,11 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           cellDescription.setSolutionCompressed(-1);
           cellDescription.setPreviousSolutionCompressed(-1);
 
+          const int dataPerSubcell = getNumberOfVariables()+getNumberOfParameters();
           cellDescription.setSolutionAverages(
-              DataHeap::getInstance().createData( getNumberOfVariables()+getNumberOfParameters(), getNumberOfVariables()+getNumberOfParameters() ) );
+              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
           cellDescription.setPreviousSolutionAverages(
-              DataHeap::getInstance().createData( getNumberOfVariables()+getNumberOfParameters(), getNumberOfVariables()+getNumberOfParameters() ) );
+              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
           checkDataHeapIndex(cellDescription,cellDescription.getSolutionAverages(),"getSolutionAverages()");
           checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAverages(),"getPreviousSolutionAverages()");
 
@@ -555,9 +556,9 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolution(),"getExtrapolatedSolution()");
 
           cellDescription.setExtrapolatedSolutionCompressed(-1);
+
           cellDescription.setExtrapolatedSolutionAverages( DataHeap::getInstance().createData(
-            (getNumberOfVariables()+getNumberOfParameters()) * 2 * DIMENSIONS,
-            (getNumberOfVariables()+getNumberOfParameters()) * 2 * DIMENSIONS ) );
+              dataPerSubcell * 2 * DIMENSIONS, dataPerSubcell * 2 * DIMENSIONS ) );
           checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionAverages(),"getExtrapolatedSolutionAverages()");
         lock.free();
       }
