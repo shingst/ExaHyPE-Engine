@@ -2252,7 +2252,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
 
   #if defined(Debug) || defined(Asserts)
-  for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+  for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
     assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
   }
   #endif
@@ -2507,7 +2507,7 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
       cellDescription.getCorrectorTimeStepSize());
 
   #if defined(Debug) || defined(Asserts)
-  for (int i=0; i<getUnknownsPerCell(); i++) {
+  for (int i=0; i<getDataPerCell(); i++) {
     assertion3(std::isfinite(solution[i]),cellDescription.toString(),"adjustSolution(...)",i);
   }
   #endif
@@ -2523,7 +2523,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     if (backupPreviousSolution) {
       double* solution  = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
-      std::copy(newSolution,newSolution+getUnknownsPerCell(),solution); // Copy (current solution) in old solution field.
+      std::copy(newSolution,newSolution+getDataPerCell(),solution); // Copy (current solution) in old solution field.
 
       #if defined(Debug) || defined(Asserts)
       for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize()==0.0 is an initial condition
@@ -2534,7 +2534,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
 
     double* update       = exahype::DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
     #if defined(Debug) || defined(Asserts)
-    for (int i=0; i<getUnknownsPerCell(); i++) {
+    for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
     } 
     #endif
@@ -2551,7 +2551,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         cellDescription.getCorrectorTimeStepSize());
 
     #if defined(Debug) || defined(Asserts)
-    for (int i=0; i<getDataPerCell(); i++) {
+    for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
       assertion3(std::isfinite(newSolution[i]),cellDescription.toString(),"updateSolution(...)",i);
     }
     #endif
