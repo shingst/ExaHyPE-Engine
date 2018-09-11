@@ -35,11 +35,11 @@
     iterationsToCureTroubledCell) {}
 
 void {{project}}::{{solver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
-  kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables,GhostLayerWidth>(luh, lim);
+  kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(luh, lim);
 }
 
 void {{project}}::{{solver}}::projectOnDGSpace(const double* const lim, double* const luh) const {
-  kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables,GhostLayerWidth>(lim, luh);
+  kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(lim, luh);
 }
 
 bool {{project}}::{{solver}}::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* boundaryMinPerVariables, double* boundaryMaxPerVariables) {
