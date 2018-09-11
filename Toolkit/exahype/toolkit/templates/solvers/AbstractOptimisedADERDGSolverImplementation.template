@@ -83,8 +83,8 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const int haloCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
-    const int DMPObservables,
-    const int limiterHelperLayers
+    const int limiterHelperLayers,
+    const int DMPObservables
     {% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}):
   {{abstractSolver}}::{{abstractSolver}}(
       maximumMeshSize,
@@ -92,8 +92,8 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
       haloCells,
       regularisedFineGridLevels,
       timeStepping,
-      DMPObservables,
-      limiterHelperLayers 
+      limiterHelperLayers,
+      DMPObservables
       {% if enableProfiler %},std::move(profiler) {% endif %}) {}
 
 {{project}}::{{abstractSolver}}::{{abstractSolver}}(
@@ -105,19 +105,20 @@ std::atomic_ulong {{project}}::{{abstractSolver}}::volumeUnknownsRestriction_c =
     const int limiterHelperLayers,
     const int DMPObservables
     {% if enableProfiler %},std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %})
-    :
-    exahype::solvers::ADERDGSolver("{{solver}}",
-        {{optNamespace}}::getNumberOfVariable(),
-        {{optNamespace}}::getNumberOfParameter(),
-        {{optNamespace}}::getBasisSize(),
-        maximumMeshSize,
-        maximumMeshDepth,
-        haloCells,
-        regularisedFineGridLevels,
-        timeStepping,
-        limiterHelperLayers,
-        DMPObservables
-        {% if enableProfiler %}, std::move(profiler){% endif %}) {}
+  :
+  exahype::solvers::ADERDGSolver(
+      "{{solver}}",
+      {{optNamespace}}::getNumberOfVariable(),
+      {{optNamespace}}::getNumberOfParameter(),
+      {{optNamespace}}::getBasisSize(),
+      maximumMeshSize,
+      maximumMeshDepth,
+      haloCells,
+      regularisedFineGridLevels,
+      timeStepping,
+      limiterHelperLayers,
+      DMPObservables
+      {% if enableProfiler %}, std::move(profiler){% endif %}) {}
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
   // This string is used in the --version output to identify compile time constants

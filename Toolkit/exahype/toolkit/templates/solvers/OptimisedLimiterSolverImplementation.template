@@ -49,8 +49,8 @@ std::atomic_ulong {{project}}::{{solver}}::findCellLocalLimiterMinAndMax_c = 0;
         const int haloCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
-        const int DMPObservables,
         const int limiterHelperLayers,
+        const int DMPObservables,
         const double DMPRelaxationParameter,
         const double DMPDifferenceScaling,
         const int iterationsToCureTroubledCell 
