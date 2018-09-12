@@ -24,7 +24,7 @@ exahype-project Euler
 	maximum-mesh-depth = 3
 	time-stepping = global
 	type const = nonlinear
-	terms const = flux, gradientFlux, source
+	terms const = flux, viscousflux, source
 	optimisation const = generic
 	language const = C
     constants = viscosity:0.1,scenario:two-bubbles

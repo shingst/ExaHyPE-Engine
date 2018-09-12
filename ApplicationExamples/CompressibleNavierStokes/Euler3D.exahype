@@ -12,19 +12,18 @@ exahype-project Euler
 
     shared-memory
          identifier               = dummy
-         configure                = {background-tasks: 1}
          cores                    = 8
          properties-file          = sharedmemory.properties
     end shared-memory  
 
     solver ADER-DG EulerSolver
 	variables const = rho:1, j:3, E:1
-	order const = 2
-	maximum-mesh-size = 0.3
+	order const = 1
+	maximum-mesh-size = 0.2
 	maximum-mesh-depth = 2
 	time-stepping = global
 	type const = nonlinear
-	terms const = flux, gradientFlux
+	terms const = flux, viscousflux
 	optimisation const = generic
 	language const = C
 	constants = viscosity:0.1,scenario:stokes

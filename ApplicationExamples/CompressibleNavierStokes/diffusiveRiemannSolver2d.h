@@ -69,8 +69,8 @@ void riemannSolverNonlinear(
         std::max(maxHyperbolicEigenvalue, std::max(smax_L, smax_R));
 
     // diffusive eigenvalues
-    solver.diffusiveEigenvalues(&QL[idx_QLR(j, 0)], direction, LL);
-    solver.diffusiveEigenvalues(&QR[idx_QLR(j, 0)], direction, LR);
+    solver.viscousEigenvalues(&QL[idx_QLR(j, 0)], direction, LL);
+    solver.viscousEigenvalues(&QR[idx_QLR(j, 0)], direction, LR);
     std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
     std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
     const double smaxDiffusive_L =

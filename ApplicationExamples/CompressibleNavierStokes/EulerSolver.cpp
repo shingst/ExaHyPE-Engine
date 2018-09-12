@@ -178,16 +178,11 @@ void Euler::EulerSolver::eigenvalues(const double* const Q,const int d,double* l
   ns.evaluateEigenvalues(Q, d, lambda);
 }
 
-void Euler::EulerSolver::diffusiveEigenvalues(const double* const Q,const int d,double* lambda) {
+void Euler::EulerSolver::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
   ns.evaluateDiffusiveEigenvalues(Q, d, lambda);
 }
 
-// TODO(Lukas) remove, currently called in boundaryValues!
-void Euler::EulerSolver::flux(const double* const Q, double** F) {
-  assert(false); // Make sure it never gets called!
-}
-
-void Euler::EulerSolver::flux(const double* const Q,const double* const gradQ, double** F) {
+void Euler::EulerSolver::viscousFlux(const double *const Q, const double *const gradQ, double **F) {
   ns.evaluateFlux(Q, gradQ, F);
 }
 

@@ -64,7 +64,7 @@ double stableDiffusiveTimeStepSize(
         const auto idx = idx_luh(i,j,k,0);
 #endif
 	  solver.eigenvalues(luh + idx, dim, hyperbolicEigenvalues.data());
-	  solver.diffusiveEigenvalues(luh + idx, dim, diffusiveEigenvalues.data());
+	  solver.viscousEigenvalues(luh + idx, dim, diffusiveEigenvalues.data());
 
 	  for (const auto eigen : hyperbolicEigenvalues) {
 	  	// TODO(Lukas) Take abs here?

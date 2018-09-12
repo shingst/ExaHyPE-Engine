@@ -80,7 +80,7 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      */
     void eigenvalues(const double* const Q,const int d,double* lambda) final override;
 
-    void diffusiveEigenvalues(const double* const Q,const int d,double* lambda) final override;
+    void viscousEigenvalues(const double* const Q,const int d,double* lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -129,8 +129,8 @@ class Euler::EulerSolver : public Euler::AbstractEulerSolver {
      *                 as C array (already allocated).
      * \param[inout] F the fluxes at that point as C array (already allocated).
      */
-  void flux(const double* const Q,double** F) final override;
-  void flux(const double* const Q, const double* const gradQ, double** F) final override;
+  //void flux(const double* const Q,double** F) final override;
+  void viscousFlux(const double* const Q, const double* const gradQ, double** F) final override;
 
   double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) final override;
   void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) final override;

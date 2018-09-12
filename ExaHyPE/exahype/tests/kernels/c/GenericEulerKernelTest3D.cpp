@@ -504,6 +504,11 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   // exahype::tests::testdata::generic_euler::testSpaceTimePredictor::luh[320 =
   // nVar * nDOFx * nDOFy * nDOFz]
 
+  // Actual values for cellCenter/t do not matter, they are only used for
+  // source terms that depend on time/space.
+  const tarch::la::Vector<DIMENSIONS, double> cellCenter(0.0, 0.0, 0.0);
+  const double t = 0.0;
+
   const tarch::la::Vector<DIMENSIONS, double> dx(0.5, 0.5, 0.5);
   const double dt = 1.267423918681417E-002;
 
@@ -528,7 +533,8 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       lQi,lFi,gradQ,PSi,PSderivatives,tmp_PSderivatives,lQhi,lFhi,
       ::exahype::tests::testdata::generic_euler::
        testSpaceTimePredictor::luh, // TODO(Dominic): Rename namespace to testSpaceTimePredictorLinear?
-       tarch::la::invertEntries(dx), dt
+       cellCenter, tarch::la::invertEntries(dx),
+       t, dt
   );
 
   for (int i = 0; i < 320; i++) {
