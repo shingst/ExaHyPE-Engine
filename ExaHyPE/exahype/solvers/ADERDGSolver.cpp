@@ -3072,7 +3072,11 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     const auto cellCenterL =  pLeft.getOffset() + 0.5*pLeft.getSize();
     const auto cellCenterR =  pRight.getOffset() + 0.5*pRight.getSize();
     const auto distance = tarch::la::abs<DIMENSIONS, double>(cellCenterL - cellCenterR);
-    assertion3(distance[0] > 0.0 || distance[1] > 0.0 || distance[2] > 0.0, cellCenterR, cellCenterL, distance);
+#if DIMENSIONS == 2
+    assertion3(distance[normalDirection] > 0.0, cellCenterR, cellCenterL, distance);
+#elif DIMENSIONS == 3
+    assertion3(distance[normalDirection] > 0.0, cellCenterR, cellCenterL, distance);
+#endif
 
     riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?

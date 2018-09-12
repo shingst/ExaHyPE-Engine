@@ -109,7 +109,6 @@ void riemannSolverNonlinear(
             0.5 * penalty * (QR[idx_QLR(j, k)] - QL[idx_QLR(j, k)]);
         assertion6(std::isfinite(FL[idx_FLR(j, k)]), j, k, factor, penalty,
                    maxHyperbolicEigenvalue, maxDiffusiveEigenvalue);
-
         if (useNCP) {
           FR[idx_FLR(j, k)] = FL[idx_FLR(j, k)] - 0.5 * ncp[k];
           FL[idx_FLR(j, k)] = FL[idx_FLR(j, k)] + 0.5 * ncp[k];
@@ -117,6 +116,7 @@ void riemannSolverNonlinear(
           FR[idx_FLR(j, k)] = FL[idx_FLR(j, k)];
         }
       }
+
     }
   }
 }
