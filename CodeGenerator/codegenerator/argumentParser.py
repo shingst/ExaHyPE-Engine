@@ -71,23 +71,65 @@ class ArgumentParser:
     
     @staticmethod
     def parseArgs():
-        # Process the command line arguments
+        """Process the command line arguments"""
         parser = argparse.ArgumentParser(description="This is the front end of the ExaHyPE code generator.")
         
         for arg in ArgumentParser.args:
+            key = arg[0]
             type = arg[1]
+            info = arg[2]
             if   type == ArgumentParser.ArgType.MandatoryString:
-                parser.add_argument(arg[0], help=arg[2])
+                parser.add_argument(key, help=info)
             elif type == ArgumentParser.ArgType.MandatoryInt:
-                parser.add_argument(arg[0], type=int, help=arg[2])
+                parser.add_argument(key, type=int, help=info)
             elif type == ArgumentParser.ArgType.OptionalBool:
-                parser.add_argument("--"+arg[0], action="store_true", help=arg[2])
+                parser.add_argument("--"+key, action="store_true", help=info)
             elif type == ArgumentParser.ArgType.OptionalInt:
-                parser.add_argument("--"+arg[0], type=int, default=arg[3], metavar=arg[4], help=arg[2])
+                parser.add_argument("--"+key, type=int, default=arg[3], metavar=arg[4], help=info)
         
         return vars(parser.parse_args())
 
 
     @staticmethod
     def validateInputConfig(inputConfig):
-        return True
+        """Validate a config and add the default value of missing optional arguments"""
+        for arg in ArgumentParser.args:
+            key  = arg[0]
+            type = arg[1]
+            #check mandatory and raise error if not set or wrong type
+            if   type == ArgumentParser.ArgType.MandatoryString:
+                if key not in inputConfig or not isinstance(inputConfig[key], str):
+                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (string expected)")
+            elif type == ArgumentParser.ArgType.MandatoryInt:
+                if key not in inputConfig or not isinstance(inputConfig[key], int):
+                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+            #check optional and set it to default if not set
+            elif type == ArgumentParser.ArgType.OptionalBool:
+                if key not in inputConfig:
+                    inputConfig[key] = False
+            elif type == ArgumentParser.ArgType.OptionalInt:
+                if key not in inputConfig:
+                    inputConfig[key] = arg[3] #default value
+
+
+    @staticmethod
+    def buildCommandLineFromConfig(inputConfig):
+        """Build a valid command line for the given config"""
+        commandLine = "codegenerator "
+        for arg in ArgumentParser.args:
+            key  = arg[0]
+            type = arg[1]
+            # add mandatory parameters
+            if   type == ArgumentParser.ArgType.MandatoryString:
+                commandLine += inputConfig[key] + " "
+            elif type == ArgumentParser.ArgType.MandatoryInt:
+                commandLine += str(inputConfig[key]) + " "
+            # check optional and add them if set and non default
+            elif type == ArgumentParser.ArgType.OptionalBool:
+                if key in inputConfig and inputConfig[key]:
+                    commandLine += "--" + key + " "
+            elif type == ArgumentParser.ArgType.OptionalInt:
+                if key in inputConfig and inputConfig[key] != arg[3]:
+                    commandLine += "--" + key + " " + str(inputConfig[key]) + " "
+        
+        return commandLine

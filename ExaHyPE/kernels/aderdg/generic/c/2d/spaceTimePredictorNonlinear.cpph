@@ -36,7 +36,7 @@ namespace {
  *  We have to consider that we store parameters in luh, lQi
  *  and have to adjust the index accordingly.
  */
-template <bool useSource, bool useFlux, bool useGradientFlux, bool useNCP, typename SolverType>
+template <bool useSource, bool useFlux, bool useVisciousFlux, bool useNCP, typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver,
                              const double* luh, const double t, const double dt,
                              const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
@@ -97,7 +97,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
   for (; iter < MaxIterations; iter++) {
       std::memset(gradQ, 0, sizeGradQ * sizeof(double));
     for (int i = 0; i < basisSize; i++) {  // time DOF
-      if(useNCP || useGradientFlux) {
+      if(useNCP || useVisciousFlux) {
         std::memset(gradQCur, 0, sizeGradQ * sizeof(double));
 
         // Compute the "derivatives" (contributions of the stiffness matrix)
@@ -110,7 +110,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
                 const auto idx = idx_gradQ(k,l, /*x*/0,m);
                 const auto t = 1.0 * invDx[0] * lQi[idx_lQi(k,n,i,m)] * kernels::dudx[order][l][n];
                 gradQCur[idx] += t;
-                if (useGradientFlux) {
+                if (useVisciousFlux) {
                   gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
                 }
               }
@@ -129,7 +129,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
               const auto idx = idx_gradQ(l, k, /*y*/1, m);
               const auto t = 1.0 * invDx[1] * lQi[idx_lQi(n, k, i, m)] * kernels::dudx[order][l][n]; /* l,n: transpose */
               gradQCur[idx] += t;
-              if (useGradientFlux) {
+              if (useVisciousFlux) {
                 gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
               }
             }
@@ -147,12 +147,10 @@ int aderPicardLoopNonlinear(SolverType& solver,
             double* F[2]; // TODO(Sven): set but not used
             F[0]      = lFi + idx_lFi(i, k, l, 0, 0);
             F[1]      = lFi + idx_lFi(i, k, l, 1, 0);
-            if (useGradientFlux) {
-              solver.flux(Q, gradQCur+idx_gradQ(k,l,0,0), F);
-            } else {
-              solver.flux(Q,F);
-
+            if(useViscousFlux){
+                solver.viscousFlux(Q,gradQ+idx_gradQ(k,l,0,0),F);
             }
+            else solver.flux(Q,F);
             // everything related to source now moved down to the NCP
           }
         }
@@ -390,7 +388,7 @@ void aderPredictorNonlinear(const double* lQi, const double* lFi,double* lQhi,
   }
 }
 
-template<bool useFlux,bool useGradientFlux,int numberOfVariables,int numberOfParameters,int basisSize>
+template<bool useFlux,bool useVisciousFlux,int numberOfVariables,int numberOfParameters,int basisSize>
 void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const double* lFhi_x,
     const double* lFhi_y, double* lQhbnd, double* lGradQhbnd, double* lFhbnd) {
   // Compute the boundary-extrapolated values for Q and F*n
@@ -400,12 +398,12 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
   idx3 idx_lQhi(basisSize, basisSize, numberOfData);
   idx4 idx_lGradQi(basisSize, basisSize, DIMENSIONS,
                    numberOfVariables);
-  idx3 idx_lFhi(basisSize, basisSize, numberOfVariables);  
+  idx3 idx_lFhi(basisSize, basisSize, numberOfVariables);
   
   idx3 idx_lQhbnd(2 * DIMENSIONS, basisSize, numberOfData);
   idx4 idx_lGradQhbnd(2 * DIMENSIONS, basisSize, DIMENSIONS,
                       numberOfVariables);
-  if (useGradientFlux) {
+  if (useVisciousFlux) {
     std::fill_n(lGradQhbnd, 2 * DIMENSIONS * basisSize * numberOfVariables * DIMENSIONS, 0.0);
   }
   idx3 idx_lFhbnd(2 * DIMENSIONS, basisSize, numberOfVariables);
@@ -442,7 +440,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
             lQhi[idx_lQhi(j, l, k)] * kernels::FRCoeff[order][l];
       }
     }
-    if (useGradientFlux) {
+    if (useVisciousFlux) {
       for (int k = 0; k < numberOfData; k++) {
         for (int l = 0; l < basisSize; l++) { // x
           for (int dim = 0; dim < DIMENSIONS; dim++) {
@@ -487,7 +485,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi, const 
             lQhi[idx_lQhi(l, j, k)] * kernels::FRCoeff[order][l];
       }
     }
-    if (useGradientFlux) {
+    if (useVisciousFlux) {
       for (int k = 0; k < numberOfData; k++) {
         for (int l = 0; l < basisSize; l++) { // x
           for (int dim = 0; dim < DIMENSIONS; dim++) {
@@ -604,7 +602,7 @@ void aderTimeAveragingExtrapolatorNonlinear(
 }  // namespace
 
 
-template <bool useSource, bool useFlux, bool useGradientFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
+template <bool useSource, bool useFlux, bool useVisciousFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
 int spaceTimePredictorNonlinear(
     SolverType& solver, double* lQhbnd, double* lGradQhbnd, double* lFhbnd,
     double* lQi, double* rhs, double* lFi, double* gradQ, double* lQhi,
@@ -618,7 +616,7 @@ int spaceTimePredictorNonlinear(
   constexpr int basisSize          = SolverType::Order+1;
 
   const int iterations =
-          aderPicardLoopNonlinear<useSource, useFlux, useGradientFlux, useNCP, SolverType>(
+          aderPicardLoopNonlinear<useSource, useFlux, useVisciousFlux, useNCP, SolverType>(
                   solver, luh, t, dt, cellCenter, invDx, lQi, rhs, lFi, gradQ);
   
   if(noTimeAveraging) {

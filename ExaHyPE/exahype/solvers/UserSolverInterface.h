@@ -154,6 +154,21 @@ public:
   virtual void flux(const double* const Q, const double* const gradQ, double** F) = 0;
 
   ///@}
+
+    /**
+   * Compute the flux with diffusive component.
+   * 
+   * \param[in]  Q the conserved variabels (and parameters) associated with a
+   *               quadrature point as C array.
+   *             gradQ the gradient of the conserved variabels (and parameters) associated
+   *                   with a quadrature point as C array.
+   * \param[inout] F a C array with shape [nDim][nVars]. That is, this is an C list
+   *               holding pointers to actual lists. Thus, the storage may be noncontinous.
+   *               In any case, the storage has already been allocated.
+   **/
+  virtual void viscousFlux(const double* const Q, const double* const gradQ, double** F) = 0;
+  virtual void viscousEigenvalues(const double* const Q,const int d,double* lambda) = 0;
+  ///@}
 };
  // UserSolverInterface
 

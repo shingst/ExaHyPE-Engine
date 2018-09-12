@@ -839,6 +839,11 @@ class exahype::solvers::Solver {
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
 
+  /**
+   * Specify if solvers spawn background jobs and
+   * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
+   * and PredictorOrLocalRecomputation.
+   */
   static void configureEnclaveTasking(const bool useBackgroundJobs);
 
 
@@ -846,16 +851,48 @@ class exahype::solvers::Solver {
 
   static int getNumberOfQueuedJobs(const JobType& jobType);
 
+
+  /**
+   * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
+   * further. We have to wait until all tasks have terminated if we want to modify the heap,
+   * i.e. insert new data or remove data.
+   * Therefore, the wait (as well as the underlying semaphore) belong
+   * into this abstract superclass.
+   *
+   * \param[in] backgroundJobCounter A reference to a background job counter.
+   */
+  static void ensureAllJobsHaveTerminated(JobType jobType);
+
  /**
-  * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
-  * further. We have to wait until all tasks have terminated if we want to modify the heap,
-  * i.e. insert new data or remove data.
-  * Therefore, the wait (as well as the underlying semaphore) belong
-  * into this abstract superclass.
+  * Waits until the \p cellDescription has completed its time step.
   *
-  * \param[in] backgroundJobCounter A reference to a background job counter.
+  * <h2> Thread-safety </h2>
+  *
+  * We only read (sample) the hasCompletedTimeStep flag and thus do not need any locks.
+  * If this flag were to assume an undefined state, this would happen after the job working processing the
+  * cell description was completed. This routine will then do an extra iteration or finish.
+  * Either is fine.
+  *
+  * The flag is modified before a job is spawned and after it was processed.
+  * As the job cannot be processed before it is spawned, setting the flag
+  * is thread-safe.
+  *
+  * <h2> MPI </h2>
+  *
+  * Tries to receive dangling MPI messages while waiting if this
+  * is specified by the user.
   */
- static void ensureAllJobsHaveTerminated(JobType jobType);
+ template <typename CellDescription>
+ static void waitUntilCompletedTimeStep(
+     const CellDescription& cellDescription,const bool receiveDanglingMessages) {
+   while ( !cellDescription.getHasCompletedTimeStep() ) {
+     // do some work myself
+     if ( receiveDanglingMessages ) {
+       tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+     }
+     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+   }
+ }
 
  /**
   * Submit a Prediction- or FusedTimeStepJob.
@@ -1433,6 +1470,23 @@ class exahype::solvers::Solver {
    * Either runs the ADERDGSolver triad or
    * performs an FV update. Performs some additional
    * tasks.
+   *
+   * * <h2> Background Jobs </h2>
+   *
+   * The FiniteVolumesSolver, ADERDGSolver and LimitingADERDGSolver implementations
+   * show the following behaviour:
+   *
+   *   - If exahype::solvers::Solver::SpawnPredictionAsBackgroundJob is set to false,
+   *     this function will not spawn any background jobs.
+   *
+   *   - If exahype::solvers::Solver::SpawnPredictionAsBackgroundJob is set to true:
+   *
+   *     - This function will spawn a FusedTimeStepJob in intermediate batch iterations.
+   *       Here, it distinguishes between skeleton and enclave cells.
+   *       ADERDGSolver and LimitingADERDGSolver variants do not spawn a PredictionJob in this case.
+   *
+   *     - This function will not a spawn a FusedTimeStepJob in the first and last iteration of
+   *       a batch. ADERDGSolver and LimitingADERDGSolver may still spawn a PredictionJob in this case.
    *
    * \param[in] isFirstIterationOfBatch Indicates that we currently run no batch or
    *                                    we are in the first iteration of a batch.

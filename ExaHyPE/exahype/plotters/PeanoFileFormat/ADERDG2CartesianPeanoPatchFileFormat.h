@@ -15,6 +15,7 @@
 #define _EXAHYPE_PLOTTERS_ADERDG_2_CARTESIAN_PEANO_FILE_FORMAT_H_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/Slicer.h"
 
 #include "tarch/plotter/griddata/blockstructured/PeanoPatchFileWriter.h"
 
@@ -49,16 +50,15 @@ class exahype::plotters::ADERDG2CartesianPeanoFileFormat: public exahype::plotte
   int           _order;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  std::string   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
   /**
    * To memorise the time argument from startPlotter(). We need it when we close the plotter for the time series.
    */
   double _time;
 
-
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestLeftBottomFront;
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestRightTopBack;
+  static tarch::logging::Log _log;
+  exahype::plotters::Slicer *slicer;
 
   tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexDataWriter;
   tarch::plotter::griddata::Writer::CellDataWriter*    _cellDataWriter;
@@ -88,7 +88,7 @@ class exahype::plotters::ADERDG2CartesianPeanoFileFormat: public exahype::plotte
   ADERDG2CartesianPeanoFileFormat(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, bool plotCells, PlotterType type);
   virtual ~ADERDG2CartesianPeanoFileFormat();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

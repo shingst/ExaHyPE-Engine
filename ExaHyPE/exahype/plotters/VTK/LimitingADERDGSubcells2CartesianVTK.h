@@ -14,9 +14,10 @@
 #ifndef _EXAHYPE_PLOTTERS_LIMITING_ADERDG_SUBCELLS_2_CARTESIAN_VTK_H_
 #define _EXAHYPE_PLOTTERS_LIMITING_ADERDG_SUBCELLS_2_CARTESIAN_VTK_H_
 
-#include "exahype/plotters/Plotter.h"
-
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
+
+#include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/Slicer.h"
 
 namespace exahype {
   namespace plotters {
@@ -42,12 +43,11 @@ private:
    * The ghost layer width the finite volumes patch is using.
    */
   const int     _ghostLayerWidth;
-  std::string   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
   static tarch::logging::Log _log;
 
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestLeftBottomFront;
-  tarch::la::Vector<DIMENSIONS, double>  _regionOfInterestRightTopBack;
+  exahype::plotters::Slicer *_slicer = nullptr;
 
   tarch::plotter::griddata::blockstructured::PatchWriter::SinglePatchWriter* _gridWriter;
   tarch::plotter::griddata::blockstructured::PatchWriterUnstructured*        _patchWriter;
@@ -62,7 +62,7 @@ public:
                               const int ghostLayerWidth,const bool isBinary);
   virtual ~LimitingADERDGSubcells2CartesianVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

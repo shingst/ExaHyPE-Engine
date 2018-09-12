@@ -131,14 +131,6 @@ void exahype::mappings::Prediction::beginIteration(
   #endif
 
   if (
-      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      _stateCopy.isLastIterationOfBatchOrNoBatch()
-  ) {
-    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::SkeletonJob);
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-  }
-
-  if (
       !exahype::solvers::Solver::FuseADERDGPhases &&
       _stateCopy.isFirstIterationOfBatchOrNoBatch()
   ) {

@@ -33,32 +33,32 @@ exahype-project  Elastic
     end-time                 = 10.0
   end computational-domain
 
-   //shared-memory
-   // identifier               = dummy
-   // configure                = {background-tasks:1,manual-pinning}	
-   // cores                    = 1
-   // properties-file          = sharedmemory.properties
-   //end shared-memory
+   /*shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:8,manual-pinning}	
+    cores                    = 8
+    properties-file          = sharedmemory.properties
+   end shared-memory*/
 
    distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks-per-node:1}
+    configure                = {hotspot,fair,ranks-per-node:2}
     buffer-size              = 3200
     timeout                  = 6000
   end distributed-memory
     
 
   global-optimisation
-    fuse-algorithmic-steps          = off
+    fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
-    spawn-predictor-as-background-thread = on
-    spawn-amr-background-threads         = on
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps = on
-    time-step-batch-factor           = 0.0
+    time-step-batch-factor           = 1.0
     disable-metadata-exchange-in-batched-time-steps = on
     double-compression = 0.0
-    spawn-double-compression-as-background-thread = off
+    spawn-double-compression-as-background-thread = on
   end global-optimisation
 
   solver ADER-DG MyElasticWaveSolver
@@ -66,7 +66,7 @@ exahype-project  Elastic
     parameters const  = rho:1,cp:1,cs:1,d:3,jacobian:1,metric_derivative:9,curve_grid:3
     order const        = 4
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size  = 0.2
+    maximum-mesh-size  = 0.6
     maximum-mesh-depth = 0
     time-stepping      = global
     type const         = linear, Legendre
@@ -88,7 +88,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram0_refine
+      output          = ./loh1_o4_seismogram0_refine
       select          = x:2.0,y:4.0926,z:4.0926
     end plot
 
@@ -96,7 +96,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram1_refine
+      output          = ./loh1_o4_seismogram1_refine
       select          = x:0.0,y:4.0926,z:4.7856
     end plot
 
@@ -104,7 +104,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram2_refine
+      output          = ./loh1_o4_seismogram2_refine
       select          = x:0.0,y:4.0926,z:9.6356
     end plot
 
@@ -112,7 +112,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram3_refine
+      output          = ./loh1_o4_seismogram3_refine
       select          = x:0.0,y:4.0926,z:14.4846
     end plot
 
@@ -120,7 +120,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram4_refine
+      output          = ./loh1_o4_seismogram4_refine
       select          = x:0.0,y:4.5826,z:4.5826
     end plot
 
@@ -128,7 +128,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram5_refine
+      output          = ./loh1_o4_seismogram5_refine
       select          = x:0.0,y:8.0116,z:8.0116
     end plot
 
@@ -136,7 +136,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram6_refine
+      output          = ./loh1_o4_seismogram6_refine
       select          = x:0.0,y:11.4406,z:11.4406
     end plot
 
@@ -144,7 +144,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram7_refine
+      output          = ./loh1_o4_seismogram7_refine
       select          = x:0.0,y:4.6696,z:4.4766
     end plot
 
@@ -152,7 +152,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram8_refine
+      output          = ./loh1_o4_seismogram8_refine
       select          = x:0.0,y:8.7046,z:7.1676
     end plot
 
@@ -160,7 +160,7 @@ exahype-project  Elastic
       variables const = 9
       time            = 0.0
       repeat          = 0.02
-      output          = ./loh1_o3_seismogram9_refine
+      output          = ./loh1_o4_seismogram9_refine
       select          = x:0.0,y:12.7396,z:9.8566
     end plot
     

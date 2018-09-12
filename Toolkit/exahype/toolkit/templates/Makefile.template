@@ -1,0 +1,82 @@
+# *********************************************************************************************
+# README
+# *********************************************************************************************
+#
+# Available configuration Parameters for ExaHyPE
+#
+# export variable  |  default-value  |  further values         |  description
+#-------------------------------------------------------------------------------------------------------
+# COMPILER            Intel             GNU                          Used compiler (and linker)
+# MODE                Release           Debug,                       Verbosity and Debug level
+#                                       Asserts,PeanoProfile,Profile          
+# SHAREDMEM           None              OMP, TBB                     Shared-memory parallelisation
+# DISTRIBUTEDMEM      None              MPI                          Distributed-memory parallelisation
+# BOUNDARYCONDITIONS  None              Periodic                     Type of boundary conditions
+# USE_IPO             Off               On, Unsafe                   IPO during compilation (intel only)
+# ******************************************************************************************************
+
+PEANO_KERNEL_PEANO_PATH={{peanoToolboxPath}}/peano
+PEANO_KERNEL_TARCH_PATH={{peanoToolboxPath}}/tarch
+PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH={{peanoToolboxPath}}/multiscalelinkedcell
+PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH={{peanoToolboxPath}}/sharedmemoryoracles
+PEANO_TOOLBOX_MPI_BLANCING_PATH={{peanoToolboxPath}}/mpibalancing
+EXAHYPE_PATH={{exahypePath}}
+PROJECT_PATH={{outputPath}}
+EXECUTABLE=ExaHyPE-{{project}}
+
+PROJECT_CFLAGS+= -DDim{{dimensions}}
+
+{% if architecture != "noarch" %}
+ARCHITECTURE={{architecture}}
+PROJECT_CFLAGS+= -DALIGNMENT={{alignment}}
+{% else %}
+ARCHITECTURE=CPU
+{% endif %}
+
+# Default options required by the specification file
+{% if useSharedMem %}
+ifeq ($(SHAREDMEM),)
+    SHAREDMEM=TBB
+endif
+{% endif %}
+{% if useDistributedMem %}
+ifeq ($(DISTRIBUTEDMEM),)
+    DISTRIBUTEDMEM=MPI
+endif
+{% endif %}
+{% if useFortran %}
+ifeq ($(MIXEDLANG),)
+    MIXEDLANG=Yes
+endif
+{% endif %}
+{% if useOptKernel %}
+PROJECT_CFLAGS += -DOPT_KERNELS
+ifneq ($(call tolower,$(MODE)),release)
+ifneq ($(call tolower,$(MODE)),)
+    PROJECT_CFLAGS += -DTEST_OPT_KERNEL
+endif
+endif
+{% endif %}
+
+{% if useLikwid %}
+# Lib include for the profiler
+PROJECT_CFLAGS+= -DLIKWID_AVAILABLE
+PROJECT_CFLAGS+= -I{{likwidInc}}
+PROJECT_LFLAGS+= $(LIKWID_LIB)
+{% endif %}
+{% if useIpcm %}
+# Lib include for the profiler
+PROJECT_CFLAGS+= -DIPCM_AVAILABLE
+PROJECT_CFLAGS+= -I{{ipcmInc}}
+PROJECT_LFLAGS+= -L{{ipcmLib}} -lintelpcm
+{% endif %}
+
+
+# Main Makefile include
+-include {{exahypePath}}/Makefile
+
+
+all: 
+	@echo {{project}}
+	@echo =================
+	@echo An ExaHyPE solver

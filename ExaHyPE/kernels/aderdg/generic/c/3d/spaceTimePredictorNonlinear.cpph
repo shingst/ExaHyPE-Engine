@@ -13,9 +13,9 @@
 
 #include <cstring>
 
-#include "peano/datatraversal/autotuning/Oracle.h"
 #include "tarch/la/Vector.h"
 #include "tarch/multicore/Loop.h"
+#include "peano/datatraversal/autotuning/Oracle.h"
 
 #include "../../../../DGMatrices.h"
 #include "../../../../GaussLegendreQuadrature.h"
@@ -37,7 +37,7 @@ namespace {
  * Currently we simply copy them over from the solution array.
  *
  */
-template <bool useSource, bool useFlux, bool useGradientFlux, bool useNCP,
+template <bool useSource, bool useFlux, bool useVisciousFlux, bool useNCP,
           typename SolverType>
 int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                             const double t,
@@ -97,7 +97,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
   // The variable gradQCur corresponds to the gradient for the
   // current timestep.
   auto gradQCur = gradQ;  // no need to allocate here.
-  if (useGradientFlux) {
+  if (useVisciousFlux) {
     // Allocate new buffer for averaged gradient.
     gradQCur = new double[sizeGradQ];
   }
@@ -109,7 +109,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
     for (int i = 0; i < basisSize; i++) {  // time DOF
       // Compute gradients only if nonconservative contributions have to be
       // computed or if the flux depends on the gradient.
-      if (useNCP || useGradientFlux) {
+      if (useNCP || useVisciousFlux) {
         std::memset(gradQCur, 0.0,
             sizeGradQ * sizeof(double));
 
@@ -125,7 +125,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                   const auto t = 1.0 * invDx[0] * lQi[idx_lQi(j, k, n, i, m)] *
                                  kernels::dudx[order][l][n];
                   gradQCur[idx] += t;
-                  if (useGradientFlux) {
+                  if (useVisciousFlux) {
                     gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
                   }
                 }
@@ -145,7 +145,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                   const auto t = 1.0 * invDx[1] * lQi[idx_lQi(j, n, k, i, m)] *
                                  kernels::dudx[order][l][n];
                   gradQCur[idx] += t;
-                  if (useGradientFlux) {
+                  if (useVisciousFlux) {
                     gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
                   }
                 }
@@ -165,7 +165,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                   const auto t = 1.0 * invDx[2] * lQi[idx_lQi(n, j, k, i, m)] *
                                  kernels::dudx[order][l][n];
                   gradQCur[idx] += t;
-                  if (useGradientFlux) {
+                  if (useVisciousFlux) {
                     gradQ[idx] += t * kernels::gaussLegendreWeights[order][i];
                   }
                 }
@@ -576,7 +576,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
               lQhi[idx_lQhi(i, j, l, k)] * kernels::FRCoeff[order][l];
         }
       }
-      if (useGradientFlux) {
+      if (useVisciousFlux) {
         for (int k = 0; k < numberOfVariables; k++) {
           for (int l = 0; l < basisSize; l++) {
             for (int dim = 0; dim < DIMENSIONS; dim++) {
@@ -622,7 +622,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
               lQhi[idx_lQhi(i, l, j, k)] * kernels::FRCoeff[order][l];
         }
       }
-      if (useGradientFlux) {
+      if (useVisciousFlux) {
         for (int k = 0; k < numberOfVariables; k++) {
           for (int l = 0; l < basisSize; l++) {
             for (int dim = 0; dim < DIMENSIONS; dim++) {
@@ -814,7 +814,7 @@ void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
 
 }  // namespace
 
-template <bool useSource, bool useFlux, bool useGradientFlux, bool useNCP,
+template <bool useSource, bool useFlux, bool useVisciousFlux, bool useNCP,
           bool noTimeAveraging, typename SolverType>
 int spaceTimePredictorNonlinear(
     SolverType& solver, double* lQhbnd, double* lGradQhbnd, double* lFhbnd,
@@ -827,25 +827,11 @@ int spaceTimePredictorNonlinear(
   constexpr int basisSize = SolverType::Order + 1;
 
   const int iterations =
-      aderPicardLoopNonlinear<useSource, useFlux, useGradientFlux, useNCP, SolverType>(
+      aderPicardLoopNonlinear<useSource, useFlux, useVisciousFlux, useNCP, SolverType>(
               solver, luh, t, dt, cellCenter, invDx, lQi, rhs, lFi, gradQ);
 
   idx5 idx_gradQ(basisSize, basisSize, basisSize, DIMENSIONS,
                  numberOfVariables);
-  /*
-  for (int i = 0; i < basisSize; ++i) {
-    for (int j = 0; j < basisSize; ++j) {
-      for (int k = 0; k < basisSize; ++k) {
-	for (int dim = 0; dim < DIMENSIONS; ++dim) {
-	  for (int var = 0; var < numberOfVariables; ++var) {
-	    assertion5(std::isfinite(gradQ[idx_gradQ(i,j,k,dim,var)]), i, j, k, dim, var);
-	  }
-	}
-      }
-    }
-  }
-  */
-
 
   if (noTimeAveraging) {
     // TODO(Lukas) what shall we do for this case?
@@ -872,20 +858,6 @@ int spaceTimePredictorNonlinear(
         &lFhi[1 * basisSize3 * numberOfVariables],  // lFhi_y
         &lFhi[2 * basisSize3 * numberOfVariables],  // lFhi_z
         lQhbnd, lGradQhbnd, lFhbnd);
-
-    idx5 idx_lGradQhbnd(2 * DIMENSIONS, basisSize, basisSize, DIMENSIONS,
-			numberOfVariables);
-    for (int i = 0; i < 2 * DIMENSIONS; ++i) {
-      for (int j = 0; j < basisSize; ++j) {
-	for (int k = 0; k < basisSize; ++k) {
-	  for (int dim = 0; dim < DIMENSIONS; ++dim) {
-	    for (int var = 0; var < numberOfVariables; ++var) {
-	      assertion5(std::isfinite(lGradQhbnd[idx_lGradQhbnd(i,j,k,dim,var)]), i, j, k, dim, var);
-	    }
-	  }
-	}
-      }
-    }
 
   }
 

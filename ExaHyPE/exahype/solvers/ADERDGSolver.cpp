@@ -71,7 +71,7 @@ int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining 
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining        = 3;
 
 /**
- * static constexpr need to defined again when following a
+ * static constexpr need to declared again when following a
  * C++ standard before C++17.
  */
 constexpr int exahype::solvers::ADERDGSolver::BoundaryStatus;
@@ -116,6 +116,9 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   CellDescription newCellDescription;
   newCellDescription.setSolverNumber(solverNumber);
+
+  // Background job completion monitoring (must be initialised with true)
+  newCellDescription.setHasCompletedTimeStep(true);
 
   // Default AMR settings
   newCellDescription.setType(cellType);
@@ -2128,7 +2131,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
           cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
           cellDescription.getCorrectorTimeStepSize(),
           false, isSkeletonCell );
+    cellDescription.setHasCompletedTimeStep(true);
   } else {
+    cellDescription.setHasCompletedTimeStep(false);
     PredictionJob predictionJob(
         *this, cellDescriptionsIndex, element,
         cellDescription.getCorrectorTimeStamp(),  // corrector time step data is correct; see docu
@@ -2162,6 +2167,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
               isFirstIterationOfBatch,isLastIterationOfBatch,isSkeletonCell, mustBeDoneImmediately,
               cellDescription.getNeighbourMergePerformed() );
     } else {
+      cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
       FusedTimeStepJob fusedTimeStepJob( *this, cellDescriptionsIndex, element,
           cellDescription.getNeighbourMergePerformed(),isSkeletonCell);
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
@@ -2261,7 +2267,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
   double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
 
   #if defined(Debug) || defined(Asserts)
-  for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+  for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
     assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
   }
   #endif
@@ -2275,6 +2281,8 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody(
       predictorTimeStepSize);
 
   compress(cellDescription,isSkeletonCell);
+
+  cellDescription.setHasCompletedTimeStep(true);
 
   validateCellDescriptionData(cellDescription,true,true,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 }
@@ -2303,6 +2311,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           uncompressBefore,isSkeletonCell);
     }
     else {
+      cellDescription.setHasCompletedTimeStep(false);
       PredictionJob predictionJob( *this,cellDescriptionsIndex,element,predictorTimeStamp,predictorTimeStepSize,
           uncompressBefore,isSkeletonCell );
       Solver::submitPredictionJob(predictionJob,isSkeletonCell);
@@ -2513,7 +2522,7 @@ void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescrip
       cellDescription.getCorrectorTimeStepSize());
 
   #if defined(Debug) || defined(Asserts)
-  for (int i=0; i<getUnknownsPerCell(); i++) {
+  for (int i=0; i<getDataPerCell(); i++) {
     assertion3(std::isfinite(solution[i]),cellDescription.toString(),"adjustSolution(...)",i);
   }
   #endif
@@ -2529,7 +2538,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
     if (backupPreviousSolution) {
       double* solution  = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
-      std::copy(newSolution,newSolution+getUnknownsPerCell(),solution); // Copy (current solution) in old solution field.
+      std::copy(newSolution,newSolution+getDataPerCell(),solution); // Copy (current solution) in old solution field.
 
       #if defined(Debug) || defined(Asserts)
       for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize()==0.0 is an initial condition
@@ -2540,7 +2549,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
 
     double* update       = exahype::DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
     #if defined(Debug) || defined(Asserts)
-    for (int i=0; i<getUnknownsPerCell(); i++) {
+    for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
     } 
     #endif
@@ -2557,7 +2566,7 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         cellDescription.getCorrectorTimeStepSize());
 
     #if defined(Debug) || defined(Asserts)
-    for (int i=0; i<getDataPerCell(); i++) {
+    for (int i=0; i<getUnknownsPerCell(); i++) { // update does not store parameters
       assertion3(std::isfinite(newSolution[i]),cellDescription.toString(),"updateSolution(...)",i);
     }
     #endif
@@ -2610,6 +2619,8 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
 
   DataHeap::HeapEntries& update = DataHeap::getInstance().getData(cellDescription.getUpdate());
   std::fill(update.begin(),update.end(),0.0);
+
+  waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
 
   for (int d = 0; d < DIMENSIONS; ++d) {
     // Check if cell is at "left" or "right" d face of parent
@@ -2979,6 +2990,9 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
           :
           getCellDescription(cellDescriptionsIndex1,element1);
 
+  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionLeft,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionRight,false);
+
   // synchronise time stepping if necessary
   synchroniseTimeStepping(cellDescriptionLeft);
   synchroniseTimeStepping(cellDescriptionRight);
@@ -3142,6 +3156,8 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   synchroniseTimeStepping(cellDescription);
+
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
@@ -3834,6 +3850,8 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
             toRank << " vertex="<<x.toString()<<" face=" << faceBarycentre.toString());
     #endif
 */
+
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true);
 
     // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
     // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd

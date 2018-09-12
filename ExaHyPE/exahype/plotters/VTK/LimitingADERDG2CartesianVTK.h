@@ -14,10 +14,11 @@
 #ifndef _EXAHYPE_PLOTTERS_LIMITING_ADERDG_2_CARTESIAN_VTK_H_
 #define _EXAHYPE_PLOTTERS_LIMITING_ADERDG_2_CARTESIAN_VTK_H_
 
-#include "exahype/plotters/Plotter.h"
-
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
 #include "tarch/plotter/griddata/VTUTimeSeriesWriter.h"
+
+#include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/slicing/Slicer.h"
 
 namespace exahype {
   namespace plotters {
@@ -56,13 +57,13 @@ private:
   int           _order           = -1;
   int           _solverUnknowns  = -1;
   int           _writtenUnknowns = -1;
-  std::string   _select          = "";
+  exahype::parser::ParserView   _plotterParameters ;
   /**
    * The ghost layer width the finite volumes patch is using.
    */
   const int     _ghostLayerWidth    = -1;
 
-  exahype::plotters::Slicer *slicer = nullptr;
+  exahype::plotters::Slicer *_slicer = nullptr;
 
   static tarch::logging::Log _log;
 
@@ -118,7 +119,7 @@ public:
 
   virtual ~LimitingADERDG2CartesianVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

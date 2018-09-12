@@ -60,7 +60,7 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
   //int           _numberOfCellsPerAxis;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  std::string   _select;
+  exahype::parser::ParserView   _plotterParameters;
   double        _cellScaleFactor; ///< a factor to visually reduce the box size of a cell, should be between [0,1] where 1 means full size
 
   /**
@@ -103,7 +103,7 @@ class exahype::plotters::Patch2VTK: public exahype::plotters::Plotter::Device {
   Patch2VTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells, exahype::solvers::Solver::Type solvertype);
   virtual ~Patch2VTK();
 
-  virtual void init(const std::string& filename, int numberOfCellsPerAxis, int unknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int numberOfCellsPerAxis, int unknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
   std::pair<int,int> plotCellBoundary(

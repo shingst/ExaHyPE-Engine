@@ -34,148 +34,7 @@
 #include <iostream>
 #include <cstdio>
 
-tarch::logging::Log _log("");
-
-/**
- * The ping pong test has to be triggered by main very very early. There should
- * be no other message in the MPI subsystem.
- */
-int exahype::pingPongTest() {
-  bool correct = true;
-  #if defined(Parallel) && defined(Asserts)
-  logInfo( "run()", "start ping pong test .... if test fails, please retranslate with -DnoPackedRecords" );
-  exahype::Vertex::initDatatype();
-  exahype::Vertex sendVertex[5];
-
-  if (tarch::parallel::Node::getInstance().getNumberOfNodes()>1) {
-    if (tarch::parallel::Node::getInstance().getRank()==0) {
-      sendVertex[0].setPosition( tarch::la::Vector<DIMENSIONS,double>(2.0), 4);
-      sendVertex[0].setAdjacentRank( 0, 10 );
-      sendVertex[0].setAdjacentRank( 1, 11 );
-      sendVertex[0].setAdjacentRank( 2, 12 );
-      sendVertex[0].setAdjacentRank( 3, 13 );
-      sendVertex[1].setPosition( tarch::la::Vector<DIMENSIONS,double>(3.0), 5);
-      sendVertex[1].setAdjacentRank( 0, 20 );
-      sendVertex[1].setAdjacentRank( 1, 21 );
-      sendVertex[1].setAdjacentRank( 2, 22 );
-      sendVertex[1].setAdjacentRank( 3, 23 );
-      sendVertex[2].setPosition( tarch::la::Vector<DIMENSIONS,double>(4.0), 6);
-      sendVertex[2].setAdjacentRank( 0, 30 );
-      sendVertex[2].setAdjacentRank( 1, 31 );
-      sendVertex[2].setAdjacentRank( 2, 32 );
-      sendVertex[2].setAdjacentRank( 3, 33 );
-
-      sendVertex[0].send(1,100,false,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
-      sendVertex[0].send(1,100,true,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
-      MPI_Send( sendVertex, 3, exahype::Vertex::MPIDatatypeContainer::Datatype, 1, 100, tarch::parallel::Node::getInstance().getCommunicator() );
-    }
-    if (tarch::parallel::Node::getInstance().getRank()==1) {
-      exahype::Vertex receivedVertex;
-
-      receivedVertex.receive(0,100,false,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
-      assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
-      assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
-      assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
-      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
-      #ifdef Dim3
-      assertion1( receivedVertex.getX()(2)==2.0, receivedVertex.toString() );
-      correct &=  receivedVertex.getX()(2)==2.0;
-      #endif
-
-
-      receivedVertex.receive(0,100,true,Vertex::MPIDatatypeContainer::ExchangeMode::Blocking);
-      assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
-      assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
-      assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
-      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
-      #ifdef Dim3
-      assertion1( receivedVertex.getX()(2)==2.0, receivedVertex.toString() );
-      correct &=  receivedVertex.getX()(2)==2.0;
-      #endif
-
-      exahype::Vertex receivedVertices[5];
-      MPI_Status status;
-      MPI_Recv( receivedVertices, 3, exahype::Vertex::MPIDatatypeContainer::Datatype, 0, 100, tarch::parallel::Node::getInstance().getCommunicator(), &status );
-      assertion3( receivedVertices[0].getLevel()==4,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      assertion3( receivedVertices[0].getX()(0)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      assertion3( receivedVertices[0].getX()(1)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertices[0].getLevel()==4 && receivedVertices[0].getX()(0)==2.0 && receivedVertices[0].getX()(1)==2.0;
-      #ifdef Dim3
-      assertion3( receivedVertices[0].getX()(2)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertices[0].getX()(2)==2.0;
-      #endif
-
-      assertion3( receivedVertices[1].getLevel()==5,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      assertion3( receivedVertices[1].getX()(0)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      assertion3( receivedVertices[1].getX()(1)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertices[1].getLevel()==5 && receivedVertices[1].getX()(0)==3.0 && receivedVertices[1].getX()(1)==3.0;
-      #ifdef Dim3
-      assertion3( receivedVertices[1].getX()(2)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertices[1].getX()(2)==3.0;
-      #endif
-
-      assertion3( receivedVertices[2].getLevel()==6,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      assertion3( receivedVertices[2].getX()(0)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      assertion3( receivedVertices[2].getX()(1)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertices[2].getLevel()==6 && receivedVertices[2].getX()(0)==4.0 && receivedVertices[2].getX()(1)==4.0;
-      #ifdef Dim3
-      assertion3( receivedVertices[2].getX()(2)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertices[2].getX()(2)==4.0;
-      #endif
-    }
-    MPI_Barrier( tarch::parallel::Node::getInstance().getCommunicator() );
-
-    if (tarch::parallel::Node::getInstance().getRank()==0) {
-      //exahype::Vertex* heapVertices = new exahype::Vertex[5];
-      exahype::Vertex heapVertices[5];
-      MPI_Recv( heapVertices, 3, exahype::Vertex::MPIDatatypeContainer::Datatype, 1, 1, tarch::parallel::Node::getInstance().getCommunicator(), MPI_STATUS_IGNORE );
-
-      assertion3( heapVertices[0].getLevel()==4,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      assertion3( heapVertices[0].getX()(0)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      assertion3( heapVertices[0].getX()(1)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      correct &=  heapVertices[0].getLevel()==4 && heapVertices[0].getX()(0)==2.0 && heapVertices[0].getX()(1)==2.0;
-      #ifdef Dim3
-      assertion3( heapVertices[0].getX()(2)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      correct &=  heapVertices[0].getX()(2)==2.0;
-      #endif
-
-      assertion3( heapVertices[1].getLevel()==5,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      assertion3( heapVertices[1].getX()(0)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      assertion3( heapVertices[1].getX()(1)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      correct &=  heapVertices[1].getLevel()==5 && heapVertices[1].getX()(0)==3.0 && heapVertices[1].getX()(1)==3.0;
-      #ifdef Dim3
-      assertion3( heapVertices[1].getX()(2)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      correct &=  heapVertices[1].getX()(2)==3.0;
-      #endif
-
-      assertion3( heapVertices[2].getLevel()==6,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      assertion3( heapVertices[2].getX()(0)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      assertion3( heapVertices[2].getX()(1)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      correct &=  heapVertices[2].getLevel()==6 && heapVertices[2].getX()(0)==4.0 && heapVertices[2].getX()(1)==4.0;
-      #ifdef Dim3
-      assertion3( heapVertices[2].getX()(2)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
-      correct &=  heapVertices[2].getX()(2)==4.0;
-      #endif
-    }
-    if (tarch::parallel::Node::getInstance().getRank()==1) {
-      exahype::Vertex* heapVertices = new exahype::Vertex[5];
-      heapVertices[0].setPosition( tarch::la::Vector<DIMENSIONS,double>(2.0), 4);
-      heapVertices[1].setPosition( tarch::la::Vector<DIMENSIONS,double>(3.0), 5);
-      heapVertices[2].setPosition( tarch::la::Vector<DIMENSIONS,double>(4.0), 6);
-      MPI_Send( heapVertices, 3, exahype::Vertex::MPIDatatypeContainer::Datatype, 0, 1, tarch::parallel::Node::getInstance().getCommunicator() );
-      delete[] heapVertices;
-    }
-    MPI_Barrier( tarch::parallel::Node::getInstance().getCommunicator() );
-  }
-
-  logInfo( "run()", " ping pong test ok" );
-  #elif defined(Parallel)
-  logInfo( "run()", "ping pong tests requires compile with -DAsserts as it uses assert data to validate that right content is exchanged" );
-  #endif
-
-  return correct ? EXIT_SUCCESS : -1;
-}
-
+tarch::logging::Log _log("exahype");
 
 int exahype::main(int argc, char** argv) {
   //
@@ -290,14 +149,16 @@ int exahype::main(int argc, char** argv) {
 
   exahype::parser::Parser parser;
 
+  std::stringstream specfile;
+  std::string specFileName;
   if(runCompiledSpecfile) {
-    std::stringstream specfile;
-    // if this line does not compile for you, rebuild and rerun the toolkit.
+    specFileName = "builtin";
     specfile.str(std::string(kernels::compiledSpecfile()));
-    parser.readFile(specfile, "builtin");
   } else {
-    parser.readFile(firstarg);
+    specFileName = firstarg;
+    specfile.str(kernels::readSpecificationFileToJSON(specFileName));
   }
+  parser.readFile(specfile, specFileName);
 
   if (!parser.isValid()) {
     logError("main()", "invalid config file. Quit");

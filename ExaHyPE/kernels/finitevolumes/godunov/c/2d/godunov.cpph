@@ -53,7 +53,6 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
   double dt_max_allowed = std::numeric_limits<double>::max();
   
   idx3 idx(patchSize+2*ghostLayerWidth,patchSize+2*ghostLayerWidth,numberOfData);
-  
   // x faces
   for (int j = patchBegin; j < patchEnd; j++) {
     for (int k = patchBegin-1; k < patchEnd; k++) {  // We have patchSize+1 faces in each coordinate direction

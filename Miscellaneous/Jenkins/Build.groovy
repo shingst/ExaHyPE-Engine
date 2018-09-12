@@ -24,21 +24,22 @@ ls
 export COMPILER_LFLAGS='-pthread'
 export PROJECT_LFLAGS="-lrt" 
 
-# Build toolkit
-Toolkit/build.sh
 
 # Build example
 echo "Building $path"
 dir="$(readlink -f $(dirname ${path}))"
 
-java -jar Toolkit/dist/ExaHyPE.jar --not-interactive ${path}
+./Toolkit/toolkit.sh -s -j -d ${path}
+
 cd $dir
 make -j 32
 '''
 	    // Stash files for later reuse
 	    // This is needed because the run step could run on another node!
-	    stash includes: "${directory}/**", name: "exahype-${config.name}"
+	    // We need to exclude any example spec file from Toolit2 as these are erroneously considered in the run process
+	    stash includes: "${directory}/**", excludes: "${directory}/Toolkit/examples/*", name: "exahype-${config.name}" 
 	    deleteDir()}
+	    
     }
 
 }

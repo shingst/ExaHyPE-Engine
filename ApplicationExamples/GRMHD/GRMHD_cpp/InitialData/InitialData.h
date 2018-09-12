@@ -64,6 +64,8 @@ public:
 #include "PizzaTOV.h"
 #include "RNSID.h"
 #include "AnalyticalID.h"
+#include "TovSolverAdapter.h"
+#include "ToriIDAdapter.h"
 
 
 

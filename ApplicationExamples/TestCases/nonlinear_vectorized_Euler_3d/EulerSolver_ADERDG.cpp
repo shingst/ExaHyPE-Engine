@@ -19,7 +19,7 @@
 #include <immintrin.h>
  
 #include "EulerSolver_ADERDG.h"
-#include "EulerSolver_ADERDG_Variables.h"
+//#include "EulerSolver_ADERDG_Variables.h"
 #include "tarch/la/MatrixVectorOperations.h"
 
 #include "kernels/GaussLegendreQuadrature.h"

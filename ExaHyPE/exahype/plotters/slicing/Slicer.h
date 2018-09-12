@@ -22,6 +22,7 @@ namespace exahype {
   }
 }
 
+#include "exahype/parser/ParserView.h"
 #include "peano/utils/Dimensions.h"
 #include "tarch/la/Vector.h"
 #include <iostream>
@@ -73,9 +74,9 @@ struct exahype::plotters::Slicer {
 	 * subclass is fitting best.
 	 * 
 	 * All subclasses should provide similar static methods to create instances
-	 * based on ExaHyPE specfile selection strings.
+	 * based on ExaHyPE specfile plotterParametersion strings.
 	 **/
-	static Slicer* bestFromSelectionQuery(const std::string& select);
+	static Slicer* bestFromSelectionQuery(const exahype::parser::ParserView& plotterParameters);
 };
 
 /**
