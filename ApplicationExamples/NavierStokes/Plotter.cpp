@@ -6,11 +6,15 @@
 //   www.exahype.eu
 // ========================
 #include "Plotter.h"
+#include "EulerSolver.h"
 #include "EulerSolver_Variables.h"
 #include "NavierStokes.h"
+#include "kernels/aderdg/generic/Kernels.h"
+
 
 Euler::Plotter::Plotter(EulerSolver&  solver) {
   // @TODO Please insert your code here.
+  order = solver.Order;
 }
 
 Euler::Plotter::~Plotter() {
@@ -50,4 +54,14 @@ void Euler::Plotter::mapQuantities(
 
   // Write potential temperature
   outputQuantities[DIMENSIONS + 2] = potT;
+
+  /*
+  const auto& weights = kernels::gaussLegendreWeights[order];
+
+  double weight = 1.0;
+  for (int i = 0; i < DIMENSIONS; ++i) {
+    weight *= weights[pos[i]];
+  }
+  outputQuantities[DIMENSIONS + 2] = weight;
+   */
 }

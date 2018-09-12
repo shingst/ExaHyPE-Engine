@@ -40,6 +40,9 @@ public:
     double* Q,
     double* outputQuantities,
     double timeStamp) override;
+private:
+  int order;
 };
+
 
 #endif /* POSTPROCESSING_Plotter_CLASS_HEADER_ */
