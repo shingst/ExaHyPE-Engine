@@ -20,7 +20,7 @@ exahype-project Euler
     solver ADER-DG EulerSolver
 	variables const = rho:1, j:2, E:1
 	order const = 1
-	maximum-mesh-size = 0.1
+	maximum-mesh-size = 1.2
 	maximum-mesh-depth = 10
 	time-stepping = global
 	type const = nonlinear
@@ -29,10 +29,24 @@ exahype-project Euler
 	language const = C
     constants = viscosity:0.1,scenario:convergence
 
+    global-optimisation
+        fuse-algorithmic-steps                          = on
+        fuse-algorithmic-steps-factor                   = 0.99
+	spawn-predictor-as-background-thread            = on
+	spawn-amr-background-threads                    = on
+	disable-vertex-exchange-in-time-steps           = on
+	time-step-batch-factor                          = 1.0
+	disable-metadata-exchange-in-batched-time-steps = on
+	double-compression                              = 0.0
+	spawn-double-compression-as-background-thread   = on
+	end global-optimisation 
+
     plot vtu::Legendre::vertices::ascii Plotter
 	variables const = 5
 	time = 0.5
 	repeat = 0.5
+	//time = 0.0
+	//repeat = 0.05
 	output = ./results/solution
     end plot
     end solver

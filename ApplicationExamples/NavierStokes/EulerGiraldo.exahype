@@ -5,8 +5,8 @@ exahype-project Euler
 
     computational-domain
 	dimension const          = 2
-	width = 2000, 2000
-	offset                   = -500.0, -500.0
+	width = 1000, 1000
+	offset                   =  0.0, 0.0
 	end-time                 = 600.0
     end computational-domain
 
@@ -32,7 +32,7 @@ exahype-project Euler
     plot vtu::Legendre::vertices::ascii Plotter
 	variables const = 5
 	time = 0.0
-	repeat = 5
+	repeat = 2.5
 	output = ./results/solution
     end plot
     end solver

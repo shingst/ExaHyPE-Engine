@@ -30,7 +30,7 @@ exahype-project Euler
 	constants = viscosity:0.1,scenario:stokes
 
     plot vtu::Legendre::vertices::ascii Plotter
-	variables const = 5
+	variables const = 6
 	time = 0.0
 	repeat = 0.005
 	output = ./results/solution
