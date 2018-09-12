@@ -30,9 +30,13 @@ void GPRDIM::DIMSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,
 
 void GPRDIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
 	if (tarch::la::equals(t,0.0)) {
-		initialdata_(x, &t, Q);
+		int md = exahype::solvers::Solver::getMaximumAdaptiveMeshDepth();
+		double cms = exahype::solvers::Solver::getCoarsestMeshSize();
+		const int order = GPRDIM::AbstractDIMSolver_ADERDG::Order;
+		initialdata_(x, &t, Q,&md,&cms,&order);
 	}
 	// Call the dynamic rupture subroutine
+
 	dynamicrupture_(x, &t, Q);
 	/*if (t>0.005) {
 		//printf("Crack!");
@@ -52,6 +56,9 @@ void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double
 	const int nDim = DIMENSIONS;
 	double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
 	
+	int md=0;
+	double cms=0;
+	
 	std::memset(stateOut, 0, nVar * sizeof(double));
 	std::memset(fluxOut , 0, nVar * sizeof(double));
 	
@@ -62,7 +69,7 @@ void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double
 		const double xi = kernels::gaussLegendreNodes[order][i];
 		double ti = t + xi * dt;
 
-		initialdata_(x, &ti, Qgp);
+		initialdata_(x, &ti, Qgp,&md,&cms,&order);
 		flux(Qgp, F);
 		for(int m=0; m < nVar; m++) {
 			stateOut[m] += weight * Qgp[m];
@@ -72,9 +79,17 @@ void GPRDIM::DIMSolver_ADERDG::boundaryValues(const double* const x,const double
 }
 
 exahype::solvers::Solver::RefinementControl GPRDIM::DIMSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+	const int order = GPRDIM::AbstractDIMSolver_ADERDG::Order;
 	int rupture_flag;
-	return exahype::solvers::Solver::RefinementControl::Keep;
-	//ruptureflag_(rupture_flag,luh)
+	
+
+	ruptureflag_(&rupture_flag,&order,luh,&center[0],&dx[0]);
+	if(rupture_flag>0){
+		return exahype::solvers::Solver::RefinementControl::Refine;	
+	}else{
+		return exahype::solvers::Solver::RefinementControl::Keep;
+	}
+	
 	//if ( level > getCoarsestMeshLevel() )
 	//	return exahype::solvers::Solver::RefinementControl::Erase;
 	//	else return exahype::solvers::Solver::RefinementControl::Keep;
@@ -151,7 +166,7 @@ void GPRDIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 	assertion(numberOfObservables==1);
 	ReadOnlyVariables vars(Q);
 	observables[0]=Q[13];
-	observables[1]=Q[16];
+	observables[1]=Q[13];
 }
 
 bool GPRDIM::DIMSolver_ADERDG::isPhysicallyAdmissible(

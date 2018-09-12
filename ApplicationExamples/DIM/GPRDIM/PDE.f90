@@ -72,6 +72,7 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,h,Q)
 	g(23)=Q(2)/Q(1)
 	h(23)=Q(2)/Q(1)
 	
+	g(23)=g(23)*SSCRACKFL%dx*2.0	! Test only
   END SUBROUTINE PDEFlux
 
 
@@ -229,6 +230,9 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
 	S(12)=-psiM(3,2)/tau*detA**(8./3.)
 	S(13)=-psiM(3,3)/tau*detA**(8./3.)
 	  
+	S(20)=Q(2)/Q(1)
+	S(21)=Q(3)/Q(1)
+	S(22)=Q(4)/Q(1)
 END SUBROUTINE PDESource
 
 RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind) 
@@ -455,21 +459,29 @@ INTEGER :: j
     END SUBROUTINE PDEEigenvectors 
     
 	
-RECURSIVE SUBROUTINE DynamicRupture(x, t, Q)
+RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 	USE SpecificVarEqn99
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE Parameters, ONLY : nVar, nDim, ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: x(nDim), t     ! 
+	REAL, INTENT(IN)               :: x_in(nDim), t     ! 
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
 	! Local variables
-	REAL :: stressnorm, sigma_vec(6)
+	REAL :: stressnorm, sigma_vec(6),ee,u(3),x(3)
 	! Compute the normal stress using the Formula by Barton (IJNMF 2009)
+	x=0.
+	x(1:nDim)=x_in(1:nDim)
 	call computeGPRLEstress(stressnorm,sigma_vec,Q,.true.)
 	IF( stressnorm > Q(17) ) THEN
 		! If the normal stress is greater than the illness stress Y0 (stored in Q(17), then broke the material
 		Q(18)=0.!0.
+		if(USEFrictionLaw) then
+			! Compute the proper friction coefficient according to the prescribed friction law
+			u=Q(2:4)/Q(1)
+			ee=LEfriction_mu(x,t,u(1:3),Q(23),SSCRACKFL)
+			Q(24)=ee*2.0*SSCRACKFL%dx
+		end if
 		! Now in the this DoF it follows the NS friction law with mu proportional to mu_f ( stored in Q(24) )
 		!print *, 'Crack!'
 	ELSE
@@ -478,12 +490,54 @@ RECURSIVE SUBROUTINE DynamicRupture(x, t, Q)
 	! Add here some static rupture (like for the SSCRACK test case
 	!
 	!
-	
+	if(.not. SSCRACKFL%DynamicFL .and. USEFrictionLaw) then ! Static marker
+	    u=Q(2:4)/Q(1)
+		ee=LEfriction_mu(x,t,u(1:3),Q(23),SSCRACKFL)
+		if(ee<SSCRACKFL%mu_s*0.999) then
+			if(abs(x(1)).le.10000 .and. abs(x(2)).le.SSCRACKFL%dx) then
+				Q(18)=0.
+				Q(24)=ee*2.0*SSCRACKFL%dx
+			end if
+		end if
+		!print *, SSCRACKFL%dx
+	end if				
+				
 	!
 	!
 	!
 END SUBROUTINE DynamicRupture	
 	
+RECURSIVE SUBROUTINE ruptureflag(rupture_flag,order,luh,x_in,dx_in)
+	USE Parameters, ONLY: nVar, nDim, ICType
+	implicit none
+	INTEGER :: rupture_flag, order
+	REAL    :: luh(nVar,(order+1)**nDim),uMax,uMin,x_in(nDim),dx_in(nDim)
+	
+	rupture_flag=0
+	
+	uMax=maxval(luh(18,:))			! xi value
+	uMin=minval(luh(18,:))
+	if(abs(uMax-uMin)>1.e-2) then
+		rupture_flag=1
+	end if
+	
+	!uMax=maxval(luh(17,:))			! Y0 value
+	!uMin=minval(luh(17,:))
+	!if(abs(uMax-uMin)>1.e-2) then
+	!	rupture_flag=1
+	!end if
+	
+	! Static part
+	select case(ICType)
+		case('SSCRACK')
+			if (abs(x_in(1)).le. 10000.0 .and. abs(x_in(2)).le. dx_in(2)) then
+				rupture_flag=1
+			end if
+		case default
+	end select
+		
+	!print *, uMin, uMax
+END SUBROUTINE ruptureflag	
 	
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
@@ -653,6 +707,8 @@ RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
 	INTEGER :: N_in,M_in
 	CALL SetMainParameters(N_in,M_in)
 END SUBROUTINE InitTECPLOT
+
+
 
 
 

@@ -9,51 +9,42 @@ Python 3.3 or more is required.
 Dependencies
 ------------
 
+You can install locally all the dependencies using the provided bash script:
+
+`./CodeGenerator/importJinjaAndUseSource.sh`
+
+
+### Jinja2
+
 The CodeGenerator uses the template engine Jinja2 (http://jinja.pocoo.org/)
 
 If it is not provided by your python installation you can instead use the source 
-of jinja2 directly either by
-
-1) Running the bash script: `./CodeGenerator/importJinjaAndUseSource.sh`
-
-or by following these steps
+of jinja2 directly either with the bash script or by following these steps
 
 1) Clone the source from the git repository to your desired install directory <my-path>: 
 `git clone https://github.com/pallets/jinja.git <my-path>/jinja`
 
-2) In ExaHyPE-Engine/CodeGenerator, create a symbolic link to <my-path>/jinja.
+2) In `ExaHyPE-Engine/CodeGenerator/codegenerator/configuration.py`, 
+put the correct path to the jinja directory
 		
-3) Modify TemplatingUtils.py to use the local version of Jinja2
+3) Do the same for Markupsafe (https://pypi.org/project/MarkupSafe/), jinja's
+dependency
 
-From: 
-```
-isJinjaAvailableAsPackage=True
-```
 
-To 
-```
-isJinjaAvailableAsPackage=False
-```
+### LIBXSMM
 
-You may need to adapt the path of the sys.import
-```
-sys.path.insert(0, 'jinja')
-```
+The CodeGenerator uses LIBXSMM to perform efficient matrux-matrix operations
 
-Dependencies of jinja2
-----------------------
+You can either install it with the bash script or by following these steps
 
-jinja2 depends on the python module markupsafe. If it is not available on your 
-system, get it manually via:
-```
-cd <my-path>
-git clone https://github.com/pallets/markupsafe.git markupsafe-install
-```
-Finally, create a symbolic link to <my-path>/markupsafe-install/markupsafe
-in ExaHyPE-Engine/Codegenerator via:
-```
-ln -s <my-path>/markupsafe-install/markupsafe
-```
+1) Clone the source from the git repository to your desired install directory <my-path>: 
+`git clone -b release --single-branch https://github.com/hfp/libxsmm.git <my-path>/libxsmm`
+
+2) Compile the source code with 
+`make realclean && make generator`
+
+3) In `ExaHyPE-Engine/CodeGenerator/codegenerator/configuration.py`, 
+put the correct path to the libxsmm\_gemm\_generator
 
 
 Paths
@@ -61,51 +52,69 @@ Paths
 
 Every path is relative to the root of the project (inside the ExaHyPE-Engine directory).
 
-The CodeGenerator assumes the following:
+The CodeGenerator relies on the paths provided in `configuration.py`:
 
-* it is located in ``CodeGenerator/``
-* the internal ExaHyPE is at ``ExaHyPE/``
 
-If this is not the case, you may need to edit
-
-* the configuration parameters of ``Toolkit/src/eu/exahype/CodeGeneratorHelper.java``
-* the configuration parameters of ``CodeGenerator/Driver.py``
-
-The generated code will be put accordingly to the ``pathToOptKernel`` argument starting from the internal ExaHyPe, by default in a subdirectory of ``ExaHyPE/kernels/aderdg/optimised/``.
+The generated code will be put accordingly to the `pathToOptKernel` argument 
+starting from the internal ExaHyPe, by default in a `kernel` subdirectory of your 
+application.
 
 
 Codegenerator
 =============
 
-To access the help: ``python3 CodeGenerator/Drivers.py -h``
+To access the help: `python3 CodeGenerator/codegenerator -h`
 
 Usage and arguments
 -------------------
 
 positional arguments:
-*  pathToOptKernel    desired relative path to the generated code (../ExaHyPE/ as root)
-*  solverName         name of the user-solver
-*  numberOfVariables  the number of quantities
-*  order              the order of the approximation polynomial
-*  dimension          number of dimensions you want to simulate
-*  numerics           linear or nonlinear
-*  architecture       the microarchitecture of the target device
-*  pathToLibxsmm      where to find your local copy of code generator back end 'https://github.com/hfp/libxsmm'
+*  pathToApplication     path to the application as given by the ExaHyPE
+                        specification file (application directory as root)
+*  pathToOptKernel       desired relative path to the generated code
+                        (application directory as root)
+*  namespace             desired namespace for the generated code
+*  solverName            name of the user-solver
+*  numberOfVariables     the number of quantities
+*  numberOfParameters    the number of parameters (fixed quantities)
+*  order                 the order of the approximation polynomial
+*  dimension             the number of spatial dimensions in the simulation (2
+                        or 3)
+*  numerics              linear or nonlinear
+*  architecture          the microarchitecture of the target device
 
 optional arguments:
-*  -h, --help         show this help message and exit
-*  --deepProfiling    enable deep-rpofiling (use only with profiler enable)
-*  --useFlux          enable flux
-*  --useNCP           enable non conservative product
-*  --useSource        enable source terms
-*  --noTimeAveraging  disable time averaging in the spacetimepredictor (less memory usage, more computation)
+*  -h, --help            show this help message and exit
+*  --useFlux             enable flux
+*  --useFluxVect         enable vectorized flux (include useFlux)
+*  --useNCP              enable non conservative product
+*  --useNCPVect          enable vectorized non conservative product (include
+                        useNCP)
+*  --useSource           enable source terms
+*  --useSourceVect       enable vectorized source terms (include useSource)
+*  --useFusedSource      enable fused source terms (include useSource)
+*  --useFusedSourceVect  enable vectorized fused source terms (include
+                        useFusedSource and useSourceVect)
+*  --useMaterialParam    enable material parameters
+*  --usePointSources numberOfPointSources
+                        enable numberOfPointSources point sources
+*  --useCERKGuess        use CERK for SpaceTimePredictor inital guess
+                        (nonlinear only)
+*  --useGaussLobatto     use Gauss Lobatto Quadrature instead of Gauss Legendre
+*  --useLimiter numberOfObservable
+                        enable limiter with the given number of observable
+*  --ghostLayerWidth width
+                        use limiter with the given ghostLayerWidth, requires
+                        useLimiter option, default = 0
 
 
-Example: ``python3 CodeGenerator/Driver.py kernels/aderdg/optimised/test Euler::MyEulerSolver 5 6 2 nonlinear hsw Libxsmm --useFlux``
+Example: `` env python3 CodeGenerator/codegenerator ./MyEuler kernels/EulerSolver MyEuler::EulerSolver_kernels::aderdg MyEuler::EulerSolver 5 0 6 3 nonlinear hsw --useFluxVect``
 
 
 Data format and padding
 -----------------------
+
+OUTDATED. TODO JMG update
 
 The Codegenerator may use padding when producing architecture specific code, it may also change the index order
 
