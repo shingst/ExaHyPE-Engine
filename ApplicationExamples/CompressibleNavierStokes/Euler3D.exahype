@@ -1,7 +1,7 @@
 exahype-project Euler
     peano-kernel-path const = ./Peano/
     exahype-path const = ./ExaHyPE
-    output-directory const = ./ApplicationExamples/NavierStokes
+    output-directory const = ./ApplicationExamples/CompressibleNavierStokes
 
     computational-domain
 	dimension const          = 3

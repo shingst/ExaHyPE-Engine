@@ -1,7 +1,7 @@
 exahype-project Euler
     peano-kernel-path const = ./Peano/
     exahype-path const = ./ExaHyPE
-    output-directory const = ./ApplicationExamples/NavierStokes
+    output-directory const = ./ApplicationExamples/CompressibleNavierStokes
 
     computational-domain
 	dimension const          = 2
@@ -17,6 +17,18 @@ exahype-project Euler
          properties-file          = sharedmemory.properties
     end shared-memory
 
+ global-optimisation
+        fuse-algorithmic-steps                          = on
+        fuse-algorithmic-steps-factor                   = 0.99
+	spawn-predictor-as-background-thread            = on
+	spawn-amr-background-threads                    = on
+	disable-vertex-exchange-in-time-steps           = on
+	time-step-batch-factor                          = 1.0
+	disable-metadata-exchange-in-batched-time-steps = on
+	double-compression                              = 0.0
+	spawn-double-compression-as-background-thread   = on
+    end global-optimisation 
+
     solver ADER-DG EulerSolver
 	variables const = rho:1, j:2, E:1
 	order const = 1
@@ -28,18 +40,6 @@ exahype-project Euler
 	optimisation const = generic
 	language const = C
     constants = viscosity:0.1,scenario:convergence
-
-    global-optimisation
-        fuse-algorithmic-steps                          = on
-        fuse-algorithmic-steps-factor                   = 0.99
-	spawn-predictor-as-background-thread            = on
-	spawn-amr-background-threads                    = on
-	disable-vertex-exchange-in-time-steps           = on
-	time-step-batch-factor                          = 1.0
-	disable-metadata-exchange-in-batched-time-steps = on
-	double-compression                              = 0.0
-	spawn-double-compression-as-background-thread   = on
-	end global-optimisation 
 
     plot vtu::Legendre::vertices::ascii Plotter
 	variables const = 5
