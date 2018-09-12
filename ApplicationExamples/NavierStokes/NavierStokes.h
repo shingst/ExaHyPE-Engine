@@ -2,6 +2,7 @@
 #define NAVIERSTOKES_NAVIERSTOKES_H
 
 #include <cmath>
+#include <memory>
 #include "tarch/la/Vector.h"
 #include "EulerSolver_Variables.h"
 #include "kernels/KernelUtils.h"
@@ -17,7 +18,8 @@ using Fluxes = Euler::AbstractEulerSolver::Fluxes;
 class NavierStokes::NavierStokes {
 public:
   NavierStokes();
-  NavierStokes(double referenceT, double referenceViscosity, double sutherlandC);
+  NavierStokes(double referenceViscosity, double referencePressure, double gamma, double Pr, double c_v,
+          double c_p, double gasConstant);
 
   double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const;
   double evaluateTemperature(double rho, double pressure) const;
@@ -28,34 +30,24 @@ public:
   void evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const;
   void evaluateFlux(const double* Q, const double* gradQ, double** F, bool temperatureDiff=true) const;
 
-  // All constants are for air.
-  // TODO(Lukas) Make sure all constants are for air at same temperature.
-  // TODO(Lukas) Maybe refactor those s.t. eqs can be used for different fluids?
-  static constexpr double referencePressure = 10000; // Pa, reference pressure used by some scenarios.
-  static constexpr double gamma = 1.4; // [1] Ratio of specific heats, c_p/c_v
 
-  /*
-  // For Giraldo:
-  static constexpr double gasConstant = 287.058; // [m^2/(s^2 K)] = [J/(kg K)] Specific gas constant, for dry air
-  // Alternative: gasConstant = c_p - c_v
-  static constexpr double c_p = 1.005 * 1000; // [J/(kg K)] Specific heat capacity at constant pressure
-  //Alternative: c_v = c_p - gasConstant
-  static constexpr double c_v = 1/(gamma - 1) * gasConstant; // [J/(kg K)] Specific heat capacity at constant volume
-  static constexpr double Pr = 0.71; // [1] Prandtl number
-  */
+  double Pr; // [1] Prandtl number
+  double referencePressure; // [Pa], reference pressure used by some scenarios.
+
+  double gamma; // [1] Ratio of specific heats, c_p/c_v
+
+  // [m^2/(s^2 K)] = [J/(kg K)]
+  double c_v; // [J/(kg K)] Specific heat capacity at constant volume
+  double c_p; // [J/(kg K)] Specific heat capacity at constant pressure
+  double gasConstant; // [J/(kg K)] Specific gas constant
+
+  double referenceViscosity; // [Pa s] = [kg/(ms)] Reference dynamic viscosity
 
 
-  // For convergence test:
-  static constexpr double Pr = 0.7;
-  static constexpr double c_v = 1;
-  static constexpr double c_p = c_v * gamma;
-  static constexpr double gasConstant = c_p - c_v;
-
-  double referenceViscosity;
+  // Unused:
   double referenceT;
   double sutherlandC;
   double sutherlandLambda;
-  
 };
 
 #endif // NAVIERSTOKES_NAVIERSTOKES_H

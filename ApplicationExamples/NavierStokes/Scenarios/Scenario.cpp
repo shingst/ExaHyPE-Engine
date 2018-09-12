@@ -37,3 +37,19 @@ void NavierStokes::Scenario::source(
 NavierStokes::BoundaryType NavierStokes::Scenario::getBoundaryType(int faceId) {
   return BoundaryType::wall;
 }
+
+const double NavierStokes::Scenario::getGamma() const { return gamma; }
+
+const double NavierStokes::Scenario::getPr() const { return Pr; }
+
+const double NavierStokes::Scenario::getC_v() const { return c_v; }
+
+const double NavierStokes::Scenario::getC_p() const { return c_p; }
+
+const double NavierStokes::Scenario::getGasConstant() const {
+  return gasConstant;
+}
+
+const double NavierStokes::Scenario::getReferencePressure() const {
+  return referencePressure;
+}

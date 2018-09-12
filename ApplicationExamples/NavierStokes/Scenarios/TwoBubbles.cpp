@@ -98,3 +98,19 @@ void NavierStokes::TwoBubbles::source(
   Scenario::source(x, t, ns, Q, S);
   S[DIMENSIONS] = Q[0] * -9.81;
 }
+
+const double NavierStokes::TwoBubbles::getGamma() const { return gamma; }
+
+const double NavierStokes::TwoBubbles::getPr() const { return Pr; }
+
+const double NavierStokes::TwoBubbles::getC_v() const { return c_v; }
+
+const double NavierStokes::TwoBubbles::getC_p() const { return c_p; }
+
+const double NavierStokes::TwoBubbles::getGasConstant() const {
+  return gasConstant;
+}
+
+const double NavierStokes::TwoBubbles::getReferencePressure() const {
+  return referencePressure;
+}

@@ -58,11 +58,11 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
     std::abort();
   }
 
-  const auto referenceT = 0.1;
   const auto referenceViscosity = constants.getValueAsDouble("viscosity");
-  const auto sutherlandC = 0.0;
 
-  ns = NavierStokes::NavierStokes(referenceT, referenceViscosity, sutherlandC);
+  std::cout << referenceViscosity << " " << scenario->getGasConstant() << std::endl;
+  ns = NavierStokes::NavierStokes(referenceViscosity, scenario->getReferencePressure(), scenario->getGamma(),
+          scenario->getPr(), scenario->getC_v(), scenario->getC_p(), scenario->getGasConstant());
 }
 
 void Euler::EulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
@@ -100,7 +100,6 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
   double* F[3] = {_F[0], _F[1], _F[2]};
 #endif
 
-
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::analytical) {
     // Integrate over time.
     auto curStateOut = std::array<double, NumberOfVariables>{0.0};
@@ -131,7 +130,6 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
   assert(scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall);
 
   // Set no slip wall boundary conditions.
-
   ReadOnlyVariables varsIn(stateIn);
   Variables varsOut(stateOut);
 
@@ -147,9 +145,16 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
   // Extrapolate gradient.
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
-  // TODO(Lukas): Do sth about heat conduction.
-  ns.evaluateFlux(stateOut, gradStateOut.data(), F, true);
+  // We deal with heat construction by computing the flux at the boundary without heat conduction,
+  // To do this, we reconstrunct the incoming flux using the extrapolated/time-averaged state/gradient.
+  // Note that this incurs an error.
+  // The incoming flux is reconstructed in boundaryConditions.
+
+ // Then compute the outgoing flux.
+  ns.evaluateFlux(stateOut, gradStateOut.data(), F, false);
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
+
+
 }
 
 exahype::solvers::Solver::RefinementControl Euler::EulerSolver::refinementCriterion(
@@ -187,7 +192,7 @@ void Euler::EulerSolver::flux(const double* const Q,const double* const gradQ, d
 }
 
 double Euler::EulerSolver::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  return stableDiffusiveTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
+  return 0.35 * stableDiffusiveTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
   //return kernels::aderdg::generic::c::stableTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
 }
 
@@ -212,24 +217,44 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
   double* fluxOut  = memory; memory+=sizeFluxOut;
 
   const int faceIndex = 2*direction+orientation;
-  
+
+  double fluxInReconstructed[sizeFluxOut] = {0.0};
+  if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
+    kernels::idx2 idx_Q(basisSize, NumberOfVariables+NumberOfParameters);
+    kernels::idx3 idx_gradQ(basisSize, DIMENSIONS, NumberOfVariables);
+    kernels::idx2 idx_F(basisSize, NumberOfVariables);
+
+    for (int i = 0; i < basisSize; i++) {
+      double _F[DIMENSIONS][NumberOfVariables] = {0.0};
+#if DIMENSIONS == 2
+      double *F[2] = {_F[0], _F[1]};
+#elif DIMENSIONS == 3
+      double* F[3] = {_F[0], _F[1], _F[2]};
+#endif
+      ns.evaluateFlux(stateIn +idx_Q(i,0), gradStateIn + idx_gradQ(i,0,0), F, false);
+      std::copy_n(F[direction], NumberOfVariables, fluxInReconstructed + idx_F(i,0));
+    }
+  } else {
+    std::copy_n(fluxIn, sizeFluxOut, fluxInReconstructed);
+  }
+
   kernels::aderdg::generic::c::boundaryConditions<true, EulerSolver>(*static_cast<EulerSolver*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
 
   if (orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
-    double* FR = fluxIn;  const double* const QR = stateIn;
+    double* FR =  fluxInReconstructed;  const double* const QR = stateIn;
 
     riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
 
-    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxInReconstructed,direction,orientation,cellSize);
   }
   else {
-    double* FL = fluxIn;  const double* const QL = stateIn;
+    double* FL =  fluxInReconstructed;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
 
-    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxInReconstructed,direction,orientation,cellSize);
   }
 
   delete[] block;

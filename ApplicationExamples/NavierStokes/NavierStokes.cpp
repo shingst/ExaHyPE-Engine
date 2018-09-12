@@ -1,16 +1,18 @@
 #include "NavierStokes.h"
 
 NavierStokes::NavierStokes::NavierStokes() :
-  NavierStokes(0.001, 21.0, 0) {
+  NavierStokes(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {
 }
-  
-NavierStokes::NavierStokes::NavierStokes(double referenceT, double referenceViscosity, double sutherlandC) :
+
+NavierStokes::NavierStokes::NavierStokes(double referenceViscosity, double referencePressure, double gamma, double Pr,
+        double c_v, double c_p, double gasConstant) :
   referenceViscosity(referenceViscosity),
-  referenceT(referenceT),
-  sutherlandC(sutherlandC),
-  sutherlandLambda(
-		   (referenceViscosity * (referenceT + sutherlandC))/
-		   std::pow(referenceT, 3./2)){
+  referencePressure(referencePressure),
+  gamma(gamma),
+  Pr(Pr),
+  c_v(c_v),
+  c_p(c_p),
+  gasConstant(gasConstant) {
 }
 
 
@@ -37,7 +39,9 @@ double NavierStokes::NavierStokes::evaluateViscosity(double T) const {
   return referenceViscosity;
 
   // Sutherland's law
-  // If using, check derivatives
+  // sutherlandLambda(
+  //		   (referenceViscosity * (referenceT + sutherlandC))/
+  //		   std::pow(referenceT, 3./2)){
   //return sutherlandLambda * (std::pow(T, 3./2) / (T + sutherlandC));
 }
 
