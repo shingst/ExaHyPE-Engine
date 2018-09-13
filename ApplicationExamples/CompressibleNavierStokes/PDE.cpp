@@ -1,4 +1,4 @@
-#include "NavierStokes.h"
+#include "PDE..h"
 
 NavierStokes::NavierStokes::NavierStokes() :
   NavierStokes(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {

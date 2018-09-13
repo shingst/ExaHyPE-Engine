@@ -90,6 +90,7 @@ class SolverController:
         nPointSources = solver["point_sources"] if type(solver.get("point_sources",[])) is int else len(solver.get("point_sources",[]))
         
         context["numberOfVariables"]          = nVar
+        context["numberOfParameters"]          = nParam
         context["numberOfMaterialParameters"] = nParam
         context["numberOfGlobalObservables"]  = nGlobalObs
         context["numberOfPointSources"]       = nPointSources

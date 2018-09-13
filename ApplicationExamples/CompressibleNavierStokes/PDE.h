@@ -4,18 +4,20 @@
 #include <cmath>
 #include <memory>
 #include "tarch/la/Vector.h"
-#include "EulerSolver_Variables.h"
 #include "kernels/KernelUtils.h"
+#include "NavierStokesSolverDG_Variables.h"
 
 namespace NavierStokes {
-  class NavierStokes;
+  class PDE;
 }
 
-using Variables = Euler::AbstractEulerSolver::Variables;
-using ReadOnlyVariables = Euler::AbstractEulerSolver::ReadOnlyVariables;
-using Fluxes = Euler::AbstractEulerSolver::Fluxes;
+/*
+using Variables = NavierStokes::AbstractNavierStokesSolverDG::Variables;
+using ReadOnlyVariables = NavierStokes::AbstractNavierStokesSolverDG::ReadOnlyVariables;
+using Fluxes = NavierStokes::AbstractNavierStokesSolverDG::Fluxes;
+ */
 
-class NavierStokes::NavierStokes {
+class NavierStokes::PDE {
 public:
   NavierStokes();
   NavierStokes(double referenceViscosity, double referencePressure, double gamma, double Pr, double c_v,
