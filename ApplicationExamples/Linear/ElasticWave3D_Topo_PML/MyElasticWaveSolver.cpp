@@ -218,29 +218,29 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	    double d0y = (n+1)*c/(2*dpmly)* log(1/tol)*0;
 	    double d0z = (n+1)*c/(2*dpmlz)* log(1/tol)*0;
 
-	    if (xx < xa){
-	      d_x = d0*pow((xa-center[0])/dpml, n);
-	    }
-	    
-	    if (xx >= xb){
-	      d_x = d0x*pow((center[0]-xb)/dpmlx, n);
-	    }
-	    
-	    //if (yy <= ya){
-	    //   d_y = d0y*pow((ya-center[1])/dpmly, n);
-	    // }
-	    
-	    if (yy >= yb){
-	      d_y = d0y*pow((center[1]-yb)/dpmly, n);
-	    }
-	    
-	    if (zz <= za){
-	      d_z = d0z*pow((za-center[2])/dpmlz, n);
-	    }
-	    
-	    if (zz >= zb){
-	      d_z = d0z*pow((center[2]-zb)/dpmlz, n);
-	    }
+            if (xx < xa){
+              d_x = d0x*pow((xa-center[0])/dpmlx, n);
+            }
+
+            if (xx >= xb){
+              d_x = d0x*pow((center[0]-xb)/dpmlx, n);
+            }
+
+            //if (yy <= ya){
+            //   d_y = d0y*pow((ya-center[1])/dpmly, n);
+            // }
+
+            if (yy >= yb){
+              d_y = d0y*pow((center[1]-yb)/dpmly, n);
+            }
+
+            if (zz <= za){
+              d_z = d0z*pow((za-center[2])/dpmlz, n);
+            }
+
+            if (zz >= zb){
+              d_z = d0z*pow((center[2]-zb)/dpmlz, n);
+            }
 
 
 	    // pml damping parameters: dx,dy,dz
@@ -754,7 +754,7 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const Q,const doub
 
     assertion2(!isnan(forceVector[8]),"ForceVector is nan",f);
     assertion2(std::isfinite(forceVector[8]), "ForceVector is not finite",f);
-
+    }
 }
 
     /**
@@ -935,7 +935,7 @@ for (int j = 0; j < 9; j++)
 }
 
 
-void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+void Elastic::MyElasticWaveSolver::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 
 #ifdef OPT_KERNELS
   double FL[converter::getFFaceGenArraySize()];
@@ -947,7 +947,6 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
   converter::FFace_optimised2generic(FR_,FR);
   converter::QFace_optimised2generic(QL_,QL);
   converter::QFace_optimised2generic(QR_,QR);
-  
 #else
   double* FL=FL_;
   double* FR=FR_;
@@ -1459,4 +1458,3 @@ void Elastic::MyElasticWaveSolver::extractTransformation(const double* const Q,
   s_y     =Q[NumberOfVariables+14];
   s_z     =Q[NumberOfVariables+15];
 }
-
