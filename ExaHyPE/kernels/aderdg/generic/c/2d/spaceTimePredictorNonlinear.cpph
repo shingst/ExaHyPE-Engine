@@ -148,7 +148,7 @@ int aderPicardLoopNonlinear(SolverType& solver,
             F[0]      = lFi + idx_lFi(i, k, l, 0, 0);
             F[1]      = lFi + idx_lFi(i, k, l, 1, 0);
             if(useViscousFlux){
-                solver.viscousFlux(Q,gradQ+idx_gradQ(k,l,0,0),F);
+                solver.viscousFlux(Q,gradQCur+idx_gradQ(k,l,0,0),F);
             }
             else solver.flux(Q,F);
             // everything related to source now moved down to the NCP
