@@ -1,10 +1,10 @@
-#include "PDE..h"
+#include "PDE.h"
 
-NavierStokes::NavierStokes::NavierStokes() :
-  NavierStokes(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {
+NavierStokes::PDE::PDE() :
+  PDE(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {
 }
 
-NavierStokes::NavierStokes::NavierStokes(double referenceViscosity, double referencePressure, double gamma, double Pr,
+NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, double gamma, double Pr,
         double c_v, double c_p, double gasConstant) :
   referenceViscosity(referenceViscosity),
   referencePressure(referencePressure),
@@ -16,25 +16,25 @@ NavierStokes::NavierStokes::NavierStokes(double referenceViscosity, double refer
 }
 
 
-double NavierStokes::NavierStokes::evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const {
+double NavierStokes::PDE::evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const {
   const auto invRho = 1./rho;
   return pressure/(gamma - 1) + 0.5 * (invRho * j * j);
 }
 
-double NavierStokes::NavierStokes::evaluateTemperature(double rho, double pressure) const {
+double NavierStokes::PDE::evaluateTemperature(double rho, double pressure) const {
   return pressure/(gasConstant * rho);
 }
 
-double NavierStokes::NavierStokes::evaluateHeatConductionCoeff(double viscosity) const {
+double NavierStokes::PDE::evaluateHeatConductionCoeff(double viscosity) const {
   // Use no heat conduction for now
   return 1./Pr * viscosity * gamma * c_v;
 }
 
-double NavierStokes::NavierStokes::evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const {
+double NavierStokes::PDE::evaluatePressure(double E, double rho, const tarch::la::Vector<DIMENSIONS,double> &j) const {
   return (gamma-1) * (E - 0.5 * (1.0/rho) * j * j);
 }
 
-double NavierStokes::NavierStokes::evaluateViscosity(double T) const {
+double NavierStokes::PDE::evaluateViscosity(double T) const {
   // Use constant viscosity for now
   return referenceViscosity;
 
@@ -45,7 +45,7 @@ double NavierStokes::NavierStokes::evaluateViscosity(double T) const {
   //return sutherlandLambda * (std::pow(T, 3./2) / (T + sutherlandC));
 }
 
-void NavierStokes::NavierStokes::evaluateEigenvalues(const double* const Q, const int d, double* lambda) const {
+void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, double* lambda) const {
   ReadOnlyVariables vars(Q);
   Variables eigs(lambda);
 
@@ -66,7 +66,7 @@ void NavierStokes::NavierStokes::evaluateEigenvalues(const double* const Q, cons
   lambda[1] += c;
 }
 
-void NavierStokes::NavierStokes::evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const {
+void NavierStokes::PDE::evaluateDiffusiveEigenvalues(const double* const Q, const int d, double* lambda) const {
   ReadOnlyVariables vars(Q);
 
   const double pressure = evaluatePressure(vars.E(), vars.rho(), vars.j());
@@ -84,7 +84,7 @@ void NavierStokes::NavierStokes::evaluateDiffusiveEigenvalues(const double* cons
   lambda[1] = (gamma * viscosity) / (Pr * vars.rho());
 }
 
-void NavierStokes::NavierStokes::evaluateFlux(const double* Q, const double* gradQ, double** F, bool temperatureDiffusion) const {
+void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, double** F, bool temperatureDiffusion) const {
   ReadOnlyVariables vars(Q);
   Fluxes f(F);
 

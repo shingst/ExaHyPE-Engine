@@ -1,5 +1,5 @@
-#ifndef NAVIERSTOKES_NAVIERSTOKES_H
-#define NAVIERSTOKES_NAVIERSTOKES_H
+#ifndef NAVIERSTOKES_PDE_H
+#define NAVIERSTOKES_PDE_H
 
 #include <cmath>
 #include <memory>
@@ -11,16 +11,14 @@ namespace NavierStokes {
   class PDE;
 }
 
-/*
 using Variables = NavierStokes::AbstractNavierStokesSolverDG::Variables;
 using ReadOnlyVariables = NavierStokes::AbstractNavierStokesSolverDG::ReadOnlyVariables;
 using Fluxes = NavierStokes::AbstractNavierStokesSolverDG::Fluxes;
- */
 
 class NavierStokes::PDE {
 public:
-  NavierStokes();
-  NavierStokes(double referenceViscosity, double referencePressure, double gamma, double Pr, double c_v,
+  PDE();
+  PDE(double referenceViscosity, double referencePressure, double gamma, double Pr, double c_v,
           double c_p, double gasConstant);
 
   double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const;
@@ -52,4 +50,4 @@ public:
   double sutherlandLambda;
 };
 
-#endif // NAVIERSTOKES_NAVIERSTOKES_H
+#endif // NAVIERSTOKES_PDE_H

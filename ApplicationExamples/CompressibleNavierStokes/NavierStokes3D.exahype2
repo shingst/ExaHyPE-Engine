@@ -6,19 +6,21 @@
     "output_directory": "./ApplicationExamples/CompressibleNavierStokes"
   },
   "computational_domain": {
-    "dimension": 2,
-    "end_time": 0.6,
+    "dimension": 3,
+    "end_time": 1.0,
     "offset": [
+      0.0,
       0.0,
       0.0
     ],
     "width": [
-      10.0,
-      10.0
+      1.0,
+      2.0,
+      1.0
     ]
   },
   "shared_memory": {
-    "cores": 16,
+    "cores": 1,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
@@ -36,18 +38,17 @@
   "solvers": [
     {
       "type": "ADER-DG",
-      "name": "EulerSolver",
+      "name": "NavierStokesSolverDG",
       "order": 1,
-      "maximum_mesh_size": 1.1,
-      "maximum_mesh_depth": 10,
+      "maximum_mesh_size": 0.2,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
         "nonlinear": true,
         "terms": [
           "flux",
-          "viscous_flux",
-          "source"
+          "viscous_flux"
         ],
         "space_time_predictor": {},
         "optimised_terms": [],
@@ -62,7 +63,7 @@
         },
         {
           "name": "j",
-          "multiplicity": 2
+          "multiplicity": 3
         },
         {
           "name": "E",
@@ -71,16 +72,16 @@
       ],
       "parameters": {
         "viscosity": 0.1,
-        "scenario": "convergence"
+        "scenario": "stokes"
       },
       "plotters": [
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
-          "time": 0.5,
-          "repeat": 0.5,
+          "time": 0.0,
+          "repeat": 0.005,
           "output": "./results/solution",
-          "variables": 5
+          "variables": 6
         }
       ]
     }

@@ -5,7 +5,7 @@
 
 namespace NavierStokes {
 class DoubleShockTube : public Scenario {
-  void initialValues(const double *const x, const NavierStokes &ns,
+  void initialValues(const double *const x, const PDE &ns,
                      Variables &vars) final override;
 };
 }  // namespace NavierStokes

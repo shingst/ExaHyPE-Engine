@@ -1,7 +1,6 @@
 #include "Stokes.h"
 
-void NavierStokes::Stokes::initialValues(const double* const x,
-                                         const NavierStokes& ns,
+void NavierStokes::Stokes::initialValues(const double* const x, const PDE& ns,
                                          Variables& vars) {
   vars.rho() = 1.0;
 #if DIMENSIONS == 2
@@ -13,8 +12,7 @@ void NavierStokes::Stokes::initialValues(const double* const x,
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
 }
 void NavierStokes::Stokes::analyticalSolution(const double* const x,
-                                              const double t,
-                                              const NavierStokes& ns,
+                                              const double t, const PDE& ns,
                                               Variables& vars,
                                               double* gradState) {
   kernels::idx2 idxGradQ(DIMENSIONS, vars.SizeVariables);

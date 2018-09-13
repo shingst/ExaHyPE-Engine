@@ -8,8 +8,9 @@
 
 #include <cmath>
 #include <map>
+#include "NavierStokesSolverDG_Variables.h"
 
-#include "EulerSolver.h"
+#include "NavierStokesSolverDG.h"
 #include "stableDiffusiveTimeStepSize.h"
 #if DIMENSIONS == 2
 #include "diffusiveRiemannSolver2d.h"
@@ -18,7 +19,6 @@
 #endif
 
 #include "kernels/aderdg/generic/Kernels.h"
-#include "EulerSolver_Variables.h"
 #include "kernels/KernelUtils.h"
 
 #include "Scenarios/Scenario.h"
@@ -30,9 +30,9 @@
 #include "Scenarios/TwoBubbles.h"
 #include "Scenarios/ConvergenceTest/ConvergenceTest.h"
 
-tarch::logging::Log Euler::EulerSolver::_log( "Euler::EulerSolver" );
+tarch::logging::Log NavierStokes::NavierStokesSolverDG::_log( "NavierStokes::NavierStokesSolverDG" );
 
-void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // Check that parameters are valid.
   assert(constants.isValueValidDouble("viscosity"));
   assert(constants.isValueValidString("scenario"));
@@ -54,18 +54,18 @@ void Euler::EulerSolver::init(const std::vector<std::string>& cmdlineargs,const 
   } else if (scenarioName == "convergence") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::ConvergenceTest());
   } else {
-    _log.error("EulerSolver::init", "Unknown scenario: " + scenarioName);
+    _log.error("NavierStokesSolverDG::init", "Unknown scenario: " + scenarioName);
     std::abort();
   }
 
   const auto referenceViscosity = constants.getValueAsDouble("viscosity");
 
   std::cout << referenceViscosity << " " << scenario->getGasConstant() << std::endl;
-  ns = NavierStokes::NavierStokes(referenceViscosity, scenario->getReferencePressure(), scenario->getGamma(),
+  ns = PDE(referenceViscosity, scenario->getReferencePressure(), scenario->getGamma(),
           scenario->getPr(), scenario->getC_v(), scenario->getC_p(), scenario->getGasConstant());
 }
 
-void Euler::EulerSolver::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void NavierStokes::NavierStokesSolverDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // @todo Please implement/augment if required
   if (tarch::la::equals(t, 0.0)) {
     Variables vars(Q);
@@ -77,11 +77,11 @@ void Euler::EulerSolver::adjustPointSolution(const double* const x,const double 
   }
 }
 
-void Euler::EulerSolver::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
+void NavierStokes::NavierStokesSolverDG::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
    scenario->source(x, t, ns, Q, S);
 }
 
-void Euler::EulerSolver::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
+void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
 					const double * const fluxIn,const double* const stateIn, const double* const gradStateIn,
   double *fluxOut,double* stateOut) {
   constexpr auto basisSize = Order + 1;
@@ -151,13 +151,13 @@ void Euler::EulerSolver::boundaryValues(const double* const x,const double t,con
   // The incoming flux is reconstructed in boundaryConditions.
 
  // Then compute the outgoing flux.
-  ns.evaluateFlux(stateOut, gradStateOut.data(), F, false);
+  //ns.evaluateFlux(stateOut, gradStateOut.data(), F, false);
+  ns.evaluateFlux(stateOut, gradStateOut.data(), F, true);
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
-
 
 }
 
-exahype::solvers::Solver::RefinementControl Euler::EulerSolver::refinementCriterion(
+exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolverDG::refinementCriterion(
     const double* luh,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
@@ -174,32 +174,32 @@ exahype::solvers::Solver::RefinementControl Euler::EulerSolver::refinementCriter
 //*****************************************************************************
 
 
-void Euler::EulerSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
+void NavierStokes::NavierStokesSolverDG::eigenvalues(const double* const Q,const int d,double* lambda) {
   ns.evaluateEigenvalues(Q, d, lambda);
 }
 
-void Euler::EulerSolver::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
+void NavierStokes::NavierStokesSolverDG::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
   ns.evaluateDiffusiveEigenvalues(Q, d, lambda);
 }
 
-void Euler::EulerSolver::viscousFlux(const double *const Q, const double *const gradQ, double **F) {
+void NavierStokes::NavierStokesSolverDG::viscousFlux(const double *const Q, const double *const gradQ, double **F) {
   ns.evaluateFlux(Q, gradQ, F);
 }
 
-double Euler::EulerSolver::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  return 0.35 * stableDiffusiveTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
-  //return kernels::aderdg::generic::c::stableTimeStepSize<EulerSolver>(*static_cast<EulerSolver*>(this),luh,dx);
+double NavierStokes::NavierStokesSolverDG::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
+  return 0.35 * stableDiffusiveTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
+  //return kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
 }
 
-void Euler::EulerSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
+void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
   assertion2(direction>=0,dt,direction);
   assertion2(direction<DIMENSIONS,dt,direction);
-  //kernels::aderdg::generic::c::riemannSolverNonlinear<false, EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,dt,direction);
-  riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,lengthScale, dt,direction);
+  //kernels::aderdg::generic::c::riemannSolverNonlinear<false, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,dt,direction);
+  riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,lengthScale, dt,direction);
 
 }
 
-void Euler::EulerSolver::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
   constexpr int basisSize     = (Order+1)*(Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
   constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
@@ -214,7 +214,7 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
   const int faceIndex = 2*direction+orientation;
 
   double fluxInReconstructed[sizeFluxOut] = {0.0};
-  if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
+  if (false && scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
     kernels::idx2 idx_Q(basisSize, NumberOfVariables+NumberOfParameters);
     kernels::idx3 idx_gradQ(basisSize, DIMENSIONS, NumberOfVariables);
     kernels::idx2 idx_F(basisSize, NumberOfVariables);
@@ -233,13 +233,13 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
     std::copy_n(fluxIn, sizeFluxOut, fluxInReconstructed);
   }
 
-  kernels::aderdg::generic::c::boundaryConditions<true, EulerSolver>(*static_cast<EulerSolver*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
+  kernels::aderdg::generic::c::boundaryConditions<true, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
 
   if (orientation==0 ) {
     double* FL = fluxOut; const double* const QL = stateOut;
     double* FR =  fluxInReconstructed;  const double* const QR = stateIn;
 
-    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
+    riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
 
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxInReconstructed,direction,orientation,cellSize);
   }
@@ -247,7 +247,7 @@ void Euler::EulerSolver::boundaryConditions(double* const update, double* const 
     double* FL =  fluxInReconstructed;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
-    riemannSolverNonlinear<false,EulerSolver>(*static_cast<EulerSolver*>(this),FL,FR,QL,QR,cellSize, dt,direction);
+    riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
 
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxInReconstructed,direction,orientation,cellSize);
   }

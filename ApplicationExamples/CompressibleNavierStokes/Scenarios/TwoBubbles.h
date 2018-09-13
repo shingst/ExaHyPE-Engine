@@ -20,12 +20,11 @@ class TwoBubbles : public Scenario {
   };
 
  public:
-  void initialValues(const double* const x, const NavierStokes& ns,
+  void initialValues(const double* const x, const PDE& ns,
                      Variables& vars) override;
 
   void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
-              const NavierStokes& ns, const double* const Q,
-              double* S) override;
+              const PDE& ns, const double* const Q, double* S) override;
 
   // Constants for dry air.
   // TODO(Lukas) Make sure that constants agree with each other.

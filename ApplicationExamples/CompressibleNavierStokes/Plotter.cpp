@@ -6,30 +6,29 @@
 //   www.exahype.eu
 // ========================
 #include "Plotter.h"
-#include "EulerSolver.h"
-#include "EulerSolver_Variables.h"
-#include "NavierStokes.h"
-#include "kernels/aderdg/generic/Kernels.h"
+#include <kernels/GaussLegendreQuadrature.h>
+#include "NavierStokesSolverDG.h"
+#include "NavierStokesSolverDG_Variables.h"
+//#include "NavierStokes.h"
 
-
-Euler::Plotter::Plotter(EulerSolver&  solver) {
+NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolverDG& solver) {
   // @TODO Please insert your code here.
   order = solver.Order;
 }
 
-Euler::Plotter::~Plotter() {
+NavierStokes::Plotter::~Plotter() {
 }
 
-void Euler::Plotter::startPlotting( double time) {
+void NavierStokes::Plotter::startPlotting( double time) {
   // @TODO Please insert your code here.
 }
 
 
-void Euler::Plotter::finishPlotting() {
+void NavierStokes::Plotter::finishPlotting() {
   // @TODO Please insert your code here.
 }
 
-void Euler::Plotter::mapQuantities(
+void NavierStokes::Plotter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -38,10 +37,12 @@ void Euler::Plotter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
+  const int writtenUnknowns = 5;
   for (int i=0; i<DIMENSIONS + 2; i++){
     outputQuantities[i] = Q[i];
   }
 
+  /*
   // TODO(Lukas): Make sure we use the correct constants
   // As we only consider air, this should be a given!
   const auto ns = NavierStokes::NavierStokes();
@@ -54,8 +55,7 @@ void Euler::Plotter::mapQuantities(
 
   // Write potential temperature
   outputQuantities[DIMENSIONS + 2] = potT;
-
-  /*
+*/
   const auto& weights = kernels::gaussLegendreWeights[order];
 
   double weight = 1.0;
@@ -63,5 +63,4 @@ void Euler::Plotter::mapQuantities(
     weight *= weights[pos[i]];
   }
   outputQuantities[DIMENSIONS + 2] = weight;
-   */
 }

@@ -1,8 +1,7 @@
 #include "TaylorGreen.h"
 
 void NavierStokes::TaylorGreen::initialValues(const double* const x,
-                                              const NavierStokes& ns,
-                                              Variables& vars) {
+                                              const PDE& ns, Variables& vars) {
   assert(DIMENSIONS == 2);
   // 2D-Scenario
   vars.rho() = 1.0;
@@ -18,7 +17,7 @@ void NavierStokes::TaylorGreen::initialValues(const double* const x,
 }
 void NavierStokes::TaylorGreen::analyticalSolution(const double* const x,
                                                    const double t,
-                                                   const NavierStokes& ns,
+                                                   const PDE& ns,
                                                    Variables& vars,
                                                    double* gradState) {
   kernels::idx2 idxGradQ(DIMENSIONS, vars.SizeVariables);

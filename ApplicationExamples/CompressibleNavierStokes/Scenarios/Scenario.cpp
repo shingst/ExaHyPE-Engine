@@ -3,8 +3,7 @@
 
 NavierStokes::Scenario::Scenario() {}
 
-void NavierStokes::Scenario::initialValues(const double* const x,
-                                           const NavierStokes& ns,
+void NavierStokes::Scenario::initialValues(const double* const x, const PDE& ns,
                                            Variables& vars) {
   // Throw away gradient here, this is not efficient but correct.
   auto gradState = std::array<double, DIMENSIONS * vars.SizeVariables>();
@@ -21,15 +20,14 @@ void NavierStokes::Scenario::initialValues(const double* const x,
 }
 
 void NavierStokes::Scenario::analyticalSolution(const double* const x,
-                                                const double t,
-                                                const NavierStokes& ns,
+                                                const double t, const PDE& ns,
                                                 Variables& vars,
                                                 double* gradState) {
   throw std::logic_error("Analytical solution not implemented!");
 }
 void NavierStokes::Scenario::source(
-    const tarch::la::Vector<DIMENSIONS, double>& x, double t,
-    const NavierStokes& ns, const double* const Q, double* S) {
+    const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
+    const double* const Q, double* S) {
   constexpr auto NumberOfVariables = DIMENSIONS + 2;  // TODO(Lukas) generalise?
   std::fill_n(S, NumberOfVariables, 0.0);
 }

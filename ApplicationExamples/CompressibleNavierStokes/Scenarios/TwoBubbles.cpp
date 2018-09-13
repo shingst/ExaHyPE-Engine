@@ -16,8 +16,7 @@ NavierStokes::TwoBubbles::Bubble::Bubble(const double tempDifference,
       centerZ(centerZ) {}
 
 void NavierStokes::TwoBubbles::initialValues(const double* const x,
-                                             const NavierStokes& ns,
-                                             Variables& vars) {
+                                             const PDE& ns, Variables& vars) {
   // For details see:
   // Robert (1993),
   // https://doi.org/10.1175/1520-0469(1993)050<1865:BCEWAS>2.0.CO;2
@@ -90,11 +89,13 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
 #endif
 
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
+
+  assertion1(vars.rho() > 0.0, x);
 }
 
 void NavierStokes::TwoBubbles::source(
-    const tarch::la::Vector<DIMENSIONS, double>& x, double t,
-    const NavierStokes& ns, const double* const Q, double* S) {
+    const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
+    const double* const Q, double* S) {
   Scenario::source(x, t, ns, Q, S);
   S[DIMENSIONS] = Q[0] * -9.81;
 }

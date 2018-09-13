@@ -1,26 +1,24 @@
 {
-  "project_name": "Euler",
+  "project_name": "NavierStokes",
   "paths": {
     "peano_kernel_path": "./Peano/",
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/CompressibleNavierStokes"
   },
   "computational_domain": {
-    "dimension": 3,
-    "end_time": 1.0,
+    "dimension": 2,
+    "end_time": 0.6,
     "offset": [
-      0.0,
       0.0,
       0.0
     ],
     "width": [
-      1.0,
-      2.0,
-      1.0
+      10.0,
+      10.0
     ]
   },
   "shared_memory": {
-    "cores": 8,
+    "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
@@ -38,17 +36,18 @@
   "solvers": [
     {
       "type": "ADER-DG",
-      "name": "EulerSolver",
+      "name": "NavierStokesSolverDG",
       "order": 1,
-      "maximum_mesh_size": 0.2,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_size": 1.1,
+      "maximum_mesh_depth": 10,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
         "nonlinear": true,
         "terms": [
           "flux",
-          "viscous_flux"
+          "viscous_flux",
+          "source"
         ],
         "space_time_predictor": {},
         "optimised_terms": [],
@@ -63,7 +62,7 @@
         },
         {
           "name": "j",
-          "multiplicity": 3
+          "multiplicity": 2
         },
         {
           "name": "E",
@@ -72,16 +71,16 @@
       ],
       "parameters": {
         "viscosity": 0.1,
-        "scenario": "stokes"
+        "scenario": "convergence"
       },
       "plotters": [
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 0.005,
+          "repeat": 0.1,
           "output": "./results/solution",
-          "variables": 6
+          "variables": 5
         }
       ]
     }

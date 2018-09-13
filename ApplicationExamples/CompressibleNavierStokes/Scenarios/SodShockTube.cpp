@@ -1,7 +1,6 @@
 #include "SodShockTube.h"
 void NavierStokes::SodShockTube::initialValues(const double* const x,
-                                               const NavierStokes& ns,
-                                               Variables& vars) {
+                                               const PDE& ns, Variables& vars) {
   double pressure = 0.0;
   if (x[1] < 0.45) {
     vars.rho() = 0.125;

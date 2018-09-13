@@ -1,7 +1,7 @@
 #ifndef NAVIERSTOKES_SCENARIO_H
 #define NAVIERSTOKES_SCENARIO_H
 
-#include "../NavierStokes.h"
+#include "../PDE.h"
 #include "tarch/la/Vector.h"
 #include <array>
 
@@ -11,13 +11,13 @@ enum class BoundaryType { analytical, wall };
 class Scenario {
  public:
   Scenario();
-  virtual void initialValues(const double* const x, const NavierStokes& ns,
+  virtual void initialValues(const double* const x, const PDE& ns,
                              Variables& vars);
   virtual void analyticalSolution(const double* const x, double t,
-                                  const NavierStokes& ns, Variables& vars,
+                                  const PDE& ns, Variables& vars,
                                   double* gradState);
   virtual void source(const tarch::la::Vector<DIMENSIONS, double>& x, double t,
-                      const NavierStokes& ns, const double* const Q, double* S);
+                      const PDE& ns, const double* const Q, double* S);
   virtual BoundaryType getBoundaryType(int faceId);
 
   virtual const double getGamma() const;
