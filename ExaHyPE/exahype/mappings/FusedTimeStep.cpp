@@ -98,7 +98,7 @@ exahype::mappings::FusedTimeStep::enterCellSpecification(int level) const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
-  return exahype::mappings::Prediction::determineEnterCellSpecification(level);
+  return exahype::mappings::Prediction::determineEnterLeaveCellSpecification(level);
 }
 
 peano::MappingSpecification
