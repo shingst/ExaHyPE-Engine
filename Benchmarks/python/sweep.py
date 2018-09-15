@@ -199,7 +199,6 @@ def getExecutableName(environmentDictHash,architecture,dimension,compileTimePara
     suffix = architecture+"-d" + dimension
     for key,value in compileTimeParameterDict.items():
         suffix += "-{}_{}".format(key,value)
-    suffix = architecture+"-d" + dimension + "-" + optimisation+ "-p" + order
     
     executable     = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
 
