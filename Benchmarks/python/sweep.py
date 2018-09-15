@@ -200,7 +200,7 @@ def getExecutableName(environmentDictHash,architecture,dimension,compileTimePara
     for key,value in compileTimeParameterDict.items():
         suffix += "-{}_{}".format(key,value)
     
-    executable     = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
+    return buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
 
 def build(buildOnlyMissing=False, skipMakeClean=False):
     """
@@ -420,11 +420,10 @@ def verifyAllExecutablesExist(justWarn=False):
                     
                     if not os.path.exists(executable):
                         allExecutablesExist = False
-                        print(messageType+ ": application for " + \
-                              "environment="+str(environmentDict) + \
-                              ", dimension="+dimension + \
-                              ", order="+order + \
-                              " does not exist! ('"+executable+"')",file=sys.stderr)
+                        infoMessage = "application for the following settings does not exist: \n- environment={}\n- architecture={}\n- dimension={}".format(str(environmentDict),architecture,dimension)
+                        for key,value in compileTimeParameterDict.items():
+                            infoMessage += "\n- {}={}".format(key,value)
+                        print("{}: {}\n('{}')".format(messageType,infoMessage,executable),file=sys.stderr)
             
     if not justWarn and not allExecutablesExist:
         print("ERROR: subprogram failed as not all executables exist. Please adopt your options file according to the error messages.\n" + \
@@ -543,6 +542,7 @@ def generateScripts():
                                 
                                 architecture = parameterDict["architecture"]
                                 dimension    = parameterDict["dimension"]
+                                ## TODO Continue working here
                                 executable   = getExecutableName(environmentDictHash,architecture,dimension,compileTimeParameterDict)
                                 
                                 specFilePath   = getSpecFilePath(parameterDictHash,ranksPerNode,cores,consumers)
