@@ -192,13 +192,14 @@ def link():
                     print("[ERROR]    could not find source file {} to create symlink".format(source))
                     sys.exit(1)
 
-def getExecutableName(environmentDictHash,architecture,dimension,compileTimeParameterDict):
+def getExecutableName(environmentDictHash,architecture,dimension,parameterDict):
     """
     Derives an executable name.
     """
     suffix = architecture+"-d" + dimension
-    for key,value in compileTimeParameterDict.items():
-        suffix += "-{}_{}".format(key,value)
+
+    for key in compileTimeParameterSpace:
+        suffix += "-{}_{}".format(key,parameterDict[key])
     
     return buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+suffix
 
@@ -543,7 +544,8 @@ def generateScripts():
                                 architecture = parameterDict["architecture"]
                                 dimension    = parameterDict["dimension"]
                                 ## TODO Continue working here
-                                executable   = getExecutableName(environmentDictHash,architecture,dimension,compileTimeParameterDict)
+
+                                executable   = getExecutableName(environmentDictHash,architecture,dimension,parameterDict)
                                 
                                 specFilePath   = getSpecFilePath(parameterDictHash,ranksPerNode,cores,consumers)
                                                  
