@@ -408,7 +408,7 @@ tarch::la::Vector<DIMENSIONS,double> exahype::parser::Parser::getDimVectorFromPa
   try {
     json::json_pointer p(path);
     result(0) = _impl->data.at(p).at(0);
-    if(_impl->data.at(p).size() != DIMENSIONS) {
+    if(_impl->data.at(p).size() < DIMENSIONS) {
       logError("getDimVectorFromPath()", path << " holds a vector of size " << _impl->data.at(p).size() << ", however we have " << DIMENSIONS << " spatial dimensions");
     }
     result(1) = _impl->data.at(p).at(1);
