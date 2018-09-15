@@ -92,8 +92,9 @@ def parseParameters(config):
     if  config.has_option("general","compile_time_parameters"):
         compileTimeParameters = parseList(config.get("general", "compile_time_parameters"))
         for key in compileTimeParameters:
-            if key in parameterSpace and key not in ["dimension","architecture"]:
-                compileTimeParameterSpace[key] = parameterSpace[key]
+            if key in parameterSpace:
+                if key not in ["dimension","architecture"]:
+                    compileTimeParameterSpace[key] = parameterSpace[key]
             else:
                 print("ERROR: Did not find 'compile_time_parameters' entry '{}' in section 'parameters' or 'grouped_parameters'.".format(key),file=sys.stderr)
                 sys.exit()

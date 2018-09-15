@@ -147,29 +147,12 @@ def verifyEnvironmentIsCorrect(justWarn=False):
         sys.exit()
 
 def verifyAllRequiredParametersAreGiven(specFileTemplate):
-    if "order" not in parameterSpace and "patchSize" not in parameterSpace:
-        print("ERROR: Neither 'order' nor 'patchSize' found in section 'parameters' or 'parameters_grouped'.",file=sys.stderr)
-        sys.exit()
     elif "dimension" not in parameterSpace:
         print("ERROR: 'dimension' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
-        sys.exit()
-    elif "optimisation" not in parameterSpace:
-        print("ERROR: 'optimisation' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
         sys.exit()
     elif "architecture" not in parameterSpace:
         print("ERROR: 'architecture' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
         sys.exit()
-
-    foundLimitingADERDG = "limiter-type" in specFileTemplate
-    if foundLimitingADERDG:
-        if "limiterType" not in parameterSpace:
-            print("ERROR: 'limiterType' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
-            sys.exit()
-        elif "limiterOptimisation" not in parameterSpace:
-            print("ERROR: 'limiterOptimisation' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
-            sys.exit()
-
-    return foundLimitingADERDG
 
 def unlink():
     """
@@ -970,8 +953,9 @@ It must further contain at least one of the following sections:
     except IOError:
         print("ERROR: couldn\'t open job script template file: "+jobScriptTemplatePath,file=sys.stderr)
         sys.exit()
-        
-    foundLimitingADERDG = verifyAllRequiredParametersAreGiven(specFileTemplate)
+    
+    # TODO move into options?
+    verifyAllRequiredParametersAreGiven(specFileTemplate)
  
     # select subprogram
     if subprogram == "cleanAll":
