@@ -267,7 +267,11 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                             buildParameterDict[key] = value
                         
                         buildSpecFileBody = renderSpecFile(specFileTemplate,buildParameterDict,"1","1","1")
-                            
+                        
+                        # build spec file name    
+                        suffix = architecture+"-d" + dimension
+                        for key in compileTimeParameterSpace:
+                            suffix += "-{}_{}".format(key,buildParameterDict[key])
                         buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+suffix+".exahype"
                             
                         with open(exahypeRoot + "/" + buildSpecFilePath, "w") as buildspecFile:
@@ -287,7 +291,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process.wait()
                         
                         # run toolkit
-                        toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFilePath+")"
+                        toolkitCommand = "{0}/Toolkit/toolkit.sh {0}/{1}".format(exahypeRoot,buildSpecFilePath)
                         print(toolkitCommand,end="",flush=True)
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, toolkitErr) = process.communicate()
