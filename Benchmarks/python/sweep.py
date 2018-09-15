@@ -147,7 +147,7 @@ def verifyEnvironmentIsCorrect(justWarn=False):
         sys.exit()
 
 def verifyAllRequiredParametersAreGiven(specFileTemplate):
-    elif "dimension" not in parameterSpace:
+    if "dimension" not in parameterSpace:
         print("ERROR: 'dimension' not found in section 'parameters' or section 'parameters_grouped'.",file=sys.stderr)
         sys.exit()
     elif "architecture" not in parameterSpace:
