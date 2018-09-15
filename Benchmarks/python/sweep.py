@@ -291,14 +291,13 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process.wait()
                         
                         # run toolkit
-                        toolkitCommand = "{0}/Toolkit/toolkit.sh {0}/{1}".format(exahypeRoot,buildSpecFilePath)
+                        toolkitCommand = "{0}/Toolkit/toolkit.sh {0}/{1}".format(exahypeRoot,buildSpecFilePath) # want to read output
                         print(toolkitCommand,end="",flush=True)
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, toolkitErr) = process.communicate()
                         process.wait()
-                        if "setup build environment ... ok" in str(output):
-                            print(" [OK]")
-                        else:
+                        print(output)
+                        if toolkitErr: # do not use -v as info output is piped into stderr
                             print(" [FAILED]")
                             print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
                             print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
