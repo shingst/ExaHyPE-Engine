@@ -35,15 +35,6 @@
 #endif
 
 peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCellSpecification(int level) {
-//  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-//    return peano::MappingSpecification(
-//          peano::MappingSpecification::WholeTree,
-//          peano::MappingSpecification::Serial,false);
-//  } else {
-//    return peano::MappingSpecification(
-//        peano::MappingSpecification::WholeTree,
-//        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-//  }
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
