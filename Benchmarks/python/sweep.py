@@ -289,9 +289,9 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         process.communicate()
                         process.wait()
-                        
+                       
                         # run toolkit
-                        toolkitCommand = "{0}/Toolkit/toolkit.sh {0}/{1}".format(exahypeRoot,buildSpecFilePath) # want to read output
+                        toolkitCommand = "{0}/Toolkit/toolkit.sh -s {0}/{1}".format(exahypeRoot,buildSpecFilePath)
                         print(toolkitCommand,end="",flush=True)
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, toolkitErr) = process.communicate()
