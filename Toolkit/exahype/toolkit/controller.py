@@ -214,7 +214,7 @@ class Controller:
         try:
             spec = validate(spec, set_defaults=True)
         except Exception as e:
-            if self.debug:
+            if self.verbose:
                 self.log.error("Specification file does not hold a valid ExaHyPE specification, it did not pass the schema validation step. The error message is: %s" % e)
             else:
                 self.log.error("Specification file does not hold a valid ExaHyPE specification, it did not pass the schema validation step. The error message is: %s" % e.message)

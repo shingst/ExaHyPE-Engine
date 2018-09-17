@@ -1112,6 +1112,23 @@ int exahype::parser::Parser::getNumberOfBackgroundTasks() {
   return result;
 }
 
+bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+      compare("all_in_a_rush");
+}
+
+bool exahype::parser::Parser::getLowPriorityJobsRunOnlyIfNoHighPriorityJobIsLeft() {
+  return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_always",isOptional).
+      compare("run_if_no_high_priority_job_left");
+}
+
+int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
+  return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",std::numeric_limits<int>::max(),isOptional);
+}
+
+int exahype::parser::Parser::getMinBackgroundJobsInARush() {
+  return getIntFromPath("/shared_memory/min_background_jobs_in_one_rush",1,isOptional);
+}
 
 bool exahype::parser::Parser::useManualPinning() {
   return getBoolFromPath("/shared_memory/manual_pinning",false,isOptional);

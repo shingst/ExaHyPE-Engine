@@ -107,7 +107,7 @@ class SolverModel(AbstractModelBaseClass):
         implementation = self.context["implementation"]
         
         if implementation=="user": # TODO
-            print("ERROR: optimised FV kernels not available yet.",file=sys.stderr)
+            print("ERROR: optimised FV kernels not available (yet).",file=sys.stderr)
             raise
         
         paths = [] # path is None if nothing was generated

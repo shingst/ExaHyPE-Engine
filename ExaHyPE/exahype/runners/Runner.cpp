@@ -271,7 +271,31 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     #endif
   }
 
+  // background jobs
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+
+  #if defined(SharedTBB)
+  tarch::multicore::jobs::Job::setMinMaxNumberOfJobsToConsumeInOneRush(
+      _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
+
+  if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
+    if ( _parser.getLowPriorityJobsWaitTillNoHighPriorityJobIsLeft() ) { // low priority behaviour
+      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    } else {
+      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
+    }
+  } else {
+    if ( _parser.getLowPriorityJobsWaitTillNoHighPriorityJobIsLeft() ) {
+      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    } else {
+      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
+    }
+  }
+  #endif
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
