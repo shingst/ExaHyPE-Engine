@@ -26,7 +26,6 @@ double NavierStokes::PDE::evaluateTemperature(double rho, double pressure) const
 }
 
 double NavierStokes::PDE::evaluateHeatConductionCoeff(double viscosity) const {
-  // Use no heat conduction for now
   return 1./Pr * viscosity * gamma * c_v;
 }
 
@@ -35,14 +34,7 @@ double NavierStokes::PDE::evaluatePressure(double E, double rho, const tarch::la
 }
 
 double NavierStokes::PDE::evaluateViscosity(double T) const {
-  // Use constant viscosity for now
   return referenceViscosity;
-
-  // Sutherland's law
-  // sutherlandLambda(
-  //		   (referenceViscosity * (referenceT + sutherlandC))/
-  //		   std::pow(referenceT, 3./2)){
-  //return sutherlandLambda * (std::pow(T, 3./2) / (T + sutherlandC));
 }
 
 void NavierStokes::PDE::evaluateEigenvalues(const double* const Q, const int d, double* lambda) const {
@@ -113,9 +105,9 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
 
   // TODO: What if rho is tiny? Possibly add epsilon here for stability.
   //assert(vars.rho() > 10e-6);
-  const auto invRho = 1. /vars.rho();
-  const auto invRho2 = 1./(vars.rho() * vars.rho());
-  const auto invRho3 = 1./(vars.rho() * vars.rho() * vars.rho());
+  const auto invRho = 1. / (vars.rho());
+  const auto invRho2 = 1./ (vars.rho() * vars.rho());
+  const auto invRho3 = 1./ (vars.rho() * vars.rho() * vars.rho());
 
   assertion2(vars.rho() > 0, vars.rho(), invRho);
   assertion2(std::isfinite(invRho), vars.rho(), invRho);
@@ -225,8 +217,17 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   // Full NS flux
   f.rho(vars.j());
   f.j(invRho * outerDot(vars.j(), vars.j()) + p*I + stressTensor);
-  f.E(
-      ((I * vars.E() + I * p + stressTensor) * (invRho * vars.j())) - kappa * gradT);
+//  f.E(
+//      ((I * vars.E() + I * p + stressTensor) * (invRho * vars.j())) - kappa * gradT);
+
+  // TODO(Lukas) fix for 3d
+  // TODO(Lukas) names
+  tarch::la::Matrix<1,2,double> t;
+  t = ( invRho * vars.j(0)), (invRho * vars.j(1));
+
+  const auto tt = t * (I * vars.E() + I * p + stressTensor);
+  f.E(tt(0,0) - kappa * gradT[0], tt(0,1) - kappa * gradT[1]);
+
 
   for (int i = 0; i < vars.variables(); ++i) {
     const auto cond = std::isfinite(Q[i]);

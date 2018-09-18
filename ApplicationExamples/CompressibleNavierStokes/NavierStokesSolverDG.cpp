@@ -146,7 +146,7 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
   // We deal with heat construction by computing the flux at the boundary without heat conduction,
-  // To do this, we reconstrunct the incoming flux using the extrapolated/time-averaged state/gradient.
+  // To do this, we reconstruct the incoming flux using the extrapolated/time-averaged state/gradient.
   // Note that this incurs an error.
   // The incoming flux is reconstructed in boundaryConditions.
 
@@ -183,12 +183,12 @@ void NavierStokes::NavierStokesSolverDG::viscousEigenvalues(const double* const 
 }
 
 void NavierStokes::NavierStokesSolverDG::viscousFlux(const double *const Q, const double *const gradQ, double **F) {
-  ns.evaluateFlux(Q, gradQ, F);
+  ns.evaluateFlux(Q, gradQ, F, true);
 }
 
 double NavierStokes::NavierStokesSolverDG::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
   return 0.35 * stableDiffusiveTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
-  //return kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
+  //return kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolverDG, true>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
 }
 
 void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const tarch::la::Vector<DIMENSIONS, double>& lengthScale, const int direction, bool isBoundaryFace, int faceIndex) {
@@ -199,6 +199,43 @@ void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,con
 
 }
 
+void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
+  constexpr int basisSize     = (Order+1)*(Order+1);
+  constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
+  constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
+
+  constexpr int totalSize = sizeStateOut + sizeFluxOut;
+  double* block = new double[totalSize];
+  double* memory = block;
+
+  double* stateOut = memory; memory+=sizeStateOut;
+  double* fluxOut  = memory; memory+=sizeFluxOut;
+
+  const int faceIndex = 2*direction+orientation;
+
+  kernels::aderdg::generic::c::boundaryConditions<true, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),fluxOut,stateOut,fluxIn,stateIn,gradStateIn, cellCentre,cellSize,t,dt,faceIndex,direction);
+
+  if (orientation==0 ) {
+    double* FL = fluxOut; const double* const QL = stateOut;
+    double* FR =  fluxIn;  const double* const QR = stateIn;
+
+    riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
+    //kernels::aderdg::generic::c::riemannSolverNonlinear<false, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,dt,direction);
+
+    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+  }
+  else {
+    double* FL =  fluxIn;  const double* const QL = stateIn;
+    double* FR = fluxOut; const double* const QR = stateOut;
+
+    riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
+    //kernels::aderdg::generic::c::riemannSolverNonlinear<false, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,dt,direction);
+
+    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
+  }
+  delete[] block;
+}
+/*
 void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
   constexpr int basisSize     = (Order+1)*(Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
@@ -252,5 +289,8 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
     kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxInReconstructed,direction,orientation,cellSize);
   }
 
+  std::copy_n(fluxInReconstructed, sizeFluxOut, fluxIn);
+
   delete[] block;
 }
+ */

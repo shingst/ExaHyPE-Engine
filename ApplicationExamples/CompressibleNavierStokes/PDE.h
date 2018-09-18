@@ -31,18 +31,17 @@ public:
   void evaluateFlux(const double* Q, const double* gradQ, double** F, bool temperatureDiff=true) const;
 
 
-  double Pr; // [1] Prandtl number
+  double referenceViscosity; // [Pa s] = [kg/(ms)] Reference dynamic viscosity
   double referencePressure; // [Pa], reference pressure used by some scenarios.
 
   double gamma; // [1] Ratio of specific heats, c_p/c_v
+  double Pr; // [1] Prandtl number
+
 
   // [m^2/(s^2 K)] = [J/(kg K)]
   double c_v; // [J/(kg K)] Specific heat capacity at constant volume
   double c_p; // [J/(kg K)] Specific heat capacity at constant pressure
   double gasConstant; // [J/(kg K)] Specific gas constant
-
-  double referenceViscosity; // [Pa s] = [kg/(ms)] Reference dynamic viscosity
-
 
   // Unused:
   double referenceT;
