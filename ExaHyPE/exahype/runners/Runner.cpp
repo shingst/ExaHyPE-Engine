@@ -33,6 +33,10 @@
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/multicore/Jobs.h"
 
+#ifdef SharedTBB
+#include "tarch/multicore/tbb/Jobs.h"
+#endif
+
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/SendReceiveBufferPool.h"
@@ -275,24 +279,24 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   #if defined(SharedTBB)
-  tarch::multicore::jobs::Job::setMinMaxNumberOfJobsToConsumeInOneRush(
+  tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
       _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
 
   if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
-    if ( _parser.getLowPriorityJobsWaitTillNoHighPriorityJobIsLeft() ) { // low priority behaviour
-      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
     } else {
-      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
     }
   } else {
-    if ( _parser.getLowPriorityJobsWaitTillNoHighPriorityJobIsLeft() ) {
-      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
     } else {
-      tarch::multicore::jobs::Job::setHighPriorityJobBehaviour(
-          tarch::multicore::jobs::Job::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
     }
   }
   #endif

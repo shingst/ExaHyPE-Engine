@@ -531,7 +531,7 @@ class exahype::parser::Parser {
    * @return If the consumer tasks should process any low priority tasks
    * if there are still high priority tasks left.
    */
-  bool getLowPriorityJobsRunOnlyIfNoHighPriorityJobIsLeft();
+  bool getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft();
   /**
    * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
    */
