@@ -148,7 +148,10 @@ void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJ
   #error PredictionSweeps must be set to 1 or 2.
   #endif
   #else
-  exahype::solvers::Solver::PredictionSweeps = ( useBackgroundJobs ) ? 2 : 1;
+  exahype::solvers::Solver::PredictionSweeps = ( 
+         !allSolversPerformOnlyUniformRefinement() || // prolongations are done in second sweep
+         useBackgroundJobs ) ? 
+         2 : 1;
   #endif
 }
 
@@ -716,6 +719,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
           isFirstIterationOfBatchOrNoBatch,
           isLastIterationOfBatchOrNoBatch);
     } else {
+      logInfo("DEBUG",minTimeStepSizes[0]);
       solver->startNewTimeStep();
     }
   }
