@@ -719,7 +719,6 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
           isFirstIterationOfBatchOrNoBatch,
           isLastIterationOfBatchOrNoBatch);
     } else {
-      logInfo("DEBUG",minTimeStepSizes[0]);
       solver->startNewTimeStep();
     }
   }
