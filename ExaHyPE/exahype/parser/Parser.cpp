@@ -1114,12 +1114,12 @@ int exahype::parser::Parser::getNumberOfBackgroundTasks() {
 
 bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
   return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
-      compare("all_in_a_rush");
+      compare("all_in_a_rush")==0;
 }
 
 bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() {
   return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_always",isOptional).
-      compare("run_if_no_high_priority_job_left");
+      compare("run_if_no_high_priority_job_left")==0;
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
