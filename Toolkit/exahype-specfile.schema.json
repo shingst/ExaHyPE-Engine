@@ -262,10 +262,10 @@
         },
         "max_background_jobs_in_one_rush" : {
           "type" : "integer", 
-          "title" : "Maximum number of background jobs a consumer grabs from the queue in a single rush (default: ~maximum integer number)", 
+          "title" : "Maximum number of background jobs a consumer grabs from the queue in a single rush (default: maximum (signed) integer number)", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
-          "default" : 2000000
+          "default" : 2147483647
         },
         "autotuning_strategy" : {
           "type" : "string", 
