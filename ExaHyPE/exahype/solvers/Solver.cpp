@@ -139,7 +139,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   }
 }
 
-void exahype::solvers::Solver::configureEnclaveTasking(const bool useBackgroundJobs) {
+void exahype::solvers::Solver::configurePredictionPhase(const bool useBackgroundJobs) {
   exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = useBackgroundJobs;
 
   #ifdef PredictionSweeps

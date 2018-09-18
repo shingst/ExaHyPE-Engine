@@ -844,7 +844,7 @@ class exahype::solvers::Solver {
    * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
    * and PredictorOrLocalRecomputation.
    */
-  static void configureEnclaveTasking(const bool useBackgroundJobs);
+  static void configurePredictionPhase(const bool useBackgroundJobs);
 
 
   static std::string toString(const JobType& jobType);
