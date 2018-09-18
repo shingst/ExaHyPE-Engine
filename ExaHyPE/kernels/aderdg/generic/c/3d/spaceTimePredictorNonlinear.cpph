@@ -99,17 +99,11 @@ namespace {
             // x direction (independent from the y and z derivatives)
             for (int j = 0; j < basisSize; j++) { // z
                 for (int k = 0; k < basisSize; k++) { // y
-                    const double weight = kernels::gaussLegendreWeights[order][i] *
-                        kernels::gaussLegendreWeights[order][j] *
-                        kernels::gaussLegendreWeights[order][k];
-                    const double updateSize = weight * dt * invDx[0];
-
                     // Matrix operation
                     for (int l = 0; l < basisSize; l++) { // x
                         for (int m = 0; m < numberOfVariables; m++) {
                             for (int n = 0; n < basisSize; n++) {
-                                gradQ[idx_gradQ(j, k, l, /*x*/0, m)] += 1.0 * invDx[0] *
-                                    lQi[idx_lQi(j, k, n, i, m)] * kernels::dudx[order][l][n];
+                                gradQ[idx_gradQ(j, k, l, /*x*/0, m)] += kernels::dudx[order][l][n] * invDx[0] * lQi[idx_lQi(j, k, n, i, m)];
                             }
                         }
                     }
@@ -119,17 +113,11 @@ namespace {
             // y direction (independent from the x and z derivatives)
             for (int j = 0; j < basisSize; j++) { // z
                 for (int k = 0; k < basisSize; k++) { // x
-                    const double weight = kernels::gaussLegendreWeights[order][i] *
-                        kernels::gaussLegendreWeights[order][j] *
-                        kernels::gaussLegendreWeights[order][k];
-                    const double updateSize = weight * dt * invDx[1];
-
                     // Matrix operation
                     for (int l = 0; l < basisSize; l++) { // y
                         for (int m = 0; m < numberOfVariables; m++) {
                             for (int n = 0; n < basisSize; n++) {
-                                gradQ[idx_gradQ(j, l, k, /*y*/1, m)] += 1.0 * invDx[1] *
-                                    lQi[idx_lQi(j, n, k, i, m)] * kernels::dudx[order][l][n];
+                                gradQ[idx_gradQ(j, l, k, /*y*/1, m)] += kernels::dudx[order][l][n] * invDx[1] * lQi[idx_lQi(j, n, k, i, m)];
                             }
                         }
                     }
@@ -139,17 +127,11 @@ namespace {
             // z direction (independent from the x and y derivatives)
             for (int j = 0; j < basisSize; j++) { // y
                 for (int k = 0; k < basisSize; k++) { // x
-                    const double weight = kernels::gaussLegendreWeights[order][i] *
-                        kernels::gaussLegendreWeights[order][j] *
-                        kernels::gaussLegendreWeights[order][k];
-                    const double updateSize = weight * dt * invDx[2];
-
                     // Matrix operation
                     for (int l = 0; l < basisSize; l++) { // z
                         for (int m = 0; m < numberOfVariables; m++) {
                             for (int n = 0; n < basisSize; n++) {
-                                gradQ[idx_gradQ(l, j, k, /*z*/2, m)] += 1.0 * invDx[2] *
-                                    lQi[idx_lQi(n, j, k, i, m)] * kernels::dudx[order][l][n];
+                                gradQ[idx_gradQ(l, j, k, /*z*/2, m)] += kernels::dudx[order][l][n] * invDx[2] * lQi[idx_lQi(n, j, k, i, m)];
                             }
                         }
                     }
