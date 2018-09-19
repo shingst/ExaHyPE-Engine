@@ -17,6 +17,9 @@ def parseArgs():
     parser.add_argument("--no-data", dest="keepData", action="store_false")
     parser.set_defaults(keepData=True)
     
+    parser.add_argument("-t", "--tikz", dest="forTikz", action="store_true",help="Has the effect of --enumerate-keys --no-headers --no-data'. Overwrites these options.")
+    parser.set_defaults(forTikz=False)
+    
     parser.add_argument("table",
        type=argparse.FileType("r"),nargs="?",
        help="The CSV table to work on.",
@@ -40,6 +43,18 @@ if __name__ == "__main__":
         
     args = parseArgs()
 
+    enumerateKeys = args.enumerateKeys
+    header        = args.header
+    keepData      = args.keepData
+    forTikz       = args.forTikz
+    table         = args.table
+    output        = args.output
+
+    if forTikz:
+       enumerateKeys = True
+       header        = False
+       keepData      = False
+ 
     # read table
     firstRow  = next(args.table)
     firstRow  = firstRow.strip().split(",")
@@ -52,15 +67,15 @@ if __name__ == "__main__":
         float(firstRow[-1])
         tableData.insert(0,firstRow)
     except:
-       if args.header:
-           if not args.enumerateKeys:
-               if not args.keepData:
+       if header:
+           if not enumerateKeys:
+               if not keepData:
                   result.append(firstRow[:-1])
                else:
                   result.append(firstRow)
                result[0].append("speedup")
            else:
-               if not args.keepData:
+               if not keepData:
                    result.append(["n","speedup"])
                else:
                    result.append(["n",firstRow[-1],"speedup"])
@@ -70,15 +85,15 @@ if __name__ == "__main__":
     n = 0
     for row in tableData:
         resultRow = None
-        if not args.enumerateKeys:
+        if not enumerateKeys:
             resultRow = row
         else:
             resultRow = [n,row[-1]]
-        if not args.keepData:
+        if not keepData:
             resultRow = resultRow[:-1]
         resultRow.append("%1.2f" % ( reference/float(row[-1])) ) # compute speedup
         result.append(resultRow)
         n += 1
     
-    csvwriter = csv.writer(args.output)
+    csvwriter = csv.writer(output)
     csvwriter.writerows(result)
