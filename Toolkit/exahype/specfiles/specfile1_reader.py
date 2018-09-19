@@ -204,7 +204,7 @@ class SpecFile1Reader():
                     distributed_memory["node_pool_strategy"]=m_node_pool_strategy.group(1)
                     found_token = True
                 if m_load_balancing_strategy:
-                    distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1)
+                    distributed_memory["load_balancing_strategy"]=m_load_balancing_strategy.group(1).replace("-","_")
                     found_token = True
                 if not found_token and len(token_s):
                     raise SpecFile1ParserError("Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s)
