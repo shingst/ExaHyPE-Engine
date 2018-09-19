@@ -16,8 +16,8 @@ def createFilterKeysToColumnIndexMapping(filterSet,columnNames):
             print("ERROR: parameter key '"+key+"' is not a column name of the table!",file=sys.stderr)
             success = False
     if not success:
-        print("ERROR: program aborted since not all parameter keys are a column name of the table.",file=sys.stderr)
-        print("ERROR: found table column names: "+",".join(columnNames),file=sys.stderr)
+        print("ERROR: program aborted since not all parameter keys are a column name of the table.\n",file=sys.stderr)
+        print("INFO: found table column names:\n"+"\n".join(columnNames),file=sys.stderr)
         sys.exit()
     
     return indexMapping
@@ -60,19 +60,6 @@ if __name__ == "__main__":
         
     args = parseArgs()
 
-    # construct row filter
-    errorOccured = False
-    rowFilter   = {} 
-    for item in args.filter:
-        tokens = item.split("=")
-        if len(tokens)!=2:
-            print("ERROR: filter item '{}' does not have shape 'key=value' or 'key=\"value\"'".format(item), file=sys.stderr)
-            errorOccured = True
-        else:
-            rowFilter[tokens[0].strip()]=tokens[1].strip("\"")
-    if errorOccured:
-        print("Program aborted.", file=sys.stderr)
-        sys.exit()
   
     # read table
     columnNames = next(args.table)
@@ -84,6 +71,20 @@ if __name__ == "__main__":
     # filter the rows
     filteredRows = []
     if args.filter[0].strip()!="*":
+        # construct row filter
+        errorOccured = False
+        rowFilter   = {} 
+        for item in args.filter:
+            tokens = item.split("=")
+            if len(tokens)!=2:
+                print("ERROR: filter item '{}' does not have shape 'key=value' or 'key=\"value\"'".format(item), file=sys.stderr)
+                errorOccured = True
+            else:
+                rowFilter[tokens[0].strip()]=tokens[1].strip("\"")
+        if errorOccured:
+            print("Program aborted.", file=sys.stderr)
+            sys.exit()
+        
         filterColumnsToIndices = createFilterKeysToColumnIndexMapping(rowFilter,columnNames)
         filteredRows = list(filter(tableFilter,tableData))
     else:
