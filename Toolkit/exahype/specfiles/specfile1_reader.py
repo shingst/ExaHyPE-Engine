@@ -183,6 +183,8 @@ class SpecFile1Reader():
         # configure
         if "configure" in distributed_memory:
             configure = distributed_memory.pop("configure").replace("{","").replace("}","")
+            required = ["ranks-per-node"]
+            required_found = [] 
             for token in configure.split(","):
                 token_s = token.strip()
                 m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
@@ -195,8 +197,9 @@ class SpecFile1Reader():
                     distributed_memory["scale_bounding_box"] = True # might be better placed into the optimisation section
                     found_token = True
                 if m_ranks_per_node:
-                    distributed_memory["ranks_per_node"]                =int(m_ranks_per_node.group(1))
+                    distributed_memory["ranks_per_node"] = int(m_ranks_per_node.group(1))
                     found_token = True
+                    required_found.append("ranks-per-node")
                 if m_primary_ranks_per_node:
                     distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
                     found_token = True
@@ -208,7 +211,10 @@ class SpecFile1Reader():
                     found_token = True
                 if not found_token and len(token_s):
                     raise SpecFile1ParserError("Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s)
-    
+        for param in required:
+            if param not in required_found:
+                raise SpecFile1ParserError("Could not find required parameter '{}:<number>' in 'distributed-memory/configure' section.".format(param))
+                 
     ##
     # TODO
     def map_shared_memory(self,shared_memory):
