@@ -33,6 +33,10 @@
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/multicore/Jobs.h"
 
+#ifdef SharedTBB
+#include "tarch/multicore/tbb/Jobs.h"
+#endif
+
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/SendReceiveBufferPool.h"
@@ -96,20 +100,18 @@ exahype::runners::Runner::~Runner() {}
 
 void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   #ifdef Parallel
-  const std::string configuration = _parser.getMPIConfiguration();
-
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
     //
     // Configure answering behaviour of global node pool
     // =================================================
     //
-    if (configuration.find( "FCFS" )!=std::string::npos ) {
+    if ( _parser.compareNodePoolStrategy( "FCFS" ) ) {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new tarch::parallel::FCFSNodePoolStrategy()
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
     }
-    else if (configuration.find( "fair" )!=std::string::npos ) {
+    else if (_parser.compareNodePoolStrategy( "fair" )) {
       int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << _parser.getRanksPerNode() << ":XXX\". Read value " << ranksPerNode << " is invalid" );
@@ -124,7 +126,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
-    else if (configuration.find( "sfc-diffusion" )!=std::string::npos ) {
+    else if (_parser.compareNodePoolStrategy( "sfc-diffusion" )) {
       int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
@@ -138,7 +140,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = static_cast<int>(exahype::parser::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
+      int primaryRanksPerNode = _parser.getIntFromPath("/distributed_memory/primary_ranks_per_node");
       if (primaryRanksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
@@ -160,13 +162,14 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
   }
 
-  if ( configuration.find( "greedy-naive" )!=std::string::npos ) {
+  // basically a switch-case
+  if ( _parser.compareMPILoadBalancingStrategy( "greedy-naive" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy );
   }
-  else if ( configuration.find( "greedy-regular" )!=std::string::npos ) {
+  else if ( _parser.compareMPILoadBalancingStrategy( "greedy-regular" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::GreedyWithRegularityAnalysis );
   }
-  else if ( configuration.find( "hotspot" )!=std::string::npos ) {
+  else if ( _parser.compareMPILoadBalancingStrategy( "hotspot" )) {
     exahype::mappings::LoadBalancing::setLoadBalancingAnalysis( exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Hotspot );
   }
   else {
@@ -178,7 +181,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   // Configure answering behaviour of global node pool
   // =================================================
   //
-  if (_parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static) {
+  if ( _parser.getMPILoadBalancingType()==exahype::parser::Parser::MPILoadBalancingType::Static ) {
     switch ( exahype::mappings::LoadBalancing::getLoadBalancingAnalysis() ) {
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Greedy:
         logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins");
@@ -272,7 +275,31 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     #endif
   }
 
+  // background jobs
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+
+  #if defined(SharedTBB)
+  tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
+      _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
+
+  if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    } else {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
+    }
+  } else {
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    } else {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
+    }
+  }
+  #endif
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
@@ -612,7 +639,7 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
-  exahype::solvers::Solver::configureEnclaveTasking(
+  exahype::solvers::Solver::configurePredictionPhase(
       _parser.getSpawnPredictionAsBackgroundThread());
 
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
@@ -650,10 +677,9 @@ int exahype::runners::Runner::run() {
     initHeaps();
 
     #ifdef Parallel
-    exahype::State::VirtuallyExpandBoundingBox =
-        _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
-    exahype::State::BroadcastInThisIteration = true;
-    exahype::State::ReduceInThisIteration    = false;
+    exahype::State::VirtuallyExpandBoundingBox =_parser.getScaleBoundingBox();
+    exahype::State::BroadcastInThisIteration   = true;
+    exahype::State::ReduceInThisIteration      = false;
     #endif
 
     auto* repository = createRepository();

@@ -28,7 +28,7 @@
 #include "exahype/solvers/ADERDGSolver.h"
 
 
-
+tarch::logging::Log exahype::plotters::ADERDG2LegendreDivergenceVTK::_log("exahype::plotters::ADERDG2LegendreDivergenceVTK");
 
 std::string exahype::plotters::ADERDG2LegendreDivergenceVerticesVTKAscii::getIdentifier() {
   return "vtk::Legendre::vertices::div::ascii";
@@ -89,33 +89,19 @@ void exahype::plotters::ADERDG2LegendreDivergenceVTK::init(
   int                orderPlusOne,
   int                unknowns,
   int                writtenUnknowns,
-  const std::string& select
+  exahype::parser::ParserView plotterParameters
 ) {
   _filename          = filename;
   _order             = orderPlusOne-1;
   _solverUnknowns    = unknowns;
-  _select            = select;
+  _plotterParameters            = plotterParameters;
   _writtenUnknowns   = writtenUnknowns;
 
-  double x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "left" );
-  _regionOfInterestLeftBottomFront(0) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "bottom" );
-  _regionOfInterestLeftBottomFront(1) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "front" );
-  _regionOfInterestLeftBottomFront(2) = x!=x ? -std::numeric_limits<double>::max() : x; // "-", min
-#endif
+  slicer = Slicer::bestFromSelectionQuery(plotterParameters);
 
-
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "right" );
-  _regionOfInterestRightTopBack(0) = x!=x ? std::numeric_limits<double>::max() : x;
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "top" );
-  _regionOfInterestRightTopBack(1) = x!=x ? std::numeric_limits<double>::max() : x;
-#if DIMENSIONS==3
-  x = exahype::parser::Parser::getValueFromPropertyString( select, "back" );
-  _regionOfInterestRightTopBack(2) = x!=x ? std::numeric_limits<double>::max() : x;
-#endif
+  if(slicer) {
+    logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
+  }
 }
 
 
@@ -343,11 +329,7 @@ void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     double* u,
     double timeStamp) {
-  if (
-    tarch::la::allSmaller(_regionOfInterestLeftBottomFront,offsetOfPatch+sizeOfPatch)
-    &&
-    tarch::la::allGreater(_regionOfInterestRightTopBack,offsetOfPatch)
-  ) {
+  if (!slicer || slicer->isPatchActive(offsetOfPatch, sizeOfPatch)) {
     assertion( _writtenUnknowns==0 || _vertexWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _cellWriter!=nullptr );
     assertion( _writtenUnknowns==0 || _gridWriter!=nullptr );

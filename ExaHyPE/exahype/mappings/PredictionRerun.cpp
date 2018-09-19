@@ -52,7 +52,7 @@ exahype::mappings::PredictionRerun::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::PredictionRerun::enterCellSpecification(int level) const {
-  return exahype::mappings::Prediction::determineEnterCellSpecification(level);
+  return exahype::mappings::Prediction::determineEnterLeaveCellSpecification(level);
 }
 
 // The remaining specifications all are nop.

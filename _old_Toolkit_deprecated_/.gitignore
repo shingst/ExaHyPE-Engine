@@ -1,0 +1,6 @@
+/bin/
+/src/files.mk
+
+# foreign unpacked code
+/src/com
+/src/org

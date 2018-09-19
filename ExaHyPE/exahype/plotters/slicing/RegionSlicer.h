@@ -49,7 +49,7 @@ struct exahype::plotters::RegionSlicer : public exahype::plotters::Slicer {
 	 * Create a RegionSlicer from an ExaHyPE specfile query string. This method
 	 * parses the string and creates a new instance on the heap.
 	 **/
-	static RegionSlicer* fromSelectionQuery(const std::string& select);
+	static RegionSlicer* fromSelectionQuery(const exahype::parser::ParserView& plotterParameters);
 	
 	std::string getIdentifier() const override { return "RegionSlicer"; }
 	std::string toString() const override;

@@ -15,6 +15,7 @@
 #define _EXAHYPE_PLOTTERS_ADERDG_2_VTK_H_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/parser/ParserView.h"
 
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
 #include "tarch/plotter/griddata/unstructured/UnstructuredGridWriter.h"
@@ -57,7 +58,7 @@ class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::
   int           _order;
   int           _solverUnknowns;
   int           _writtenUnknowns;
-  std::string   _select;
+  exahype::parser::ParserView   _plotterParameters;
 
 
   /**
@@ -109,7 +110,7 @@ class exahype::plotters::ADERDG2LegendreVTK: public exahype::plotters::Plotter::
   ADERDG2LegendreVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType isBinary, bool plotCells);
   virtual ~ADERDG2LegendreVTK();
 
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters);
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
 

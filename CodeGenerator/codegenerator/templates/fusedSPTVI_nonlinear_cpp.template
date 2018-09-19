@@ -94,7 +94,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
-{% if useNCP or useFlux %}
+{% if useNCP or (useFlux and useCERKGuess) %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
@@ -180,7 +180,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
   
   int iter = 0;
-  for (iter; iter < MaxIterations; iter++) {
+  for (; iter < MaxIterations; iter++) {
     for (int i = 0; i < {{nDof}}; i++) {  // time DOF
 
 {% if useFlux %}

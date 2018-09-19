@@ -14,7 +14,9 @@
 /* This is a hack to enable PingPongTests also when built in Release mode:
  * Enable Assertions for this compile context (=this cpp file) only.
  */
+#ifndef Asserts
 #define Asserts
+#endif
 
 #include "tarch/logging/Log.h"
 #include "tarch/tests/TestCaseRegistry.h"

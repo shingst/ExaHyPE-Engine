@@ -23,7 +23,7 @@ def parseList(string):
     for line in csv.reader([string],delimiter=","):
       values = line
       for i,value in enumerate(values):
-          values[i] = value.replace("\"","")
+          values[i] = value.strip().replace("\"","")
       return values
 
 def parseEnvironment(config):
@@ -86,8 +86,24 @@ def parseParameters(config):
         if key in parameterSpace:
             print("ERROR: The following keys are reserved: "+",".join(blackList)+".",file=sys.stderr)
             sys.exit()
+    
+    # compile-time parameters
+    compileTimeParameterSpace = collections.OrderedDict()
+    if  config.has_option("general","compile_time_parameters"):
+        compileTimeParameters = parseList(config.get("general", "compile_time_parameters"))
+        for key in compileTimeParameters:
+            if key in parameterSpace:
+                if key not in ["dimension","architecture"]:
+                    compileTimeParameterSpace[key] = parameterSpace[key]
+            else:
+                print("ERROR: Did not find 'compile_time_parameters' entry '{}' in section 'parameters' or 'grouped_parameters'.".format(key),file=sys.stderr)
+                sys.exit()
+    else:
+        print("ERROR: Did not find required 'compile_time_parameters' option where you specify the parameters whose variation requires a rerun of the toolkit and a recompilaton of the project folder sources!" +\
+              "Note that you do not need to specify 'dimensions' and 'architecture' as they require a rebuild of Peano as well. They are treated separately.",file=sys.stderr)
+        sys.exit()
  
-    return ungroupedParameterSpace,groupedParameterSpace,parameterSpace
+    return ungroupedParameterSpace,groupedParameterSpace,parameterSpace,compileTimeParameterSpace
 
 def compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
     overlap = False
@@ -139,8 +155,8 @@ def parseRanksNodesCoreCounts(jobs):
         ranksNodesCoreCountsList.append( RanksNodesCoreCounts( ranks=ranks, nodes=nodes, coreCounts=coreCountsList, text=entryMatch[0] ) )
         
     if not ranksNodesCoreCountsList:
-        print("ERROR: could not find any 'ranks_nodes_cores' entries in the form: '<ranks> x <nodes> x {<cores0>:<consumertasks0>,<cores1>:<consumertasks1>,...}'.\n"\
-              "       Valid examples: '29 x 29 x {1:1}', '758 x 29 x {8:4,16:8}'",file=sys.stderr)
+        print("ERROR: could not find any 'ranks_nodes_cores' entries in the form: 'ranks_nodes_cores = <ranks> x <nodes> x {<cores0>:<consumertasks0>,<cores1>:<consumertasks1>,...}'.\n"\
+              "       Valid examples: 'ranks_nodes_cores = 29 x 29 x {1:1}', 'ranks_nodes_cores = 758 x 29 x {8:4,16:8}'",file=sys.stderr)
         sys.exit()
     elif compareRanksNodesCoreCountsWithEachOther(ranksNodesCoreCountsList):
         sys.exit()
@@ -163,9 +179,9 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
     resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
     historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
     
-    jobs                                                           = dict(configParser["jobs"])
-    environmentSpace                                               = parseEnvironment(configParser)
-    ungroupedParameterSpace, groupedParameterSpace, parameterSpace = parseParameters(configParser)
+    jobs = dict(configParser["jobs"])
+    environmentSpace = parseEnvironment(configParser)
+    ungroupedParameterSpace, groupedParameterSpace, parameterSpace, compileTimeParameterSpace = parseParameters(configParser)
 
     jobClass   = "unknown"
     islands    = "unknown" 
@@ -190,6 +206,7 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
            ("general jobs "
             "environmentSpace "
             "ungroupedParameterSpace groupedParameterSpace parameterSpace "
+            "compileTimeParameterSpace "
             "exahypeRoot outputPath projectPath projectName "
             "buildFolder "
             "buildFolderPath scriptsFolderPath "
@@ -199,12 +216,13 @@ def parseOptionsFile(optionsFile,ignoreMetadata=False):
             "runNumbers runNumbersGrouped"))
     
     options = Options(
-      general                 = general,
-      jobs                    = jobs,\
-      environmentSpace        = environmentSpace,\
-      ungroupedParameterSpace = ungroupedParameterSpace,\
-      groupedParameterSpace   = groupedParameterSpace,\
-      parameterSpace          = parameterSpace,\
+      general                   = general,
+      jobs                      = jobs,\
+      environmentSpace          = environmentSpace,\
+      ungroupedParameterSpace   = ungroupedParameterSpace,\
+      groupedParameterSpace     = groupedParameterSpace,\
+      parameterSpace            = parameterSpace,\
+      compileTimeParameterSpace = compileTimeParameterSpace,\
       \
       exahypeRoot      = exahypeRoot,\
       outputPath       = outputPath,\

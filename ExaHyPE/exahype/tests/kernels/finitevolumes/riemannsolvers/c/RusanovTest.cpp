@@ -47,6 +47,11 @@ exahype::tests::kernels::finitevolumes::riemannsolvers::c::ZeroFluxZeroNCP::flux
 }
 
 void
+exahype::tests::kernels::finitevolumes::riemannsolvers::c::ZeroFluxZeroNCP::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
+// do nothing
+}
+
+void
 exahype::tests::kernels::finitevolumes::riemannsolvers::c::ZeroFluxZeroNCP::eigenvalues(
     const double* const Q,const int normalNonZeroIndex, double* lambda) {
   // always return 1.0
@@ -84,7 +89,7 @@ void exahype::tests::kernels::finitevolumes::riemannsolvers::c::RusanovTest::run
 
   double fL[ZeroFluxZeroNCP::NumberOfVariables];
   double fR[ZeroFluxZeroNCP::NumberOfVariables];
-  ::kernels::finitevolumes::riemannsolvers::c::rusanov<false,true,ZeroFluxZeroNCP>(
+  ::kernels::finitevolumes::riemannsolvers::c::rusanov<false,true,false,ZeroFluxZeroNCP>(
       mockupSolver,
       fL,fR,
       qL,

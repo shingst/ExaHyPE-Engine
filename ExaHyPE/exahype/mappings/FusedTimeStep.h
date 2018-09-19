@@ -193,7 +193,7 @@ private:
 
   #if defined(SharedMemoryParallelisation)
   /**
-   * Copy the _backgroundJobsHaveTerminated
+   * Copy the _batchIterationCounterUpdated
    * and _batchIteration fields form the masterThread
    */
   FusedTimeStep(const FusedTimeStep& masterThread);
@@ -274,8 +274,6 @@ private:
    * Finish plotting if a plotter is active.
    *
    * <h2> Background Jobs </h2>
-   * Reset the _backgroundJobsHaveTerminated switch.
-   *
    * Notify Peano's tarch that we want to start processing
    * background jobs with all available cores.
    *

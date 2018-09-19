@@ -2,8 +2,7 @@ module purge
 module load python/3.6.3
 module load java
 module load slurm
-module load intel/xe_2017.2
-module load intelmpi/intel/2017.2
+module load intel/xe_2018.2
 module load gcc/4.9.1
 
 # Not required

@@ -16,7 +16,8 @@
 
 namespace exahype {
 namespace parser {
-class Parser;
+  class Parser;
+  class ParserImpl; // pimpl idiom, forward declaration
 }
 }
 
@@ -35,21 +36,18 @@ class Parser;
 #include "exahype/solvers/Solver.h"
 
 /**
- * ExaHyPE command line parser
+ * ExaHyPE Specification file (Parameters)
  *
- * A simple parser that creates a linear token stream
- * from a given ExaHyPE specification file.
- *
- * The parser can deal with C and doxygen style comments as
- * long as not two multi-line comment blocks are opened/closed
- * in the same line.
+ * Under the hood, the old Specfile parser was replaced here by
+ * a JSON parser.
  * 
- * <h2>Parser Limitations</h2>
- * Requires a proper implementation of the
- * C++11 regex routines (GCC>=4.9.0).
- *
- * Cannot deal with multiple openings/closings of comments
- * in the same line.
+ * This parser is a singleton "by concept", i.e. to keep all methods
+ * const, it stores the internal state statically and thus it only 
+ * makes sense to use it as a singleton. The state is the validity of
+ * the plotter, ie. holds a flag whether an error occured. The idea
+ * of this was probably lazy error reporting but I don't see how.
+ * (Well, one thing is that you can copy it freely but it will behave
+ * like a singleton)
  *
  * @author Tobias Weinzierl, Dominic Etienne Charrier, Sven Koeppel
  */
@@ -60,11 +58,10 @@ class exahype::parser::Parser {
 
   static const std::string   _noTokenFound;
 
-  std::vector<std::string> _tokenStream;
+  ParserImpl* _impl;
 
   /**
-   * Takes certain parameters from the
-   * token stream and checks their validity.
+   * Takes certain parameters from the parameters and checks their validity.
    */
   void checkValidity();
 
@@ -88,25 +85,118 @@ class exahype::parser::Parser {
   static bool _interpretationErrorOccured;
 
   /**
-   * \return "notoken" if not found.
-   */
-  std::string getTokenAfter(std::string token,
-                            int additionalTokensToSkip = 0) const;
-  std::string getTokenAfter(std::string token0, std::string token1,
-                            int additionalTokensToSkip = 0) const;
-  std::string getTokenAfter(std::string token0, int occurance0,
-                            int additionalTokensToSkip) const;
-  std::string getTokenAfter(std::string token0, int occurance0,
-                            std::string token1, int occurance1,
-                            int additionalTokensToSkip = 0) const;
-
-  /**
    * Holds the filename of the specification file parsed by this parser
    **/
   std::string _filename;
 
+  /**
+   * Count the size of a field of type 'variables', 'material_parameters', 'global_observables'.
+   *
+   * @param solverNumber index of solver in registry. First solver has index '0'.
+   * @param identifier   one out of 'variables', 'material_parameters', 'global_observables'
+   */
+  int countVariablesType(const int solverNumber, const std::string& identifier, const bool isOptional=false) const;
+
  public:
   /**
+   * \defgroup JsonFrontend High-level API to read from JSON data
+   * 
+   * These functions allow to use JSON pointers (RFC 6901), hereby
+   * called "paths", to address anything in nested data structures.
+   * An example of such a path is "/solvers/0/name". Obviously, it
+   * allows to mix dictionary/object and array/list indices.
+   * 
+   * Suppport for all native data types (bool,int,double,string) is
+   * provided.
+   * 
+   * For the readers, if isOptional is given, will return defaultValue
+   * if not found. However, if found but not of the requested type
+   * (not castable), will logError().
+   * If not isOptional is given, will logError also if path is not
+   * found. Will not throw exception but return a nonsense value
+   * instead and invalidate the Parser. This follows the old
+   * Parser idiom.
+   * 
+   * There are also functions for high level access to vectors
+   * and simple versions of ExaHyPE's favourite "property lists",
+   * i.e. arrays containing flag keywords.
+   * 
+   * @{
+   **/
+  
+  /// Checks whether a path is present, irrelevant from it's type
+  bool hasPath(std::string path) const;
+  
+  /// Will spill out JSON
+  std::string dumpPath(std::string path) const;
+  
+  bool isValueValidBool(const std::string& path) const;
+  bool isValueValidInt(const std::string& path) const;
+  bool isValueValidDouble(const std::string& path) const;
+  bool isValueValidString(const std::string& path) const;
+  
+  /**
+   * @return a string from a JSON path from the configuration file or the default value
+   *
+   * @note Will logError in case of errors and invalidate the parser.
+   *
+   * @param path         path to the string
+   * @param defaultValue default value
+   * @param isOptional   parameter is optional
+   */
+  std::string getStringFromPath(std::string path, std::string defaultValue="", bool isOptional=false) const;
+  int getIntFromPath(std::string path, int defaultValue=-1, bool isOptional=false) const;
+  double getDoubleFromPath(std::string path, double defaultValue=-1, bool isOptional=false) const;
+  bool getBoolFromPath(std::string path, bool defaultValue=true, bool isOptional=false) const;
+  std::vector< std::pair<std::string, std::string> > getObjectAsVectorOfStringPair(std::string path, bool isOptional=false) const;
+  
+  /**
+   * Compare string from a JSON path from the configuration file to
+   * another string.
+   *
+   * @return `true` if the strings match.
+   *
+   * @note Will logError in case of errors and invalidate the parser.
+   *
+   * @param path         path to the string
+   * @param defaultValue default value
+   * @param isOptional   parameter is optional
+   */
+  bool stringFromPathEquals(const std::string& path, const std::string& defaultValue,const bool isOptional, const std::string& otherString) const;
+
+  /**
+   * Read a double-Vector of length DIMENSIONS from a JSON path from the configuration file.
+   * Will logError in case of errors and invalidate the parser.
+   **/
+  tarch::la::Vector<DIMENSIONS,double> getDimVectorFromPath(std::string path) const;
+  
+  /**
+   * Get a STL int-vector with any length from a JSON path from the configuration file.
+   * Will logError in case of errors and invalidate the parser.
+   **/
+  std::vector<int> getIntVectorFromPath(std::string path) const;
+  
+  
+  /**
+   * Returns true if a flag list (i.e. an array of strings) contains a keyword, at the 
+   * JSON path position.
+   * A nonexisting array is interpreted as false.
+   **/
+  bool flagListContains(std::string path, std::string keyword) const;
+  
+  /// Readable boolean "enums"
+  static constexpr bool isOptional = true;
+  static constexpr bool isMandatory = false;
+  /**
+   * @}
+   **/
+   
+  /**
+   * This is old and shout no more be used, since it requires parsing of strings.
+   * TODO: Detect any usage of getValueFromPropertyString and replace it with
+   * a proper ParserView, map or list where they can look up the value by their
+   * selves, or something else.
+   *
    * Property strings in ExaHyPE are string alike "{all,left=0.5,Q4}". This
    * operation returns the value of a property, i.e. if you invoke
    * getvalueFromProperyString( "left" ), you obtain 0.5 in the example
@@ -135,18 +225,13 @@ class exahype::parser::Parser {
 
 
   void readFile(const std::string& filename);
-
-  /**
-   *
-   *
-   **/
   void readFile(std::istream& inputFile, std::string filename="");
 
   bool isValid() const;
-  void invalidate();
+  void invalidate() const;
 
   /**
-   * \return How many threads is the code supposed to use?
+   * @return How many threads is the code supposed to use?
    */
   int getNumberOfThreads() const;
 
@@ -159,27 +244,41 @@ class exahype::parser::Parser {
   MulticoreOracleType getMulticoreOracleType() const;
 
   MPILoadBalancingType getMPILoadBalancingType() const;
-  std::string getMPIConfiguration() const;
-  std::string getSharedMemoryConfiguration() const;
+
+  /**
+   * @return `true` if the parsed strategy matches the argument.
+   * @param strategy one of "FCFS" (first-come-first-served), "fair", "sfc-diffusion"
+   */
+  bool compareNodePoolStrategy(const std::string& strategy) const;
+
+  /**
+   * @return `true` if the parsed strategy matches the argument.
+   * @param strategy one of "greedy_naive", "greedy_regular", "hotspot"
+   */
+  bool compareMPILoadBalancingStrategy(const std::string& strategy) const;
+
+  bool getScaleBoundingBox() const;
+
   int getMPIBufferSize() const;
+
   int getMPITimeOut() const;
 
   double getSimulationEndTime() const;
 
   /**
-   * \return if the simulation end time can be
+   * @return if the simulation end time can be
    * found in the parsed specification file.
    */
   bool  foundSimulationEndTime() const;
 
   /**
-   * \return the number of time steps the
+   * @return the number of time steps the
    * simulation shall be run (0 is a valid value)
    */
   int  getSimulationTimeSteps() const;
 
   /**
-   * \return Indicates if the user has chosen the fused ADER-DG time stepping
+   * @return Indicates if the user has chosen the fused ADER-DG time stepping
    * variant.
    *
    * If the parser returns _noTokenFound, we may not issue an error as this is
@@ -188,19 +287,19 @@ class exahype::parser::Parser {
   bool getFuseAlgorithmicSteps() const;
 
   /**
-   * \return Time step size underestimation factor for the fused ADER-DG time
+   * @return Time step size underestimation factor for the fused ADER-DG time
    * stepping variant.
    */
   double getFuseAlgorithmicStepsFactor() const;
 
   /**
-   * \return if the predictor should be spawned as background
+   * @return if the predictor should be spawned as background
    * thread whenever this is possible.
    */
   bool getSpawnPredictionAsBackgroundThread() const;
 
   /**
-   * \return if the mesh refinement iterations should
+   * @return if the mesh refinement iterations should
    * use background-threads whenever this is possible.
    */
   bool getSpawnAMRBackgroundThreads() const;
@@ -228,72 +327,74 @@ class exahype::parser::Parser {
    * exchange of ExaHyPE metadata if and only if no dynamic limiting
    * and no dynamic AMR is used.
    *
-   * \note That this is upgraded to all time stepping communication
+   * @note That this is upgraded to all time stepping communication
    * if you turn getDisablePeanoNeighbourExchangeDuringTimeSteps()
    * returns true as well.
    */
   bool getDisableMetadataExchangeInBatchedTimeSteps() const;
 
   /**
-   * \return The type of a solver.
+   * @return The type of a solver.
    */
   exahype::solvers::Solver::Type getType(int solverNumber) const;
 
   /**
-   * \return The identifier of a solver.
+   * @return The identifier of a solver.
    */
   std::string getIdentifier(int solverNumber) const;
 
   /**
-   * \return The number of state vaParserriables of a solver.
+   * @return The number of state variables of a solver.
    */
   int getVariables(int solverNumber) const;
 
   /**
-   * \return The number of parameters of a solver, e.g. material values etc.
+   *
+   *
+   * @return The number of parameters of a solver, e.g. material values etc.
    */
   int getParameters(int solverNumber) const;
 
   /**
-   * \return The order of the ansatz polynomials of a solver.
+   * @return The number of global observables, e.g. energies, coordinates, errors, ...
+   */
+  int getGlobalObservables(int solverNumber) const;
+
+  /**
+   * @return The order of the ansatz polynomials of a solver.
    */
   int getOrder(int solverNumber) const;
 
   /**
-   * \return The maximum extent in each coordinate direction a cell is allowed
+   * @return The maximum extent in each coordinate direction a cell is allowed
    * to have.
    */
   double getMaximumMeshSize(int solverNumber) const;
 
   /**
-   * \return The maximum adaptive mesh depth as specified
+   * @return The maximum adaptive mesh depth as specified
    * by the user.
    *
-   * \note If the user has not specified an adaptive
+   * @note If the user has not specified an adaptive
    * mesh depth, 0 is returned.
    */
   int getMaximumMeshDepth(int solverNumber) const;
 
   /**
-   * \return The number of halo cells that are refined around a
+   * @return The number of halo cells that are refined around a
    * a cell on the finest allowed mesh level which wants to be kept
    * or refined further.
    *
-   * \note If the user has not specified this optional value, 0 is returned.
+   * @note If the user has not specified this optional value, 0 is returned.
    */
   int getHaloCells(int solverNumber) const;
 
   /**
-   * \return The number of regularised fine grid levels.
+   * @return The number of regularised fine grid levels.
    *
-   * \note If the user has not specified this optional value, 0 is returned.
+   * @note If the user has not specified this optional value, 0 is returned.
    */
   int getRegularisedFineGridLevels(int solverNumber) const;
-
-  /**
-   * Prints a summary of the parameters read in for a solver.
-   */
-  void logSolverDetails(int solverNumber) const;
 
   /**
    * Checks for inconsistencies between the ExaHyPE specification file
@@ -306,7 +407,7 @@ class exahype::parser::Parser {
   void checkSolverConsistency(int solverNumber) const;
 
   /**
-   * \return The time stepping mode of a solver.
+   * @return The time stepping mode of a solver.
    */
   exahype::solvers::Solver::TimeStepping getTimeStepping(
       int solverNumber) const;
@@ -314,42 +415,42 @@ class exahype::parser::Parser {
   bool hasOptimisationSegment() const;
 
   /**
-   * \return The relaxation parameter used for the discrete maximum principle (DMP).
+   * @return The relaxation parameter used for the discrete maximum principle (DMP).
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   double getDMPRelaxationParameter(int solverNumber) const;
 
   /**
-   * \return The maximum-minimum difference scaling used for the discrete maximum principle (DMP).
+   * @return The maximum-minimum difference scaling used for the discrete maximum principle (DMP).
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   double getDMPDifferenceScaling(int solverNumber) const;
 
   /**
-   * \return The number of observables that should be considered
+   * @return The number of observables that should be considered
    * within the discrete maximum principle.
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   int getDMPObservables(int solverNumber) const;
 
   /**
-   * \return The minimum number of steps we keep a cell troubled after it has been
+   * @return The minimum number of steps we keep a cell troubled after it has been
    * considered as cured by the discrete maximum principle (DMP) and the
    * physical admissibility detection (PAD).
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   int getStepsTillCured(int solverNumber) const;
 
   /**
-   * \return the number of Limiter/FV helper layers
+   * @return the number of Limiter/FV helper layers
    * surrounding a troubled cell.
    *
    * The helper layers of the the ADER-DG solver have
@@ -357,7 +458,7 @@ class exahype::parser::Parser {
    * We thus have a total number of helper layers
    * which is twice the returned value.
    *
-   * \note This value can only be read in if the solver \p solverNumber is
+   * @note This value can only be read in if the solver \p solverNumber is
    * a limiting ADER-DG solver.
    */
   int getLimiterHelperLayers(int solverNumber) const;
@@ -374,7 +475,7 @@ class exahype::parser::Parser {
    *  select    = <selector>
    * end plot
    */
-  std::string getIdentifierForPlotter(int solverNumber,
+  std::string getTypeForPlotter(int solverNumber,
                                       int plotterNumber) const;
   std::string getNameForPlotter(int solverNumber,
                                 int plotterNumber) const;
@@ -383,13 +484,26 @@ class exahype::parser::Parser {
                                         int plotterNumber) const;
   double getRepeatTimeForPlotter(int solverNumber, int plotterNumber) const;
   std::string getFilenameForPlotter(int solverNumber, int plotterNumber) const;
-  std::string getSelectorForPlotter(int solverNumber, int plotterNumber) const;
+
+  /**
+   * @return A parser view for the parameters section.
+   * Invalid parser view if no parameters section is present.
+   *
+   * @param solverNumber  index of the solver in the spec file
+   * @param plotterNumber index of the plotter in the spec file
+   */
+  exahype::parser::ParserView getParametersForPlotter(int solverNumber, int plotterNumber) const;
 
   std::string getProfilerIdentifier() const;
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
 
+  /**
+   * @TODO This function should be renamed to createParserViewForSolver, as we also
+   * now also create ParserViews for plotters.
+   **/
   exahype::parser::ParserView createParserView(int solverNumber);
+  exahype::parser::ParserView createParserView(std::string basePath);
 
   /**
    * Returns an empty string if no log file is specified in the file.
@@ -402,7 +516,31 @@ class exahype::parser::Parser {
   double getNodePoolAnsweringTimeout() const;
 
   int getRanksPerNode();
+
+  /**
+   * \return Maximum number of running background job consumer tasks.
+   */
   int getNumberOfBackgroundTasks();
+
+  /**
+   * @return If multiple high priority background jobs should be consumed in a rush
+   * or if they should be processed one at a time.
+   */
+  bool getProcessHighPriorityBackgroundJobsInAnRush();
+  /**
+   * @return If the consumer tasks should process any low priority tasks
+   * if there are still high priority tasks left.
+   */
+  bool getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft();
+  /**
+   * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
+   */
+  int getMinBackgroundJobsInARush();
+  /**
+   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush
+   * (default: ~maximum integer number)
+   */
+  int getMaxBackgroundJobsInARush();
 
   bool useManualPinning();
 
@@ -412,19 +550,14 @@ class exahype::parser::Parser {
    **/
   std::string getSpecfileName() const;
 
-  /**
-   * Returns the token stream as string. This is helpful for debugging.
-   **/
-  std::string getTokenStreamAsString() const;
-
   enum class TBBInvadeStrategy {
-	Undef,
+    Undef,
     NoInvade,
-	OccupyAllCores,
-	NoInvadeButAnalyseDistribution,
-	InvadeBetweenTimeSteps,
-	InvadeThroughoutComputation,
-	InvadeAtTimeStepStartupPlusThroughoutComputation
+    OccupyAllCores,
+    NoInvadeButAnalyseDistribution,
+    InvadeBetweenTimeSteps,
+    InvadeThroughoutComputation,
+    InvadeAtTimeStepStartupPlusThroughoutComputation
   };
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;

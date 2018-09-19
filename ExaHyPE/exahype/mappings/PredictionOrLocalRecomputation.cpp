@@ -75,7 +75,7 @@ exahype::mappings::PredictionOrLocalRecomputation::enterCellSpecification(int le
       exahype::solvers::Solver::FuseADERDGPhases &&
       exahype::solvers::Solver::oneSolverRequestedMeshRefinement()
   ) {
-    return exahype::mappings::Prediction::determineEnterCellSpecification(level);
+    return exahype::mappings::Prediction::determineEnterLeaveCellSpecification(level);
   } else {
     return peano::MappingSpecification(
         peano::MappingSpecification::WholeTree,

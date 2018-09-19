@@ -37,6 +37,12 @@ namespace kernels {
    * This allows to access the specfile that was seen by the toolkit.
    **/
   const char* compiledSpecfile();
+
+  /**
+   * Allows users to implement a custom specification file parser. The
+   * output string must hold a valid JSON file.
+   **/
+  std::string readSpecificationFileToJSON(const std::string& filename);
 }
 
 #endif
