@@ -3081,7 +3081,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
       assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(FR[i]),pRight.toString(),faceIndexRight,normalDirection,i,FR[i]);
     }
     #endif
-    
+
+    /*
     // Compute distance between cell centers.
     const auto cellCenterL =  pLeft.getOffset() + 0.5*pLeft.getSize();
     const auto cellCenterR =  pRight.getOffset() + 0.5*pRight.getSize();
@@ -3091,13 +3092,15 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 #elif DIMENSIONS == 3
     assertion3(distance[normalDirection] > 0.0, cellCenterR, cellCenterL, distance);
 #endif
+     */
 
+     // TODO(Lukas): Choose size of correct element.
     riemannSolver( // TODO(Dominic): Merge Riemann solver directly with the face integral and push the result on update
                    // does not make sense to overwrite the flux when performing local time stepping; coarse grid flux must be constant, or not?
         FL,FR,QL,QR,
         std::min(pLeft.getCorrectorTimeStepSize(),
             pRight.getCorrectorTimeStepSize()),
-	distance,
+        pLeft.getSize(),
         normalDirection, false, -1);
     
     #if defined(Debug) || defined(Asserts)
@@ -4009,7 +4012,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         (faceIndex * dofPerFace); // TODO const-correct kernels
     riemannSolver(
         FL, FR, QL, QR,
-        cellDescription.getCorrectorTimeStepSize(), cellDescription.getSize(), ,direction,false,faceIndex);
+        cellDescription.getCorrectorTimeStepSize(), cellDescription.getSize(),direction,false,faceIndex);
     
     #if defined(Debug) || defined(Asserts)
     for (int ii = 0; ii<dataPerFace; ii++) {
