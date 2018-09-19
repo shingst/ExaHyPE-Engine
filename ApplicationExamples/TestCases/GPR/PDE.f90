@@ -366,12 +366,12 @@ RECURSIVE SUBROUTINE PDEMatrixB(An,Q,nv)
 END SUBROUTINE PDEMatrixB
 
 
-RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
-	USE TECPLOTPLOTTERmod
-	implicit none
-	INTEGER :: N_in,M_in
-	CALL SetMainParameters(N_in,M_in)
-END SUBROUTINE InitTECPLOT
+!RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in)
+!	USE TECPLOTPLOTTERmod
+!	implicit none
+!	INTEGER :: N_in,M_in
+!	CALL SetMainParameters(N_in,M_in)
+!END SUBROUTINE InitTECPLOT
 
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
