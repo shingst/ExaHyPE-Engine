@@ -1,5 +1,5 @@
 {
-  "project_name": "Euler",
+  "project_name": "NavierStokes",
   "paths": {
     "peano_kernel_path": "./Peano/",
     "exahype_path": "./ExaHyPE",
@@ -36,10 +36,10 @@
   "solvers": [
     {
       "type": "ADER-DG",
-      "name": "EulerSolver",
-      "order": 1,
+      "name": "NavierStokesSolverDG",
+      "order": 3,
       "maximum_mesh_size": 50.0,
-      "maximum_mesh_depth": 3,
+      "maximum_mesh_depth": 5,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -70,7 +70,7 @@
         }
       ],
       "parameters": {
-        "viscosity": 0.1,
+        "viscosity": 0.001,
         "scenario": "two-bubbles"
       },
       "plotters": [
