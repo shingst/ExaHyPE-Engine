@@ -527,6 +527,13 @@ class exahype::parser::Parser {
    * or if they should be processed one at a time.
    */
   bool getProcessHighPriorityBackgroundJobsInAnRush();
+
+  /**
+   * @return Return if every single high priority job should be spawned
+   * as a task.
+   */
+  bool getSpawnHighPriorityBackgroundJobsAsATask();
+
   /**
    * @return If the consumer tasks should process any low priority tasks
    * if there are still high priority tasks left.

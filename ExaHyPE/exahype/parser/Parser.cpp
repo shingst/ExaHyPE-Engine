@@ -1117,6 +1117,11 @@ bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
       compare("all_in_a_rush")==0;
 }
 
+bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+      compare("spawn_as_a_task")==0;
+}
+
 bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() {
   return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_always",isOptional).
       compare("run_if_no_high_priority_job_left")==0;
