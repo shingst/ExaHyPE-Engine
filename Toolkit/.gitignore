@@ -1,6 +1,7 @@
-/bin/
-/src/files.mk
+dependencies
 
-# foreign unpacked code
-/src/com
-/src/org
+attr
+jinja2
+jsonschema
+markupsafe
+pyrsistent

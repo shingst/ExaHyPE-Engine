@@ -19,7 +19,7 @@ import codecs
 import collections
 import statistics
 
-knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
+knownParameters  = ["architecture", "dimension"]
 
 metrics =  [
         ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident

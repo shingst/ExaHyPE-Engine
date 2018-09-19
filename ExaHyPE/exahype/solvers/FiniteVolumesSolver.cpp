@@ -535,10 +535,11 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           cellDescription.setSolutionCompressed(-1);
           cellDescription.setPreviousSolutionCompressed(-1);
 
+          const int dataPerSubcell = getNumberOfVariables()+getNumberOfParameters();
           cellDescription.setSolutionAverages(
-              DataHeap::getInstance().createData( getNumberOfVariables()+getNumberOfParameters(), getNumberOfVariables()+getNumberOfParameters() ) );
+              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
           cellDescription.setPreviousSolutionAverages(
-              DataHeap::getInstance().createData( getNumberOfVariables()+getNumberOfParameters(), getNumberOfVariables()+getNumberOfParameters() ) );
+              DataHeap::getInstance().createData( dataPerSubcell, dataPerSubcell ) );
           checkDataHeapIndex(cellDescription,cellDescription.getSolutionAverages(),"getSolutionAverages()");
           checkDataHeapIndex(cellDescription,cellDescription.getPreviousSolutionAverages(),"getPreviousSolutionAverages()");
 
@@ -555,9 +556,9 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
           checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolution(),"getExtrapolatedSolution()");
 
           cellDescription.setExtrapolatedSolutionCompressed(-1);
+
           cellDescription.setExtrapolatedSolutionAverages( DataHeap::getInstance().createData(
-            (getNumberOfVariables()+getNumberOfParameters()) * 2 * DIMENSIONS,
-            (getNumberOfVariables()+getNumberOfParameters()) * 2 * DIMENSIONS ) );
+              dataPerSubcell * 2 * DIMENSIONS, dataPerSubcell * 2 * DIMENSIONS ) );
           checkDataHeapIndex(cellDescription,cellDescription.getExtrapolatedSolutionAverages(),"getExtrapolatedSolutionAverages()");
         lock.free();
       }
@@ -915,8 +916,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
   synchroniseTimeStepping(cellDescription1);
   synchroniseTimeStepping(cellDescription2);
 
-  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription1);
-  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription2);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false);
 
   assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
 
@@ -957,7 +958,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 
   synchroniseTimeStepping(cellDescription);
 
-  waitUntilCompletedTimeStep<CellDescription,JobType::EnclaveJob>(cellDescription);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
 
   if (cellDescription.getType()==CellDescription::Cell) {
     uncompress(cellDescription);
@@ -1259,7 +1260,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
-  waitUntilCompletedTimeStep<CellDescription,JobType::SkeletonJob>(cellDescription);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
 
   const int numberOfFaceDof = getDataPerPatchFace();
   double* luhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).data()

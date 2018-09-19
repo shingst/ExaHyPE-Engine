@@ -8,21 +8,30 @@ This is the maing repository of the ExaHyPE project. It contains the following d
 * Demonstrators: Lightweight applications for demonstration purpose (maintained by Durham)
 * Miscellaneous: Various codes and tools
 * Peano: Mounting point for the Peano installation
+* Submodules: Installation directory for the git submodules (ExaHyPE's dependencies)
 * Toolkit: The ExaHyPE development toolkit
 * UserCodes: Prototypes of ExaHyPE written in Matlab and Fortran and contributed by Trento
 
 ## Mini installation guide ##
 
+### Dependencies ###
+
+Python3 (3.3 at least) is required for the Toolkit and the CodeGenerator (compile time).
+
+Other dependencies are open source and registered as git submodules, a working C++ compiler is required to build libxsmm. 
+A script is provided to fetch them, and if necessary build them.
+
+### Instalation and demo ###
+
 Copy and paste these commands to start with a working ExaHyPE application and compile the demo application _EulerFlow_:
 
     git clone git@gitlab.lrz.de:exahype/ExaHyPE-Engine.git
-    ./ExaHyPE-Engine/Peano/checkout-update-peano.sh
-    ./ExaHyPE-Engine/Toolkit/build.sh
+    ./ExaHyPE-Engine/Submodules/updateSubmodules.sh
 
 Now you are ready to follow compile and run an ExaHyPE application [according to the guidebook](http://www5.in.tum.de/exahype/guidebook.pdf):
 
     cd ExaHyPE-Engine/
-    java -jar Toolkit/dist/ExaHyPE.jar ApplicationExamples/EulerFlow.exahype
+    ./Toolkit/toolkit.sh ApplicationExamples/EulerFlow.exahype
     cd ApplicationExamples/EulerFlow/
     
     export COMPILER=gnu
@@ -36,31 +45,7 @@ Look into `RUN.sh` for an alternative, more elaborate way how to setp the instal
     exa=Miscellaneous/BuildScripts/exa.sh 
     $exa bootstrap
     $exa compile-run EulerFlow
-
-### CodeGenerator dependencies (optional) ###
-
-The optimised kernels are optional and can be replaced by the generic ones, thus the CodeGenerator's dependencies are also optional.
-
-Python 3 is required to run the CodeGenerator.
-
-Additionally the CodeGenerator requires:
-
-* libxsmm (https://github.com/hfp/libxsmm) to generate the advanced matrix multiplication code using libxsmm's generator
-* Jinja2 (https://github.com/pallets/jinja.git) a python3 template engine to generate the optimised kernel
-* MarkupSafe (https://github.com/pallets/markupsafe.git), a dependency from Jinja2.
-
-A script is provided to import all the dependencies locally.
-In contrast to the CodeGenerator, the build of libxsmm 
-requires Python 2. It fails with Python 3.
-So, make sure that "python" does refer
-to a Python 2 binary.
-
-Quick installation:
-
-    ./ExaHyPE-Engine/CodeGenerator/importDependenciesLocally.sh 
-
-If Jinja2 is provided by your python installation you can safelly edit the value of the import script configuration parameter ``JINJA2_ALREADY_AVAILABLE`` to remove its and MarkupSafe local imports.
-
+    
 
 ## General remarks ##
 

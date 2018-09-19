@@ -221,18 +221,15 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_LFLAGS += -xCORE-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS += -xMIC-AVX512 -fma
-		#FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
-		#TODO SVENK: make fortran code compatible with these flags
+		FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
 		COMPILER_LFLAGS += -xMIC-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
 		COMPILER_CFLAGS += -xAVX
-		#FCOMPILER_CFLAGS += -xAVX
-		#TODO SVENK: make fortran code compatible with these flags
+		FCOMPILER_CFLAGS += -xAVX
 		COMPILER_LFLAGS += -xAVX
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
 		COMPILER_CFLAGS += -xCORE-AVX2 -fma
-		#FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
-		#TODO SVENK: make fortran code compatible with these flags
+		FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
 		COMPILER_LFLAGS += -xCORE-AVX2 -fma
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])

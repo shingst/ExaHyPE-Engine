@@ -5,6 +5,13 @@
 #include <limits>
 #include <cmath>
 
+
+/**
+ * static constexpr need to declared again when following a
+ * C++ standard before C++17.
+ */
+constexpr int exahype::plotters::ascii::TimeSeriesReductions::LEN;
+
 exahype::plotters::ascii::TimeSeriesReductions::TimeSeriesReductions() {
   data[index::tidx] = -1.0; // to start with 0 at first startRow
   // to debug whether strange things happen

@@ -41,7 +41,7 @@ exahype-project EulerADERDG
 
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {hotspot,fair,ranks_per_node:6}
+    configure                = {hotspot,fair,ranks-per-node:6}
     buffer-size              = 64
     timeout                  = 160
   end distributed-memory

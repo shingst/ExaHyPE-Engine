@@ -100,7 +100,7 @@ private:
    * PredictionOrLocalRecomputation use the same
    * enter cell specification.
    */
-  static peano::MappingSpecification determineEnterCellSpecification(int level);
+  static peano::MappingSpecification determineEnterLeaveCellSpecification(int level);
 
   /**
    * This method first synchronises the time step sizes and time stamps, and

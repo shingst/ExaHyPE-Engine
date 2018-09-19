@@ -93,32 +93,19 @@ int aderPicardLoopNonlinear(SolverType& solver,
             std::memset(gradQ, 0, basisSize2 * DIMENSIONS * numberOfVariables * sizeof(double));
 
             for (int k = 0; k < basisSize; k++) { // k == y
-                const double weight = kernels::gaussLegendreWeights[order][i] *
-                    kernels::gaussLegendreWeights[order][k];
-                const double updateSize = weight * dt * invDx[0];
-
-
                 for (int l = 0; l < basisSize; l++) { // l == x
                     for (int m = 0; m < numberOfVariables; m++) {
                         for (int n = 0; n < basisSize; n++) { // n == matmul x
-                            gradQ[idx_gradQ(k, l, /*x*/0, m)] += 1.0 * invDx[0] *
-                                lQi[idx_lQi(k,n,i,m)] *
-                                kernels::dudx[order][l][n];
+                            gradQ[idx_gradQ(k, l, /*x*/0, m)] += kernels::dudx[order][l][n]  /* l,n: transpose */ * invDx[0] * lQi[idx_lQi(k,n,i,m)];
                         }
                     }
                 }
             }
             for(int k=0; k<basisSize; k++) {
-                const double weight = kernels::gaussLegendreWeights[order][i] *
-                    kernels::gaussLegendreWeights[order][k];
-                const double updateSize = weight * dt * invDx[1];
-
                 for (int l = 0; l < basisSize; l++) { // l == y
                     for (int m = 0; m < numberOfVariables; m++) {
                         for (int n = 0; n < basisSize; n++) { // n = matmul y
-                            gradQ[idx_gradQ(l, k, /*y*/1, m)] += 1.0 * invDx[1] *
-                                lQi[idx_lQi(n, k, i, m)] *
-                                kernels::dudx[order][l][n]; /* l,n: transpose */
+                            gradQ[idx_gradQ(l, k, /*y*/1, m)] += kernels::dudx[order][l][n] /* l,n: transpose */ * invDx[1] * lQi[idx_lQi(n, k, i, m)];
                         }
                     }
                 }

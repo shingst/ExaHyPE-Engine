@@ -844,7 +844,7 @@ class exahype::solvers::Solver {
    * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
    * and PredictorOrLocalRecomputation.
    */
-  static void configureEnclaveTasking(const bool useBackgroundJobs);
+  static void configurePredictionPhase(const bool useBackgroundJobs);
 
 
   static std::string toString(const JobType& jobType);
@@ -879,17 +879,18 @@ class exahype::solvers::Solver {
   *
   * <h2> MPI </h2>
   *
-  * Tries to receive dangling MPI messages while waiting.
+  * Tries to receive dangling MPI messages while waiting if this
+  * is specified by the user.
   */
- template <typename CellDescription,JobType jobType>
+ template <typename CellDescription>
  static void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription) {
+     const CellDescription& cellDescription,const bool receiveDanglingMessages) {
    while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
-     tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
-    //  if ( jobType != JobType::SkeletonJob ) {
-       peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
-    //  }
+     if ( receiveDanglingMessages ) {
+       tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+     }
+     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
    }
  }
 
