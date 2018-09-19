@@ -243,14 +243,14 @@
         },
        	"low_priority_background_job_processing" : {
           "type" : "string", 
-          "title" : "Low-priority background job processing strategy to use",
+          "title" : "How to process low priority background jobs",
           "enum" : [ "run_if_no_high_priority_job_left", "run_always" ],
           "default" : "run_always" 
         },
         "high_priority_background_job_processing" : {
           "type" : "string", 
-          "title" : "High-priority background job processing strategy to use",
-          "enum" : [ "all_in_a_rush", "one_at_a_time" ],
+          "title" : "How to process high-priority background jobs",
+          "enum" : [ "all_in_a_rush", "one_at_a_time", "spawn_as_a_task" ],
           "default" : "all_in_a_rush" 
         },
 		"min_background_jobs_in_one_rush" : {
