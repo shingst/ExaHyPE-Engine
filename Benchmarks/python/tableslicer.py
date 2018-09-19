@@ -38,6 +38,11 @@ def parseArgs():
         help="Specify a list of key-value pairs. Example: ./tableslicer.py --filter order=3 maximumMeshDepth=3 ...")
     parser.add_argument("-c", "--cols",   nargs="+",  default=["*"],
         help="Specifiy the list columns you want to read from the rows matching the filter. Example: ./tableslicer.py ... --cols cores realtime_min ")
+    
+    parser.add_argument('--header', dest='header', action='store_true',help="Write a header to the output file.")
+    parser.add_argument('--no-header', dest='header', action='store_false',help="Write no header to the output file.")
+    parser.set_defaults(header=True)
+    
     parser.add_argument('table',
         type=argparse.FileType('r'),
         help="The CSV table to work on")
@@ -91,7 +96,8 @@ if __name__ == "__main__":
        extractedColumnsToIndices = createFilterKeysToColumnIndexMapping(columnNames,columnNames)
 
     result = []
-    result.append(list(extractedColumnsToIndices.keys()))
+    if args.header:
+       result.append(list(extractedColumnsToIndices.keys()))
     for row in filteredRows:
         resultRow = []
         for index in extractedColumnsToIndices.values(): # is ordered
