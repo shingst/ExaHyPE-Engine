@@ -29,7 +29,10 @@ void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
 	double V[nVar];
 	
 	TOV::idvars id;
+
+  auto params = new TOV::Parameters();
 	tov->Interpolate(x, id);
+
 	
 	V[rho] = id.rho;
 	V[E] = id.press;
@@ -42,8 +45,11 @@ void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
 	V[lapse] = id.alp;
 	
 	// Floor atmosphere
-	if(V[rho] < Parameters::atmo_rho) V[rho] = Parameters::atmo_rho;
-	if(V[E] < Parameters::atmo_press) V[E] = Parameters::atmo_press;
+  
+	if(V[rho] < params->atmo_rho) V[rho] = params->atmo_rho;
+	if(V[E] < params->atmo_rho) V[E] = params->atmo_press;
+//	if(V[rho] < TOV::Parameters.atmo_rho) V[rho] = TOV::Parameters.atmo_rho;
+//	if(V[E] < TOV::Parameters.atmo_press) V[E] = TOV::Parameters.atmo_press;
 	
 	// Caveats with the ordering, here it is Tensish (C)
 	V[gij + 0] = id.gam[0][0];
