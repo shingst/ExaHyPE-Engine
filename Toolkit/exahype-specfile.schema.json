@@ -16,7 +16,7 @@
           "$comment" : "Named variables with lengths (like vectors)",
           "items" : {
             "type" : "object",
-            "required" : [ "name", "multiplicity" ],
+            "required" : [ "name" ],
     	    "additionalProperties" : false,
             "properties" : {
               "name" : {
@@ -230,7 +230,6 @@
           "title" : "Number of shared-memory cores per node", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
-          "default" : 1,
           "old_format" : { "token_after" : "cores" }
         },
         "background_job_consumers" : {
@@ -741,7 +740,6 @@
           "limiter" : {
             "title" : "Limiting-ADER-DG-specific settings",
             "type" : "object",
-            "required" : [ "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ],
             "additionalProperties" : "false",
             "properties" : {
               "implementation" : {
