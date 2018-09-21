@@ -20,8 +20,8 @@
   // x direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
@@ -29,8 +29,8 @@
   // y direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
@@ -39,8 +39,8 @@
   // z direction
   for (int j = 0; j < {{nDof}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
@@ -53,8 +53,8 @@
   // x direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
@@ -62,8 +62,8 @@
   // y direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
@@ -72,8 +72,8 @@
   // z direction
   for (int j = 0; j < {{nDof3D}}; j++) {
     for (int k = 0; k < {{nDof}}; k++) {
-{% with gemmKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }

@@ -79,15 +79,15 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
        
         # generates gemms
         if(self.context["useLibxsmm"]):
-            self.controller.generateGemms("asm_fstpvi.c", self.context["gemmList"].values())
+            self.controller.generateGemms("asm_fstpvi.c", self.context["matmulConfigs"].values())
     
     
     def buildGemmsConfig(self):
-        self.context["gemmList"] = {}
+        self.context["matmulConfigs"] = {}
         
         if(self.context["isLinear"]):
             if(self.context["useFlux"]):
-                self.context["gemmList"]["flux_x"] = MatmulConfig(    
+                self.context["matmulConfigs"]["flux_x"] = MatmulConfig(    
                                             # M
                                             self.context["nVarPad"],   \
                                             # N
@@ -114,7 +114,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                self.context["gemmList"]["flux_y"] = MatmulConfig(    
+                self.context["matmulConfigs"]["flux_y"] = MatmulConfig(    
                                             # M
                                             self.context["nVarPad"],    \
                                             # N
@@ -142,7 +142,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # type
                                             "gemm")
                 if(self.context["nDim"]>=3):
-                    self.context["gemmList"]["flux_z"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["flux_z"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVarPad"],    \
                                                 # N
@@ -170,7 +170,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # type
                                                 "gemm")
             if(self.context["useNCP"]):
-                self.context["gemmList"]["gradQ_x"] = MatmulConfig(    
+                self.context["matmulConfigs"]["gradQ_x"] = MatmulConfig(    
                                             # M
                                             self.context["nVar"],    \
                                             # N
@@ -197,7 +197,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                self.context["gemmList"]["gradQ_y"] = MatmulConfig(    
+                self.context["matmulConfigs"]["gradQ_y"] = MatmulConfig(    
                                             # M
                                             self.context["nVar"],    \
                                             # N
@@ -225,7 +225,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # type
                                             "gemm")
                 if(self.context["nDim"]>=3):
-                    self.context["gemmList"]["gradQ_z"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["gradQ_z"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -254,7 +254,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 "gemm")
         else: #NonLinear
             if(self.context["useFlux"]):
-                self.context["gemmList"]["rhs_x"] = MatmulConfig(    
+                self.context["matmulConfigs"]["rhs_x"] = MatmulConfig(    
                                             # M
                                             self.context["nVarPad"],    \
                                             # N
@@ -281,7 +281,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                self.context["gemmList"]["rhs_y"] = MatmulConfig(    
+                self.context["matmulConfigs"]["rhs_y"] = MatmulConfig(    
                                             # M
                                             self.context["nVarPad"],                             \
                                             # N
@@ -309,7 +309,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # type
                                             "gemm")
                 if(self.context["nDim"]>=3):
-                    self.context["gemmList"]["rhs_z"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["rhs_z"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVarPad"],                             \
                                                 # N
@@ -336,7 +336,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 "nopf",                                            \
                                                 # type
                                                 "gemm")
-                self.context["gemmList"]["lduh_x"] = MatmulConfig(  
+                self.context["matmulConfigs"]["lduh_x"] = MatmulConfig(  
                                             # M
                                             self.context["nVarPad"],       \
                                             # N
@@ -363,7 +363,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             "nopf",                       \
                                             # type
                                             "gemm")
-                self.context["gemmList"]["lduh_y"] = MatmulConfig(  
+                self.context["matmulConfigs"]["lduh_y"] = MatmulConfig(  
                                             # M
                                             self.context["nVarPad"],                         \
                                             # N
@@ -391,7 +391,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # type
                                             "gemm")
                 if(self.context["nDim"]>=3):
-                    self.context["gemmList"]["lduh_z"] = MatmulConfig(  
+                    self.context["matmulConfigs"]["lduh_z"] = MatmulConfig(  
                                                 # M
                                                 self.context["nVarPad"],                             \
                                                 # N
@@ -419,7 +419,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # type
                                                 "gemm")
                 if(self.context["useCERKGuess"]):
-                    self.context["gemmList"]["gradF_x_RKLoop"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["gradF_x_RKLoop"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -446,7 +446,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
-                    self.context["gemmList"]["gradF_y_RKLoop"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["gradF_y_RKLoop"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -474,7 +474,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # type
                                                 "gemm")
                     if(self.context["nDim"]>=3):
-                        self.context["gemmList"]["gradF_z_RKLoop"] = MatmulConfig(    
+                        self.context["matmulConfigs"]["gradF_z_RKLoop"] = MatmulConfig(    
                                                     # M
                                                     self.context["nVar"],    \
                                                     # N
@@ -502,7 +502,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                     # type
                                                     "gemm")
             if(self.context["useNCP"]):
-                self.context["gemmList"]["gradQ_x"] = MatmulConfig(    
+                self.context["matmulConfigs"]["gradQ_x"] = MatmulConfig(    
                                             # M
                                             self.context["nVar"],    \
                                             # N
@@ -529,7 +529,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             "nopf",                    \
                                             # type
                                             "gemm")
-                self.context["gemmList"]["gradQ_y"] = MatmulConfig(    
+                self.context["matmulConfigs"]["gradQ_y"] = MatmulConfig(    
                                             # M
                                             self.context["nVar"],    \
                                             # N
@@ -557,7 +557,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                             # type
                                             "gemm")
                 if(self.context["nDim"]>=3):
-                    self.context["gemmList"]["gradQ_z"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["gradQ_z"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -585,7 +585,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # type
                                                 "gemm")
                 if(self.context["useCERKGuess"]):
-                    self.context["gemmList"]["gradQ_x_RKLoop"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["gradQ_x_RKLoop"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -612,7 +612,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 "nopf",                    \
                                                 # type
                                                 "gemm")
-                    self.context["gemmList"]["gradQ_y_RKLoop"] = MatmulConfig(    
+                    self.context["matmulConfigs"]["gradQ_y_RKLoop"] = MatmulConfig(    
                                                 # M
                                                 self.context["nVar"],    \
                                                 # N
@@ -640,7 +640,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                 # type
                                                 "gemm")
                     if(self.context["nDim"]>=3):
-                        self.context["gemmList"]["gradQ_z_RKLoop"] = MatmulConfig(    
+                        self.context["matmulConfigs"]["gradQ_z_RKLoop"] = MatmulConfig(    
                                                     # M
                                                     self.context["nVar"],    \
                                                     # N
@@ -667,7 +667,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                                     "nopf",                    \
                                                     # type
                                                     "gemm")
-            self.context["gemmList"]["lqi"] = MatmulConfig(    
+            self.context["matmulConfigs"]["lqi"] = MatmulConfig(    
                                         # M
                                         self.context["nVar"],                             \
                                         # N
