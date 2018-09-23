@@ -33,6 +33,10 @@
 #include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/multicore/Jobs.h"
 
+#ifdef SharedTBB
+#include "tarch/multicore/tbb/Jobs.h"
+#endif
+
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/SendReceiveBufferPool.h"
@@ -271,7 +275,39 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     #endif
   }
 
+  // background jobs
   tarch::multicore::jobs::Job::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+
+  #if defined(SharedTBB)
+  tarch::multicore::jobs::setMinMaxNumberOfJobsToConsumeInOneRush(
+      _parser.getMinBackgroundJobsInARush(), _parser.getMaxBackgroundJobsInARush() );
+
+  if ( _parser.getProcessHighPriorityBackgroundJobsInAnRush() ) { // high priority behaviour
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARushAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    } else {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
+    }
+  } else if (_parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
+      logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
+                  "Fall back to 'run_always' low priority job processing strategy.");
+    }
+    tarch::multicore::jobs::setHighPriorityJobBehaviour(
+        tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
+  }
+  else {
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);
+    } else {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATime);
+    }
+  }
+  #endif
 
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::Dummy:
@@ -611,7 +647,7 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::FuseADERDGPhases         = _parser.getFuseAlgorithmicSteps();
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
-  exahype::solvers::Solver::configureEnclaveTasking(
+  exahype::solvers::Solver::configurePredictionPhase(
       _parser.getSpawnPredictionAsBackgroundThread());
 
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =

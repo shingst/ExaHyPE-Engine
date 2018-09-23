@@ -37,7 +37,7 @@ exahype-project EulerFV
    ===========================================
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {greedy-naive,FCFS}
+    configure                = {greedy-naive,FCFS,ranks-per-node:1}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory

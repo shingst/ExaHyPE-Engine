@@ -55,10 +55,10 @@ pipeline {
 	    //cleanWs()
 	//}
 	success {
-	    updateGitlabCommitStatus(name: 'master', state: 'success')
+	    updateGitlabCommitStatus(name: BRANCH_NAME, state: 'success')
 	}
 	failure {
-	    updateGitlabCommitStatus(name: 'master', state: 'failed')
+	    updateGitlabCommitStatus(name: BRANCH_NAME, state: 'failed')
 	}
     }
     options {

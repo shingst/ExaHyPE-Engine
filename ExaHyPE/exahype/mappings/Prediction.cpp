@@ -34,16 +34,10 @@
 #include "VT.h"
 #endif
 
-peano::MappingSpecification exahype::mappings::Prediction::determineEnterCellSpecification(int level) {
-  if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::Serial,false);
-  } else {
-    return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-  }
+peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCellSpecification(int level) {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
 }
 
 peano::CommunicationSpecification
@@ -66,7 +60,7 @@ exahype::mappings::Prediction::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::Prediction::enterCellSpecification(int level) const {
-  return determineEnterCellSpecification(level);
+  return determineEnterLeaveCellSpecification(level);
 }
 
 // The remaining specifications all are nop.

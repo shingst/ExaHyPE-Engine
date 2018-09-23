@@ -193,7 +193,7 @@ else
 		h)  echo "-h prints this message"
 			echo "-s set submodules url to ssh"
 			echo "-t use ssh tunnel (port: 12345) and git protocol (works on SuperMUC)"
-			echo "-v set submodules url to https"
+			echo "-w set submodules url to https"
 			echo "-p only update the Peano submodule"
 			echo "-o only update submodules other than Peano"
 			exit -1;;

@@ -16,7 +16,7 @@
           "$comment" : "Named variables with lengths (like vectors)",
           "items" : {
             "type" : "object",
-            "required" : [ "name", "multiplicity" ],
+            "required" : [ "name" ],
     	    "additionalProperties" : false,
             "properties" : {
               "name" : {
@@ -221,6 +221,7 @@
       "type" : "object", 
       "used-by" : "toolkit",
       "scope" : "run-time",
+      "required" : [ "cores" ],
       "additionalProperties" : false,
       "old_format_prepend" : { "within_section" : "shared-memory" },
       "properties" : {
@@ -229,7 +230,6 @@
           "title" : "Number of shared-memory cores per node", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
-          "default" : 1,
           "old_format" : { "token_after" : "cores" }
         },
         "background_job_consumers" : {
@@ -239,7 +239,33 @@
           "exclusiveMinimum" : false,
           "default" : 1,
           "old_format" : { "token_after" : "background-tasks" }
-        }, 
+        },
+       	"low_priority_background_job_processing" : {
+          "type" : "string", 
+          "title" : "How to process low priority background jobs",
+          "enum" : [ "run_if_no_high_priority_job_left", "run_always" ],
+          "default" : "run_always" 
+        },
+        "high_priority_background_job_processing" : {
+          "type" : "string", 
+          "title" : "How to process high-priority background jobs",
+          "enum" : [ "all_in_a_rush", "one_at_a_time", "spawn_as_a_task" ],
+          "default" : "all_in_a_rush" 
+        },
+		"min_background_jobs_in_one_rush" : {
+          "type" : "integer", 
+          "title" : "Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).", 
+          "minimum" : 1,
+          "exclusiveMinimum" : false,
+          "default" : 1
+        },
+        "max_background_jobs_in_one_rush" : {
+          "type" : "integer", 
+          "title" : "Maximum number of background jobs a consumer grabs from the queue in a single rush (default: maximum (signed) integer number)", 
+          "minimum" : 1,
+          "exclusiveMinimum" : false,
+          "default" : 2147483647
+        },
         "autotuning_strategy" : {
           "type" : "string", 
           "title" : "Autotuning algorithm to use", 
@@ -264,9 +290,6 @@
           "default" : false,
           "old_format" : { "set_if_token_exists" : "manual-pinning" }
         }
-      },
-      "dependencies" : {
-        "background_job_consumer_threads" : ["cores"]
       }
     }, 
     "distributed_memory" : {
@@ -717,7 +740,6 @@
           "limiter" : {
             "title" : "Limiting-ADER-DG-specific settings",
             "type" : "object",
-            "required" : [ "dmp_observables", "dmp_difference_scaling", "dmp_relaxation_parameter" ],
             "additionalProperties" : "false",
             "properties" : {
               "implementation" : {

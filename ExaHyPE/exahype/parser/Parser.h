@@ -516,7 +516,38 @@ class exahype::parser::Parser {
   double getNodePoolAnsweringTimeout() const;
 
   int getRanksPerNode();
+
+  /**
+   * \return Maximum number of running background job consumer tasks.
+   */
   int getNumberOfBackgroundTasks();
+
+  /**
+   * @return If multiple high priority background jobs should be consumed in a rush
+   * or if they should be processed one at a time.
+   */
+  bool getProcessHighPriorityBackgroundJobsInAnRush();
+
+  /**
+   * @return Return if every single high priority job should be spawned
+   * as a task.
+   */
+  bool getSpawnHighPriorityBackgroundJobsAsATask();
+
+  /**
+   * @return If the consumer tasks should process any low priority tasks
+   * if there are still high priority tasks left.
+   */
+  bool getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft();
+  /**
+   * @return Minimum number of background jobs a consumer grabs from the queue in a single rush (default: 1).
+   */
+  int getMinBackgroundJobsInARush();
+  /**
+   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush
+   * (default: ~maximum integer number)
+   */
+  int getMaxBackgroundJobsInARush();
 
   bool useManualPinning();
 

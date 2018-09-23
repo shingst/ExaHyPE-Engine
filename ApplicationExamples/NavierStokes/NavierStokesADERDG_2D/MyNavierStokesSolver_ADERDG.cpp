@@ -103,7 +103,7 @@ void NavierStokesADERDG::MyNavierStokesSolver_ADERDG::viscousEigenvalues(const d
     lambda[0] = 0.0;
     lambda[1] = 0.0;
     lambda[2] = (4.0/3.0)*mu*irho;
-    lambda[3] = mu/irho;
+    lambda[3] = mu*irho;
     lambda[4] = mu*GAMMA/Pr*irho;
 }
 

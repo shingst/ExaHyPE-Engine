@@ -55,7 +55,6 @@ void GRMHD::GRMHDSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 	logError("boundaryValues", "Some Boundary faces are missing in Specfile. Need: left,right,top,bottom,front,back. Got:" << tbc);
 	std::abort();
   }
-  icsetup_();
 }
 
 void __attribute__((optimize("O0"))) initialData(const double* const x,const double t,const double dt,double* Q) {

@@ -408,7 +408,7 @@ tarch::la::Vector<DIMENSIONS,double> exahype::parser::Parser::getDimVectorFromPa
   try {
     json::json_pointer p(path);
     result(0) = _impl->data.at(p).at(0);
-    if(_impl->data.at(p).size() != DIMENSIONS) {
+    if(_impl->data.at(p).size() < DIMENSIONS) {
       logError("getDimVectorFromPath()", path << " holds a vector of size " << _impl->data.at(p).size() << ", however we have " << DIMENSIONS << " spatial dimensions");
     }
     result(1) = _impl->data.at(p).at(1);
@@ -1112,6 +1112,28 @@ int exahype::parser::Parser::getNumberOfBackgroundTasks() {
   return result;
 }
 
+bool exahype::parser::Parser::getProcessHighPriorityBackgroundJobsInAnRush() {
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+      compare("all_in_a_rush")==0;
+}
+
+bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","all_in_a_rush",isOptional).
+      compare("spawn_as_a_task")==0;
+}
+
+bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() {
+  return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_always",isOptional).
+      compare("run_if_no_high_priority_job_left")==0;
+}
+
+int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
+  return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",std::numeric_limits<int>::max(),isOptional);
+}
+
+int exahype::parser::Parser::getMinBackgroundJobsInARush() {
+  return getIntFromPath("/shared_memory/min_background_jobs_in_one_rush",1,isOptional);
+}
 
 bool exahype::parser::Parser::useManualPinning() {
   return getBoolFromPath("/shared_memory/manual_pinning",false,isOptional);

@@ -35,27 +35,26 @@ exahype-project EulerADERDG
    ===========================================
    Comment this stuff in to get an MPI version
    ===========================================
-
   distributed-memory
     identifier               = static_load_balancing
-    configure                = {greedy-naive,FCFS}
+    configure                = {greedy-naive,FCFS,ranks-per-node:1}
     buffer-size              = 64
     timeout                  = 60
   end distributed-memory
-*/
+  */
 
   /*
    ====================================================
    Comment this stuff in to get a shared memory version
    ====================================================
- 
   shared-memory
     identifier               = dummy
     configure                = {}
     cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
- */ 
+  */ 
+  
   solver Limiting-ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5

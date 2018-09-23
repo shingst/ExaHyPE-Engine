@@ -1,44 +1,53 @@
 {#
-  String gemmKey
-  String A
-  String B
-  String C
-  String A_shift
-  String B_shift
-  String C_shift
+      C       = alpha  *   A   *    B   + beta  *  C
+   (M x N)              (M x K)  (K x N)
+  The gemm config (fetched through matmulKey) contains M, N, K, LDA, LDB, LDC, alpha and beta
+  See matmulConfig
+
+  String matmulKey : name of the associated config
+  String A         : name of A
+  String B         : name of B
+  String C         : name of C
+  String A_shift   : shift to the zero of A
+  String B_shift   : shift to the zero of A
+  String C_shift   : shift to the zero of A
   
   optional
-  bool overrideUseLibxsmm : force locally useLibxsmm to take its value if set
-  String trueB            : true array B
+  bool overrideUseLibxsmm : force locally useLibxsmm to take this value if set
+  String trueB            : true array B, B must b a true matrix, not a tensor slice
   String trueAlpha        : true value of the coefficent alpha (note: it will be multiplicated by the configuration alpha, /!\ sign error)
   bool forceCoeffMatrix   : only when using trueB, trueAlpha, force the no libxsmm case to also generate the coeff matrix
   
-  If trueB is used, a temporary array trueAlpha*trueB 
+  If trueB is used, a temporary array trueAlpha*trueB is generated
 #}
 {% with %}
 {# /**************************************
    **** Set up helper template values ****
    **************************************/ #}
-{% set conf = gemmList[gemmKey] %}
+{% set conf = matmulConfigs[matmulKey] %}
 {% if overrideUseLibxsmm is not defined %}
-{% set overrideUseLibxsmm = useLibxsmm %}{# if no override then take the current value #}
+  {% set overrideUseLibxsmm = useLibxsmm %}{# if no override then take the current value #}
 {% endif %}
 {% if trueB is not defined %}
-{% set trueB = B %}
-{% set useTrueB = False %}
-{% set trueAlpha_string = '' %}
+  {% set trueB = B %}
+  {% set useTrueB = False %}
 {% else %}
-{% set useTrueB = True %}
-{% set trueAlpha_string = trueAlpha~' * ' %}
+  {% set useTrueB = True %}
 {% endif %}
 {% if forceCoeffMatrix is not defined %}
-{% set forceCoeffMatrix = False %}
+  {% set forceCoeffMatrix = False %}
 {% endif %}
 {# /********************
    **** Subtemplate ****
    *********************/ #}
+{# 
+
+// LIBXSMM case
+//-------------
+
+#}
 {% if overrideUseLibxsmm %}
-{% if useTrueB %}
+{% if useTrueB %}{# will set B[it] to be trueAlpha*trueB[it] #}
 double {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
 #pragma simd
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
@@ -47,19 +56,24 @@ for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
 #if defined(USE_IPO) && !defined(UNSAFE_IPO)
 volatile double doNotOptimizeAway_{{B}} = {{B}}[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
 #endif
-{% endif %}
+{% endif %}{# useTrueB #}
 #ifdef USE_IPO
-  #pragma forceinline
+#pragma forceinline
 #endif
-{{conf.baseroutinename}}({{A}}+{{A_shift}}, {{B}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}, {{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %});
+{{conf.baseroutinename}}({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}, {{B}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}, {{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %});
 {% else %}{# overrideUseLibxsmm #}
+{# 
+
+// No LIBXSMM case
+//----------------
+
+#}
 {% if forceCoeffMatrix %}
 double {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
 #pragma simd
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
   {{B}}[it] = {{trueAlpha}} * {{trueB}}[it];
 }
-{% set trueAlpha_string = '' %}{# force the rest of the generated code to use the generated matrix #}
 {% set trueB = B %}
 {% endif %}
 {% if conf.beta == 0 %}
@@ -75,7 +89,7 @@ for (int it_1 = 0; it_1 < {{conf.K}}; it_1++) {
   for (int it_2 = 0; it_2 < {{conf.N}}; it_2++) {
     #pragma simd
     for (int it_3 = 0; it_3 < {{conf.M}}; it_3++) {
-      {{C}}[{{C_shift}}+it_1*{{conf.LDC}}+it_3] {{ '+' if conf.alpha == 1 else '-' }}= {{A}}[{{A_shift}}+it_2*{{conf.LDA}}+it_3] * {{trueAlpha_string}}{{trueB}}[{% if B_shift != '0' %}{{B_shift}}+{% endif %}it_1*{{conf.LDB}}+it_2];
+      {{C}}[{{C_shift}}+it_1*{{conf.LDC}}+it_3] {{ '+' if conf.alpha == 1 else '-' }}= {{A}}[{{A_shift}}+it_2*{{conf.LDA}}+it_3] * {% if ((trueAlpha is defined) and not forceCoeffMatrix) %}{{trueAlpha}}* {% endif %}{{trueB}}[{% if B_shift != '0' %}{{B_shift}}+{% endif %}it_1*{{conf.LDB}}+it_2];
     }
   }
 }

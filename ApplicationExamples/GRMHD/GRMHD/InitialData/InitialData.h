@@ -24,28 +24,27 @@ bool prepare_id(std::string idname);
 // C ID:
 #include "InitialData/PizzaTOV.h"
 #include "InitialData/RNSID.h"
+#include "InitialData/TovSolverAdapter.h"
 
 // FORTRAN ID:
 extern "C" {
 
-// FORTRAN function for IC setup
-void icsetup_()
 
-// FORTRAN functions called by C
-void initialdata_(const double* x, const double* const t, double* Q);
+  // FORTRAN functions called by C
+  void initialdata_(const double* x, const double* const t, double* Q);
 
-// only initialdata_ is used, no more.
+  // only initialdata_ is used, no more.
 
-void initialalfenwave_(const double* x,const double* const t,  double* Q);
-void initialblast_(const double* x, const double* const t, double* Q);
-void initialorsagtang_(const double* x,const double* const t,  double* Q);
-void initialrotor_(const double* x, const double* const t, double* Q);
+  void initialalfenwave_(const double* x,const double* const t,  double* Q);
+  void initialblast_(const double* x, const double* const t, double* Q);
+  void initialorsagtang_(const double* x,const double* const t,  double* Q);
+  void initialrotor_(const double* x, const double* const t, double* Q);
 
-// Exact solutions in FORTRAN
-//void alfenwave_(const double* x, double* Q, const double* /* scalar */ t);
+  // Exact solutions in FORTRAN
+  //void alfenwave_(const double* x, double* Q, const double* /* scalar */ t);
 
-void initialaccretiondisc_(const double* x, const double* const t,  double* Q);
-void initialaccretiondisc3d_(const double* x, const double* const t, double* Q);
+  void initialaccretiondisc_(const double* x, const double* const t,  double* Q);
+  void initialaccretiondisc3d_(const double* x, const double* const t, double* Q);
 
 }/* extern "C" */
 
