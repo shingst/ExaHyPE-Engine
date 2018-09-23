@@ -9,7 +9,7 @@
 #include <kernels/GaussLegendreQuadrature.h>
 #include "NavierStokesSolverDG.h"
 #include "NavierStokesSolverDG_Variables.h"
-//#include "NavierStokes.h"
+#include "PDE.h"
 
 NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolverDG& solver) {
   // @TODO Please insert your code here.
@@ -42,11 +42,19 @@ void NavierStokes::Plotter::mapQuantities(
     outputQuantities[i] = Q[i];
   }
 
-  /*
   // TODO(Lukas): Make sure we use the correct constants
   // As we only consider air, this should be a given!
-  const auto ns = NavierStokes::NavierStokes();
-  AbstractEulerSolver::Variables vars(Q);
+  Variables vars(Q);
+  const double gamma = 1.4;
+  const double Pr = 0.71;
+  const double gasConstant = 287.058;
+  const double c_p = 1.005 * 1000;
+  const double c_v = 1 / (gamma - 1) * gasConstant;
+  const double referencePressure = 10000;
+  const auto referenceViscosity = 0.001;
+
+  auto ns = PDE(referenceViscosity, referencePressure, gamma,
+          Pr, c_v, c_p, gasConstant);
 
   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
   const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
@@ -55,7 +63,7 @@ void NavierStokes::Plotter::mapQuantities(
 
   // Write potential temperature
   outputQuantities[DIMENSIONS + 2] = potT;
-*/
+  /*
   const auto& weights = kernels::gaussLegendreWeights[order];
 
   double weight = 1.0;
@@ -63,4 +71,5 @@ void NavierStokes::Plotter::mapQuantities(
     weight *= weights[pos[i]];
   }
   outputQuantities[DIMENSIONS + 2] = weight;
+   */
 }

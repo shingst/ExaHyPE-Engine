@@ -228,7 +228,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   const auto tt = t * (I * vars.E() + I * p + stressTensor);
   f.E(tt(0,0) - kappa * gradT[0], tt(0,1) - kappa * gradT[1]);
 
-
+/*
   for (int i = 0; i < vars.variables(); ++i) {
     const auto cond = std::isfinite(Q[i]);
     if (!cond) {
@@ -240,5 +240,6 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
     }
     assert(cond);
   }
+  */
 }
 

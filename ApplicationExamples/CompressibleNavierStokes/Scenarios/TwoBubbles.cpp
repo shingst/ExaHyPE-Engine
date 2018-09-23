@@ -68,9 +68,10 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
 
   const double g = 9.81;  // [m/s^2]
   // For pressure computation assume that temperature is constant everywhere.
-  const double pressure =
-      backgroundPressure *
-      std::exp(-(g * posZ) / (ns.gasConstant * backgroundT));
+  //const double pressure =
+  //    backgroundPressure *
+  //    std::exp(-(g * posZ) / (ns.gasConstant * backgroundT));
+  const double pressure = std::pow(-0.000451886593143019*posZ + 13.8949549437314, 3.5);
 
   // Conversion factor potential temperature -> temperature
   const double poTToT =
