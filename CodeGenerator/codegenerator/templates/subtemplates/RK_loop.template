@@ -18,12 +18,10 @@
 {% endwith %}
 
   // x direction
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-{% with matmulKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(z*'~nDof~'+y)*'~nVarPad*nDof, B_shift='0', C_shift='(z*'~nDof~'+y)*'~nVarPad*nDof %}
+  for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
+{% with matmulKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='yz*'~nVarPad*nDof, B_shift='0', C_shift='yz*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
-    }
   }
   
   // y direction
@@ -37,12 +35,10 @@
   
 {% if nDim==3 %}
   // z direction
-  for (int y = 0; y < {{nDof}}; y++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-{% with matmulKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(y*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(y*'~nDof~'+x)*'~nVarPad %}
+  for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
+{% with matmulKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='xy*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='xy*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
-    }
   }
 {% endif %}{# nDim == 3 #}
 {% endif %}{# useFlux #}
@@ -52,12 +48,10 @@
   std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0
   
   // x direction
-  for (int z = 0; z < {{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-{% with matmulKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(z*'~nDof~'+y)*'~nData*nDof, B_shift='0', C_shift='(z*'~nDof~'+y)*'~nVarPad*nDof %}
+  for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
+{% with matmulKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='yz*'~nData*nDof, B_shift='0', C_shift='yz*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
-    }
   }
   
   // y direction
@@ -71,12 +65,10 @@
   
 {% if nDim == 3 %}
   // z direction
-  for (int y = 0; y < {{nDof3D}}; y++) {
-    for (int x = 0; x < {{nDof}}; x++) {
-{% with matmulKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(y*'~nDof~'+x)*'~nData, B_shift='0', C_shift='(y*'~nDof~'+x)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+  for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
+{% with matmulKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='xy*'~nData, B_shift='0', C_shift='xy*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
-    }
   }
 {% endif %}
 
