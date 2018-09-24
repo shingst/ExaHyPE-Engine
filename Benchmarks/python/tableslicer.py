@@ -44,8 +44,14 @@ def parseArgs():
     parser.set_defaults(header=True)
     
     parser.add_argument('table',
-        type=argparse.FileType('r'),
-        help="The CSV table to work on")
+        type=argparse.FileType('r'),nargs="?",
+        help="The CSV table to work with.",
+        default=sys.stdin)
+    
+    parser.add_argument('--output',
+        type=argparse.FileType('w'),
+        help="The output file.",
+        default=sys.stdout)
     
     return parser.parse_args()
 
@@ -105,5 +111,5 @@ if __name__ == "__main__":
             resultRow.append(row[index])
         result.append(resultRow)
     
-    csvwriter = csv.writer(sys.stdout)
+    csvwriter = csv.writer(args.output)
     csvwriter.writerows(result)
