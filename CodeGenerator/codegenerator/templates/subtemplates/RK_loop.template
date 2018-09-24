@@ -10,26 +10,26 @@
 
   // Flux component
 
-{# ******************************************************
+{# /******************************************************
    **** call to flux function over {{inputLuh}} into lF_guess ****
-   ****************************************************** #}
-{% with inputQ=inputLuh, inputQ_dataSize=nData, outputF='lF_guess',  timeInterleaved=False, time_var='0' %}
+   ******************************************************/ #}
+{% with inputQ=inputLuh, inputQ_dataSize=nData, outputF='lF_guess', timeInterleaved=False, time_var='0' %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 
   // x direction
-  for (int j = 0; j < {{nDof3D}}; j++) {
-    for (int k = 0; k < {{nDof}}; k++) {
-{% with matmulKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+{% with matmulKey='gradF_x_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(z*'~nDof~'+y)*'~nVarPad*nDof, B_shift='0', C_shift='(z*'~nDof~'+y)*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
   
   // y direction
-  for (int j = 0; j < {{nDof3D}}; j++) {
-    for (int k = 0; k < {{nDof}}; k++) {
-{% with matmulKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad %}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+{% with matmulKey='gradF_y_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~(nDof**nDim)*nVarPad, B_shift='0', C_shift='(z*'~nDof*nDof~'+x)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
@@ -37,9 +37,9 @@
   
 {% if nDim==3 %}
   // z direction
-  for (int j = 0; j < {{nDof}}; j++) {
-    for (int k = 0; k < {{nDof}}; k++) {
-{% with matmulKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad %}
+  for (int y = 0; y < {{nDof}}; y++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+{% with matmulKey='gradF_z_RKLoop', A='lF_guess', B='dudxT_by_dx', C=outputKi, A_shift='(y*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nVarPad, B_shift='0', C_shift='(y*'~nDof~'+x)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
@@ -49,20 +49,21 @@
 {% if useNCP %}
   
   //NCP component
+  std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0
   
   // x direction
-  for (int j = 0; j < {{nDof3D}}; j++) {
-    for (int k = 0; k < {{nDof}}; k++) {
-{% with matmulKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData*nDof, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+{% with matmulKey='gradQ_x_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(z*'~nDof~'+y)*'~nData*nDof, B_shift='0', C_shift='(z*'~nDof~'+y)*'~nVarPad*nDof %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
   }
   
   // y direction
-  for (int j = 0; j < {{nDof3D}}; j++) {
-    for (int k = 0; k < {{nDof}}; k++) {
-{% with matmulKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof*nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+{% with matmulKey='gradQ_y_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(z*'~nDof*nDof~'+x)*'~nData, B_shift='0', C_shift='(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
@@ -70,9 +71,9 @@
   
 {% if nDim == 3 %}
   // z direction
-  for (int j = 0; j < {{nDof3D}}; j++) {
-    for (int k = 0; k < {{nDof}}; k++) {
-{% with matmulKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(j*'~nDof~'+k)*'~nData, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+  for (int y = 0; y < {{nDof3D}}; y++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+{% with matmulKey='gradQ_z_RKLoop', A=inputLuh, B='dudxT_by_dx', C='gradQ', A_shift='(y*'~nDof~'+x)*'~nData, B_shift='0', C_shift='(y*'~nDof~'+x)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
     }
@@ -81,9 +82,9 @@
 
 
   {
-{# ***********************************************************
+{# /***********************************************************
    **** call to Source and NCP (or FusedSource) functions ****
-   *********************************************************** #}
+   ***********************************************************/ #}
 {% with time_var='0', inputQ=inputLuh, output=outputKi, writeSource=False, multiplyByWeights=False, substractToOutput=True, inputQ_dataSize=inputLuh_dataSize, timeInterleaved=False %}
 {% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}

@@ -139,9 +139,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% with inputLuh='luh', outputKi='K1', inputLuh_dataSize=nData %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
 {% endwith %}
-{% if useNCP %}
-    std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0 for next loop
-{% endif %}
     
     // K2
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
@@ -154,7 +151,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
 {% endif %}
     }
-
 {% with inputLuh='lwh', outputKi='K2', inputLuh_dataSize=nData %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
 {% endwith %}
