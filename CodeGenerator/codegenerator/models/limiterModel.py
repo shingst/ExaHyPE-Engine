@@ -38,17 +38,17 @@ class LimiterModel(AbstractModelBaseClass):
         self.render("limiter_cpp.template", "limiter.cpp")
         # generates gemms
         if(self.context["useLibxsmm"]):
-            self.controller.generateGemms("asm_limiter.c", self.context["gemmList"].values())
+            self.controller.generateGemms("asm_limiter.c", self.context["matmulConfigs"].values())
     
     
     def buildGemmsConfig(self):
         # define a sequence of matmul configs
-        self.context["gemmList"] = {}
+        self.context["matmulConfigs"] = {}
 
         #-----------------------------
         # implementation file
         #-----------------------------        
-        self.context["gemmList"]["dg2fv"] = MatmulConfig(  
+        self.context["matmulConfigs"]["dg2fv"] = MatmulConfig(  
                                     # M
                                     self.context["nVar"],      \
                                     # N
@@ -75,7 +75,7 @@ class LimiterModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        self.context["gemmList"]["fv2dg"] = MatmulConfig(  
+        self.context["matmulConfigs"]["fv2dg"] = MatmulConfig(  
                                     # M
                                     self.context["nVar"],      \
                                     # N
@@ -102,7 +102,7 @@ class LimiterModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        self.context["gemmList"]["uh2lob"] = MatmulConfig(  
+        self.context["matmulConfigs"]["uh2lob"] = MatmulConfig(  
                                     # M
                                     self.context["nVar"],      \
                                     # N

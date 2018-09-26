@@ -139,9 +139,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% with inputLuh='luh', outputKi='K1', inputLuh_dataSize=nData %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
 {% endwith %}
-{% if useNCP %}
-    std::memset(gradQ, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double)); //reset gradQ to 0 for next loop
-{% endif %}
     
     // K2
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
@@ -154,7 +151,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
 {% endif %}
     }
-
 {% with inputLuh='lwh', outputKi='K2', inputLuh_dataSize=nData %}
 {% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
 {% endwith %}
@@ -213,13 +209,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% with gemmKey='rhs_x', A='lFi', B='coeffRhsX', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
-{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='rhs_x', A='lFi', B='coeffRhsX', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof~'+k)*'~nVarPad*nDof, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}{# useFlux #}
 {% if useNCP %}
-{% with gemmKey='gradQ_x', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
-{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradQ_x', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof*nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad*nDof %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
           ijk_++;
@@ -232,13 +228,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% with gemmKey='rhs_y', A='lFi', B='coeffRhsY', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
-{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='rhs_y', A='lFi', B='coeffRhsY', C='rhs', A_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof3D~'+j)*'~nDof*nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}{# useFlux #}
 {% if useNCP %}
-{% with gemmKey='gradQ_y', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
-{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradQ_y', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof*nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof*nDof~'+k)*'~nVarPad~'+'~nVarPad*(nDof**nDim) %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
           ijk_++;
@@ -252,13 +248,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         for (int k = 0; k < {{nDof}}; k++) {
 {% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
-{% with gemmKey='rhs_z', A='lFi', B='coeffRhsZ', C='rhs', A_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
-{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='rhs_z', A='lFi', B='coeffRhsZ', C='rhs', A_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, B_shift='0', C_shift='((i*'~nDof*nDof~'+j)*'~nDof~'+k)*'~nVarPad, B_shift='0', trueB='Kxi', trueAlpha='-updateSize' %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}{# useFlux #}
 {% if useNCP %}
-{% with gemmKey='gradQ_z', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
-{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='gradQ_z', A='lQi', B='dudxT_by_dx', C='gradQ', A_shift='((j*'~nDof~'+k)*'~nDof~'+i)*'~nDataPad, B_shift='0', C_shift='(j*'~nDof~'+k)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim) %}
+{% filter indent(width=10, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
           ijk_++;
@@ -282,8 +278,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     double sq_res = 0.0;
     for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
       const double iweight = 1.0 / weights3[ijk];     
-{% with gemmKey='lqi', A='rhs', B='s_m_QSlice', C='new_lQi_slice', A_shift=nVarPad~'*ijk', B_shift='0', C_shift='0', trueB='iK1_T', trueAlpha='iweight' %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='lqi', A='rhs', B='s_m_QSlice', C='new_lQi_slice', A_shift=nVarPad~'*ijk', B_shift='0', C_shift='0', trueB='iK1_T', trueAlpha='iweight' %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
       for(int l = 0; l < {{nDof}}; l++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
@@ -523,20 +519,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     for (int i=0; i<{{nDof}}; i++) {
       
       //x, also define coefficient matrix coeffVolume
-{% with gemmKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx[0]', forceCoeffMatrix=True %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx[0]', forceCoeffMatrix=True %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 
       //y, reuse coeffVolume
-{% with gemmKey='lduh_y', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~(nDof*nDof)~'+i)*'~nVarPad %}
+{% with matmulKey='lduh_y', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~(nDof*nDof)~'+i)*'~nVarPad %}
 {% filter indent(width=6, indentfirst=True) %}
-{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% if nDim == 3 %}
 
       //z, reuse coeffVolume
-{% with gemmKey='lduh_z', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~nVarPad %}
-{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/gemm.template' %}{% endfilter %}
+{% with matmulKey='lduh_z', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~nVarPad %}
+{% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 {% endif %}
 

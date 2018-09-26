@@ -1,4 +1,36 @@
 #!/usr/bin/env python3
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+def removeInvariantColumns(table,header):
+    '''
+    Remove all columns containing the same value in every row
+    of the given table.
+    '''  
+    invariantColumns        = collections.OrderedDict()
+    invariantColumnsIndices = []
+
+    for col in range(0,len(header)):
+        current = column(table,col) 
+        if all(item.strip()==current[0].strip() for item in current):
+            invariantColumnsIndices.append(col)
+            invariantColumns[header[col]]=current[0]
+    
+    filteredTable  = []
+    for row in table:
+        filteredRow = []
+        for col in range(0,len(header)):
+            if col not in invariantColumnsIndices:
+               filteredRow.append(row[col])
+        filteredTable.append(filteredRow)
+
+    filteredHeader = []
+    for col in range(0,len(header)):
+        if col not in invariantColumnsIndices:
+            filteredHeader.append(header[col])
+   
+    return filteredTable,filteredHeader,invariantColumns
+
 def createFilterKeysToColumnIndexMapping(filterSet,columnNames):
     """
     Returns the parameter to index mappings for the keys of the given 
@@ -43,11 +75,25 @@ def parseArgs():
     parser.add_argument('--no-header', dest='header', action='store_false',help="Write no header to the output file.")
     parser.set_defaults(header=True)
     
+    parser.add_argument('--compress', dest='compress', action='store_true',help="Remove columns where the same value is found in every row.")
+    parser.add_argument('--no-compress', dest='compress', action='store_false',help="Do not remove columns where the same value is found in every row.")
+    parser.set_defaults(compress=False)
+    
+    parser.add_argument("-s", "--sort", nargs="+", default=[],
+        help="Specify a list of sorting key columns. Order is important. Example: ./tableslicer.py ... ... --cols fused cores --sort cores fused ")
+    
     parser.add_argument('table',
-        type=argparse.FileType('r'),
-        help="The CSV table to work on")
+        type=argparse.FileType('r'),nargs="?",
+        help="The CSV table to work with.",
+        default=sys.stdin)
+    
+    parser.add_argument('--output',
+        type=argparse.FileType('w'),
+        help="The output file.",
+        default=sys.stdout)
     
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     import sys,os
@@ -59,7 +105,6 @@ if __name__ == "__main__":
     import math
         
     args = parseArgs()
-
   
     # read table
     columnNames = next(args.table)
@@ -95,15 +140,41 @@ if __name__ == "__main__":
        extractedColumnsToIndices = createFilterKeysToColumnIndexMapping(args.cols,columnNames)
     else:
        extractedColumnsToIndices = createFilterKeysToColumnIndexMapping(columnNames,columnNames)
+    header = list(extractedColumnsToIndices.keys())
 
     result = []
-    if args.header:
-       result.append(list(extractedColumnsToIndices.keys()))
     for row in filteredRows:
         resultRow = []
         for index in extractedColumnsToIndices.values(): # is ordered
             resultRow.append(row[index])
         result.append(resultRow)
+  
+    # sort
+    if len(args.sort):
+        keyIndices = []
+        for item in args.sort:
+            if item not in header:
+                print("ERROR: sorting key '{}' must be a column of the table: Available columns: {}'".format(item), ", ".join(header))
+                sys.exit()
+            else:
+                keyIndices.append(header.index(item))
+
+        def getColumnsSortingKey(row):
+            keyTuple = ()
+            for index in keyIndices:
+              try:
+                  keyTuple += (float(row[index]),)
+              except ValueError:
+                  keyTuple += (row[index],)
+            return keyTuple
     
-    csvwriter = csv.writer(sys.stdout)
+        result = sorted(result,key=getColumnsSortingKey)
+ 
+    # compress
+    if args.compress:
+        result,header,invariantColumns = removeInvariantColumns(result,header)
+
+    csvwriter = csv.writer(args.output)
+    if args.header:
+        csvwriter.writerow(header)
     csvwriter.writerows(result)
