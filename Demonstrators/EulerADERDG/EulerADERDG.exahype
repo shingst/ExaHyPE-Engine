@@ -71,9 +71,7 @@ exahype-project EulerADERDG
 
 
 
-  */ 
   
->>>>>>> 3de08e2cf1a54e93fe9571d2dcd14230c545cbd6
   solver Limiting-ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
