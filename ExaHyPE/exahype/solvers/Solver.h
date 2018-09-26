@@ -1586,7 +1586,7 @@ class exahype::solvers::Solver {
     */
   virtual void prolongateFaceData(
       const int cellDescriptionsIndex,
-      const int element
+      const int element,
       const bool isAtRemoteBoundary) = 0;
 
   /**

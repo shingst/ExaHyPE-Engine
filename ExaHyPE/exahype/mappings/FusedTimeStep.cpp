@@ -300,7 +300,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
          solver->prolongateFaceData(
              fineGridCell.getCellDescriptionsIndex(),element,
              exahype::Cell::isAtRemoteBoundary(
-                 fineGridVertices,fineGridVerticesEnumerator); // this operates only on virtual helper cells (pull from below)
+                 fineGridVertices,fineGridVerticesEnumerator)); // this operates only on virtual helper cells (pull from below)
        }
      }
   }

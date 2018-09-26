@@ -867,8 +867,8 @@ void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
 
 void exahype::solvers::FiniteVolumesSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
-    const int element
-    const int isAtRemoteBoundary) {
+    const int element,
+    const bool isAtRemoteBoundary) {
   // do nothing
 }
 

@@ -2710,7 +2710,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
 
       waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
-      ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition);
+      ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition.subcellIndex);
       Solver::submitPredictionJob(prolongationJob,false);
     }
   }
@@ -4331,7 +4331,7 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _parentCellDescription(parentCellDescription),
-  _subcellIndex(subcellIndex.data()) {
+  _subcellIndex(subcellIndex) {
   tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
   {
     NumberOfEnclaveJobs++; // TODO(Dominic): Not sure yet which queue is optimal

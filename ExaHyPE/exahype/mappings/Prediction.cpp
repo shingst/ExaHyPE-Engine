@@ -184,7 +184,7 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
           solver->prolongateFaceData(
               fineGridCell.getCellDescriptionsIndex(),element,
               exahype::Cell::isAtRemoteBoundary(
-                  fineGridVertices,fineGridVerticesEnumerator);
+                  fineGridVertices,fineGridVerticesEnumerator));
         }
       }
       grainSize.parallelSectionHasTerminated();
