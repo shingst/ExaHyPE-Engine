@@ -181,7 +181,10 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
         }
         else { // we are sure here that the skeleton STPs have finished
           // this operates only on helper cells
-          solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element);
+          solver->prolongateFaceData(
+              fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::Cell::isAtRemoteBoundary(
+                  fineGridVertices,fineGridVerticesEnumerator);
         }
       }
       grainSize.parallelSectionHasTerminated();
