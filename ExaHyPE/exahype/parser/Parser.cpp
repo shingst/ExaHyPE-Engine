@@ -660,6 +660,10 @@ bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
 }
 
+bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
+  return getBoolFromPath("/optimisation/spawn_prolongation_as_background_thread", false, isOptional);
+}
+
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
   return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
 }

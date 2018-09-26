@@ -400,6 +400,11 @@
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },
+        "spawn_prolongation_as_background_thread" : {
+          "type" : "boolean", 
+          "title" : "Wether to spawn the face data prolongation as a background thread, or so.",
+          "default" : false
+        },
         "spawn_amr_background_threads" : {
           "type" : "boolean", 
           "title" : "Wether to spawn the predictor as a background thread, or so.",

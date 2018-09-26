@@ -2585,14 +2585,8 @@ void exahype::solvers::ADERDGSolver::swapSolutionAndPreviousSolution(CellDescrip
 
 void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
     CellDescription& cellDescription,
-    SubcellPosition& subcellPosition) {
-  assertion2(Heap::getInstance().isValidIndex(
-      subcellPosition.parentCellDescriptionsIndex),
-      subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
-
-  CellDescription& parentCellDescription = getCellDescription(
-      subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-
+    const CellDescription& parentCellDescription,
+    const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
   assertion(parentCellDescription.getSolverNumber() == cellDescription.getSolverNumber());
   assertion(parentCellDescription.getType() == CellDescription::Type::Cell ||
             parentCellDescription.getType() == CellDescription::Type::Descendant);
@@ -2605,20 +2599,18 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
   DataHeap::HeapEntries& update = DataHeap::getInstance().getData(cellDescription.getUpdate());
   std::fill(update.begin(),update.end(),0.0);
 
-  waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
-
   for (int d = 0; d < DIMENSIONS; ++d) {
     // Check if cell is at "left" or "right" d face of parent
-    if (subcellPosition.subcellIndex[d]==0 ||
-        subcellPosition.subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1) {
-      const int faceIndex = 2*d + ((subcellPosition.subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
+    if (subcellIndex[d]==0 ||
+        subcellIndex[d]==tarch::la::aPowI(levelDelta,3)-1) {
+      const int faceIndex = 2*d + ((subcellIndex[d]==0) ? 0 : 1); // Do not remove brackets.
 
       const int numberOfFaceDof = getBndFaceSize();
       const int numberOfFluxDof = getBndFluxSize();
-      
+
       logDebug("prolongateFaceDataToDescendant(...)","cell=" << cellDescription.getOffset()+0.5*cellDescription.getSize() <<
                ",level=" << cellDescription.getLevel() << ",d=" << d <<
-               ",face=" << faceIndex << ",subcellIndex" << subcellPosition.subcellIndex.toString() << " to " <<
+               ",face=" << faceIndex << ",subcellIndex" << subcellIndex.toString() << " to " <<
                " cell="<<parentCellDescription.getOffset()+0.5*parentCellDescription.getSize()<<
                " level="<<parentCellDescription.getLevel());
 
@@ -2638,7 +2630,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
 
       faceUnknownsProlongation(lQhbndFine,lFhbndFine,lQhbndCoarse,
                                lFhbndCoarse, levelCoarse, levelFine,
-                               exahype::amr::getSubfaceIndex(subcellPosition.subcellIndex,d));
+                               exahype::amr::getSubfaceIndex(subcellIndex,d));
 
       // time step data TODO(LTS), still need veto
       cellDescription.setPredictorTimeStamp(parentCellDescription.getPredictorTimeStamp());
@@ -2647,6 +2639,8 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
       prolongateObservablesMinAndMax(cellDescription,parentCellDescription,faceIndex);
     }
   }
+
+  cellDescription.setHasCompletedTimeStep(true);
 }
 
 void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
@@ -2673,7 +2667,8 @@ void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
 
 void exahype::solvers::ADERDGSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
-    const int element) {
+    const int element,
+    const bool isAtRemoteBoundary) {
   CellDescription& cellDescription =
       exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
@@ -2682,11 +2677,42 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
       cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
       isValidCellDescriptionIndex(cellDescription.getParentIndex()) // might be at master-worker boundary
   ) {
-    exahype::solvers::Solver::SubcellPosition subcellPosition =
-        exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,false>(
-            cellDescription);
+    if (
+        !SpawnProlongationAsBackgroundJob ||
+        isAtRemoteBoundary
+    ) {
+      exahype::solvers::Solver::SubcellPosition subcellPosition =
+          exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,false>( // look up next parent which might be a Cell or Descendant
+              cellDescription);
+      assertion2(Heap::getInstance().isValidIndex(
+            subcellPosition.parentCellDescriptionsIndex),
+            subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
 
-    prolongateFaceDataToDescendant(cellDescription,subcellPosition);
+      CellDescription& parentCellDescription = getCellDescription(
+          subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+      assertion1(parentCellDescription.getType()==CellDescription::Type::Cell ||
+                 parentCellDescription.getType()==CellDescription::Type::Descendant
+                 ,parentCellDescription.toString());
+
+      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+      prolongateFaceDataToDescendant(cellDescription,parentCellDescription,subcellPosition.subcellIndex);
+    } else {
+      exahype::solvers::Solver::SubcellPosition subcellPosition =
+          exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap,true>( // look up top-most parent which is a Cell
+              cellDescription);
+      assertion2(Heap::getInstance().isValidIndex(
+                  subcellPosition.parentCellDescriptionsIndex),
+                  subcellPosition.parentCellDescriptionsIndex,cellDescription.toString());
+
+      CellDescription& parentCellDescription = getCellDescription(
+          subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+      assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,parentCellDescription.toString());
+
+      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+      cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
+      ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition.subcellIndex);
+      Solver::submitPredictionJob(prolongationJob,false);
+    }
   }
   assertion2(
       cellDescription.getType()!=CellDescription::Type::Descendant ||
@@ -4297,6 +4323,34 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out <<  ")";
 }
 
+exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
+  ADERDGSolver&     solver,
+  CellDescription& cellDescription,
+  const CellDescription& parentCellDescription,
+  const tarch::la::Vector<DIMENSIONS,int>& subcellIndex):
+  _solver(solver),
+  _cellDescription(cellDescription),
+  _parentCellDescription(parentCellDescription),
+  _subcellIndex(subcellIndex) {
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfEnclaveJobs++; // TODO(Dominic): Not sure yet which queue is optimal
+  }
+  lock.free();
+}
+
+bool exahype::solvers::ADERDGSolver::ProlongationJob::operator()() {
+  _solver.prolongateFaceDataToDescendant(
+      _cellDescription,_parentCellDescription,_subcellIndex);
+
+  tarch::multicore::Lock lock(exahype::BackgroundJobSemaphore);
+  {
+    NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
+  }
+  lock.free();
+  return false;
+}
 
 exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
   ADERDGSolver&     solver,

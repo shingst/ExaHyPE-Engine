@@ -299,6 +299,12 @@ class exahype::parser::Parser {
   bool getSpawnPredictionAsBackgroundThread() const;
 
   /**
+   * @return if the prolongation should be spawned as background
+   * thread whenever this is possible.
+   */
+  bool getSpawnProlongationAsBackgroundThread() const;
+
+  /**
    * @return if the mesh refinement iterations should
    * use background-threads whenever this is possible.
    */
