@@ -47,17 +47,14 @@ exahype-project EulerADERDG
    ====================================================
    Comment this stuff in to get a shared memory version
    ====================================================
-<<<<<<< HEAD
  */ 
-=======
->>>>>>> 3de08e2cf1a54e93fe9571d2dcd14230c545cbd6
   shared-memory
     identifier               = dummy
     configure                = {}
     cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
-<<<<<<< HEAD
+
 
   global-optimisation
     fuse-algorithmic-steps          = on
@@ -74,7 +71,6 @@ exahype-project EulerADERDG
 
 
 
-=======
   */ 
   
 >>>>>>> 3de08e2cf1a54e93fe9571d2dcd14230c545cbd6
