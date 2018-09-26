@@ -33,6 +33,11 @@ double stableDiffusiveTimeStepSize(
   constexpr int basisSize          = order+1;
   constexpr double cflFactor       = SolverType::CFL;
 
+  // Obtained from von Neumann analysis.
+  // PNPM[N] <= 1/(2N+1)
+  constexpr double PNPM[10]  = {1.0,   0.33,  0.17, 0.1,  0.069,
+                                0.045, 0.038, 0.03, 0.02, 0.015};
+
   auto dt = std::numeric_limits<double>::max();
 #if DIMENSIONS == 2
 	kernels::idx3 idx_luh(basisSize, basisSize, numberOfData);
@@ -80,8 +85,9 @@ double stableDiffusiveTimeStepSize(
 #endif
     } // j
    } // i
-   dt = cflFactor * (minDx/(DIMENSIONS*(2 * order + 1))) *
-		   1./(maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * (2 * (2 * order + 1))/minDx);
+  dt = (cflFactor * minDx * PNPM[order])/DIMENSIONS * 1./ (
+  		maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * (2/(PNPM[order] * minDx))
+  		);
     
   return dt;
 }
