@@ -290,7 +290,15 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
     }
-  } else {
+  } else if (_parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
+    if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
+      logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
+                  "Fall back to 'run_always' low priority job processing strategy.");
+    }
+    tarch::multicore::jobs::setHighPriorityJobBehaviour(
+        tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
+  }
+  else {
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessOneHighPriorityTasksAtATimeAndRunBackgroundTasksOnlyIfNoHighPriorityTasksAreLeft);

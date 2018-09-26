@@ -36,17 +36,17 @@ class AMRRoutinesModel(AbstractModelBaseClass):
         self.render("amrRoutines_cpp.template", "amrRoutines.cpp")
         # generates gemms
         if(self.context["useLibxsmm"]):
-            self.controller.generateGemms("asm_amrRoutines.c", self.context["gemmList"].values())
+            self.controller.generateGemms("asm_amrRoutines.c", self.context["matmulConfigs"].values())
     
     
     def buildGemmsConfig(self):
         # define a sequence of matmul configs
-        self.context["gemmList"] = {}
+        self.context["matmulConfigs"] = {}
 
         #-----------------------------
         # implementation file
         #-----------------------------
-        self.context["gemmList"]["face_Q"] = MatmulConfig(  
+        self.context["matmulConfigs"]["face_Q"] = MatmulConfig(  
                                     # M
                                     self.context["nDataPad"],      \
                                     # N
@@ -73,7 +73,7 @@ class AMRRoutinesModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        self.context["gemmList"]["face_F"] = MatmulConfig(  
+        self.context["matmulConfigs"]["face_F"] = MatmulConfig(  
                                     # M
                                     self.context["nVarPad"],       \
                                     # N
@@ -100,7 +100,7 @@ class AMRRoutinesModel(AbstractModelBaseClass):
                                     "nopf",                       \
                                     # type
                                     "gemm")
-        self.context["gemmList"]["volume"] = MatmulConfig(  
+        self.context["matmulConfigs"]["volume"] = MatmulConfig(  
                                     # M
                                     self.context["nData"],       \
                                     # N

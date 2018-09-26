@@ -1178,91 +1178,91 @@ RECURSIVE SUBROUTINE InitialAccretionDisc3D(x,t,Q)
  
  
     
-SUBROUTINE PDESetup
-    USE Parameters 
-#ifdef TWOPUNCTURES 
-	USE TwoPunctures_mod, ONLY : TwoPunctures_Setup, TwoPunctures_Run, TwoPunctures_AmendParameters
-#endif         
-#ifdef RNSID
-    USE RNSID_mod, ONLY : RNSID_Setup, RNSID_Run, RNSID_AmendParameters 
-#endif          
-#ifdef RNSTOV
-    USE NSTOV_mod
-#endif  
-    IMPLICIT NONE
-#ifdef PARALLEL
-    INCLUDE 'mpif.h'
-#endif    
-    ! Local variables 
-    INTEGER          :: i, j, k, ii, jj, kk, l, c, iGP, iElem, iVar, VMAX(d), count, cnt, iErr, iDim, idxs(d), iper(d) 
-    INTEGER          :: Left, Right, cInnerFaces, cOuterFaces, itemp(N+1), CPUN(-1:1,-1:1,-1:1)    
-    REAL             :: phi(N+1), phi0(N+1), phi1(N+1), phi_xi(N+1), phi_xixi(N+1)
-    REAL             :: phi_i(N+1), phi_j(N+1), phi_k(N+1) 
-    REAL             :: ux(nVar,N+1,N+1,N+1), uy(nVar,N+1,N+1,N+1), uz(nVar,N+1,N+1,N+1) 
-    REAL             :: u0(nVar), v0(nVar), xGP(d), x0(d), subxi(N+1), aux(d), nv(d), par0(nParam)  
-    REAL             :: lparambnd(nParam,6,nDOF(2),nDOF(3))    
-    REAL             :: xi, dxi, xi1, xi2, rtemp(N+1), ImLambda(N+1)  
-    REAL             :: TestMatrix(N+1,N+1), TestMatrix2(nSubLim,nSubLim), test(nSubLim)
-    REAL             :: r1(9), wGPNMat(N+1,N+1) , igamma 
-    REAL, POINTER    :: LSQM(:,:), iLSQM(:,:), LSQrhs(:,:) 
-    LOGICAL          :: dmpresult 
-    REAL, PARAMETER  :: Pi = ACOS(-1.0) 
-    ! 
-    SELECT CASE(ICType)
-    CASE('CCZ4TwoPunctures','Z4TwoPunctures') 
-#ifdef TWOPUNCTURES  
-        CALL TwoPunctures_Setup()	
-	    ! After Setup, you can change the parameters of TwoPunctures, such as Black Hole
-	    ! mass, etc. They are stored as C++ class members, so there is no way of changing
-	    ! them from Fortran. However, you can do so if you call the following function
-	    ! and changes it's implementation
-	    !CALL TwoPunctures_AmendParameters()	
-	    PRINT *, ' Starting the TwoPunctures algorithm... '
-	    CALL TwoPunctures_Run() 
-	    PRINT *, ' Done. '
-#ifdef PARALLEL
-        CALL MPI_BARRIER(MPI_COMM_WORLD,mpiErr) 
-#endif
-#else
-        PRINT *, ' Twopunctures not available. Please compile with -DTWOPUNCTURES. ' 
-        STOP 
-#endif         
-    CASE('CCZ4RNSID','GRMHDRNSID') 
-#ifdef RNSID 
-        CALL RNSID_Setup()	 
-        CALL RNSID_AmendParameters()  
-        PRINT *, ' Starting the RNSID algorithm... '
-        CALL RNSID_Run() 
-	    PRINT *, ' Done. '        
-#ifdef PARALLEL
-        CALL MPI_BARRIER(MPI_COMM_WORLD,mpiErr) 
-#endif
-        ! 
-#else
-        !PRINT *, ' RNSID not available. Please compile with -DRNSID. ' 
-        STOP 
-#endif 
-    CASE('GRMHDTorus')
-#ifdef TORUS
-        CALL init_disk_isentropic_par(METRIC_KSS)
-#endif
-    ! 
-    CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
-#ifdef RNSTOV
-        !IF(myrank.eq.0) PRINT *, ' Starting the RNSTOV algorithm... '
-            CALL NSTOV_Main
-	    !IF(myrank.eq.0) PRINT *, ' Done. '  
-#ifdef PARALLEL 
-        CALL MPI_BARRIER(MPI_COMM_WORLD,mpiErr)  
-#endif     
-#else
-        PRINT *, ' RNSTOV not available. Please compile with -DRNSTOV. ' 
-        STOP 
-#endif
-    ! 
-    END SELECT 
-    ! 
-    !
-    continue
-    !
-END SUBROUTINE PDESetUp
+! SUBROUTINE PDESetup
+!     USE Parameters 
+! #ifdef TWOPUNCTURES 
+! 	USE TwoPunctures_mod, ONLY : TwoPunctures_Setup, TwoPunctures_Run, TwoPunctures_AmendParameters
+! #endif         
+! #ifdef RNSID
+!     USE RNSID_mod, ONLY : RNSID_Setup, RNSID_Run, RNSID_AmendParameters 
+! #endif          
+! #ifdef RNSTOV
+!     USE NSTOV_mod
+! #endif  
+!     IMPLICIT NONE
+! #ifdef PARALLEL
+!     INCLUDE 'mpif.h'
+! #endif    
+!     ! Local variables 
+!     INTEGER          :: i, j, k, ii, jj, kk, l, c, iGP, iElem, iVar, VMAX(d), count, cnt, iErr, iDim, idxs(d), iper(d) 
+!     INTEGER          :: Left, Right, cInnerFaces, cOuterFaces, itemp(N+1), CPUN(-1:1,-1:1,-1:1)    
+!     REAL             :: phi(N+1), phi0(N+1), phi1(N+1), phi_xi(N+1), phi_xixi(N+1)
+!     REAL             :: phi_i(N+1), phi_j(N+1), phi_k(N+1) 
+!     REAL             :: ux(nVar,N+1,N+1,N+1), uy(nVar,N+1,N+1,N+1), uz(nVar,N+1,N+1,N+1) 
+!     REAL             :: u0(nVar), v0(nVar), xGP(d), x0(d), subxi(N+1), aux(d), nv(d), par0(nParam)  
+!     REAL             :: lparambnd(nParam,6,nDOF(2),nDOF(3))    
+!     REAL             :: xi, dxi, xi1, xi2, rtemp(N+1), ImLambda(N+1)  
+!     REAL             :: TestMatrix(N+1,N+1), TestMatrix2(nSubLim,nSubLim), test(nSubLim)
+!     REAL             :: r1(9), wGPNMat(N+1,N+1) 
+!     REAL, POINTER    :: LSQM(:,:), iLSQM(:,:), LSQrhs(:,:) 
+!     LOGICAL          :: dmpresult 
+!     REAL, PARAMETER  :: Pi = ACOS(-1.0) 
+!     ! 
+!     SELECT CASE(ICType)
+!     CASE('CCZ4TwoPunctures','Z4TwoPunctures') 
+! #ifdef TWOPUNCTURES  
+!         CALL TwoPunctures_Setup()	
+! 	    ! After Setup, you can change the parameters of TwoPunctures, such as Black Hole
+! 	    ! mass, etc. They are stored as C++ class members, so there is no way of changing
+! 	    ! them from Fortran. However, you can do so if you call the following function
+! 	    ! and changes it's implementation
+! 	    !CALL TwoPunctures_AmendParameters()	
+! 	    PRINT *, ' Starting the TwoPunctures algorithm... '
+! 	    CALL TwoPunctures_Run() 
+! 	    PRINT *, ' Done. '
+! #ifdef PARALLEL
+!         CALL MPI_BARRIER(MPI_COMM_WORLD,mpiErr) 
+! #endif
+! #else
+!         PRINT *, ' Twopunctures not available. Please compile with -DTWOPUNCTURES. ' 
+!         STOP 
+! #endif         
+!     CASE('CCZ4RNSID','GRMHDRNSID') 
+! #ifdef RNSID 
+!         CALL RNSID_Setup()	 
+!         CALL RNSID_AmendParameters()  
+!         PRINT *, ' Starting the RNSID algorithm... '
+!         CALL RNSID_Run() 
+! 	    PRINT *, ' Done. '        
+! #ifdef PARALLEL
+!         CALL MPI_BARRIER(MPI_COMM_WORLD,mpiErr) 
+! #endif
+!         ! 
+! #else
+!         !PRINT *, ' RNSID not available. Please compile with -DRNSID. ' 
+!         STOP 
+! #endif 
+!     CASE('GRMHDTorus')
+! #ifdef TORUS
+!         CALL init_disk_isentropic_par(METRIC_KSS)
+! #endif
+!     ! 
+!     CASE('GRMHDTOV','CCZ4TOV','GRMHDTOV_perturbed') 
+! #ifdef RNSTOV
+!         !IF(myrank.eq.0) PRINT *, ' Starting the RNSTOV algorithm... '
+!             CALL NSTOV_Main
+! 	    !IF(myrank.eq.0) PRINT *, ' Done. '  
+! #ifdef PARALLEL 
+!         CALL MPI_BARRIER(MPI_COMM_WORLD,mpiErr)  
+! #endif     
+! #else
+!         PRINT *, ' RNSTOV not available. Please compile with -DRNSTOV. ' 
+!         STOP 
+! #endif
+!     ! 
+!     END SELECT 
+!     ! 
+!     !
+!     continue
+!     !
+! END SUBROUTINE PDESetUp

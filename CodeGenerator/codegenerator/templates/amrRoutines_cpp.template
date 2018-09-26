@@ -10,6 +10,9 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
+ 
+#include <algorithm> //copy_n
+
 #include "tarch/la/Scalar.h"
 #include "tarch/la/ScalarOperations.h"
 
@@ -474,8 +477,8 @@ void {{codeNamespace}}::faceFluxRestriction(
     const int levelDelta
 ) {
 
-  double lFhbndCoarseTemp1[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
-  double lFhbndCoarseTemp2[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
+  double lFhbndCoarseTemp1[{{nDof*nDof3D*nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+  double lFhbndCoarseTemp2[{{nDof*nDof3D*nVarPad}}] __attribute__((aligned(ALIGNMENT)));
   
 {% if nDim == 3 and useLibxsmm %}
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -611,11 +614,7 @@ void {{codeNamespace}}::faceFluxRestriction(
     }
   }
 
-  // Add restricted fine level unknowns to coarse level unknowns.
-  #pragma simd
-  for (int it = 0; it < {{nDof*nDof3D*nVarPad }}; it++) {
-    lFhbndCoarse[it] += pointerFhbnd2[it];
-  }
+  std::copy_n(pointerFhbnd2,{{nDof*nDof3D*nVarPad}},lFhbndCoarse);
 
 }
 

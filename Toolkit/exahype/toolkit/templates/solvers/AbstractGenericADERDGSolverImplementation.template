@@ -257,7 +257,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
   constexpr int basisSize     = (Order+1);
 {% endif %}
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
-  constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
+  constexpr int sizeFluxOut  = NumberOfVariables*basisSize;
   
   constexpr int totalSize = sizeStateOut + sizeFluxOut;
 {% if tempVarsOnStack %}
