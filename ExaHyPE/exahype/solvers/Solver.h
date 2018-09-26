@@ -432,6 +432,14 @@ class exahype::solvers::Solver {
   static bool SpawnPredictionAsBackgroundJob;
 
   /**
+   * Set to true if the prolongation
+   * should be launched as background job whenever possible.
+   *
+   * Requires that the prediction is launched as background job too.
+   */
+  static bool SpawnProlongationAsBackgroundJob;
+
+  /**
    * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
    * and FusedTimeStep iterations we need to run per time step.
    */
@@ -844,7 +852,7 @@ class exahype::solvers::Solver {
    * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
    * and PredictorOrLocalRecomputation.
    */
-  static void configurePredictionPhase(const bool useBackgroundJobs);
+  static void configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs);
 
 
   static std::string toString(const JobType& jobType);
@@ -1578,7 +1586,8 @@ class exahype::solvers::Solver {
     */
   virtual void prolongateFaceData(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element
+      const bool isAtRemoteBoundary) = 0;
 
   /**
    * Restrict data to a parent on

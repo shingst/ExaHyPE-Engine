@@ -867,13 +867,9 @@ void exahype::solvers::FiniteVolumesSolver::swapSolutionAndPreviousSolution(
 
 void exahype::solvers::FiniteVolumesSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
-    const int element) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-
-  if (cellDescription.getType()==CellDescription::Cell)
-    return;
-
-  assertionMsg(false,"Please implement!");
+    const int element
+    const int isAtRemoteBoundary) {
+  // do nothing
 }
 
 void exahype::solvers::FiniteVolumesSolver::restriction(

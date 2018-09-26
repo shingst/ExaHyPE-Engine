@@ -540,7 +540,8 @@ private:
    */
   void prolongateFaceDataToDescendant(
       CellDescription& cellDescription,
-      SubcellPosition& SubcellPosition);
+      const CellDescription& parentCellDescription,
+      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
   /**
    * Copies the parent cell descriptions observables'
@@ -779,6 +780,10 @@ private:
       bool operator()();
   };
 
+  /**
+   * A job which performs the prediction and volume integral operations
+   * for a cell description.
+   */
   class PredictionJob {
     private:
       ADERDGSolver&    _solver; // TODO not const because of kernels
@@ -797,6 +802,26 @@ private:
           const double      predictorTimeStepSize,
           const bool        uncompressBefore,
           const bool        isAtRemoteBoundary);
+
+      bool operator()();
+  };
+
+  /**
+   * A job which performs prolongation operation
+   * for a cell description.
+   */
+  class ProlongationJob {
+    private:
+      ADERDGSolver&                            _solver; // TODO not const because of kernels
+      CellDescription&                         _cellDescription;
+      const CellDescription&                   _parentCellDescription;
+      const tarch::la::Vector<DIMENSIONS,int>  _subcellIndex;
+    public:
+      ProlongationJob(
+          ADERDGSolver&                            solver,
+          CellDescription&                         cellDescription,
+          const CellDescription&                   parentCellDescription,
+          const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
       bool operator()();
   };
@@ -1898,8 +1923,9 @@ public:
 
   // TODO(LTS): Add docu
   void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element) override;
+      const int  cellDescriptionsIndex,
+      const int  element,
+      const bool isAtRemoteBoundary) override;
 
   /** \copydoc Solver::restrict
    *

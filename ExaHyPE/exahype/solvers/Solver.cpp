@@ -74,6 +74,8 @@ bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
 int exahype::solvers::Solver::PredictionSweeps                = 1;
 
+bool exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = false;
+
 bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
 double exahype::solvers::Solver::CompressionAccuracy = 0.0;
@@ -139,8 +141,9 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   }
 }
 
-void exahype::solvers::Solver::configurePredictionPhase(const bool useBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = useBackgroundJobs;
+void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps
   exahype::solvers::Solver::PredictionSweeps = PredictionSweeps;
@@ -150,7 +153,7 @@ void exahype::solvers::Solver::configurePredictionPhase(const bool useBackground
   #else
   exahype::solvers::Solver::PredictionSweeps = ( 
          !allSolversPerformOnlyUniformRefinement() || // prolongations are done in second sweep
-         useBackgroundJobs ) ? 
+         usePredictionBackgroundJobs ) ? 
          2 : 1;
   #endif
 }

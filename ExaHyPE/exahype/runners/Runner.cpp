@@ -648,7 +648,8 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
   exahype::solvers::Solver::configurePredictionPhase(
-      _parser.getSpawnPredictionAsBackgroundThread());
+      _parser.getSpawnPredictionAsBackgroundThread(),
+      _parser.getSpawnProlongationAsBackgroundThread());
 
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
       _parser.getSpawnAMRBackgroundThreads();

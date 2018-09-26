@@ -1214,7 +1214,8 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocallyFused(
 
 void exahype::solvers::LimitingADERDGSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
-    const int element) {
+    const int element,
+    const bool isAtRemoteBoundary) {
   _solver->prolongateFaceData(cellDescriptionsIndex,element);
 }
 
