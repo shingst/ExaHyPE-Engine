@@ -1056,10 +1056,6 @@ public:
       const int element,
       const bool isAtRemoteBoundary) final override;
 
-  void restriction(
-        const int cellDescriptionsIndex,
-        const int element) final override;
-
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////

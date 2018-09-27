@@ -2137,7 +2137,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const bool isLastIterationOfBatch,
     const bool isAtRemoteBoundary) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     const bool isAMRSkeletonCell     = ADERDGSolver::belongsToAMRSkeleton(cellDescription,isAtRemoteBoundary);
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
@@ -2159,7 +2159,17 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
-  } else {
+  } else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
+    restriction(cellDescription);
+
+    UpdateResult result;
+    result._meshUpdateEvent =
+        exahype::solvers::Solver::mergeMeshUpdateEvents(
+            result._meshUpdateEvent,
+            evaluateRefinementCriteriaAfterSolutionUpdate(
+               cellDescription,cellDescription.getNeighbourMergePerformed()));
+    return result;
+  } else { // Ancestor
     return UpdateResult();
   }
 }
@@ -2169,7 +2179,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
       const int element,
       const bool isAtRemoteBoundary){
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
-  if (cellDescription.getType()==CellDescription::Type::Cell) {
+  if ( cellDescription.getType()==CellDescription::Type::Cell ) {
     uncompress(cellDescription);
 
     UpdateResult result;
@@ -2180,6 +2190,17 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::update(
 
     compress(cellDescriptionsIndex,element,isAtRemoteBoundary);
  
+    return result;
+
+  } else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
+    restriction(cellDescription);
+
+    UpdateResult result;
+    result._meshUpdateEvent =
+        exahype::solvers::Solver::mergeMeshUpdateEvents(
+            result._meshUpdateEvent,
+            evaluateRefinementCriteriaAfterSolutionUpdate(
+                cellDescription,cellDescription.getNeighbourMergePerformed()));
     return result;
   } else {
     return UpdateResult();
@@ -2721,14 +2742,8 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
       tarch::parallel::Node::getInstance().getRank());
 }
 
-void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it still make sense?
-    const int fineGridCellDescriptionsIndex,
-    const int fineGridElement) {
-  CellDescription& cellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
-  if (
-      cellDescription.getType()==CellDescription::Type::Descendant &&
-      cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
-  ) {
+void exahype::solvers::ADERDGSolver::restriction(CellDescription& cellDescription) {
+  if ( cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication ) {
     assertion1( tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber()) != NotFound,
                 cellDescription.toString());
 
@@ -2741,10 +2756,9 @@ void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it stil
                             subcellPosition.parentCellDescriptionsIndex,
                             subcellPosition.parentElement);
   }
-  // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
 }
 
-void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be merged with faceIntegral
+void exahype::solvers::ADERDGSolver::restrictToTopMostParent(
                   const CellDescription& cellDescription,
                   const int parentCellDescriptionsIndex,
                   const int parentElement) {

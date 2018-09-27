@@ -552,7 +552,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
-  } else {
+  } else if ( solverPatch.getType()==SolverPatch::Type::Descendant ) {
+    _solver->restriction(solverPatch);
+
     UpdateResult result;
     result._meshUpdateEvent =
         exahype::solvers::Solver::mergeMeshUpdateEvents(
@@ -560,6 +562,8 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
             _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
                 solverPatch,solverPatch.getNeighbourMergePerformed()));
     return result;
+  } else {
+    return UpdateResult();
   }
 }
 
@@ -590,6 +594,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
     }
     break;
   case SolverPatch::Type::Descendant:
+    _solver->restriction(solverPatch);
     _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
     result._meshUpdateEvent =
         _solver->evaluateRefinementCriteriaAfterSolutionUpdate(solverPatch,solverPatch.getNeighbourMergePerformed());
@@ -1217,12 +1222,6 @@ void exahype::solvers::LimitingADERDGSolver::prolongateFaceData(
     const int element,
     const bool isAtRemoteBoundary) {
   _solver->prolongateFaceData(cellDescriptionsIndex,element,isAtRemoteBoundary);
-}
-
-void exahype::solvers::LimitingADERDGSolver::restriction(
-        const int cellDescriptionsIndex,
-        const int element) {
-  _solver->restriction(cellDescriptionsIndex,element);
 }
 
 

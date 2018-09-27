@@ -144,12 +144,21 @@ bool exahype::Vertex::hasToMergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   assertion(!isHangingNode());
 
+  // TODO The check below is a little too strict for the time stepping
+  // iterations, where the adjacency information is up-to-date,
+  // as it is also used for metadata spreading during the
+  // mesh setup iterations where adjacency information might be stale
+
   if ( cellDescriptionsIndex1!=cellDescriptionsIndex2 ) { // happened once
-    assertion1(cellDescriptionsIndex1!=cellDescriptionsIndex2,cellDescriptionsIndex1);
     assertion1(exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1),
         cellDescriptionsIndex1);
     assertion1(exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2),
         cellDescriptionsIndex2);
+
+    auto& cellDescriptionsADERDG1 = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
+    auto& cellDescriptionsADERDG2 = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
+    auto& cellDescriptionsFV1     = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
+    auto& cellDescriptionsFV2     = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
 
     const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
     const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
@@ -159,14 +168,12 @@ bool exahype::Vertex::hasToMergeNeighbours(
     const int faceIndex2 = 2*direction+orientation2;
 
     bool mergeNeighbours =
-        !exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty() ||
-        !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty() ||
-        !exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty() ||
-        !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty();
+        (!cellDescriptionsADERDG1.empty() && !cellDescriptionsADERDG2.empty()) ||
+        (!cellDescriptionsFV2.empty() && !cellDescriptionsFV2.empty());
 
     // cell 1
     tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch1;
-    for (auto& p1 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
+    for (auto& p1 : cellDescriptionsADERDG1) {
       baryCentreFromPatch1 =
           exahype::Cell::computeFaceBarycentre(p1.getOffset(),p1.getSize(),direction,orientation1);
       mergeNeighbours &= !p1.getNeighbourMergePerformed(faceIndex1);
@@ -174,7 +181,7 @@ bool exahype::Vertex::hasToMergeNeighbours(
       // now we can set the flag
       p1.setNeighbourMergePerformed(faceIndex1,true);
     }
-    for (auto& p1 : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
+    for (auto& p1 : cellDescriptionsFV1) {
       baryCentreFromPatch1 =
           exahype::Cell::computeFaceBarycentre(p1.getOffset(),p1.getSize(),direction,orientation1);
       mergeNeighbours &= !p1.getNeighbourMergePerformed(faceIndex1);
@@ -185,7 +192,7 @@ bool exahype::Vertex::hasToMergeNeighbours(
 
     // cell 2
     tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch2;
-    for (auto& p2 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
+    for (auto& p2 : cellDescriptionsADERDG2) {
       baryCentreFromPatch2 =
           exahype::Cell::computeFaceBarycentre(p2.getOffset(),p2.getSize(),direction,orientation2);
       mergeNeighbours &= !p2.getNeighbourMergePerformed(faceIndex2);
@@ -196,7 +203,7 @@ bool exahype::Vertex::hasToMergeNeighbours(
       // now we can set the flag
       p2.setNeighbourMergePerformed(faceIndex2,true);
     }
-    for (auto& p2 : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
+    for (auto& p2 : cellDescriptionsFV2) {
       baryCentreFromPatch2 =
           exahype::Cell::computeFaceBarycentre(p2.getOffset(),p2.getSize(),direction,orientation2);
       mergeNeighbours &= !p2.getNeighbourMergePerformed(faceIndex2);
@@ -233,12 +240,15 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
   const int faceIndex2 = 2*direction+orientation2;
 
   if ( cellDescriptionsIndex1 >= 0 ) {
+    auto& cellDescriptionsADERDG1 = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
+    auto& cellDescriptionsFV1     = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1);
+
     bool mergeWithBoundaryData =
-        !exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty() ||
-        !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty();
+        !cellDescriptionsADERDG1.empty() ||
+        !cellDescriptionsFV1.empty();
 
     tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch1;
-    for (auto& p1 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
+    for (auto& p1 : cellDescriptionsADERDG1) {
       mergeWithBoundaryData &=
           !p1.getNeighbourMergePerformed(faceIndex1);
       baryCentreFromPatch1 = exahype::Cell::computeFaceBarycentre(p1.getOffset(),p1.getSize(),direction,orientation1);
@@ -246,7 +256,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
       // now we can set the flag
       p1.setNeighbourMergePerformed(faceIndex1,true);
     }
-    for (auto& p1 : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
+    for (auto& p1 : cellDescriptionsFV1) {
       mergeWithBoundaryData &=
           !p1.getNeighbourMergePerformed(faceIndex1);
       baryCentreFromPatch1 = exahype::Cell::computeFaceBarycentre(p1.getOffset(),p1.getSize(),direction,orientation1);
@@ -260,12 +270,15 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
     mergeWithBoundaryData &= equalUpToRelativeTolerance(baryCentreFromPatch1,baryCentreFromVertex);
     return mergeWithBoundaryData;
   } else if ( cellDescriptionsIndex2 >= 0 ) {
+    auto& cellDescriptionsADERDG2 = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
+    auto& cellDescriptionsFV2     = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2);
+
     bool mergeWithBoundaryData =
-        !exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty() ||
-        !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty();
+        !cellDescriptionsADERDG2.empty() ||
+        !cellDescriptionsFV2.empty();
 
     tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch2;
-    for (auto& p2 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
+    for (auto& p2 : cellDescriptionsADERDG2) {
       mergeWithBoundaryData &=
           !p2.getNeighbourMergePerformed(faceIndex2);
       baryCentreFromPatch2 = exahype::Cell::computeFaceBarycentre(p2.getOffset(),p2.getSize(),direction,orientation2);
@@ -273,7 +286,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
       // now we can set the flag
       p2.setNeighbourMergePerformed(faceIndex2,true);
     }
-    for (auto& p2 : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
+    for (auto& p2 : cellDescriptionsFV2) {
       mergeWithBoundaryData &=
           !p2.getNeighbourMergePerformed(faceIndex2);
       baryCentreFromPatch2 = exahype::Cell::computeFaceBarycentre(p2.getOffset(),p2.getSize(),direction,orientation2);

@@ -524,6 +524,13 @@ private:
   static bool belongsToAMRSkeleton(const CellDescription& cellDescription, const bool isAtRemoteBoundary);
 
   /**
+   * Restrict certain flags to the next
+   * parent and restrict data to the
+   * top most parent.
+   */
+  void restriction(CellDescription& cellDescription);
+
+  /**
    * Restrict the obse
    */
   void restrictObservablesMinAndMax(
@@ -1926,16 +1933,6 @@ public:
       const int  cellDescriptionsIndex,
       const int  element,
       const bool isAtRemoteBoundary) override;
-
-  /** \copydoc Solver::restrict
-   *
-   * Restrict certain flags to the next
-   * parent and restrict data to the
-   * top most parent.
-   */
-  void restriction(
-      const int cellDescriptionsIndex,
-      const int element) override;
 
   /**
    * Restrict face data to the top most parent which has allocated face data arrays (Ancestor)

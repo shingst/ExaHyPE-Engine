@@ -244,7 +244,7 @@ private:
 
 
   /**
-   * Perform a restriction for solvers who requested it.
+   * Call the fusedTimeStep method of the solvers.
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

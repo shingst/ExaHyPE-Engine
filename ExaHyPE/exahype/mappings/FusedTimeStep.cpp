@@ -341,7 +341,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                _stateCopy.isLastIterationOfBatchOrNoBatch() : 
                _stateCopy.isSecondToLastIterationOfBatchOrNoBatch();
 
-        // TODO(LTS): Merge these two functions
         exahype::solvers::Solver::UpdateResult result =
             solver->fusedTimeStep(
                 fineGridCell.getCellDescriptionsIndex(),element,
@@ -350,7 +349,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _meshUpdateEvents  [solverNumber] = exahype::solvers::Solver::mergeMeshUpdateEvents( _meshUpdateEvents[solverNumber], result._meshUpdateEvent );
         _minTimeStepSizes[solverNumber]   = std::min( result._timeStepSize,                 _minTimeStepSizes[solverNumber]);

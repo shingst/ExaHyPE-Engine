@@ -396,14 +396,12 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
 
-        // TODO(Dominic): Merge the two functions if possible
         exahype::solvers::Solver::UpdateResult result =
             solver->update(
                 fineGridCell.getCellDescriptionsIndex(),element,
                 exahype::Cell::isAtRemoteBoundary(
                     fineGridVertices,fineGridVerticesEnumerator)
             );
-        solver->restriction(fineGridCell.getCellDescriptionsIndex(),element);
 
         _meshUpdateEvents[solverNumber] =
             exahype::solvers::Solver::mergeMeshUpdateEvents(

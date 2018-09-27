@@ -1589,22 +1589,6 @@ class exahype::solvers::Solver {
       const int element,
       const bool isAtRemoteBoundary) = 0;
 
-  /**
-   * Restrict data to a parent on
-   * a coarser level.
-   *
-   * \note Thread-safety must be ensured by the implementation itself.
-   *
-   * \note This function assumes a bottom-up traversal of the grid and must thus
-   * be called from the leaveCell(...) mapping method.
-   *
-   * \note Has no const modifier yet since kernels are not
-   * const yet.
-   */
-  virtual void restriction(
-      const int cellDescriptionsIndex,
-      const int element) = 0;
-
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
