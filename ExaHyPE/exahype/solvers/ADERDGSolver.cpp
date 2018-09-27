@@ -2715,7 +2715,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
                  parentCellDescription.getType()==CellDescription::Type::Descendant
                  ,parentCellDescription.toString());
 
-      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       prolongateFaceDataToDescendant(cellDescription,parentCellDescription,subcellPosition.subcellIndex);
     } else {
       exahype::solvers::Solver::SubcellPosition subcellPosition =
@@ -2729,7 +2729,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
           subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
       assertion1(parentCellDescription.getType()==CellDescription::Type::Cell,parentCellDescription.toString());
 
-      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+      waitUntilCompletedTimeStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
       cellDescription.setHasCompletedTimeStep(false); // done here in order to skip lookup of cell description in job constructor
       ProlongationJob prolongationJob( *this, cellDescription, parentCellDescription, subcellPosition.subcellIndex);
       Solver::submitPredictionJob(prolongationJob,false);
@@ -3015,8 +3015,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
           :
           getCellDescription(cellDescriptionsIndex1,element1);
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionLeft,false);
-  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionRight,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionLeft,false,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescriptionRight,false,false);
 
   // synchronise time stepping if necessary
   synchroniseTimeStepping(cellDescriptionLeft);
@@ -3171,7 +3171,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
 
   synchroniseTimeStepping(cellDescription);
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
 
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
@@ -3861,7 +3861,7 @@ void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
     #endif
 */
 
-    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true);
+    waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
 
     // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
     // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd

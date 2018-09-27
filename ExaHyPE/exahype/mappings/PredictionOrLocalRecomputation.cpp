@@ -173,13 +173,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
     initialiseLocalVariables();
   }
 
-  if (
-      exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
-      _stateCopy.isLastIterationOfBatchOrNoBatch()
-  ) {
-    peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-  }
-
   #ifdef Debug // TODO(Dominic): And not parallel and not shared memory
   _interiorFaceMerges = 0;
   _boundaryFaceMerges = 0;

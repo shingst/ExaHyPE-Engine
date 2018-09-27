@@ -164,9 +164,6 @@ void exahype::mappings::FusedTimeStep::updateBatchIterationCounter(bool initiali
         solver->beginTimeStep(solver->getMinTimeStamp());
       }
     }
-    if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob && sendOutRiemannDataInThisIteration() ) {
-      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-    }
   }
 }
 

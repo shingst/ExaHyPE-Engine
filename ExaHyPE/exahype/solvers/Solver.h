@@ -888,22 +888,43 @@ class exahype::solvers::Solver {
   * <h2> MPI </h2>
   *
   * Tries to receive dangling MPI messages while waiting if this
-  * is specified by the user.
+  * is specified by the user. Make sure you receive from a thread-safe context
+  * if you switch this functionality on.
+  *
+  * @param cellDescription the cell description we want to modify
+  * @param processHighPriorityJobsDuringWait process high priority jobs (true) or background jobs (false) while waiting for
+  *                                          the cell description to become usable
+  * @param receiveDanglingMessages try to receive dangling messages while waiting for the cell description to become usable
   */
  template <typename CellDescription>
  static void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool receiveDanglingMessages) {
-   while ( !cellDescription.getHasCompletedTimeStep() ) {
-     // do some work myself
-     if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+     const CellDescription& cellDescription,
+     const bool processHighPriorityJobsDuringWait,
+     const bool receiveDanglingMessages) {
+   if ( !cellDescription.getHasCompletedTimeStep() ) {
+     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+     while ( !cellDescription.getHasCompletedTimeStep() ) {
+       if ( receiveDanglingMessages ) { // implies we are at the remote boundary
+         tarch::parallel::Node::getInstance().receiveDanglingMessages();
+       }
+       // TODO(Dominic): The number of jobs to process during the waits
+       // should be rather low if this thread has to generate more jobs
+       // in the same iteration.
+       // Use magic number 3. Probably needs to be tuned.
+       if ( processHighPriorityJobsDuringWait ) {
+         tarch::multicore::jobs::processHighPriorityJobs(3);
+       } else {
+         tarch::multicore::jobs::processBackgroundJobs(3);
+       }
      }
-     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
    }
  }
 
  /**
   * Submit a Prediction- or FusedTimeStepJob.
+  *
+  * As a side effect this might start up one or
+  * more background job consumer threads.
   *
   * \param[in] function the job
   * \param[in[ isSkeletonJob the class of this job.
