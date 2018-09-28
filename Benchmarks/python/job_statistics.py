@@ -38,7 +38,9 @@ def parseArgument(argv,i):
 
 def plotStatistics(fname, output_folder):
     stats = {}
+    #  10.4573      info         no of background tasks[1]=19029
     ex = re.compile(r"background tasks\[(\d+)\]=(\d+)?")
+    base = 10
     with open(fname, 'r') as f:
         for l in f.readlines():
             if "no of background tasks" in l:
@@ -49,7 +51,7 @@ def plotStatistics(fname, output_folder):
                     if num_tasks == 0:
                         stats[0] = occurences
                     else:
-                        stats_bin = int(math.log(num_tasks, 10)) + 1
+                        stats_bin = int(math.log(num_tasks, base)) + 1
                         if stats_bin in stats:
                             stats[stats_bin] += occurences
                         else:
@@ -66,7 +68,7 @@ def plotStatistics(fname, output_folder):
         if k == 0:
             labels.append(0)
         else:
-            labels.append(r"$<10^{}$".format(k))
+            labels.append(r"$<{}^{}$".format(base,k))
     plt.bar(x, y,tick_label=labels,log=True)
     plt.xlabel("Number of tasks executed by consumer")
     plt.ylabel("Frequency")
