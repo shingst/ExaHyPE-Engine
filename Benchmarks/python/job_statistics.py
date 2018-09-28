@@ -79,6 +79,7 @@ def plotStatistics(fname, output_folder):
     if output_folder is None: output_folder="."
     out_file = os.path.join(output_folder, os.path.basename(fname)) + ".job-stats.pdf"
     plt.savefig(out_file, bbox_inches='tight')
+    plt.clf()
 
 if __name__ == "__main__":
     if haveToPrintHelpMessage(sys.argv):
