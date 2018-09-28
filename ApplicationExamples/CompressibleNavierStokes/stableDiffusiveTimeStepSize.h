@@ -72,7 +72,6 @@ double stableDiffusiveTimeStepSize(
 	  solver.viscousEigenvalues(luh + idx, dim, diffusiveEigenvalues.data());
 
 	  for (const auto eigen : hyperbolicEigenvalues) {
-	  	// TODO(Lukas) Take abs here?
 	    maxHyperbolicEigenvalue = std::max(maxHyperbolicEigenvalue, std::abs(eigen));
 	  }
 	  for (const auto eigen : diffusiveEigenvalues) {
@@ -86,8 +85,7 @@ double stableDiffusiveTimeStepSize(
     } // j
    } // i
   dt = (cflFactor * minDx * PNPM[order])/DIMENSIONS * 1./ (
-  		maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * (2/(PNPM[order] * minDx))
+  		maxHyperbolicEigenvalue + maxDiffusiveEigenvalue * 2 * (order+1/minDx)
   		);
-    
   return dt;
 }
