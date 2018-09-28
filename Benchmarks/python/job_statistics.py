@@ -56,6 +56,9 @@ def plotStatistics(fname, output_folder):
                             stats[stats_bin] += occurences
                         else:
                             stats[stats_bin] = occurences
+    if len(stats) == 0:
+        print("WARNING: {} doesn't contain TBB_USE_THREADING_TOOLS output: no plot created".format(fname))
+        return
     labels = []
     x = []
     y = []
