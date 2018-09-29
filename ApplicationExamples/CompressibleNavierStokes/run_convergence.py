@@ -33,7 +33,7 @@ template = json.loads(r'''
     "background_job_consumers": 7,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "manual_pinning": true
+    "manual_pinning": false
   },
   "distributed_memory": {
       "ranks_per_node": 2,
@@ -134,15 +134,10 @@ module switch intel/18.0
 module switch tbb/2018
 module switch gcc/5
 
-pwd
-ls
-
 export OMP_NUM_THREADS={threads_per_task}
 export MP_TASK_AFFINITY=core:{threads_per_task}
-export MP_SINGLE_THREAD=no
 
-#poe {exahype_bin} {exahype_config_file}
-mpiexec -n {total_tasks} {exahype_bin} {exahype_config_file}
+poe {exahype_bin} {exahype_config_file}
 '''
 
 
@@ -310,11 +305,9 @@ def main():
     }
     user_config['total_tasks'] = user_config['nodes'] * user_config['tasks_per_node']
     
-    #order_grid = [1,2,3]
-    order_grid = [1,3]
-    max_factor = 4
+    order_grid = [1,2,3,4,5] 
+    max_factor = 4 
     factor_grid = range(1, max_factor+1)
-    factor_grid = [2,3,4,5]
 
     # Build for various orders.
     if args.build:
