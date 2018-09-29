@@ -223,6 +223,10 @@ def run(template, my_env, config):
     config['log_dir'] = config['tmp_dir'] + '/logs/'
     config['working_dir'] = config['tmp_dir'] + '/workingdirs/' + config['template_hash']
 
+    # Copy log filter to working dir
+    shutil.copy2(get_application_path() + '/exahype.log_filter',
+                 config['working_dir'] + '/exahype.log_filter')
+
     os.makedirs(config['log_dir'], exist_ok=True)
     os.makedirs(config['working_dir'], exist_ok=True)
     os.makedirs(config['results_dir'], exist_ok=True)
