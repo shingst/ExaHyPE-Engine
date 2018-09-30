@@ -22,7 +22,7 @@
 exahype-project EulerFV
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./Demonstrators/EulerFV
+  output-directory const           = ./Demonstrators/EulerFV-with-Delta
 
   computational-domain
     dimension const         = 2
