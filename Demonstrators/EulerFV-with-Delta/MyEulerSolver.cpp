@@ -43,7 +43,7 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   }
 
   // Boundary stuff
-  const double maxDistance = 1e-4;
+  const double maxDistance = 1e-1; // should be roughly sqrt(h)*d
   std::vector< delta::ContactPoint > contact =
     delta::contactdetection::sphere(
       _embeddedGeometry->getCentreX(),
@@ -63,6 +63,12 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   }
   else {
     vars.inside() = contact[0].distance;
+    logInfo( "adjustSolution(...)", "voxel at " << x[0] << "," << x[1] << "," << x[2] << " has value " << vars.inside() );
+  }
+
+  // @todo Das muesste Halfspaces initialisieren. Tut es aber net.
+  if (x[0]>0.0) {
+    vars.inside() = -maxDistance;
   }
 }
 
