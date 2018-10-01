@@ -14,7 +14,7 @@ tarch::logging::Log EulerFV::MyEulerSolver::_log( "EulerFV::MyEulerSolver" );
 
 void EulerFV::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   _embeddedGeometry = new delta::primitives::Sphere(
-    0.5, 0.5, 0.5,
+    0.5, 0.5, 0.0,
 	0.2
   );
 }
@@ -43,7 +43,7 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   }
 
   // Boundary stuff
-  const double maxDistance = 1e-1; // should be roughly sqrt(h)*d
+  const double maxDistance = 1e-2; // should be roughly sqrt(h)*d
   std::vector< delta::ContactPoint > contact =
     delta::contactdetection::sphere(
       _embeddedGeometry->getCentreX(),
@@ -59,17 +59,19 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
 	  maxDistance
     );
   if ( contact.empty() ) {
-    vars.inside() = maxDistance;
+    vars.inside() = 2.0*maxDistance; // If maxDistance is the epsilon environment
+                                     // we can twice this.
   }
   else {
     vars.inside() = contact[0].distance;
-    logInfo( "adjustSolution(...)", "voxel at " << x[0] << "," << x[1] << "," << x[2] << " has value " << vars.inside() );
+    assertion6(
+      vars.inside()<=2.0 * maxDistance,
+	  vars.inside(), maxDistance,
+	  x[0], x[1], x[2],
+	  contact[0].toString()
+	);
   }
-
-  // @todo Das muesste Halfspaces initialisieren. Tut es aber net.
-  if (x[0]>0.0) {
-    vars.inside() = -maxDistance;
-  }
+  logDebug( "adjustSolution(...)", "voxel at " << x[0] << "," << x[1] << "," << x[2] << " has value " << vars.inside() );
 }
 
 
