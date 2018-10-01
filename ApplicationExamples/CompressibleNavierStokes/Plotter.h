@@ -31,6 +31,7 @@ public:
     double timeStamp) override;
 private:
     int order;
+    NavierStokesSolverDG* solver;
 };
 
 #endif /* POSTPROCESSING_Plotter_CLASS_HEADER_ */

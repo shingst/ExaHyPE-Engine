@@ -11,9 +11,9 @@
 #include "NavierStokesSolverDG_Variables.h"
 #include "PDE.h"
 
-NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolverDG& solver) {
-  // @TODO Please insert your code here.
-  order = solver.Order;
+NavierStokes::Plotter::Plotter(NavierStokes::NavierStokesSolverDG& solver) :
+        order(solver.Order), solver(&solver) {
+
 }
 
 NavierStokes::Plotter::~Plotter() {
@@ -42,34 +42,32 @@ void NavierStokes::Plotter::mapQuantities(
     outputQuantities[i] = Q[i];
   }
 
-  // TODO(Lukas): Make sure we use the correct constants
-  // As we only consider air, this should be a given!
-  Variables vars(Q);
-  const double gamma = 1.4;
-  const double Pr = 0.71;
-  const double gasConstant = 287.058;
-  const double c_p = 1.005 * 1000;
-  const double c_v = 1 / (gamma - 1) * gasConstant;
-  const double referencePressure = 10000;
-  const auto referenceViscosity = 0.001;
+  if (solver->scenarioName == "convergence") {
+    // Plot quadrature weights.
+    // This is needed to approximate the integral of error norms.
+    const auto& weights = kernels::gaussLegendreWeights[order];
 
-  auto ns = PDE(referenceViscosity, referencePressure, gamma,
-          Pr, c_v, c_p, gasConstant);
+    double weight = 1.0;
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      weight *= weights[pos[i]];
+    }
+    outputQuantities[DIMENSIONS + 2] = weight;
+  } else {
+    // For other scenarios, plot the potential temperature.
+    Variables vars(Q);
 
-  const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
-  const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
+    const auto& ns = solver->ns;
 
-  const auto potT = temperature * std::pow((ns.referencePressure/pressure), (ns.gasConstant/ns.c_p));
+    const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j());
+    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
 
-  // Write potential temperature
-  outputQuantities[DIMENSIONS + 2] = potT;
-  /*
-  const auto& weights = kernels::gaussLegendreWeights[order];
+    const auto potT = temperature / std::pow((pressure / ns.referencePressure), (ns.gasConstant / ns.c_p));
 
-  double weight = 1.0;
-  for (int i = 0; i < DIMENSIONS; ++i) {
-    weight *= weights[pos[i]];
+    // Compute background potential temperature
+
+
+    // Write potential temperature
+    outputQuantities[DIMENSIONS + 2] = potT;
   }
-  outputQuantities[DIMENSIONS + 2] = weight;
-   */
+
 }
