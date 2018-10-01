@@ -64,23 +64,10 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
       potentialT += bubble.tempDifference *
                     std::exp(-(d * d) / (bubble.decay * bubble.decay));
     }
+    break; // Only 1 bubble for now.
   }
 
   const double g = 9.81;  // [m/s^2]
-  // For pressure computation assume that temperature is constant everywhere.
-  //const double pressure =
-  //    backgroundPressure *
-  //    std::exp(-(g * posZ) / (ns.gasConstant * backgroundT));
-  const double pressure = std::pow(-0.000451886593143019*posZ + 13.8949549437314, 3.5);
-
-  // Conversion factor potential temperature -> temperature
-  const double poTToT =
-      std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
-
-  // Assuming that pressure = background pressure
-  const double temperature = potentialT * poTToT;
-
-  vars.rho() = pressure / (ns.gasConstant * temperature);
 
   // Air is initially at rest.
 #if DIMENSIONS == 2
@@ -89,16 +76,34 @@ void NavierStokes::TwoBubbles::initialValues(const double* const x,
   vars.j(0, 0, 0);
 #endif
 
+  const double pressure = std::pow((ns.gasConstant*ns.gamma*backgroundT*std::pow(std::pow(ns.gamma, ns.gamma/(ns.gamma - 1))*ns.referencePressure, (ns.gamma - 1)/ns.gamma) - ns.gasConstant*backgroundT*std::pow(std::pow(ns.gamma, ns.gamma/(ns.gamma - 1))*ns.referencePressure, (ns.gamma - 1)/ns.gamma) - g*ns.gamma*std::pow(ns.referencePressure, ns.gasConstant/c_p)*posZ*(ns.gamma - 1) + g*std::pow(ns.referencePressure, ns.gasConstant/c_p)*posZ*(ns.gamma - 1))/(ns.gasConstant*ns.gamma*backgroundT*(ns.gamma - 1)), ns.gamma/(ns.gamma - 1));
+  const double poTToT =
+          std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
+  const double temperature = potentialT * poTToT;
+  vars.rho() = pressure / (ns.gasConstant * temperature);
   vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
 
-  assertion1(vars.rho() > 0.0, x);
+  /*
+   const double exner = 1 - (g * posZ)/(ns.c_p * backgroundT);
+   const double pressure = ns.referencePressure * std::pow(
+           exner,
+           1/(ns.c_p/ns.gasConstant)
+           );
+  const double poTToT =
+          std::pow((pressure / backgroundPressure), ns.gasConstant / ns.c_p);
+  const double temperature = potentialT * poTToT;
+  vars.rho() = pressure / (ns.gasConstant * temperature);
+  vars.E() = ns.evaluateEnergy(vars.rho(), pressure, vars.j());
+   */
 }
 
 void NavierStokes::TwoBubbles::source(
     const tarch::la::Vector<DIMENSIONS, double>& x, double t, const PDE& ns,
     const double* const Q, double* S) {
   Scenario::source(x, t, ns, Q, S);
-  S[DIMENSIONS] = Q[0] * -9.81;
+  const double g = -9.81;
+  S[DIMENSIONS] = Q[0] * g;
+  S[DIMENSIONS + 1] = Q[2] * g;
 }
 
 const double NavierStokes::TwoBubbles::getGamma() const { return gamma; }
