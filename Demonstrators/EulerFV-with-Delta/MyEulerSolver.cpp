@@ -4,36 +4,44 @@
 
 #include "Logo.h"
 
+#include "delta/primitives/Sphere.h"
+
 
 tarch::logging::Log EulerFV::MyEulerSolver::_log( "EulerFV::MyEulerSolver" );
 
 
 void EulerFV::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // @todo Please implement/augment if required
+  _embeddedGeometry = new delta::primitives::Sphere(
+    0.5, 0.5, 0.5,
+	0.2
+  );
 }
 
+
 void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
-  if ( tarch::la::equals( t,0.0 ) ) {
   Variables vars(Q);
-  
-  tarch::la::Vector<DIMENSIONS,double> myX( x[0] - 0.06, 1.0-x[1] - 0.25 ); // translate
-  myX *= static_cast<double>(Image.width);
-  tarch::la::Vector<DIMENSIONS,int>    myIntX( 1.2*myX(0) , 1.2*myX(1) );  // scale
+  if ( tarch::la::equals( t,0.0 ) ) {
+    tarch::la::Vector<DIMENSIONS,double> myX( x[0] - 0.06, 1.0-x[1] - 0.25 ); // translate
+    myX *= static_cast<double>(Image.width);
+    tarch::la::Vector<DIMENSIONS,int>    myIntX( 1.2*myX(0) , 1.2*myX(1) );  // scale
 
-  double Energy = 0.1;
+    double Energy = 0.1;
 
-  if (
-    myIntX(0) > 0 && myIntX(0) < static_cast<int>(Image.width)
-    &&
-    myIntX(1) > 0 && myIntX(1) < static_cast<int>(Image.height)
-  ) {
-    Energy += 1.0-Image.pixel_data[myIntX(1)*Image.width+myIntX(0)];
+    if (
+      myIntX(0) > 0 && myIntX(0) < static_cast<int>(Image.width)
+      &&
+      myIntX(1) > 0 && myIntX(1) < static_cast<int>(Image.height)
+    ) {
+      Energy += 1.0-Image.pixel_data[myIntX(1)*Image.width+myIntX(0)];
+    }
+
+    vars.rho() = 1.0;
+    vars.E()   = Energy;
+    vars.j(0,0,0);
   }
 
-  vars.rho() = 1.0;
-  vars.E()   = Energy;
-  vars.j(0,0,0);
-  }
+  // Boundary stuff
+  vars.inside() = 23.0;
 }
 
 
