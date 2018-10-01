@@ -28,7 +28,7 @@ exahype-project EulerFV
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.1
+    end-time                = 0.01
   end computational-domain
  
   /*
@@ -43,6 +43,31 @@ exahype-project EulerFV
   end distributed-memory
   */
   
+  /*
+   ====================================================
+   Comment this stuff in to get a shared memory version
+   ====================================================
+  */ 
+  shared-memory
+    identifier               = dummy
+    configure                = {}
+    cores                    = 8
+    properties-file          = sharedmemory.properties
+  end shared-memory
+  
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    spawn-amr-background-threads = on
+    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+    disable-vertex-exchange-in-time-steps        = on
+    time-step-batch-factor           = 1.0
+    disable-metadata-exchange-in-batched-time-steps = on
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
   solver Finite-Volumes MyEulerSolver
     variables const    = rho:1,j:3,E:1,inside:1
     patch-size const   = 10
@@ -54,7 +79,7 @@ exahype-project EulerFV
     
     language const    = C
     plot vtu::Cartesian::cells::ascii EulerWriter
-      variables const = 5
+      variables const = 6
       time            = 0.0
       repeat          = 0.01
       output          = ./variables

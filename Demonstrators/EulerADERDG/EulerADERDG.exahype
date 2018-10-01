@@ -76,7 +76,7 @@ exahype-project EulerADERDG
     variables const            = rho:1,j:3,E:1
     order const                = 5
     maximum-mesh-size          = 5e-1    
-    maximum-mesh-depth         = 1
+    maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear, Legendre
     terms const                = flux
