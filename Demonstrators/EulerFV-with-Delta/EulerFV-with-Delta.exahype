@@ -28,7 +28,7 @@ exahype-project EulerFV
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.01
+    end-time                = 0.0001
   end computational-domain
  
   /*
@@ -48,12 +48,14 @@ exahype-project EulerFV
    Comment this stuff in to get a shared memory version
    ====================================================
   */ 
+  /*
   shared-memory
     identifier               = dummy
     configure                = {}
     cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
+  */
   
   global-optimisation
     fuse-algorithmic-steps          = on
@@ -71,7 +73,7 @@ exahype-project EulerFV
   solver Finite-Volumes MyEulerSolver
     variables const    = rho:1,j:3,E:1,inside:1
     patch-size const   = 10
-    maximum-mesh-size  = 2e-2    
+    maximum-mesh-size  = 2e-1   
     time-stepping      = global
     type const         = godunov
     terms const        = flux

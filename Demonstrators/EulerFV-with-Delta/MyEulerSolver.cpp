@@ -4,7 +4,9 @@
 
 #include "Logo.h"
 
+#include "delta/ContactPoint.h"
 #include "delta/primitives/Sphere.h"
+#include "delta/contactdetection/sphere.h"
 
 
 tarch::logging::Log EulerFV::MyEulerSolver::_log( "EulerFV::MyEulerSolver" );
@@ -41,7 +43,27 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   }
 
   // Boundary stuff
-  vars.inside() = 23.0;
+  const double maxDistance = 1e-4;
+  std::vector< delta::ContactPoint > contact =
+    delta::contactdetection::sphere(
+      _embeddedGeometry->getCentreX(),
+      _embeddedGeometry->getCentreY(),
+      _embeddedGeometry->getCentreZ(),
+      _embeddedGeometry->getBoundingSphereRadius(),
+
+      x[0], // voxel centre
+      x[1], // voxel centre
+      x[2], // voxel centre
+
+	  1e-4,  // voxel size
+	  maxDistance
+    );
+  if ( contact.empty() ) {
+    vars.inside() = maxDistance;
+  }
+  else {
+    vars.inside() = contact[0].distance;
+  }
 }
 
 
