@@ -54,14 +54,22 @@ class LimiterModel(AbstractModelBaseClass):
         nDofPad  = self.context["nDofPad"]
         nDofLim  = self.context["nDofLim"]
         nDofLim2 = nDofLim*nDofLim
+        nDofLimPad = self.context["nDofLimPad"]
         nDim     = self.context["nDim"]
 
-        self.context["matmulConfigs"]["dg2fv_x"] =     MatmulConfig(nVar, nDofLim, nDof, nData            , nDofPad, nDataPad         , 1, 1, 1, 1, "dg2fv_x", "nopf", "gemm")
+        self.context["matmulConfigs"]["dg2fv_x"] =     MatmulConfig(nData   , nDofLim, nDof, nData            , nDofPad, nDataPad         , 1, 1, 0, 1, "dg2fv_x", "nopf", "gemm") # input slice not aligned
         if(self.context["nDim"]>=3):
-            self.context["matmulConfigs"]["dg2fv_y"] = MatmulConfig(nVar, nDofLim, nDof, nDofLim*nDataPad , nDofPad, nDofLim*nDataPad , 1, 1, 1, 1, "dg2fv_y", "nopf", "gemm")
-            self.context["matmulConfigs"]["dg2fv_z"] = MatmulConfig(nVar, nDofLim, nDof, nDofLim2*nDataPad, nDofPad, nDofLim2*nData   , 1, 1, 1, 1, "dg2fv_z", "nopf", "gemm")
+            self.context["matmulConfigs"]["dg2fv_y"] = MatmulConfig(nDataPad, nDofLim, nDof, nDofLim*nDataPad , nDofPad, nDofLim*nDataPad , 1, 1, 1, 1, "dg2fv_y", "nopf", "gemm") #M is padded in both input and output
+            self.context["matmulConfigs"]["dg2fv_z"] = MatmulConfig(nData   , nDofLim, nDof, nDofLim2*nDataPad, nDofPad, nDofLim2*nData   , 1, 1, 1, 0, "dg2fv_z", "nopf", "gemm") # output slice not aligned
         else:
-            self.context["matmulConfigs"]["dg2fv_y"] = MatmulConfig(nVar, nDofLim, nDof, nDofLim*nDataPad , nDofPad, nDofLim*nData    , 1, 1, 1, 1, "dg2fv_y", "nopf", "gemm")
+            self.context["matmulConfigs"]["dg2fv_y"] = MatmulConfig(nData   , nDofLim, nDof, nDofLim*nDataPad , nDofPad, nDofLim*nData    , 1, 1, 1, 0, "dg2fv_y", "nopf", "gemm") # output slice not aligned
+            
+        self.context["matmulConfigs"]["fv2dg_x"] =     MatmulConfig(nData   , nDof, nDofLim, nData            , nDofLimPad, nDataPad         , 1, 1, 0, 1, "fv2dg_x", "nopf", "gemm") # input slice not aligned
+        if(self.context["nDim"]>=3):
+            self.context["matmulConfigs"]["fv2dg_y"] = MatmulConfig(nDataPad, nDof, nDofLim, nDof*nDataPad , nDofLimPad, nDof*nDataPad , 1, 1, 1, 1, "fv2dg_y", "nopf", "gemm") #M is padded in both input and output
+            self.context["matmulConfigs"]["fv2dg_z"] = MatmulConfig(nData   , nDof, nDofLim, nDof2*nDataPad, nDofLimPad, nDof2*nData   , 1, 1, 1, 0, "fv2dg_z", "nopf", "gemm") # output slice not aligned
+        else:
+            self.context["matmulConfigs"]["fv2dg_y"] = MatmulConfig(nData   , nDof, nDofLim, nDof*nDataPad , nDofLimPad, nDof*nData    , 1, 1, 1, 0, "fv2dg_y", "nopf", "gemm") # output slice not aligned
             
          # TODO JMG remove legacy once refactor done
         #-----------------------------
