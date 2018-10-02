@@ -44,7 +44,26 @@ class LimiterModel(AbstractModelBaseClass):
     def buildGemmsConfig(self):
         # define a sequence of matmul configs
         self.context["matmulConfigs"] = {}
+        # shortcut
+        nVar     = self.context["nVar"]
+        nVarPad  = self.context["nVarPad"]
+        nData    = self.context["nData"]
+        nDataPad = self.context["nDataPad"]
+        nDof     = self.context["nDof"]
+        nDof2    = nDof*nDof
+        nDofPad  = self.context["nDofPad"]
+        nDofLim  = self.context["nDofLim"]
+        nDofLim2 = nDofLim*nDofLim
+        nDim     = self.context["nDim"]
 
+        self.context["matmulConfigs"]["dg2fv_x"] =     MatmulConfig(nVar, nDofLim, nDof, nData            , nDofPad, nDataPad         , 1, 1, 1, 1, "dg2fv_x", "nopf", "gemm")
+        if(self.context["nDim"]>=3):
+            self.context["matmulConfigs"]["dg2fv_y"] = MatmulConfig(nVar, nDofLim, nDof, nDofLim*nDataPad , nDofPad, nDofLim*nDataPad , 1, 1, 1, 1, "dg2fv_y", "nopf", "gemm")
+            self.context["matmulConfigs"]["dg2fv_z"] = MatmulConfig(nVar, nDofLim, nDof, nDofLim2*nDataPad, nDofPad, nDofLim2*nData   , 1, 1, 1, 1, "dg2fv_z", "nopf", "gemm")
+        else:
+            self.context["matmulConfigs"]["dg2fv_y"] = MatmulConfig(nVar, nDofLim, nDof, nDofLim*nDataPad , nDofPad, nDofLim*nData    , 1, 1, 1, 1, "dg2fv_y", "nopf", "gemm")
+            
+         # TODO JMG remove legacy once refactor done
         #-----------------------------
         # implementation file
         #-----------------------------        

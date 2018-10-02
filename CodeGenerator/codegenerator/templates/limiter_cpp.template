@@ -10,6 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/ #}
+{% import 'subtemplates/macros.template' as m with context %}{# get template macros #}
 
 #include <algorithm>
 #include <cstring>
@@ -28,35 +29,42 @@
 //Fortran (Limiter.f90): GetSubcellData
 void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) {
   
-  std::memset(lim, 0, sizeof(double)*{{((nDofLim+2*ghostLayerWidth)**nDim)*nVar}});
-  //tensor operation
-{% if useLibxsmm %}
-  double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  
-  //Compact projection without ghostlayer
-  for (int z = 0; z < {{nDofLim3D}}; z++) {
-    for (int iz = 0; iz < {{nDof3D}}; iz++) {
-      for (int y = 0; y < {{nDofLim}}; y++) {
-        for (int iy = 0; iy < {{nDof}}; iy++) {
-          #pragma vector aligned
-          for (int it = 0; it < {{nDofLim*nDofPad}}; it++) {
-            coeff[it] = dg2fv[it] 
-{% if nDim==3 %}
-                      * dg2fv[z*{{nDofPad}}+iz]
-{% endif %}
-                      * dg2fv[y*{{nDofPad}}+iy];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}});
-        }
-      }
+  //compact projection without ghostlayer
+  // x
+  {{m.allocateArray('tmpX', nDof3D*nDof*nDofLim*nDataPad, setToZero=True) | indent(2)}}{##}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      {{ m.matmul('dg2fv_x', 'luh', 'dg2fv', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDofLim*nDataPad) | indent(6) }}{##}
     }
   }
+  
+{%if nDim == 2%}
+  // y
+  std::memset(lim, 0, sizeof(double)*{{((nDofLim+2*ghostLayerWidth)**nDim)*nVar}});
+  for (int x = 0; x < {{nDofLim}}; x++) {
+    {{ m.matmul('dg2fv_y', 'tmpX', 'dg2fv', 'lim', 'x*'~nDataPad, '0', 'x*'~nData) | indent(4) }}{##}
+  }
+  {{m.freeArray("tmpX")}}{##}
+{% else %}
+  // y
+  {{m.allocateArray('tmpY', nDof3D*nDofLim*nDofLim*nVarPad, setToZero=True) | indent(2)}}{##}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int x = 0; x < {{nDofLim}}; x++) {
+      {{ m.matmul('dg2fv_y', 'tmpX', 'dg2fv', 'tmpY', '(z*'~nDof*nDofLim~'+x)*'~nDataPad, '0', '(z*'~nDofLim*nDofLim~'+x)*'~nDataPad) | indent(6) }}{##}
+    }
+  }
+  {{m.freeArray("tmpX") | indent(2)}}{##}
+  
+  // z
+  std::memset(lim, 0, sizeof(double)*{{((nDofLim+2*ghostLayerWidth)**nDim)*nVar}});
+  for (int y = 0; y < {{nDofLim}}; y++) {
+    for (int x = 0; x < {{nDofLim}}; x++) {
+      {{ m.matmul('dg2fv_z', 'tmpY', 'dg2fv', 'lim', '(y*'~nDofLim~'+x)*'~nDataPad, '0', '(y*'~nDofLim~'+x)*'~nData) | indent(6) }}{##}
+    }
+  }
+  {{m.freeArray("tmpY") | indent(2)}}{##}
+{% endif %}
+  
   //space out for ghostlayer (in place)
   for (int z = {{nDofLim3D-1}}; z >= 0; z--) {
     for (int y = {{nDofLim-1}}; y >= 0; y--) {
@@ -64,29 +72,7 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
       std::memset(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, 0, sizeof(double)*{{nVar*nDofLim}}); //delete the memory block that was moved to ensure ghostlayers are set at 0.
     }
   }
-{% else %}{# useLibxsmm #}
-  for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // We can skip x,y,z>=basisSizeLim+ghostLayerWidth
-    for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
-      for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
-        for (int iz = 0; iz < {{nDof3D}}; iz++) {
-          for (int iy = 0; iy < {{nDof}}; iy++) {
-            for (int ix = 0; ix < {{nDof}}; ix++) {
-              for (int n = 0; n < {{nVar}}; n++) {
-                lim[((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nVar}}+n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n] 
-{% if nDim == 3 %}
-                                        * dg2fv[(z-{{ghostLayerWidth3D}})*{{nDofPad}}+iz]
-{% endif %}
-                                        * dg2fv[(y-{{ghostLayerWidth}})*{{nDofPad}}+iy]
-                                        * dg2fv[(x-{{ghostLayerWidth}})*{{nDofPad}}+ix];
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-{% endif %}{# useLibxsmm #}  
-
+  
 }
 
 //Fortran (Limiter.f90): PutSubcellData
@@ -425,3 +411,71 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
 {% endif %}{# useLibxsmm #}
 
 }
+
+
+/*
+
+void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) {
+
+  /*
+  std::memset(lim, 0, sizeof(double)*{{((nDofLim+2*ghostLayerWidth)**nDim)*nVar}});
+  //tensor operation
+{% if useLibxsmm %}
+  double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  
+  //Compact projection without ghostlayer
+  for (int z = 0; z < {{nDofLim3D}}; z++) {
+    for (int iz = 0; iz < {{nDof3D}}; iz++) {
+      for (int y = 0; y < {{nDofLim}}; y++) {
+        for (int iy = 0; iy < {{nDof}}; iy++) {
+          #pragma vector aligned
+          for (int it = 0; it < {{nDofLim*nDofPad}}; it++) {
+            coeff[it] = dg2fv[it] 
+{% if nDim==3 %}
+                      * dg2fv[z*{{nDofPad}}+iz]
+{% endif %}
+                      * dg2fv[y*{{nDofPad}}+iy];
+          }
+#ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
+          #pragma forceinline
+#endif
+          {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}});
+        }
+      }
+    }
+  }
+  //space out for ghostlayer (in place)
+  for (int z = {{nDofLim3D-1}}; z >= 0; z--) {
+    for (int y = {{nDofLim-1}}; y >= 0; y--) {
+      std::copy_n(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, {{nVar*nDofLim}}, lim+(((z+{{ghostLayerWidth3D}})*{{nDofLim+2*ghostLayerWidth}}+y+{{ghostLayerWidth}})*{{nDofLim+2*ghostLayerWidth}}+{{ghostLayerWidth}})*{{nVar}}); // no overlap since we have ghostlayers at the beginning
+      std::memset(lim+(z*{{nDofLim}}+y)*{{nDofLim*nVar}}, 0, sizeof(double)*{{nVar*nDofLim}}); //delete the memory block that was moved to ensure ghostlayers are set at 0.
+    }
+  }
+{% else %}{# useLibxsmm #}
+  for (int z = {{ghostLayerWidth3D}}; z < {{nDofLim3D+ghostLayerWidth3D}}; z++) { // We can skip x,y,z>=basisSizeLim+ghostLayerWidth
+    for (int y = {{ghostLayerWidth}}; y < {{nDofLim+ghostLayerWidth}}; y++) {
+      for (int x = {{ghostLayerWidth}}; x < {{nDofLim+ghostLayerWidth}}; x++) {
+        for (int iz = 0; iz < {{nDof3D}}; iz++) {
+          for (int iy = 0; iy < {{nDof}}; iy++) {
+            for (int ix = 0; ix < {{nDof}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                lim[((z*{{nDofLim+2*ghostLayerWidth}}+y)*{{nDofLim+2*ghostLayerWidth}}+x)*{{nVar}}+n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n] 
+{% if nDim == 3 %}
+                                        * dg2fv[(z-{{ghostLayerWidth3D}})*{{nDofPad}}+iz]
+{% endif %}
+                                        * dg2fv[(y-{{ghostLayerWidth}})*{{nDofPad}}+iy]
+                                        * dg2fv[(x-{{ghostLayerWidth}})*{{nDofPad}}+ix];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+{% endif %}{# useLibxsmm #}  
+
+}
+*/
