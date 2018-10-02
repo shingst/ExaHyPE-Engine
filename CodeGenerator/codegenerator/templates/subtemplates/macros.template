@@ -1,0 +1,35 @@
+{# /**
+  This subtemplate contain macros used in other template/subtemplate
+  
+  Include it at the start of a template to be able to use the macros
+  {% import 'subtemplates/macros.template' as m with context %}{# get template macros #}
+  
+  To use macros with indentation use {{ m.XXXmacroName(XXXargs...) | indent(XXXsize) }}
+  */
+#}
+{#
+/**
+  Allocate array
+*/
+#}
+{% macro allocateArray(name, size, setToZero=False) %}
+{% if tempVarsOnStack %}
+double {{name}}[{{size}}] __attribute__((aligned(ALIGNMENT)));
+{% else %}
+double* {{name}} = ((double *) _mm_malloc(sizeof(double)*{{size}}, ALIGNMENT));
+{% endif %}
+{% if setToZero %}
+std::memset({{name}}, 0, sizeof(double)*{{size}});
+{% endif %}
+{% endmacro %}
+{#
+
+/**
+  Free array
+*/
+#}
+{% macro freeArray(name) %}
+{% if not tempVarsOnStack %}
+_mm_free({{name}});
+{% endif %}
+{% endmacro %}
