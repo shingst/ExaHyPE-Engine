@@ -2,6 +2,19 @@
 def column(matrix, i):
     return [row[i] for row in matrix]
 
+
+def minAndMaxInColumn(matrix, i):
+     minimum = +float("inf")
+     maximum = -float("inf")
+     for row in matrix:
+        try:
+            value = float(row[i])
+            minimum = min(minimum,value)
+            maximum = max(maximum,value)
+        except:
+            pass
+     return minimum,maximum
+
 def removeInvariantColumns(table,header):
     '''
     Remove all columns containing the same value in every row
@@ -60,35 +73,44 @@ def tableFilter(row):
         match = match and row[index].startswith(rowFilter[key])
     return match
 
+def minMaxFilter(row):
+    return float(row[minMaxIndex])==minMax
+
 def parseArgs():
     parser = argparse.ArgumentParser(
         description="This is tableslicer.py: A small tool for extracting columns from a table which is scanned according to a filter.",
             epilog="End of help message.",
     )
     # some mandatory arguments from Toolkit1
-    parser.add_argument("-f", "--filter", nargs="+", default=["*"],
+    parser.add_argument("--filter", nargs="+", default=["*"],
         help="Specify a list of key-value pairs. Example: ./tableslicer.py --filter order=3 maximumMeshDepth=3 ...")
-    parser.add_argument("-c", "--cols",   nargs="+",  default=["*"],
+    parser.add_argument("--cols",   nargs="+",  default=["*"],
         help="Specifiy the list columns you want to read from the rows matching the filter. Example: ./tableslicer.py ... --cols cores realtime_min ")
     
-    parser.add_argument('--header', dest='header', action='store_true',help="Write a header to the output file.")
-    parser.add_argument('--no-header', dest='header', action='store_false',help="Write no header to the output file.")
+    parser.add_argument("--min", nargs="?", default="",
+        help="Specify the column you want to determine the minimum value of. All (filtered) rows with that value will be written out. If you do not specify anything, the last column will be used. Example: ./tableslicer.py --filter .. --cols order maximumMeshDepth ... --min order ")
+    
+    parser.add_argument("--max", nargs="?", default="",
+        help="Specify the column you want to determine the maximum value of. All (filtered) rows with that value will be written out. If you do not specify anything, the last column will be used. Example: ./tableslicer.py --filter .. --cols order maximumMeshDepth ... --max order ")
+
+    parser.add_argument("--header", dest="header", action="store_true",help="Write a header to the output file.")
+    parser.add_argument("--no-header", dest="header", action="store_false",help="Write no header to the output file.")
     parser.set_defaults(header=True)
     
-    parser.add_argument('--compress', dest='compress', action='store_true',help="Remove columns where the same value is found in every row.")
-    parser.add_argument('--no-compress', dest='compress', action='store_false',help="Do not remove columns where the same value is found in every row.")
+    parser.add_argument("--compress", dest="compress", action="store_true",help="Remove columns where the same value is found in every row.")
+    parser.add_argument("--no-compress", dest="compress", action="store_false",help="Do not remove columns where the same value is found in every row.")
     parser.set_defaults(compress=False)
     
     parser.add_argument("-s", "--sort", nargs="+", default=[],
         help="Specify a list of sorting key columns. Order is important. Example: ./tableslicer.py ... ... --cols fused cores --sort cores fused ")
     
-    parser.add_argument('table',
-        type=argparse.FileType('r'),nargs="?",
+    parser.add_argument("table",
+        type=argparse.FileType("r"),nargs="?",
         help="The CSV table to work with.",
         default=sys.stdin)
     
-    parser.add_argument('--output',
-        type=argparse.FileType('w'),
+    parser.add_argument("--output",
+        type=argparse.FileType("w"),
         help="The output file.",
         default=sys.stdout)
     
@@ -113,7 +135,9 @@ if __name__ == "__main__":
     tableData   = list(csv.reader(args.table,delimiter=","))
     args.table.close()
    
+    ##
     # filter the rows
+    ##
     filteredRows = []
     if args.filter[0].strip()!="*":
         # construct row filter
@@ -135,7 +159,9 @@ if __name__ == "__main__":
     else:
         filteredRows = tableData
     
+    ##
     # filter the columns
+    ##
     if args.cols[0].strip()!="*":
        extractedColumnsToIndices = createFilterKeysToColumnIndexMapping(args.cols,columnNames)
     else:
@@ -149,7 +175,9 @@ if __name__ == "__main__":
             resultRow.append(row[index])
         result.append(resultRow)
   
+    ##
     # sort
+    ##
     if len(args.sort):
         keyIndices = []
         for item in args.sort:
@@ -169,8 +197,36 @@ if __name__ == "__main__":
             return keyTuple
     
         result = sorted(result,key=getColumnsSortingKey)
+
+    ##
+    # min,max filter
+    ##
+    if args.min!="":
+        minMaxIndex = -1
+        if args.min != None:
+           if args.min in extractedColumnsToIndices.keys():
+               minMaxIndex = list(extractedColumnsToIndices.keys()).index(args.min)
+           else: 
+               print("ERROR: column to find minimum in, '{}', must be a column of the sliced table: Available columns: {}'".format(item), ", ".join(extractedColumnsToIndices))
+               sys.exit()
+        minMax, maximum = minAndMaxInColumn(result,minMaxIndex)
+        result = list(filter(minMaxFilter,result))
  
+    if args.max!="":
+        minMaxIndex = -1
+        if args.max != None:
+           if args.max in extractedColumnsToIndices.keys():
+               minMaxIndex = list(extractedColumnsToIndices.keys()).index(args.min)
+           else: 
+               print("ERROR: column to find maximum in, '{}', must be a column of the sliced table: Available columns: {}'".format(item), ", ".join(extractedColumnsToIndices))
+               sys.exit()
+        minimum, minMax = minAndMaxInColumn(result,minMaxIndex)
+        result = list(filter(minMaxFilter,result))
+         
+
+    ##
     # compress
+    ##
     if args.compress:
         result,header,invariantColumns = removeInvariantColumns(result,header)
 
