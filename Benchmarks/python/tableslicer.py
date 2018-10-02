@@ -216,7 +216,7 @@ if __name__ == "__main__":
         minMaxIndex = -1
         if args.max != None:
            if args.max in extractedColumnsToIndices.keys():
-               minMaxIndex = list(extractedColumnsToIndices.keys()).index(args.min)
+               minMaxIndex = list(extractedColumnsToIndices.keys()).index(args.max)
            else: 
                print("ERROR: column to find maximum in, '{}', must be a column of the sliced table: Available columns: {}'".format(item), ", ".join(extractedColumnsToIndices))
                sys.exit()
