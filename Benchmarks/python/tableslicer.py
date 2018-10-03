@@ -76,6 +76,15 @@ def tableFilter(row):
 def minMaxFilter(row):
     return float(row[minMaxIndex])==minMax
 
+def getColumnsSortingKey(row):
+    keyTuple = ()
+    for index in keyIndices:
+      try:
+          keyTuple += (float(row[index]),)
+      except ValueError:
+          keyTuple += (row[index],)
+    return keyTuple
+
 def parseArgs():
     parser = argparse.ArgumentParser(
         description="This is tableslicer.py: A small tool for extracting columns from a table which is scanned according to a filter.",
@@ -187,15 +196,6 @@ if __name__ == "__main__":
             else:
                 keyIndices.append(header.index(item))
 
-        def getColumnsSortingKey(row):
-            keyTuple = ()
-            for index in keyIndices:
-              try:
-                  keyTuple += (float(row[index]),)
-              except ValueError:
-                  keyTuple += (row[index],)
-            return keyTuple
-    
         result = sorted(result,key=getColumnsSortingKey)
 
     ##
