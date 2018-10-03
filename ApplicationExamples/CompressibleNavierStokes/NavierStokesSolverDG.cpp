@@ -158,7 +158,7 @@ void NavierStokes::NavierStokesSolverDG::boundaryValues(const double* const x,co
 
  // Then compute the outgoing flux.
   //ns.evaluateFlux(stateOut, gradStateOut.data(), F, false);
-  ns.evaluateFlux(stateOut, gradStateOut.data(), F, false);
+  ns.evaluateFlux(stateOut, gradStateOut.data(), F, true);
   std::copy_n(F[normalNonZero], NumberOfVariables, fluxOut);
 
 }
@@ -234,12 +234,15 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
     riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
   }
 
-  kernels::idx2 idx_F(basisSize, NumberOfVariables);
-  for (int i = 0; i < (Order + 1); ++i) {
-      // TODO(Lukas) only set parts of it to zero?
-      // i.e. in correct direction?
-    fluxIn[idx_F(i, 3)] = 0.0;
+  if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
+    static_assert(DIMENSIONS == 2); // TODO(Lukas) Implement for 3D
+    kernels::idx2 idx_F(basisSize, NumberOfVariables);
+    for (int i = 0; i < (Order + 1); ++i) {
+      // Set energy flux to zero!
+      fluxIn[idx_F(i, 3)] = 0.0;
+    }
   }
+
   kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   delete[] block;
 }
