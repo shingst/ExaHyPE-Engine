@@ -195,74 +195,72 @@ def render_jobscript(template, config, file_name):
     config['jobscript_path'] = file_name
 
 def run(template, my_env, config):
-    logging.info("Starting running {config}".format(config=config))
-    config['job_name'] = "exahype_o{order}_f{factor}".format(order=config['order'],
-                                                             factor=config['factor'])
+    logging.info("Starting running {config}".format(config=config))                                                  
+    config['job_name'] = "exahype_o{order}_f{factor}".format(order=config['order'],                                  
+                                                             factor=config['factor'])                                
 
-    config['exahype_bin'] = '{bin_dir}/exahype_order_{order}'.format(
+    config['exahype_bin'] = '{bin_dir}/exahype_order_{order}'.format(                                                
         bin_dir=config['bin_dir'],
         order=config['order'])
 
-    config['results_dir'] = '{dir}/order_{order}_factor_{factor}'.format(
+    config['results_dir'] = '{dir}/order_{order}_factor_{factor}'.format(                                            
         dir=config['results_dir'],
         order=config['order'],
         factor=config['factor'])
-    
-    
+
     # Render exahype file.
     os.makedirs(config['script_dir'], exist_ok=True)
-    template_file_name = config['script_dir'] + '/rendered_template_{template_hash}.exahype2'
+    template_file_name = config['script_dir'] + '/rendered_template_{template_hash}.exahype2'                        
     render_template(template, config, template_file_name)
 
     # Create dirs for output and logs.
     config['log_dir'] = config['tmp_dir'] + '/logs/'
-    config['working_dir'] = config['tmp_dir'] + '/workingdirs/' + config['template_hash']
-
-    # Copy log filter to working dir
-    shutil.copy2(get_application_path() + '/exahype.log_filter',
-                 config['working_dir'] + '/exahype.log_filter')
+    config['working_dir'] = config['tmp_dir'] + '/workingdirs/' + config['template_hash'] + '/'                      
 
     os.makedirs(config['log_dir'], exist_ok=True)
     os.makedirs(config['working_dir'], exist_ok=True)
     os.makedirs(config['results_dir'], exist_ok=True)
     os.makedirs(config['script_dir'], exist_ok=True)
 
+    # Copy log filter to working dir
+    shutil.copy2(get_application_path() + '/exahype.log-filter',                                                     
+                 config['working_dir'])
+
     # Render jobscript.
-    jobscript_file_name = config['script_dir'] + '/rendered_jobscript_{template_hash}.cmd'
-    render_jobscript(job_template, config, jobscript_file_name)
+    jobscript_file_name = config['script_dir'] + '/rendered_jobscript_{template_hash}.cmd'                           
+    render_jobscript(job_template, config, jobscript_file_name)                                                      
 
     # Submit jobscript.
-    subprocess.run(['llsubmit', config['jobscript_path']], env=my_env)
+    subprocess.run(['llsubmit', config['jobscript_path']], env=my_env)                                               
 
-    #subprocess.run([exahype_bin, template_path], env=my_env)
-    logging.info("Submitted jobscript {jobscript_file_name} for config {template_file_name}.".format(
+    #subprocess.run([exahype_bin, template_path], env=my_env)                                                        
+    logging.info("Submitted jobscript {jobscript_file_name} for config {template_file_name}.".format(                
         jobscript_file_name="",
         template_file_name=config['exahype_config_file']))
-    
 
 def build(template, my_env, config):
     os.makedirs(config['bin_dir'], exist_ok=True)
     os.makedirs(config['script_dir'], exist_ok=True)
-    
-    os.chdir(get_application_path()) # move to correct directory
 
-    toolkit_bin = get_exahype_root() + '/Toolkit/toolkit.sh'
+    os.chdir(get_application_path()) # move to correct directory                                                     
 
-    template_file_name = config['script_dir'] + '/rendered_template_{template_hash}.exahype2'
+    toolkit_bin = get_exahype_root() + '/Toolkit/toolkit.sh'                                                         
+
+    template_file_name = config['script_dir'] + '/rendered_template_{template_hash}.exahype2'                        
     render_template(template, config, template_file_name)
-    
+
     logging.info("Started building with {}".format(config))
 
     # Clean files from prior build.
-    subprocess.run(['make', 'clean' ,'-j{}'.format(os.cpu_count())], env=my_env)
+    subprocess.run(['make', 'clean' ,'-j{}'.format(os.cpu_count())], env=my_env)                                     
     logging.info("Cleaned.")
 
     # Run toolkit for currenct settings.
-    subprocess.run([toolkit_bin, config['exahype_config_file']], env=my_env)
+    subprocess.run([toolkit_bin, config['exahype_config_file']], env=my_env)                                         
     logging.info("Ran toolkit.")
-    
+
     # Compile program.
-    subprocess.run(['make', '-j{}'.format(os.cpu_count())], env=my_env)
+    subprocess.run(['make', '-j{}'.format(os.cpu_count())], env=my_env)                                              
     logging.info("Compiled.")
 
     # Move binary for later use.
@@ -274,18 +272,18 @@ def build(template, my_env, config):
     logging.info("Copied file to {}".format(new_path))
 
     return new_path
-    
+   
 def main():
-    parser = argparse.ArgumentParser(description='Run simulations for various orders and mesh-sizes.')
-    parser.add_argument('--build', '-b', action='store_true')
+    parser = argparse.ArgumentParser(description='Run simulations for various orders and mesh-sizes.')               
+    parser.add_argument('--build', '-b', action='store_true')                                                        
     parser.add_argument('--run', '-r', action='store_true')
 
     args = parser.parse_args()
-    
+
     print(__file__)
     print(get_exahype_root())
 
-    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)                                        
 
     # Set up environment for compiling.
     # TODO: Maybe extract to shell script?
@@ -298,15 +296,15 @@ def main():
                    'threads_per_task': 14,
                    'background_threads_per_task': 7,
 
-                   'tmp_dir': os.path.expanduser('/gss/scratch/pr83no/ga24dib2/exahype/'),
-                   'results_dir': os.path.expanduser('/gpfs/work/pr83no/ga24dib2/exahype/results/'),
-                   'bin_dir': os.path.expanduser('/gpfs/work/pr83no/ga24dib2/exahype/bin/'),
-                   'script_dir': os.path.expanduser('/gss/scratch/pr83no/ga24dib2/exahype/templates/')
+                   'tmp_dir': os.path.expanduser('/gss/scratch/pr83no/ga24dib2/exahype/'),                           
+                   'results_dir': os.path.expanduser('/gpfs/work/pr83no/ga24dib2/exahype/results/'),                 
+                   'bin_dir': os.path.expanduser('/gpfs/work/pr83no/ga24dib2/exahype/bin/'),                         
+                   'script_dir': os.path.expanduser('/gss/scratch/pr83no/ga24dib2/exahype/templates/')               
     }
-    user_config['total_tasks'] = user_config['nodes'] * user_config['tasks_per_node']
-    
-    order_grid = [1,2,3,4,5] 
-    max_factor = 4 
+    user_config['total_tasks'] = user_config['nodes'] * user_config['tasks_per_node']                                
+
+    order_grid = [1,4]
+    max_factor = 4
     factor_grid = range(1, max_factor+1)
 
     # Build for various orders.
@@ -317,8 +315,8 @@ def main():
                     'factor': max_factor,
                     'mesh_size': get_meshsize(max_factor)}
             config = {**user_config, **run_config}
-            build(template=template, my_env=my_env, config=config) 
-    
+            build(template=template, my_env=my_env, config=config)                                                   
+
     if args.run:
         logging.info("Start running.")
         for order in order_grid:
@@ -327,7 +325,7 @@ def main():
                         'factor': factor,
                         'mesh_size': get_meshsize(factor)}
                 config = {**user_config, **run_config}
-                run(template=template, my_env=my_env, config=config)
+                run(template=template, my_env=my_env, config=config)                                                 
 
 if __name__ == '__main__':
     main()
