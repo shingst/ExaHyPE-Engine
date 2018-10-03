@@ -37,7 +37,7 @@ void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cm
   assert(constants.isValueValidDouble("viscosity"));
   assert(constants.isValueValidString("scenario"));
 
-  const std::string scenarioName = constants.getValueAsString("scenario");
+  scenarioName = constants.getValueAsString("scenario");
 
   if (scenarioName == "sod-shock-tube") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::SodShockTube());
@@ -63,10 +63,11 @@ void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cm
   std::cout << referenceViscosity << " " << scenario->getGasConstant() << std::endl;
   ns = PDE(referenceViscosity, scenario->getReferencePressure(), scenario->getGamma(),
           scenario->getPr(), scenario->getC_v(), scenario->getC_p(), scenario->getGasConstant());
+
+  auto ns2 = ns;
 }
 
 void NavierStokes::NavierStokesSolverDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
-  // @todo Please implement/augment if required
   if (tarch::la::equals(t, 0.0)) {
     Variables vars(Q);
     scenario->initialValues(x, ns, vars);
@@ -192,7 +193,7 @@ void NavierStokes::NavierStokesSolverDG::viscousFlux(const double *const Q, cons
 }
 
 double NavierStokes::NavierStokesSolverDG::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  return 0.35 * stableDiffusiveTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
+  return (0.7/0.9) * stableDiffusiveTimeStepSize<NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
   //return kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolverDG, true>(*static_cast<NavierStokesSolverDG*>(this),luh,dx);
 }
 
@@ -204,11 +205,10 @@ void NavierStokes::NavierStokesSolverDG::riemannSolver(double* FL,double* FR,con
 
 }
 
-/*
 void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
   constexpr int basisSize     = (Order+1)*(Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
-  constexpr int sizeFluxOut  = (DIMENSIONS + 1)*NumberOfVariables*basisSize;
+  constexpr int sizeFluxOut  = NumberOfVariables*basisSize;
 
   constexpr int totalSize = sizeStateOut + sizeFluxOut;
   double* block = new double[totalSize];
@@ -226,23 +226,25 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
     double* FR =  fluxIn;  const double* const QR = stateIn;
 
     riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
-    //kernels::aderdg::generic::c::riemannSolverNonlinear<false, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,dt,direction);
-
-    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
   else {
     double* FL =  fluxIn;  const double* const QL = stateIn;
     double* FR = fluxOut; const double* const QR = stateOut;
 
     riemannSolverNonlinear<false,NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,cellSize, dt,direction);
-    //kernels::aderdg::generic::c::riemannSolverNonlinear<false, NavierStokesSolverDG>(*static_cast<NavierStokesSolverDG*>(this),FL,FR,QL,QR,dt,direction);
-
-    kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   }
+
+  kernels::idx2 idx_F(basisSize, NumberOfVariables);
+  for (int i = 0; i < (Order + 1); ++i) {
+      // TODO(Lukas) only set parts of it to zero?
+      // i.e. in correct direction?
+    fluxIn[idx_F(i, 3)] = 0.0;
+  }
+  kernels::aderdg::generic::c::faceIntegralNonlinear<NumberOfVariables, Order+1>(update,fluxIn,direction,orientation,cellSize);
   delete[] block;
 }
- */
 
+/*
 void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update, double* const fluxIn,const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int direction,const int orientation) {
   constexpr int basisSize     = (Order+1)*(Order+1);
   constexpr int sizeStateOut = (NumberOfVariables+NumberOfParameters)*basisSize;
@@ -301,3 +303,4 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
 
   delete[] block;
 }
+ */

@@ -34,9 +34,9 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
      * Log device
      */
     static tarch::logging::Log _log;
-    PDE ns;
     std::unique_ptr<Scenario> scenario;
   public:
+    std::string scenarioName;
     NavierStokesSolverDG(
         const double maximumMeshSize,
         const int maximumMeshDepth,
@@ -141,6 +141,7 @@ class NavierStokes::NavierStokesSolverDG : public NavierStokes::AbstractNavierSt
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
+    PDE ns;
 };
 
 #endif // __NavierStokesSolverDG_CLASS_HEADER__
