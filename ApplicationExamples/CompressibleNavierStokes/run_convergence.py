@@ -124,7 +124,7 @@ job_template = \
 #@ initialdir = {working_dir}
 #@ error  =  {log_dir}/job.$(schedd_host).$(jobid).err
 #@ output =  {log_dir}/job.$(schedd_host).$(jobid).out
-#@ notification=always
+#@ notification=error
 #@ notify_user=lukas@krenz.land
 #@ queue
 
