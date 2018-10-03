@@ -63,7 +63,7 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
     }
   }
   {{m.freeArray("tmpY") | indent(2)}}{##}
-{% endif %}
+{% endif %}{# nDim == 2 #}
   
   //space out for ghostlayer (in place)
   for (int z = {{nDofLim3D-1}}; z >= 0; z--) {
@@ -112,7 +112,7 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
     }
   }
   {{m.freeArray("tmpY") | indent(2)}}{##}
-{% endif %}
+{% endif %}{# nDim ==2 #}
   
 }
 
@@ -237,38 +237,50 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     double* max
 ) {
 
-  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
-  
-{% if useLibxsmm %}
-  double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  double lobValues[{{nVar*nDof}}] __attribute__((aligned(ALIGNMENT)));
-  
+  // x
+  {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad, setToZero=True) | indent(2)}}{##}
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
-      std::memset(lobValues, 0, sizeof(double)*{{nVar*nDof}});
-      for (int iz = 0; iz < {{nDof3D}}; iz++) {
-        for (int iy = 0; iy < {{nDof}}; iy++) {
-          #pragma vector aligned
-          for(int it=0; it<{{nDof*nDofPad}}; it++) {
-            coeff[it] = uh2lob[it] 
-{% if nDim==3 %}
-                      * uh2lob[z*{{nDofPad}}+iz]
-{% endif %}
-                      * uh2lob[y*{{nDofPad}}+iy];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_uh2lob}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lobValues);
-        }
+      {{ m.matmul('uh2lob_x', 'luh', 'uh2lob', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDof*nDataPad) | indent(6) }}{##}
+    }
+  }
+  
+  {%if nDim == 2%}
+  // y
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  {{m.allocateArray('lob', nDof*nDataPad) | indent(2)}}{##} // constant x slice of projected solution
+  for (int x = 0; x < {{nDof}}; x++) {
+    // lob is reset to 0 in the matmul
+    {{ m.matmul('uh2lob_y_slice', 'tmpX', 'uh2lob', 'lob', 'x*'~nDataPad, '0', '0') | indent(4) }}{##} 
+    for(int p = 0; p < {{nDof}}; p++) {
+      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lob+p*{{nDataPad}});
+      for (int n = 0; n < {{nObs}}; n++) {
+        min[n] = std::min( min[n], observables[n] );
+        max[n] = std::max( max[n], observables[n] );
       }
-      
-      for (int x = 0; x < {{nDof}}; x++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lobValues+x*{{nVar}});
-    
+    }
+  }
+  {{m.freeArray("tmpX")}}{##}
+  {{m.freeArray("lob")}}{##}
+{% else %}
+  // y
+  {{m.allocateArray('tmpY', nDof*nDof*nDof*nDataPad, setToZero=True) | indent(2)}}{##}
+  for (int z = 0; z < {{nDof}}; z++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+      {{ m.matmul('uh2lob_y', 'tmpX', 'uh2lob', 'tmpY', '(z*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nDataPad) | indent(6) }}{##}
+    }
+  }
+  {{m.freeArray("tmpX") | indent(2)}}{##}
+  
+  // z
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  {{m.allocateArray('lob', nDof*nDataPad) | indent(2)}}{# no need to set to zero, gemm will overwrite #} // constant x,y slice of projected solution
+  for (int y = 0; y < {{nDof}}; y++) {
+    for (int x = 0; x < {{nDof}}; x++) {
+      // lob is reset to 0 in the matmul
+      {{ m.matmul('uh2lob_z_slice', 'tmpY', 'uh2lob', 'lob', '(y*'~nDof~'+x)*'~nDataPad, '0', '0') | indent(6) }}{##}
+      for(int p = 0; p < {{nDof}}; p++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lob+p*{{nDataPad}});
         for (int n = 0; n < {{nObs}}; n++) {
           min[n] = std::min( min[n], observables[n] );
           max[n] = std::max( max[n], observables[n] );
@@ -276,37 +288,9 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
       }
     }
   }
-{% else %}{# useLibxsmm #}
-  double lobValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
-  for (int z = 0; z<{{nDof3D}}; z++) {
-    for (int y = 0; y < {{nDof}}; y++) {
-      for (int x = 0; x < {{nDof}}; x++) {
-        std::memset(lobValues, 0, sizeof(double)*{{nVarPad}});
-        for (int iz = 0; iz < {{nDof3D}}; iz++) {
-          for (int iy = 0; iy < {{nDof}}; iy++) {
-            for (int ix = 0; ix < {{nDof}}; ix++) {
-              for (int n = 0; n < {{nVar}}; n++) {
-                lobValues[n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n]
-{% if nDim == 3 %}
-                            * uh2lob[z*{{nDofPad}}+iz]
-{% endif %}
-                            * uh2lob[y*{{nDofPad}}+iy]
-                            * uh2lob[x*{{nDofPad}}+ix];
-              }
-            }
-          }
-        }
-
-        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},lobValues);
-        
-        for (int n = 0; n < {{nObs}}; n++) {
-          min[n] = std::min( min[n], observables[n] );
-          max[n] = std::max( max[n], observables[n] );
-        }
-      }
-    }
-  }
-{% endif %}{# useLibxsmm #}
+  {{m.freeArray("tmpY") | indent(2)}}{##}
+  {{m.freeArray("lob") | indent(2)}}{##}
+{% endif %}{# nDim==2 #}
 
 }
 
@@ -321,39 +305,50 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     double* max
 ) {
   
-
+  // x
+  {{m.allocateArray('tmpX', nDof3D*nDof*nDofLim*nDataPad, setToZero=True) | indent(2)}}{##}
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      {{ m.matmul('dg2fv_x', 'luh', 'dg2fv', 'tmpX', '(z*'~nDof~'+y)*'~nDof*nData, '0', '(z*'~nDof~'+y)*'~nDofLim*nDataPad) | indent(6) }}{##}
+    }
+  }
+  
+  {%if nDim == 2%}
+  // y
   double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
-  
-{% if useLibxsmm %}
-  double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  double limValues[{{nVar*nDofLim}}] __attribute__((aligned(ALIGNMENT)));
-  
-  for (int z = 0; z < {{nDofLim3D}}; z++) {
-    for (int y = 0; y < {{nDofLim}}; y++) {
-      std::memset(limValues, 0, sizeof(double)*{{nVar*nDofLim}});
-      for (int iz = 0; iz < {{nDof3D}}; iz++) {
-        for (int iy = 0; iy < {{nDof}}; iy++) {
-          #pragma vector aligned
-          for(int it=0; it<{{nDofLim*nDofPad}}; it++) {
-            coeff[it] = dg2fv[it] 
-{% if nDim==3 %}
-                      * dg2fv[z*{{nDofPad}}+iz]
-{% endif %}
-                      * dg2fv[y*{{nDofPad}}+iy];
-          }
-#ifdef USE_IPO
-#ifndef UNSAFE_IPO
-          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
-          #pragma forceinline
-#endif
-          {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, limValues);
-        }
+  {{m.allocateArray('lim', nDofLim*nDataPad) | indent(2)}}{##} // constant x slice of projected solution
+  for (int x = 0; x < {{nDofLim}}; x++) {
+    // lim is reset to 0 in the matmul
+    {{ m.matmul('dg2fv_y_slice', 'tmpX', 'dg2fv', 'lim', 'x*'~nDataPad, '0', '0') | indent(4) }}{##}
+    for(int p = 0; p < {{nDofLim}}; p++) {
+      solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lim+p*{{nDataPad}});
+      for (int n = 0; n < {{nObs}}; n++) {
+        min[n] = std::min( min[n], observables[n] );
+        max[n] = std::max( max[n], observables[n] );
       }
-      
-      for (int x = 0; x < {{nDofLim}}; x++) {
-        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, limValues+x*{{nVar}});
-    
+    }
+  }
+  {{m.freeArray("tmpX")}}{##}
+  {{m.freeArray("lim")}}{##}
+{% else %}
+  // y
+  {{m.allocateArray('tmpY', nDof*nDofLim*nDofLim*nDataPad, setToZero=True) | indent(2)}}{##}
+  for (int z = 0; z < {{nDof}}; z++) {
+    for (int x = 0; x < {{nDofLim}}; x++) {
+      {{ m.matmul('dg2fv_y', 'tmpX', 'dg2fv', 'tmpY', '(z*'~nDof*nDofLim~'+x)*'~nDataPad, '0', '(z*'~nDofLim*nDofLim~'+x)*'~nDataPad) | indent(6) }}{##}
+    }
+  }
+  {{m.freeArray("tmpX") | indent(2)}}{##}
+  
+  // z
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  {{m.allocateArray('lim', nDofLim*nDataPad) | indent(2)}}{# no need to set to zero, gemm will overwrite #} // constant x,y slice of projected solution
+  for (int y = 0; y < {{nDofLim}}; y++) {
+    for (int x = 0; x < {{nDofLim}}; x++) {
+      // lim is reset to 0 in the matmul
+      {{ m.matmul('dg2fv_z_slice', 'tmpY', 'dg2fv', 'lim', '(y*'~nDofLim~'+x)*'~nDataPad, '0', '0') | indent(6) }}{##}
+      for(int p = 0; p < {{nDofLim}}; p++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lim+p*{{nDataPad}});
         for (int n = 0; n < {{nObs}}; n++) {
           min[n] = std::min( min[n], observables[n] );
           max[n] = std::max( max[n], observables[n] );
@@ -361,43 +356,14 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
       }
     }
   }
-{% else %}{# useLibxsmm #}
-  double limValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
-
-  //tensor operation
-  for (int z = 0; z < {{nDofLim3D}}; z++) {
-    for (int y = 0; y < {{nDofLim}}; y++) {
-      for (int x = 0; x < {{nDofLim}}; x++) {
-        std::memset(limValues, 0, sizeof(double)*{{nVarPad}});
-        for (int iz = 0; iz < {{nDof3D}}; iz++) {
-          for (int iy = 0; iy < {{nDof}}; iy++) {
-            for (int ix = 0; ix < {{nDof}}; ix++) {
-              for (int n = 0; n < {{nVar}}; n++) {
-                limValues[n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n]
-{% if nDim == 3 %}
-                                * dg2fv[z*{{nDofPad}}+iz]
-{% endif %}
-                                * dg2fv[y*{{nDofPad}}+iy]
-                                * dg2fv[x*{{nDofPad}}+ix];
-              }
-            }
-          }
-        }
-
-        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, limValues);
-        
-        for (int n = 0; n < {{nObs}}; n++) {
-          min[n] = std::min( min[n], observables[n] );
-          max[n] = std::max( max[n], observables[n] );
-        }
-      }
-    }
-  }
-{% endif %}{# useLibxsmm #}
+  {{m.freeArray("tmpY") | indent(2)}}{##}
+  {{m.freeArray("lim") | indent(2)}}{##}
+{% endif %}{# nDim==2 #}
 
 }
 
-
+//Legacy version
+//TODO JMG remove
 /*
 
 void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) {
@@ -522,6 +488,168 @@ void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const 
 }
 
 
+void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
+    const double* const luh,
+    const exahype::solvers::ADERDGSolver* solver,
+    double* min, 
+    double* max
+) {
+
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  
+{% if useLibxsmm %}
+  double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  double lobValues[{{nVar*nDof}}] __attribute__((aligned(ALIGNMENT)));
+  
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      std::memset(lobValues, 0, sizeof(double)*{{nVar*nDof}});
+      for (int iz = 0; iz < {{nDof3D}}; iz++) {
+        for (int iy = 0; iy < {{nDof}}; iy++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = uh2lob[it] 
+{% if nDim==3 %}
+                      * uh2lob[z*{{nDofPad}}+iz]
+{% endif %}
+                      * uh2lob[y*{{nDofPad}}+iy];
+          }
+#ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
+          #pragma forceinline
+#endif
+          {{gemm_uh2lob}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, lobValues);
+        }
+      }
+      
+      for (int x = 0; x < {{nDof}}; x++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, lobValues+x*{{nVar}});
+    
+        for (int n = 0; n < {{nObs}}; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+{% else %}{# useLibxsmm #}
+  double lobValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+  for (int z = 0; z<{{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      for (int x = 0; x < {{nDof}}; x++) {
+        std::memset(lobValues, 0, sizeof(double)*{{nVarPad}});
+        for (int iz = 0; iz < {{nDof3D}}; iz++) {
+          for (int iy = 0; iy < {{nDof}}; iy++) {
+            for (int ix = 0; ix < {{nDof}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                lobValues[n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n]
+{% if nDim == 3 %}
+                            * uh2lob[z*{{nDofPad}}+iz]
+{% endif %}
+                            * uh2lob[y*{{nDofPad}}+iy]
+                            * uh2lob[x*{{nDofPad}}+ix];
+              }
+            }
+          }
+        }
+
+        solver->mapDiscreteMaximumPrincipleObservables(observables,{{nObs}},lobValues);
+        
+        for (int n = 0; n < {{nObs}}; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+{% endif %}{# useLibxsmm #}
+
+}
+
+void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
+    const double* const luh,
+    const exahype::solvers::ADERDGSolver* solver,
+    double* min, 
+    double* max
+) {
+  
+
+  double observables[{{nObs}}] __attribute__((aligned(ALIGNMENT)));
+  
+{% if useLibxsmm %}
+  double coeff[{{nDofLim*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  double limValues[{{nVar*nDofLim}}] __attribute__((aligned(ALIGNMENT)));
+  
+  for (int z = 0; z < {{nDofLim3D}}; z++) {
+    for (int y = 0; y < {{nDofLim}}; y++) {
+      std::memset(limValues, 0, sizeof(double)*{{nVar*nDofLim}});
+      for (int iz = 0; iz < {{nDof3D}}; iz++) {
+        for (int iy = 0; iy < {{nDof}}; iy++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDofLim*nDofPad}}; it++) {
+            coeff[it] = dg2fv[it] 
+{% if nDim==3 %}
+                      * dg2fv[z*{{nDofPad}}+iz]
+{% endif %}
+                      * dg2fv[y*{{nDofPad}}+iy];
+          }
+#ifdef USE_IPO
+#ifndef UNSAFE_IPO
+          volatile double doNotOptimizeAway_coeff = coeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+#endif
+          #pragma forceinline
+#endif
+          {{gemm_dg2fv}}(luh+(iz*{{nDof3D}}+iy)*{{nDof*nData}}, coeff, limValues);
+        }
+      }
+      
+      for (int x = 0; x < {{nDofLim}}; x++) {
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, limValues+x*{{nVar}});
+    
+        for (int n = 0; n < {{nObs}}; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+{% else %}{# useLibxsmm #}
+  double limValues[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+
+  //tensor operation
+  for (int z = 0; z < {{nDofLim3D}}; z++) {
+    for (int y = 0; y < {{nDofLim}}; y++) {
+      for (int x = 0; x < {{nDofLim}}; x++) {
+        std::memset(limValues, 0, sizeof(double)*{{nVarPad}});
+        for (int iz = 0; iz < {{nDof3D}}; iz++) {
+          for (int iy = 0; iy < {{nDof}}; iy++) {
+            for (int ix = 0; ix < {{nDof}}; ix++) {
+              for (int n = 0; n < {{nVar}}; n++) {
+                limValues[n] += luh[((iz*{{nDof}}+iy)*{{nDof}}+ix)*{{nData}}+n]
+{% if nDim == 3 %}
+                                * dg2fv[z*{{nDofPad}}+iz]
+{% endif %}
+                                * dg2fv[y*{{nDofPad}}+iy]
+                                * dg2fv[x*{{nDofPad}}+ix];
+              }
+            }
+          }
+        }
+
+        solver->mapDiscreteMaximumPrincipleObservables(observables, {{nObs}}, limValues);
+        
+        for (int n = 0; n < {{nObs}}; n++) {
+          min[n] = std::min( min[n], observables[n] );
+          max[n] = std::max( max[n], observables[n] );
+        }
+      }
+    }
+  }
+{% endif %}{# useLibxsmm #}
+
+}
 
 
 */
