@@ -235,7 +235,7 @@ void NavierStokes::NavierStokesSolverDG::boundaryConditions(double* const update
   }
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::wall) {
-    static_assert(DIMENSIONS == 2); // TODO(Lukas) Implement for 3D
+    static_assert(DIMENSIONS == 2, "BC only implemented for 2D!"); // TODO(Lukas) Implement for 3D
     kernels::idx2 idx_F(basisSize, NumberOfVariables);
     for (int i = 0; i < (Order + 1); ++i) {
       // Set energy flux to zero!
