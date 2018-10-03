@@ -422,9 +422,18 @@ public:
    * \param[out]   fR      the fluxes on the right side of the point cell (already allocated).
    * \param[in]    qL      the state vector in the left neighbour cell
    * \param[in]    qR      the state vector in the right neighbour cell
+   * \param[in]    cellSize the size of a single cell (dx/patchSize)
    * \param[in]    normalNonZero  Index of the nonzero normal vector component.
    **/
-  virtual double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) = 0;
+  virtual double riemannSolver(
+          double* fL,
+          double *fR,
+          const double* qL,
+          const double* qR,
+          const double* gradQL,
+          const double* gradQR,
+          const double* cellSize,
+          int normalNonZero) = 0;
 
   virtual void solutionUpdate(
       double* luhNew,const double* luh,

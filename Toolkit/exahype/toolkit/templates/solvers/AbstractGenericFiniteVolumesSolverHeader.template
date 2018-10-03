@@ -69,8 +69,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void boundaryConditions(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
 
     /// Apr 18, Coding Week: Riemann Solvers in FV. Hopefully inlined as evaluated point wise.
-    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int direction) override;
-
+    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int normalNonZero) override;
     static void constantsToString(std::ostream& os);
     static void abortWithMsg(const char* const msg);
     
@@ -80,7 +79,7 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     {% endif %}
     
     {% if not useSource %}
-    void algebraicSource(const double* const Q,double* S)  final {}
+    void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) final;
     {% endif %}
     
     {% if not useFlux or useViscousFlux %}

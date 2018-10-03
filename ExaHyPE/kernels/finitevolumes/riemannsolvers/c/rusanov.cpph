@@ -24,24 +24,49 @@
 template <bool useNCP, bool useFlux, bool useViscousFlux, typename SolverType>
 double kernels::finitevolumes::riemannsolvers::c::rusanov(
     SolverType& solver,
-    double* fnL, double *fnR, const double* qL, const double* qR, int normalNonZero) { // TODO(Dominic): I need four of those
+    double* fnL, double *fnR, const double* qL, const double* qR,
+    const double* gradQL,
+    const double* gradQR,
+    const double* const cellSize,
+    int normalNonZero) { // TODO(Dominic): I need four of those
   constexpr int numberOfVariables  = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables + numberOfParameters;
 
+  // Compute penalty contribution of convective eigenvalues.
   double sL[numberOfVariables];
   double sR[numberOfVariables];
+
   solver.eigenvalues(qL, normalNonZero, sL);
   solver.eigenvalues(qR, normalNonZero, sR);
 
-  double s_max = -1.0;
+  double maxEigenvalue = -1.0;
   for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sL_i = std::abs(sL[i]);
-    s_max = std::max( abs_sL_i, s_max );
+    maxEigenvalue = std::max( std::abs(sL[i]), maxEigenvalue);
   }
   for (int i = 0; i < numberOfVariables; i++) {
-    const double abs_sR_i = std::abs(sR[i]);
-    s_max = std::max( abs_sR_i, s_max );
+    maxEigenvalue = std::max(std::abs(sR[i]), maxEigenvalue);
+  }
+
+  double s_max = maxEigenvalue;
+
+  double maxViscousEigenvalue = 0.0;
+  if (useViscousFlux) {
+    // Compute penalty contribution of diffusive eigenvalues
+    std::fill_n(sL, numberOfVariables, 0.0);
+    std::fill_n(sR, numberOfVariables, 0.0);
+
+    solver.viscousEigenvalues(qL, normalNonZero, sL);
+    solver.viscousEigenvalues(qR, normalNonZero, sR);
+
+    for (int i = 0; i < numberOfVariables; i++) {
+      maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sL[i]));
+    }
+    for (int i = 0; i < numberOfVariables; i++) {
+      maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[i]));
+    }
+
+    s_max += 2 * maxViscousEigenvalue / cellSize[normalNonZero];
   }
 
   // determine BgradQ from ncp
@@ -64,21 +89,26 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     solver.flux(qL, FL);
     solver.flux(qR, FR);
   }
+
+  idx2 idxGradQ(DIMENSIONS, numberOfData);
   if (useViscousFlux) {
       //std::cout << numberOfData << std::endl;
-      double gradQ_[DIMENSIONS*numberOfData] = {0.0};
+      double gradQ_[DIMENSIONS*numberOfVariables] = {0.0};
       for(int i=0; i < DIMENSIONS; i++){
-          for(int j=0; j < numberOfData; j++){
-              gradQ_[i*numberOfData + j] = gradQ[i][j];
+        // Skip parameters
+          for(int j=0; j < numberOfVariables; j++){
+              gradQ_[idxGradQ(i, j)] = gradQ[i][j];
           }
       }
-    solver.viscousFlux(qL,gradQ_, FL);
-    solver.viscousFlux(qR,gradQ_, FR);
+
+    // TODO (Lukas) Compute complete gradient over both dimensions!
+    solver.viscousFlux(qL,gradQL, FL);
+    solver.viscousFlux(qR,gradQR, FR);
   }
 
   for (int i = 0; i < numberOfVariables; i++) {
     fnL[i] = 0.5 * s_max * (qL[i] - qR[i]);
-    if (useFlux) {
+    if (useFlux || useViscousFlux) {
       fnL[i] += 0.5 * (FL2[normalNonZero][i] + FR2[normalNonZero][i]);
     }
 
@@ -89,7 +119,6 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
       fnR[i] = fnL[i];
     }
   }
-
   return s_max;
 }
 ////////////////////////////////////////////////////////////////////////////////
