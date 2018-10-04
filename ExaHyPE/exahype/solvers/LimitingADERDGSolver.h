@@ -1053,7 +1053,8 @@ public:
 
   void prolongateFaceData(
       const int cellDescriptionsIndex,
-      const int element) final override;
+      const int element,
+      const bool isAtRemoteBoundary) final override;
 
   void restriction(
         const int cellDescriptionsIndex,

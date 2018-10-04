@@ -71,7 +71,7 @@ void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
 {% if useViscousFlux %}
 void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
     // Dimensions                        = {{dimensions}}
-    // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+    // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
 
     // @todo Please implement/augment if required
     {% for d in range_0_nDim %}
@@ -84,7 +84,7 @@ void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* co
 
 void {{project}}::{{solver}}::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
     // Dimensions             = {{dimensions}}
-    // Number of variables    = {{numberOfVariables + numberOfParameters}} + #parameters
+    // Number of variables    = {{numberOfVariables + numberOfMaterialParameters}} + #parameters
 
     // @todo Please implement/augment if required
     {% for i in range_0_nVar %}

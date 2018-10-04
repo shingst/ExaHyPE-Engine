@@ -297,7 +297,10 @@ void exahype::mappings::FusedTimeStep::enterCell(
        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
        const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
        if (element!=exahype::solvers::Solver::NotFound) {
-         solver->prolongateFaceData(fineGridCell.getCellDescriptionsIndex(),element); // this operates only on virtual helper cells (pull from below)
+         solver->prolongateFaceData(
+             fineGridCell.getCellDescriptionsIndex(),element,
+             exahype::Cell::isAtRemoteBoundary(
+                 fineGridVertices,fineGridVerticesEnumerator)); // this operates only on virtual helper cells (pull from below)
        }
      }
   }

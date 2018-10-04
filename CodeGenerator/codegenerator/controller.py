@@ -91,8 +91,8 @@ class Controller:
             "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
             "useCERKGuess"          : args["useCERKGuess"],
-            "useLibxsmm"            : True,
-            "runtimeDebug"          : False #for debug
+            "useLibxsmm"            : Configuration.useLibxsmm,
+            "runtimeDebug"          : Configuration.runtimeDebug #for debug
         }
         
         self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
@@ -114,7 +114,7 @@ class Controller:
            raise ValueError("Number of parameters must be >= 0")
         if self.config["nDim"] < 2 or self.config["nDim"] > 3:
            raise ValueError("Number of dimensions must be 2 or 3")
-        if self.config["nDof"] < 0 or self.config["nDof"] > 9:
+        if self.config["nDof"] < 1 or self.config["nDof"] > 10: #nDof = order+1
            raise ValueError("Order has to be between 0 and 9")
         if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
             raise ValueError("If using source and NCP, both or neither must be vectorized")

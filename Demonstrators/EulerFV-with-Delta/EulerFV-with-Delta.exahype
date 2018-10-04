@@ -19,16 +19,16 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  */
-exahype-project EulerADERDG
+exahype-project EulerFV
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./Demonstrators/EulerADERDG
+  output-directory const           = ./Demonstrators/EulerFV-with-Delta
 
   computational-domain
     dimension const         = 2
     width                   = 1.0, 1.0
     offset                  = 0.0, 0.0
-    end-time                = 0.01
+    end-time                = 0.0001
   end computational-domain
  
   /*
@@ -42,20 +42,21 @@ exahype-project EulerADERDG
     timeout                  = 60
   end distributed-memory
   */
-
+  
   /*
    ====================================================
    Comment this stuff in to get a shared memory version
    ====================================================
- */ 
+  */ 
+  /*
   shared-memory
     identifier               = dummy
     configure                = {}
     cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
-
-
+  */
+  
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
@@ -69,41 +70,21 @@ exahype-project EulerADERDG
     spawn-double-compression-as-background-thread = off
   end global-optimisation
 
-
-
-  
-  solver Limiting-ADER-DG MyEulerSolver
-    variables const            = rho:1,j:3,E:1
-    order const                = 5
-    maximum-mesh-size          = 5e-1    
-    maximum-mesh-depth         = 2
-    time-stepping              = global
-    type const                 = nonlinear, Legendre
-    terms const                = flux
-    optimisation const         = generic
-    language const             = C
-    limiter-type const         = godunov
-    limiter-optimisation const = generic
-    limiter-language const     = C
-    dmp-observables     const  = 5
-    dmp-relaxation-parameter   = 1e-4
-    dmp-difference-scaling     = 1e-3
+  solver Finite-Volumes MyEulerSolver
+    variables const    = rho:1,j:3,E:1,inside:1
+    patch-size const   = 10
+    maximum-mesh-size  = 5e-2
+    time-stepping      = global
+    type const         = godunov
+    terms const        = flux
+	optimisation const = generic
     
-    plot vtu::Cartesian::vertices::limited::ascii EulerWriter
-      variables const = 5
-      time            = 100.0
-      repeat          = 0.001
+    language const    = C
+    plot vtu::Cartesian::cells::ascii EulerWriter
+      variables const = 6
+      time            = 0.0
+      repeat          = 0.01
       output          = ./variables
     end plot
-    
-    
-    plot vtk::Cartesian::subcells::limited::ascii EulerSubcellsWriter
-      variables const = 5
-      time            = 100.0
-      repeat          = 0.001
-      output          = ./variables-fv
-    end plot
-     
-     
   end solver
 end exahype-project
