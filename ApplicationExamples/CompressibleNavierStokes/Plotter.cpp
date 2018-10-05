@@ -42,7 +42,8 @@ void NavierStokes::Plotter::mapQuantities(
     outputQuantities[i] = Q[i];
   }
 
-  if (solver->scenarioName == "convergence") {
+  if (solver->scenarioName == "convergence" ||
+          solver->scenarioName == "entropy-wave") {
     // Plot quadrature weights.
     // This is needed to approximate the integral of error norms.
     const auto& weights = kernels::gaussLegendreWeights[order];

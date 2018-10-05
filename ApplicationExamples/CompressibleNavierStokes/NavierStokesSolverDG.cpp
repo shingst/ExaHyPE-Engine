@@ -25,6 +25,7 @@
 #include "Scenarios/SodShockTube.h"
 #include "Scenarios/DoubleShockTube.h"
 #include "Scenarios/SmoothWave.h"
+#include "Scenarios/EntropyWave.h"
 #include "Scenarios/TaylorGreen.h"
 #include "Scenarios/Stokes.h"
 #include "Scenarios/TwoBubbles.h"
@@ -45,6 +46,8 @@ void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cm
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::DoubleShockTube());
   } else if (scenarioName == "smooth-wave") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::SmoothWave());
+  } else if (scenarioName == "entropy-wave") {
+    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::EntropyWave());
   } else if (scenarioName == "stokes") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::Stokes());
   } else if (scenarioName == "taylor-green") {
