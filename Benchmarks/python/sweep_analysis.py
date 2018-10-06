@@ -19,6 +19,8 @@ import codecs
 import collections
 import statistics
 
+lastKeyColumn=-1
+
 knownParameters  = ["architecture", "dimension"]
 
 metrics =  [
@@ -224,7 +226,7 @@ def parseResultFile(filePath):
 
 def getAdapterTimesSortingKey(row):
     keyTuple = ()
-    keys = row[:-3]
+    keys = row[:lastKeyColumn]
     for key in keys:
       try:
           keyTuple += (float(key),)
@@ -236,6 +238,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
     """
     Loop over all ".out" files in the results section and create a table.
     """
+    global lastKeyColumn
+    lastKeyColumn=-1
+
     tablePath = resultsFolderPath+"/"+projectName+'.csv'
     try:
         with open(tablePath, "w") as csvfile:
@@ -276,6 +281,9 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         header.append("consumerTasks")
                         header.append("run")
                         header.append("adapter")
+                        #
+                        lastKeyColumn = len(header)
+                        #
                         header.append("iterations")
                         header.append("total_cputime")
                         header.append("total_realtime")
@@ -811,3 +819,182 @@ def parseMetrics(resultsFolderPath,projectName,compressTable):
 
     except IOError as err:
         print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
+
+def parseJobStatistics(resultsFolderPath,projectName,compressTable):
+    """
+    Loop over all ".out" files in the results section and parses the
+    job statistics.
+    """
+    global lastKeyColumn
+    lastKeyColumn=-1
+    
+    tablePath = resultsFolderPath+"/"+projectName+'-job-statistics.csv'
+    try:
+        with open(tablePath, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile, delimiter=",",quotechar="\"")
+            files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
+            
+            print("processed files:")
+            firstFile = True
+            for fileName in files:
+                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-N1-t1-c1-b1-r1.out
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-N([0-9]+)-t([0-9]+)-c([0-9]+)-b([0-9]+)-r([0-9]+).out$',fileName)
+                prefix              = match.group(1)
+                parameterDictHash   = match.group(2)
+                environmentDictHash = match.group(3)
+                ranks               = match.group(4)
+                nodes               = match.group(5)
+                ranksPerNode        = match.group(6)
+                cores               = match.group(7)
+                consumerTasks       = match.group(8)
+                run                 = match.group(9)
+
+                environmentDict,parameterDict,statsNoOfBackgroundTasks,\
+                statsGrabbedBackgroundTasks,statsRunningConsumers =\
+                    parseJobStatisticsFromResultsFile(resultsFolderPath + "/" + fileName)
+
+                if environmentDict!=None:
+                    # write header
+                    if firstFile:
+                        header = []
+                        header += sorted(environmentDict)
+                        for parameter in knownParameters:
+                            header.append(parameter)
+                        for parameter in sorted(parameterDict):
+                            if parameter not in knownParameters:
+                                header.append(parameter)
+                        header.append("ranks")
+                        header.append("nodes")
+                        header.append("ranksPerNode")
+                        header.append("cores")
+                        header.append("consumerTasks")
+                        header.append("run")
+                        #
+                        lastKeyColumn = len(header)
+                        #
+                        for bucket in sorted(statsNoOfBackgroundTasks):
+                            header.append("numJobs{}".format(bucket))
+                        for bucket in sorted(statsGrabbedBackgroundTasks):
+                            header.append("numGrabbed{}".format(bucket))
+                        for bucket in sorted(statsRunningConsumers):
+                            header.append("numConsumers{}".format(bucket))
+                        header.append("file")
+                        csvwriter.writerow(header)
+                        firstFile=False
+                    print(resultsFolderPath+"/"+fileName)
+
+                    # write row
+                    row=[]
+                    for key in sorted(environmentDict):
+                        row.append(environmentDict[key])
+                    for key in knownParameters:
+                        row.append(parameterDict[key])
+                    for key in sorted(parameterDict):
+                        if key not in knownParameters:
+                            row.append(parameterDict[key])
+                    row.append(ranks)
+                    row.append(nodes)
+                    row.append(ranksPerNode)
+                    row.append(cores)
+                    row.append(consumerTasks)
+                    row.append(run)
+                    for bucket in sorted(statsNoOfBackgroundTasks):
+                        row.append(statsNoOfBackgroundTasks[bucket])
+                    for bucket in sorted(statsGrabbedBackgroundTasks):
+                        row.append(statsGrabbedBackgroundTasks[bucket])
+                    for bucket in sorted(statsRunningConsumers):
+                        row.append(statsRunningConsumers[bucket])
+                    row.append(fileName)
+                    csvwriter.writerow(row)
+
+        success = not firstFile
+        if success:
+          # reopen the table and sort it
+          tableFile   = open(tablePath, 'r')
+          header      = next(tableFile)
+          header      = header.strip().split(",")
+          reader      = csv.reader(tableFile,delimiter=",",quotechar="\"")
+
+          sortedData = sorted(reader,key=getLikwidMetricsSortingKey)
+          tableFile.close()
+
+          if compressTable:
+             print("") 
+             sortedData,header = removeEmptyColumns(sortedData,header)
+             print("stripped table from columns containing value \"-1.0\" in every row.") 
+             sortedData,header,invariantColumns = removeInvariantColumns(sortedData,header)
+             print("stripped table from the following columns as their value is the same in every row (<column header>: <common value>):")
+             for column in invariantColumns:
+                 print(column+": "+ invariantColumns[column])
+             print("") 
+
+          with open(tablePath, 'w') as sortedTableFile:
+              writer = csv.writer(sortedTableFile, delimiter=",",quotechar="\"")
+              writer.writerow(header)
+              writer.writerows(sortedData)
+          print("created table:")
+          print(tablePath)
+
+    except IOError as err:
+        print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
+    return
+
+def parseJobStatisticsFromResultsFile(resultsFile):
+    statsNoOfBackgroundTasks = {}
+    statsGrabbedBackgroundTasks = {}
+    statsRunningConsumers = {}
+    environmentDict = None
+    parameterDict = None   
+ 
+    # bins: < x< 2^0, x< 2^1, x < 2^2
+    for bucket in range(0,29): # ~ 270 milloon tasks is largest bin 2^28
+        statsNoOfBackgroundTasks[bucket]    = 0
+        statsGrabbedBackgroundTasks[bucket] = 0
+    for bucket in range(0,11): # 1024 consumers can run on the same time
+        statsRunningConsumers[bucket] = 0
+    #  10.4573      info         no of background tasks[1]=19029 
+    base = 2
+    with open(resultsFile, 'r') as f:
+        for l in f.readlines():
+            if l.startswith("sweep/environment"):
+                value = l.replace("sweep/environment=","")
+                environmentDict=json.loads(value)
+            if l.startswith("sweep/parameters"):
+                value = l.replace("sweep/parameters=","")
+                parameterDict=json.loads(value)
+            if "no of background tasks available per consumer run" in l:
+                ex = re.compile(r"no of background tasks available per consumer run\[(\d+)\]=(\d+)?")
+                match = ex.search(l)
+                print("match1")
+                if match:
+                    print("match2")
+                    num_tasks = int(match.group(1))
+                    occurences = int(match.group(2))
+                    if num_tasks == 0:
+                        statsNoOfBackgroundTasks[0] += occurences
+                    else:
+                        bucket = int(math.log(num_tasks, base)) + 1
+                        statsNoOfBackgroundTasks[bucket] += occurences
+            if "no of background tasks processed per consumer run" in l:
+                ex = re.compile(r"no of background tasks processed per consumer run\[(\d+)\]=(\d+)?")
+                match = ex.search(l)
+                if match:
+                    num_tasks = int(match.group(1))
+                    occurences = int(match.group(2))
+                    if num_tasks == 0:
+                        statsGrabbedBackgroundTasks[0] += occurences
+                    else:
+                        bucket = int(math.log(num_tasks, base)) + 1
+                        statsGrabbedBackgroundTasks[bucket] += occurences
+            if "no of running consumers" in l:
+                ex = re.compile(r"no of running consumers\[(\d+)\]=(\d+)?")
+                match = ex.search(l)
+                if match:
+                    num_tasks  = int(match.group(1))
+                    occurences = int(match.group(2))
+                    if num_tasks == 0:
+                        statsRunningConsumers[0] += occurences
+                    else:
+                        bucket = int(math.log(num_tasks, base)) + 1
+                        statsRunningConsumers[bucket] += occurences
+    return environmentDict,parameterDict,statsNoOfBackgroundTasks,statsGrabbedBackgroundTasks,statsRunningConsumers
