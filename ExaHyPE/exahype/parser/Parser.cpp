@@ -1131,6 +1131,11 @@ bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft
       compare("run_if_no_high_priority_job_left")==0;
 }
 
+bool exahype::parser::Parser::getSpawnLowPriorityBackgroundJobsAsATask() {
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","spawn_as_a_task",isOptional).
+      compare("spawn_as_a_task")==0;
+}
+
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
   return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",std::numeric_limits<int>::max(),isOptional);
 }
