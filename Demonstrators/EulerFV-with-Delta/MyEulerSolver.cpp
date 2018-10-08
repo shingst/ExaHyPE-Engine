@@ -5,17 +5,37 @@
 #include "Logo.h"
 
 #include "delta/ContactPoint.h"
+#include "delta/primitives/Cylinder.h"
 #include "delta/primitives/Sphere.h"
 #include "delta/contactdetection/sphere.h"
+#include "delta/io/vtk.h"
 
 
 tarch::logging::Log EulerFV::MyEulerSolver::_log( "EulerFV::MyEulerSolver" );
 
 
 void EulerFV::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
+  _embeddedGeometry = new delta::primitives::Cylinder(
+    0.5, 0.5, 0.0,  // center
+	0.2,       // rdius
+	-0.1, 0.1, // min/maxZ
+	0.1
+  );
+
+/*
   _embeddedGeometry = new delta::primitives::Sphere(
-    0.5, 0.5, 0.0,
-	0.2
+    0.5, 0.5, 0.0,  // center
+	0.4,       // rdius
+	0.1
+  );
+*/
+
+  delta::io::writeVTK(
+    _embeddedGeometry->getNumberOfTriangles(),
+	_embeddedGeometry->getXCoordinates(),
+	_embeddedGeometry->getYCoordinates(),
+	_embeddedGeometry->getZCoordinates(),
+    "embedded-geometry.vtk"
   );
 }
 
@@ -45,7 +65,7 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   // Boundary stuff
   const double maxDistance = 1e-2; // should be roughly sqrt(h)*d
   std::vector< delta::ContactPoint > contact =
-    delta::contactdetection::sphere(
+    delta::contactdetection::sphereToSphere(
       _embeddedGeometry->getCentreX(),
       _embeddedGeometry->getCentreY(),
       _embeddedGeometry->getCentreZ(),
@@ -55,7 +75,7 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
       x[1], // voxel centre
       x[2], // voxel centre
 
-	  1e-4,  // voxel size
+	  1e-2,  // voxel size
 	  maxDistance
     );
   if ( contact.empty() ) {
