@@ -506,33 +506,6 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 }
 
 
-/*
-void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
-{% if enableProfiler %}
-  _profiler->start("faceUnknownsRestriction");
-{% endif %}
-{% if countFlops %}
-  const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
-{% endif %}
-
-  {{optNamespace}}::faceUnknownsRestriction( lQhbndCoarse, lFhbndCoarse, lQhbndFine, lFhbndFine, coarseGridLevel, fineGridLevel, subfaceIndex);
-  
-{% if countFlops %}
-  double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
-  const unsigned long f = {{optNamespace}}::faceUnknownsRestriction_flops * (fineGridLevel - coarseGridLevel);
-  const unsigned long time_ul = (unsigned long) time;
-  total_flops += f;
-  total_time += time_ul;
-  faceUnknownsRestriction_f += f;
-  faceUnknownsRestriction_t += time_ul;
-  faceUnknownsRestriction_c += 1;
-{% endif %}
-{% if enableProfiler %}
-  _profiler->stop("faceUnknownsRestriction");
-{% endif %}
-}
-*/
-
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
 {% if enableProfiler %}

@@ -203,16 +203,6 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
   );
-
-  void faceUnknownsRestriction(
-    double* restrict lQhbndCoarse,
-    double* restrict lFhbndCoarse,
-    const double* restrict lQhbndFine,
-    const double* restrict lFhbndFine,
-    const int coarseGridLevel,
-    const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
-  );
   
   // used by faceIntegral, only restrict the flux on the face
   void faceFluxRestriction(
