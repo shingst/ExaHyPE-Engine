@@ -15,6 +15,7 @@ import json
 import os
 import re
 import codecs
+import math
 
 import collections
 import statistics
@@ -965,9 +966,7 @@ def parseJobStatisticsFromResultsFile(resultsFile):
             if "no of background tasks available per consumer run" in l:
                 ex = re.compile(r"no of background tasks available per consumer run\[(\d+)\]=(\d+)?")
                 match = ex.search(l)
-                print("match1")
                 if match:
-                    print("match2")
                     num_tasks = int(match.group(1))
                     occurences = int(match.group(2))
                     if num_tasks == 0:
