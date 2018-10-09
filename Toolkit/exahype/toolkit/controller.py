@@ -85,11 +85,8 @@ class Controller:
             self.log.info("Read input file %s." % inpath.resolve())
         else:
             self.log.info("Read from stdin (%s)" % str(args.specfile))
-     
-        specformat = args.format 
-        if self.strict_json:
-             specformat = "json"
-        rawSpec = self.getSpec(args.specfile, specformat)
+        
+        rawSpec = self.getSpec(args.specfile, args.format)
         self.spec = self.validateAndSetDefaults(rawSpec, args.validate_only)
 
 
