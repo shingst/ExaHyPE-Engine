@@ -15,8 +15,6 @@
 #include <algorithm>
 #include <cstring>
 
-#include "tarch/la/ScalarOperations.h"
-
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
 

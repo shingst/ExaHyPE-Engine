@@ -13,9 +13,6 @@
  
 #include <algorithm> //copy_n
 
-#include "tarch/la/Scalar.h"
-#include "tarch/la/ScalarOperations.h"
-
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
@@ -24,6 +21,29 @@
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
 
+// local help function
+inline int powOf3(int exp){
+  switch(exp) {
+    case 0:
+      return 1;
+    case 1:
+      return 3;
+    case 2:
+      return 9;
+    case 3:
+      return 27;
+    case 4:
+      return 81;
+    case 5:
+      return 243;
+    default:
+      int result = 243;
+      for (int d=0; d<exp-5; d++) {
+        result *= 3;
+      }
+      return result;
+  }
+}
 
 void {{codeNamespace}}::faceUnknownsProlongation(
     double* restrict lQhbndFine,
@@ -32,7 +52,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
     const double* restrict lFhbndCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
+    const int* const subfaceIndex
 ) {
   const int levelDelta = fineGridLevel - coarseGridLevel;
 
@@ -74,14 +94,12 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   // Per iteration, the digits corresponding to the current significances then determine
   // the subintervals for the single level prolongation.
   for (int l = 1; l < levelDelta+1; ++l) {
-    const int significance = tarch::la::aPowI(levelDelta-l,3);
+    const int significance = powOf3(levelDelta-l);
     subfaceIndexCurrent_0 = subfaceIndexPrevious_0 % significance;
     subintervalIndex_0    = (subfaceIndexPrevious_0 - subfaceIndexCurrent_0)/significance;
-    assertion(subintervalIndex_0 < 3);
 {% if nDim==3 %}
     subfaceIndexCurrent_1 = subfaceIndexPrevious_1 % significance;
     subintervalIndex_1    = (subfaceIndexPrevious_1 - subfaceIndexCurrent_1)/significance;
-    assertion(subintervalIndex_1 < 3);
 {% endif %}
 
     // Zero the values of the first pointer.
@@ -254,7 +272,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
 void {{codeNamespace}}::faceFluxRestriction(
     double* restrict lFhbndCoarse,
     const double* restrict lFhbndFine,
-    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+    const int* const subfaceIndex,
     const int levelDelta
 ) {
 
@@ -285,11 +303,9 @@ void {{codeNamespace}}::faceFluxRestriction(
   for (int l = 1; l < levelDelta+1; ++l) {
     subintervalIndex_0    = subfaceIndexCurrent_0 % 3;  
     subfaceIndexCurrent_0 = (subfaceIndexCurrent_0 - subintervalIndex_0)/3;
-    assertion(subintervalIndex_0 < 3);
 {% if nDim==3 %}
     subintervalIndex_1    = subfaceIndexCurrent_1 % 3;
     subfaceIndexCurrent_1 = (subfaceIndexCurrent_1 - subintervalIndex_1)/3;
-    assertion(subintervalIndex_1 < 3);
 {% endif %}
 
     // Zero the values of of the first pair of pointers.
@@ -406,7 +422,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
     const double* restrict luhCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
+    const int* const subcellIndex
 ){
   const int levelDelta = fineGridLevel - coarseGridLevel;
 
@@ -446,17 +462,14 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
   // Per iteration, the digits corresponding to the current significances then determine
   // the subintervals for the single level prolongation.
   for (int l = 1; l < levelDelta+1; ++l) {
-    const int significance = tarch::la::aPowI(levelDelta-l,3);
+    const int significance = powOf3(levelDelta-l);
     subcellIndexCurrent_0 = subcellIndexPrevious_0 % significance;
     subintervalIndex_0    = (subcellIndexPrevious_0 - subcellIndexCurrent_0)/significance;
-    assertion(subintervalIndex_0 < 3);
     subcellIndexCurrent_1 = subcellIndexPrevious_1 % significance;
     subintervalIndex_1    = (subcellIndexPrevious_1 - subcellIndexCurrent_1)/significance;
-    assertion(subintervalIndex_1 < 3);
 {% if nDim==3 %}
     subcellIndexCurrent_2 = subcellIndexPrevious_2 % significance;
     subintervalIndex_2    = (subcellIndexPrevious_2 - subcellIndexCurrent_2)/significance;
-    assertion(subintervalIndex_2 < 3);
 {% endif %}
 
     // Zero the values of the first pointer.
@@ -589,7 +602,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
     const double* restrict luhFine,
     const int coarseGridLevel,
     const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
+    const int* const subcellIndex
 ) {
   const int levelDelta    = fineGridLevel - coarseGridLevel;
 
@@ -621,14 +634,11 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   for (int l = 1; l < levelDelta+1; ++l) {
     subintervalIndex_0    = subcellIndexCurrent_0 % 3;
     subcellIndexCurrent_0 = (subcellIndexCurrent_0 - subintervalIndex_0)/3;
-    assertion(subintervalIndex_0 < 3);
     subintervalIndex_1    = subcellIndexCurrent_1 % 3;
     subcellIndexCurrent_1 = (subcellIndexCurrent_1 - subintervalIndex_1)/3;
-    assertion(subintervalIndex_1 < 3);
 {% if nDim==3 %}
     subintervalIndex_2    = subcellIndexCurrent_2 % 3;
     subcellIndexCurrent_2 = (subcellIndexCurrent_2 - subintervalIndex_2)/3;
-    assertion(subintervalIndex_2 < 3);
 {% endif %}
 
     // Zero the values of the first pointer.

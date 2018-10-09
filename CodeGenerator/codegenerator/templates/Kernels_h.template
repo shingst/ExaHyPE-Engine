@@ -14,14 +14,6 @@
 #ifndef _EXAHYPE_{{guardNamespace}}_KERNELS_H_
 #define _EXAHYPE_{{guardNamespace}}_KERNELS_H_
 
-#include "tarch/la/Vector.h"
-#include "peano/utils/Globals.h"
-
-
-{% if useDeepProfiler %}
-#include "exahype/profilers/Profiler.h"
-{% endif %}
-
 #ifndef __INTEL_COMPILER
 #include <mm_malloc.h>
 #endif
@@ -62,14 +54,14 @@ namespace {{namespaceName}} {
     double* restrict PSi,   // for pointSource
     double* restrict PSderivatives, // for pointSource
     const double* const restrict luh,
-    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const center,
     const double dx, // Assume dx[0] == dx[1] == dx[2]
     const double tStep, // == t
     const double dt,
     std::vector<int>* pointSources // will be deleted in the end if set
   );
 {% if usePointSources %}
-int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
+  int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     {{solverName}}& solver,
     double* restrict lduh,
     double* restrict lQhbnd, 
@@ -84,14 +76,14 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     double* restrict PSi,   // for pointSource
     double* restrict PSderivatives, // for pointSource
     const double* const restrict luh,
-    const tarch::la::Vector<DIMENSIONS, double>& center,
+    const double* const center,
     const double dx, // Assume dx[0] == dx[1] == dx[2]
     const double tStep, // == t
     const double dt,
     std::vector<int>* pointSources // will be deleted in the end if set
   );
-{% endif %}
-{% else %}
+{% endif %}{# usePointSources #}
+{% else %}{# isLinear #}
   int fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
     double* restrict lduh,
@@ -106,7 +98,7 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     double* restrict lShi,  // for NCP or Source
     double* restrict gradQ, // for NCP or Source
     const double* const restrict luh,
-    const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
+    const double inverseDx, //Assume dx[0] == dx[1] == dx[2]
     const double dt
   );
 {% endif %}
@@ -120,7 +112,7 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
   void surfaceIntegral( 
     double* restrict lduh, 
     const double* restrict const lFhbnd, 
-    const tarch::la::Vector<DIMENSIONS,double> &inverseDx
+    const double inverseDx //Assume dx[0] == dx[1] == dx[2]
   );
   
   void faceIntegral(
@@ -128,14 +120,14 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double *const lFhbnd,
     const int direction, 
     const int orientation,
-    const tarch::la::Vector<DIMENSIONS, double> &inverseDx
+    const double inverseDxDirection
   );
 
   void solutionAdjustment(
     {{solverName}}& solver,
     double* luh,
-    const tarch::la::Vector<DIMENSIONS,double>& center,
-    const tarch::la::Vector<DIMENSIONS,double>& dx,
+    const double* const center,
+    const double dx, //Assume dx[0] == dx[1] == dx[2]
     const double t,
     const double dt
   );
@@ -148,15 +140,12 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double* restrict const QR,
     const double dt,
     const int direction
-{% if useDeepProfiler %}
-    , exahype::profilers::Profiler* profiler
-{% endif %}
   );
 
   double stableTimeStepSize(
     {{solverName}}& solver,
     const double* restrict const luh,
-    const tarch::la::Vector<DIMENSIONS,double>& inverseDx
+    const double inverseDx //Assume dx[0] == dx[1] == dx[2]
   );
 
   void boundaryConditions(
@@ -165,8 +154,8 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     double* stateOut, 
     const double* const fluxIn, 
     const double* const stateIn, 
-    const tarch::la::Vector<DIMENSIONS, double>& cellCentre, 
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize, 
+    const double* const cellCentre, 
+    const double* const cellSize, 
     const double t,const double dt, 
     const int faceIndex, 
     const int normalNonZero 
@@ -175,19 +164,8 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
 {% if usePointSources %}
   std::vector<int>* getPointSources(
     {{solverName}}& solver,
-    const tarch::la::Vector<DIMENSIONS, double>& center,
-    const tarch::la::Vector<DIMENSIONS, double>& dx
-  );
-  
-  void deltaDistribution(
-    {{solverName}}& solver,
-    const double* const restrict luh,
-    const double t,
-    const double dt,
-    const tarch::la::Vector<DIMENSIONS, double>& center,
-    const tarch::la::Vector<DIMENSIONS, double>& dx,
-    std::vector<int>* pointSources, // will be deleted in the end
-    double* restrict PSi
+    const double* const center,
+    const double dx //Assume dx[0] == dx[1] == dx[2]
   );
 {% endif %}
   
@@ -201,14 +179,14 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double* restrict lFhbndCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
+    const int* const subfaceIndex
   );
   
   // used by faceIntegral, only restrict the flux on the face
   void faceFluxRestriction(
     double* restrict lFhbndCoarse,
     const double* restrict lFhbndFine,
-    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex,
+    const int* const subfaceIndex,
     const int levelDelta
   );
 
@@ -217,7 +195,7 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double* restrict luhCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
+    const int* const subcellIndex
   );
   
   void volumeUnknownsRestriction(
@@ -225,7 +203,7 @@ int fusedSpaceTimePredictorVolumeIntegral_WithoutPS(
     const double* restrict luhFine,
     const int coarseGridLevel,
     const int fineGridLevel,
-    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
+    const int* const subcellIndex
   );
 
 {% if useLimiter %}

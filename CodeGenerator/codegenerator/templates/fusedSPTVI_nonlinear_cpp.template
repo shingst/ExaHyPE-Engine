@@ -14,8 +14,6 @@
 #include <cstring>
 #include <algorithm>
 
-#include <tarch/la/Vector.h>
-
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
@@ -40,7 +38,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         double* restrict lShi,  // for NCP or Source
         double* restrict gradQ, // for NCP or Source
         const double* const restrict luh,
-        const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
+        const double inverseDx, //Assume dx[0] == dx[1] == dx[2]
         const double dt
 ) {
 
@@ -92,7 +90,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% endif %}
 {% endwith %}
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
-  const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
+  const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
 {% if useNCP or (useFlux and useCERKGuess) %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -100,7 +98,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
   #pragma simd
   for(int it=0;it<{{nDof*nDofPad}};it++) {
-    dudxT_by_dx[it] = inverseDx[0] * dudx_T[it];
+    dudxT_by_dx[it] = inverseDx * dudx_T[it];
   }
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
@@ -519,7 +517,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     for (int i=0; i<{{nDof}}; i++) {
       
       //x, also define coefficient matrix coeffVolume
-{% with matmulKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx[0]', forceCoeffMatrix=True %}
+{% with matmulKey='lduh_x', A='lFhi', B='coeffVolume', C='lduh', A_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), B_shift='0', C_shift='(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx', forceCoeffMatrix=True %}
 {% filter indent(width=6, indentfirst=True) %}{% include 'subtemplates/matmul.template' %}{% endfilter %}
 {% endwith %}
 

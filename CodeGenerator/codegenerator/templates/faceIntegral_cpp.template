@@ -11,8 +11,6 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
-#include <tarch/la/Vector.h>
-
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
@@ -23,7 +21,8 @@ void {{codeNamespace}}::faceIntegral(
                               const double *const lFhbnd,
                               const int direction, 
                               const int orientation,
-                              const tarch::la::Vector<DIMENSIONS, double> &inverseDx) {
+                              const double inverseDxDirection
+) {
 
 #ifdef __INTEL_COMPILER
   __assume_aligned(FRCoeff,  ALIGNMENT);
@@ -35,9 +34,9 @@ void {{codeNamespace}}::faceIntegral(
 
   const double* const FCoeff = (orientation == 0 ? FLCoeff : FRCoeff);
 {% if isLinear %}
-  const double scaling = inverseDx[direction];
+  const double scaling = inverseDxDirection;
 {% else %}
-  const double scaling = (2.0 * orientation - 1.0) * inverseDx[direction];
+  const double scaling = (2.0 * orientation - 1.0) * inverseDxDirection;
 {% endif %}
   
   switch (direction) {

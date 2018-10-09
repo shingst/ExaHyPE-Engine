@@ -14,14 +14,13 @@
 #include <limits>
 
 #include "{{pathToOptKernel}}/Kernels.h"
-#include "tarch/la/Vector.h" 
 
 #include "{{solverHeader}}"
 
 double {{codeNamespace}}::stableTimeStepSize(
     {{solverName}}& solver,
     const double* restrict const luh,
-    const tarch::la::Vector<DIMENSIONS,double>& inverseDx
+    const double inverseDx //Assume dx[0] == dx[1] == dx[2]
 ) {
   constexpr double cflFactor       = {{solverName}}::CFL;
   constexpr double PNPM[10]        = {1.0,   0.33,  0.17, 0.1,  0.069,
@@ -42,7 +41,7 @@ double {{codeNamespace}}::stableTimeStepSize(
       for (int n = 0; n < {{nVar}}; n++) {
         maxEigenvalue = std::max(fabs(lambda[n]), maxEigenvalue);
       }
-      denominator += maxEigenvalue * inverseDx[d];
+      denominator += maxEigenvalue * inverseDx; //Assume dx[0] == dx[1] == dx[2]
     }
 
     dt = std::min(dt, cflFactor * PNPM[{{nDof-1}}] / denominator);  // order = nDof-1
