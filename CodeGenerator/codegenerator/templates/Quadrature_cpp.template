@@ -11,9 +11,9 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
-#include "{{pathToOptKernel}}/Quadrature.h"
 #include <mm_malloc.h> //g++
 
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 // Use {{quadratureType}} quadrature
 double* {{codeNamespace}}::weights1;
@@ -26,7 +26,7 @@ double* {{codeNamespace}}::dg2fv;
 double* {{codeNamespace}}::fv2dg;
 {% endif %}
 
-void {{codeNamespace}}::freeQuadratureNodesAndWeights(const std::set<int>& orders) {
+void {{codeNamespace}}::freeQuadratureNodesAndWeights() {
   _mm_free(weights1);
   _mm_free(weights2);
   _mm_free(weights3);
@@ -38,7 +38,7 @@ void {{codeNamespace}}::freeQuadratureNodesAndWeights(const std::set<int>& order
 {% endif %}
 }
 
-void {{codeNamespace}}::initQuadratureNodesAndWeights(const std::set<int>& orders) {
+void {{codeNamespace}}::initQuadratureNodesAndWeights() {
   weights1 = (double *) _mm_malloc(sizeof(double)*{{w1Size }}, ALIGNMENT); //nDofPad
   weights2 = (double *) _mm_malloc(sizeof(double)*{{w2Size }}, ALIGNMENT); //2D: nDofPad (==weight1), 3D: (nDof*nDof)Pad (== w1[i]*w1[j])
   weights3 = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])

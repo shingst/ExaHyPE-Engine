@@ -14,17 +14,14 @@
 #ifndef _EXAHYPE_{{guardNamespace}}_QUADRATURE_H_
 #define _EXAHYPE_{{guardNamespace}}_QUADRATURE_H_
 
-
-#include <set>
-
 // Use {{quadratureType}} quadrature
 
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {
 {% endfor %}
 
-void initQuadratureNodesAndWeights(const std::set<int>& orders);
-void freeQuadratureNodesAndWeights(const std::set<int>& orders);
+void initQuadratureNodesAndWeights();
+void freeQuadratureNodesAndWeights();
 
 extern double *nodes;
 extern double *weights1;
