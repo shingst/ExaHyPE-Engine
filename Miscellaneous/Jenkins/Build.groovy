@@ -29,7 +29,7 @@ export PROJECT_LFLAGS="-lrt"
 echo "Building $path"
 dir="$(readlink -f $(dirname ${path}))"
 
-./Toolkit/toolkit.sh ${path}
+./Toolkit/toolkit.sh -j ${path}
 
 cd $dir
 make -j 32
