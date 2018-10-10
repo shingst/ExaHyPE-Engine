@@ -12,6 +12,7 @@ void pdeeigenvalues_(double* lambda, const double* const Q, double* nv);
 void registerinitialdata_(const char* const id_name, int* id_name_len);
 
 void pdencp_(double* BgradQ, const double* const Q, const double* const gradQ);
+void pdencp_lk_(double* BgradQ, const double* const Q, const double* const gradQ);
 void pdejacobian_(double* An, const double* const Q, const double* const gradQ, double* nv);
 void pdematrixb_(double* Bn, const double* const Q, double* nv);
 void pdevarname_(char* MyNameOUT, int* ind);
@@ -25,11 +26,6 @@ void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, do
 void testriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);
 
 void inittecplot_(const int* N_in,const int* M_in);
-void dynamicrupture_(const double* x, const double* const t, double* Q);
-void ruptureflag_(int* rupture_flag,const int* order, const double* luh,const double* x,const double* dx);
-
-//PDEAuxVar(aux,Q,x,time)
-void pdeauxvar_(double* aux, const double* const Q,double* x, const double* const time);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */

@@ -22,9 +22,10 @@
 #endif
 	!CHARACTER(LEN=20), PARAMETER	:: ICType='StiffInclusion'
 	!CHARACTER(LEN=20), PARAMETER	:: ICType='DRupture'
-	CHARACTER(LEN=20), PARAMETER	:: ICType='SSCRACK'
+	!CHARACTER(LEN=20), PARAMETER	:: ICType='SSCRACK'
+	CHARACTER(LEN=20), PARAMETER	:: ICType='TPV3_2D'
     INTEGER, PARAMETER             	:: nAux = 8
-	INTEGER, PARAMETER             	:: nVar = 24                           ! The number of variables of the PDE system  
+	INTEGER, PARAMETER             	:: nVar = 25                           ! The number of variables of the PDE system  
     INTEGER, PARAMETER             	:: nLin = 10
 	REAL, PARAMETER             	:: epsilon1 = 1.e-3
 

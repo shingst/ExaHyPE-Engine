@@ -833,7 +833,7 @@ if __name__ == "__main__":
     import sweep_analysis
     import sweep_options
     
-    subprograms = ["build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll"]
+    subprograms = ["build","buildMissing","buildLocally","link","scripts","submit","cancel","parseAdapters","parseTotalTimes","parseTimeStepTimes","parseMetrics","parseJobStatistics","cleanBuild", "cleanScripts","cleanResults","cleanHistory","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
         info = \
@@ -859,6 +859,7 @@ available subprograms:
                        Per configuration, calculate the time spent per time step
                        and minimise over all runs.
 * parseMetrics       - read the job output and parse likwid metrics
+* parseJobStatistics - read background job processing stastistics. Requires that executables are built with "-DTBB_USE_THREADING_TOOLS=1".
 * cleanAll           - remove the whole sweep benchmark suite
 * cleanBuild         - remove the build subfolder
 * cleanScripts       - remove the scripts subfolder
@@ -995,3 +996,5 @@ It must further contain at least one of the following sections:
         sweep_analysis.parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=True)
     elif subprogram == "parseMetrics":
         sweep_analysis.parseMetrics(resultsFolderPath,projectName,compressTable)
+    elif subprogram == "parseJobStatistics":
+        sweep_analysis.parseJobStatistics(resultsFolderPath,projectName,compressTable)

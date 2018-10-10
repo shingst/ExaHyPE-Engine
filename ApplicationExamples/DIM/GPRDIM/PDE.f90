@@ -233,6 +233,9 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
 	S(20)=Q(2)/Q(1)
 	S(21)=Q(3)/Q(1)
 	S(22)=Q(4)/Q(1)
+	
+	S(23)=sqrt(sum((Q(2:4)/Q(1))**2))
+	S(18)=-max(0.0,Q(25))*Q(18) 
 END SUBROUTINE PDESource
 
 RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind) 
@@ -268,6 +271,7 @@ RECURSIVE SUBROUTINE PDEVarName(MyNameOUT,ind)
     MyName(22) = 'zDisp'
     MyName(23) = 'Disp'
     MyName(24) = 'mu_f'
+	MyName(25) = 'alpha_f'
 	
 	MyNameOUT=MyName(ind+1)
     END SUBROUTINE PDEVarName
@@ -475,7 +479,15 @@ RECURSIVE SUBROUTINE DynamicRupture(x_in, t, Q)
 	call computeGPRLEstress(stressnorm,sigma_vec,Q,.true.)
 	IF( stressnorm > Q(17) ) THEN
 		! If the normal stress is greater than the illness stress Y0 (stored in Q(17), then broke the material
-		Q(18)=0.!0.
+		!Q(18)=0.!0. ! Broke directly the material
+		
+		if(t<0.02) then
+			Q(25)=100.0
+			Q(18)=0.
+		else
+			Q(25)=5.0
+		end if
+		
 		if(USEFrictionLaw) then
 			! Compute the proper friction coefficient according to the prescribed friction law
 			u=Q(2:4)/Q(1)
@@ -528,8 +540,13 @@ RECURSIVE SUBROUTINE ruptureflag(rupture_flag,order,luh,x_in,dx_in)
 	!end if
 	
 	! Static part
+	rupture_flag=0
 	select case(ICType)
 		case('SSCRACK')
+			if (abs(x_in(1)).le. 10000.0 .and. abs(x_in(2)).le. dx_in(2)) then
+				rupture_flag=1
+			end if
+		case('TPV3_2D')
 			if (abs(x_in(1)).le. 10000.0 .and. abs(x_in(2)).le. dx_in(2)) then
 				rupture_flag=1
 			end if

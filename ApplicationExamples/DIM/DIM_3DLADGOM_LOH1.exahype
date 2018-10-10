@@ -1,0 +1,132 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ DIM, Diffuse Interface Method
+
+ */
+exahype-project DIM
+
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/DIM/DIM_3DLADGOM_LOH1
+  architecture const               = hsw
+  log-file                         = whatever.log
+
+  computational-domain
+    dimension const         = 3
+    width                   = 24.0, 24.0, 24.0
+    offset                  = -12.0,  -8.0, -12.0
+    end-time                = 10.0
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:1}
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:28}
+    buffer-size              = 6400
+    timeout                  = 6000
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
+    spawn-amr-background-threads         = on
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = on
+  end global-optimisation
+
+  solver Limiting-ADER-DG DIMSolver
+    /* gamma is actually parts of a matrix... */
+    variables const                = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
+    //parameters const  = rhoP:1,cpP:1,csP:1,Lim:1
+    order const                    = 3
+    maximum-mesh-size              = 1.0
+    maximum-mesh-depth             = 1
+    time-stepping                  = global
+    type const = linear
+	terms const = flux,ncp,pointsources:1
+	optimisation const = generic
+    language const                 = C
+    limiter-type const         = musclhancock
+    limiter-optimisation const = generic
+    limiter-language const     = C
+    dmp-observables  const         = 0
+    dmp-relaxation-parameter       = 1e+3 
+    dmp-difference-scaling         = 1e+4 
+    steps-till-cured           = 5
+    // helper-layers              = 2
+
+     plot user::defined TecplotWriter
+       variables const = 14
+       time            = 0.0
+       repeat          = 0.1
+       output          = ./output/tecplot
+     end plot
+
+ plot probe::ascii ProbeWriter
+      variables const = 14
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./output/pp1
+      select          = x:0.0,y:2.0,z:0.0
+    end plot
+
+    plot probe::ascii ProbeWriter
+      variables const = 14
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./output/pp2
+      select          = x:6.0,y:0.0,z:8.0
+    end plot
+
+
+    plot probe::ascii ProbeWriter
+      variables const = 14
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./output/pp3
+      select          = x:-8.0,y:0.0,z:-6.0
+    end plot
+
+    plot probe::ascii ProbeWriter
+      variables const = 14
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./output/pp4
+      select          = x:-5.764,y:0.0,z:-8.647
+    end plot
+
+    plot probe::ascii ProbeWriter
+      variables const = 14
+      time            = 0.0
+      repeat          = 0.02
+      output          = ./output/pp5
+      select          = x:-8.647,y:0.0,z:-5.764
+    end plot
+
+
+
+  end solver
+end exahype-project
