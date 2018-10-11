@@ -153,6 +153,111 @@ RECURSIVE SUBROUTINE InitialData(xGP, t, Q,maxAMR,CoarseLen, order)
 			USEFrictionLaw=.FALSE.  ! Do not use friction law
 			up(24)=1.0            ! Set the friction value mu to be constant
 			! =============================================================================================
+		case('TPV3')
+			! ============================ SELF-SIMILAR RUPTURE TEST =====================================
+			
+			! ---------- DEFINE THE PARAMETERS -----------
+			lambda0=3.204376e+10
+			mu0=3.203812e+10
+			rho0=2670.0
+			ICsig=0.5 ! Velocity
+			! --------------------------------------------
+			
+			
+			up=0.
+			! Set the lamè constants ------ !
+			up(15)=lambda0   ! Lambda    !
+			up(16)=mu0      ! mu        !
+			up(1)= rho0     ! rho       !
+			! ----------------------------- !
+			! Initial velocity vector ----- !
+			up(2) = 0.0                     !
+			up(3) = 0.0                     ! 
+			up(4) = 0.0                     !
+			! ----------------------------- ! 
+			LEsigma=0.
+			LEsigma(1)=120.0*1.e+6
+			LEsigma(2)=0.
+			LEsigma(3)=0.
+			!LEsigma(6)=70.0
+			!if(abs(xGP(1)) .le. 1500.0 .and. abs(xGP(2)) .le. 200.0 .and. abs(xGP(3)) .le. 100.0) then
+			!	LEsigma(4)=81.6*1.e+6 
+			!else
+			!	LEsigma(4)=70.0*1e+6
+			!end if
+			LEsigma(6)=70.0*1.e+6
+			r=sqrt((xGP(2)-0.0)**2+(xGP(3)-0.0)**2)
+			if(abs(xGP(1))<500.0) then
+				if(abs(xGP(2))<3000 .and. abs(xGP(3))<3000) then
+					LEsigma(6)=81.6*1.e+6;
+				else
+						LEsigma(6)=70.0*1.e+6
+				end if
+				!LEsigma(6)=(70.0+11.6*exp(-r**2/(2.0*6000.0)))*1.e+6
+			end if
+			up(5:13)= GPRsigma2A(LEsigma,0.0,up(15),up(16),up(1),1.e-3)
+			! ----------------------------- !
+			up(14)=1     ! alpha
+			up(18)=1     ! xi
+			! ----------------------------- !
+			r=xGP(1)
+			up(17)=1.0e+8 - (1.0e+8-75.24*1.e+6)*exp(-r**2/(2.0*1000.0**2))
+			
+			USEFrictionLaw=.false.  ! Do not use friction law
+			up(24)=100.0
+			up(25)=0.0 ! Alpha friction
+
+			case('TPV3_2D')
+			
+				! Set the lamè constants ------ !
+				lambda0=3.204376e+10
+				mu0=3.203812e+10
+				rho0=2670.0
+				! ----------------------------- !
+				! Set the lamè constants ------ !
+				up(15)=lambda0   ! Lambda    !
+				up(16)=mu0      ! mu        !
+				up(1)= rho0     ! rho       !
+				! ----------------------------- !				
+				! Initial velocity vector ----- !
+				up(2) = 0.0                     !
+				up(3) = 0.0                     ! 
+				up(4) = 0.0                     !
+				! ----------------------------- !
+				LEsigma=0.
+				LEsigma(1)=0.
+				LEsigma(2)=120.0*1.e+6!/1.e+6!0.
+				LEsigma(3)=0.!120.0*1.e+6
+				if(abs(xGP(1)) .le. 1500.0 .and. abs(xGP(2)) .le. 200.0 .and. abs(xGP(3)) .le. 100.0) then
+					LEsigma(4)=81.6*1.e+6 
+				else
+					LEsigma(4)=70.0*1e+6
+				end if
+				LEsigma(4)=70.0*1e+6!/1.e+6
+				if(abs(xGP(1)) .le. 1500.0) then
+				r=xGP(2)
+				LEsigma(4)=(70.0*1e+6 + (11.6*1.e+6)*exp(-r**2/(2.0*20.0**2)))!/1.e+6
+				end if
+				up(5:13)= GPRsigma2A(LEsigma,0.0,up(15),up(16),up(1),1.e-3)
+				! ----------------------------- !
+				up(14)=1     ! alpha
+				if(abs(xGP(2)) .le. 300.0) then
+					!up(17)=1.83e+8!1.e+16! Y0
+					up(17)=81.24*1.e+6
+				else
+					up(17)=2.2e+8  
+					up(17)=2.2e+9
+				end if
+				r=xGP(2)
+				up(17)=(1.0e+8 - (1.0e+8-75.24*1.e+6)*exp(-r**2/(2.0*200.0**2)))!/1.e+6
+				
+				up(18)=1     ! xi
+				! ----------------------------- !
+				USEFrictionLaw=.false.  ! Do not use friction law
+				up(24)=10000.0
+				up(25)=0.0 ! Alpha friction
+				
+				up(19:23)=0.0
 		case default
 			print *, ICType, ' Not implemented'
 			stop
@@ -174,7 +279,9 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx_in,numberOfObservables, ob
 	real	:: rr,ldx(3),xx(3)
 	xx=0.
 	xx(1:nDim)=xx_in(1:nDim)
-   if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
+  limiter_value=0;
+return 
+  if((observablesMin(1)<0.999 .and. observablesMax(1)>0.001) .or. observablesMax(1)>1.001 .or. observablesMin(1)<-0.001) THEN 
 		dmpresult=.FALSE.
    else
 		dmpresult=.TRUE.

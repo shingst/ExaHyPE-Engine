@@ -541,6 +541,12 @@ class exahype::parser::Parser {
   bool getSpawnHighPriorityBackgroundJobsAsATask();
 
   /**
+   * @return Return if every single low priority job should be spawned
+   * as a task.
+   */
+  bool getSpawnLowPriorityBackgroundJobsAsATask();
+
+  /**
    * @return If the consumer tasks should process any low priority tasks
    * if there are still high priority tasks left.
    */
