@@ -55,7 +55,7 @@ exahype-project Euler
     time-stepping      = global
     type const         = nonlinear
     terms const        = flux
-    optimisation const = generic, usestack
+    optimisation const = optimised, usestack
     language const     = C
     constants          = reference:entropywave
    
