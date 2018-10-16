@@ -324,7 +324,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
 
 void {{codeNamespace}}::volumeUnknownsRestriction(
     double* restrict luhCoarse,
-    const double* const restrict const luhFine,
+    const double* const restrict luhFine,
     const int coarseGridLevel,
     const int fineGridLevel,
     const int* const subcellIndex

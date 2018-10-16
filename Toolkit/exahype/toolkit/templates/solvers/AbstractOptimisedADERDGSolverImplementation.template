@@ -197,19 +197,19 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 {% if isLinear %}
 {% if usePointSources %}
   int picardIt = -1;
-  std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),center.data(),dx[0]);
+  std::vector<int>* pointSources = {{optNamespace}}::getPointSources(*static_cast<{{solver}}*>(this),&center[0],dx[0]);
 {% if countFlops %}
   const int psSize = pointSources != nullptr ? pointSources->size() : 0;
 {% endif %}
   
   if(pointSources != nullptr) {
     // perform pointsource
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center.data(), dx[0], t, dt, pointSources);
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, pointSources);
   } else {
-    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center.data(), dx[0], t, dt, pointSources);
+    picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral_WithoutPS(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, pointSources);
   }
 {% else %}
-  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, center.data(), dx[0], t, dt, nullptr);
+  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), lduh, lQhbnd, lFhbnd, lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives, luh, &center[0], dx[0], t, dt, nullptr);
 {% endif %}
   
 {% else %}
@@ -310,7 +310,7 @@ void {{project}}::{{abstractSolver}}::faceIntegral(double* const lduh,const doub
 {% else %}  
     double* lFhbndCoarse = new double[sizeFlux];
 {% endif %}
-    {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,subfaceIndex.data(),levelDelta);
+    {{optNamespace}}::faceFluxRestriction(lFhbndCoarse,lFhbnd,&subfaceIndex[0],levelDelta);
     
     tarch::la::Vector<DIMENSIONS,double> coarseGridCellSize = tarch::la::aPowI(levelDelta,3) * 1.0 * cellSize;
     {{optNamespace}}::faceIntegral(lduh,lFhbndCoarse,direction,orientation,1./coarseGridCellSize[direction] /*inverseDxDirection*/);
@@ -390,7 +390,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const update, d
 
   const int faceIndex = 2*direction+orientation;
 
-  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, cellCentre.data(), cellSize.data(), t, dt, faceIndex, direction);
+  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
 
 {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
@@ -461,7 +461,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
 
-  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, center.data(), dx[0], t, dt );
+  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this), luh, &center[0], dx[0], t, dt );
 {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   const unsigned long f = {{optNamespace}}::solutionAdjustment_flops;
@@ -488,7 +488,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
 
-  {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex.data());
+  {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, &subfaceIndex[0]);
   
 {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
@@ -515,7 +515,7 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
 
-  {{optNamespace}}::volumeUnknownsProlongation( luhFine, luhCoarse, coarseGridLevel, fineGridLevel, subcellIndex.data());
+  {{optNamespace}}::volumeUnknownsProlongation( luhFine, luhCoarse, coarseGridLevel, fineGridLevel, &subcellIndex[0]);
 
 {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
@@ -542,7 +542,7 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
 {% endif %}
 
-  {{optNamespace}}::volumeUnknownsRestriction( luhCoarse, luhFine, coarseGridLevel, fineGridLevel, subcellIndex.data());
+  {{optNamespace}}::volumeUnknownsRestriction( luhCoarse, luhFine, coarseGridLevel, fineGridLevel, &subcellIndex[0]);
   
 {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
