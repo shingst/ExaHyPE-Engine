@@ -9,6 +9,7 @@
 
 namespace NavierStokes {
   class PDE;
+  class Scenario;
 }
 
 using Variables = NavierStokes::AbstractNavierStokesSolverDG::Variables;
@@ -20,6 +21,7 @@ public:
   PDE();
   PDE(double referenceViscosity, double referencePressure, double gamma, double Pr, double c_v,
           double c_p, double gasConstant);
+  PDE(double referenceViscosity, Scenario& scenario);
 
   double evaluateEnergy(double rho, double pressure, const tarch::la::Vector<DIMENSIONS,double> &j) const;
   double evaluateTemperature(double rho, double pressure) const;

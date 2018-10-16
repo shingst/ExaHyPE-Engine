@@ -1,8 +1,18 @@
 #include "PDE.h"
+#include "Scenarios/Scenario.h"
 
 NavierStokes::PDE::PDE() :
   PDE(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {
 }
+
+NavierStokes::PDE::PDE(double referenceViscosity, NavierStokes::Scenario &scenario) :
+  referenceViscosity(referenceViscosity),
+  referencePressure(scenario.getReferencePressure()),
+  gamma(scenario.getGamma()),
+  Pr(scenario.getPr()),
+  c_v(scenario.getC_v()),
+  c_p(scenario.getC_p()),
+  gasConstant(scenario.getGasConstant()) { }
 
 NavierStokes::PDE::PDE(double referenceViscosity, double referencePressure, double gamma, double Pr,
         double c_v, double c_p, double gasConstant) :
@@ -216,7 +226,7 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
 
   // Full NS flux
   f.rho(vars.j());
-  f.j(invRho * outerDot(vars.j(), vars.j()) + p*I + stressTensor);
+  f.j(outerDot(invRho * vars.j(), vars.j()) + p*I + stressTensor);
 //  f.E(
 //      ((I * vars.E() + I * p + stressTensor) * (invRho * vars.j())) - kappa * gradT);
 

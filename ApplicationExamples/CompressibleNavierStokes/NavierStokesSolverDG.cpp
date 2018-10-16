@@ -56,18 +56,20 @@ void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cm
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TwoBubbles());
   } else if (scenarioName == "convergence") {
     scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::ConvergenceTest());
+  double referenceViscosity;
+  if (constants.isValueValidString("viscosity") &&
+      constants.getValueAsString("viscosity") == "default") {
+   throw -1;
   } else {
-    _log.error("NavierStokesSolverDG::init", "Unknown scenario: " + scenarioName);
-    std::abort();
+    assert(constants.isValueValidDouble("viscosity"));
+    referenceViscosity = constants.getValueAsDouble("viscosity");
   }
 
-  const auto referenceViscosity = constants.getValueAsDouble("viscosity");
+  scenarioName = constants.getValueAsString("scenario");
+  scenario = ScenarioFactory::createScenario(scenarioName);
 
   std::cout << referenceViscosity << " " << scenario->getGasConstant() << std::endl;
-  ns = PDE(referenceViscosity, scenario->getReferencePressure(), scenario->getGamma(),
-          scenario->getPr(), scenario->getC_v(), scenario->getC_p(), scenario->getGasConstant());
-
-  auto ns2 = ns;
+  ns = PDE(referenceViscosity, *scenario);
 }
 
 void NavierStokes::NavierStokesSolverDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
