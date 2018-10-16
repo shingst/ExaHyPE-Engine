@@ -1,16 +1,18 @@
-//
-// Created by lukas on 16/10/18.
-//
-
 #ifndef COMPRESSIBLENAVIERSTOKES_SCENARIOFACTORY_H
 #define COMPRESSIBLENAVIERSTOKES_SCENARIOFACTORY_H
 
+#include "Scenario.h"
+#include <memory>
+#include <string>
 
+namespace NavierStokes {
+    class ScenarioFactory {
+    private:
+        using ScenarioPtr = std::unique_ptr<Scenario>;
+    public:
 
-class ScenarioFactory {
-
-};
-
-
+        static ScenarioPtr createScenario(const std::string& scenarioName);
+    };
+}
 
 #endif //COMPRESSIBLENAVIERSTOKES_SCENARIOFACTORY_H

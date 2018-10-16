@@ -21,41 +21,13 @@
 #include "kernels/aderdg/generic/Kernels.h"
 #include "kernels/KernelUtils.h"
 
-#include "Scenarios/Scenario.h"
-#include "Scenarios/SodShockTube.h"
-#include "Scenarios/DoubleShockTube.h"
-#include "Scenarios/SmoothWave.h"
-#include "Scenarios/EntropyWave.h"
-#include "Scenarios/TaylorGreen.h"
-#include "Scenarios/Stokes.h"
-#include "Scenarios/TwoBubbles.h"
-#include "Scenarios/ConvergenceTest/ConvergenceTest.h"
+#include "Scenarios/ScenarioFactory.h"
 
 tarch::logging::Log NavierStokes::NavierStokesSolverDG::_log( "NavierStokes::NavierStokesSolverDG" );
 
 void NavierStokes::NavierStokesSolverDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // Check that parameters are valid.
-  assert(constants.isValueValidDouble("viscosity"));
   assert(constants.isValueValidString("scenario"));
 
-  scenarioName = constants.getValueAsString("scenario");
-
-  if (scenarioName == "sod-shock-tube") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::SodShockTube());
-  } else if (scenarioName == "double-shock-tube") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::DoubleShockTube());
-  } else if (scenarioName == "smooth-wave") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::SmoothWave());
-  } else if (scenarioName == "entropy-wave") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::EntropyWave());
-  } else if (scenarioName == "stokes") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::Stokes());
-  } else if (scenarioName == "taylor-green") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TaylorGreen());
-  } else if (scenarioName == "two-bubbles") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::TwoBubbles());
-  } else if (scenarioName == "convergence") {
-    scenario = std::unique_ptr<NavierStokes::Scenario>(new NavierStokes::ConvergenceTest());
   double referenceViscosity;
   if (constants.isValueValidString("viscosity") &&
       constants.getValueAsString("viscosity") == "default") {
