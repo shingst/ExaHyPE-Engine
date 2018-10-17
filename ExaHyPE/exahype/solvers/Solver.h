@@ -180,6 +180,27 @@ namespace exahype {
   #endif
 
   /**
+   * @return pointer to the first element of a data heap array.
+   *
+   * @param index heap index of the array.
+   */
+  double* getDataHeapArray(const int index);
+
+  /**
+   * @return a data heap array as vector.
+   *
+   * @param index heap index of the array.
+   */
+  DataHeap::HeapEntries& getDataHeapEntries(const int index);
+
+  /**
+   * Moves a DataHeap array, i.e. copies the found
+   * data at "fromIndex" to the array at "toIndex" and
+   * deletes the "fromIndex" array afterwards.
+   */
+  void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
+
+  /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
   extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
@@ -670,13 +691,6 @@ class exahype::solvers::Solver {
   static bool oneSolverIsOfType(const Type& type);
 
   /**
-   * Moves a DataHeap array, i.e. copies the found
-   * data at "fromIndex" to the array at "toIndex" and
-   * deletes the "fromIndex" array afterwards.
-   */
-  static void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
-
-  /**
    * Run over all solvers and identify the minimal time stamp.
    */
   static double getMinTimeStampOfAllSolvers();
@@ -846,6 +860,12 @@ class exahype::solvers::Solver {
       const bool isFirstIterationOfBatchOrNoBatch,
       const bool isLastIterationOfBatchOrNoBatch,
       const bool fusedTimeStepping);
+
+  /**
+   * Rolls back those solvers which requested a global rollback
+   * to the previous time step.
+   */
+  static void rollbackSolversToPreviousTimeStepIfApplicable();
 
   /**
    * Specify if solvers spawn background jobs and
@@ -1365,7 +1385,8 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) = 0;
+      const int solverNumber,
+      const bool stillInRefiningMode) = 0;
 
   /**
    * \return if the vertices around a cell should be erased, kept,

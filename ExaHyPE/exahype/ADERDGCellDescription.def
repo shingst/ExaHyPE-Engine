@@ -224,7 +224,7 @@ class exahype::records::ADERDGCellDescription {
     ErasingVirtualChildrenRequested,
     /**
      * After all children of a parent left
-     * the parent's refinement event DeaugmentingChildrenRequested
+     * the parent's refinement event ErasingVirtualChildrenRequested
      * unchanged, the parent changes its state
      * to this event. In the next iteration
      * the parent's children need to restrict their
@@ -241,7 +241,9 @@ class exahype::records::ADERDGCellDescription {
      * Additional events for notifying a deployed child cell about an erasing
      * decision made by the master.
      */
+    ErasingRequested,
     Erasing,
+    ChangeToVirtualCellRequested,
     ChangeToVirtualCell,
     ErasingVirtualCell
   };
@@ -416,7 +418,6 @@ class exahype::records::ADERDGCellDescription {
    */
   parallelise persistent int previousAugmentationStatus;
   
-  
   /**
    * \see communicationStatus
    */
@@ -444,13 +445,6 @@ class exahype::records::ADERDGCellDescription {
    * \see refinementStatus
    */
   persistent int facewiseRefinementStatus[DIMENSIONS_TIMES_TWO];
-  
-  /**
-   * A flag indicating cells marked by a normal refinement criterion
-   * during the time stepping. This is used as a marker for
-   * halo cell diffusion heat sources.
-   */
-  persistent bool refinementFlag;
   
   /**
    * Status which indicates the refinement decision made
@@ -492,6 +486,19 @@ class exahype::records::ADERDGCellDescription {
    * helper layer width.
    */
   parallelise persistent int previousRefinementStatus;
+ 
+  /**
+   * A flag indicating cells marked by a normal refinement criterion
+   * during the time stepping. This is used as a marker for
+   * halo cell diffusion heat sources.
+   */
+  parallelise persistent bool refinementFlag;
+  
+  /**
+   * A flag for vetoing the erasing of child cells
+   * during the mesh refinement iterations.
+   */
+  parallelise persistent bool vetoErasingChildren;
   
   /**
    * A counter holding the number of iterations to

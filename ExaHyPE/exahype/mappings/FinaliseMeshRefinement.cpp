@@ -124,6 +124,8 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   OneSolverRequestedMeshUpdate =
       exahype::solvers::Solver::oneSolverRequestedMeshRefinement();
 
+  exahype::solvers::Solver::rollbackSolversToPreviousTimeStepIfApplicable();
+
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
   initialiseLocalVariables();
@@ -165,6 +167,12 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
         const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if ( element!=exahype::solvers::Solver::NotFound ) {
+          // roll back the solution
+          if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) {
+            solver->rollbackSolutionGlobally(
+                fineGridCell.getCellDescriptionsIndex(),element,
+                exahype::solvers::Solver::FuseADERDGPhases);
+          }
 
           // compute a new time step size
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
