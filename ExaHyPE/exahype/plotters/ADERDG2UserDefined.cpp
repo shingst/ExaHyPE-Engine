@@ -48,9 +48,6 @@ void exahype::plotters::ADERDG2UserDefined::init(
   _writtenVariables = writtenVariables;
 }
 
-exahype::plotters::ADERDG2UserDefined::~ADERDG2UserDefined() {
-}
-
 void exahype::plotters::ADERDG2UserDefined::plotPatch(const int cellDescriptionsIndex, const int element) {
   auto& aderdgCellDescription = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 

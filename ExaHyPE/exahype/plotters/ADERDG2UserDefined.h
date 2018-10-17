@@ -37,7 +37,7 @@ class exahype::plotters::ADERDG2UserDefined: public exahype::plotters::Plotter::
   static std::string getIdentifier();
 
   ADERDG2UserDefined();
-  virtual ~ADERDG2UserDefined();
+  virtual ~ADERDG2UserDefined() = default;
 
   void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, exahype::parser::ParserView plotterParameters) override;
 
