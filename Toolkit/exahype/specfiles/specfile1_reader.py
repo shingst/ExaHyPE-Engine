@@ -111,6 +111,7 @@ class SpecFile1Reader():
             "cores",\
             "order",\
             "patch_size",\
+            "halo_cells",\
             "maximum_mesh_depth",\
             "dmp_observables",\
             "steps_till_cured",\
