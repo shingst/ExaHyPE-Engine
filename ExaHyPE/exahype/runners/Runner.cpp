@@ -1279,16 +1279,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.iterate(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
-  
-  // Only the solvers which requested a global recomputation do a rollback
-  if ( exahype::solvers::Solver::oneSolverRequestedGlobalRecomputation() ) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
-
-    logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-    repository.switchToGlobalRollback();
-    repository.iterate(1,false);
-  }
 
   // 3. Perform a grid update for those solvers that requested refinement
   if ( exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ) {
