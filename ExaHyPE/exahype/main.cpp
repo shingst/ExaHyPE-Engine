@@ -206,9 +206,10 @@ int exahype::main(int argc, char** argv) {
   #endif
 
   tarch::logging::CommandLineLogger::getInstance().clearFilterList();
-  if (!tarch::logging::LogFilterFileReader::parsePlainTextFile(
-          "exahype.log-filter")) {
-    tarch::logging::CommandLineLogger::getInstance().clearFilterList();
+  tarch::logging::LogFilterFileReader::parsePlainTextFile( "exahype.log-filter" );
+
+//    tarch::logging::CommandLineLogger::getInstance().clearFilterList();
+/*
     tarch::logging::CommandLineLogger::getInstance().addFilterListEntry(
         ::tarch::logging::CommandLineLogger::FilterListEntry("info", false));
     #if !defined(Asserts)
@@ -221,7 +222,8 @@ int exahype::main(int argc, char** argv) {
     tarch::logging::CommandLineLogger::getInstance().addFilterListEntry(
         ::tarch::logging::CommandLineLogger::FilterListEntry("debug", -1,
                                                              "exahype", false));
-  }
+*/
+
 
   exahype::runners::Runner runner(parser, cmdlineargs);
   int programExitCode = runner.run();

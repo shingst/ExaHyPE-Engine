@@ -35,6 +35,33 @@ namespace c {
    */
   double minmod(double a, double b);
 
+  /**
+   * The MUSCl-Hancock implementation follows "13.4.2 The MUSCL–Hancock Method (MHM)" in
+   * E.F. Toro's book "Riemann solvers and numerical methods for fluid dynamics: a practical introduction",
+   * 3rd ed. Dordrecht ; New York: Springer, 2009.
+   *
+   * Modifications:
+   *
+   * - The ghost layers have width two. This allows us to perform only one communication step but
+   *   results in more work per patch as some slopes have to be computed twice.
+   *
+   * - Corner/edge volumes are not communicated yielding a star stencil (+). Note that this may
+   *   reduce the approximation quality.
+   *
+   * Issues:
+   *
+   * - Users experienced zero-valued states when performing PDE operations.
+   *   Simply ignoring these states seemd to help. This might imply that these
+   *   bad states are found in the ghost layers. Likely, the interface states are the bad states.
+   *   Debugging should start here.
+   *
+   * @param solver a user solver implementing the PDE kernels
+   * @param luh_new the evolved solution
+   * @param luh     the current (old) solution
+   * @param dx      the dimensions of a cell
+   * @param dt      the used time step size
+   * @return the actual admissible time step size obtained from the Riemann solves.
+   */
   template <bool useSource, bool useNCP, bool useFlux, class SolverType>
   double solutionUpdate(
       SolverType& solver,double* luh_new, const double* luh,

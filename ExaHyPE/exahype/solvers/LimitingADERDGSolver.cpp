@@ -254,11 +254,12 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber) {
+    const int solverNumber,
+    const bool stillInRefiningMode) {
   return
       _solver->progressMeshRefinementInLeaveCell(
           fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,fineGridPositionOfCell,solverNumber);
+          coarseGridCell,fineGridPositionOfCell,solverNumber,stillInRefiningMode);
 }
 
 exahype::solvers::Solver::RefinementControl
@@ -777,15 +778,12 @@ exahype::solvers::LimitingADERDGSolver::determineRefinementStatusAfterSolutionUp
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(SolverPatch& solverPatch) {
-  double* solution = DataHeap::getInstance().getData(
-      solverPatch.getSolution()).data();
+  double* solution = getDataHeapArray(solverPatch.getSolution());
 
   const int numberOfObservables = _solver->getDMPObservables();
   if ( numberOfObservables>0 ) {
-    double* observablesMin = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMin()).data();
-    double* observablesMax = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMax()).data();
+    double* observablesMin = getDataHeapArray(solverPatch.getSolutionMin());
+    double* observablesMax = getDataHeapArray(solverPatch.getSolutionMax());
 
     // 1. Check if the DMP is satisfied and search for the min and max
     // Write the new min and max to the storage reserved for face 0
@@ -814,14 +812,11 @@ bool exahype::solvers::LimitingADERDGSolver::evaluatePhysicalAdmissibilityCriter
 
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables > 0) {
-    observablesMin = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMin()).data();
-    observablesMax = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMax()).data();
+    observablesMin = getDataHeapArray(solverPatch.getSolutionMin());
+    observablesMax = getDataHeapArray(solverPatch.getSolutionMax());
   }
 
-  const double* const solution = DataHeap::getInstance().getData(
-        solverPatch.getSolution()).data();
+  const double* const solution = getDataHeapArray(solverPatch.getSolution());
 
   return _solver->isPhysicallyAdmissible(
       solution,
@@ -865,13 +860,10 @@ void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(SolverPatc
     assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMin()),
             solverPatch.toString());
 
-    const double* const solution = DataHeap::getInstance().getData(
-        solverPatch.getSolution()).data();
+    const double* const solution = getDataHeapArray(solverPatch.getSolution());
 
-    double* observablesMin = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMin()).data();
-    double* observablesMax = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMax()).data();
+    double* observablesMin = getDataHeapArray(solverPatch.getSolutionMin());
+    double* observablesMax = getDataHeapArray(solverPatch.getSolutionMax());
 
     // Write the result to the face with index "0"
     findCellLocalMinAndMax(solution, observablesMin, observablesMax);
@@ -896,13 +888,10 @@ void exahype::solvers::LimitingADERDGSolver::determineSolverMinAndMax(SolverPatc
 void exahype::solvers::LimitingADERDGSolver::determineLimiterMinAndMax(SolverPatch& solverPatch,LimiterPatch& limiterPatch) {
   const int numberOfObservables = _solver->getDMPObservables();
   if (numberOfObservables>0) {
-    double* limiterSolution = DataHeap::getInstance().getData(
-        limiterPatch.getSolution()).data();
+    double* limiterSolution = getDataHeapArray(limiterPatch.getSolution());
 
-    double* observablesMin = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMin()).data();
-    double* observablesMax = DataHeap::getInstance().getData(
-        solverPatch.getSolutionMax()).data();
+    double* observablesMin = getDataHeapArray(solverPatch.getSolutionMin());
+    double* observablesMax = getDataHeapArray(solverPatch.getSolutionMax());
 
     // Write the result to the face with index "0"
     findCellLocalLimiterMinAndMax(limiterSolution, observablesMin, observablesMax);
@@ -1023,8 +1012,8 @@ bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocat
 
 void exahype::solvers::LimitingADERDGSolver::projectDGSolutionOnFVSpace(
     SolverPatch& solverPatch,LimiterPatch& limiterPatch) const {
-  const double* solverSolution  = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
-  double*       limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
+  const double* solverSolution  = getDataHeapArray(solverPatch.getSolution());
+  double*       limiterSolution = getDataHeapArray(limiterPatch.getSolution());
 
   projectOnFVLimiterSpace(solverSolution, limiterSolution);
 }
@@ -1035,7 +1024,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
     const bool fusedTimeStepping) const {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
 
-  if (fusedTimeStepping) { // TODO merge with synchronisation
+  if ( fusedTimeStepping ) { // TODO merge with synchronisation
     rollbackToPreviousTimeStepFused(cellDescriptionsIndex,solverElement);
   } else {
     rollbackToPreviousTimeStep(cellDescriptionsIndex,solverElement);
@@ -1047,7 +1036,7 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
       solverPatch.getPreviousRefinementStatus());
 
   // 2. Rollback solution to previous time step
-  if (solverPatch.getType()==SolverPatch::Type::Cell) {
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     if ( solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() ) {
       assertion(solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None);
 
@@ -1070,6 +1059,9 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionGlobally(
       _solver->swapSolutionAndPreviousSolution(solverPatch);
     }
   }
+
+  // 3. Reset the previous refinement status.
+  solverPatch.setRefinementStatus(solverPatch.getPreviousRefinementStatus());
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
@@ -1124,8 +1116,8 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolutionLocally(
 
 void exahype::solvers::LimitingADERDGSolver::projectFVSolutionOnDGSpace(
     SolverPatch& solverPatch,LimiterPatch& limiterPatch) const {
-  const double* limiterSolution = DataHeap::getInstance().getData(limiterPatch.getSolution()).data();
-  double*       solverSolution  = DataHeap::getInstance().getData(solverPatch.getSolution()).data();
+  const double* limiterSolution = getDataHeapArray(limiterPatch.getSolution());
+  double*       solverSolution  = getDataHeapArray(solverPatch.getSolution());
 
   projectOnDGSpace(limiterSolution, solverSolution);
 }
@@ -1214,8 +1206,9 @@ double exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocallyFused(
 
 void exahype::solvers::LimitingADERDGSolver::prolongateFaceData(
     const int cellDescriptionsIndex,
-    const int element) {
-  _solver->prolongateFaceData(cellDescriptionsIndex,element);
+    const int element,
+    const bool isAtRemoteBoundary) {
+  _solver->prolongateFaceData(cellDescriptionsIndex,element,isAtRemoteBoundary);
 }
 
 void exahype::solvers::LimitingADERDGSolver::restriction(
@@ -1378,10 +1371,10 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
 ) const {
   assertion( solverPatch1.getSolverNumber() == solverPatch2.getSolverNumber() );
   const int numberOfObservables = _solver->getDMPObservables();
-  double* min1 = DataHeap::getInstance().getData( solverPatch1.getSolutionMin()  ).data() + faceIndex1 * numberOfObservables;
-  double* min2 = DataHeap::getInstance().getData( solverPatch2.getSolutionMin()  ).data() + faceIndex2 * numberOfObservables;
-  double* max1 = DataHeap::getInstance().getData( solverPatch1.getSolutionMax()  ).data() + faceIndex1 * numberOfObservables;
-  double* max2 = DataHeap::getInstance().getData( solverPatch2.getSolutionMax()  ).data() + faceIndex2 * numberOfObservables;
+  double* min1 = getDataHeapArray(solverPatch1.getSolutionMin()) + faceIndex1 * numberOfObservables;
+  double* min2 = getDataHeapArray(solverPatch2.getSolutionMin()) + faceIndex2 * numberOfObservables;
+  double* max1 = getDataHeapArray(solverPatch1.getSolutionMax()) + faceIndex1 * numberOfObservables;
+  double* max2 = getDataHeapArray(solverPatch2.getSolutionMax()) + faceIndex2 * numberOfObservables;
 
   for (int i=0; i<numberOfObservables; i++) {
     const double min = std::min(
@@ -1513,11 +1506,9 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
 
       assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMin()));
       assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMax()));
-      const double* observablesMin = DataHeap::getInstance().getData(
-          solverPatch.getSolutionMin()).data() +
+      const double* observablesMin = getDataHeapArray(solverPatch.getSolutionMin()) +
           (faceIndex * numberOfObservables);
-      const double* observablesMax = DataHeap::getInstance().getData(
-          solverPatch.getSolutionMax()).data() +
+      const double* observablesMax = getDataHeapArray(solverPatch.getSolutionMax()) +
           (faceIndex * numberOfObservables);
 
       DataHeap::getInstance().sendData(
@@ -1747,8 +1738,8 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
   const double* const min, const double* const max) const {
   assertion1(ADERDGSolver::holdsFaceData(solverPatch),solverPatch.toString());
 
-  double* solutionMin = DataHeap::getInstance().getData( solverPatch.getSolutionMin()  ).data();
-  double* solutionMax = DataHeap::getInstance().getData( solverPatch.getSolutionMax()  ).data();
+  double* solutionMin = getDataHeapArray(solverPatch.getSolutionMin());
+  double* solutionMax = getDataHeapArray(solverPatch.getSolutionMax());
 
   const int numberOfObservables = _solver->getDMPObservables();
   for (int i=0; i<numberOfObservables; i++) {

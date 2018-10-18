@@ -102,7 +102,7 @@
         "log_file" : {
           "type" : "string", 
           "title" : "The path or name of the ExaHyPE runtime logfile", 
-          "default" : "output.log", 
+          "default" : "", 
           "old_format" : { "token_after" : "log-file" },
           "examples" : [
             "whatever.log",
@@ -243,7 +243,7 @@
        	"low_priority_background_job_processing" : {
           "type" : "string", 
           "title" : "How to process low priority background jobs",
-          "enum" : [ "run_if_no_high_priority_job_left", "run_always" ],
+          "enum" : [ "run_if_no_high_priority_job_left", "run_always", "spawn_as_a_task" ],
           "default" : "run_always" 
         },
         "high_priority_background_job_processing" : {
@@ -399,6 +399,11 @@
           "title" : "Wether to spawn the predictor as a background thread, or so.",
           "default" : false,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
+        },
+        "spawn_prolongation_as_background_thread" : {
+          "type" : "boolean", 
+          "title" : "Wether to spawn the face data prolongation as a background thread, or so.",
+          "default" : false
         },
         "spawn_amr_background_threads" : {
           "type" : "boolean", 

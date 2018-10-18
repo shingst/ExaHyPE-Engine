@@ -25,7 +25,7 @@ void {{project}}::{{solver}}::init(const std::vector<std::string>& cmdlineargs,c
 {% if patchwiseAdjust %}
 void {{project}}::{{solver}}::adjustSolution(double *luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
     //initialise luh
@@ -34,7 +34,7 @@ void {{project}}::{{solver}}::adjustSolution(double *luh, const tarch::la::Vecto
 {% else %}
 void {{project}}::{{solver}}::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
     {% for i in range_0_nVarParam %}
@@ -48,7 +48,7 @@ void {{project}}::{{solver}}::boundaryValues(const double* const x,const double 
   const double * const fluxIn,const double* const stateIn,
   double *fluxOut,double* stateOut) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
 
   // @todo Please implement/augment if required
   {% for i in range_0_nVar %}
@@ -74,7 +74,7 @@ exahype::solvers::Solver::RefinementControl {{project}}::{{solver}}::refinementC
 
 void {{project}}::{{solver}}::eigenvalues(const double* const Q,const int d,double* lambda) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   
   // @todo Please implement/augment if required
   {% for i in range_0_nVar %}
@@ -85,7 +85,7 @@ void {{project}}::{{solver}}::eigenvalues(const double* const Q,const int d,doub
 {% if useViscousFlux %}
 void {{project}}::{{solver}}::viscousEigenvalues(const double* const Q,const int d,double* lambda) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   
   // @todo Please implement/augment if required
   {% for i in range_0_nVar %}
@@ -98,7 +98,7 @@ void {{project}}::{{solver}}::viscousEigenvalues(const double* const Q,const int
 {% if useViscousFlux %}
 void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* const gradQ,double** F) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   
   // @todo Please implement/augment if required
   {% for d in range_0_nDim %}
@@ -114,7 +114,7 @@ void {{project}}::{{solver}}::viscousFlux(const double* const Q,const double* co
 {% if useFlux and not useViscousFlux %}
 void {{project}}::{{solver}}::flux(const double* const Q,double** F) {
   // Dimensions                        = {{dimensions}}
-  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfParameters}}
+  // Number of variables + parameters  = {{numberOfVariables}} + {{numberOfMaterialParameters}}
   
   // @todo Please implement/augment if required
   {% for d in range_0_nDim %}
@@ -151,7 +151,7 @@ void  {{project}}::{{solver}}::nonConservativeProduct(const double* const Q,cons
 void  {{project}}::{{solver}}::initPointSourceLocations(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants){
   // @todo Please implement/augment if required
 
-{% for i in range_0_numberOfPointSources %}
+{% for i in range_0_nPointSources %}
 {% for d in range_0_nDim %}
   pointSourceLocation[{{i}}][{{d}}]=0.0;
 {% endfor %}
