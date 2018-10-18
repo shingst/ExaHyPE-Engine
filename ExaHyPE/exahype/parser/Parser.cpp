@@ -660,6 +660,10 @@ bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
   return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
 }
 
+bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
+  return getBoolFromPath("/optimisation/spawn_prolongation_as_background_thread", false, isOptional);
+}
+
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
   return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
 }
@@ -1125,6 +1129,11 @@ bool exahype::parser::Parser::getSpawnHighPriorityBackgroundJobsAsATask() {
 bool exahype::parser::Parser::getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() {
   return getStringFromPath("/shared_memory/low_priority_background_job_processing","run_always",isOptional).
       compare("run_if_no_high_priority_job_left")==0;
+}
+
+bool exahype::parser::Parser::getSpawnLowPriorityBackgroundJobsAsATask() {
+  return getStringFromPath("/shared_memory/high_priority_background_job_processing","spawn_as_a_task",isOptional).
+      compare("spawn_as_a_task")==0;
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {

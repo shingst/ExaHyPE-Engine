@@ -35,7 +35,7 @@ exahype-project  Elastic
 
   shared-memory
     identifier               = dummy
-    configure                = {background-tasks:28,manual-pinning}
+    configure                = {background-tasks:28}
     cores                    = 28
     properties-file          = sharedmemory.properties
   end shared-memory

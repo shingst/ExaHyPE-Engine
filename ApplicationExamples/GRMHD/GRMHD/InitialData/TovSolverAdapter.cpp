@@ -29,7 +29,10 @@ void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
 	double V[nVar];
 	
 	TOV::idvars id;
+
+  auto params = new TOV::Parameters();
 	tov->Interpolate(x, id);
+
 	
 	V[rho] = id.rho;
 	V[E] = id.press;
@@ -42,18 +45,27 @@ void TovSolverAdapter::Interpolate(const double* x, double t, double* Q) {
 	V[lapse] = id.alp;
 	
 	// Floor atmosphere
-	if(V[rho] < Parameters::atmo_rho) V[rho] = Parameters::atmo_rho;
-	if(V[E] < Parameters::atmo_press) V[E] = Parameters::atmo_press;
+  
+	if(V[rho] < params->atmo_rho) V[rho] = params->atmo_rho;
+	if(V[E] < params->atmo_rho) V[E] = params->atmo_press;
+//	if(V[rho] < TOV::Parameters.atmo_rho) V[rho] = TOV::Parameters.atmo_rho;
+//	if(V[E] < TOV::Parameters.atmo_press) V[E] = TOV::Parameters.atmo_press;
 	
 	// Caveats with the ordering, here it is Tensish (C)
-	V[gij + 0] = id.gam[0][0];
-	V[gij + 1] = id.gam[0][1];
-	V[gij + 2] = id.gam[1][1];
-	V[gij + 3] = id.gam[0][2];
-	V[gij + 4] = id.gam[1][2];
-	V[gij + 5] = id.gam[2][2];
+	V[gij + 0] = id.gam[0][0];  // gxx
+	V[gij + 1] = id.gam[0][1];  // gxy
+	V[gij + 2] = id.gam[0][2];  // gxz
+	V[gij + 3] = id.gam[1][1];  // gyy
+	V[gij + 4] = id.gam[1][2];  // gyz
+	V[gij + 5] = id.gam[2][2];  // gzz
+
+//	printf("At x=(%lf,%lf,%lf), rho=%lf\n", x[0],x[1],x[2],V[rho]);
+//  std::cout << "Before p2c V = " << std::endl;; 
+//  for(int i=0; i<nVar; i++) {
+//    std::cout << i << " = " << V[i] << std::endl;
+//  }
 	
 	pdeprim2cons_(Q, V);
 
-	//printf("At x=(%f,%f,%f), rho=%f\n", x[0],x[1],x[2],Q[rho]);
+
 }

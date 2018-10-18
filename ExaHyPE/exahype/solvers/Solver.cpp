@@ -41,6 +41,23 @@ tarch::multicore::BooleanSemaphore exahype::BackgroundJobSemaphore;
 
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
+exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
+  return DataHeap::getInstance().getData(index);
+}
+
+double* exahype::getDataHeapArray(const int index) {
+  return getDataHeapEntries(index).data();
+}
+
+void exahype::moveDataHeapArray(
+    const int fromIndex,const int toIndex,bool recycleFromArray) {
+  std::copy(
+      getDataHeapEntries(fromIndex).begin(),
+      getDataHeapEntries(fromIndex).end(),
+      getDataHeapEntries(toIndex).begin());
+  DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
+}
+
 #ifdef TrackGridStatistics
 /**
  * If you enable assertions, we have the option not to remove any entries from
@@ -73,6 +90,8 @@ bool exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps = false;
 
 bool exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = false;
 int exahype::solvers::Solver::PredictionSweeps                = 1;
+
+bool exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = false;
 
 bool exahype::solvers::Solver::SpawnAMRBackgroundJobs = false;
 
@@ -139,8 +158,9 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   }
 }
 
-void exahype::solvers::Solver::configurePredictionPhase(const bool useBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob = useBackgroundJobs;
+void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
+  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
+  exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
 
   #ifdef PredictionSweeps
   exahype::solvers::Solver::PredictionSweeps = PredictionSweeps;
@@ -150,7 +170,7 @@ void exahype::solvers::Solver::configurePredictionPhase(const bool useBackground
   #else
   exahype::solvers::Solver::PredictionSweeps = ( 
          !allSolversPerformOnlyUniformRefinement() || // prolongations are done in second sweep
-         useBackgroundJobs ) ? 
+         usePredictionBackgroundJobs ) ? 
          2 : 1;
   #endif
 }
@@ -213,7 +233,7 @@ void exahype::solvers::Solver::tearApart(
 
   assertion( DataHeap::getInstance().isValidIndex(normalHeapIndex) );
   assertion( CompressedDataHeap::getInstance().isValidIndex(compressedHeapIndex) );
-  assertion2( static_cast<int>(DataHeap::getInstance().getData(normalHeapIndex).size())==numberOfEntries, DataHeap::getInstance().getData(normalHeapIndex).size(), numberOfEntries );
+  assertion2( static_cast<int>(getDataHeapEntries(normalHeapIndex).size())==numberOfEntries, getDataHeapEntries(normalHeapIndex).size(), numberOfEntries );
   assertion( CompressedDataHeap::getInstance().getData(compressedHeapIndex).empty() );
 
   CompressedDataHeap::getInstance().getData( compressedHeapIndex ).clear();
@@ -224,7 +244,7 @@ void exahype::solvers::Solver::tearApart(
 	}
 	else {
      peano::heap::decompose(
-	  DataHeap::getInstance().getData( normalHeapIndex )[i],
+	  getDataHeapEntries(normalHeapIndex)[i],
 		  exponent, mantissa, bytesForMantissa
 		);
 
@@ -245,8 +265,8 @@ void exahype::solvers::Solver::tearApart(
 		  exponent, mantissa, bytesForMantissa
 		);
 		assertion9(
-		  tarch::la::equals( reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
-		  reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i],
+		  tarch::la::equals( reconstructedValue, getDataHeapEntries(normalHeapIndex)[i], tarch::la::absoluteWeight(reconstructedValue, getDataHeapEntries(normalHeapIndex)[i], CompressionAccuracy) ),
+		  reconstructedValue, getDataHeapEntries(normalHeapIndex)[i],
 		  reconstructedValue-DataHeap::getInstance().getData( normalHeapIndex )[i],
 		  CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex,
 		  static_cast<int>(exponent), mantissa
@@ -268,15 +288,15 @@ void exahype::solvers::Solver::glueTogether(
   assertion( CompressedDataHeap::getInstance().isValidIndex(compressedHeapIndex) );
 
   #ifdef ValidateCompressedVsUncompressedData
-  assertion( static_cast<int>(DataHeap::getInstance().getData(normalHeapIndex).size())==numberOfEntries );
+  assertion( static_cast<int>(getDataHeapEntries(normalHeapIndex).size())==numberOfEntries );
   #else
-  DataHeap::getInstance().getData(normalHeapIndex).resize(numberOfEntries);
+  getDataHeapEntries(normalHeapIndex).resize(numberOfEntries);
   #endif
 
   for (int i=numberOfEntries-1; i>=0; i--) {
     const char firstEntry = CompressedDataHeap::getInstance().getData( compressedHeapIndex ).back();
 	if (firstEntry==0) {
-      DataHeap::getInstance().getData(normalHeapIndex)[i] = 0.0;
+      getDataHeapEntries(normalHeapIndex)[i] = 0.0;
       CompressedDataHeap::getInstance().getData( compressedHeapIndex ).pop_back();
 	}
 	else {
@@ -292,12 +312,12 @@ void exahype::solvers::Solver::glueTogether(
       );
       #ifdef ValidateCompressedVsUncompressedData
       assertion7(
-        tarch::la::equals( DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, tarch::la::absoluteWeight(reconstructedValue, DataHeap::getInstance().getData( normalHeapIndex )[i], CompressionAccuracy) ),
-        DataHeap::getInstance().getData(normalHeapIndex)[i], reconstructedValue, DataHeap::getInstance().getData(normalHeapIndex)[i] - reconstructedValue,
+        tarch::la::equals( getDataHeapEntries(normalHeapIndex)[i], reconstructedValue, tarch::la::absoluteWeight(reconstructedValue, getDataHeapEntries(normalHeapIndex)[i], CompressionAccuracy) ),
+        getDataHeapEntries(normalHeapIndex)[i], reconstructedValue, getDataHeapEntries(normalHeapIndex)[i] - reconstructedValue,
         CompressionAccuracy, bytesForMantissa, numberOfEntries, normalHeapIndex
       );
       #endif
-      DataHeap::getInstance().getData(normalHeapIndex)[i] = reconstructedValue;
+      getDataHeapEntries(normalHeapIndex)[i] = reconstructedValue;
     }
   }
 }
@@ -379,15 +399,6 @@ bool exahype::solvers::Solver::oneSolverIsOfType(const Type& type) {
   return result;
 }
 
-void exahype::solvers::Solver::moveDataHeapArray(
-    const int fromIndex,const int toIndex,bool recycleFromArray) {
-  std::copy(
-      DataHeap::getInstance().getData(fromIndex).begin(),
-      DataHeap::getInstance().getData(fromIndex).end(),
-      DataHeap::getInstance().getData(toIndex).begin());
-  DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
-}
-
 double exahype::solvers::Solver::getMinTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();
 
@@ -467,6 +478,11 @@ double exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers() {
 const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainSize() {
   assertion(RegisteredSolvers.size()>0);
   return RegisteredSolvers[0]->_domainSize;
+}
+
+const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainOffset() {
+  assertion(RegisteredSolvers.size()>0);
+  return RegisteredSolvers[0]->_domainOffset;
 }
 
 double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
@@ -724,7 +740,24 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
   }
 }
 
+void exahype::solvers::Solver::rollbackSolversToPreviousTimeStepIfApplicable() {
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const bool performGlobalRollback =
+          solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested;
+      if (
+           performGlobalRollback &&
+           exahype::solvers::Solver::FuseADERDGPhases
+      ) {
+        solver->rollbackToPreviousTimeStepFused();
+      } else if (
+           performGlobalRollback
+      ) {
+        solver->rollbackToPreviousTimeStep();
+      }
 
+    }
+  }
 
 std::string exahype::solvers::Solver::toString(const MeshUpdateEvent& meshUpdateEvent) {
   switch (meshUpdateEvent) {

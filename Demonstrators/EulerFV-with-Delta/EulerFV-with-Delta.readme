@@ -1,0 +1,44 @@
+## How to install ##
+
+
+- Build Delta:
+  I assume that you have a valid Delta build in a directory
+   
+     mydelta/src/lib
+   
+  i.e. that there's both a libdelta_debug.so and a libdelta.so file.
+  I furthermore assume that all delta sources are held in 
+  
+     mydelta/src/delta
+     
+  and its subdirectories
+
+
+- Build ExaHyPE glue code:
+  Change into the ExaHyPE root director and type in
+  
+     Toolkit/toolkit.sh Demonstrators/EulerFV-with-Delta/EulerFV-with-Delta.exahype
+     
+  If this is the first time you access ExaHyPE, you will have to invoke
+  
+     ./updateSubmodules.sh
+     
+  from the Submodules subdirectory unless you have downloaded an ExaHyPE snapshot
+  from the web.
+  
+- Build the application
+  Change into Demonstrators/EulerFV-with-Delta and run make in there. You might 
+  have to set
+  
+    export COMPILER=gnu
+   
+  if you want to use the GNU compiler instead of the Intel product. Furthermore, you
+  have to export the following variables:
+  
+    export PROJECT_CFLAGS=-Imydelta
+    export PROJECT_LFLAGS="-Lmydelta/lib -ldelta"
+
+- Run code through
+
+    ./ExaHyPE-EulerFV EulerFV-with-Delta.exahype
+

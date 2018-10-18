@@ -47,18 +47,35 @@ exahype-project EulerADERDG
    ====================================================
    Comment this stuff in to get a shared memory version
    ====================================================
+ */ 
   shared-memory
     identifier               = dummy
     configure                = {}
     cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory
-  */ 
+
+
+  global-optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    spawn-amr-background-threads = on
+    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+    disable-vertex-exchange-in-time-steps        = on
+    time-step-batch-factor           = 1.0
+    disable-metadata-exchange-in-batched-time-steps = on
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
+
+
   
   solver Limiting-ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
-    maximum-mesh-size          = 1e-1    
+    maximum-mesh-size          = 5e-1    
     maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear, Legendre
@@ -74,7 +91,7 @@ exahype-project EulerADERDG
     
     plot vtu::Cartesian::vertices::limited::ascii EulerWriter
       variables const = 5
-      time            = 0.0
+      time            = 100.0
       repeat          = 0.001
       output          = ./variables
     end plot
@@ -82,7 +99,7 @@ exahype-project EulerADERDG
     
     plot vtk::Cartesian::subcells::limited::ascii EulerSubcellsWriter
       variables const = 5
-      time            = 0.0
+      time            = 100.0
       repeat          = 0.001
       output          = ./variables-fv
     end plot

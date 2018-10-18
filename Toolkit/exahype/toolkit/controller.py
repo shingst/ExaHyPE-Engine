@@ -96,7 +96,7 @@ class Controller:
         except BadSpecificationFile as e:
             self.log.error("Some directories did not exist and/or could not be created.")
             self.log.exception(e)
-            self.log.error("Failure due to bad specificaiton file, cannot continue")
+            self.log.error("Failure due to bad specification file, cannot continue")
             sys.exit(-4)
         
         self.wait_interactive("validated and configured pathes")

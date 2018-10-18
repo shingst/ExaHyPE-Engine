@@ -299,6 +299,12 @@ class exahype::parser::Parser {
   bool getSpawnPredictionAsBackgroundThread() const;
 
   /**
+   * @return if the prolongation should be spawned as background
+   * thread whenever this is possible.
+   */
+  bool getSpawnProlongationAsBackgroundThread() const;
+
+  /**
    * @return if the mesh refinement iterations should
    * use background-threads whenever this is possible.
    */
@@ -533,6 +539,12 @@ class exahype::parser::Parser {
    * as a task.
    */
   bool getSpawnHighPriorityBackgroundJobsAsATask();
+
+  /**
+   * @return Return if every single low priority job should be spawned
+   * as a task.
+   */
+  bool getSpawnLowPriorityBackgroundJobsAsATask();
 
   /**
    * @return If the consumer tasks should process any low priority tasks

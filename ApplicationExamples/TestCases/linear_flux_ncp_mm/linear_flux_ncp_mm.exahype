@@ -107,13 +107,13 @@ exahype-project  Elastic
     end plot */
 
     /* Do not need the time series for a point in the moment*/
-    plot probe::ascii ProbeWriter
+   /* plot probe::ascii ProbeWriter
       variables const = 9
       time            = 0.0
       repeat          = 0.005
       output          = ./reference_solution
       select          = x:0.5,y:0.5,z:0.8
-    end plot
+    end plot */
     
   end solver
 end exahype-project

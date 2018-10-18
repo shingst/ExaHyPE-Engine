@@ -290,13 +290,18 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       tarch::multicore::jobs::setHighPriorityJobBehaviour(
           tarch::multicore::jobs::HighPriorityTaskProcessing::ProcessAllHighPriorityTasksInARush);
     }
-  } else if (_parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
+  } else if ( _parser.getSpawnHighPriorityBackgroundJobsAsATask() ) {
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) { // low priority behaviour
       logWarning("initSharedMemoryConfiguration()","There exists no high priority job queue if we spawn high priority jobs directly as TBB tasks. "<<
                   "Fall back to 'run_always' low priority job processing strategy.");
     }
-    tarch::multicore::jobs::setHighPriorityJobBehaviour(
-        tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
+    if ( _parser.getSpawnLowPriorityBackgroundJobsAsATask() ){
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityAndBackgroundTasksToRealTBBTasks);
+    } else {
+      tarch::multicore::jobs::setHighPriorityJobBehaviour(
+          tarch::multicore::jobs::HighPriorityTaskProcessing::MapHighPriorityTasksToRealTBBTasks);
+    }
   }
   else {
     if ( _parser.getRunLowPriorityJobsOnlyIfNoHighPriorityJobIsLeft() ) {
@@ -432,6 +437,8 @@ void exahype::runners::Runner::initDataCompression() {
 
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 #ifdef SharedMemoryParallelisation
+  tarch::multicore::jobs::plotStatistics();
+
   switch (_parser.getMulticoreOracleType()) {
   case exahype::parser::Parser::MulticoreOracleType::AutotuningWithoutLearning:
     break;
@@ -648,7 +655,8 @@ void exahype::runners::Runner::parseOptimisations() const {
   exahype::solvers::Solver::WeightForPredictionRerun = _parser.getFuseAlgorithmicStepsFactor();
 
   exahype::solvers::Solver::configurePredictionPhase(
-      _parser.getSpawnPredictionAsBackgroundThread());
+      _parser.getSpawnPredictionAsBackgroundThread(),
+      _parser.getSpawnProlongationAsBackgroundThread());
 
   exahype::solvers::Solver::SpawnAMRBackgroundJobs =
       _parser.getSpawnAMRBackgroundThreads();
@@ -1270,16 +1278,6 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
     repository.iterate(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
-  }
-  
-  // Only the solvers which requested a global recomputation do a rollback
-  if ( exahype::solvers::Solver::oneSolverRequestedGlobalRecomputation() ) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
-
-    logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
-    peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
-    repository.switchToGlobalRollback();
-    repository.iterate(1,false);
   }
 
   // 3. Perform a grid update for those solvers that requested refinement

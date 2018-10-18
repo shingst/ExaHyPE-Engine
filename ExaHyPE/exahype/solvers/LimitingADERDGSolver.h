@@ -759,7 +759,8 @@ public:
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber) override;
+     const int solverNumber,
+     const bool stillInRefiningMode) override;
 
  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
      const int cellDescriptionsIndex,
@@ -1053,7 +1054,8 @@ public:
 
   void prolongateFaceData(
       const int cellDescriptionsIndex,
-      const int element) final override;
+      const int element,
+      const bool isAtRemoteBoundary) final override;
 
   void restriction(
         const int cellDescriptionsIndex,

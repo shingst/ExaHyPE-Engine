@@ -20,10 +20,20 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
   if( direction == 0 ){   // x-face
     for (int i = 0; i < basisSize; i++) { // z
       for (int j = 0; j < basisSize; j++) { // y
-        const double scaledWeight = 
-             kernels::gaussLegendreWeights[order][i] *
-             kernels::gaussLegendreWeights[order][j] *
-             scaling;
+
+      	#if defined(_GLL)
+           const double scaledWeight = kernels::gaussLobattoWeights[order][i] *
+                                 kernels::gaussLobattoWeights[order][j]*scaling;
+       #else
+           const double scaledWeight = kernels::gaussLegendreWeights[order][i] *
+                                 kernels::gaussLegendreWeights[order][j]*scaling;
+
+       #endif
+       
+        //const double scaledWeight = 
+        //     kernels::gaussLegendreWeights[order][i] *
+        //     kernels::gaussLegendreWeights[order][j] *
+        //     scaling;
 
         for (int k = 0; k < basisSize; k++) { // x
           for (int l = 0; l < numberOfVariables; l++) {
@@ -39,10 +49,20 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
     for (int i = 0; i < basisSize; i++) { // z
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x
-          const double scaledWeight = 
-               kernels::gaussLegendreWeights[order][i] *
-               kernels::gaussLegendreWeights[order][k] *
-               scaling;
+
+	#if defined(_GLL)
+           const double scaledWeight = kernels::gaussLobattoWeights[order][i] *
+                                 kernels::gaussLobattoWeights[order][k]*scaling;
+       #else
+           const double scaledWeight = kernels::gaussLegendreWeights[order][i] *
+                                 kernels::gaussLegendreWeights[order][k]*scaling;
+
+       #endif
+       
+          //const double scaledWeight = 
+          //     kernels::gaussLegendreWeights[order][i] *
+          //     kernels::gaussLegendreWeights[order][k] *
+          //     scaling;
 
           for (int l = 0; l < numberOfVariables; l++) {
             lduh[idx_lduh(i, j, k, l)] -=
@@ -57,10 +77,20 @@ void kernels::aderdg::generic::c::faceIntegralLinear(double* const lduh, const d
     for (int i = 0; i < basisSize; i++) { // z 
       for (int j = 0; j < basisSize; j++) { // y
         for (int k = 0; k < basisSize; k++) { // x
-          const double scaledWeight = 
-               kernels::gaussLegendreWeights[order][j] *
-               kernels::gaussLegendreWeights[order][k] *
-               scaling;
+
+	#if defined(_GLL)
+           const double scaledWeight = kernels::gaussLobattoWeights[order][j] *
+                                 kernels::gaussLobattoWeights[order][k]*scaling;
+       #else
+           const double scaledWeight = kernels::gaussLegendreWeights[order][j] *
+                                 kernels::gaussLegendreWeights[order][k]*scaling;
+
+       #endif
+       
+          //    const double scaledWeight = 
+          //     kernels::gaussLegendreWeights[order][j] *
+          //     kernels::gaussLegendreWeights[order][k] *
+          //     scaling;
 
           for (int l = 0; l < numberOfVariables; l++) {
               lduh[idx_lduh(i, j, k, l)] -=

@@ -180,6 +180,27 @@ namespace exahype {
   #endif
 
   /**
+   * @return pointer to the first element of a data heap array.
+   *
+   * @param index heap index of the array.
+   */
+  double* getDataHeapArray(const int index);
+
+  /**
+   * @return a data heap array as vector.
+   *
+   * @param index heap index of the array.
+   */
+  DataHeap::HeapEntries& getDataHeapEntries(const int index);
+
+  /**
+   * Moves a DataHeap array, i.e. copies the found
+   * data at "fromIndex" to the array at "toIndex" and
+   * deletes the "fromIndex" array afterwards.
+   */
+  void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
+
+  /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
   extern tarch::multicore::BooleanSemaphore BackgroundJobSemaphore;
@@ -432,6 +453,14 @@ class exahype::solvers::Solver {
   static bool SpawnPredictionAsBackgroundJob;
 
   /**
+   * Set to true if the prolongation
+   * should be launched as background job whenever possible.
+   *
+   * Requires that the prediction is launched as background job too.
+   */
+  static bool SpawnProlongationAsBackgroundJob;
+
+  /**
    * The number of Prediction,PredictionRerun,PredictionOrLocalRecomputation<
    * and FusedTimeStep iterations we need to run per time step.
    */
@@ -662,13 +691,6 @@ class exahype::solvers::Solver {
   static bool oneSolverIsOfType(const Type& type);
 
   /**
-   * Moves a DataHeap array, i.e. copies the found
-   * data at "fromIndex" to the array at "toIndex" and
-   * deletes the "fromIndex" array afterwards.
-   */
-  static void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
-
-  /**
    * Run over all solvers and identify the minimal time stamp.
    */
   static double getMinTimeStampOfAllSolvers();
@@ -737,6 +759,7 @@ class exahype::solvers::Solver {
   static double getCoarsestMeshSizeOfAllSolvers();
 
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
+  static const tarch::la::Vector<DIMENSIONS,double>& getDomainOffset();
 
   /**
    * Run over all solvers and identify the maximum depth of adaptive
@@ -840,11 +863,17 @@ class exahype::solvers::Solver {
       const bool fusedTimeStepping);
 
   /**
+   * Rolls back those solvers which requested a global rollback
+   * to the previous time step.
+   */
+  static void rollbackSolversToPreviousTimeStepIfApplicable();
+
+  /**
    * Specify if solvers spawn background jobs and
    * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
    * and PredictorOrLocalRecomputation.
    */
-  static void configurePredictionPhase(const bool useBackgroundJobs);
+  static void configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs);
 
 
   static std::string toString(const JobType& jobType);
@@ -881,16 +910,30 @@ class exahype::solvers::Solver {
   *
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
+  *
+  * @note Only use receiveDanglingMessages=true if the routine
+  * is called from a serial context.
+  *
+  * @param cellDescription a cell description
+  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+  * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
  static void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool receiveDanglingMessages) {
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+   if ( !cellDescription.getHasCompletedTimeStep() ) {
+     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+   }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
      if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+       tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+     if ( waitForHighPriorityJob ) {
+       tarch::multicore::jobs::processHighPriorityJobs(1);
+     } else {
+       tarch::multicore::jobs::processBackgroundJobs(1);
+     }
    }
  }
 
@@ -1357,7 +1400,8 @@ class exahype::solvers::Solver {
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) = 0;
+      const int solverNumber,
+      const bool stillInRefiningMode) = 0;
 
   /**
    * \return if the vertices around a cell should be erased, kept,
@@ -1578,7 +1622,8 @@ class exahype::solvers::Solver {
     */
   virtual void prolongateFaceData(
       const int cellDescriptionsIndex,
-      const int element) = 0;
+      const int element,
+      const bool isAtRemoteBoundary) = 0;
 
   /**
    * Restrict data to a parent on

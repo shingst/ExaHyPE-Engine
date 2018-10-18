@@ -41,7 +41,70 @@ namespace exahype {
 }
 
 /**
- * Describes one solver.
+ * ADER-DG solver base class.
+ *
+ *
+ * Mesh Refinement
+ * ===============
+ *
+ * Some notes on the solver which will hopefully grow into a full documentation.
+ *
+ * - The user uses a RefinementControl to steer the refinement automation implemented
+ *   by this solver. The time stepping is only stopped if refinement is requested.
+ *
+ * - We perform rollbacks after the mesh refinement as we assume that the
+ *   mesh refinement is always triggered to late by the user (a-posteriori refinement).
+ *   We thus have to check if we can erase the current and the previous solution.
+ *
+ * - The refinement automaton uses a RefinementEvent to track the state of
+ *   each cell. The automata of different cells interplay when
+ *   refining or erasing of cells is performed.
+ *
+ * - In order to prevent refinement/erasing oscillations, we restrict the
+ *   solution and previousSolution to the parent and evaluate the refinement
+ *   criterion for both. Only if no refinement is triggered, the
+ *   erasing is actually performed.
+ *
+ * - On the finest level, we evaluate the refinement criterion but we also
+ *   spread a status for halo refinement. A cells refinement decision making
+ *   is thus depending on two inputs. We combine both information
+ *   into a refinement status. We choose always the maximum
+ *   value of the inputs.
+ *   The hybrid limiter solver further injects the limiter status into
+ *   the refinement status.
+ *
+ * Subsequently, we list refinement "stories" cell descriptions of this solver
+ * might "experience".
+ *
+ * Safe, Oscillation-Free Erasing of Child Cells
+ * ---------------------------------------------
+ *
+ * This procedure can take up to 3 iterations.
+ *
+ * 1. All children (type: Cell) of a cell (type: Ancestor) want to be erased.
+ * They have the refinement status Erase. In the previous iteration, they
+ * had this refinement status, too. (adjustSolutionDuringMeshRefinementBody -> markForRefinement)
+ * They write their max refinement status to the parent (progressMeshRefinementInEnterCell->updateCoarseGridAncestorRefinementStatus).
+ * (If one of them is an Ancestor itself, they set an erasing children veto flag which is reset by
+ * the parent in every iteration.)
+ *
+ * 2. The parent (type: Ancestor) changes its type to Cell and allocates
+ * the necessary memory. (progressMeshRefinementInLeaveCell->progressCollectiveRefinementOperationsInLeaveCell)
+ * The parent notifies its children by setting the ErasingChildrenRequested RefinementEvent.
+ *
+ * 3.The children restrict their volume data (solution and previous solution) up to the parent. They
+ * do not delete their data yet. (progressMeshRefinementInLeaveCell->restrictVolumeDataIfErasingChildrenRequested)
+ *
+ * 4. The parent evaluates the refinement criterion for current solution and previous solution.
+ * If one of the evaluations indicates that refining is necessary, the children erasing
+ * process is stopped and the parent changes its type back to Ancestor. (progressMeshRefinementInLeaveCell->progressCollectiveRefinementOperationsInLeaveCell)
+ * During the mesh refinement iterations, it stores the current and previous refinement status in order
+ * to prevent the procedure to start again.
+ *
+ * If no refinement at both time stages is required, the parent keeps its new type (Cell) and signals its children to delete
+ * themselves. It does this by changing the RefinementEvent from ErasingChildrenRequested -> ErasingChildren.
+ *
+ * 5. The parent resets its status to None.
  */
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
@@ -255,6 +318,19 @@ private:
       const bool isInitialMeshRefinement);
 
   /**
+   * Evaluate the refinement criterion and convert the user
+   * input to an integer representation, the refinement status.
+   *
+   * @param cellDescription   a cell description
+   * @param solutionHeapIndex solution array heap index. Externalised in order to use the method for current and previous solution.
+   * @param timeStamp         time stamp matching the solution array.
+   * @return a refinement status (Erase(-1),Keep(0), or _refineOrKeepOnFineGrid (>=1))
+   */
+  int evaluateRefinementCriterion(
+      const CellDescription& cellDescription,
+      const int solutionHeapIndex, const double& timeStamp);
+
+  /**
    * Query the user's refinement criterion and
    * write a refinement request back to the cell description.
    */
@@ -309,7 +385,7 @@ private:
    */
   void decideOnVirtualRefinement(CellDescription& fineGridCellDescription);
 
-  /*
+  /**
    * Change the erasing children request to a change children to descendants
    * request of the coarse grid cell description's parent
    * if the coarse grid cell has children itself (of type Descendant).
@@ -345,7 +421,7 @@ private:
   void prepareVolumeDataRestriction(
       CellDescription& cellDescription) const;
 
-  /*
+  /**
    * Starts of finish collective operations from a
    * fine cell description point of view.
    *
@@ -356,7 +432,20 @@ private:
       CellDescription& fineGridCellDescription);
 
   bool progressCollectiveRefinementOperationsInLeaveCell(
-      CellDescription& fineGridCellDescription);
+      CellDescription& fineGridCellDescription,
+      const bool stillInRefiningMode);
+
+  /**
+   * Checks the current and previous solution on a Cell which was
+   * previously an Ancestor if any refinement is/was requested. If so,
+   * no erasing must be performed and the Cell must be converted
+   * back into an Ancestor.
+   *
+   * @param  cellDescription the considered cell description.
+   * @return if a Cell (which was previously an Ancestor) can
+   * erase its children.
+   */
+  bool markPreviousAncestorForRefinement(CellDescription& cellDescription);
 
   /**
    * In case, we change the children to a descendant
@@ -448,6 +537,13 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
+   * Change a cell description of type Cell to an Ancestor.
+   *
+   * @param cellDescription a cell description of type Cell.
+   */
+  void changeCellToAncestor(CellDescription& cellDescription);
+
+  /**
    * Prolongates Volume data from a parent cell description to
    * \p cellDescription if the fine grid cell associated with
    * \p cellDescription is adjacent to a boundary of the
@@ -485,14 +581,16 @@ private:
    * sizes of the children. Not sure if this makes sense. TODO(Dominic)
    *
    * \note This method makes only sense for real cells.
-   * in the current AMR concept.
    */
-  void restrictVolumeData(
-      CellDescription&       coarseGridCellDescription,
+  void restrictVolumeDataIfErasingRequested(
       const CellDescription& fineGridCellDescription,
-      const tarch::la::Vector<DIMENSIONS, int>& subcellIndex);
+      const CellDescription& coarseGridCellDescription);
 
   /**
+   * Ensure that the fine grid cell descriptions's parent index is pointing to the
+   * coarse grid cell's cell descriptions index; this is important to re-establish
+   * the parent-child relations on a new worker after a fork.
+   *
    * Checks if the parent index of a fine grid cell description
    * was set to RemoteAdjacencyIndex during a previous forking event.
    *
@@ -504,9 +602,20 @@ private:
    * For cell descriptions of type Descendant, copy offset and
    * level of the top-most parent cell description, which is of type Cell.
    */
-  void ensureConsistencyOfParentInformation(
+  void ensureFineGridCoarseGridConsistency(
       CellDescription& cellDescription,
       const int coarseGridCellDescriptionsIndex);
+
+  /**
+   * Update the refinement status of a coarse grid parent of type
+   * Ancestor.
+   *
+   * @param fineGridCellDescription the fine grid cell description
+   * @param coarseGridElement       element of the
+   */
+  void updateCoarseGridAncestorRefinementStatus(
+      const CellDescription& fineGridCellDescription,
+      CellDescription& coarseGridCellDescription);
 
   /**
    * Checks if a cell description is next to an 
@@ -540,7 +649,8 @@ private:
    */
   void prolongateFaceDataToDescendant(
       CellDescription& cellDescription,
-      SubcellPosition& SubcellPosition);
+      const CellDescription& parentCellDescription,
+      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
   /**
    * Copies the parent cell descriptions observables'
@@ -779,6 +889,10 @@ private:
       bool operator()();
   };
 
+  /**
+   * A job which performs the prediction and volume integral operations
+   * for a cell description.
+   */
   class PredictionJob {
     private:
       ADERDGSolver&    _solver; // TODO not const because of kernels
@@ -797,6 +911,26 @@ private:
           const double      predictorTimeStepSize,
           const bool        uncompressBefore,
           const bool        isAtRemoteBoundary);
+
+      bool operator()();
+  };
+
+  /**
+   * A job which performs prolongation operation
+   * for a cell description.
+   */
+  class ProlongationJob {
+    private:
+      ADERDGSolver&                            _solver; // TODO not const because of kernels
+      CellDescription&                         _cellDescription;
+      const CellDescription&                   _parentCellDescription;
+      const tarch::la::Vector<DIMENSIONS,int>  _subcellIndex;
+    public:
+      ProlongationJob(
+          ADERDGSolver&                            solver,
+          CellDescription&                         cellDescription,
+          const CellDescription&                   parentCellDescription,
+          const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
       bool operator()();
   };
@@ -1575,7 +1709,8 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+      const int solverNumber,
+      const bool stillInRefiningMode) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
         const int cellDescriptionsIndex,
@@ -1898,8 +2033,9 @@ public:
 
   // TODO(LTS): Add docu
   void prolongateFaceData(
-      const int cellDescriptionsIndex,
-      const int element) override;
+      const int  cellDescriptionsIndex,
+      const int  element,
+      const bool isAtRemoteBoundary) override;
 
   /** \copydoc Solver::restrict
    *
@@ -1935,9 +2071,7 @@ public:
 
   /**
    * Go back to previous time step with
-   * time step data and solution.
-   *
-   * Keep the new refinement status.
+   * time step data, solution, and refinement status.
    *
    * Allocate necessary new limiter patches.
    */
