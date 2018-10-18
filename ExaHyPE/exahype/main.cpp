@@ -257,9 +257,10 @@ void exahype::help(const std::string& programname) {
   std::cout << "\n";
   std::cout << "   Other possible parameters:\n";
   std::cout << "\n";
-  std::cout << "    --help    | -h       Show this help message\n";
-  std::cout << "    --version | -v       Show version and other hard coded information\n";
-  std::cout << "    --tests   | -t       Run the unit tests\n";
+  std::cout << "    --help     | -h      Show this help message\n";
+  std::cout << "    --version  | -v      Show version and other hard coded information\n";
+  std::cout << "    --tests    | -t      Run the unit tests\n";
+  std::cout << "    --pingpong | -p      Run only a simple MPI Ping Pong test\n";
   std::cout << "    --show-specfile      Show the specification file the binary was built with\n";
   std::cout << "    --built-in-specfile  Run with the spec. file the binary was built with\n";
   std::cout << "\n";
