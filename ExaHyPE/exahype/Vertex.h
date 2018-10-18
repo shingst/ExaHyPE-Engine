@@ -321,7 +321,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const bool validate) const;
 
-  /*!Solve Riemann problems on all interior faces that are adjacent
+  /**
+   * Solve Riemann problems on all interior faces that are adjacent
    * to this vertex and impose boundary conditions on faces that
    * belong to the boundary.
    *
@@ -383,6 +384,35 @@ private:
   void mergeNeighbours(
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
+   * Loop body of loop in mergeNeighbours.
+   *
+   * @param pos1Scalar linearised multi-index
+   * @param x position of this vertex
+   * @param h mesh size
+   */
+  void mergeNeighboursLoopBody(
+      const int index,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
+   * A functor wrapping mergeNeighboursLoopBody.
+   */
+  class MergeNeighboursJob {
+      private:
+        const exahype::Vertex& _vertex; // !!! assumes existence of member till end of life time
+        const tarch::la::Vector<DIMENSIONS, double>&      _x; // !!! assumes existence of member till end of life time
+        const tarch::la::Vector<DIMENSIONS, double>&      _h; // !!! assumes existence of member till end of life time
+      public:
+        MergeNeighboursJob(
+          const exahype::Vertex& vertex,                    // !!! assumes existence of member till end of life time
+          const tarch::la::Vector<DIMENSIONS, double>& x,   // !!! assumes existence of member till end of life time
+          const tarch::la::Vector<DIMENSIONS, double>& h);  // !!! assumes existence of member till end of life time
+
+          bool operator()(const tarch::la::Vector<1,int>& pos1) const;
+  };
 
 
 #ifdef Parallel

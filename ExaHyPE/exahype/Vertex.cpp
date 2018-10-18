@@ -15,6 +15,9 @@
 
 #include "tarch/la/Scalar.h"
 
+#include "tarch/multicore/Loop.h"
+#include "tarch/multicore/dForRange.h"
+
 #include "peano/utils/Loop.h"
 #include "peano/grid/Checkpoint.h"
 
@@ -470,22 +473,55 @@ void exahype::Vertex::mergeWithBoundaryData(
   }
 }
 
+void exahype::Vertex::mergeNeighboursLoopBody(
+    const int index,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h) const {
+  constexpr int size=2*(DIMENSIONS-1);
+  #if DIMENSIONS==2
+  constexpr double ix[size]={0,1}; // each column denotes a cell position where we can do DIMENSIONS race-free neighbour merges
+  constexpr double iy[size]={0,1};
+  #elif DIMENSIONS==3
+  constexpr double ix[size]={0,1,0,1};
+  constexpr double iy[size]={0,1,1,0};
+  constexpr double iz[size]={0,0,1,1};
+  #else
+  #error DIMENSIONS must be either defined as 2 or 3.
+  #endif
+  tarch::la::Vector<DIMENSIONS, int> pos1;
+  pos1[0]=ix[index];
+  pos1[1]=iy[index];
+  #if DIMENSIONS==3
+  pos1[2]=iz[index];
+  #endif
+  const int pos1Scalar = peano::utils::dLinearised(pos1,2);
+
+  dfor2(pos2)
+    InterfaceType interfaceType = determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,x,h,true);
+    if ( interfaceType==InterfaceType::Interior ) { // Assumes that we have two valid indices
+      mergeNeighboursDataAndMetadata(pos1,pos1Scalar,pos2,pos2Scalar);
+    } else if ( interfaceType==InterfaceType::Boundary ) {
+      mergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar);
+    }
+  enddforx
+}
+
 
 void exahype::Vertex::mergeNeighbours(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
-    dfor2(pos1)
-      dfor2(pos2)
-        InterfaceType interfaceType = determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,x,h,true);
-
-        if ( interfaceType==InterfaceType::Interior ) { // Assumes that we have two valid indices
-          mergeNeighboursDataAndMetadata(pos1,pos1Scalar,pos2,pos2Scalar);
-        } else if ( interfaceType==InterfaceType::Boundary ) {
-          mergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar);
-        }
-      enddforx
+    #ifdef useParallelForInMergeNeigbours
+    tarch::la::Vector<1,int> limits(2*(DIMENSIONS-1));
+    tarch::la::Vector<1,int> offset(0);
+    tarch::multicore::dForRange<1> range(offset,limits,1,1);
+    MergeNeighboursJob loopBody(*this,x,h);
+    tarch::multicore::parallelFor(range,loopBody);
+    #else
+    for (int i=0; i<2*(DIMENSIONS-1); i++) { // We can separate 2*(DIMENSIONS-1) cells with non-overlapping surfaces.
+      mergeNeighboursLoopBody(i,x,h);
     enddforx
+    #endif
   }
 }
 
@@ -1023,3 +1059,17 @@ void exahype::Vertex::receiveNeighbourData(
   }
 }
 #endif
+
+exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob(
+  const exahype::Vertex& vertex,                  // !!! assumes existance of member till end of life time
+  const tarch::la::Vector<DIMENSIONS, double>& x, // !!! assumes existance of member till end of life time
+  const tarch::la::Vector<DIMENSIONS, double>& h) // !!! assumes existance of member till end of life time
+  :
+  _vertex(vertex),
+  _x(x),
+  _h(h) {}
+
+bool exahype::Vertex::MergeNeighboursJob::MergeNeighboursJob::operator()(const tarch::la::Vector<1,int>& index) const {
+  _vertex.mergeNeighboursLoopBody(index[0],_x,_h);
+  return false;
+}
