@@ -789,16 +789,15 @@ bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAnd
     // Write the new min and max to the storage reserved for face 0
     bool dmpIsSatisfied = discreteMaximumPrincipleAndMinAndMaxSearch(solution, observablesMin,observablesMax);
 
-    // TODO(Dominic):
-//    // 2. Copy the result on the other faces as well
-//    for (int i=1; i<DIMENSIONS_TIMES_TWO; ++i) {
-//      std::copy_n(
-//          observablesMin,numberOfObservables, // past-the-end element
-//          observablesMin+i*numberOfObservables);
-//      std::copy_n(
-//          observablesMax,numberOfObservables, // past-the-end element
-//          observablesMax+i*numberOfObservables);
-//    }
+    // 2. Copy the result on the other faces as well
+    for (int i=1; i<DIMENSIONS_TIMES_TWO; ++i) {
+      std::copy_n(
+          observablesMin,numberOfObservables, // past-the-end element
+          observablesMin+i*numberOfObservables);
+      std::copy_n(
+          observablesMax,numberOfObservables, // past-the-end element
+          observablesMax+i*numberOfObservables);
+    }
 
     return dmpIsSatisfied;
   } else {
