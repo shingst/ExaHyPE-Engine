@@ -745,6 +745,7 @@ class exahype::solvers::Solver {
   static double getCoarsestMeshSizeOfAllSolvers();
 
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
+  static const tarch::la::Vector<DIMENSIONS,double>& getDomainOffset();
 
   /**
    * Run over all solvers and identify the maximum depth of adaptive
