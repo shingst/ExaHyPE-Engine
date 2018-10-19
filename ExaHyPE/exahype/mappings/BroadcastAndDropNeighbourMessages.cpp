@@ -36,7 +36,7 @@ peano::MappingSpecification
 exahype::mappings::BroadcastAndDropNeighbourMessages::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
+      peano::MappingSpecification::Serial,false); // it's not worth it to run this operation in parallel.
 }
 
 /* All specifications below are nop. */
