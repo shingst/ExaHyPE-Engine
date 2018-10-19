@@ -78,6 +78,23 @@ private:
       const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
 
   /**
+   * @return positions in {0,1}^DIMENSIONS where the associated cells do not share a face.
+   *
+   * @param index running from 0 till 2*(DIMENSIONS-1) (exclusive)
+   */
+  static tarch::la::Vector<DIMENSIONS,int> getNeighbourMergePosition(const int index);
+
+  /**
+   * These are the neighbour merge partners for the positions obtained
+   * with getNextNeighbourMergePosition(const int index).
+   *
+   * @return positions in {0,1}^DIMENSIONS where the associated cells do not share a face.
+   *
+   * @param index running from 0 till 2*(DIMENSIONS-1) (exclusive)
+   */
+  static tarch::la::Vector<DIMENSIONS,int> getNeighbourMergeCoPosition(const int index);
+
+  /**
    * Checks if the cell descriptions at the indices corresponding
    * to \p pos1 and \p pos2 need to be merged with each other.
    *
@@ -321,7 +338,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const bool validate) const;
 
-  /*!Solve Riemann problems on all interior faces that are adjacent
+  /**
+   * Solve Riemann problems on all interior faces that are adjacent
    * to this vertex and impose boundary conditions on faces that
    * belong to the boundary.
    *
@@ -381,6 +399,18 @@ private:
    * of a cell.
    */
   void mergeNeighbours(
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
+   * Loop body of loop in mergeNeighbours.
+   *
+   * @param pos1Scalar linearised multi-index
+   * @param x position of this vertex
+   * @param h mesh size
+   */
+  void mergeNeighboursLoopBody(
+      const int index,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
@@ -627,7 +657,26 @@ private:
       bool isFirstIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       int level) const;
-#endif
+  #endif
+
+
+  /**
+   * A functor wrapping mergeNeighboursLoopBody.
+   */
+  class MergeNeighboursJob {
+      private:
+        const exahype::Vertex& _vertex; // !!! assumes existence of member till end of life time
+        const tarch::la::Vector<DIMENSIONS, double>&      _x; // !!! assumes existence of member till end of life time
+        const tarch::la::Vector<DIMENSIONS, double>&      _h; // !!! assumes existence of member till end of life time
+      public:
+        MergeNeighboursJob(
+          const exahype::Vertex& vertex,                    // !!! assumes existence of member till end of life time
+          const tarch::la::Vector<DIMENSIONS, double>& x,   // !!! assumes existence of member till end of life time
+          const tarch::la::Vector<DIMENSIONS, double>& h);  // !!! assumes existence of member till end of life time
+
+          bool operator()(const tarch::la::Vector<1,int>& pos1) const;
+  };
+
 };
 
 #endif // _EXAHYPE_VERTEX_H

@@ -913,8 +913,8 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
   synchroniseTimeStepping(cellDescription1);
   synchroniseTimeStepping(cellDescription2);
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false);
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
 
   assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
 
@@ -955,7 +955,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 
   synchroniseTimeStepping(cellDescription);
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false,false);
 
   if (cellDescription.getType()==CellDescription::Cell) {
     uncompress(cellDescription);
@@ -1257,7 +1257,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
   assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
 
-  waitUntilCompletedTimeStep<CellDescription>(cellDescription,false);
+  waitUntilCompletedTimeStep<CellDescription>(cellDescription,true,true);
 
   const int numberOfFaceDof = getDataPerPatchFace();
   double* luhbnd = getDataHeapArray(cellDescription.getExtrapolatedSolution())

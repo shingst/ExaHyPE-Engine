@@ -480,6 +480,11 @@ const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainS
   return RegisteredSolvers[0]->_domainSize;
 }
 
+const tarch::la::Vector<DIMENSIONS,double>& exahype::solvers::Solver::getDomainOffset() {
+  assertion(RegisteredSolvers.size()>0);
+  return RegisteredSolvers[0]->_domainOffset;
+}
+
 double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
   double result = -std::numeric_limits<double>::max(); // "-", min
 

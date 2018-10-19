@@ -759,6 +759,7 @@ class exahype::solvers::Solver {
   static double getCoarsestMeshSizeOfAllSolvers();
 
   static const tarch::la::Vector<DIMENSIONS,double>& getDomainSize();
+  static const tarch::la::Vector<DIMENSIONS,double>& getDomainOffset();
 
   /**
    * Run over all solvers and identify the maximum depth of adaptive
@@ -909,16 +910,30 @@ class exahype::solvers::Solver {
   *
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
+  *
+  * @note Only use receiveDanglingMessages=true if the routine
+  * is called from a serial context.
+  *
+  * @param cellDescription a cell description
+  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+  * @param receiveDanglingMessages receive dangling messages while waiting
   */
  template <typename CellDescription>
  static void waitUntilCompletedTimeStep(
-     const CellDescription& cellDescription,const bool receiveDanglingMessages) {
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+   if ( !cellDescription.getHasCompletedTimeStep() ) {
+     peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+   }
    while ( !cellDescription.getHasCompletedTimeStep() ) {
      // do some work myself
      if ( receiveDanglingMessages ) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages(); // TODO(Dominic): Thread-safe?
+       tarch::parallel::Node::getInstance().receiveDanglingMessages();
      }
-     peano::datatraversal::TaskSet::finishToProcessBackgroundJobs();
+     if ( waitForHighPriorityJob ) {
+       tarch::multicore::jobs::processHighPriorityJobs(1);
+     } else {
+       tarch::multicore::jobs::processBackgroundJobs(1);
+     }
    }
  }
 
