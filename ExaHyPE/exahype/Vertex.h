@@ -50,32 +50,12 @@ public:
   /**
    * Compare if two vectors are equal up to a relative
    * tolerance.
+   *
+   * TODO(Dominic): Right place?
    */
   static bool equalUpToRelativeTolerance(
       const tarch::la::Vector<DIMENSIONS,double>& first,
       const tarch::la::Vector<DIMENSIONS,double>& second);
-
-private:
-  typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
-
-  friend class VertexOperations;
-
-  /**
-   * The log device of this class.
-   */
-  static tarch::logging::Log _log;
-
-
-  /**
-   * Validate that a compute cell is not next to
-   * an invalid cell description index as long as their
-   * interface is an interior face.
-   */
-  void validateNeighbourhood(
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
 
   /**
    * @return positions in {0,1}^DIMENSIONS where the associated cells do not share a face.
@@ -93,6 +73,27 @@ private:
    * @param index running from 0 till 2*(DIMENSIONS-1) (exclusive)
    */
   static tarch::la::Vector<DIMENSIONS,int> getNeighbourMergeCoPosition(const int index);
+
+private:
+  typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
+
+  friend class VertexOperations;
+
+  /**
+   * The log device of this class.
+   */
+  static tarch::logging::Log _log;
+
+  /**
+   * Validate that a compute cell is not next to
+   * an invalid cell description index as long as their
+   * interface is an interior face.
+   */
+  void validateNeighbourhood(
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
 
   /**
    * Checks if the cell descriptions at the indices corresponding
