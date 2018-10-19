@@ -378,7 +378,14 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x, const doub
 void Euler::EulerSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
     double* observables,const int numberOfObservables,
     const double* const Q) const {
-    std::copy_n(Q, NumberOfVariables, observables);
+  ReadOnlyVariables vars(Q);
+
+  const double gamma = 1.4;
+  const double irho = 1./vars.rho();
+  const double p = (gamma-1) * (vars.E() - 0.5 * irho * vars.j()*vars.j() );
+
+  observables[0] = vars.rho();
+  observables[1] = p;
 }
 
 
@@ -390,6 +397,6 @@ bool Euler::EulerSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t, const double dt) const {
   if (observablesMin[0] <= 0.0) return false;
-  if (observablesMin[4] < 0.0) return false;
+  if (observablesMin[1] < 0.0) return false;
   return true;
 }
