@@ -369,8 +369,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
       _stateCopy.isFirstIterationOfBatchOrNoBatch() &&
       OneSolverRequestedLocalRecomputation
   ) {
-    dfor2(pos1)
-      dfor2(pos2)
+    for (int index1=0; index1<2*(DIMENSIONS-1); index1++) {
+      const tarch::la::Vector<DIMENSIONS,int> pos1=exahype::Vertex::getNeighbourMergePosition(index1);
+      const int pos1Scalar = peano::utils::dLinearised(pos1,2);
+
+      for (int index2=0; index2<2*(DIMENSIONS-1); index2++) {
+        const tarch::la::Vector<DIMENSIONS,int> pos2=exahype::Vertex::getNeighbourMergeCoPosition(index2);
+        const int pos2Scalar = peano::utils::dLinearised(pos2,2);
+
         exahype::Vertex::InterfaceType interfaceType =
             fineGridVertex.determineInterfaceType(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH,true);
 
@@ -446,8 +452,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
             }
           }
         }
-      enddforx
-    enddforx
+      }
+    }
   }
 
   logTraceOutWith1Argument( "touchVertexFirstTime(...)", fineGridVertex );
