@@ -89,7 +89,6 @@ exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<st
     _boundingBoxSize(0.0),
     _meshRefinements(0),
     _localRecomputations(0),
-    _globalRecomputations(0),
     _predictorReruns(0) {
   #ifdef TBBInvade
   _shmInvade = nullptr;
@@ -1170,17 +1169,14 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
 
 
 void exahype::runners::Runner::updateStatistics() {
-  _meshRefinements      += (!exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() &&
-                           exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) ? 1 : 0;
   _localRecomputations  +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) ? 1 : 0;
-  _globalRecomputations +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
+  _meshRefinements +=  (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) ? 1 : 0;
   _predictorReruns      +=  (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) ? 1 : 0;
 }
 
 void exahype::runners::Runner::printStatistics() {
   logInfo("printStatistics(...)","number of mesh refinements      = "<<_meshRefinements);
   logInfo("printStatistics(...)","number of local recomputations  = "<<_localRecomputations);
-  logInfo("printStatistics(...)","number of global recomputations = "<<_globalRecomputations);
   logInfo("printStatistics(...)","number of predictor reruns      = "<<_predictorReruns);
 }
 

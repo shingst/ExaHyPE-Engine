@@ -487,37 +487,6 @@ void exahype::solvers::LimitingADERDGSolver::copyTimeStepDataFromSolverPatch(
   limiterPatch.setTimeStepSize(solverPatch.getCorrectorTimeStepSize());
 }
 
-exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
-    const int   cellDescriptionsIndex,
-    const int   element,
-    const bool  isFirstIterationOfBatch,
-    const bool  isLastIterationOfBatch,
-    const bool  isSkeletonJob,
-    const bool  mustBeDoneImmediately,
-    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
-  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,element);
-
-  // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
-  updateSolution(solverPatch,cellDescriptionsIndex,isFirstIterationOfBatch);
-
-  UpdateResult result;
-  result._timeStepSize = startNewTimeStepFused(
-      solverPatch,cellDescriptionsIndex,isFirstIterationOfBatch,isLastIterationOfBatch);
-  result._meshUpdateEvent =
-      updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
-          solverPatch,cellDescriptionsIndex,neighbourMergePerformed);
-
-  if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ) {
-    _solver->performPredictionAndVolumeIntegral(
-        cellDescriptionsIndex,element,
-        solverPatch.getCorrectorTimeStamp(), // corrector time step data is correct; see docu
-        solverPatch.getCorrectorTimeStepSize(),
-        false/*already uncompressed*/,isSkeletonJob);
-  }
-
-  return result;
-}
-
 exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::fusedTimeStep(
     const int cellDescriptionsIndex,
     const int element,
@@ -553,15 +522,46 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
       Solver::submitPredictionJob(fusedTimeStepJob,isSkeletonCell);
       return UpdateResult();
     }
-  } else {
+  }
+  else {
     UpdateResult result;
+    _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
     result._meshUpdateEvent =
-        exahype::solvers::Solver::mergeMeshUpdateEvents(
-            result._meshUpdateEvent,
-            _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
-                solverPatch,solverPatch.getNeighbourMergePerformed()));
+        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+            solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
     return result;
   }
+}
+
+exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
+    const int   cellDescriptionsIndex,
+    const int   element,
+    const bool  isFirstIterationOfBatch,
+    const bool  isLastIterationOfBatch,
+    const bool  isSkeletonJob,
+    const bool  mustBeDoneImmediately,
+    const std::bitset<DIMENSIONS_TIMES_TWO>& neighbourMergePerformed) {
+  SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,element);
+
+  // synchroniseTimeStepping(cellDescriptionsIndex,element); // assumes this was done in neighbour merge
+  updateSolution(solverPatch,cellDescriptionsIndex,isFirstIterationOfBatch);
+
+  UpdateResult result;
+  result._timeStepSize = startNewTimeStepFused(
+      solverPatch,cellDescriptionsIndex,isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._meshUpdateEvent =
+      updateRefinementStatusAndMinAndMaxAfterSolutionUpdate(
+          solverPatch,cellDescriptionsIndex,neighbourMergePerformed);
+
+  if ( solverPatch.getRefinementStatus()<_solver->getMinimumRefinementStatusForTroubledCell() ) {
+    _solver->performPredictionAndVolumeIntegral(
+        cellDescriptionsIndex,element,
+        solverPatch.getCorrectorTimeStamp(), // corrector time step data is correct; see docu
+        solverPatch.getCorrectorTimeStepSize(),
+        false/*already uncompressed*/,isSkeletonJob);
+  }
+
+  return result;
 }
 
 exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::update(
@@ -590,12 +590,11 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::u
       compress(solverPatch,cellDescriptionsIndex,isAtRemoteBoundary);
     }
     break;
-  case SolverPatch::Type::Descendant:
+  default:
     _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
     result._meshUpdateEvent =
-        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(solverPatch,solverPatch.getNeighbourMergePerformed());
-    break;
-  default:
+      _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
+          solverPatch,solverPatch.getNeighbourMergePerformed());  // must be done by all cell types TODO(Dominic): Clean up
     break;
   }
   return result;
