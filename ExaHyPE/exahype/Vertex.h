@@ -45,8 +45,6 @@ namespace exahype {
  */
 class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 public:
-  enum class InterfaceType { None, Interior, Boundary };
-
   /**
    * Compare if two vectors are equal up to a relative
    * tolerance.
@@ -74,16 +72,6 @@ public:
    */
   static tarch::la::Vector<DIMENSIONS,int> getNeighbourMergeCoPosition(const int index);
 
-private:
-  typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
-
-  friend class VertexOperations;
-
-  /**
-   * The log device of this class.
-   */
-  static tarch::logging::Log _log;
-
   /**
    * Validate that a compute cell is not next to
    * an invalid cell description index as long as their
@@ -95,81 +83,63 @@ private:
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2) const;
 
-  /**
-   * Checks if the cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 need to be merged with each other.
-   *
-   * To this end, we check if
-   *
-   * - the cell descriptions are valid and different and
-   * - no merge has yet been performed at the given face
-   *   on both cell descriptions.
-   *
-   * !! Side effects !!
-   *
-   * If a merge has to be performed, this routine sets the neighbourMergePerformed flag for this face
-   * for all found cell descriptions
-   *
-   * <h2>MPI</h2>
-   *
-   * During the mesh refinement iterations in a MPI-context, we have further
-   * observed that the adjacency information might not be up-to-date / are mixed up
-   * on a newly introduced rank after a fork was performed.
-   *
-   * We then further check if
-   *
-   *  - the geometry information of the two cell descriptions clarifies
-   *    that they are neighbours.
-   *    We compare the barycentres for this purpose.
-   */
-  bool hasToMergeNeighbours(
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+private:
+  typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
+
+  friend class VertexOperations;
 
   /**
-   * Checks if a cell descriptions at the indices corresponding
-   * to \p pos1 and \p pos2 are next to the domain boundary.
-   * Is this the case, boundary conditions have to be imposed.
-   *
-   * !! Side effects !!
-   *
-   * If a merge has to be performed, this routine sets the neighbourMergePerformed flag for this face
-   * for all found cell descriptions
+   * The log device of this class.
    */
-  bool hasToMergeWithBoundaryData(
-      const int cellDescriptionsIndex1,
-      const int cellDescriptionsIndex2,
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+  static tarch::logging::Log _log;
 
-  /*! Helper routine for mergeNeighbours.
+  /**
+   * Loops over the cell descriptions stored at the
+   * two heap array indices and tries to merge matching
+   * pairs adjacent to the common face.
    *
-   * TODO(Dominic): Add docu.
+   * @param cellDescriptionsIndex1 index corresponding to pos1
+   * @param cellDescriptionsIndex2 index corresponding to pos2
+   * @param pos1 position of first cell
+   * @param pos2 position of second cell
+   * @param x the position of the vertex
+   * @param h the mesh size at the level of the vertex
+   *
+   * @note Assumes a stable mesh, or at least one where no cells are deleted
+   * but only added and the adjacency information is updated.
    */
   void mergeNeighboursDataAndMetadata(
-      const tarch::la::Vector<DIMENSIONS,int>&  pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>&  pos2,
-      const int pos2Scalar) const;
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
-  /*! Helper routine for mergeNeighbours.
+  /**
+   * Loops over the cell descriptions stored at the
+   * two heap array indices and tries to impose boundary
+   * conditions if this was not already previously.
    *
-   * TODO(Dominic): Add docu.
+   * @param cellDescriptionsIndex1 index corresponding to pos1
+   * @param cellDescriptionsIndex2 index corresponding to pos2
+   * @param pos1 position of first cell
+   * @param pos2 position of second cell
+   * @param x the position of the vertex
+   * @param h the mesh size at the level of the vertex
+   *
+   * @note Assumes a stable mesh, or at least one where no cells are deleted
+   * but only added and the adjacency information is updated.
    */
   void mergeWithBoundaryData(
-      const tarch::la::Vector<DIMENSIONS,int>&  pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>&  pos2,
-      const int pos2Scalar) const;
+      const int cellDescriptionsIndex1,
+      const int cellDescriptionsIndex2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   #ifdef Parallel
-
   static constexpr int InvalidMetadataIndex = -1;
 
   /*! Helper routine for sendToNeighbour
@@ -285,7 +255,14 @@ private:
   tarch::la::Vector<TWO_POWER_D, int> getCellDescriptionsIndex() const;
 
   /**
-   * TODO(Dominic): Add docu.
+   * Compute the face barycentre from a vertex perspective where
+   * the normal direction d is known and the position of one
+   * of the adjacent cells.
+   *
+   * The barycentre is then computed as xB[d] = x[d] and
+   * xB[i] = x[i] +- h[i]/2 for i != d. The sign
+   * of the second term depends on the position of any of
+   * the cells adjacent to the interface.
    *
    * \param[in] cellPosition Position of one of the cells adjacent to the
    *                         face. Which one does not matter.
@@ -320,24 +297,23 @@ private:
    * \note Since this function sets the
    * neighbourMergePerformed flags, do never
    * use it in combination with the Merging mapping.
+   *
+   * @param section the code section this routine is called from
+   * @param x the position of the vertex
+   * @param h the level-dependent mesh size of cells adjacent to this vertex
+   * @param checkThoroughly if set to true, this routine will tell the solvers to compare
+   *                        the geometry information of the vertex
+   *                        with that stored on the patches before doing a merge.
+   *                        This is usually only turned on during the mesh refinement iterations
+   *                        where the grid changes and thus the adjacency maps stored in the vertices.
+   *                        Here, it might happen that the indices are outdated and then link
+   *                        to patches/cell descriptions located somewhere else.
    */
   void mergeOnlyNeighboursMetadata(
       const exahype::State::AlgorithmSection& section,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h) const;
-
-
-  /**
-   * \return the type of the interface between two cells.
-   */
-  InterfaceType determineInterfaceType(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
-      const bool validate) const;
+      const bool checkThoroughly) const;
 
   /**
    * Solve Riemann problems on all interior faces that are adjacent

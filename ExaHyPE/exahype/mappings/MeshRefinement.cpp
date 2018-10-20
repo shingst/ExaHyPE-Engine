@@ -371,7 +371,7 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
-      exahype::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH);
+      exahype::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH,true);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }

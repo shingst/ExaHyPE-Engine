@@ -109,7 +109,6 @@ namespace exahype {
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
-
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
@@ -711,8 +710,7 @@ private:
   void solveRiemannProblemAtInterface(
       CellDescription& pLeft,
       CellDescription& pRight,
-      const int faceIndexLeft,
-      const int faceIndexRight);
+      Solver::InterfaceInfo& face);
 
   /**
    * Apply the boundary conditions at the face with index \p faceIndex.
@@ -727,15 +725,10 @@ private:
    * \note Not thread-safe.
    *
    * \param[in] cellDescription         The cell description
-   * \param[in] faceIndex               The index of the interface
-   *                                    from the perspective of the cell/cell
-   *                                    description. The index is computed as 2 times the
-   *                                    position of the normal vector non-zero entry plus a
-   *                                    value that encodes the normal vector direction
-   *                                    (0 for negative direction, 1 for positive direction).
+   * \param[in] face                    information about the boundary face
    * \note Not thread-safe.
    */
-  void applyBoundaryConditions(CellDescription& p,const int faceIndex);
+  void applyBoundaryConditions(CellDescription& p,Solver::BoundaryFaceInfo& face);
 
 #ifdef Parallel
   /**
@@ -2096,26 +2089,27 @@ public:
       const int otherAugmentationStatus) const;
 
   void mergeNeighboursMetadata(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
+      Heap::HeapEntries&                        cellDescriptions1,
+      Heap::HeapEntries&                        cellDescriptions2,
+      const int                                 solverNumber,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2,
+      const tarch::la::Vector<DIMENSIONS,       double>& x,
+      const tarch::la::Vector<DIMENSIONS,       double>& h,
+      const bool                                checkThoroughly) const;
 
-  void mergeNeighbours(
-      const int                                 cellDescriptionsIndex1,
-      const int                                 element1,
-      const int                                 cellDescriptionsIndex2,
-      const int                                 element2,
+  void mergeNeighboursData(
+      Heap::HeapEntries&                        cellDescriptions1,
+      Heap::HeapEntries&                        cellDescriptions2,
+      const int                                 solverNumber,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2);
 
   void mergeWithBoundaryData(
-      const int                                 cellDescriptionsIndex,
-      const int                                 element,
+      Heap::HeapEntries&                        cellDescriptions,
+      const int                                 solverNumber,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary) override;
+      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
   /**
    * Sends all the cell descriptions at address \p
