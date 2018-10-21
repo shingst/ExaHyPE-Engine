@@ -2723,7 +2723,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
       tarch::parallel::Node::getInstance().getRank());
 }
 
-void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it still make sense?
+void exahype::solvers::ADERDGSolver::restriction(
     const int fineGridCellDescriptionsIndex,
     const int fineGridElement) {
   CellDescription& cellDescription = getCellDescription(fineGridCellDescriptionsIndex,fineGridElement);
@@ -2740,10 +2740,8 @@ void exahype::solvers::ADERDGSolver::restriction( // TODO(Dominic): Does it stil
 
     // restrict update and minMax
     restrictToTopMostParent(cellDescription,
-                            subcellPosition.parentCellDescriptionsIndex,
-                            subcellPosition.parentElement);
+      subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
   }
-  // TODO(Dominic): Merge again; Have veto mechanism per face; set at interface with Ancestor
 }
 
 void exahype::solvers::ADERDGSolver::restrictToTopMostParent( // TODO must be merged with faceIntegral
@@ -3047,9 +3045,6 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       counter++;
       #endif
 
-//      logInfo("mergeNeighboursData(...)","pos1="<<pos1.toString()<<",pos2="<<pos2.toString()<<",face="<<face.toString());
-//      logInfo("mergeNeighboursData(...)","cellDescription1="<<cellDescription1.getOffset()<<",cellDescription2="<<cellDescription2.getOffset());
-
       waitUntilCompletedTimeStep<CellDescription>(cellDescription1,false,false);
       waitUntilCompletedTimeStep<CellDescription>(cellDescription2,false,false);
 
@@ -3080,8 +3075,6 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
           (face._orientation1==1) ? cellDescription1 : cellDescription2;
       CellDescription& cellDescriptionRight =
           (face._orientation1==1) ? cellDescription2 : cellDescription1;
-//      logInfo("mergeNeighboursData(...)","cellDescriptionLeft="<<cellDescriptionLeft.getOffset()<<",cellDescriptionRight="<<cellDescriptionRight.getOffset());
-//      solveRiemannProblemAtInterface(cellDescriptionLeft,cellDescriptionRight,face);
       solveRiemannProblemAtInterface(cellDescriptionLeft,cellDescriptionRight,face);
 
       cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true);

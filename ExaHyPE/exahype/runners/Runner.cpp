@@ -1437,10 +1437,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
   }
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","global recomputation requested by at least one solver");
-  }
   if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
   }
@@ -1477,10 +1473,6 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","local recomputation requested by at least one solver");
-  }
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshRefinement());
-    logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","global recomputation requested by at least one solver");
   }
   if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
     logInfo("runOneTimeStepWithThreeSeparateAlgorithmicSteps(...)","mesh update requested by at least one solver");
