@@ -45,8 +45,13 @@ namespace c {
    * - The ghost layers have width two. This allows us to perform only one communication step but
    *   results in more work per patch as some slopes have to be computed twice.
    *
-   * - Corner/edge volumes are not communicated yielding a star stencil (+). Note that this may
-   *   reduce the approximation quality.
+   * - Corner/edge volumes are not communicated yielding a star stencil (+).
+   *   Therefore, certain slopes in ghost cells adjacent to
+   *   diagonal or edge neighbours can either not be (i) reconstructed
+   *   and set to zero, or (ii) they are reconstructed based on only
+   *   2 out of 3 cells which means they are not limited.
+   *
+   *   The implementation follows approach (ii).
    *
    * Issues:
    *
